@@ -1,0 +1,7 @@
+# Runtime dependencies plus tools required for CI and local development.
+-r requirements.txt
+pytest>=8,<9
+pytest-asyncio>=0.24,<1
+ruff>=0.9,<1
+bandit>=1.7,<2
+pip-audit>=2.7,<3
