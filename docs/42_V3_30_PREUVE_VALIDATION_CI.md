@@ -6,9 +6,9 @@ Date de validation : 17 novembre 2026
 
 - Dépôt : `dikevia/Dikevia`
 - Branche : `cfdt-juris-v3-30-developer-ready`
-- Commit contrôlé : `248313253b6fd1786a997082727f6e4500151762`
+- Commit contrôlé : `91f4b2c994adfdd79866e6a9a0bc77dea63aa6a8`
 - Pull request : [#1](https://github.com/dikevia/Dikevia/pull/1), vers `main`, laissée ouverte et non fusionnée.
-- Exécution GitHub Actions : [run 44046067289](https://github.com/dikevia/Dikevia/actions/runs/44046067289)
+- Exécution GitHub Actions : [run 44046880639](https://github.com/dikevia/Dikevia/actions/runs/44046880639)
 
 ## Résultats observés
 
@@ -28,7 +28,7 @@ Un avertissement non bloquant subsiste dans les tests : dépréciation Starlette
 
 ## Artefact généré
 
-GitHub Actions a produit l'artefact `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14311272570`, taille 2 393 594 octets. Empreinte SHA-256 de l'archive : `e8915ece0d1b4045c863787107bf3aa9883bee0c523a51c3b8a22151d9cbfd9b`. Sa conservation GitHub est prévue jusqu'au 17 décembre 2026.
+GitHub Actions a produit l'artefact `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14310794599`, taille 4 650 336 octets. Empreinte SHA-256 de l'archive : `8fd8d8b3368646b462c1d5d2958da393099aac495561970ad03e9812033bf821`. Sa conservation GitHub est prévue jusqu'au 17 décembre 2026.
 
 Le ZIP du kit est accompagné du fichier `SHA256SUMS_KIT.txt`, qui permet de contrôler les fichiers contenus.
 
