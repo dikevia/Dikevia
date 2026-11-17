@@ -146,7 +146,7 @@ async def _run_private_membership_scenario():
             organization_id,
             suspended_user,
         )
-        assert await activate(runtime_a, remaining_invited)
+        assert await activate(platform_a, remaining_invited)
         assert await admin.fetchval(
             "SELECT count(*) FROM memberships WHERE status='ACTIVE'"
         ) == 10
