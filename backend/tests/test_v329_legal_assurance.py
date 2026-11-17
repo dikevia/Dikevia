@@ -31,3 +31,12 @@ def test_review_route_is_tenant_scoped_and_never_returns_legal_verdict():
     assert 'local["scan_status"] != "CLEAN"' in main
     assert "Aucune déclaration automatique" in main
     assert '@app.get("/api/v1/platform/legal-corpus/freshness")' in main
+
+
+def test_compliance_review_consumes_ai_result_and_records_all_provider_outcomes():
+    from pathlib import Path
+    main = (Path(__file__).resolve().parents[1] / "app/main.py").read_text(encoding="utf-8")
+    assert "candidate = extract_analysis_content(candidate_result)" in main
+    assert "record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)" in main
+    assert '"outcome": "PROVIDER_ERROR"' in main
+    assert 'usage["outcome"] = "REJECTED_UNGROUNDED"' in main
