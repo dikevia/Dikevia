@@ -84,3 +84,13 @@ de l'instance et la consignation des résultats de recette.
   le run de CI PostgreSQL doit faire foi pour la livraison finale.
 - Le nouveau test PostgreSQL suppose une base CI jetable sans adhésions actives
   préexistantes, condition vérifiée explicitement par le test.
+
+
+## V3.31 — Protection contre les rafales de requêtes chat
+
+- Migration 017 : compteur PostgreSQL par organisation, utilisateur et minute ; aucune question ni contenu conversationnel n'est enregistré dans ce compteur.
+- La mise à jour du compteur est atomique (INSERT ON CONFLICT) pour fonctionner avec plusieurs workers API.
+- RLS/FORCE RLS limite la lecture et l'écriture du compteur au tenant et à l'utilisateur courant.
+- Valeur par défaut : 10 requêtes chat par minute et par utilisateur ; configuration CHAT_RATE_LIMIT_PER_MINUTE bornée entre 1 et 120.
+- Au dépassement, l'API renvoie HTTP 429 avec Retry-After ; les compteurs de plus de 24 heures sont nettoyés lors de la requête suivante de l'utilisateur.
+- Cette limite protège contre les rafales, mais ne constitue pas un budget mensuel de dépenses IA, un quota PISTE ou un WAF. Ces contrôles doivent être définis séparément avant commercialisation.
