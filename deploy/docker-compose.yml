@@ -1,0 +1,127 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cfdt_juris
+      POSTGRES_USER: cfdt_migration
+      POSTGRES_PASSWORD: ${POSTGRES_MIGRATION_PASSWORD:?Set POSTGRES_MIGRATION_PASSWORD in project .env}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in project .env}
+      POSTGRES_INGEST_PASSWORD: ${POSTGRES_INGEST_PASSWORD:?Set POSTGRES_INGEST_PASSWORD in project .env}
+      POSTGRES_MONITOR_PASSWORD: ${POSTGRES_MONITOR_PASSWORD:?Set POSTGRES_MONITOR_PASSWORD in project .env}
+      POSTGRES_PLATFORM_ADMIN_PASSWORD: ${POSTGRES_PLATFORM_ADMIN_PASSWORD:?Set POSTGRES_PLATFORM_ADMIN_PASSWORD in project .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/01-create-app-role.sh:/docker-entrypoint-initdb.d/01-create-app-role.sh:ro
+      - ./init/02-create-corpus-ingest-role.sh:/docker-entrypoint-initdb.d/02-create-corpus-ingest-role.sh:ro
+      - ./init/03-create-monitor-role.sh:/docker-entrypoint-initdb.d/03-create-monitor-role.sh:ro
+      - ./init/04-create-platform-admin-role.sh:/docker-entrypoint-initdb.d/04-create-platform-admin-role.sh:ro
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/04-schema.sql:ro
+      - ../database/grant_runtime_permissions.sql:/docker-entrypoint-initdb.d/05-runtime-grants.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cfdt_migration -d cfdt_juris"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  keycloak-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Set KEYCLOAK_DB_PASSWORD in project .env}
+    volumes:
+      - keycloak_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Set KEYCLOAK_DB_PASSWORD in project .env}
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: ${KEYCLOAK_PROXY_HEADERS:-}
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:?Set KEYCLOAK_ADMIN_USERNAME in project .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in project .env}
+    ports:
+      - "${KEYCLOAK_BIND_ADDRESS:-127.0.0.1}:${KEYCLOAK_PORT:-8081}:8080"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health/ready >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+    restart: unless-stopped
+
+  clamav:
+    image: clamav/clamav:stable
+    expose:
+      - "3310"
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping=3 --host=127.0.0.1 --port=3310"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 5m
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    env_file:
+      - ${JURIS_RUNTIME_ENV_FILE:-../.env.runtime}
+    ports:
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3)"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - document_data:/var/lib/cfdt-juris/documents
+    restart: unless-stopped
+
+
+  migrator:
+    profiles: ["ops"]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://cfdt_migration:${POSTGRES_MIGRATION_PASSWORD:?Set POSTGRES_MIGRATION_PASSWORD in project .env}@db:5432/cfdt_juris
+    command: ["python", "/srv/scripts/db_migrate.py", "status"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres_data:
+  keycloak_data:
+  document_data:

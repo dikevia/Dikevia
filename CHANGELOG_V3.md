@@ -305,5 +305,96 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Recherche CETAT explicitement présentée comme recherche documentaire tant que le texte intégral n'est pas validé dans PISTE réel.
 - Recherche des documents locaux tenant-scoped, filtrés par collectivité, antivirus, empreinte, extraction, validation humaine et dates d'effet ; les documents non validés sont exclus du contexte IA.
 - Protection contre les recherches longues qui écartent la question actuelle, et contre les références IA provenant de sources exclues du contexte.
-- Tests locaux : 164 réussis, 2 ignorés (intégration PostgreSQL réelle non configurée).
+- Résultat historique du checkpoint moteur juridique : 164 réussis, 2 ignorés (intégration PostgreSQL réelle non configurée). Le run du kit révisé est consigné ci-dessous.
 - Aucune migration ou import de production n'est revendiqué dans cette livraison.
+
+## V3.30 — profil d'instance privée
+- Ajout du mode `PRIVATE_INSTANCE_MODE` limité à dix comptes actifs.
+- Désactivation des routes de facturation Stripe en mode privé.
+- Acceptation des invitations en statut `INVITED` jusqu'à approbation de l'administrateur plateforme.
+- Ajout des statuts `SUSPENDED` et `REVOKED` et d'un contrôle SQL transactionnel du quota.
+- Documentation de déploiement dans `docs/40_INSTANCE_PRIVEE_10_COMPTES.md`.
+
+## V3.30 — préparation du transfert développeur (2026-11-17)
+- La CI applique désormais les migrations 014 et 015 sur PostgreSQL avant les tests.
+- Ajout d'un test d'intégration du plafond privé, des approbations concurrentes, de la suspension et de l'audit.
+- La migration 015 refuse une base contenant plusieurs organisations ou plus de dix adhésions actives.
+- Correction des 42 diagnostics Ruff hérités de l'archive; la commande de lint CI passe maintenant localement.
+- Résultat local initial du kit : 169 réussis et 3 ignorés faute de PostgreSQL disponible; ce résultat précède la recette CI.
+- Le workflow GitHub crée son propre PostgreSQL éphémère et fournit les URL locales nécessaires; aucun secret GitHub ni URL Neon n'est requis.
+- Après le premier run CI, les deux appels à `ElementTree.fromstring` sur du XML non fiable ont été remplacés par `defusedxml`; un test DOCX vérifie le rejet d'entités internes.
+- Le contrôle `pip-audit` a ensuite détecté deux avis sur Pytest 8.4.2; la dépendance de développement est relevée à la version corrigée 9.0.3.
+- Voir `docs/41_PLAN_DEVELOPPEUR_V3_30.md` pour les étapes de recette qui restent à réaliser.
+
+
+## V3.30 — séparation des privilèges administrateur PostgreSQL
+
+- Ajout de la migration 016 et du rôle de connexion dédié `cfdt_juris_platform_admin`, distinct des rôles runtime et ingestion.
+- Les fonctions SQL d'administration (annuaire, statut des organisations, création d'organisation, accès gratuits et gestion des membres privés) ne sont plus exécutables par le rôle runtime.
+- Les écritures de la liste d'accès gratuits et de son journal sont réservées au pool administrateur, avec des privilèges limités aux colonnes nécessaires.
+- Ajout de tests PostgreSQL réels qui vérifient le refus des opérations privilégiées depuis le rôle runtime et leur autorisation via le rôle dédié.
+- CI finale sur PostgreSQL 16 : **178 tests réussis, aucun échec** ; voir `docs/42_V3_30_PREUVE_VALIDATION_CI.md`.
+- Procédure d'installation/migration Docker et PostgreSQL managé : `docs/43_V3_30_ADMIN_DB_ROLE_MIGRATION.md`.
+
+
+## V3.33 — Limitation partagée des parcours IA
+- Extension du compteur PostgreSQL atomique V3.31 aux revues de cohérence des règles locales.
+- Chat juridique et revue locale consomment le même quota par utilisateur et organisation : l'alternance des endpoints ne permet plus de contourner la limite.
+- Le refus HTTP 429 intervient avant les recherches documentaires coûteuses et fournit `Retry-After`.
+- Aucun texte de question, document ou résultat n'est ajouté au compteur.
+
+
+## V3.34 — Limitation des appels directs aux connecteurs PISTE
+- Les contrôles de connexion, recherches Légifrance et recherches/consultations CETAT consomment désormais le même compteur PostgreSQL par organisation et utilisateur que le chat juridique.
+- Une réponse HTTP 429 avec `Retry-After` est renvoyée avant tout appel externe lorsque le quota est atteint.
+- Les paramètres de recherche et identifiants sont validés avant consommation du quota afin que les entrées invalides ne pénalisent pas l'utilisateur.
+- Aucun contenu de recherche n'est ajouté au compteur ; aucune migration supplémentaire n'est nécessaire.
+
+
+## V3.35 — Bornage des imports PISTE administrateur
+- Les deux routes d'ingestion réglementaire et CETAT valident désormais la longueur de recherche avant toute création de run ou appel externe.
+- La limite demandée est bornée à 20 résultats maximum, ce qui borne également le nombre de consultations de textes intégraux CETAT.
+- Les paramètres invalides renvoient HTTP 422 sans ouvrir de connexion d'ingestion ni appeler PISTE.
+- Aucun changement de schéma PostgreSQL et aucune migration Neon ne sont nécessaires.
+
+
+## V3.37 — Préparation de la purge des conversations privées
+- Ajout d'un utilitaire opérateur de purge des conversations privées, avec prévisualisation par défaut et seuil absolu fourni explicitement.
+- Suppression réelle protégée par double confirmation ; connexion dédiée refusée si le rôle PostgreSQL ne possède pas SUPERUSER ou BYPASSRLS.
+- Les messages et dossiers liés sont supprimés via les cascades SQL existantes.
+- Tests unitaires des garde-fous et test d'intégration PostgreSQL de la prévisualisation, de la suppression et des cascades.
+- Aucun délai de conservation par défaut, aucune planification et aucune exécution sur une base réelle. La politique (durées, point de départ, exceptions et sauvegardes) reste à valider par le responsable de traitement/DPO.
+
+## V3.38 — Préparation de la recette développeur
+
+- Version déclarée de l'API alignée sur `3.38.0` (la version précédente était restée à 3.35.0 malgré les lots ultérieurs).
+
+- Ajout de `scripts/run_developer_validation.sh` pour rejouer localement les contrôles de compilation, configuration, Ruff, Bandit, pip-audit, pytest et scripts shell.
+- Contrôle Docker Compose conditionnel si un fichier `.env` local existe ; construction des images sur demande explicite via `BUILD_IMAGES=1`.
+- Tests HTTP `/health` et `/ready` optionnels via `SMOKE_BASE_URL`.
+- Mode strict optionnel pour exiger les URL PostgreSQL de test via `REQUIRE_POSTGRES_INTEGRATION=1`.
+- Ajout de `docs/44_PREPARATION_RECETTE_DEVELOPPEUR.md` avec commandes reproductibles, matrice de recette externe et preuves attendues.
+- Le script ne démarre aucun service, n'applique aucune migration et ne touche à aucune base.
+
+- Correction du contrat de test qui référençait encore l'ancienne version API 3.35.0 ; il vérifie désormais 3.38.0.
+- Renommage de l'archive et de l'artefact CI en V3.38 pour éviter de remettre un kit étiqueté V3.30 alors que son contenu est plus récent.
+- La CI a révélé ce décalage : 204 tests réussis, 1 échec de contrat de version ; la relance sur le commit corrigé doit confirmer la suite complète.
+
+
+## V3.38 — Intégrité des documents privés
+
+- Ajout d'une vérification SHA-256 des octets stockés avant réindexation et téléchargement des documents et de leurs versions.
+- Le contrôle antivirus de nouvelle analyse refuse de déclarer sain un fichier dont l'empreinte ne correspond plus à celle enregistrée à l'import ; le statut devient bloquant (`INFECTED`, moteur `INTEGRITY_CHECK`).
+- Ajout de tests unitaires sur empreinte valide, contenu altéré et empreinte absente/invalide, ainsi que d'un contrat sur les routes documentaires.
+- Aucun changement de schéma, aucune migration et aucune connexion à la base Neon.
+
+- Stockage privé : répertoires organisation/document en permissions `0700`, fichiers temporaires et définitifs en `0600`, écriture temporaire exclusive, synchronisation disque avant renommage atomique.
+
+- Téléchargements documentaires : la réponse renvoie désormais exactement les octets qui viennent d'être vérifiés par SHA-256, ce qui supprime la fenêtre de remplacement du fichier entre vérification et lecture HTTP.
+- Correction de la remontée du moteur de contrôle lors d'une nouvelle analyse : une altération détectée reste identifiée `INTEGRITY_CHECK` sur le document courant.
+
+
+### Sécurité documentaire — concurrence des versions
+
+- Le numéro de version est désormais calculé après verrouillage `FOR UPDATE` de la ligne du document, dans la même transaction que l'insertion et la mise à jour du document parent. Deux dépôts simultanés ne peuvent plus allouer le même numéro.
+- Le fichier créé est supprimé si la transaction échoue, afin d'éviter un fichier orphelin.
