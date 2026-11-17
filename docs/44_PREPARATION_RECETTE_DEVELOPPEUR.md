@@ -115,3 +115,8 @@ Aucune de ces actions ne doit être simulée ou remplacée par des identifiants 
 ## Précision sur le mode PostgreSQL strict
 
 `REQUIRE_POSTGRES_INTEGRATION=1` vérifie uniquement que les trois variables d'environnement sont renseignées. Il ne teste pas à lui seul la connectivité, les privilèges SQL, la présence des migrations ni l'absence de tests ignorés. La preuve de l'intégration PostgreSQL est le résultat pytest sur une base jetable correctement initialisée, comme dans le workflow CI.
+
+
+## Contrôle d'intégrité du stockage documentaire
+
+La réindexation et le téléchargement comparent désormais les octets du fichier à l'empreinte SHA-256 conservée en base. Une différence bloque l'opération. La route de nouvelle analyse antivirus marque également la version comme `INFECTED` avec le moteur `INTEGRITY_CHECK` si les octets ont changé depuis l'import initial. Ce contrôle détecte une altération du fichier ; il ne remplace ni une sauvegarde ni une vérification périodique de l'ensemble du stockage.
