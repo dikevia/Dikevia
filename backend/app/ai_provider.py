@@ -1,3 +1,15 @@
+"""Adaptateur facultatif OpenAI-compatible pour l'analyse assistée.
+
+Le modèle n'est jamais une source juridique : il ne reçoit que les extraits du
+corpus validés par le backend et ne peut pas créer de citations exposées.
+"""
+from __future__ import annotations
+import json
+import re
+from dataclasses import dataclass
+import httpx
+from .config import settings
+
 SYSTEM_PROMPT = """Tu es l'assistant juridique de Dikevia, spécialisé en fonction publique territoriale.
 Tu aides des représentants syndicaux. Tu n'es ni avocat ni autorité administrative.
 RÈGLES IMPÉRATIVES :
