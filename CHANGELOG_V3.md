@@ -349,3 +349,10 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Une réponse HTTP 429 avec `Retry-After` est renvoyée avant tout appel externe lorsque le quota est atteint.
 - Les paramètres de recherche et identifiants sont validés avant consommation du quota afin que les entrées invalides ne pénalisent pas l'utilisateur.
 - Aucun contenu de recherche n'est ajouté au compteur ; aucune migration supplémentaire n'est nécessaire.
+
+
+## V3.35 — Bornage des imports PISTE administrateur
+- Les deux routes d'ingestion réglementaire et CETAT valident désormais la longueur de recherche avant toute création de run ou appel externe.
+- La limite demandée est bornée à 20 résultats maximum, ce qui borne également le nombre de consultations de textes intégraux CETAT.
+- Les paramètres invalides renvoient HTTP 422 sans ouvrir de connexion d'ingestion ni appeler PISTE.
+- Aucun changement de schéma PostgreSQL et aucune migration Neon ne sont nécessaires.
