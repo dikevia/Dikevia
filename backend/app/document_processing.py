@@ -1,6 +1,7 @@
 """Fail-closed malware scanning and bounded text extraction for private documents."""
 from __future__ import annotations
 
+import hashlib
 import socket
 import struct
 import zipfile
@@ -96,3 +97,10 @@ def extract_document_text(data: bytes, mime: str, max_chars: int = 2_000_000) ->
     if not text:
         return "", "NO_TEXT"
     return text[:max_chars], "EXTRACTED"
+
+
+def document_sha256_matches(data: bytes, expected: str | None) -> bool:
+    """Return whether stored bytes match the immutable digest recorded at upload."""
+    if not expected or len(expected) != 64:
+        return False
+    return hashlib.sha256(data).hexdigest() == expected.lower()
