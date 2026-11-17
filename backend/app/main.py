@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
     yield
     await close_pool()
 
-app = FastAPI(title="CFDT JURIS API", version="3.34.0", debug=settings.debug, lifespan=lifespan,
+app = FastAPI(title="CFDT JURIS API", version="3.35.0", debug=settings.debug, lifespan=lifespan,
               docs_url=None if settings.app_env == "production" else "/docs",
               redoc_url=None if settings.app_env == "production" else "/redoc",
               openapi_url=None if settings.app_env == "production" else "/openapi.json")
@@ -881,6 +881,10 @@ async def legal_corpus_freshness(admin=Depends(require_platform_admin)):
 @app.post("/api/v1/platform/legal-corpus/ingest/regulatory")
 async def ingest_regulatory_corpus(q: str, effective_date: date | None = None,
         limit: int = 10, admin=Depends(require_platform_admin)):
+    if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
+        raise HTTPException(422, "La recherche réglementaire doit contenir entre 2 et 500 caractères.")
+    if not 1 <= limit <= 20:
+        raise HTTPException(422, "La limite d'import réglementaire doit être comprise entre 1 et 20.")
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     requested_date = effective_date or date.today()
@@ -918,6 +922,10 @@ async def ingest_regulatory_corpus(q: str, effective_date: date | None = None,
 @app.post("/api/v1/platform/legal-corpus/ingest/administrative-case-law")
 async def ingest_administrative_case_law(q: str, effective_date: date | None = None,
         limit: int = 10, admin=Depends(require_platform_admin)):
+    if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
+        raise HTTPException(422, "La recherche de jurisprudence doit contenir entre 2 et 500 caractères.")
+    if not 1 <= limit <= 20:
+        raise HTTPException(422, "La limite d'import de jurisprudence doit être comprise entre 1 et 20.")
     if not settings.legifrance_cetat_fulltext_enabled:
         raise HTTPException(503, "L'import du texte intégral CETAT est désactivé jusqu'à validation du contrat de consultation sur PISTE.")
     if not legifrance.configured:
