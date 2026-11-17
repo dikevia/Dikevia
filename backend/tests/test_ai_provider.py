@@ -33,3 +33,16 @@ def test_provider_token_usage_parser_preserves_unknown_values():
     assert _nonnegative_token_count(-1) is None
     assert _nonnegative_token_count(True) is None
     assert _nonnegative_token_count("12") is None
+
+
+def test_internal_ai_usage_metadata_is_never_serialized_to_clients():
+    from app.schemas import AskResponse
+
+    response = AskResponse(
+        request_id="d5d2d51a-98f0-4e16-a9df-b0cc10bdf9f0",
+        verification_status="NON_VERIFIE",
+        answer="Réponse de test",
+        ai_usage={"provider": "openai_compatible", "model": "private-model", "total_tokens": 42},
+    )
+    assert "ai_usage" not in response.model_dump()
+    assert "ai_usage" not in response.model_dump(mode="json")
