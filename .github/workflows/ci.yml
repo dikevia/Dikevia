@@ -97,3 +97,12 @@ jobs:
           docker compose --env-file .env.staging -f deploy/docker-compose.yml config --quiet
           docker compose --env-file .env -f deploy/docker-compose.yml -f deploy/docker-compose.monitoring.yml --profile monitoring config --quiet
           docker compose -p juris-ci --env-file .env -f deploy/docker-compose.yml build api migrator
+      - name: Build clean developer kit
+        run: python scripts/package_developer_kit.py
+      - name: Upload developer kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: CFDT-JURIS-V3.30-Kit-Developpeur
+          path: dist/CFDT_JURIS_V3_30_Kit_Developpeur.zip
+          if-no-files-found: error
+          retention-days: 30
