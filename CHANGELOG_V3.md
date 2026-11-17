@@ -325,3 +325,13 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Après le premier run CI, les deux appels à `ElementTree.fromstring` sur du XML non fiable ont été remplacés par `defusedxml`; un test DOCX vérifie le rejet d'entités internes.
 - Le contrôle `pip-audit` a ensuite détecté deux avis sur Pytest 8.4.2; la dépendance de développement est relevée à la version corrigée 9.0.3.
 - Voir `docs/41_PLAN_DEVELOPPEUR_V3_30.md` pour les étapes de recette qui restent à réaliser.
+
+
+## V3.30 — séparation des privilèges administrateur PostgreSQL
+
+- Ajout de la migration 016 et du rôle de connexion dédié `cfdt_juris_platform_admin`, distinct des rôles runtime et ingestion.
+- Les fonctions SQL d'administration (annuaire, statut des organisations, création d'organisation, accès gratuits et gestion des membres privés) ne sont plus exécutables par le rôle runtime.
+- Les écritures de la liste d'accès gratuits et de son journal sont réservées au pool administrateur, avec des privilèges limités aux colonnes nécessaires.
+- Ajout de tests PostgreSQL réels qui vérifient le refus des opérations privilégiées depuis le rôle runtime et leur autorisation via le rôle dédié.
+- CI finale sur PostgreSQL 16 : **178 tests réussis, aucun échec** ; voir `docs/42_V3_30_PREUVE_VALIDATION_CI.md`.
+- Procédure d'installation/migration Docker et PostgreSQL managé : `docs/43_V3_30_ADMIN_DB_ROLE_MIGRATION.md`.
