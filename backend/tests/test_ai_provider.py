@@ -46,3 +46,18 @@ def test_internal_ai_usage_metadata_is_never_serialized_to_clients():
     )
     assert "ai_usage" not in response.model_dump()
     assert "ai_usage" not in response.model_dump(mode="json")
+
+
+def test_ai_analysis_result_exposes_text_for_grounding_checks():
+    from app.ai_provider import AIAnalysisResult, extract_analysis_content
+
+    result = AIAnalysisResult(
+        content="L'article L. 123-4 prévoit une règle.",
+        model="test-model",
+        prompt_tokens=10,
+        completion_tokens=8,
+        total_tokens=18,
+    )
+    assert extract_analysis_content(result) == result.content
+    assert extract_analysis_content("Réponse de test") == "Réponse de test"
+    assert extract_analysis_content(None) is None
