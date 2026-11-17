@@ -27,7 +27,7 @@ def build_generated_secrets(current: dict[str, str]) -> dict[str, str]:
         value = current.get(key, "")
         if value and "CHANGE_ME_" not in value:
             return value
-        source_url = current.get("DATABASE_URL", "") if key == "POSTGRES_APP_PASSWORD" else current.get("LEGAL_CORPUS_INGEST_DATABASE_URL", "") if key == "POSTGRES_INGEST_PASSWORD" else ""
+        source_url = current.get("DATABASE_URL", "") if key == "POSTGRES_APP_PASSWORD" else current.get("LEGAL_CORPUS_INGEST_DATABASE_URL", "") if key == "POSTGRES_INGEST_PASSWORD" else current.get("PLATFORM_ADMIN_DATABASE_URL", "") if key == "POSTGRES_PLATFORM_ADMIN_PASSWORD" else ""
         parsed_password = urlparse(source_url).password if source_url else None
         if parsed_password and "CHANGE_ME_" not in parsed_password:
             return unquote(parsed_password)
@@ -37,6 +37,7 @@ def build_generated_secrets(current: dict[str, str]) -> dict[str, str]:
         "CHANGE_ME_RUNTIME": secret_for("POSTGRES_APP_PASSWORD"),
         "CHANGE_ME_INGEST": secret_for("POSTGRES_INGEST_PASSWORD"),
         "CHANGE_ME_MONITOR": secret_for("POSTGRES_MONITOR_PASSWORD"),
+        "CHANGE_ME_PLATFORM_ADMIN": secret_for("POSTGRES_PLATFORM_ADMIN_PASSWORD"),
         "CHANGE_ME_KEYCLOAK_DB": secret_for("KEYCLOAK_DB_PASSWORD"),
         "CHANGE_ME_KEYCLOAK_ADMIN": secret_for("KEYCLOAK_ADMIN_PASSWORD"),
         "CHANGE_ME_GRAFANA_ADMIN": secret_for("GRAFANA_ADMIN_PASSWORD"),
@@ -83,7 +84,8 @@ def validate_database_passwords(content: str) -> None:
             key, value = line.split("=", 1)
             values[key.strip()] = value.strip()
     pairs = (("DATABASE_URL", "POSTGRES_APP_PASSWORD", "cfdt_juris_app"),
-             ("LEGAL_CORPUS_INGEST_DATABASE_URL", "POSTGRES_INGEST_PASSWORD", "cfdt_juris_ingest"))
+             ("LEGAL_CORPUS_INGEST_DATABASE_URL", "POSTGRES_INGEST_PASSWORD", "cfdt_juris_ingest"),
+             ("PLATFORM_ADMIN_DATABASE_URL", "POSTGRES_PLATFORM_ADMIN_PASSWORD", "cfdt_juris_platform_admin"))
     for url_key, password_key, expected_user in pairs:
         if not values.get(url_key) or not values.get(password_key):
             continue
