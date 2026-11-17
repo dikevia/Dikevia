@@ -32,7 +32,7 @@ def test_example_oidc_config_has_no_client_secret():
 
 def test_backend_api_version_is_current():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
-    assert 'version="3.33.0"' in main
+    assert 'version="3.34.0"' in main
 
 
 def test_frontend_static_assets_are_mounted_and_config_is_present():
