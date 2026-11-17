@@ -10,7 +10,7 @@ CREATE TABLE ai_usage_events (
     prompt_tokens integer CHECK (prompt_tokens IS NULL OR prompt_tokens >= 0),
     completion_tokens integer CHECK (completion_tokens IS NULL OR completion_tokens >= 0),
     total_tokens integer CHECK (total_tokens IS NULL OR total_tokens >= 0),
-    outcome varchar(40) NOT NULL CHECK (outcome IN ('ANSWERED','REJECTED_UNGROUNDED')),
+    outcome varchar(40) NOT NULL CHECK (outcome IN ('ANSWERED','REJECTED_UNGROUNDED','PROVIDER_ERROR')),
     created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX ai_usage_events_org_created_idx
