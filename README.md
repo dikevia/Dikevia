@@ -1,9 +1,9 @@
-# CFDT JURIS — Kit développeur V3.33
+# CFDT JURIS — Kit développeur V3.34
 
 La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des textes réglementaires complémentaires sur Légifrance et interrogation sécurisée des documents propres à l’employeur.
 
 ## État réel de cette livraison
-- Code FastAPI versionné `3.33.0`.
+- Code FastAPI versionné `3.34.0`.
 - Console plateforme : annuaire des syndicats, création d’espaces, attribution d’accès offerts, suspension et réactivation journalisées.
 - Validation de JWT OIDC via JWKS, issuer, audience, expiration et algorithmes configurés.
 - Appartenance active vérifiée en base pour chaque requête tenant.
