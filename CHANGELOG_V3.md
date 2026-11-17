@@ -335,3 +335,10 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Ajout de tests PostgreSQL réels qui vérifient le refus des opérations privilégiées depuis le rôle runtime et leur autorisation via le rôle dédié.
 - CI finale sur PostgreSQL 16 : **178 tests réussis, aucun échec** ; voir `docs/42_V3_30_PREUVE_VALIDATION_CI.md`.
 - Procédure d'installation/migration Docker et PostgreSQL managé : `docs/43_V3_30_ADMIN_DB_ROLE_MIGRATION.md`.
+
+
+## V3.33 — Limitation partagée des parcours IA
+- Extension du compteur PostgreSQL atomique V3.31 aux revues de cohérence des règles locales.
+- Chat juridique et revue locale consomment le même quota par utilisateur et organisation : l'alternance des endpoints ne permet plus de contourner la limite.
+- Le refus HTTP 429 intervient avant les recherches documentaires coûteuses et fournit `Retry-After`.
+- Aucun texte de question, document ou résultat n'est ajouté au compteur.
