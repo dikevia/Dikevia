@@ -121,3 +121,7 @@ La limitation PostgreSQL est désormais commune aux questions du chat et aux rev
 
 ## V3.34 — Protection des appels PISTE directs
 Les routes de vérification de connexion Légifrance, de recherche d'articles, de recherche CETAT et de consultation d'une décision appliquent le quota partagé par organisation/utilisateur avant tout appel réseau. Les entrées de recherche et identifiants sont validés en amont. Le dépassement renvoie HTTP 429 et `Retry-After`. Aucun contenu de recherche n'est stocké par le mécanisme de limitation.
+
+
+## V3.35 — Bornage des imports PISTE administrateur
+Les routes d'ingestion du corpus réglementaire et de jurisprudence administrative valident la recherche (2 à 500 caractères) et bornent le nombre de résultats (1 à 20) avant toute connexion à la base d'ingestion ou tout appel PISTE. Pour l'import CETAT, cette limite borne aussi le nombre de consultations de textes intégraux. Les entrées invalides renvoient HTTP 422. Aucun changement de schéma ni migration de base n'est requis.
