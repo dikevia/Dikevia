@@ -367,6 +367,8 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 
 ## V3.38 — Préparation de la recette développeur
 
+- Version déclarée de l'API alignée sur `3.38.0` (la version précédente était restée à 3.35.0 malgré les lots ultérieurs).
+
 - Ajout de `scripts/run_developer_validation.sh` pour rejouer localement les contrôles de compilation, configuration, Ruff, Bandit, pip-audit, pytest et scripts shell.
 - Contrôle Docker Compose conditionnel si un fichier `.env` local existe ; construction des images sur demande explicite via `BUILD_IMAGES=1`.
 - Tests HTTP `/health` et `/ready` optionnels via `SMOKE_BASE_URL`.
