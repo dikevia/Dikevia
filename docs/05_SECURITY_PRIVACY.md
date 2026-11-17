@@ -13,8 +13,9 @@
 - Fournisseur OIDC, client, audience, JWKS, MFA, durée de session et révocation côté IdP.
 - Rôle SQL runtime séparé, sans propriété des tables, `BYPASSRLS` ou `SUPERUSER`.
 - TLS, reverse proxy, secrets manager, sauvegardes chiffrées, supervision et rotation des secrets.
+- Comptabilisation des tokens IA par organisation et utilisateur : seules les métadonnées fournisseur/modèle, les compteurs de tokens disponibles, l'issue de l'appel et un identifiant technique sont stockés. Aucun prompt, réponse, conversation ou extrait documentaire n'est enregistré dans ce journal. Le rôle runtime peut uniquement insérer ; la lecture nécessite un accès administratif distinct.
 - Limitation PostgreSQL atomique des requêtes chat par utilisateur et organisation (10/minute par défaut, configurable de 1 à 120), avec réponse HTTP 429 et Retry-After. Cette protection applicative ne remplace pas le rate limiting réseau/WAF ni un quota mensuel de coûts IA.
-- Quotas mensuels de coûts IA, politique CORS et protections anti-abus en frontal restent à définir/configurer.
+- Les quotas mensuels et le calcul de coûts IA restent à définir à partir des tarifs réels des fournisseurs et des plans commerciaux ; les compteurs inconnus restent NULL et aucun coût estimé n'est inventé. Politique CORS et protections anti-abus en frontal restent à vérifier/configurer.
 - Analyse des dépendances et images Docker.
 - Procédure de désactivation/révocation et test de propagation immédiate.
 - Tests PostgreSQL réels de non-fuite A/B pour SELECT, INSERT, UPDATE et DELETE.
