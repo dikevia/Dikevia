@@ -392,3 +392,9 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 
 - Téléchargements documentaires : la réponse renvoie désormais exactement les octets qui viennent d'être vérifiés par SHA-256, ce qui supprime la fenêtre de remplacement du fichier entre vérification et lecture HTTP.
 - Correction de la remontée du moteur de contrôle lors d'une nouvelle analyse : une altération détectée reste identifiée `INTEGRITY_CHECK` sur le document courant.
+
+
+### Sécurité documentaire — concurrence des versions
+
+- Le numéro de version est désormais calculé après verrouillage `FOR UPDATE` de la ligne du document, dans la même transaction que l'insertion et la mise à jour du document parent. Deux dépôts simultanés ne peuvent plus allouer le même numéro.
+- Le fichier créé est supprimé si la transaction échoue, afin d'éviter un fichier orphelin.
