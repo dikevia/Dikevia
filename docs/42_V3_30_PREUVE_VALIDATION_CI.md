@@ -6,15 +6,15 @@ Date de validation : 17 novembre 2026
 
 - Dépôt : `dikevia/Dikevia`
 - Branche : `cfdt-juris-v3-30-developer-ready`
-- Commit contrôlé : `eb70ef692d3b00eb2fc4cae855fff29f2e778a80`
+- Commit contrôlé : `cdc6ae43687e1978aea7abfd8877cb228d8f4a2d`
 - Pull request : [#1](https://github.com/dikevia/Dikevia/pull/1), vers `main`, laissée ouverte et non fusionnée.
-- Exécution GitHub Actions : [run 44053022900](https://github.com/dikevia/Dikevia/actions/runs/44053022900)
+- Exécution GitHub Actions : [run 44054893375](https://github.com/dikevia/Dikevia/actions/runs/44053022900)
 
 ## Résultats observés
 
 L'exécution complète du workflow `test-and-audit` s'est terminée avec succès.
 
-- **185 tests réussis**, aucun échec.
+- **187 tests réussis**, aucun échec.
 - Ruff : réussi.
 - Bandit : réussi.
 - `pip-audit` : réussi.
@@ -24,7 +24,7 @@ L'exécution complète du workflow `test-and-audit` s'est terminée avec succès
 - Validation des configurations Docker Compose et construction des images : réussies.
 - Construction et téléversement du kit développeur : réussis.
 
-Un avertissement non bloquant subsiste : dépréciation Starlette liée à l'utilisation de `httpx` dans `TestClient`.
+Un avertissement non bloquant subsiste : Starlette signale que l'utilisation de `httpx` avec `TestClient` est dépréciée et recommande `httpx2`.
 
 ## Évolutions validées
 
@@ -33,15 +33,16 @@ Un avertissement non bloquant subsiste : dépréciation Starlette liée à l'uti
 - Le journal ne contient aucun prompt, réponse, message, extrait documentaire ou identifiant de conversation. Le rôle runtime ne peut qu'insérer les colonnes de métadonnées autorisées ; aucune lecture n'est accordée.
 - Les appels IA réussis, les réponses rejetées pour référence non sourcée et les erreurs fournisseur sont distingués.
 - Les métadonnées de comptabilisation sont exclues de la sérialisation API et ne sont pas exposées au navigateur.
+- Le parcours de revue de cohérence des règles locales extrait désormais correctement le texte de `AIAnalysisResult` avant le contrôle des références ; ses appels IA sont également comptabilisés, y compris les réponses rejetées et les erreurs fournisseur.
 - La version API est 3.32.0.
 - Aucun coût en euros ni quota mensuel n'est calculé ou appliqué à ce stade : il faudra d'abord définir les tarifs fournisseurs et les budgets par offre.
 
 ## Artefact généré
 
 - Nom : `CFDT-JURIS-V3.30-Kit-Developpeur`
-- Identifiant : `14313509415`
-- Taille : 4 661 212 octets
-- SHA-256 : `0c17c4296db04c6ea8f44df521b71e50e2e58041774ad27317ce8f4211fd5f2a`
+- Identifiant : `14315661654`
+- Taille : 4 661 983 octets
+- SHA-256 : `7e00ec7445fe8eadcffc6637dcd1215b016fc89b16e9e1b8e314d34863fcfac4`
 - Conservation GitHub jusqu'au 17 décembre 2026.
 
 L'archive contient le code, les migrations, les tests et la documentation révisés. Le fichier `SHA256SUMS_KIT.txt` permet de contrôler les fichiers contenus.
