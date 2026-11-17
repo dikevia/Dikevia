@@ -104,7 +104,7 @@ def test_foreign_or_unknown_conversation_cannot_create_read_or_update_dossier(me
         route = endpoint(
             "/api/v1/chat/conversations/{conversation_id}/dossier", "PUT"
         )
-        call = route(conversation_id, {"content": {}}, ctx)
+        call = route(conversation_id, {"content": {"status": "BROUILLON_A_VALIDER"}}, ctx)
 
     with pytest.raises(HTTPException) as exc:
         asyncio.run(call)
