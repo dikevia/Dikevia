@@ -24,7 +24,7 @@ CREATE POLICY chat_rate_limit_tenant_owner ON chat_rate_limit_buckets
       AND user_id=NULLIF(current_setting('app.current_user_id',true),'')::uuid
     );
 
-GRANT SELECT (request_count,window_start) ON chat_rate_limit_buckets TO cfdt_juris_app;
+GRANT SELECT (organization_id,user_id,request_count,window_start) ON chat_rate_limit_buckets TO cfdt_juris_app;
 GRANT INSERT (organization_id,user_id,window_start,request_count) ON chat_rate_limit_buckets TO cfdt_juris_app;
 GRANT UPDATE (request_count) ON chat_rate_limit_buckets TO cfdt_juris_app;
 GRANT DELETE ON chat_rate_limit_buckets TO cfdt_juris_app;
