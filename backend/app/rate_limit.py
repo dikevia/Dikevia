@@ -1,4 +1,4 @@
-"""Tenant-scoped PostgreSQL throttling shared by expensive legal AI endpoints."""
+"""Tenant-scoped PostgreSQL throttling shared by expensive legal and AI connector endpoints."""
 from dataclasses import dataclass
 
 
@@ -11,10 +11,10 @@ class RateLimitDecision:
 
 async def consume_chat_request(conn, organization_id: str, user_id: str,
                                requests_per_minute: int) -> RateLimitDecision:
-    """Atomically consume one request from the current user's UTC minute bucket.
+    """Atomically consume one expensive legal request from the current user's UTC minute bucket.
 
     The SQL operation is safe under concurrent API workers. Only counters and
-    timestamps are stored; question text and other conversation content are not.
+    timestamps are stored; question text, search terms and other user content are not.
     """
     if not 1 <= requests_per_minute <= 120:
         raise ValueError("La limite de requêtes chat doit être comprise entre 1 et 120.")
