@@ -1,0 +1,59 @@
+name: Deploy staging (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type STAGING to authorize deployment
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: juris-staging
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: ${{ inputs.confirm == 'STAGING' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_DEPLOY_HOST }}
+          username: ${{ secrets.STAGING_DEPLOY_USER }}
+          key: ${{ secrets.STAGING_DEPLOY_SSH_KEY }}
+          port: ${{ secrets.STAGING_DEPLOY_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -eu
+            cd "${{ secrets.STAGING_DEPLOY_PATH }}"
+            git fetch --prune origin
+            git checkout develop
+            git pull --ff-only origin develop
+            test -f .env.staging
+            python3 scripts/upgrade_env_file.py --staging
+            python3 scripts/audit_production_env.py --env-file .env.staging
+            grep -q '^APP_ENV=production$' .env.staging
+            grep -q '^LEGIFRANCE_ENVIRONMENT=sandbox$' .env.staging
+            ! grep -q 'example.org' .env.staging
+            COMPOSE_PROJECT_NAME=$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env.staging | tail -n 1)
+            COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-cfdt-juris-staging}
+            python3 scripts/render_keycloak_config.py --env-file .env.staging
+            python3 scripts/render_runtime_env.py --source .env.staging --output .env.staging.runtime
+            docker compose -p ${COMPOSE_PROJECT_NAME} --env-file .env.staging -f deploy/docker-compose.yml build api migrator
+            docker compose -p ${COMPOSE_PROJECT_NAME} --env-file .env.staging -f deploy/docker-compose.yml up -d db keycloak-db keycloak clamav
+            for i in $(seq 1 60); do
+              if docker compose -p ${COMPOSE_PROJECT_NAME} --env-file .env.staging -f deploy/docker-compose.yml exec -T db pg_isready -U cfdt_migration -d cfdt_juris >/dev/null 2>&1; then break; fi
+              sleep 2
+            done
+            ENV_FILE=.env.staging COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME} scripts/ensure_operational_roles.sh
+            docker compose -p ${COMPOSE_PROJECT_NAME} --env-file .env.staging -f deploy/docker-compose.yml run --rm migrator python /srv/scripts/db_migrate.py baseline
+            ENV_FILE=.env.staging COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME} scripts/upgrade_with_backup.sh
+            docker compose -p ${COMPOSE_PROJECT_NAME} --env-file .env.staging -f deploy/docker-compose.yml up -d
+            for i in $(seq 1 30); do
+              if curl --fail --silent http://127.0.0.1:18000/ready >/dev/null; then exit 0; fi
+              sleep 5
+            done
+            echo 'Staging readiness check failed; investigate deployment.' >&2
+            exit 1
