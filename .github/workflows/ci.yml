@@ -16,11 +16,11 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: juris_test
+          POSTGRES_DB: cfdt_juris
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d juris_test"
+          --health-cmd "pg_isready -U postgres -d cfdt_juris"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
@@ -58,9 +58,9 @@ jobs:
           PGPORT: 5432
           PGUSER: postgres
           PGPASSWORD: postgres
-          PGDATABASE: juris_test
+          PGDATABASE: cfdt_juris
           POSTGRES_USER: postgres
-          POSTGRES_DB: juris_test
+          POSTGRES_DB: cfdt_juris
           POSTGRES_APP_PASSWORD: ci-app-password
           POSTGRES_INGEST_PASSWORD: ci-ingest-password
           POSTGRES_MONITOR_PASSWORD: ci-monitor-password
@@ -79,8 +79,8 @@ jobs:
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend
-          TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/juris_test
-          TEST_DATABASE_URL: postgresql://cfdt_juris_app:ci-app-password@127.0.0.1:5432/juris_test
+          TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/cfdt_juris
+          TEST_DATABASE_URL: postgresql://cfdt_juris_app:ci-app-password@127.0.0.1:5432/cfdt_juris
         run: pytest -q backend/tests
       - name: Validate shell scripts
         run: bash -n scripts/*.sh deploy/init/*.sh
