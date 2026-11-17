@@ -25,6 +25,8 @@ def test_platform_admin_functions_are_only_granted_to_dedicated_role():
     migration = (ROOT / "database/migrations/016_platform_admin_database_role.sql").read_text()
     assert "REVOKE EXECUTE ON FUNCTION private_instance_pending_members(uuid) FROM cfdt_juris_app" in migration
     assert "GRANT EXECUTE ON FUNCTION private_instance_pending_members(uuid) TO cfdt_juris_platform_admin" in migration
+    assert "GRANT EXECUTE ON FUNCTION platform_admin_create_organization(uuid,uuid,text,text,text,boolean) TO cfdt_juris_platform_admin" in migration
+    assert "GRANT EXECUTE ON FUNCTION platform_admin_grant_free_access(uuid,uuid,text) TO cfdt_juris_platform_admin" in migration
     assert "REVOKE INSERT, UPDATE ON platform_free_email_access FROM cfdt_juris_app" in migration
     source = (ROOT / "backend/app/main.py").read_text()
     assert "get_platform_admin_pool()" in source
