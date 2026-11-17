@@ -342,3 +342,10 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Chat juridique et revue locale consomment le même quota par utilisateur et organisation : l'alternance des endpoints ne permet plus de contourner la limite.
 - Le refus HTTP 429 intervient avant les recherches documentaires coûteuses et fournit `Retry-After`.
 - Aucun texte de question, document ou résultat n'est ajouté au compteur.
+
+
+## V3.34 — Limitation des appels directs aux connecteurs PISTE
+- Les contrôles de connexion, recherches Légifrance et recherches/consultations CETAT consomment désormais le même compteur PostgreSQL par organisation et utilisateur que le chat juridique.
+- Une réponse HTTP 429 avec `Retry-After` est renvoyée avant tout appel externe lorsque le quota est atteint.
+- Les paramètres de recherche et identifiants sont validés avant consommation du quota afin que les entrées invalides ne pénalisent pas l'utilisateur.
+- Aucun contenu de recherche n'est ajouté au compteur ; aucune migration supplémentaire n'est nécessaire.
