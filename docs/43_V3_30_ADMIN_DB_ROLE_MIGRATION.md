@@ -22,7 +22,11 @@ Le fichier `.env` doit contenir `POSTGRES_PLATFORM_ADMIN_PASSWORD` et `PLATFORM_
 
 ## Base Docker existante
 
-Les scripts d'initialisation PostgreSQL ne sont pas rejoués sur un volume déjà initialisé. Après avoir mis à niveau le fichier `.env` avec `python scripts/upgrade_env_file.py`, exécuter :
+Les scripts d'initialisation PostgreSQL ne sont pas rejoués sur un volume déjà initialisé. Après avoir mis à niveau le fichier `.env` avec `python scripts/upgrade_env_file.py`, recréer le conteneur DB sans supprimer son volume, afin de monter le nouveau script et transmettre le secret :
+
+`docker compose --env-file .env up -d db`
+
+Puis exécuter :
 
 ```bash
 docker compose --env-file .env exec db bash /docker-entrypoint-initdb.d/04-create-platform-admin-role.sh
