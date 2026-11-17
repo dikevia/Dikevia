@@ -379,3 +379,11 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Correction du contrat de test qui référençait encore l'ancienne version API 3.35.0 ; il vérifie désormais 3.38.0.
 - Renommage de l'archive et de l'artefact CI en V3.38 pour éviter de remettre un kit étiqueté V3.30 alors que son contenu est plus récent.
 - La CI a révélé ce décalage : 204 tests réussis, 1 échec de contrat de version ; la relance sur le commit corrigé doit confirmer la suite complète.
+
+
+## V3.38 — Intégrité des documents privés
+
+- Ajout d'une vérification SHA-256 des octets stockés avant réindexation et téléchargement des documents et de leurs versions.
+- Le contrôle antivirus de nouvelle analyse refuse de déclarer sain un fichier dont l'empreinte ne correspond plus à celle enregistrée à l'import ; le statut devient bloquant (`INFECTED`, moteur `INTEGRITY_CHECK`).
+- Ajout de tests unitaires sur empreinte valide, contenu altéré et empreinte absente/invalide, ainsi que d'un contrat sur les routes documentaires.
+- Aucun changement de schéma, aucune migration et aucune connexion à la base Neon.
