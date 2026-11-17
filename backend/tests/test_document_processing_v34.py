@@ -160,3 +160,13 @@ def test_document_routes_check_storage_digest_before_use():
     assert "Le fichier a été modifié ou corrompu dans le stockage privé" in main
     assert "Une version a été modifiée ou corrompue dans le stockage privé" in main
     assert '"scan_engine":"INTEGRITY_CHECK"' in main
+
+
+def test_private_storage_uses_restrictive_unix_permissions():
+    from pathlib import Path
+
+    main = (Path(__file__).parents[1] / "app/main.py").read_text()
+    assert "os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600" in main
+    assert "os.chmod(document_dir,0o700)" in main
+    assert "os.chmod(path,0o600)" in main
+    assert "os.fsync(stream.fileno())" in main
