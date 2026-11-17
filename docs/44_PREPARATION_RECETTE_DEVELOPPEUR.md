@@ -126,3 +126,8 @@ Les fichiers privés sont créés avec des permissions de service restrictives (
 
 
 Les téléchargements renvoient les octets mêmes qui ont été contrôlés par empreinte SHA-256 ; le serveur ne relit pas le chemin après validation, ce qui évite une substitution entre le contrôle et l'envoi. Lors d'une nouvelle analyse, le moteur associé au résultat de la version courante est propagé tel quel au document parent, notamment `INTEGRITY_CHECK` en cas d'altération.
+
+
+### Contrôle complémentaire du versionnement documentaire
+
+Le dépôt d'une nouvelle version verrouille désormais la ligne du document avec `SELECT ... FOR UPDATE` à l'intérieur de la transaction qui calcule le prochain numéro, écrit le fichier et enregistre les métadonnées. Le verrou est conservé jusqu'au commit. Cette sérialisation évite les collisions de numéros lorsque plusieurs utilisateurs déposent simultanément une version du même document. En cas d'échec de transaction, le fichier écrit est supprimé. La recette doit inclure un scénario de dépôts concurrents sur un même document.
