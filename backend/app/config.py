@@ -85,8 +85,6 @@ def validate_runtime_configuration(config: Settings) -> None:
             raise RuntimeError("DEBUG doit être strictement désactivé en production.")
         if not config.database_url:
             raise RuntimeError("DATABASE_URL est obligatoire en production.")
-        if not config.platform_admin_database_url:
-            raise RuntimeError("PLATFORM_ADMIN_DATABASE_URL est obligatoire en production pour isoler les opérations administrateur.")
         if not all(oidc_values):
             raise RuntimeError("OIDC doit être entièrement configuré en production.")
         if not _valid_https_or_local(config.oidc_issuer, False) or not _valid_https_or_local(config.oidc_jwks_url, False):
@@ -109,6 +107,8 @@ def validate_runtime_configuration(config: Settings) -> None:
         platform_db = urlparse(config.platform_admin_database_url)
         if platform_db.scheme not in {"postgres", "postgresql"} or platform_db.username != "cfdt_juris_platform_admin":
             raise RuntimeError("PLATFORM_ADMIN_DATABASE_URL doit utiliser le rôle dédié cfdt_juris_platform_admin.")
+        if not config.platform_admin_database_url:
+            raise RuntimeError("PLATFORM_ADMIN_DATABASE_URL est obligatoire en production pour isoler les opérations administrateur.")
         if config.platform_admin_database_url in {config.database_url, config.legal_corpus_ingest_database_url} or platform_db.username in {app_db.username, ingest_db.username}:
             raise RuntimeError("Le compte administrateur doit être distinct des comptes runtime et ingestion.")
     if config.legifrance_environment not in {"sandbox", "production"}:
