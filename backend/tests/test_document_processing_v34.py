@@ -150,3 +150,13 @@ def test_document_integrity_matches_original_sha256():
     assert not document_sha256_matches(data + b" altered", digest)
     assert not document_sha256_matches(data, None)
     assert not document_sha256_matches(data, "invalid")
+
+
+def test_document_routes_check_storage_digest_before_use():
+    from pathlib import Path
+
+    main = (Path(__file__).parents[1] / "app/main.py").read_text()
+    assert "document_sha256_matches(data, row[\"sha256\"])" in main
+    assert "Le fichier a été modifié ou corrompu dans le stockage privé" in main
+    assert "Une version a été modifiée ou corrompue dans le stockage privé" in main
+    assert '"scan_engine":"INTEGRITY_CHECK"' in main
