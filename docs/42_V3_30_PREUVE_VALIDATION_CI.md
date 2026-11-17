@@ -8,7 +8,7 @@ Date de validation : 17 novembre 2026
 - Branche : `cfdt-juris-v3-30-developer-ready`
 - Commit contrôlé : `cdc6ae43687e1978aea7abfd8877cb228d8f4a2d`
 - Pull request : [#1](https://github.com/dikevia/Dikevia/pull/1), vers `main`, laissée ouverte et non fusionnée.
-- Exécution GitHub Actions : [run 44054893375](https://github.com/dikevia/Dikevia/actions/runs/44053022900)
+- Exécution GitHub Actions : [run 44054893375](https://github.com/dikevia/Dikevia/actions/runs/44054893375)
 
 ## Résultats observés
 
