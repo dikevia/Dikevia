@@ -52,3 +52,11 @@ def test_document_and_scanner_limits_are_bounded():
 
 def test_bearer_token_size_limit_is_defined():
     assert MAX_BEARER_TOKEN_LENGTH == 16_384
+
+
+def test_chat_rate_limit_configuration_is_bounded():
+    with pytest.raises(RuntimeError, match="CHAT_RATE_LIMIT_PER_MINUTE"):
+        validate_runtime_configuration(Settings(chat_rate_limit_per_minute=0))
+    with pytest.raises(RuntimeError, match="CHAT_RATE_LIMIT_PER_MINUTE"):
+        validate_runtime_configuration(Settings(chat_rate_limit_per_minute=121))
+    validate_runtime_configuration(Settings(chat_rate_limit_per_minute=10))
