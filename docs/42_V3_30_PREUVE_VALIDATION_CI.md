@@ -58,3 +58,16 @@ Cette validation prouve que les contrôles automatisés et les tests sur la base
 - un audit d'intrusion indépendant ou une certification juridique.
 
 Aucune migration n'a été appliquée à la base Neon du propriétaire et aucun déploiement de production n'a été effectué.
+
+
+# V3.34 — preuve de validation CI des connecteurs PISTE
+
+Date de validation : 17 novembre 2026
+
+- Commit contrôlé : `4506bfb7a330fafa32060e1e6c4008b6a76498c2`.
+- GitHub Actions : [run 44060023429](https://github.com/dikevia/Dikevia/actions/runs/44060023429) — succès.
+- **192 tests réussis, aucun échec**, un avertissement non bloquant lié à l'utilisation de `httpx` avec `TestClient` dans Starlette.
+- Ruff, Bandit, `pip-audit`, compilation, audit des variables, migrations 001 à 018, tests PostgreSQL 16/RLS, scripts shell, configurations Docker Compose, construction et téléversement du kit : réussis.
+- Les tests V3.34 vérifient que les routes de contrôle PISTE, recherche Légifrance, recherche CETAT et consultation CETAT passent par le quota partagé avant tout appel externe ; les entrées invalides ne consomment pas le quota ; le refus renvoie HTTP 429 avec `Retry-After`.
+- Aucun changement de schéma SQL ou migration supplémentaire n'est requis.
+- Cette preuve ne remplace pas la recette avec les identifiants PISTE réels, ni la validation des quotas contractuels du fournisseur.
