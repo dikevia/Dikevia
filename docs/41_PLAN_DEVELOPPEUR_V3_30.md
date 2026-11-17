@@ -132,3 +132,15 @@ Les versions ultérieures ont ajouté l'historique privé des conversations et l
 - **Point non réalisé :** aucune durée de conservation métier approuvée ni purge automatique planifiée des conversations/dossiers n'est démontrée par le kit.
 - Avant production, le responsable de traitement/DPO doit valider les finalités, durées, bases légales, information, droits d'accès/export/suppression et politique de sauvegarde ; le développeur doit implémenter et tester les purges correspondantes.
 - Ne pas utiliser de dossiers réels avant cette validation. Ne pas déduire une conformité RGPD du seul passage de la CI.
+
+
+## V3.36 — contrats API de propriété des conversations et dossiers
+
+- Ajout de tests des gestionnaires API pour les conversations et dossiers qui ne sont pas visibles dans le contexte propriétaire courant.
+- Une conversation étrangère/inconnue ne doit pas être listée ou lue ; sa suppression doit renvoyer 404 ; les opérations de création, lecture et modification du dossier lié doivent être refusées.
+- La suite CI du commit `c19b109d7ce76c64113dd5fb2e4bce57181dc05a` a réussi : **199 tests, aucun échec** (run [44066187124](https://github.com/dikevia/Dikevia/actions/runs/44066187124)).
+- Les nouveaux tests V3.36 exercent directement les gestionnaires de routes avec une connexion simulant le masquage RLS. Ils complètent les tests PostgreSQL réels déjà présents ; ils ne constituent pas une recette HTTP/OIDC complète.
+- Cette évolution est principalement une extension de tests et de preuve, sans changement de schéma ni migration SQL.
+- Le kit correspondant est disponible dans l'artefact [14319513979](https://github.com/dikevia/Dikevia/actions/runs/44066187124/artifacts/14319513979).
+
+Le blocage de conservation/purge décrit ci-dessus reste ouvert et ne doit pas être contourné par une durée technique choisie sans validation du responsable de traitement/DPO.
