@@ -34,7 +34,7 @@ def include_file(path: Path) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default="dist/CFDT_JURIS_V3_30_Kit_Developpeur.zip")
+    parser.add_argument("--output", default="dist/CFDT_JURIS_V3_38_Kit_Developpeur.zip")
     args = parser.parse_args()
     output = (ROOT / args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -51,7 +51,7 @@ def main() -> int:
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         manifest_lines.append(f"{digest}  {path.relative_to(ROOT).as_posix()}")
 
-    root_name = "CFDT_JURIS_V3_30_Kit_Developpeur"
+    root_name = "CFDT_JURIS_V3_38_Kit_Developpeur"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in files:
             archive.write(path, f"{root_name}/{path.relative_to(ROOT).as_posix()}")
