@@ -144,3 +144,16 @@ Les versions ultérieures ont ajouté l'historique privé des conversations et l
 - Le kit correspondant est disponible dans l'artefact [14319513979](https://github.com/dikevia/Dikevia/actions/runs/44066187124/artifacts/14319513979).
 
 Le blocage de conservation/purge décrit ci-dessus reste ouvert et ne doit pas être contourné par une durée technique choisie sans validation du responsable de traitement/DPO.
+
+
+## V3.37 — préparation technique de la purge des conversations privées
+
+- Ajout de `scripts/purge_private_conversations.py`, outil opérateur sans planification automatique.
+- Prévisualisation sans effet de bord par défaut ; seuil absolu ISO-8601 avec fuseau obligatoire.
+- Double confirmation `--execute --confirm-delete` pour supprimer.
+- Refus des connexions dont le rôle PostgreSQL n'a ni `SUPERUSER` ni `BYPASSRLS`.
+- La suppression des conversations entraîne les cascades déjà définies vers messages et dossiers.
+- Tests unitaires des garde-fous et test PostgreSQL réel prévu dans la CI pour vérifier prévisualisation, suppression et cascades, sans toucher à Neon.
+- Aucun délai métier n'est défini et aucun job planifié n'est installé. L'outil n'est pas exécuté sur une base réelle.
+- La règle technique utilise `chat_conversations.updated_at` comme colonne de comparaison ; le responsable de traitement/DPO doit valider le point de départ, les durées, exceptions, sauvegardes et périmètres avant toute utilisation.
+- Documents téléversés, journaux d'audit et métriques ne sont pas inclus dans cette première version.
