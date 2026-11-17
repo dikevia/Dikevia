@@ -8,11 +8,13 @@ services:
       POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in project .env}
       POSTGRES_INGEST_PASSWORD: ${POSTGRES_INGEST_PASSWORD:?Set POSTGRES_INGEST_PASSWORD in project .env}
       POSTGRES_MONITOR_PASSWORD: ${POSTGRES_MONITOR_PASSWORD:?Set POSTGRES_MONITOR_PASSWORD in project .env}
+      POSTGRES_PLATFORM_ADMIN_PASSWORD: ${POSTGRES_PLATFORM_ADMIN_PASSWORD:?Set POSTGRES_PLATFORM_ADMIN_PASSWORD in project .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init/01-create-app-role.sh:/docker-entrypoint-initdb.d/01-create-app-role.sh:ro
       - ./init/02-create-corpus-ingest-role.sh:/docker-entrypoint-initdb.d/02-create-corpus-ingest-role.sh:ro
       - ./init/03-create-monitor-role.sh:/docker-entrypoint-initdb.d/03-create-monitor-role.sh:ro
+      - ./init/04-create-platform-admin-role.sh:/docker-entrypoint-initdb.d/04-create-platform-admin-role.sh:ro
       - ../database/schema.sql:/docker-entrypoint-initdb.d/04-schema.sql:ro
       - ../database/grant_runtime_permissions.sql:/docker-entrypoint-initdb.d/05-runtime-grants.sql:ro
     healthcheck:
