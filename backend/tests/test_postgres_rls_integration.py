@@ -73,10 +73,12 @@ async def _run_isolation_scenario():
             assert [r["content"] for r in own_messages] == ["Question privée A"]
             own_dossiers = await runtime.fetch("SELECT content->>'title' AS title FROM legal_dossiers")
             assert [r["title"] for r in own_dossiers] == ["Dossier A"]
-            with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await runtime.execute("INSERT INTO legal_dossiers(organization_id,conversation_id,user_id,content) VALUES($1,$2,$3,'{}'::jsonb)", org_a,conversation_a2,user_a)
-            with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await runtime.execute("INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content) VALUES($1,$2,$3,'user','tentative de falsification')", org_a,conversation_a2,user_a)
+            async with runtime.transaction():
+                with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                    await runtime.execute("INSERT INTO legal_dossiers(organization_id,conversation_id,user_id,content) VALUES($1,$2,$3,'{}'::jsonb)", org_a,conversation_a2,user_a)
+            async with runtime.transaction():
+                with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                    await runtime.execute("INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content) VALUES($1,$2,$3,'user','tentative de falsification')", org_a,conversation_a2,user_a)
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a2))
             second_user_conversations = await runtime.fetch("SELECT id FROM chat_conversations")
             assert {r["id"] for r in second_user_conversations} == {conversation_a2}
@@ -90,8 +92,9 @@ async def _run_isolation_scenario():
             indexed = await runtime.fetch("SELECT document_id,extracted_text FROM document_text")
             assert {r["document_id"] for r in indexed} == {doc_a}
             assert "organisation B" not in indexed[0]["extracted_text"]
-            with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await runtime.execute("INSERT INTO document_text(organization_id,document_id,version_number,sha256,extracted_text,extraction_status) VALUES($1,$2,1,$3,'forged','EXTRACTED')", org_b,doc_b,"c"*64)
+            async with runtime.transaction():
+                with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                    await runtime.execute("INSERT INTO document_text(organization_id,document_id,version_number,sha256,extracted_text,extraction_status) VALUES($1,$2,1,$3,'forged','EXTRACTED')", org_b,doc_b,"c"*64)
             membership_orgs = await runtime.fetch("SELECT organization_id FROM memberships")
             assert {r["organization_id"] for r in membership_orgs} == {org_a}
             setting_orgs = await runtime.fetch("SELECT organization_id FROM organization_settings")
@@ -104,11 +107,12 @@ async def _run_isolation_scenario():
             assert foreign_invoice == 0
             # INSERT is granted for audit events, but a forged foreign tenant key
             # must be rejected by the RLS WITH CHECK policy.
-            with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await runtime.execute(
-                    "INSERT INTO audit_events(organization_id,event_type) VALUES($1,'RLS_FORGED_TENANT')",
-                    org_b,
-                )
+            async with runtime.transaction():
+                with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                    await runtime.execute(
+                        "INSERT INTO audit_events(organization_id,event_type) VALUES($1,'RLS_FORGED_TENANT')",
+                        org_b,
+                    )
 
         # No tenant context means no tenant data.
         async with runtime.transaction():
