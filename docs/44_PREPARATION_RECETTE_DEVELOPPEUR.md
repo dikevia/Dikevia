@@ -120,3 +120,6 @@ Aucune de ces actions ne doit être simulée ou remplacée par des identifiants 
 ## Contrôle d'intégrité du stockage documentaire
 
 La réindexation et le téléchargement comparent désormais les octets du fichier à l'empreinte SHA-256 conservée en base. Une différence bloque l'opération. La route de nouvelle analyse antivirus marque également la version comme `INFECTED` avec le moteur `INTEGRITY_CHECK` si les octets ont changé depuis l'import initial. Ce contrôle détecte une altération du fichier ; il ne remplace ni une sauvegarde ni une vérification périodique de l'ensemble du stockage.
+
+
+Les fichiers privés sont créés avec des permissions de service restrictives (`0700` pour les répertoires organisation/document, `0600` pour les fichiers), puis publiés par renommage atomique après écriture synchronisée. Le développeur doit vérifier que le volume monté conserve ces permissions et que le compte du service est le seul compte système autorisé à lire le stockage.
