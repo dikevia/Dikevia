@@ -69,10 +69,12 @@ class LegalOrchestrator:
         else:
             case_law_issue = "Jurisprudence administrative non interrogée : identifiants PISTE non configurés."
 
-        try:
-            found = search_cgfp(contextual_question, limit=8)
-        except (FileNotFoundError, OSError, ValueError):
-            found = None
+        found = None
+        if settings.cgfp_enabled:
+            try:
+                found = search_cgfp(contextual_question, limit=8)
+            except (FileNotFoundError, OSError, ValueError):
+                found = None
 
         local_sources: list[dict] = []
         local_issue = None
