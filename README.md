@@ -296,3 +296,7 @@ Ne placez jamais de mots de passe, jetons, URL de base de données avec identifi
 
 ## V3.33 — Limitation partagée des parcours juridiques coûteux
 Le quota PostgreSQL existant est désormais partagé entre les questions du chat et les revues de cohérence des règles locales. Une même personne ne peut donc pas contourner la limitation en alternant les deux routes. Le contrôle intervient avant la lecture du document et la recherche du corpus ; le dépassement renvoie HTTP 429 avec `Retry-After`. Le compteur reste limité à l'organisation et à l'utilisateur, sans stocker de contenu juridique.
+
+
+## V3.35 — Sécurisation des imports PISTE
+Les routes d'administration qui importent les textes réglementaires et la jurisprudence contrôlent désormais les recherches et limitent chaque import à 20 résultats maximum avant tout accès à la base d'ingestion ou à l'API PISTE. Cette protection évite les imports involontairement trop volumineux et borne les consultations de décisions intégrales.
