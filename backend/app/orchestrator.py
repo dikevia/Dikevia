@@ -254,13 +254,25 @@ class LegalOrchestrator:
                     "DECISION_AVAILABLE_BY_REQUESTED_DATE",
                     "VERIFIED_APPLICABLE",
                 }
-                ai_sources = [
+                # The CGFP snapshot is the national baseline for explanation, but
+                # it is not temporally authoritative. Pass it to the model only
+                # alongside at least one independently verified, date-scoped
+                # source; never let the snapshot alone trigger an AI conclusion.
+                verified_sources = [
                     s for s in sources
                     if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
                     and s.get("content_kind") != "METADATA"
                     and (s.get("citation_integrity") or {}).get("valid") is True
                     and s.get("temporal_status") in eligible_temporal_statuses
                 ]
+                cgfp_context_sources = [
+                    {**s, "reference_role": "BASELINE_CONTEXT_ONLY",
+                     "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED"}
+                    for s in sources
+                    if s.get("source_type") == "CGFP_SNAPSHOT"
+                    and (s.get("citation_integrity") or {}).get("valid") is True
+                ]
+                ai_sources = cgfp_context_sources + verified_sources if verified_sources else []
                 if ai_sources:
                     ai_result = await analyze_question(
                         question=request.question,
