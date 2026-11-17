@@ -20,6 +20,7 @@ def main() -> int:
         "CHANGE_ME_RUNTIME": secrets.token_urlsafe(32),
         "CHANGE_ME_INGEST": secrets.token_urlsafe(32),
         "CHANGE_ME_MONITOR": secrets.token_urlsafe(32),
+        "CHANGE_ME_PLATFORM_ADMIN": secrets.token_urlsafe(32),
         "CHANGE_ME_KEYCLOAK_DB": secrets.token_urlsafe(32),
         "CHANGE_ME_KEYCLOAK_ADMIN": secrets.token_urlsafe(32),
         "CHANGE_ME_GRAFANA_ADMIN": secrets.token_urlsafe(32),
