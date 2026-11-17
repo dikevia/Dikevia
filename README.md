@@ -279,3 +279,16 @@ Pour les employeurs locaux proposés par l'interface, le moteur recherche égale
 
 ## Profil d'instance privée (10 comptes)
 Le projet comporte un profil privé activable par `PRIVATE_INSTANCE_MODE=true` et `PRIVATE_INSTANCE_MAX_USERS=10`. Voir `docs/40_INSTANCE_PRIVEE_10_COMPTES.md` pour la procédure d'installation, l'approbation manuelle des comptes et la migration 015.
+
+
+## Kit développeur ZIP
+
+Après validation complète de la CI, le workflow publie un artefact téléchargeable nommé `CFDT-JURIS-V3.30-Kit-Developpeur` (conservation 30 jours). Il contient les sources et la documentation, sans dépôt Git local, caches, environnements virtuels ni fichiers de secrets.
+
+Pour produire l'archive depuis une copie locale du dépôt :
+```bash
+python scripts/package_developer_kit.py
+```
+Le fichier est créé dans `dist/CFDT_JURIS_V3_30_Kit_Developpeur.zip`. Le script ajoute `SHA256SUMS_KIT.txt`, qui permet de contrôler l'intégrité des fichiers extraits. Les fichiers `.env` réels, clés privées et certificats ne sont jamais inclus ; seuls les modèles `.env.example` et `.env.staging.example` sont conservés.
+
+Ne placez jamais de mots de passe, jetons, URL de base de données avec identifiants ou données syndicales réelles dans l'archive.
