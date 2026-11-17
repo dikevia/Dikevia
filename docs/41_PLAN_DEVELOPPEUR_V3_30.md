@@ -104,3 +104,7 @@ de l'instance et la consignation des résultats de recette.
 - Le rôle API peut uniquement ajouter des événements. Il ne peut ni lire ni modifier le journal ; RLS/FORCE RLS contrôle les insertions selon l'organisation et l'utilisateur courants.
 - Les réponses IA, réponses rejetées pour référence non sourcée et erreurs du fournisseur sont distinguées.
 - Les quotas mensuels et le calcul monétaire ne sont pas activés : ils nécessitent les tarifs fournisseurs vérifiés et une décision sur les budgets/plans. Ne pas présenter le compteur de tokens comme un coût en euros.
+
+
+## V3.33 — Quota partagé des traitements juridiques coûteux
+Le quota PostgreSQL initialement appliqué au chat est également appliqué à la revue de cohérence des règles locales. Les deux routes partagent le même compteur par organisation/utilisateur et la même configuration `CHAT_RATE_LIMIT_PER_MINUTE`. Le contrôle de la revue intervient avant la lecture du document et l'interrogation du corpus national. Le compteur n'enregistre aucun contenu.
