@@ -1424,7 +1424,7 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
 
 @app.get("/api/v1/documents/{document_id}/download")
 async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context)):
-    row=await ctx.conn.fetchrow("SELECT storage_key,original_filename,mime_type,scan_status FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid",document_id,ctx.organization_id)
+    row=await ctx.conn.fetchrow("SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid",document_id,ctx.organization_id)
     if not row or not row["storage_key"]:
         raise HTTPException(404,"Fichier introuvable.")
     if row["scan_status"] != "CLEAN":
@@ -1432,11 +1432,14 @@ async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant
     path=private_document_path(row["storage_key"])
     if not path.is_file():
         raise HTTPException(404,"Fichier introuvable dans le stockage privé.")
+    data=await asyncio.to_thread(path.read_bytes)
+    if not document_sha256_matches(data, row["sha256"]):
+        raise HTTPException(409,"Le fichier a été modifié ou corrompu dans le stockage privé. Téléchargement bloqué.")
     return FileResponse(path,media_type=row["mime_type"] or "application/octet-stream",filename=row["original_filename"] or "document",headers={"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
 @app.get("/api/v1/documents/{document_id}/versions/{version_number}/download")
 async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context)):
-    row=await ctx.conn.fetchrow("""SELECT storage_key,original_filename,mime_type,scan_status FROM document_versions
+    row=await ctx.conn.fetchrow("""SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM document_versions
       WHERE organization_id=$1::uuid AND document_id=$2::uuid AND version_number=$3""",ctx.organization_id,document_id,version_number)
     if not row or not row["storage_key"]:
         raise HTTPException(404,"Version introuvable.")
@@ -1445,6 +1448,9 @@ async def download_document_version(document_id:str,version_number:int,ctx:Tenan
     path=private_document_path(row["storage_key"])
     if not path.is_file():
         raise HTTPException(404,"Fichier introuvable dans le stockage privé.")
+    data=await asyncio.to_thread(path.read_bytes)
+    if not document_sha256_matches(data, row["sha256"]):
+        raise HTTPException(409,"Le fichier a été modifié ou corrompu dans le stockage privé. Téléchargement bloqué.")
     return FileResponse(path,media_type=row["mime_type"] or "application/octet-stream",filename=row["original_filename"] or "document",headers={"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
 @app.put("/api/v1/documents/{document_id}")
