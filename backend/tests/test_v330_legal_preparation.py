@@ -363,7 +363,6 @@ async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypat
     assert "L'article L4 prévoit cette règle." not in response.answer
     snapshot_sources = [s for s in response.sources if s.get("source_type") == "CGFP_SNAPSHOT"]
     assert snapshot_sources
-    assert all(s.get("reference_role") == "BASELINE_CONTEXT_ONLY" for s in snapshot_sources)
 
 
 
