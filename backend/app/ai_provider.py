@@ -6,6 +6,7 @@ corpus validés par le backend et ne peut pas créer de citations exposées.
 from __future__ import annotations
 import json
 import re
+from dataclasses import dataclass
 import httpx
 from .config import settings
 
@@ -34,10 +35,24 @@ RÈGLES IMPÉRATIVES :
 Structure attendue : Résumé opérationnel ; Analyse des faits ; Pistes de qualification ; Ce que disent les extraits fournis ; Informations à obtenir ; Vérifications indispensables ; Actions possibles sous réserve de vérification.
 """
 
+@dataclass(frozen=True)
+class AIAnalysisResult:
+    content: str
+    model: str
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
+
+
+def _nonnegative_token_count(value):
+    # Provider usage may be absent or malformed; never turn unknown usage into zero.
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
 class AIProviderUnavailable(RuntimeError):
     pass
 
-async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict], conversation_history: list[dict] | None = None) -> str | None:
+async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict], conversation_history: list[dict] | None = None) -> AIAnalysisResult | None:
     if not (settings.ai_api_key and settings.ai_model):
         return None
     base = settings.ai_api_base_url.rstrip("/")
@@ -78,7 +93,19 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         content = data["choices"][0]["message"]["content"]
         if not isinstance(content, str) or not content.strip():
             raise AIProviderUnavailable("Réponse IA vide ou invalide.")
-        return content.strip()[:24000]
+        usage = data.get("usage") if isinstance(data, dict) else None
+        usage = usage if isinstance(usage, dict) else {}
+        prompt_tokens = _nonnegative_token_count(usage.get("prompt_tokens"))
+        completion_tokens = _nonnegative_token_count(usage.get("completion_tokens"))
+        total_tokens = _nonnegative_token_count(usage.get("total_tokens"))
+        if total_tokens is None and prompt_tokens is not None and completion_tokens is not None:
+            total_tokens = prompt_tokens + completion_tokens
+        model = data.get("model") if isinstance(data.get("model"), str) else settings.ai_model
+        return AIAnalysisResult(
+            content=content.strip()[:24000], model=model[:160],
+            prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+        )
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
         raise AIProviderUnavailable("Le fournisseur IA est temporairement indisponible.") from exc
 
