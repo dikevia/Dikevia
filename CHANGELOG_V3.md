@@ -387,3 +387,5 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Le contrôle antivirus de nouvelle analyse refuse de déclarer sain un fichier dont l'empreinte ne correspond plus à celle enregistrée à l'import ; le statut devient bloquant (`INFECTED`, moteur `INTEGRITY_CHECK`).
 - Ajout de tests unitaires sur empreinte valide, contenu altéré et empreinte absente/invalide, ainsi que d'un contrat sur les routes documentaires.
 - Aucun changement de schéma, aucune migration et aucune connexion à la base Neon.
+
+- Stockage privé : répertoires organisation/document en permissions `0700`, fichiers temporaires et définitifs en `0600`, écriture temporaire exclusive, synchronisation disque avant renommage atomique.
