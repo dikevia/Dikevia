@@ -79,6 +79,12 @@ async def _run_isolation_scenario():
                 completion_tokens,total_tokens,outcome)
                 VALUES($1,$2,$3,'openai_compatible','test-model',100,25,125,'ANSWERED')""",
                 usage_request_id, org_a, user_a)
+            # The API's idempotent conflict clause must work without SELECT rights.
+            await runtime.execute("""INSERT INTO ai_usage_events(
+                request_id,organization_id,user_id,provider,model,prompt_tokens,
+                completion_tokens,total_tokens,outcome)
+                VALUES($1,$2,$3,'openai_compatible','test-model',100,25,125,'ANSWERED')
+                ON CONFLICT(request_id) DO NOTHING""", usage_request_id, org_a, user_a)
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 async with runtime.transaction():
                     await runtime.execute("""INSERT INTO ai_usage_events(
