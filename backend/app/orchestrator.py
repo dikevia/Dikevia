@@ -5,7 +5,7 @@ import logging
 from .schemas import AskRequest, AskResponse
 from .cgfp import search_cgfp, get_cgfp_article
 from .legal_validation import validate_snapshot_citation, parse_facts_date
-from .ai_provider import analyze_question, AIProviderUnavailable, answer_references_are_grounded
+from .ai_provider import analyze_question, AIAnalysisResult, AIProviderUnavailable, answer_references_are_grounded
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector
 from .legal_corpus import search_legal_corpus
@@ -242,6 +242,7 @@ class LegalOrchestrator:
         # This prevents a current API result or a consolidated PDF snapshot from
         # being silently treated as the law applicable to an undated situation.
         ai_sources: list[dict] = []
+        ai_usage = None
         if parsed_date is None:
             ai_answer = None
             missing.insert(0, "Analyse juridique contextualisée suspendue : préciser la date des faits pour vérifier la version applicable. La date du jour n'est utilisée que pour le repérage documentaire.")
@@ -260,13 +261,25 @@ class LegalOrchestrator:
                     and s.get("temporal_status") in eligible_temporal_statuses
                 ]
                 if ai_sources:
-                    ai_answer = await analyze_question(
+                    ai_result = await analyze_question(
                         question=request.question,
                         employer=request.employer,
                         facts_date=request.facts_date,
                         sources=ai_sources,
                         conversation_history=history,
                     )
+                    if isinstance(ai_result, AIAnalysisResult):
+                        ai_answer = ai_result.content
+                        ai_usage = {
+                            "provider": "openai_compatible", "model": ai_result.model,
+                            "prompt_tokens": ai_result.prompt_tokens,
+                            "completion_tokens": ai_result.completion_tokens,
+                            "total_tokens": ai_result.total_tokens,
+                            "outcome": "ANSWERED",
+                        }
+                    else:
+                        # Keep test doubles and alternate adapters returning plain strings compatible.
+                        ai_answer = ai_result
                 else:
                     ai_answer = None
                     missing.insert(
@@ -285,6 +298,8 @@ class LegalOrchestrator:
         }
         if ai_answer and not answer_references_are_grounded(ai_answer, allowed_refs, allowed_authorities):
             ai_answer = None
+            if ai_usage is not None:
+                ai_usage["outcome"] = "REJECTED_UNGROUNDED"
             missing.insert(0, "Une référence d'article générée n'était pas présente dans les sources récupérées ; la réponse IA a été écartée.")
 
         if ai_answer:
@@ -309,4 +324,4 @@ class LegalOrchestrator:
             if isinstance(source.get("text"), str):
                 source["text"] = source.get("excerpt") or source["text"][:1800]
         return AskResponse(request_id=request_id, verification_status="PARTIELLEMENT_VERIFIE",
-            answer=answer, sources=sources, missing_information=missing)
+            answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage)
