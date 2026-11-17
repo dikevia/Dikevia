@@ -67,6 +67,12 @@ async def _run_isolation_scenario():
         async with runtime.transaction():
             await runtime.execute("SELECT set_config('app.current_org_id',$1,true)", str(org_a))
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
+            from app.rate_limit import consume_chat_request
+            first = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
+            second = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
+            third = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
+            assert first.allowed and second.allowed and not third.allowed
+            assert third.request_count == 3
             conversations = await runtime.fetch("SELECT id,title FROM chat_conversations")
             assert {r["id"] for r in conversations} == {conversation_a}
             own_messages = await runtime.fetch("SELECT content FROM chat_messages")
@@ -115,6 +121,13 @@ async def _run_isolation_scenario():
                         "INSERT INTO audit_events(organization_id,event_type) VALUES($1,'RLS_FORGED_TENANT')",
                         org_b,
                     )
+            # The rate-limit ledger is invisible across tenant boundaries.
+            await runtime.execute("SELECT set_config('app.current_org_id',$1,true)", str(org_b))
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_b))
+            foreign_bucket_count = await runtime.fetchval("SELECT count(*) FROM chat_rate_limit_buckets")
+            assert foreign_bucket_count == 0
+            own_bucket = await consume_chat_request(runtime, str(org_b), str(user_b), 2)
+            assert own_bucket.allowed
 
         # No tenant context means no tenant data.
         async with runtime.transaction():
