@@ -1298,17 +1298,28 @@ async def upload_document_version(document_id:str,file:UploadFile=File(...),effe
         UUID(document_id)
     except ValueError:
         raise HTTPException(400,"Identifiant de document invalide.")
-    doc=await ctx.conn.fetchrow("SELECT id,title,document_type FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid FOR UPDATE",document_id,ctx.organization_id)
+    doc=await ctx.conn.fetchrow("SELECT id FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid",document_id,ctx.organization_id)
     if not doc:
         raise HTTPException(404,"Document introuvable.")
     data,filename,mime=await read_and_validate_document(file)
     scan = await scan_uploaded_bytes(data)
     extracted_text, extraction_status = extract_document_text(data, mime)
     digest=hashlib.sha256(data).hexdigest()
-    version=(await ctx.conn.fetchval("SELECT COALESCE(max(version_number),0)+1 FROM document_versions WHERE organization_id=$1::uuid AND document_id=$2::uuid",ctx.organization_id,document_id))
-    storage_key=store_private_file(ctx.organization_id,document_id,version,data,Path(filename).suffix.lower())
+    storage_key=None
+    version=None
     try:
         async with ctx.conn.transaction():
+            # The document row is the serialization point for concurrent version uploads.
+            # The lock must be acquired inside this transaction and held through commit.
+            locked_doc=await ctx.conn.fetchrow(
+                "SELECT id FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid FOR UPDATE",
+                document_id,ctx.organization_id)
+            if not locked_doc:
+                raise HTTPException(404,"Document introuvable.")
+            version=await ctx.conn.fetchval(
+                "SELECT COALESCE(max(version_number),0)+1 FROM document_versions WHERE organization_id=$1::uuid AND document_id=$2::uuid",
+                ctx.organization_id,document_id)
+            storage_key=store_private_file(ctx.organization_id,document_id,version,data,Path(filename).suffix.lower())
             await ctx.conn.execute("""INSERT INTO document_versions(organization_id,document_id,version_number,storage_key,sha256,
               effective_from,effective_to,original_filename,mime_type,file_size_bytes,uploaded_by,scan_status,scan_engine,scanned_at)
               VALUES($1::uuid,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11::uuid,$12,$13,now())""",ctx.organization_id,document_id,version,
@@ -1324,7 +1335,8 @@ async def upload_document_version(document_id:str,file:UploadFile=File(...),effe
               VALUES($1::uuid,$2::uuid,'DOCUMENT_VERSION_UPLOADED','document',$3::uuid,jsonb_build_object('version',$4,'sha256',$5))""",
               ctx.organization_id,ctx.user_id,document_id,version,digest)
     except Exception:
-        private_document_path(storage_key).unlink(missing_ok=True)
+        if storage_key:
+            private_document_path(storage_key).unlink(missing_ok=True)
         raise
     return {"document_id":document_id,"version":version,"original_filename":filename,"sha256":digest,
       "scan_status":scan["scan_status"],"extraction_status":extraction_status,"validation_status":"COLLECTED_UNVERIFIED"}
