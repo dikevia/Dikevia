@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from scripts.purge_private_conversations import (
+from scripts.purge_private_conversations import (  # noqa: E402
     parse_args,
     parse_cutoff,
     run_purge,
