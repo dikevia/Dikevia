@@ -118,3 +118,21 @@ Date de validation : 17 novembre 2026
 - Conservation GitHub annoncée jusqu'au 17 décembre 2026.
 
 La réussite de cette CI ne clôt pas les points bloquants de préproduction : politique et purge de conservation, validation RGPD/DPO, recette réelle OIDC/PISTE/fournisseur IA, base Neon de préproduction distincte, sauvegarde/restauration et audit indépendant. Aucune migration n'a été appliquée à Neon, aucun déploiement de production n'a été effectué et la branche `main` reste inchangée. La PR #1 demeure ouverte et non fusionnée.
+
+
+## V3.37 — préparation sécurisée de la purge des conversations privées
+
+Date de validation : 17 novembre 2026
+
+- Commit contrôlé : `172a7fd3c0dad3d1a6956e1cb273f75a4e362007`.
+- GitHub Actions : [run 44067647029](https://github.com/dikevia/Dikevia/actions/runs/44067647029) — terminé avec succès.
+- **205 tests réussis, aucun échec** ; un avertissement non bloquant dans la suite de tests.
+- Toutes les étapes du job `test-and-audit` ont réussi : compilation et audit de configuration, Ruff, Bandit, `pip-audit`, migrations 001–018 sur PostgreSQL 16 jetable avec rôles à privilèges minimaux, tests unitaires/contrat/RLS, scripts shell, configurations Docker Compose, construction et téléversement du kit.
+- Le nouvel outil `scripts/purge_private_conversations.py` exige une date limite explicite avec fuseau horaire. Il fonctionne en simulation par défaut ; l'exécution réelle exige les deux options `--execute` et `--confirm-delete`, ainsi qu'une connexion dont le rôle dispose de privilèges élevés (`rolsuper` ou `rolbypassrls`). Les suppressions des conversations entraînent les suppressions en cascade prévues par le schéma pour les messages et dossiers liés.
+- Les tests vérifient notamment le refus d'un rôle runtime ordinaire, l'absence de suppression en simulation, le respect de la date limite et les suppressions en cascade sur PostgreSQL de test.
+- **Aucune purge automatique n'est activée et aucune donnée réelle n'a été supprimée.** Aucun calendrier ni durée de conservation par défaut n'est défini.
+- Le critère technique utilisé est `updated_at`. Il doit être validé par le responsable de traitement/DPO avant tout usage réel. Les exceptions, gels juridiques, fichiers téléversés, journaux, métriques et sauvegardes ne sont pas couverts par cet outil.
+- Artefact : `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14321286322`, taille 4 677 655 octets, SHA-256 `b9aa8f09109a5f995d33557831b6b76a212703d6b806b30893d0b96bc8249838`.
+- Conservation GitHub annoncée jusqu'au 17 décembre 2026.
+
+Cette validation porte sur le commit indiqué et l'environnement PostgreSQL éphémère de la CI. Elle ne constitue pas une validation de la politique de conservation, une recette sur Neon, ni une autorisation d'exécuter la purge en production. Aucune migration Neon, aucun déploiement de production et aucune modification de la branche `main` n'ont été effectués. La PR #1 reste ouverte et non fusionnée.
