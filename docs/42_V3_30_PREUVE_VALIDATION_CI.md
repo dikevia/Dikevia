@@ -79,7 +79,8 @@ Date de validation : 17 novembre 2026
 
 - Commit contrôlé : `372a0ea4ea9a7a5123c74935bb8aea714ed23317`.
 - GitHub Actions : [run 44061778862](https://github.com/dikevia/Dikevia/actions/runs/44061778862) — terminé avec succès.
-- Le job `test-and-audit` et chacune de ses étapes ont réussi : compilation et audit de l'environnement, Ruff, Bandit, `pip-audit`, PostgreSQL 16 jetable avec rôles à privilèges minimaux, tests unitaires/contrat/RLS, scripts shell, configurations Docker Compose, construction et téléversement du kit.
+- Le job `test-and-audit` et chacune de ses étapes ont réussi : compilation et audit de l'environnement, Ruff, Bandit, `pip-audit`, PostgreSQL 16 jetable avec rôles à privilèges minimaux, tests unitaires/contrat/RLS (**193 tests réussis, aucun échec**), scripts shell, configurations Docker Compose, construction et téléversement du kit.
+- Un avertissement de dépréciation Starlette/httpx subsiste dans les tests ; il n'a pas fait échouer la CI. Des avertissements de dépréciation Node.js 20 concernent les actions GitHub utilisées par le workflow.
 - Les validations V3.35 vérifient que les routes d'ingestion PISTE réglementaire et CETAT rejettent les recherches hors limites (2 à 500 caractères) et les nombres de résultats hors limites (1 à 20) avant tout effet de bord. Pour CETAT, la borne limite également les consultations de textes intégraux.
 - Version API : 3.35.0. Aucun changement de schéma SQL ni migration supplémentaire.
 - Artefact : `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14319075913`, taille 4 666 924 octets, SHA-256 `1433779885341600771c952ba7e2b3428aa19aac92e28a0cd64d4632fb32715e`.
