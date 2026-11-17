@@ -1,4 +1,4 @@
-"""Tenant-scoped, PostgreSQL-backed throttling for expensive chat requests."""
+"""Tenant-scoped PostgreSQL throttling shared by expensive legal AI endpoints."""
 from dataclasses import dataclass
 
 
