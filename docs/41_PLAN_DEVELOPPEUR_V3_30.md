@@ -112,3 +112,23 @@ Le quota PostgreSQL initialement appliqué au chat est également appliqué à l
 
 ## V3.34 — Protection des connecteurs juridiques directs
 Les routes de contrôle PISTE, de recherche Légifrance et de recherche/consultation CETAT partagent maintenant le compteur PostgreSQL par organisation et utilisateur déjà utilisé par le chat et la revue locale. Le quota est contrôlé avant tout appel externe ; les entrées invalides sont rejetées avant consommation. La réponse de dépassement est HTTP 429 avec `Retry-After`. Cette protection couvre les routes API directes, mais ne remplace pas les quotas contractuels PISTE ni un budget fournisseur.
+
+
+## V3.35 — Bornage des imports PISTE
+
+- Les routes d'ingestion réglementaire et CETAT valident les recherches (2 à 500 caractères) et limitent les imports à 1–20 résultats avant toute connexion ou opération externe.
+- La borne CETAT limite également les consultations de décisions intégrales.
+- Version API : 3.35.0 ; aucun changement de schéma SQL.
+- CI du commit code V3.35 : 193 tests réussis, aucun échec ; migrations 001 à 018, tests PostgreSQL 16/RLS, contrôles qualité et construction du kit réussis.
+- Preuve et empreinte de l'archive : voir `docs/42_V3_30_PREUVE_VALIDATION_CI.md`.
+
+## Clarification du modèle de conversation et point RGPD bloquant
+
+Les versions ultérieures ont ajouté l'historique privé des conversations et les dossiers juridiques persistants (migration 012 et migration 013). Les anciens documents qui décrivaient un chat sans historique serveur étaient devenus obsolètes ; les exigences produit, sécurité et acceptation ont été harmonisées le 17 novembre 2026.
+
+- Les conversations et messages sont stockés dans PostgreSQL et protégés par RLS/FORCE RLS, avec cloisonnement par organisation et utilisateur.
+- La suppression d'une conversation entraîne la suppression en cascade de ses messages et du dossier juridique associé.
+- Le journal de consommation IA ne stocke pas le texte des conversations.
+- **Point non réalisé :** aucune durée de conservation métier approuvée ni purge automatique planifiée des conversations/dossiers n'est démontrée par le kit.
+- Avant production, le responsable de traitement/DPO doit valider les finalités, durées, bases légales, information, droits d'accès/export/suppression et politique de sauvegarde ; le développeur doit implémenter et tester les purges correspondantes.
+- Ne pas utiliser de dossiers réels avant cette validation. Ne pas déduire une conformité RGPD du seul passage de la CI.
