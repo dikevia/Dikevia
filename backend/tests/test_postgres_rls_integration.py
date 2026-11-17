@@ -27,6 +27,7 @@ async def _run_isolation_scenario():
     coll_a, coll_b = uuid.uuid4(), uuid.uuid4()
     doc_a, doc_b = uuid.uuid4(), uuid.uuid4()
     token_a, token_b = "hash-a-" + uuid.uuid4().hex, "hash-b-" + uuid.uuid4().hex
+    usage_request_id = uuid.uuid4()
     admin = await asyncpg.connect(ADMIN_URL)
     runtime = await asyncpg.connect(RUNTIME_URL)
     try:
@@ -73,6 +74,20 @@ async def _run_isolation_scenario():
             third = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
             assert first.allowed and second.allowed and not third.allowed
             assert third.request_count == 3
+            await runtime.execute("""INSERT INTO ai_usage_events(
+                request_id,organization_id,user_id,provider,model,prompt_tokens,
+                completion_tokens,total_tokens,outcome)
+                VALUES($1,$2,$3,'openai_compatible','test-model',100,25,125,'ANSWERED')""",
+                usage_request_id, org_a, user_a)
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.execute("""INSERT INTO ai_usage_events(
+                        request_id,organization_id,user_id,provider,model,outcome)
+                        VALUES($1,$2,$3,'openai_compatible','test-model','ANSWERED')""",
+                        uuid.uuid4(), org_b, user_b)
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.fetch("SELECT request_id FROM ai_usage_events")
             conversations = await runtime.fetch("SELECT id,title FROM chat_conversations")
             assert {r["id"] for r in conversations} == {conversation_a}
             own_messages = await runtime.fetch("SELECT content FROM chat_messages")
@@ -128,6 +143,13 @@ async def _run_isolation_scenario():
             assert foreign_bucket_count == 0
             own_bucket = await consume_chat_request(runtime, str(org_b), str(user_b), 2)
             assert own_bucket.allowed
+
+        usage_row = await admin.fetchrow(
+            "SELECT organization_id,user_id,prompt_tokens,completion_tokens,total_tokens FROM ai_usage_events WHERE request_id=$1",
+            usage_request_id)
+        assert usage_row is not None
+        assert usage_row["organization_id"] == org_a and usage_row["user_id"] == user_a
+        assert (usage_row["prompt_tokens"],usage_row["completion_tokens"],usage_row["total_tokens"]) == (100,25,125)
 
         # No tenant context means no tenant data.
         async with runtime.transaction():
