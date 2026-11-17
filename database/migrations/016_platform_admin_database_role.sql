@@ -11,7 +11,7 @@ BEGIN
   IF admin_role_oid IS NULL THEN
     RAISE EXCEPTION 'Dedicated least-privilege role cfdt_juris_platform_admin is missing or unsafe';
   END IF;
-  IF EXISTS (SELECT 1 FROM pg_auth_members WHERE member=admin_role_oid) THEN
+  IF EXISTS (SELECT 1 FROM pg_auth_members WHERE member=admin_role_oid OR roleid=admin_role_oid) THEN
     RAISE EXCEPTION 'Platform-admin DB role must not inherit or be able to SET ROLE into another role';
   END IF;
   IF EXISTS (SELECT 1 FROM pg_shdepend WHERE refclassid='pg_authid'::regclass
@@ -23,6 +23,10 @@ END $;
 -- Remove any accidental pre-existing direct table grants before applying the allowlist.
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM cfdt_juris_platform_admin;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM cfdt_juris_platform_admin;
+REVOKE ALL ON SCHEMA public FROM cfdt_juris_platform_admin;
+GRANT USAGE ON SCHEMA public TO cfdt_juris_platform_admin;
+REVOKE ALL ON DATABASE cfdt_juris FROM cfdt_juris_platform_admin;
+GRANT CONNECT ON DATABASE cfdt_juris TO cfdt_juris_platform_admin;
 
 REVOKE EXECUTE ON FUNCTION platform_admin_list_organizations(uuid) FROM cfdt_juris_app;
 REVOKE EXECUTE ON FUNCTION platform_admin_set_organization_status(uuid,uuid,text) FROM cfdt_juris_app;
