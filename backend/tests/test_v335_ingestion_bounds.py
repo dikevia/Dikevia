@@ -27,6 +27,8 @@ def test_privileged_piste_ingestion_validates_query_and_bounds_work_before_datab
     ]
     for marker, next_marker, query_error, limit_error, first_side_effect in cases:
         route = _route(source, marker, next_marker)
+        assert "if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:" in route
+        assert "if not 1 <= limit <= 20:" in route
         assert query_error in route
         assert limit_error in route
         assert route.index(query_error) < route.index(first_side_effect)
