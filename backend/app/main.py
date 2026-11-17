@@ -1220,10 +1220,28 @@ def private_document_path(storage_key: str) -> Path:
 def store_private_file(org_id: str, document_id: str, version: int, data: bytes, suffix: str) -> str:
     key=f"{org_id}/{document_id}/v{version}-{uuid4().hex}{suffix}"
     path=private_document_path(key)
-    path.parent.mkdir(parents=True,exist_ok=True)
+    root=Path(settings.document_storage_path).resolve()
+    org_dir=root/org_id
+    document_dir=org_dir/document_id
+    root.mkdir(parents=True,exist_ok=True,mode=0o700)
+    org_dir.mkdir(mode=0o700,exist_ok=True)
+    document_dir.mkdir(mode=0o700,exist_ok=True)
+    # Restrict directory traversal and file reads to the service account.
+    os.chmod(root,0o700)
+    os.chmod(org_dir,0o700)
+    os.chmod(document_dir,0o700)
     temp=path.with_suffix(path.suffix+".tmp")
-    temp.write_bytes(data)
-    os.replace(temp,path)
+    descriptor=os.open(temp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    try:
+        with os.fdopen(descriptor,"wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp,path)
+        os.chmod(path,0o600)
+    except Exception:
+        temp.unlink(missing_ok=True)
+        raise
     return key
 
 @app.post("/api/v1/documents",status_code=201)
