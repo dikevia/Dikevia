@@ -94,6 +94,12 @@ async def _run_isolation_scenario():
             assert [r["content"] for r in own_messages] == ["Question privée A"]
             own_dossiers = await runtime.fetch("SELECT content->>'title' AS title FROM legal_dossiers")
             assert [r["title"] for r in own_dossiers] == ["Dossier A"]
+            # A different user in the same tenant cannot read or mutate this owner's records.
+            assert await runtime.fetch("SELECT id FROM chat_messages") != []
+            assert await runtime.fetchval("SELECT count(*) FROM chat_messages WHERE conversation_id=$1", conversation_a2) == 0
+            assert await runtime.fetchval("SELECT count(*) FROM chat_conversations WHERE id=$1", conversation_a2) == 0
+            assert await runtime.execute("UPDATE chat_conversations SET title='forged' WHERE id=$1", conversation_a2) == "UPDATE 0"
+            assert await runtime.execute("DELETE FROM chat_messages WHERE conversation_id=$1", conversation_a2) == "DELETE 0"
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 async with runtime.transaction():
                     await runtime.execute("INSERT INTO legal_dossiers(organization_id,conversation_id,user_id,content) VALUES($1,$2,$3,'{}'::jsonb)", org_a,conversation_a2,user_a)
@@ -105,6 +111,10 @@ async def _run_isolation_scenario():
             assert {r["id"] for r in second_user_conversations} == {conversation_a2}
             second_user_dossiers = await runtime.fetch("SELECT content->>'title' AS title FROM legal_dossiers")
             assert [r["title"] for r in second_user_dossiers] == ["Dossier A2"]
+            second_user_messages = await runtime.fetch("SELECT content FROM chat_messages")
+            assert [r["content"] for r in second_user_messages] == ["Question privée A2"]
+            assert await runtime.fetchval("SELECT count(*) FROM chat_messages WHERE conversation_id=$1", conversation_a) == 0
+            assert await runtime.fetchval("SELECT count(*) FROM legal_dossiers WHERE conversation_id=$1", conversation_a) == 0
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
             rows = await runtime.fetch("SELECT id,title FROM documents ORDER BY title")
             assert {r['id'] for r in rows} == {doc_a}
@@ -142,7 +152,20 @@ async def _run_isolation_scenario():
             foreign_bucket_count = await runtime.fetchval("SELECT count(*) FROM chat_rate_limit_buckets")
             assert foreign_bucket_count == 0
             own_bucket = await consume_chat_request(runtime, str(org_b), str(user_b), 2)
-            assert own_bucket.allowed
+
+        # The owner can delete their conversation; database cascades remove messages and dossier.
+        async with runtime.transaction():
+            await runtime.execute("SELECT set_config('app.current_org_id',$1,true)", str(org_a))
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
+            assert await runtime.execute("DELETE FROM chat_conversations WHERE id=$1", conversation_a) == "DELETE 1"
+
+        cascade_counts = await admin.fetchrow(
+            """SELECT
+                (SELECT count(*) FROM chat_messages WHERE conversation_id=$1) AS messages,
+                (SELECT count(*) FROM legal_dossiers WHERE conversation_id=$1) AS dossiers""",
+            conversation_a)
+        assert cascade_counts["messages"] == 0
+        assert cascade_counts["dossiers"] == 0
 
         usage_row = await admin.fetchrow(
             "SELECT organization_id,user_id,prompt_tokens,completion_tokens,total_tokens FROM ai_usage_events WHERE request_id=$1",
