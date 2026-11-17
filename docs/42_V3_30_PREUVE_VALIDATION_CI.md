@@ -102,3 +102,19 @@ Date de validation : 17 novembre 2026
 - Conservation GitHub annoncée jusqu'au 17 décembre 2026.
 
 Cette validation porte sur les tests automatisés de l'environnement éphémère. Elle ne constitue pas une recette sur Neon ni une preuve de conformité RGPD ou de sécurité exhaustive. La durée de conservation et la purge automatique des conversations restent notamment à définir et à mettre en œuvre avant la production. La PR #1 reste ouverte et non fusionnée ; `main`, Neon et la production n'ont pas été modifiés.
+
+
+## V3.36 — contrats API de propriété des conversations et dossiers
+
+Date de validation : 17 novembre 2026
+
+- Commit contrôlé : `c19b109d7ce76c64113dd5fb2e4bce57181dc05a`.
+- GitHub Actions : [run 44066187124](https://github.com/dikevia/Dikevia/actions/runs/44066187124) — terminé avec succès.
+- **199 tests réussis, aucun échec**.
+- Les tests V3.36 couvrent les contrats des gestionnaires de routes : une conversation étrangère ou invisible n'est pas listée/lue ; sa suppression renvoie 404 ; la création, la lecture et la modification d'un dossier associé à une conversation invisible sont refusées ; les routes attendues sont présentes et rattachées au contexte d'organisation authentifié.
+- Ces tests de gestionnaires utilisent une connexion simulant le masquage des lignes par RLS. Les tests PostgreSQL réels de la suite séparée couvrent les politiques RLS elles-mêmes. Cette distinction est importante : les nouveaux tests V3.36 ne sont pas une recette HTTP complète avec un fournisseur OIDC réel.
+- Toutes les étapes CI ont réussi : compilation, audit de configuration, Ruff, Bandit, `pip-audit`, migrations 001–018 sur PostgreSQL 16 jetable avec rôles à privilèges minimaux, tests unitaires/contrat/RLS, scripts shell, Docker Compose, construction et téléversement du kit.
+- Artefact : `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14319513979`, taille 4 671 597 octets, SHA-256 `406878453791efc89f3dfe9c42e5161b6cf82f267ab6e08ff2514293e4397b59`.
+- Conservation GitHub annoncée jusqu'au 17 décembre 2026.
+
+La réussite de cette CI ne clôt pas les points bloquants de préproduction : politique et purge de conservation, validation RGPD/DPO, recette réelle OIDC/PISTE/fournisseur IA, base Neon de préproduction distincte, sauvegarde/restauration et audit indépendant. Aucune migration n'a été appliquée à Neon, aucun déploiement de production n'a été effectué et la branche `main` reste inchangée. La PR #1 demeure ouverte et non fusionnée.
