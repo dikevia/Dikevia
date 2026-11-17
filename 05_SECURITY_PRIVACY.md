@@ -32,3 +32,19 @@ Avant tout choix : vérifier contrat de sous-traitance, localisation, transferts
 
 ## État de conformité
 La présence de contrôles techniques dans le dépôt ne constitue pas une conformité RGPD démontrée. La recette juridique, la documentation du traitement, les contrats, la politique de conservation et la purge effective restent à valider avant tout usage avec des dossiers réels.
+
+
+## V3.37 — mécanisme de purge privée préparé, non activé
+
+Un utilitaire opérateur `scripts/purge_private_conversations.py` est ajouté pour préparer la purge des conversations privées et de leurs données dépendantes.
+
+- Aucun délai de conservation n'est codé en dur et aucun seuil par défaut n'existe.
+- Le seuil doit être fourni explicitement en date/heure ISO-8601 avec fuseau.
+- Le mode par défaut est une prévisualisation sans suppression.
+- L'exécution réelle exige simultanément `--execute` et `--confirm-delete`.
+- La connexion doit utiliser `RETENTION_DATABASE_URL`, un compte explicitement autorisé à contourner RLS ; le script refuse un compte qui ne possède ni `SUPERUSER` ni `BYPASSRLS`.
+- La suppression cible les conversations dont `updated_at` est antérieur au seuil ; les messages et dossiers associés sont supprimés par les contraintes de cascade déjà testées.
+- La sortie ne contient que le nombre de conversations supprimées/prévues et les identifiants d'organisation avec leurs compteurs, jamais les contenus.
+- L'outil n'est pas appelé par l'API, n'est pas planifié et n'est pas exécuté sur une base réelle. Il n'y a pas de variable de durée préconfigurée.
+
+**Important :** ce mécanisme technique ne définit pas la politique juridique. Avant toute activation, le responsable du traitement/DPO doit encore décider et documenter les durées, le point de départ du délai (la règle actuelle utilise le champ technique `updated_at`), les exceptions éventuelles (contentieux, gel légal, demandes d'accès), les sauvegardes et le périmètre des autres données. La purge des documents téléversés, journaux d'audit et métriques est hors du périmètre de cet utilitaire. Aucune suppression automatique n'est active.
