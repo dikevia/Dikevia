@@ -13,7 +13,8 @@
 - Fournisseur OIDC, client, audience, JWKS, MFA, durée de session et révocation côté IdP.
 - Rôle SQL runtime séparé, sans propriété des tables, `BYPASSRLS` ou `SUPERUSER`.
 - TLS, reverse proxy, secrets manager, sauvegardes chiffrées, supervision et rotation des secrets.
-- Rate limiting, quotas, politique CORS et protections anti-abus en frontal.
+- Limitation PostgreSQL atomique des requêtes chat par utilisateur et organisation (10/minute par défaut, configurable de 1 à 120), avec réponse HTTP 429 et Retry-After. Cette protection applicative ne remplace pas le rate limiting réseau/WAF ni un quota mensuel de coûts IA.
+- Quotas mensuels de coûts IA, politique CORS et protections anti-abus en frontal restent à définir/configurer.
 - Analyse des dépendances et images Docker.
 - Procédure de désactivation/révocation et test de propagation immédiate.
 - Tests PostgreSQL réels de non-fuite A/B pour SELECT, INSERT, UPDATE et DELETE.
