@@ -113,3 +113,7 @@ Le ZIP contient désormais le profil privé décrit dans `docs/40_INSTANCE_PRIVE
 ## Addendum V3.31 — limitation des requêtes chat
 
 La migration 017 ajoute une limitation PostgreSQL atomique par utilisateur et organisation (10 requêtes/minute par défaut, configurable). Le compteur est protégé par RLS/FORCE RLS et ne contient aucun texte de conversation. Le dépassement renvoie HTTP 429 avec Retry-After. Cette mesure ne remplace pas un WAF, un quota mensuel de dépenses IA ni les limites PISTE ; ces derniers restent à définir pour la commercialisation.
+
+
+## Addendum V3.33 — Quota partagé
+La limitation PostgreSQL est désormais commune aux questions du chat et aux revues de cohérence des règles locales. Le quota est consommé avant la lecture du document et la recherche du corpus national ; les deux parcours ne peuvent donc pas être alternés pour contourner la limite. Le refus est HTTP 429 avec `Retry-After`.
