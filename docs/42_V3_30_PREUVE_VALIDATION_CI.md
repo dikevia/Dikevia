@@ -1,4 +1,4 @@
-# V3.32 — preuve de validation CI du kit développeur
+# V3.33 — preuve de validation CI du kit développeur
 
 Date de validation : 17 novembre 2026
 
@@ -6,15 +6,15 @@ Date de validation : 17 novembre 2026
 
 - Dépôt : `dikevia/Dikevia`
 - Branche : `cfdt-juris-v3-30-developer-ready`
-- Commit contrôlé : `cdc6ae43687e1978aea7abfd8877cb228d8f4a2d`
+- Commit contrôlé : `1bcf515a6256b81da93dccc326d2681d8e99e893`
 - Pull request : [#1](https://github.com/dikevia/Dikevia/pull/1), vers `main`, laissée ouverte et non fusionnée.
-- Exécution GitHub Actions : [run 44054893375](https://github.com/dikevia/Dikevia/actions/runs/44054893375)
+- Exécution GitHub Actions : [run 44056185761](https://github.com/dikevia/Dikevia/actions/runs/44054893375)
 
 ## Résultats observés
 
 L'exécution complète du workflow `test-and-audit` s'est terminée avec succès.
 
-- **187 tests réussis**, aucun échec.
+- **189 tests réussis**, aucun échec.
 - Ruff : réussi.
 - Bandit : réussi.
 - `pip-audit` : réussi.
@@ -34,15 +34,16 @@ Un avertissement non bloquant subsiste : Starlette signale que l'utilisation de 
 - Les appels IA réussis, les réponses rejetées pour référence non sourcée et les erreurs fournisseur sont distingués.
 - Les métadonnées de comptabilisation sont exclues de la sérialisation API et ne sont pas exposées au navigateur.
 - Le parcours de revue de cohérence des règles locales extrait désormais correctement le texte de `AIAnalysisResult` avant le contrôle des références ; ses appels IA sont également comptabilisés, y compris les réponses rejetées et les erreurs fournisseur.
-- La version API est 3.32.0.
+- La version API est 3.33.0.
+- Le quota PostgreSQL est partagé entre le chat et la revue de cohérence des règles locales. Le refus 429 intervient avant la lecture du document et la recherche du corpus national ; l'alternance des deux routes ne permet plus de contourner la limite.
 - Aucun coût en euros ni quota mensuel n'est calculé ou appliqué à ce stade : il faudra d'abord définir les tarifs fournisseurs et les budgets par offre.
 
 ## Artefact généré
 
 - Nom : `CFDT-JURIS-V3.30-Kit-Developpeur`
-- Identifiant : `14315661654`
-- Taille : 4 661 983 octets
-- SHA-256 : `7e00ec7445fe8eadcffc6637dcd1215b016fc89b16e9e1b8e314d34863fcfac4`
+- Identifiant : `14316236830`
+- Taille : 4 663 369 octets
+- SHA-256 : `2d0784cabae4953aee4891410b2998f2edaae83f082fb3b10e35d1083261b61e`
 - Conservation GitHub jusqu'au 17 décembre 2026.
 
 L'archive contient le code, les migrations, les tests et la documentation révisés. Le fichier `SHA256SUMS_KIT.txt` permet de contrôler les fichiers contenus.
