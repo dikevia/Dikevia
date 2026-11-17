@@ -23,7 +23,9 @@ async def _run_private_membership_scenario():
     import asyncpg
 
     organization_id = uuid.uuid4()
+    additional_organization_id = uuid.uuid4()
     platform_admin_id = uuid.uuid4()
+    free_email = f"{uuid.uuid4().hex}@free-test.invalid"
     active_user_ids = [uuid.uuid4() for _ in range(8)]
     invited_user_ids = [uuid.uuid4() for _ in range(2)]
     all_user_ids = [platform_admin_id, *active_user_ids, *invited_user_ids]
@@ -162,19 +164,63 @@ async def _run_private_membership_scenario():
             "AND event_type IN ('PRIVATE_MEMBER_APPROVED','PRIVATE_MEMBER_SUSPENDED')",
             organization_id,
         ) == 3
+
+        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+            await runtime_a.fetch(
+                "SELECT * FROM platform_admin_list_organizations($1::uuid)",
+                platform_admin_id,
+            )
+        listed = await platform_a.fetch(
+            "SELECT * FROM platform_admin_list_organizations($1::uuid)",
+            platform_admin_id,
+        )
+        assert any(row["id"] == organization_id for row in listed)
+
+        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+            await runtime_a.fetchval(
+                "SELECT platform_admin_create_organization($1::uuid,$2::uuid,$3,$4,$5,false)",
+                platform_admin_id, additional_organization_id, "admin-test-" + additional_organization_id.hex[:12],
+                "Admin test", "Admin test",
+            )
+        assert await platform_a.fetchval(
+            "SELECT platform_admin_create_organization($1::uuid,$2::uuid,$3,$4,$5,false)",
+            platform_admin_id, additional_organization_id, "admin-test-" + additional_organization_id.hex[:12],
+            "Admin test", "Admin test",
+        )
+
+        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+            await runtime_a.fetchval(
+                "SELECT platform_admin_grant_free_access($1::uuid,$2::uuid,$3)",
+                platform_admin_id, additional_organization_id, "Test privilege",
+            )
+        assert await platform_a.fetchval(
+            "SELECT platform_admin_grant_free_access($1::uuid,$2::uuid,$3)",
+            platform_admin_id, additional_organization_id, "Test privilege",
+        )
+
+        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+            await runtime_a.execute(
+                "INSERT INTO platform_free_email_access(email_normalized,granted_by) VALUES($1,$2)",
+                free_email, platform_admin_id,
+            )
+        await platform_a.execute(
+            "INSERT INTO platform_free_email_access(email_normalized,granted_by) VALUES($1,$2)",
+            free_email, platform_admin_id,
+        )
     finally:
         await runtime_a.close()
         await runtime_b.close()
         await platform_a.close()
         await platform_b.close()
         async with admin.transaction():
+            await admin.execute("DELETE FROM platform_free_email_access WHERE email_normalized=$1", free_email)
             await admin.execute(
                 "DELETE FROM platform_admins WHERE user_id=ANY($1::uuid[])",
                 all_user_ids,
             )
             await admin.execute(
-                "DELETE FROM organizations WHERE id=$1::uuid",
-                organization_id,
+                "DELETE FROM organizations WHERE id=ANY($1::uuid[])",
+                [organization_id, additional_organization_id],
             )
             await admin.execute(
                 "DELETE FROM users WHERE id=ANY($1::uuid[])",
