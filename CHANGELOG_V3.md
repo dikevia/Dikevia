@@ -356,3 +356,11 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - La limite demandée est bornée à 20 résultats maximum, ce qui borne également le nombre de consultations de textes intégraux CETAT.
 - Les paramètres invalides renvoient HTTP 422 sans ouvrir de connexion d'ingestion ni appeler PISTE.
 - Aucun changement de schéma PostgreSQL et aucune migration Neon ne sont nécessaires.
+
+
+## V3.37 — Préparation de la purge des conversations privées
+- Ajout d'un utilitaire opérateur de purge des conversations privées, avec prévisualisation par défaut et seuil absolu fourni explicitement.
+- Suppression réelle protégée par double confirmation ; connexion dédiée refusée si le rôle PostgreSQL ne possède pas SUPERUSER ou BYPASSRLS.
+- Les messages et dossiers liés sont supprimés via les cascades SQL existantes.
+- Tests unitaires des garde-fous et test d'intégration PostgreSQL de la prévisualisation, de la suppression et des cascades.
+- Aucun délai de conservation par défaut, aucune planification et aucune exécution sur une base réelle. La politique (durées, point de départ, exceptions et sauvegardes) reste à valider par le responsable de traitement/DPO.
