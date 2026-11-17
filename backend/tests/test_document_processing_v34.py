@@ -9,6 +9,7 @@ import pytest
 from app.document_processing import (
     MalwareDetected,
     ScannerUnavailable,
+    document_sha256_matches,
     extract_document_text,
     scan_with_clamav,
 )
@@ -138,3 +139,14 @@ def test_postgres_rls_integration_covers_extracted_text_isolation():
     test_file = (Path(__file__).parent / "test_postgres_rls_integration.py").read_text()
     assert "SELECT document_id,extracted_text FROM document_text" in test_file
     assert "organisation B" in test_file
+
+
+def test_document_integrity_matches_original_sha256():
+    import hashlib
+
+    data = b"original legal document"
+    digest = hashlib.sha256(data).hexdigest()
+    assert document_sha256_matches(data, digest)
+    assert not document_sha256_matches(data + b" altered", digest)
+    assert not document_sha256_matches(data, None)
+    assert not document_sha256_matches(data, "invalid")
