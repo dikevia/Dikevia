@@ -123,3 +123,6 @@ La réindexation et le téléchargement comparent désormais les octets du fichi
 
 
 Les fichiers privés sont créés avec des permissions de service restrictives (`0700` pour les répertoires organisation/document, `0600` pour les fichiers), puis publiés par renommage atomique après écriture synchronisée. Le développeur doit vérifier que le volume monté conserve ces permissions et que le compte du service est le seul compte système autorisé à lire le stockage.
+
+
+Les téléchargements renvoient les octets mêmes qui ont été contrôlés par empreinte SHA-256 ; le serveur ne relit pas le chemin après validation, ce qui évite une substitution entre le contrôle et l'envoi. Lors d'une nouvelle analyse, le moteur associé au résultat de la version courante est propagé tel quel au document parent, notamment `INTEGRITY_CHECK` en cas d'altération.
