@@ -99,8 +99,10 @@ async def _run_isolation_scenario():
             assert {r["organization_id"] for r in membership_orgs} == {org_a}
             setting_orgs = await runtime.fetch("SELECT organization_id FROM organization_settings")
             assert {r["organization_id"] for r in setting_orgs} == {org_a}
-            audit_orgs = await runtime.fetch("SELECT organization_id FROM audit_events")
-            assert {r["organization_id"] for r in audit_orgs} == {org_a}
+            # Audit history is intentionally write-only for the runtime API role.
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.fetch("SELECT organization_id FROM audit_events")
             invoice_rows = await runtime.fetch("SELECT organization_id,amount_paid FROM stripe_invoice_records")
             assert len(invoice_rows) == 1 and invoice_rows[0]["organization_id"] == org_a
             foreign_invoice = await runtime.fetchval("SELECT count(*) FROM stripe_invoice_records WHERE organization_id=$1", org_b)
