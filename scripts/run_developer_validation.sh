@@ -29,6 +29,9 @@ ruff check backend/app backend/tests scripts --select E4,E7,E9
 require bandit
 bandit -q -r backend/app -ll
 
+step "Cohérence des dépendances"
+python -m pip check
+
 step "Audit des dépendances"
 require pip-audit
 pip-audit -r backend/requirements-dev.txt
