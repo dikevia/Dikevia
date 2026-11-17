@@ -108,7 +108,7 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("Configuration IA incomplète : AI_API_BASE_URL, AI_API_KEY et AI_MODEL sont requis ensemble.")
     if config.ai_api_base_url:
         ai_url = urlparse(config.ai_api_base_url)
-        if not ai_url.hostname or ai_url.path not in ("", "/v1") or ai_url.query or ai_url.fragment:
+        if not ai_url.hostname or ai_url.path.rstrip("/") not in ("", "/v1", "/v1beta/openai") or ai_url.query or ai_url.fragment:
             raise RuntimeError("AI_API_BASE_URL doit être une origine ou une base /v1 sans paramètres.")
         if config.app_env == "production" and ai_url.scheme != "https":
             raise RuntimeError("AI_API_BASE_URL doit utiliser HTTPS en production.")
