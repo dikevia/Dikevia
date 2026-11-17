@@ -6,20 +6,20 @@ Date de validation : 17 novembre 2026
 
 - Dépôt : `dikevia/Dikevia`
 - Branche : `cfdt-juris-v3-30-developer-ready`
-- Commit contrôlé : `b99dbf17a6696f75dc18ad93869a588177c20b36`
+- Commit contrôlé : `248313253b6fd1786a997082727f6e4500151762`
 - Pull request : [#1](https://github.com/dikevia/Dikevia/pull/1), vers `main`, laissée ouverte et non fusionnée.
-- Exécution GitHub Actions : [run 44041570677](https://github.com/dikevia/Dikevia/actions/runs/44041570677)
+- Exécution GitHub Actions : [run 44046067289](https://github.com/dikevia/Dikevia/actions/runs/44041570677)
 
 ## Résultats observés
 
-L'exécution complète du workflow `test-and-audit` s'est terminée avec succès.
+L'exécution complète du workflow `test-and-audit` s'est terminée avec succès. La validation inclut la séparation du rôle PostgreSQL administrateur, les fonctions SQL de création d'organisation et d'attribution d'accès gratuit, et le refus des opérations privilégiées depuis le rôle runtime.
 
-- **177 tests réussis**, aucun échec.
+- **178 tests réussis**, aucun échec.
 - Ruff : réussi.
 - Bandit : réussi.
 - `pip-audit` : réussi.
 - Compilation Python et audit du modèle d'environnement : réussis.
-- Migrations SQL 001 à 015 et tests d'intégration sur PostgreSQL 16 éphémère : réussis.
+- Migrations SQL 001 à 016, création des rôles dédiés et tests d'intégration sur PostgreSQL 16 éphémère : réussis.
 - Vérification syntaxique des scripts shell : réussie.
 - Validation des configurations Docker Compose : réussie.
 - Construction et téléversement du kit développeur : réussis.
@@ -28,7 +28,7 @@ Un avertissement non bloquant subsiste dans les tests : dépréciation Starlette
 
 ## Artefact généré
 
-GitHub Actions a produit l'artefact `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14309392809`, taille 2 386 619 octets. Sa conservation GitHub est prévue jusqu'au 17 décembre 2026.
+GitHub Actions a produit l'artefact `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14311272570`, taille 2 393 594 octets. Empreinte SHA-256 de l'archive : `e8915ece0d1b4045c863787107bf3aa9883bee0c523a51c3b8a22151d9cbfd9b`. Sa conservation GitHub est prévue jusqu'au 17 décembre 2026.
 
 Le ZIP du kit est accompagné du fichier `SHA256SUMS_KIT.txt`, qui permet de contrôler les fichiers contenus.
 
