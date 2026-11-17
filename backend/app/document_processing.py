@@ -6,7 +6,7 @@ import struct
 import zipfile
 from dataclasses import dataclass
 from io import BytesIO
-from xml.etree import ElementTree
+from defusedxml import ElementTree
 
 
 class ScannerUnavailable(RuntimeError):

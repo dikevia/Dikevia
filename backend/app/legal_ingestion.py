@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import re
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
+from defusedxml.common import DefusedXmlException
 from datetime import date
 from typing import Any
 from urllib.parse import urlparse
@@ -41,7 +42,7 @@ def parse_circulaires_xml(xml_bytes: bytes) -> list[dict[str, Any]]:
         raise ValueError("Les déclarations DTD/ENTITY ne sont pas acceptées.")
     try:
         root = ET.fromstring(xml_bytes)
-    except ET.ParseError as exc:
+    except (ET.ParseError, DefusedXmlException) as exc:
         raise ValueError("Le fichier XML CIRCULAIRES est invalide.") from exc
 
     records = []

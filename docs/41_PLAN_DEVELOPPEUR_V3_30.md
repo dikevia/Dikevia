@@ -11,6 +11,8 @@ Sur l'archive révisée, la suite Python a donné **169 réussis et 3 ignorés**
 Les trois tests ignorés sont les tests d'intégration PostgreSQL, faute de base et
 d'URL de test dans cet environnement. Ce résultat ne valide donc pas les migrations
 014/015 en base; la CI et la recette staging doivent encore le faire.
+La CI GitHub crée son propre PostgreSQL éphémère et fournit les URL locales aux
+tests; elle n'a besoin d'aucun secret GitHub contenant une URL Neon.
 
 ## Améliorations préparées dans cette révision
 
@@ -27,6 +29,9 @@ d'URL de test dans cet environnement. Ce résultat ne valide donc pas les migrat
   sauvegarde restaurable et la recette des approbations concurrentes.
 - La commande d'installation locale et la documentation des comptes listés ont
   été corrigées.
+- Les parseurs XML de documents DOCX et de circulaires utilisent `defusedxml`;
+  une régression vérifie le rejet d'entités XML et la dépendance est déclarée
+  directement dans les exigences runtime.
 
 ## Ordre de travail recommandé
 
@@ -43,6 +48,8 @@ d'URL de test dans cet environnement. Ce résultat ne valide donc pas les migrat
 
 - Installer la même version PostgreSQL et les mêmes rôles que la cible.
 - Exécuter la CI complète et conserver le lien du run et son commit.
+- La CI utilise son PostgreSQL éphémère; les URL Neon ne doivent pas être ajoutées
+  aux secrets GitHub.
 - Tester invitation, acceptation, approbation, refus, suspension, réactivation,
   révocation et concurrence de deux approbations.
 - Vérifier que le onzième compte actif est refusé, qu'une suspension libère une

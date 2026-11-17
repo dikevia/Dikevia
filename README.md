@@ -64,6 +64,8 @@ Les tests `backend/tests/test_postgres_rls_integration.py` vérifient avec deux 
 
 Exécution : `./scripts/run_postgres_security_tests.sh`. Si ces variables ne sont pas définies, le test d'intégration est ignoré. Les tests statiques ne remplacent pas ce test réel.
 
+Dans GitHub Actions, le workflow crée sa propre base PostgreSQL éphémère, applique le schéma et les migrations, puis fournit ces deux URL locales au test. Aucun secret GitHub ni URL Neon n'est nécessaire pour la CI.
+
 
 `database/schema.sql` est le schéma consolidé de référence pour une installation neuve. Pour une base déjà créée en V3/V3.1, appliquer uniquement les migrations 002 puis 003 qui manquent ; ne pas rejouer le schéma consolidé par-dessus une base existante.
 

@@ -320,5 +320,7 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Ajout d'un test d'intégration du plafond privé, des approbations concurrentes, de la suspension et de l'audit.
 - La migration 015 refuse une base contenant plusieurs organisations ou plus de dix adhésions actives.
 - Correction des 42 diagnostics Ruff hérités de l'archive; la commande de lint CI passe maintenant localement.
-- Suite Python du kit révisé : 169 réussis et 3 ignorés dans l'environnement de travail; les tests PostgreSQL restent à exécuter en CI avec les URL de test configurées.
+- Résultat local initial du kit : 169 réussis et 3 ignorés faute de PostgreSQL disponible; ce résultat précède la recette CI.
+- Le workflow GitHub crée son propre PostgreSQL éphémère et fournit les URL locales nécessaires; aucun secret GitHub ni URL Neon n'est requis.
+- Après le premier run CI, les deux appels à `ElementTree.fromstring` sur du XML non fiable ont été remplacés par `defusedxml`; un test DOCX vérifie le rejet d'entités internes.
 - Voir `docs/41_PLAN_DEVELOPPEUR_V3_30.md` pour les étapes de recette qui restent à réaliser.

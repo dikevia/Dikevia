@@ -17,10 +17,18 @@ DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.docu
 
 
 def make_docx(text: str) -> bytes:
+    document_xml = (
+        "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>"
+        f"<w:body><w:p><w:r><w:t>{text}</w:t></w:r></w:p></w:body></w:document>"
+    )
+    return make_docx_xml(document_xml)
+
+
+def make_docx_xml(document_xml: str) -> bytes:
     out = BytesIO()
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("[Content_Types].xml", "<Types xmlns='http://schemas.openxmlformats.org/package/2006/content-types'/>")
-        archive.writestr("word/document.xml", f"<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'><w:body><w:p><w:r><w:t>{text}</w:t></w:r></w:p></w:body></w:document>")
+        archive.writestr("word/document.xml", document_xml)
     return out.getvalue()
 
 
@@ -66,6 +74,16 @@ def test_docx_without_text_is_marked_no_text():
     text, status = extract_document_text(make_docx(""), DOCX_MIME)
     assert text == ""
     assert status == "NO_TEXT"
+
+
+def test_docx_internal_entity_is_rejected():
+    xml = """<!DOCTYPE w:document [<!ENTITY injected "must not be extracted">]>
+    <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+      <w:body><w:p><w:r><w:t>&injected;</w:t></w:r></w:p></w:body>
+    </w:document>"""
+    text, status = extract_document_text(make_docx_xml(xml), DOCX_MIME)
+    assert text == ""
+    assert status == "FAILED"
 
 
 def test_clamav_clean_response():
