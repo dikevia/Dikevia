@@ -187,3 +187,21 @@ def test_document_rescan_preserves_integrity_failure_engine():
     main = (Path(__file__).parents[1] / "app/main.py").read_text()
     assert 'current_engine=current_item["scan_engine"]' in main
     assert "scan_engine=$4,scanned_at=now()" in main
+
+
+
+def test_document_version_number_is_allocated_under_document_row_lock():
+    from pathlib import Path
+
+    main = (Path(__file__).parents[1] / "app/main.py").read_text()
+    route = main.split('@app.post("/api/v1/documents/{document_id}/versions"', 1)[1].split(
+        '@app.get("/api/v1/documents/{document_id}/versions"', 1
+    )[0]
+    transaction_start = route.index("async with ctx.conn.transaction():")
+    lock_position = route.index("FOR UPDATE")
+    version_position = route.index("COALESCE(max(version_number),0)+1")
+    file_position = route.index("store_private_file(")
+    insert_position = route.index("INSERT INTO document_versions")
+    assert transaction_start < lock_position < version_position < file_position < insert_position
+    assert "storage_key=None" in route
+    assert "if storage_key:" in route
