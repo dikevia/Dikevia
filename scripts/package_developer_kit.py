@@ -15,7 +15,7 @@ EXCLUDED_DIRS = {
 }
 ALLOWED_ENV_EXAMPLES = {".env.example", ".env.staging.example"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".pem", ".p12", ".pfx"}
-EXCLUDED_NAMES = {".env", ".env.runtime", ".env.staging.runtime", "id_rsa", "id_ed25519"}
+EXCLUDED_NAMES = {".env", ".env.runtime", ".env.staging.runtime", ".DS_Store", "id_rsa", "id_ed25519"}
 
 
 def include_file(path: Path) -> bool:
