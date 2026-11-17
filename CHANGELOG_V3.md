@@ -375,3 +375,7 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Mode strict optionnel pour exiger les URL PostgreSQL de test via `REQUIRE_POSTGRES_INTEGRATION=1`.
 - Ajout de `docs/44_PREPARATION_RECETTE_DEVELOPPEUR.md` avec commandes reproductibles, matrice de recette externe et preuves attendues.
 - Le script ne démarre aucun service, n'applique aucune migration et ne touche à aucune base.
+
+- Correction du contrat de test qui référençait encore l'ancienne version API 3.35.0 ; il vérifie désormais 3.38.0.
+- Renommage de l'archive et de l'artefact CI en V3.38 pour éviter de remettre un kit étiqueté V3.30 alors que son contenu est plus récent.
+- La CI a révélé ce décalage : 204 tests réussis, 1 échec de contrat de version ; la relance sur le commit corrigé doit confirmer la suite complète.
