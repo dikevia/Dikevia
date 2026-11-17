@@ -1432,9 +1432,11 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
                   WHERE organization_id=$1::uuid AND document_id=$2::uuid AND version_number=$3""",
                   ctx.organization_id,document_id,item["version"],item["scan_status"],item["scan_engine"])
         current_version=max(item["version"] for item in results)
-        current_status=next(item["scan_status"] for item in results if item["version"] == current_version)
-        await ctx.conn.execute("""UPDATE documents SET scan_status=$3,scan_engine='ClamAV',scanned_at=now()
-          WHERE organization_id=$1::uuid AND id=$2::uuid""",ctx.organization_id,document_id,current_status)
+        current_item=next(item for item in results if item["version"] == current_version)
+        current_status=current_item["scan_status"]
+        current_engine=current_item["scan_engine"]
+        await ctx.conn.execute("""UPDATE documents SET scan_status=$3,scan_engine=$4,scanned_at=now()
+          WHERE organization_id=$1::uuid AND id=$2::uuid""",ctx.organization_id,document_id,current_status,current_engine)
         await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
           VALUES($1::uuid,$2::uuid,'DOCUMENT_ANTIVIRUS_RESCAN','document',$3::uuid,$4::jsonb)""",
           ctx.organization_id,ctx.user_id,document_id,json.dumps({"versions":results}))
