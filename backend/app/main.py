@@ -726,6 +726,15 @@ async def review_local_rule_compliance(document_id: str, q: str,
     query = q.strip()
     if len(query) < 8 or len(query) > 500:
         raise HTTPException(422, "La question de contrôle doit contenir entre 8 et 500 caractères.")
+    rate = await consume_chat_request(
+        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+    )
+    if not rate.allowed:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
+            headers={"Retry-After": str(rate.retry_after_seconds)},
+        )
     requested_date = effective_date or date.today()
     local = await ctx.conn.fetchrow("""
       SELECT d.id,d.title,d.document_type,d.official_number,d.official_url,d.validation_status,
