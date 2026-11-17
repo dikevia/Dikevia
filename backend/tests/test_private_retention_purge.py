@@ -93,6 +93,11 @@ async def _run_postgresql_retention_scenario():
             )
 
         cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        runtime_url = os.getenv("TEST_DATABASE_URL")
+        if runtime_url:
+            with pytest.raises(RuntimeError, match="contourner RLS"):
+                await run_purge(runtime_url, cutoff, execute=False)
+
         preview = await run_purge(ADMIN_URL, cutoff, execute=False)
         assert preview["mode"] == "dry_run"
         assert preview["conversations"] == 1
