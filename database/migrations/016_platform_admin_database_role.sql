@@ -1,13 +1,28 @@
 -- V3.30 hardening: privileged platform operations use a dedicated DB login.
 -- Apply only after cfdt_juris_platform_admin has been created by deploy/init/04-create-platform-admin-role.sh.
 BEGIN;
-DO $$
+DO $
+DECLARE admin_role_oid oid;
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='cfdt_juris_platform_admin' AND rolcanlogin
-      AND NOT rolsuper AND NOT rolcreatedb AND NOT rolcreaterole AND NOT rolbypassrls) THEN
+  SELECT oid INTO admin_role_oid FROM pg_roles
+   WHERE rolname='cfdt_juris_platform_admin' AND rolcanlogin
+     AND NOT rolsuper AND NOT rolcreatedb AND NOT rolcreaterole
+     AND NOT rolbypassrls AND NOT rolinherit AND NOT rolreplication;
+  IF admin_role_oid IS NULL THEN
     RAISE EXCEPTION 'Dedicated least-privilege role cfdt_juris_platform_admin is missing or unsafe';
   END IF;
-END $$;
+  IF EXISTS (SELECT 1 FROM pg_auth_members WHERE member=admin_role_oid) THEN
+    RAISE EXCEPTION 'Platform-admin DB role must not inherit or be able to SET ROLE into another role';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_shdepend WHERE refclassid='pg_authid'::regclass
+      AND refobjid=admin_role_oid AND deptype='o') THEN
+    RAISE EXCEPTION 'Platform-admin DB role must not own database objects';
+  END IF;
+END $;
+
+-- Remove any accidental pre-existing direct table grants before applying the allowlist.
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM cfdt_juris_platform_admin;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM cfdt_juris_platform_admin;
 
 REVOKE EXECUTE ON FUNCTION platform_admin_list_organizations(uuid) FROM cfdt_juris_app;
 REVOKE EXECUTE ON FUNCTION platform_admin_set_organization_status(uuid,uuid,text) FROM cfdt_juris_app;
