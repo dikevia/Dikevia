@@ -87,3 +87,18 @@ Date de validation : 17 novembre 2026
 - Conservation annoncée par GitHub jusqu'au 17 décembre 2026.
 
 Cette preuve concerne uniquement le commit indiqué et l'environnement PostgreSQL éphémère de la CI. Elle ne vaut pas recette sur Neon, validation des identifiants réels PISTE/OIDC/IA, test de restauration sur l'instance cible, audit indépendant ni autorisation de mise en production. Aucune migration Neon et aucun déploiement de production n'ont été effectués ; la branche `main` reste inchangée et la PR #1 demeure ouverte, non fusionnée.
+
+
+## Vérification complémentaire — isolation des conversations et dossiers
+
+Date de validation : 17 novembre 2026
+
+- Commit contrôlé : `366adc0e7d185077ea3c7e8082912b0b9189d5cc`.
+- GitHub Actions : [run 44065407804](https://github.com/dikevia/Dikevia/actions/runs/44065407804) — terminé avec succès.
+- **193 tests réussis, aucun échec** ; un avertissement non bloquant Starlette/httpx.
+- Les tests d'intégration exécutés sur PostgreSQL 16 vérifient désormais qu'un autre utilisateur de la même organisation ne peut pas lire les conversations, messages ou dossiers d'un propriétaire différent ; les tentatives de modification et de suppression de ses conversations/messages n'affectent aucune ligne ; le propriétaire peut supprimer sa conversation et les messages ainsi que le dossier associé sont supprimés en cascade.
+- Toutes les étapes du job CI ont réussi : compilation, audit de configuration, Ruff, Bandit, `pip-audit`, migrations 001–018 sur PostgreSQL jetable, tests unitaires/contrat/RLS, scripts shell, Docker Compose et construction/téléversement du kit.
+- Artefact reconstruit : `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14320835091`, taille 4 669 745 octets, SHA-256 `3a013e6046af725c3a12b0363bdbc19ac3a80f4295250ee19f229333333dfe8c`.
+- Conservation GitHub annoncée jusqu'au 17 décembre 2026.
+
+Cette validation porte sur les tests automatisés de l'environnement éphémère. Elle ne constitue pas une recette sur Neon ni une preuve de conformité RGPD ou de sécurité exhaustive. La durée de conservation et la purge automatique des conversations restent notamment à définir et à mettre en œuvre avant la production. La PR #1 reste ouverte et non fusionnée ; `main`, Neon et la production n'ont pas été modifiés.
