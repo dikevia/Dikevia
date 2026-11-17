@@ -44,7 +44,7 @@ Copier `deploy/.env.example` vers `.env` à la racine du projet, ou utiliser `ba
 cd backend
 PYTHONPATH=. pytest -q
 ```
-La CI V3.30 exécute la suite complète sur PostgreSQL 16 éphémère. Dernier résultat validé : **178 tests réussis, aucun échec** ; voir `docs/42_V3_30_PREUVE_VALIDATION_CI.md`. Les tests OIDC avec un IdP réel, les tests de révocation, les tests de concurrence des invitations et la recette de restauration restent à réaliser en staging. Les fonctions SQL `SECURITY DEFINER` d'administration sont réservées au rôle `cfdt_juris_platform_admin` distinct du rôle runtime.
+La CI V3.30 exécute la suite complète sur PostgreSQL 16 éphémère. Dernier résultat validé : **187 tests réussis, aucun échec** ; voir `docs/42_V3_30_PREUVE_VALIDATION_CI.md`. Les tests OIDC avec un IdP réel, les tests de révocation, les tests de concurrence des invitations et la recette de restauration restent à réaliser en staging. Les fonctions SQL `SECURITY DEFINER` d'administration sont réservées au rôle `cfdt_juris_platform_admin` distinct du rôle runtime.
 
 
 ## V3.2 — renforcement RLS du registre d'identité
@@ -292,3 +292,7 @@ python scripts/package_developer_kit.py
 Le fichier est créé dans `dist/CFDT_JURIS_V3_30_Kit_Developpeur.zip`. Le script ajoute `SHA256SUMS_KIT.txt`, qui permet de contrôler l'intégrité des fichiers extraits. Les fichiers `.env` réels, clés privées et certificats ne sont jamais inclus ; seuls les modèles `.env.example` et `.env.staging.example` sont conservés.
 
 Ne placez jamais de mots de passe, jetons, URL de base de données avec identifiants ou données syndicales réelles dans l'archive.
+
+
+## V3.33 — Limitation partagée des parcours juridiques coûteux
+Le quota PostgreSQL existant est désormais partagé entre les questions du chat et les revues de cohérence des règles locales. Une même personne ne peut donc pas contourner la limitation en alternant les deux routes. Le contrôle intervient avant la lecture du document et la recherche du corpus ; le dépassement renvoie HTTP 429 avec `Retry-After`. Le compteur reste limité à l'organisation et à l'utilisateur, sans stocker de contenu juridique.
