@@ -3,6 +3,7 @@ from uuid import uuid4
 import logging
 
 from .schemas import AskRequest, AskResponse
+from .config import settings
 from .cgfp import search_cgfp, get_cgfp_article
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, AIAnalysisResult, AIProviderUnavailable, answer_references_are_grounded
@@ -288,6 +289,13 @@ class LegalOrchestrator:
                     )
             except AIProviderUnavailable:
                 ai_answer = None
+                # Record a provider attempt even when it fails; token usage remains unknown.
+                if settings.ai_api_base_url and settings.ai_model:
+                    ai_usage = {
+                        "provider": "openai_compatible", "model": settings.ai_model[:160],
+                        "prompt_tokens": None, "completion_tokens": None,
+                        "total_tokens": None, "outcome": "PROVIDER_ERROR",
+                    }
         # Ground generated references only against sources actually supplied to
         # the model, never against excluded snapshot or metadata-only results.
         allowed_refs = {s.get("article") for s in ai_sources if s.get("article")}
