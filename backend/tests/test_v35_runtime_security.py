@@ -23,6 +23,7 @@ def test_only_asymmetric_oidc_algorithms_are_accepted():
 def test_production_requires_database_oidc_and_explicit_https_cors():
     base = dict(app_env="production", database_url="postgresql://db/app",
                 legal_corpus_ingest_database_url="postgresql://cfdt_juris_ingest:secret@db/app",
+                platform_admin_database_url="postgresql://cfdt_juris_platform_admin:platform@db/app",
                 oidc_issuer="https://issuer.example", oidc_audience="cfdt-juris",
                 oidc_jwks_url="https://issuer.example/jwks")
     with pytest.raises(RuntimeError, match="CORS_ORIGINS"):
@@ -34,6 +35,8 @@ def test_production_requires_database_oidc_and_explicit_https_cors():
 
 def test_production_rejects_wildcard_cors():
     cfg = Settings(app_env="production", database_url="postgresql://db/app",
+        legal_corpus_ingest_database_url="postgresql://cfdt_juris_ingest:secret@db/app",
+        platform_admin_database_url="postgresql://cfdt_juris_platform_admin:platform@db/app",
         oidc_issuer="https://issuer.example", oidc_audience="api",
         oidc_jwks_url="https://issuer.example/jwks", cors_origins="*")
     with pytest.raises(RuntimeError, match="CORS_ORIGINS"):
