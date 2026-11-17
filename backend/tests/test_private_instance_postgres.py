@@ -157,6 +157,10 @@ async def _run_private_membership_scenario():
         await runtime_b.close()
         async with admin.transaction():
             await admin.execute(
+                "DELETE FROM platform_admins WHERE user_id=ANY($1::uuid[])",
+                all_user_ids,
+            )
+            await admin.execute(
                 "DELETE FROM organizations WHERE id=$1::uuid",
                 organization_id,
             )
