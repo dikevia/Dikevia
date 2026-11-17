@@ -108,7 +108,7 @@ jobs:
       - name: Upload developer kit
         uses: actions/upload-artifact@v4
         with:
-          name: CFDT-JURIS-V3.30-Kit-Developpeur
-          path: dist/CFDT_JURIS_V3_30_Kit_Developpeur.zip
+          name: CFDT-JURIS-V3.38-Kit-Developpeur
+          path: dist/CFDT_JURIS_V3_38_Kit_Developpeur.zip
           if-no-files-found: error
           retention-days: 30
