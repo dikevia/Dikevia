@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import zipfile
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED_DIRS = {
@@ -14,7 +14,7 @@ EXCLUDED_DIRS = {
     ".idea", ".DS_Store",
 }
 ALLOWED_ENV_EXAMPLES = {".env.example", ".env.staging.example"}
-EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".pem", ".p12", ".pfx"}
+EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".pem", ".p12", ".pfx", ".zip", ".sqlite", ".db", ".log"}
 EXCLUDED_NAMES = {".env", ".env.runtime", ".env.staging.runtime", ".DS_Store", "id_rsa", "id_ed25519"}
 
 
