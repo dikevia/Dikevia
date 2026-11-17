@@ -389,3 +389,6 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Aucun changement de schéma, aucune migration et aucune connexion à la base Neon.
 
 - Stockage privé : répertoires organisation/document en permissions `0700`, fichiers temporaires et définitifs en `0600`, écriture temporaire exclusive, synchronisation disque avant renommage atomique.
+
+- Téléchargements documentaires : la réponse renvoie désormais exactement les octets qui viennent d'être vérifiés par SHA-256, ce qui supprime la fenêtre de remplacement du fichier entre vérification et lecture HTTP.
+- Correction de la remontée du moteur de contrôle lors d'une nouvelle analyse : une altération détectée reste identifiée `INTEGRITY_CHECK` sur le document courant.
