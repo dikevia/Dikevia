@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
     yield
     await close_pool()
 
-app = FastAPI(title="CFDT JURIS API", version="3.31.0", debug=settings.debug, lifespan=lifespan,
+app = FastAPI(title="CFDT JURIS API", version="3.32.0", debug=settings.debug, lifespan=lifespan,
               docs_url=None if settings.app_env == "production" else "/docs",
               redoc_url=None if settings.app_env == "production" else "/redoc",
               openapi_url=None if settings.app_env == "production" else "/openapi.json")
@@ -600,6 +600,15 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)
     history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
     result = await orchestrator.ask(payload,ctx.organization_id,conn=ctx.conn,conversation_history=history)
     result.conversation_id = conversation_id
+    if result.ai_usage is not None:
+        usage = result.ai_usage
+        await ctx.conn.execute("""INSERT INTO ai_usage_events(
+            organization_id,user_id,request_id,provider,model,prompt_tokens,
+            completion_tokens,total_tokens,outcome)
+            VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
+            ON CONFLICT(request_id) DO NOTHING""",
+            ctx.organization_id, ctx.user_id, result.request_id, usage["provider"], usage["model"],
+            usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
     await ctx.conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
         VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
         str(conversation_id), ctx.user_id, result.answer,
