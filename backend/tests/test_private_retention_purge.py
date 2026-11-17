@@ -1,9 +1,13 @@
 import asyncio
 import os
+import sys
 import uuid
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.purge_private_conversations import (
     parse_args,
