@@ -111,3 +111,7 @@ Un test ignoré n'est pas un test réussi. Une simulation HTTP ne vaut pas conne
 - Valider les droits sur les corpus, la marque et le code.
 
 Aucune de ces actions ne doit être simulée ou remplacée par des identifiants fictifs.
+
+## Précision sur le mode PostgreSQL strict
+
+`REQUIRE_POSTGRES_INTEGRATION=1` vérifie uniquement que les trois variables d'environnement sont renseignées. Il ne teste pas à lui seul la connectivité, les privilèges SQL, la présence des migrations ni l'absence de tests ignorés. La preuve de l'intégration PostgreSQL est le résultat pytest sur une base jetable correctement initialisée, comme dans le workflow CI.
