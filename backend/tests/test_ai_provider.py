@@ -1,5 +1,5 @@
 import pytest
-from app.ai_provider import analyze_question, SYSTEM_PROMPT, answer_references_are_grounded
+from app.ai_provider import analyze_question, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count
 from app.config import settings
 
 @pytest.mark.asyncio
@@ -24,3 +24,12 @@ def test_ai_generated_article_references_must_exist_in_sources():
 def test_ai_answer_rejects_unretrieved_bare_article_numbers_and_other_authorities():
     assert not answer_references_are_grounded("L'article 12 de la loi prévoit…", {"L123-4"})
     assert not answer_references_are_grounded("Le décret n° 2024-123 prévoit…", {"L123-4"})
+
+
+def test_provider_token_usage_parser_preserves_unknown_values():
+    assert _nonnegative_token_count(12) == 12
+    assert _nonnegative_token_count(0) == 0
+    assert _nonnegative_token_count(None) is None
+    assert _nonnegative_token_count(-1) is None
+    assert _nonnegative_token_count(True) is None
+    assert _nonnegative_token_count("12") is None
