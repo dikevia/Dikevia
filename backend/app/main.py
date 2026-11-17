@@ -23,7 +23,7 @@ from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
 from .cgfp import search_cgfp, get_cgfp_article
-from .document_processing import scan_with_clamav, ScannerUnavailable, MalwareDetected, extract_document_text
+from .document_processing import scan_with_clamav, ScannerUnavailable, MalwareDetected, extract_document_text, document_sha256_matches
 from .keycloak_admin import KeycloakAdmin, KeycloakAdminConfig, KeycloakAdminError
 from .mailer import send_invitation_email
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -1342,6 +1342,8 @@ async def reindex_document_versions(document_id: str, ctx: TenantContext = Depen
         if not path.is_file():
             raise HTTPException(404, "Un fichier de version est absent du stockage privé.")
         data=await asyncio.to_thread(path.read_bytes)
+        if not document_sha256_matches(data, row["sha256"]):
+            raise HTTPException(409, "Une version a été modifiée ou corrompue dans le stockage privé. Réparez le fichier avant réindexation.")
         text_value,status=extract_document_text(data,row["mime_type"] or "")
         extracted.append((row["version_number"],row["sha256"],text_value,status))
     async with ctx.conn.transaction():
@@ -1363,7 +1365,7 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
         UUID(document_id)
     except ValueError:
         raise HTTPException(400, "Identifiant de document invalide.")
-    rows = await ctx.conn.fetch("""SELECT version_number,storage_key FROM document_versions
+    rows = await ctx.conn.fetch("""SELECT version_number,storage_key,sha256 FROM document_versions
       WHERE organization_id=$1::uuid AND document_id=$2::uuid ORDER BY version_number""",ctx.organization_id,document_id)
     legacy_current = None
     if not rows:
@@ -1381,6 +1383,9 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
         if not path.is_file():
             raise HTTPException(404, "Un fichier de version est absent du stockage privé.")
         data=await asyncio.to_thread(path.read_bytes)
+        if not document_sha256_matches(data, row["sha256"]):
+            results.append({"version":row["version_number"],"scan_status":"INFECTED","scan_engine":"INTEGRITY_CHECK"})
+            continue
         try:
             result=await asyncio.to_thread(scan_with_clamav,data,settings.clamav_host,
                 settings.clamav_port,settings.clamav_timeout_seconds)
