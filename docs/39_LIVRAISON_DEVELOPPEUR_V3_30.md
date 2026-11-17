@@ -108,3 +108,8 @@ Le moteur reste un outil d'aide à l'analyse juridique, pas un service certifié
 
 ## Addendum — profil d'instance privée (livraison de travail)
 Le ZIP contient désormais le profil privé décrit dans `docs/40_INSTANCE_PRIVEE_10_COMPTES.md` : organisation unique, dix adhésions actives maximum, invitations suivies d'une approbation plateforme, suspension/révocation sans suppression des données et désactivation des routes Stripe. La migration 015 et son rollback sont fournis. Ce profil n'est pas encore déployé sur la base de l'organisation : appliquer la migration et effectuer la recette PostgreSQL/OIDC décrite dans le guide privé avant ouverture aux utilisateurs.
+
+
+## Addendum V3.31 — limitation des requêtes chat
+
+La migration 017 ajoute une limitation PostgreSQL atomique par utilisateur et organisation (10 requêtes/minute par défaut, configurable). Le compteur est protégé par RLS/FORCE RLS et ne contient aucun texte de conversation. Le dépassement renvoie HTTP 429 avec Retry-After. Cette mesure ne remplace pas un WAF, un quota mensuel de dépenses IA ni les limites PISTE ; ces derniers restent à définir pour la commercialisation.
