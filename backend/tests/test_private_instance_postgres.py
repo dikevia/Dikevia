@@ -1,8 +1,8 @@
 """Real PostgreSQL tests for the private-instance membership functions.
 
 Run against a disposable database after schema.sql, runtime grants, migrations
-010-015, and the RLS role setup. These tests are skipped without both database
-URLs; CI configures them on a fresh PostgreSQL service.
+010-016, and the RLS role setup. These tests are skipped without admin, runtime,
+and platform-admin URLs; CI configures them on a fresh PostgreSQL service.
 """
 import asyncio
 import os
@@ -12,8 +12,9 @@ import pytest
 
 ADMIN_URL = os.getenv("TEST_DATABASE_ADMIN_URL")
 RUNTIME_URL = os.getenv("TEST_DATABASE_URL")
+PLATFORM_ADMIN_URL = os.getenv("TEST_PLATFORM_ADMIN_DATABASE_URL")
 pytestmark = pytest.mark.skipif(
-    not (ADMIN_URL and RUNTIME_URL),
+    not (ADMIN_URL and RUNTIME_URL and PLATFORM_ADMIN_URL),
     reason="PostgreSQL test URLs not configured",
 )
 
@@ -29,6 +30,8 @@ async def _run_private_membership_scenario():
     admin = await asyncpg.connect(ADMIN_URL)
     runtime_a = await asyncpg.connect(RUNTIME_URL)
     runtime_b = await asyncpg.connect(RUNTIME_URL)
+    platform_a = await asyncpg.connect(PLATFORM_ADMIN_URL)
+    platform_b = await asyncpg.connect(PLATFORM_ADMIN_URL)
     try:
         # This test requires the disposable CI database to start without
         # pre-existing active memberships because the quota is instance-wide.
@@ -79,7 +82,7 @@ async def _run_private_membership_scenario():
                 ],
             )
 
-        members = await runtime_a.fetch(
+        members = await platform_a.fetch(
             "SELECT user_id,membership_status "
             "FROM private_instance_pending_members($1::uuid)",
             platform_admin_id,
@@ -94,6 +97,13 @@ async def _run_private_membership_scenario():
                 uuid.uuid4(),
             )
 
+        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+            await runtime_a.fetchval(
+                "SELECT private_instance_set_member_status("
+                "$1::uuid,$2::uuid,$3::uuid,'ACTIVE')",
+                platform_admin_id, organization_id, invited_user_ids[0],
+            )
+
         async def activate(conn, user_id):
             return await conn.fetchval(
                 "SELECT private_instance_set_member_status("
@@ -104,8 +114,8 @@ async def _run_private_membership_scenario():
             )
 
         results = await asyncio.gather(
-            activate(runtime_a, invited_user_ids[0]),
-            activate(runtime_b, invited_user_ids[1]),
+            activate(platform_a, invited_user_ids[0]),
+            activate(platform_b, invited_user_ids[1]),
             return_exceptions=True,
         )
         assert sum(result is True for result in results) == 1
@@ -129,7 +139,7 @@ async def _run_private_membership_scenario():
                 break
         assert remaining_invited is not None
         suspended_user = active_user_ids[0]
-        assert await runtime_a.fetchval(
+        assert await platform_a.fetchval(
             "SELECT private_instance_set_member_status("
             "$1::uuid,$2::uuid,$3::uuid,'SUSPENDED')",
             platform_admin_id,
@@ -155,6 +165,8 @@ async def _run_private_membership_scenario():
     finally:
         await runtime_a.close()
         await runtime_b.close()
+        await platform_a.close()
+        await platform_b.close()
         async with admin.transaction():
             await admin.execute(
                 "DELETE FROM platform_admins WHERE user_id=ANY($1::uuid[])",
