@@ -319,7 +319,7 @@ async def test_cgfp_import_batches_chunk_inserts_inside_one_transaction(monkeypa
 
 
 @pytest.mark.asyncio
-async def test_ai_cannot_cite_snapshot_article_excluded_from_its_context(monkeypatch):
+async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypatch):
     import app.orchestrator as module
 
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
@@ -342,7 +342,11 @@ async def test_ai_cannot_cite_snapshot_article_excluded_from_its_context(monkeyp
         return []
 
     async def unsupported_ai(**kwargs):
-        assert all(s.get("source_type") != "CGFP_SNAPSHOT" for s in kwargs["sources"])
+        snapshots = [s for s in kwargs["sources"] if s.get("source_type") == "CGFP_SNAPSHOT"]
+        assert snapshots
+        assert all(s.get("reference_role") == "BASELINE_CONTEXT_ONLY" for s in snapshots)
+        assert all(s.get("temporal_status") == "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED" for s in snapshots)
+        assert any(s.get("source_type") == "LEGIFRANCE_LODA" for s in kwargs["sources"])
         return "L'article L4 prévoit cette règle."
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", no_code_articles)
@@ -357,6 +361,9 @@ async def test_ai_cannot_cite_snapshot_article_excluded_from_its_context(monkeyp
     )
     assert any("référence d'article générée" in item for item in response.missing_information)
     assert "L'article L4 prévoit cette règle." not in response.answer
+    snapshot_sources = [s for s in response.sources if s.get("source_type") == "CGFP_SNAPSHOT"]
+    assert snapshot_sources
+    assert all(s.get("reference_role") == "BASELINE_CONTEXT_ONLY" for s in snapshot_sources)
 
 
 
