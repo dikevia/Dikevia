@@ -94,3 +94,13 @@ de l'instance et la consignation des résultats de recette.
 - Valeur par défaut : 10 requêtes chat par minute et par utilisateur ; configuration CHAT_RATE_LIMIT_PER_MINUTE bornée entre 1 et 120.
 - Au dépassement, l'API renvoie HTTP 429 avec Retry-After ; les compteurs de plus de 24 heures sont nettoyés lors de la requête suivante de l'utilisateur.
 - Cette limite protège contre les rafales, mais ne constitue pas un budget mensuel de dépenses IA, un quota PISTE ou un WAF. Ces contrôles doivent être définis séparément avant commercialisation.
+
+
+## V3.32 — Comptabilisation de la consommation IA
+
+- Migration 018 : journal `ai_usage_events` par organisation et utilisateur, avec identifiant technique de requête, fournisseur, modèle, compteurs de tokens disponibles, date et issue de l'appel.
+- Aucun contenu de question, de réponse, de conversation ou de document n'est stocké dans ce journal.
+- Les compteurs absents ou invalides restent `NULL` ; aucune consommation ni aucun coût ne sont estimés artificiellement.
+- Le rôle API peut uniquement ajouter des événements. Il ne peut ni lire ni modifier le journal ; RLS/FORCE RLS contrôle les insertions selon l'organisation et l'utilisateur courants.
+- Les réponses IA, réponses rejetées pour référence non sourcée et erreurs du fournisseur sont distinguées.
+- Les quotas mensuels et le calcul monétaire ne sont pas activés : ils nécessitent les tarifs fournisseurs vérifiés et une décision sur les budgets/plans. Ne pas présenter le compteur de tokens comme un coût en euros.
