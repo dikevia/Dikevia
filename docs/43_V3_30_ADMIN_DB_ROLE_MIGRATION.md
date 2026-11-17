@@ -58,3 +58,8 @@ Ne jamais utiliser le compte propriétaire de la base comme `PLATFORM_ADMIN_DATA
 ## Contrôles automatisés
 
 La CI crée les trois rôles, applique les migrations jusqu'à 016 et vérifie que le rôle runtime reçoit une erreur `InsufficientPrivilege` lorsqu'il tente d'appeler les fonctions d'administration des membres privés. Le rôle dédié doit, lui, pouvoir les appeler après vérification OIDC par l'API.
+
+
+## Migration 017 — limitation des requêtes chat
+
+La migration 017 crée le compteur de limitation des requêtes chat. Elle est appliquée après la migration 016 par le migrateur habituel. La valeur par défaut est de 10 demandes par minute et par utilisateur ; elle peut être ajustée avec CHAT_RATE_LIMIT_PER_MINUTE (1 à 120). Aucun contenu de conversation n'est stocké dans le compteur. Une réponse HTTP 429 inclut Retry-After.
