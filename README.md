@@ -25,14 +25,16 @@ Depuis `backend/` :
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r backend/requirements-dev.txt
+pip install -r requirements-dev.txt
 export PYTHONPATH=.
 uvicorn app.main:app --reload
 ```
 Sans `DATABASE_URL` et paramètres OIDC, les endpoints privés échouent volontairement en 503 ; `/health` reste disponible.
 
 ## Migration
-Pour une installation neuve, `database/schema.sql` fournit le baseline jusqu’à la V3.21 (migration 009), puis appliquer les migrations 010, 011, 012, 013 et 014. Pour une base existante, appliquer uniquement les migrations manquantes dans l'ordre : `001_initial_multi_tenant.sql` à `014_cgfp_snapshot_source_type.sql` (créer le rôle `cfdt_juris_ingest` avant la migration 009), avec un rôle de migration distinct. Créer les rôles runtime et ingestion avec `deploy/init/01-create-app-role.sh` et `deploy/init/02-create-corpus-ingest-role.sh`, puis exécuter `database/grant_runtime_permissions.sql` comme DBA après les migrations. Les migrations 010, 011, 012 et 013 ajoutent leurs propres droits applicatifs. Provisionner le premier administrateur plateforme hors API avec `database/bootstrap_platform_admin.sql`. Les rôles runtime et ingestion ne sont pas propriétaires des tables et n’ont ni `SUPERUSER` ni `BYPASSRLS`. Le rôle API est en lecture seule sur le corpus national ; seul le pool d’ingestion séparé peut l’alimenter. Ne jamais utiliser le compte de migration comme compte API.
+Pour une installation neuve, `database/schema.sql` fournit le baseline jusqu’à la V3.21 (migration 009), puis appliquer les migrations 010 à 014. Pour une base existante, appliquer uniquement les migrations manquantes dans l'ordre : `001_initial_multi_tenant.sql` à `014_cgfp_snapshot_source_type.sql` (créer le rôle `cfdt_juris_ingest` avant la migration 009), avec un rôle de migration distinct. Créer les rôles runtime et ingestion avec `deploy/init/01-create-app-role.sh` et `deploy/init/02-create-corpus-ingest-role.sh`, puis exécuter `database/grant_runtime_permissions.sql` comme DBA après les migrations. Les migrations 010, 011, 012 et 013 ajoutent leurs propres droits applicatifs. Provisionner le premier administrateur plateforme hors API avec `database/bootstrap_platform_admin.sql`. Les rôles runtime et ingestion ne sont pas propriétaires des tables et n’ont ni `SUPERUSER` ni `BYPASSRLS`. Le rôle API est en lecture seule sur le corpus national ; seul le pool d’ingestion séparé peut l’alimenter. Ne jamais utiliser le compte de migration comme compte API.
+
+Pour une instance privée, appliquer aussi la migration `015_private_instance_10_seats.sql` après la 014. Elle refuse désormais une base qui contient déjà plusieurs organisations : examiner et isoler les données avant de relancer. Suivre `docs/40_INSTANCE_PRIVEE_10_COMPTES.md` pour l'ordre de recette et l'activation du paramètre privé.
 
 ## Variables
 Copier `deploy/.env.example` vers `.env` à la racine du projet, ou utiliser `bash scripts/bootstrap.sh`. Renseigner les paramètres OIDC et les secrets fournisseurs. Docker Compose lit `.env` pour l'infrastructure ; `scripts/render_runtime_env.py` génère `.env.runtime`, transmis à l'API avec les seuls champs applicatifs. Les secrets DBA, Keycloak DB, Grafana et supervision ne sont pas exposés au conteneur API. Ne jamais committer les fichiers `.env*` générés.
@@ -61,6 +63,8 @@ La migration `database/migrations/003_global_identity_rls.sql` active RLS et FOR
 Les tests `backend/tests/test_postgres_rls_integration.py` vérifient avec deux organisations que les documents d'un autre espace sont invisibles, qu'une écriture avec un `organization_id` falsifié est rejetée, que le registre d'identité est limité à l'identité authentifiée et que le hash d'invitation n'ouvre qu'une invitation. Ils nécessitent une base PostgreSQL de test jetable, les migrations ci-dessus et deux URL : `TEST_DATABASE_ADMIN_URL` (rôle DBA/superuser de test) et `TEST_DATABASE_URL` (rôle runtime `cfdt_juris_app`).
 
 Exécution : `./scripts/run_postgres_security_tests.sh`. Si ces variables ne sont pas définies, le test d'intégration est ignoré. Les tests statiques ne remplacent pas ce test réel.
+
+Dans GitHub Actions, le workflow crée sa propre base PostgreSQL éphémère, applique le schéma et les migrations, puis fournit ces deux URL locales au test. Aucun secret GitHub ni URL Neon n'est nécessaire pour la CI.
 
 
 `database/schema.sql` est le schéma consolidé de référence pour une installation neuve. Pour une base déjà créée en V3/V3.1, appliquer uniquement les migrations 002 puis 003 qui manquent ; ne pas rejouer le schéma consolidé par-dessus une base existante.
@@ -271,3 +275,20 @@ Pour les employeurs locaux proposés par l'interface, le moteur recherche égale
 - Extraits renvoyés au navigateur bornés ; les textes intégraux restent côté serveur.
 - Tests : 164 réussis, 2 ignorés dans l'environnement de génération ; les deux tests PostgreSQL RLS exigent une base de test réelle.
 - Les accès PISTE, l'import dans la base cible, la recette PostgreSQL, les tests Keycloak/ClamAV et le déploiement restent à réaliser dans l'environnement de l'exploitant.
+
+
+## Profil d'instance privée (10 comptes)
+Le projet comporte un profil privé activable par `PRIVATE_INSTANCE_MODE=true` et `PRIVATE_INSTANCE_MAX_USERS=10`. Voir `docs/40_INSTANCE_PRIVEE_10_COMPTES.md` pour la procédure d'installation, l'approbation manuelle des comptes et la migration 015.
+
+
+## Kit développeur ZIP
+
+Après validation complète de la CI, le workflow publie un artefact téléchargeable nommé `CFDT-JURIS-V3.30-Kit-Developpeur` (conservation 30 jours). Il contient les sources et la documentation, sans dépôt Git local, caches, environnements virtuels ni fichiers de secrets.
+
+Pour produire l'archive depuis une copie locale du dépôt :
+```bash
+python scripts/package_developer_kit.py
+```
+Le fichier est créé dans `dist/CFDT_JURIS_V3_30_Kit_Developpeur.zip`. Le script ajoute `SHA256SUMS_KIT.txt`, qui permet de contrôler l'intégrité des fichiers extraits. Les fichiers `.env` réels, clés privées et certificats ne sont jamais inclus ; seuls les modèles `.env.example` et `.env.staging.example` sont conservés.
+
+Ne placez jamais de mots de passe, jetons, URL de base de données avec identifiants ou données syndicales réelles dans l'archive.

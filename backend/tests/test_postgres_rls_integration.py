@@ -1,0 +1,208 @@
+"""Real PostgreSQL RLS tests.
+
+Run only against a disposable test database after `database/schema.sql`,
+`database/grant_runtime_permissions.sql`, and migrations 010/011/012/013/014 have been applied. Required env:
+  TEST_DATABASE_ADMIN_URL: migration/owner connection (fixture setup/cleanup)
+  TEST_DATABASE_URL: non-owner runtime connection (RLS assertions)
+
+These tests are deliberately skipped when URLs are absent; static tests are
+not a substitute for executing them against PostgreSQL.
+"""
+import asyncio
+import os
+import uuid
+
+import pytest
+
+ADMIN_URL = os.getenv("TEST_DATABASE_ADMIN_URL")
+RUNTIME_URL = os.getenv("TEST_DATABASE_URL")
+pytestmark = pytest.mark.skipif(not (ADMIN_URL and RUNTIME_URL), reason="PostgreSQL test URLs not configured")
+
+
+async def _run_isolation_scenario():
+    import asyncpg
+
+    org_a, org_b = uuid.uuid4(), uuid.uuid4()
+    user_a, user_b, user_a2 = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    coll_a, coll_b = uuid.uuid4(), uuid.uuid4()
+    doc_a, doc_b = uuid.uuid4(), uuid.uuid4()
+    token_a, token_b = "hash-a-" + uuid.uuid4().hex, "hash-b-" + uuid.uuid4().hex
+    admin = await asyncpg.connect(ADMIN_URL)
+    runtime = await asyncpg.connect(RUNTIME_URL)
+    try:
+        runtime_role = await runtime.fetchrow(
+            "SELECT r.rolsuper, r.rolbypassrls FROM pg_roles r WHERE r.rolname=current_user"
+        )
+        assert runtime_role is not None
+        assert runtime_role["rolsuper"] is False
+        assert runtime_role["rolbypassrls"] is False
+        admin_role = await admin.fetchrow(
+            "SELECT r.rolsuper, r.rolbypassrls FROM pg_roles r WHERE r.rolname=current_user"
+        )
+        assert admin_role is not None and (admin_role["rolsuper"] or admin_role["rolbypassrls"])
+
+        async with admin.transaction():
+            await admin.execute("INSERT INTO organizations(id,slug,legal_name,display_name) VALUES($1,$2,$3,$4),($5,$6,$7,$8)",
+                org_a, "rls-a-"+org_a.hex[:10], "Org A", "Org A", org_b, "rls-b-"+org_b.hex[:10], "Org B", "Org B")
+            await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE'),($4,'https://issuer.test',$5,$6,'ACTIVE')",
+                user_a, "sub-a-"+user_a.hex, "a@example.test", user_b, "sub-b-"+user_b.hex, "b@example.test")
+            await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE')", user_a2, "sub-a2-"+user_a2.hex, "a2@example.test")
+            await admin.execute("INSERT INTO memberships(organization_id,user_id,role,status) VALUES($1,$2,'ORG_ADMIN','ACTIVE'),($3,$4,'ORG_ADMIN','ACTIVE'),($1,$5,'MEMBER','ACTIVE')", org_a,user_a,org_b,user_b,user_a2)
+            conversation_a, conversation_a2 = uuid.uuid4(), uuid.uuid4()
+            await admin.execute("INSERT INTO chat_conversations(id,organization_id,user_id,title) VALUES($1,$2,$3,'Conversation A'),($4,$2,$5,'Conversation A2')", conversation_a,org_a,user_a,conversation_a2,user_a2)
+            await admin.execute("INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content) VALUES($1,$2,$3,'user','Question privée A'),($1,$4,$5,'user','Question privée A2')", org_a,conversation_a,user_a,conversation_a2,user_a2)
+            await admin.execute("INSERT INTO legal_dossiers(organization_id,conversation_id,user_id,content) VALUES($1,$2,$3,'{\"title\":\"Dossier A\"}'::jsonb),($1,$4,$5,'{\"title\":\"Dossier A2\"}'::jsonb)", org_a,conversation_a,user_a,conversation_a2,user_a2)
+            await admin.execute("INSERT INTO collectivities(id,organization_id,code,name) VALUES($1,$2,'TEST','Test A'),($3,$4,'TEST','Test B')", coll_a,org_a,coll_b,org_b)
+            await admin.execute("INSERT INTO documents(id,organization_id,collectivity_id,title,document_type,validation_status) VALUES($1,$2,$3,'Doc A','REGULATION','COLLECTED_UNVERIFIED'),($4,$5,$6,'Doc B','REGULATION','COLLECTED_UNVERIFIED')", doc_a,org_a,coll_a,doc_b,org_b,coll_b)
+            await admin.execute("INSERT INTO document_versions(organization_id,document_id,version_number,sha256) VALUES($1,$2,1,$3),($4,$5,1,$6)", org_a,doc_a,"a"*64,org_b,doc_b,"b"*64)
+            await admin.execute("INSERT INTO document_text(organization_id,document_id,version_number,sha256,extracted_text,extraction_status) VALUES($1,$2,1,$3,'texte confidentiel organisation A','EXTRACTED'),($4,$5,1,$6,'texte confidentiel organisation B','EXTRACTED')", org_a,doc_a,"a"*64,org_b,doc_b,"b"*64)
+            await admin.execute("INSERT INTO invitations(organization_id,email_normalized,role,invited_by,status,token_hash,expires_at) VALUES($1,'a@example.test','MEMBER',$2,'PENDING',$3,now()+interval '1 day'),($4,'b@example.test','MEMBER',$5,'PENDING',$6,now()+interval '1 day')", org_a,user_a,token_a,org_b,user_b,token_b)
+            await admin.execute("INSERT INTO organization_settings(organization_id) VALUES($1),($2)", org_a, org_b)
+            await admin.execute("INSERT INTO audit_events(organization_id,event_type) VALUES($1,'SEED_A'),($2,'SEED_B')", org_a, org_b)
+            await admin.execute("""INSERT INTO stripe_invoice_records(stripe_invoice_id,organization_id,invoice_number,status,currency,amount_due,amount_paid)
+                VALUES($1,$2,'INV-A','paid','eur',1500,1500),($3,$4,'INV-B','paid','eur',8000,8000)""",
+                "in_test_"+uuid.uuid4().hex, org_a, "in_test_"+uuid.uuid4().hex, org_b)
+
+        # Tenant A sees only its own documents and cannot update tenant B's row.
+        async with runtime.transaction():
+            await runtime.execute("SELECT set_config('app.current_org_id',$1,true)", str(org_a))
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
+            conversations = await runtime.fetch("SELECT id,title FROM chat_conversations")
+            assert {r["id"] for r in conversations} == {conversation_a}
+            own_messages = await runtime.fetch("SELECT content FROM chat_messages")
+            assert [r["content"] for r in own_messages] == ["Question privée A"]
+            own_dossiers = await runtime.fetch("SELECT content->>'title' AS title FROM legal_dossiers")
+            assert [r["title"] for r in own_dossiers] == ["Dossier A"]
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.execute("INSERT INTO legal_dossiers(organization_id,conversation_id,user_id,content) VALUES($1,$2,$3,'{}'::jsonb)", org_a,conversation_a2,user_a)
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.execute("INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content) VALUES($1,$2,$3,'user','tentative de falsification')", org_a,conversation_a2,user_a)
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a2))
+            second_user_conversations = await runtime.fetch("SELECT id FROM chat_conversations")
+            assert {r["id"] for r in second_user_conversations} == {conversation_a2}
+            second_user_dossiers = await runtime.fetch("SELECT content->>'title' AS title FROM legal_dossiers")
+            assert [r["title"] for r in second_user_dossiers] == ["Dossier A2"]
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
+            rows = await runtime.fetch("SELECT id,title FROM documents ORDER BY title")
+            assert {r['id'] for r in rows} == {doc_a}
+            hidden = await runtime.fetchval("SELECT count(*) FROM documents WHERE id=$1", doc_b)
+            assert hidden == 0
+            indexed = await runtime.fetch("SELECT document_id,extracted_text FROM document_text")
+            assert {r["document_id"] for r in indexed} == {doc_a}
+            assert "organisation B" not in indexed[0]["extracted_text"]
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.execute("INSERT INTO document_text(organization_id,document_id,version_number,sha256,extracted_text,extraction_status) VALUES($1,$2,1,$3,'forged','EXTRACTED')", org_b,doc_b,"c"*64)
+            membership_orgs = await runtime.fetch("SELECT organization_id FROM memberships")
+            assert {r["organization_id"] for r in membership_orgs} == {org_a}
+            setting_orgs = await runtime.fetch("SELECT organization_id FROM organization_settings")
+            assert {r["organization_id"] for r in setting_orgs} == {org_a}
+            # Audit history is intentionally write-only for the runtime API role.
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.fetch("SELECT organization_id FROM audit_events")
+            invoice_rows = await runtime.fetch("SELECT organization_id,amount_paid FROM stripe_invoice_records")
+            assert len(invoice_rows) == 1 and invoice_rows[0]["organization_id"] == org_a
+            foreign_invoice = await runtime.fetchval("SELECT count(*) FROM stripe_invoice_records WHERE organization_id=$1", org_b)
+            assert foreign_invoice == 0
+            # INSERT is granted for audit events, but a forged foreign tenant key
+            # must be rejected by the RLS WITH CHECK policy.
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.execute(
+                        "INSERT INTO audit_events(organization_id,event_type) VALUES($1,'RLS_FORGED_TENANT')",
+                        org_b,
+                    )
+
+        # No tenant context means no tenant data.
+        async with runtime.transaction():
+            rows = await runtime.fetch("SELECT id FROM documents")
+            assert rows == []
+
+        # A verified identity context exposes only that identity, not the global directory.
+        async with runtime.transaction():
+            await runtime.execute("SELECT set_config('app.oidc_issuer','https://issuer.test',true)")
+            await runtime.execute("SELECT set_config('app.oidc_subject',$1,true)", "sub-a-"+user_a.hex)
+            users = await runtime.fetch("SELECT id FROM users")
+            assert {r['id'] for r in users} == {user_a}
+            admins = await runtime.fetch("SELECT user_id FROM platform_admins")
+            assert admins == []
+
+        # The invitation lookup exception is bound to one exact hash only.
+        async with runtime.transaction():
+            await runtime.execute("SELECT set_config('app.invitation_token_hash',$1,true)", token_a)
+            invitations = await runtime.fetch("SELECT token_hash FROM invitations")
+            assert {r['token_hash'] for r in invitations} == {token_a}
+    finally:
+        await runtime.close()
+        # Admin URL should be a disposable test DB owner/superuser so it can
+        # remove fixture rows even when FORCE ROW LEVEL SECURITY is enabled.
+        async with admin.transaction():
+            await admin.execute("DELETE FROM organizations WHERE id IN ($1,$2)", org_a, org_b)
+            await admin.execute("DELETE FROM users WHERE id IN ($1,$2,$3)", user_a, user_b, user_a2)
+        await admin.close()
+
+
+def test_postgresql_rls_isolation_between_two_organizations():
+    asyncio.run(_run_isolation_scenario())
+
+
+async def _run_concurrent_tenant_isolation_scenario(tenant_count: int = 12):
+    """Exercise simultaneous tenant-scoped reads with one DB connection per tenant."""
+    import asyncpg
+
+    org_ids = [uuid.uuid4() for _ in range(tenant_count)]
+    user_ids = [uuid.uuid4() for _ in range(tenant_count)]
+    collectivity_ids = [uuid.uuid4() for _ in range(tenant_count)]
+    document_ids = [uuid.uuid4() for _ in range(tenant_count)]
+    admin = await asyncpg.connect(ADMIN_URL)
+    try:
+        async with admin.transaction():
+            await admin.executemany(
+                "INSERT INTO organizations(id,slug,legal_name,display_name) VALUES($1,$2,$3,$4)",
+                [(org_ids[i], f"parallel-{org_ids[i].hex[:12]}", f"Syndicat {i}", f"Syndicat {i}") for i in range(tenant_count)],
+            )
+            await admin.executemany(
+                "INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://parallel-issuer.test',$2,$3,'ACTIVE')",
+                [(user_ids[i], f"sub-{user_ids[i].hex}", f"parallel-{i}@example.test") for i in range(tenant_count)],
+            )
+            await admin.executemany(
+                "INSERT INTO memberships(organization_id,user_id,role,status) VALUES($1,$2,'ORG_ADMIN','ACTIVE')",
+                list(zip(org_ids, user_ids)),
+            )
+            await admin.executemany(
+                "INSERT INTO collectivities(id,organization_id,code,name) VALUES($1,$2,'TEST','Collectivité test')",
+                list(zip(collectivity_ids, org_ids)),
+            )
+            await admin.executemany(
+                "INSERT INTO documents(id,organization_id,collectivity_id,title,document_type,validation_status) VALUES($1,$2,$3,$4,'REGULATION','COLLECTED_UNVERIFIED')",
+                [(document_ids[i], org_ids[i], collectivity_ids[i], f"Document privé {i}") for i in range(tenant_count)],
+            )
+
+        async def assert_one_tenant(index: int):
+            conn = await asyncpg.connect(RUNTIME_URL)
+            try:
+                async with conn.transaction():
+                    await conn.execute("SELECT set_config('app.current_org_id',$1,true)", str(org_ids[index]))
+                    rows = await conn.fetch("SELECT id,organization_id FROM documents")
+                    assert {row["id"] for row in rows} == {document_ids[index]}
+                    assert {row["organization_id"] for row in rows} == {org_ids[index]}
+                    foreign_count = await conn.fetchval(
+                        "SELECT count(*) FROM documents WHERE id=$1", document_ids[(index + 1) % tenant_count]
+                    )
+                    assert foreign_count == 0
+            finally:
+                await conn.close()
+
+        await asyncio.gather(*(assert_one_tenant(i) for i in range(tenant_count)))
+    finally:
+        async with admin.transaction():
+            await admin.execute("DELETE FROM organizations WHERE id=ANY($1::uuid[])", org_ids)
+            await admin.execute("DELETE FROM users WHERE id=ANY($1::uuid[])", user_ids)
+        await admin.close()
+
+
+def test_postgresql_rls_concurrent_isolation_across_twelve_organizations():
+    asyncio.run(_run_concurrent_tenant_isolation_scenario())

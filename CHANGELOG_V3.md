@@ -305,5 +305,23 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Recherche CETAT explicitement présentée comme recherche documentaire tant que le texte intégral n'est pas validé dans PISTE réel.
 - Recherche des documents locaux tenant-scoped, filtrés par collectivité, antivirus, empreinte, extraction, validation humaine et dates d'effet ; les documents non validés sont exclus du contexte IA.
 - Protection contre les recherches longues qui écartent la question actuelle, et contre les références IA provenant de sources exclues du contexte.
-- Tests locaux : 164 réussis, 2 ignorés (intégration PostgreSQL réelle non configurée).
+- Résultat historique du checkpoint moteur juridique : 164 réussis, 2 ignorés (intégration PostgreSQL réelle non configurée). Le run du kit révisé est consigné ci-dessous.
 - Aucune migration ou import de production n'est revendiqué dans cette livraison.
+
+## V3.30 — profil d'instance privée
+- Ajout du mode `PRIVATE_INSTANCE_MODE` limité à dix comptes actifs.
+- Désactivation des routes de facturation Stripe en mode privé.
+- Acceptation des invitations en statut `INVITED` jusqu'à approbation de l'administrateur plateforme.
+- Ajout des statuts `SUSPENDED` et `REVOKED` et d'un contrôle SQL transactionnel du quota.
+- Documentation de déploiement dans `docs/40_INSTANCE_PRIVEE_10_COMPTES.md`.
+
+## V3.30 — préparation du transfert développeur (2026-11-17)
+- La CI applique désormais les migrations 014 et 015 sur PostgreSQL avant les tests.
+- Ajout d'un test d'intégration du plafond privé, des approbations concurrentes, de la suspension et de l'audit.
+- La migration 015 refuse une base contenant plusieurs organisations ou plus de dix adhésions actives.
+- Correction des 42 diagnostics Ruff hérités de l'archive; la commande de lint CI passe maintenant localement.
+- Résultat local initial du kit : 169 réussis et 3 ignorés faute de PostgreSQL disponible; ce résultat précède la recette CI.
+- Le workflow GitHub crée son propre PostgreSQL éphémère et fournit les URL locales nécessaires; aucun secret GitHub ni URL Neon n'est requis.
+- Après le premier run CI, les deux appels à `ElementTree.fromstring` sur du XML non fiable ont été remplacés par `defusedxml`; un test DOCX vérifie le rejet d'entités internes.
+- Le contrôle `pip-audit` a ensuite détecté deux avis sur Pytest 8.4.2; la dépendance de développement est relevée à la version corrigée 9.0.3.
+- Voir `docs/41_PLAN_DEVELOPPEUR_V3_30.md` pour les étapes de recette qui restent à réaliser.

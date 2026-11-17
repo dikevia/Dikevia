@@ -1,0 +1,112 @@
+name: CI
+on:
+  push:
+    branches: [main, develop, cfdt-juris-v3-30-developer-ready]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-audit:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cfdt_juris
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cfdt_juris"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Install dependencies and quality tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-dev.txt
+          python -m pip check
+      - name: Compile Python and audit environment template
+        run: |
+          python -m compileall -q backend/app scripts
+          python scripts/audit_env_example.py
+      - name: Lint
+        run: ruff check backend/app backend/tests scripts --select E4,E7,E9 --output-format=github
+      - name: Security static analysis
+        run: bandit -q -r backend/app -ll
+      - name: Dependency vulnerability audit
+        run: pip-audit -r backend/requirements-dev.txt
+      - name: Prepare disposable PostgreSQL database and least-privilege roles
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: cfdt_juris
+          POSTGRES_USER: postgres
+          POSTGRES_DB: cfdt_juris
+          POSTGRES_APP_PASSWORD: ci-app-password
+          POSTGRES_INGEST_PASSWORD: ci-ingest-password
+          POSTGRES_MONITOR_PASSWORD: ci-monitor-password
+          POSTGRES_PLATFORM_ADMIN_PASSWORD: ci-platform-admin-password
+        run: |
+          bash deploy/init/01-create-app-role.sh
+          bash deploy/init/02-create-corpus-ingest-role.sh
+          bash deploy/init/03-create-monitor-role.sh
+          bash deploy/init/04-create-platform-admin-role.sh
+          psql -v ON_ERROR_STOP=1 -f database/schema.sql
+          psql -v ON_ERROR_STOP=1 -f database/grant_runtime_permissions.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/010_subscription_catalog_and_free_email_access.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/011_commercial_customer_console.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/012_persistent_chat_conversations.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/013_legal_dossiers.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/014_cgfp_snapshot_source_type.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/015_private_instance_10_seats.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/016_platform_admin_database_role.sql
+      - name: Unit, contract and real PostgreSQL RLS integration tests
+        env:
+          PYTHONPATH: backend
+          TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/cfdt_juris
+          TEST_DATABASE_URL: postgresql://cfdt_juris_app:ci-app-password@127.0.0.1:5432/cfdt_juris
+          TEST_PLATFORM_ADMIN_DATABASE_URL: postgresql://cfdt_juris_platform_admin:ci-platform-admin-password@127.0.0.1:5432/cfdt_juris
+        run: pytest -q backend/tests
+      - name: Validate shell scripts
+        run: bash -n scripts/*.sh deploy/init/*.sh
+      - name: Validate Docker Compose configurations
+        run: |
+          cp deploy/.env.example .env
+          cp deploy/.env.staging.example .env.staging
+          python scripts/upgrade_env_file.py
+          python scripts/upgrade_env_file.py --staging
+          python scripts/render_runtime_env.py --source .env --output .env.runtime
+          python scripts/render_runtime_env.py --source .env.staging --output .env.staging.runtime
+          cp deploy/monitoring/alertmanager.yml.example deploy/monitoring/alertmanager.yml
+          docker compose --env-file .env -f deploy/docker-compose.yml config --quiet
+          docker compose --env-file .env.staging -f deploy/docker-compose.yml config --quiet
+          docker compose --env-file .env -f deploy/docker-compose.yml -f deploy/docker-compose.monitoring.yml --profile monitoring config --quiet
+          docker compose -p juris-ci --env-file .env -f deploy/docker-compose.yml build api migrator
+      - name: Build clean developer kit
+        run: python scripts/package_developer_kit.py
+      - name: Upload developer kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: CFDT-JURIS-V3.30-Kit-Developpeur
+          path: dist/CFDT_JURIS_V3_30_Kit_Developpeur.zip
+          if-no-files-found: error
+          retention-days: 30

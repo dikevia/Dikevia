@@ -1,0 +1,16 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+dist/
+build/
+
+/backups/
+.env.staging
+backups/
+deploy/monitoring/alertmanager.yml
+.env.runtime
+.env.staging.runtime
