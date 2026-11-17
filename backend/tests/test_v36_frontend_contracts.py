@@ -59,3 +59,13 @@ def test_juris_sources_display_the_matching_local_collectivity():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
     assert "src.collectivity" in html
     assert "src.local_document_type" in html
+
+
+def test_chat_endpoint_uses_server_side_rate_limit_and_retry_after():
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    assert "consume_chat_request(" in main
+    assert "status_code=429" in main
+    assert '"Retry-After"' in main
+    migration = (ROOT / "database/migrations/017_chat_rate_limits.sql").read_text(encoding="utf-8")
+    assert "ENABLE ROW LEVEL SECURITY" in migration
+    assert "FORCE ROW LEVEL SECURITY" in migration
