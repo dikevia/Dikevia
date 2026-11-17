@@ -606,7 +606,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)
             organization_id,user_id,request_id,provider,model,prompt_tokens,
             completion_tokens,total_tokens,outcome)
             VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
-            ON CONFLICT(request_id) DO NOTHING""",
+""",
             ctx.organization_id, ctx.user_id, result.request_id, usage["provider"], usage["model"],
             usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
     await ctx.conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
