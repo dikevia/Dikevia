@@ -20,7 +20,7 @@ RETURNS TABLE(organization_id uuid, user_id uuid, email text, role text, members
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path=public,pg_temp SET row_security=off AS $$
 BEGIN
- IF NOT EXISTS(SELECT 1 FROM platform_admins WHERE user_id=p_admin_id) THEN
+ IF NOT EXISTS(SELECT 1 FROM platform_admins pa WHERE pa.user_id=p_admin_id) THEN
    RAISE EXCEPTION 'platform administrator required' USING ERRCODE='42501';
  END IF;
  RETURN QUERY
@@ -37,7 +37,7 @@ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path=public,pg_temp SET row_security=off AS $$
 DECLARE active_count bigint; current_status text;
 BEGIN
- IF NOT EXISTS(SELECT 1 FROM platform_admins WHERE user_id=p_admin_id) THEN
+ IF NOT EXISTS(SELECT 1 FROM platform_admins pa WHERE pa.user_id=p_admin_id) THEN
    RAISE EXCEPTION 'platform administrator required' USING ERRCODE='42501';
  END IF;
  IF p_status NOT IN ('ACTIVE','SUSPENDED','REVOKED') THEN
