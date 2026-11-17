@@ -25,5 +25,7 @@ CREATE POLICY ai_usage_events_tenant_insert ON ai_usage_events
     );
 -- Runtime can append events only. Reading/reporting requires a separate audited
 -- administrative path; ordinary users cannot inspect usage ledgers.
-GRANT INSERT ON ai_usage_events TO cfdt_juris_app;
+GRANT INSERT (request_id,organization_id,user_id,provider,model,prompt_tokens,
+              completion_tokens,total_tokens,outcome)
+    ON ai_usage_events TO cfdt_juris_app;
 COMMIT;
