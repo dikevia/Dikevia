@@ -108,3 +108,7 @@ de l'instance et la consignation des résultats de recette.
 
 ## V3.33 — Quota partagé des traitements juridiques coûteux
 Le quota PostgreSQL initialement appliqué au chat est également appliqué à la revue de cohérence des règles locales. Les deux routes partagent le même compteur par organisation/utilisateur et la même configuration `CHAT_RATE_LIMIT_PER_MINUTE`. Le contrôle de la revue intervient avant la lecture du document et l'interrogation du corpus national. Le compteur n'enregistre aucun contenu.
+
+
+## V3.34 — Protection des connecteurs juridiques directs
+Les routes de contrôle PISTE, de recherche Légifrance et de recherche/consultation CETAT partagent maintenant le compteur PostgreSQL par organisation et utilisateur déjà utilisé par le chat et la revue locale. Le quota est contrôlé avant tout appel externe ; les entrées invalides sont rejetées avant consommation. La réponse de dépassement est HTTP 429 avec `Retry-After`. Cette protection couvre les routes API directes, mais ne remplace pas les quotas contractuels PISTE ni un budget fournisseur.
