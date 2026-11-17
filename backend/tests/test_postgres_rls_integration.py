@@ -120,6 +120,15 @@ async def _run_isolation_scenario():
             assert {r['id'] for r in rows} == {doc_a}
             hidden = await runtime.fetchval("SELECT count(*) FROM documents WHERE id=$1", doc_b)
             assert hidden == 0
+            own_versions = await runtime.fetch("SELECT document_id,version_number FROM document_versions")
+            assert {(r["document_id"], r["version_number"]) for r in own_versions} == {(doc_a, 1)}
+            assert await runtime.fetchval("SELECT count(*) FROM document_versions WHERE document_id=$1", doc_b) == 0
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.execute(
+                        "INSERT INTO document_versions(organization_id,document_id,version_number,sha256) VALUES($1,$2,2,$3)",
+                        org_b, doc_b, "d"*64,
+                    )
             indexed = await runtime.fetch("SELECT document_id,extracted_text FROM document_text")
             assert {r["document_id"] for r in indexed} == {doc_a}
             assert "organisation B" not in indexed[0]["extracted_text"]
