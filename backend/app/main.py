@@ -27,7 +27,7 @@ from .document_processing import scan_with_clamav, ScannerUnavailable, MalwareDe
 from .keycloak_admin import KeycloakAdmin, KeycloakAdminConfig, KeycloakAdminError
 from .mailer import send_invitation_email
 from .legifrance import connector as legifrance, LegifranceUnavailable
-from .jurisprudence import AdministrativeCaseLawConnector
+from .jurisprudence import AdministrativeCaseLawConnector, DECISION_ID_RE
 from .billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
 from .legal_corpus import upsert_legal_document, search_legal_corpus
 from .legal_assurance import assess_source_set
@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
     yield
     await close_pool()
 
-app = FastAPI(title="CFDT JURIS API", version="3.33.0", debug=settings.debug, lifespan=lifespan,
+app = FastAPI(title="CFDT JURIS API", version="3.34.0", debug=settings.debug, lifespan=lifespan,
               docs_url=None if settings.app_env == "production" else "/docs",
               redoc_url=None if settings.app_env == "production" else "/redoc",
               openapi_url=None if settings.app_env == "production" else "/openapi.json")
@@ -66,6 +66,19 @@ async def record_ai_usage_event(conn, organization_id, user_id, request_id, usag
         VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
     """, organization_id, user_id, request_id, usage["provider"], usage["model"],
         usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
+
+
+async def enforce_legal_connector_rate_limit(ctx: TenantContext) -> None:
+    """Share the tenant/user minute bucket with chat before direct paid PISTE calls."""
+    decision = await consume_chat_request(
+        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+    )
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Limite de requêtes juridiques atteinte. Réessayez dans quelques instants.",
+            headers={"Retry-After": str(decision.retry_after_seconds)},
+        )
 
 
 def decode_jsonb(value):
@@ -639,6 +652,7 @@ async def legifrance_status(ctx: TenantContext = Depends(get_tenant_context)):
 async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
+    await enforce_legal_connector_rate_limit(ctx)
     try:
         await legifrance.ping()
     except LegifranceUnavailable:
@@ -651,6 +665,9 @@ async def search_legifrance(q: str, effective_date: date | None = None,
         ctx: TenantContext = Depends(get_tenant_context)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
+    if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
+        raise HTTPException(422, "La recherche Légifrance doit contenir entre 2 et 500 caractères.")
+    await enforce_legal_connector_rate_limit(ctx)
     try:
         results = await legifrance.search_code_articles(q, effective_date or date.today())
     except ValueError as exc:
@@ -666,6 +683,9 @@ async def search_administrative_case_law(q: str, effective_date: date | None = N
         ctx: TenantContext = Depends(get_tenant_context)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
+    if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
+        raise HTTPException(422, "La recherche de jurisprudence doit contenir entre 2 et 500 caractères.")
+    await enforce_legal_connector_rate_limit(ctx)
     requested_date = effective_date or date.today()
     try:
         results = await case_law_connector.search(q, requested_date)
@@ -687,6 +707,9 @@ async def consult_administrative_case_law(decision_id: str,
         ctx: TenantContext = Depends(get_tenant_context)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
+    if not isinstance(decision_id, str) or not DECISION_ID_RE.fullmatch(decision_id):
+        raise HTTPException(422, "Identifiant de décision administrative invalide.")
+    await enforce_legal_connector_rate_limit(ctx)
     try:
         result = await case_law_connector.consult(decision_id)
     except ValueError as exc:
