@@ -117,3 +117,7 @@ La migration 017 ajoute une limitation PostgreSQL atomique par utilisateur et or
 
 ## Addendum V3.33 — Quota partagé
 La limitation PostgreSQL est désormais commune aux questions du chat et aux revues de cohérence des règles locales. Le quota est consommé avant la lecture du document et la recherche du corpus national ; les deux parcours ne peuvent donc pas être alternés pour contourner la limite. Le refus est HTTP 429 avec `Retry-After`.
+
+
+## V3.34 — Protection des appels PISTE directs
+Les routes de vérification de connexion Légifrance, de recherche d'articles, de recherche CETAT et de consultation d'une décision appliquent le quota partagé par organisation/utilisateur avant tout appel réseau. Les entrées de recherche et identifiants sont validés en amont. Le dépassement renvoie HTTP 429 et `Retry-After`. Aucun contenu de recherche n'est stocké par le mécanisme de limitation.
