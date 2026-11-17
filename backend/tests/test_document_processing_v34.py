@@ -170,3 +170,20 @@ def test_private_storage_uses_restrictive_unix_permissions():
     assert "os.chmod(document_dir,0o700)" in main
     assert "os.chmod(path,0o600)" in main
     assert "os.fsync(stream.fileno())" in main
+
+
+def test_document_download_returns_the_verified_bytes_not_a_second_file_read():
+    from pathlib import Path
+
+    main = (Path(__file__).parents[1] / "app/main.py").read_text()
+    assert "return Response(content=data,media_type=row[\"mime_type\"]" in main
+    assert "filename*=UTF-8''{quote(filename)}" in main
+    assert "return FileResponse(path" not in main
+
+
+def test_document_rescan_preserves_integrity_failure_engine():
+    from pathlib import Path
+
+    main = (Path(__file__).parents[1] / "app/main.py").read_text()
+    assert 'current_engine=current_item["scan_engine"]' in main
+    assert "scan_engine=$4,scanned_at=now()" in main
