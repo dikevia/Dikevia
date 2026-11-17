@@ -20,6 +20,8 @@ class AskResponse(BaseModel):
     sources: list[dict] = Field(default_factory=list)
     missing_information: list[str] = Field(default_factory=list)
     disclaimer: str = "Information juridique assistée, à valider humainement."
+    # Internal metering data; excluded from every public API serialization.
+    ai_usage: dict | None = Field(default=None, exclude=True)
 
 class InvitationCreate(BaseModel):
     email: EmailStr
