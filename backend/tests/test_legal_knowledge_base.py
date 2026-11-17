@@ -143,7 +143,8 @@ def test_production_requires_distinct_ingestion_database_role():
     from app.config import Settings, validate_runtime_configuration
     base = dict(app_env="production", database_url="postgresql://cfdt_juris_app:app@db/cfdt_juris",
         oidc_issuer="https://id.example", oidc_audience="cfdt-juris-api",
-        oidc_jwks_url="https://id.example/jwks", cors_origins="https://juris.example")
+        oidc_jwks_url="https://id.example/jwks", cors_origins="https://juris.example",
+        platform_admin_database_url="postgresql://cfdt_juris_platform_admin:platform@db/cfdt_juris")
     with pytest.raises(RuntimeError, match="LEGAL_CORPUS_INGEST_DATABASE_URL"):
         validate_runtime_configuration(Settings(**base))
     with pytest.raises(RuntimeError, match="rôle PostgreSQL dédié"):
