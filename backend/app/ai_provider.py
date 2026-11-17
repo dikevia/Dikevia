@@ -110,6 +110,13 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         raise AIProviderUnavailable("Le fournisseur IA est temporairement indisponible.") from exc
 
 
+def extract_analysis_content(result):
+    """Return only the text payload from supported AI adapter results."""
+    if isinstance(result, AIAnalysisResult):
+        return result.content
+    return result if isinstance(result, str) else None
+
+
 def answer_references_are_grounded(answer: str, allowed_refs: set[str | None],
                                    allowed_authorities: set[str | None] | None = None) -> bool:
     """Reject article/legal-authority numbers absent from retrieved source records."""
