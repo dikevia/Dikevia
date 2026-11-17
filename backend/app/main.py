@@ -369,7 +369,7 @@ async def stripe_webhook(request: Request):
 async def platform_list_free_email_access(platform=Depends(require_platform_admin)):
     if settings.private_instance_mode:
         raise HTTPException(404, "Les accès commerciaux individuels sont désactivés sur cette instance privée.")
-    rows = await get_pool().fetch("""SELECT id,email_normalized,note,expires_at,created_at,revoked_at
+    rows = await get_platform_admin_pool().fetch("""SELECT id,email_normalized,note,expires_at,created_at,revoked_at
         FROM platform_free_email_access ORDER BY created_at DESC LIMIT 500""")
     return [{"id": str(r["id"]), "email": r["email_normalized"], "note": r["note"],
              "expires_at": r["expires_at"], "created_at": r["created_at"],
@@ -395,7 +395,7 @@ async def platform_add_free_email_access(payload: dict, platform=Depends(require
                 raise ValueError("expiration passée")
         except ValueError:
             raise HTTPException(422, "La date d'expiration doit être une date future valide.")
-    async with get_pool().acquire() as conn:
+    async with get_platform_admin_pool().acquire() as conn:
         async with conn.transaction():
             row = await conn.fetchrow("""INSERT INTO platform_free_email_access(email_normalized,note,granted_by,expires_at)
                 VALUES($1,$2,$3::uuid,$4::timestamptz)
@@ -417,7 +417,7 @@ async def platform_revoke_free_email_access(access_id: str, platform=Depends(req
         access_uuid = str(UUID(access_id))
     except ValueError:
         raise HTTPException(422, "Identifiant d'accès invalide.")
-    async with get_pool().acquire() as conn:
+    async with get_platform_admin_pool().acquire() as conn:
         async with conn.transaction():
             row = await conn.fetchrow("""UPDATE platform_free_email_access SET revoked_at=now(),updated_at=now()
                 WHERE id=$1::uuid AND revoked_at IS NULL RETURNING id,email_normalized""", access_uuid)
