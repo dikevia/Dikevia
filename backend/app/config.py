@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     smtp_from: str = ""
     document_storage_path: str = "/var/lib/cfdt-juris/documents"
     cgfp_index_path: str = ""
+    cgfp_enabled: bool = True
     ai_api_base_url: str = ""
     ai_api_key: str = ""
     ai_model: str = ""
