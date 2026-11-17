@@ -21,6 +21,16 @@ def test_platform_functions_recheck_admin_and_are_not_public():
     assert "GRANT EXECUTE ON FUNCTION" in migration
 
 
+def test_platform_admin_functions_are_only_granted_to_dedicated_role():
+    migration = (ROOT / "database/migrations/016_platform_admin_database_role.sql").read_text()
+    assert "REVOKE EXECUTE ON FUNCTION private_instance_pending_members(uuid) FROM cfdt_juris_app" in migration
+    assert "GRANT EXECUTE ON FUNCTION private_instance_pending_members(uuid) TO cfdt_juris_platform_admin" in migration
+    assert "REVOKE INSERT, UPDATE ON platform_free_email_access FROM cfdt_juris_app" in migration
+    source = (ROOT / "backend/app/main.py").read_text()
+    assert "get_platform_admin_pool()" in source
+    assert "PLATFORM_ADMIN_DATABASE_URL" in (ROOT / "backend/app/config.py").read_text()
+
+
 def test_platform_console_is_not_shown_by_default_and_has_explicit_actions():
     frontend = (ROOT / "frontend/index.html").read_text()
     assert 'id="platformScreen" class="hidden"' in frontend
