@@ -364,3 +364,12 @@ Les tests de cette version vérifient les règles applicatives ; ils ne remplace
 - Les messages et dossiers liés sont supprimés via les cascades SQL existantes.
 - Tests unitaires des garde-fous et test d'intégration PostgreSQL de la prévisualisation, de la suppression et des cascades.
 - Aucun délai de conservation par défaut, aucune planification et aucune exécution sur une base réelle. La politique (durées, point de départ, exceptions et sauvegardes) reste à valider par le responsable de traitement/DPO.
+
+## V3.38 — Préparation de la recette développeur
+
+- Ajout de `scripts/run_developer_validation.sh` pour rejouer localement les contrôles de compilation, configuration, Ruff, Bandit, pip-audit, pytest et scripts shell.
+- Contrôle Docker Compose conditionnel si un fichier `.env` local existe ; construction des images sur demande explicite via `BUILD_IMAGES=1`.
+- Tests HTTP `/health` et `/ready` optionnels via `SMOKE_BASE_URL`.
+- Mode strict optionnel pour exiger les URL PostgreSQL de test via `REQUIRE_POSTGRES_INTEGRATION=1`.
+- Ajout de `docs/44_PREPARATION_RECETTE_DEVELOPPEUR.md` avec commandes reproductibles, matrice de recette externe et preuves attendues.
+- Le script ne démarre aucun service, n'applique aucune migration et ne touche à aucune base.
