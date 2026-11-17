@@ -1,9 +1,9 @@
-# CFDT JURIS — Kit développeur V3.34
+# Dikevia — Kit développeur V3.38.5
 
 La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des textes réglementaires complémentaires sur Légifrance et interrogation sécurisée des documents propres à l’employeur.
 
 ## État réel de cette livraison
-- Code FastAPI versionné `3.34.0`.
+- Code FastAPI versionné `3.38.5`.
 - Console plateforme : annuaire des syndicats, création d’espaces, attribution d’accès offerts, suspension et réactivation journalisées.
 - Validation de JWT OIDC via JWKS, issuer, audience, expiration et algorithmes configurés.
 - Appartenance active vérifiée en base pour chaque requête tenant.
@@ -14,7 +14,7 @@ La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des 
 - Invitations à jeton aléatoire à usage unique, stocké sous forme de SHA-256 et lié à l’e-mail OIDC vérifié.
 - Acceptation d’invitation transactionnelle et journalisée.
 - Conversations persistées dans PostgreSQL, privées à l’utilisateur OIDC et à l’organisation active via RLS FORCE.
-- Le CGFP est interrogeable via un index article/page et importable dans le corpus national par `scripts/import_cgfp_to_legal_corpus.py` ; les réponses issues de ce seul snapshot restent `PARTIELLEMENT_VERIFIE` et ne remplacent pas le contrôle Légifrance.
+- Le CGFP constitue la référence nationale de base de Dikevia. Son index article/page alimente le contexte du chat ; le snapshot seul ne suffit jamais à certifier la version applicable. Les textes officiels Légifrance/PISTE contrôlent la rédaction et la temporalité des dispositions.
 
 Le dossier de transfert développeur, avec les seules opérations restantes côté environnement, est décrit dans `docs/39_LIVRAISON_DEVELOPPEUR_V3_30.md`.
 
