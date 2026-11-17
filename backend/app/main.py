@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
     yield
     await close_pool()
 
-app = FastAPI(title="CFDT JURIS API", version="3.35.0", debug=settings.debug, lifespan=lifespan,
+app = FastAPI(title="CFDT JURIS API", version="3.38.0", debug=settings.debug, lifespan=lifespan,
               docs_url=None if settings.app_env == "production" else "/docs",
               redoc_url=None if settings.app_env == "production" else "/redoc",
               openapi_url=None if settings.app_env == "production" else "/openapi.json")
