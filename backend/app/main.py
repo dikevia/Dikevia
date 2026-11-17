@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from urllib.parse import quote
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
 from .dependencies import get_principal, get_tenant_context, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
@@ -1453,7 +1454,10 @@ async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant
     data=await asyncio.to_thread(path.read_bytes)
     if not document_sha256_matches(data, row["sha256"]):
         raise HTTPException(409,"Le fichier a été modifié ou corrompu dans le stockage privé. Téléchargement bloqué.")
-    return FileResponse(path,media_type=row["mime_type"] or "application/octet-stream",filename=row["original_filename"] or "document",headers={"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
+    filename=row["original_filename"] or "document"
+    return Response(content=data,media_type=row["mime_type"] or "application/octet-stream",headers={
+        "Content-Disposition":f"attachment; filename=\"document\"; filename*=UTF-8''{quote(filename)}",
+        "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
 @app.get("/api/v1/documents/{document_id}/versions/{version_number}/download")
 async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context)):
@@ -1469,7 +1473,10 @@ async def download_document_version(document_id:str,version_number:int,ctx:Tenan
     data=await asyncio.to_thread(path.read_bytes)
     if not document_sha256_matches(data, row["sha256"]):
         raise HTTPException(409,"Le fichier a été modifié ou corrompu dans le stockage privé. Téléchargement bloqué.")
-    return FileResponse(path,media_type=row["mime_type"] or "application/octet-stream",filename=row["original_filename"] or "document",headers={"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
+    filename=row["original_filename"] or "document"
+    return Response(content=data,media_type=row["mime_type"] or "application/octet-stream",headers={
+        "Content-Disposition":f"attachment; filename=\"document\"; filename*=UTF-8''{quote(filename)}",
+        "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
 @app.put("/api/v1/documents/{document_id}")
 async def update_document_metadata(document_id:str,payload:DocumentMetadataUpdate,ctx:TenantContext=Depends(require_legal_editor)):
