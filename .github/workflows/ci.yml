@@ -79,6 +79,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f database/migrations/014_cgfp_snapshot_source_type.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/015_private_instance_10_seats.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/016_platform_admin_database_role.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/017_chat_rate_limits.sql
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend
