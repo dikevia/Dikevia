@@ -10,7 +10,7 @@ import zipfile
 from io import BytesIO
 from datetime import date, datetime, timezone
 from fastapi import UploadFile, File, Form, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi import FastAPI, Depends, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -34,6 +34,7 @@ from .legal_assurance import assess_source_set
 from .ai_provider import analyze_question, answer_references_are_grounded
 from .legal_ingestion import parse_circulaires_xml
 from .dossiers import build_dossier_content, validate_dossier_content
+from .rate_limit import consume_chat_request
 import httpx
 
 @asynccontextmanager
@@ -570,6 +571,15 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
 
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
 async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)):
+    rate = await consume_chat_request(
+        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+    )
+    if not rate.allowed:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
+            headers={"Retry-After": str(rate.retry_after_seconds)},
+        )
     conversation_id = payload.conversation_id
     if conversation_id is None:
         row = await ctx.conn.fetchrow("""INSERT INTO chat_conversations(organization_id,user_id,title)
