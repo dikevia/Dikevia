@@ -31,7 +31,7 @@ from .jurisprudence import AdministrativeCaseLawConnector
 from .billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
 from .legal_corpus import upsert_legal_document, search_legal_corpus
 from .legal_assurance import assess_source_set
-from .ai_provider import analyze_question, answer_references_are_grounded
+from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content
 from .legal_ingestion import parse_circulaires_xml
 from .dossiers import build_dossier_content, validate_dossier_content
 from .rate_limit import consume_chat_request
@@ -56,6 +56,16 @@ FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
 orchestrator = LegalOrchestrator()
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
+
+
+async def record_ai_usage_event(conn, organization_id, user_id, request_id, usage):
+    """Append privacy-minimal provider usage metadata for one tenant-scoped AI call."""
+    await conn.execute("""INSERT INTO ai_usage_events(
+        organization_id,user_id,request_id,provider,model,prompt_tokens,
+        completion_tokens,total_tokens,outcome)
+        VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
+    """, organization_id, user_id, request_id, usage["provider"], usage["model"],
+        usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
 
 
 def decode_jsonb(value):
@@ -602,13 +612,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)
     result.conversation_id = conversation_id
     if result.ai_usage is not None:
         usage = result.ai_usage
-        await ctx.conn.execute("""INSERT INTO ai_usage_events(
-            organization_id,user_id,request_id,provider,model,prompt_tokens,
-            completion_tokens,total_tokens,outcome)
-            VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
-""",
-            ctx.organization_id, ctx.user_id, result.request_id, usage["provider"], usage["model"],
-            usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
+        await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, result.request_id, usage)
     await ctx.conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
         VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
         str(conversation_id), ctx.user_id, result.answer,
@@ -774,15 +778,35 @@ async def review_local_rule_compliance(document_id: str, q: str,
             "Ne déclare jamais le document illégal. Ne suppose pas qu'une absence de résultat prouve la conformité. "
             "Toute affirmation juridique doit être rattachée aux références exactes présentes dans les sources."
         )
+        request_id = str(uuid4())
         try:
-            candidate = await analyze_question(
+            candidate_result = await analyze_question(
                 question=review_question, employer="NATIONAL", facts_date=requested_date.isoformat(),
                 sources=[local_source] + usable_national, conversation_history=None)
+            candidate = extract_analysis_content(candidate_result)
+            usage = None
+            if isinstance(candidate_result, AIAnalysisResult):
+                usage = {
+                    "provider": "openai_compatible", "model": candidate_result.model,
+                    "prompt_tokens": candidate_result.prompt_tokens,
+                    "completion_tokens": candidate_result.completion_tokens,
+                    "total_tokens": candidate_result.total_tokens, "outcome": "ANSWERED",
+                }
             allowed_refs = {item.get("article") for item in usable_national if item.get("article")}
             allowed_authorities = {value for item in usable_national for value in
                 (item.get("official_number"), item.get("source_id"), item.get("case_number")) if value}
             if candidate and answer_references_are_grounded(candidate, allowed_refs, allowed_authorities):
                 ai_review = candidate
+            elif usage is not None:
+                usage["outcome"] = "REJECTED_UNGROUNDED"
+            if usage is not None:
+                await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
+        except AIProviderUnavailable:
+            await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, {
+                "provider": "openai_compatible", "model": settings.ai_model[:160],
+                "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
+                "outcome": "PROVIDER_ERROR",
+            })
         except Exception:
             ai_review = None
     await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
