@@ -106,6 +106,8 @@ GRANT EXECUTE ON FUNCTION private_instance_set_member_status(uuid,uuid,uuid,text
 -- Platform allowlist writes and its audit trail are also isolated from the API role.
 REVOKE INSERT, UPDATE ON platform_free_email_access FROM cfdt_juris_app;
 REVOKE INSERT ON platform_audit_events FROM cfdt_juris_app;
-GRANT SELECT, INSERT, UPDATE ON platform_free_email_access TO cfdt_juris_platform_admin;
-GRANT INSERT ON platform_audit_events TO cfdt_juris_platform_admin;
+GRANT SELECT ON platform_free_email_access TO cfdt_juris_platform_admin;
+GRANT INSERT (email_normalized,note,granted_by,expires_at) ON platform_free_email_access TO cfdt_juris_platform_admin;
+GRANT UPDATE (note,granted_by,expires_at,revoked_at,updated_at) ON platform_free_email_access TO cfdt_juris_platform_admin;
+GRANT INSERT (actor_user_id,event_type,target_type,target_id,metadata) ON platform_audit_events TO cfdt_juris_platform_admin;
 COMMIT;
