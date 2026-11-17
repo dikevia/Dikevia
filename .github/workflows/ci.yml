@@ -64,10 +64,12 @@ jobs:
           POSTGRES_APP_PASSWORD: ci-app-password
           POSTGRES_INGEST_PASSWORD: ci-ingest-password
           POSTGRES_MONITOR_PASSWORD: ci-monitor-password
+          POSTGRES_PLATFORM_ADMIN_PASSWORD: ci-platform-admin-password
         run: |
           bash deploy/init/01-create-app-role.sh
           bash deploy/init/02-create-corpus-ingest-role.sh
           bash deploy/init/03-create-monitor-role.sh
+          bash deploy/init/04-create-platform-admin-role.sh
           psql -v ON_ERROR_STOP=1 -f database/schema.sql
           psql -v ON_ERROR_STOP=1 -f database/grant_runtime_permissions.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/010_subscription_catalog_and_free_email_access.sql
@@ -76,11 +78,13 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f database/migrations/013_legal_dossiers.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/014_cgfp_snapshot_source_type.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/015_private_instance_10_seats.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/016_platform_admin_database_role.sql
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend
           TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/cfdt_juris
           TEST_DATABASE_URL: postgresql://cfdt_juris_app:ci-app-password@127.0.0.1:5432/cfdt_juris
+          TEST_PLATFORM_ADMIN_DATABASE_URL: postgresql://cfdt_juris_platform_admin:ci-platform-admin-password@127.0.0.1:5432/cfdt_juris
         run: pytest -q backend/tests
       - name: Validate shell scripts
         run: bash -n scripts/*.sh deploy/init/*.sh
