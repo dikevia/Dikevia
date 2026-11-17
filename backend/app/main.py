@@ -17,7 +17,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from .config import settings, validate_runtime_configuration
-from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool
+from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
 from .dependencies import get_principal, get_tenant_context, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
@@ -39,7 +39,7 @@ import httpx
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_runtime_configuration(settings)
-    await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url)
+    await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
     yield
     await close_pool()
 
@@ -172,24 +172,24 @@ async def billing_invoice_history(limit: int = 50, ctx: TenantContext = Depends(
 
 @app.get("/api/v1/platform/commercial/summary")
 async def platform_commercial_summary(month: date | None = None, platform=Depends(require_platform_admin)):
-    rows = await get_pool().fetch("SELECT * FROM platform_admin_commercial_summary($1::uuid,COALESCE($2::date,date_trunc('month',now())::date))",
+    rows = await get_platform_admin_pool().fetch("SELECT * FROM platform_admin_commercial_summary($1::uuid,COALESCE($2::date,date_trunc('month',now())::date))",
                                   platform["user_id"], month)
     return dict(rows[0]) if rows else {}
 
 
 @app.get("/api/v1/platform/commercial/invoices")
 async def platform_commercial_invoices(limit: int = 100, platform=Depends(require_platform_admin)):
-    rows = await get_pool().fetch("SELECT * FROM platform_admin_commercial_invoices($1::uuid,$2)",
+    rows = await get_platform_admin_pool().fetch("SELECT * FROM platform_admin_commercial_invoices($1::uuid,$2)",
                                   platform["user_id"], min(max(limit, 1), 200))
     return {"invoices": [dict(r) for r in rows]}
 
 
 @app.get("/api/v1/platform/commercial/organizations")
 async def platform_commercial_organizations(platform=Depends(require_platform_admin)):
-    rows = await get_pool().fetch("SELECT * FROM platform_admin_list_organizations($1::uuid)", platform["user_id"])
+    rows = await get_platform_admin_pool().fetch("SELECT * FROM platform_admin_list_organizations($1::uuid)", platform["user_id"])
     output = []
     for r in rows:
-        counts = await get_pool().fetchrow("""SELECT * FROM platform_admin_organization_seat_counts($1::uuid,$2::uuid)""",
+        counts = await get_platform_admin_pool().fetchrow("""SELECT * FROM platform_admin_organization_seat_counts($1::uuid,$2::uuid)""",
                                            platform["user_id"], r["id"])
         output.append({"id":str(r["id"]),"name":r["display_name"],"slug":r["slug"],
             "plan_code":r["plan_code"],"subscription_status":r["subscription_status"],
@@ -1565,7 +1565,7 @@ async def accept_invitation(payload: InvitationAccept, response: Response, princ
 async def private_instance_members(platform=Depends(require_platform_admin)):
     if not settings.private_instance_mode:
         raise HTTPException(404, "Cette fonction est réservée à l'instance privée.")
-    rows = await get_pool().fetch(
+    rows = await get_platform_admin_pool().fetch(
         "SELECT * FROM private_instance_pending_members($1::uuid)", platform["user_id"])
     return {"members": [{
         "organization_id": str(r["organization_id"]), "user_id": str(r["user_id"]),
@@ -1586,7 +1586,7 @@ async def private_instance_set_member(organization_id: str, user_id: str, payloa
     if status not in {"ACTIVE", "SUSPENDED", "REVOKED"}:
         raise HTTPException(422, "Statut attendu : ACTIVE, SUSPENDED ou REVOKED.")
     try:
-        changed = await get_pool().fetchval(
+        changed = await get_platform_admin_pool().fetchval(
             "SELECT private_instance_set_member_status($1::uuid,$2::uuid,$3::uuid,$4)",
             platform["user_id"], org_id, member_id, status)
     except Exception as exc:
@@ -1600,7 +1600,7 @@ async def private_instance_set_member(organization_id: str, user_id: str, payloa
 @app.get("/api/v1/platform/organizations")
 async def platform_list_organizations(platform=Depends(require_platform_admin)):
     """Cross-tenant directory exposed only through a DBA-owned guarded SQL function."""
-    rows = await get_pool().fetch(
+    rows = await get_platform_admin_pool().fetch(
         "SELECT * FROM platform_admin_list_organizations($1::uuid)", platform["user_id"])
     return [{
         "id": str(r["id"]), "slug": r["slug"], "legal_name": r["legal_name"],
@@ -1622,7 +1622,7 @@ async def platform_set_organization_status(organization_id: str, payload: dict,
     status = payload.get("status") if isinstance(payload, dict) else None
     if status not in ("ACTIVE", "SUSPENDED"):
         raise HTTPException(422, "État demandé invalide.")
-    changed = await get_pool().fetchval(
+    changed = await get_platform_admin_pool().fetchval(
         "SELECT platform_admin_set_organization_status($1::uuid,$2::uuid,$3)",
         platform["user_id"], org_id, status)
     if not changed:
@@ -1633,13 +1633,13 @@ async def platform_set_organization_status(organization_id: str, payload: dict,
 @app.post("/api/v1/platform/organizations", status_code=201)
 async def create_organization(payload: OrganizationCreate, platform=Depends(require_platform_admin)):
     """Only the dedicated platform-admin registry can create organizations."""
-    pool = get_pool()
+    pool = get_platform_admin_pool()
     org_id = str(uuid4())
     async with pool.acquire() as conn:
         async with conn.transaction():
             if settings.private_instance_mode:
                 await conn.execute("SELECT pg_advisory_xact_lock(33010329)")
-                existing = await conn.fetch("SELECT * FROM platform_admin_list_organizations($1::uuid)", platform["user_id"])
+                existing = await get_platform_admin_pool().fetch("SELECT * FROM platform_admin_list_organizations($1::uuid)", platform["user_id"])
                 if existing:
                     raise HTTPException(409, "L'instance privée est limitée à une seule organisation syndicale.")
             await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_id)
