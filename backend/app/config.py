@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     ai_api_key: str = ""
     ai_model: str = ""
     ai_timeout_seconds: float = 25.0
+    chat_rate_limit_per_minute: int = 10
     legifrance_environment: str = "sandbox"
     legifrance_client_id: str = ""
     legifrance_client_secret: str = ""
@@ -128,6 +129,8 @@ def validate_runtime_configuration(config: Settings) -> None:
             raise RuntimeError("AI_API_BASE_URL doit utiliser HTTPS en production.")
     if not 2 <= config.ai_timeout_seconds <= 120:
         raise RuntimeError("AI_TIMEOUT_SECONDS doit être compris entre 2 et 120.")
+    if not 1 <= config.chat_rate_limit_per_minute <= 120:
+        raise RuntimeError("CHAT_RATE_LIMIT_PER_MINUTE doit être compris entre 1 et 120.")
     if not 1 <= config.document_max_size_mb <= 100:
         raise RuntimeError("DOCUMENT_MAX_SIZE_MB doit être compris entre 1 et 100.")
     if not 1 <= config.clamav_port <= 65535 or not 1 <= config.clamav_timeout_seconds <= 60:
