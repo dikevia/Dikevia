@@ -71,3 +71,18 @@ Date de validation : 17 novembre 2026
 - Les tests V3.34 vérifient que les routes de contrôle PISTE, recherche Légifrance, recherche CETAT et consultation CETAT passent par le quota partagé avant tout appel externe ; les entrées invalides ne consomment pas le quota ; le refus renvoie HTTP 429 avec `Retry-After`.
 - Aucun changement de schéma SQL ou migration supplémentaire n'est requis.
 - Cette preuve ne remplace pas la recette avec les identifiants PISTE réels, ni la validation des quotas contractuels du fournisseur.
+
+
+## V3.35 — Bornage des imports PISTE et validation du kit
+
+Date de validation : 17 novembre 2026
+
+- Commit contrôlé : `372a0ea4ea9a7a5123c74935bb8aea714ed23317`.
+- GitHub Actions : [run 44061778862](https://github.com/dikevia/Dikevia/actions/runs/44061778862) — terminé avec succès.
+- Le job `test-and-audit` et chacune de ses étapes ont réussi : compilation et audit de l'environnement, Ruff, Bandit, `pip-audit`, PostgreSQL 16 jetable avec rôles à privilèges minimaux, tests unitaires/contrat/RLS, scripts shell, configurations Docker Compose, construction et téléversement du kit.
+- Les validations V3.35 vérifient que les routes d'ingestion PISTE réglementaire et CETAT rejettent les recherches hors limites (2 à 500 caractères) et les nombres de résultats hors limites (1 à 20) avant tout effet de bord. Pour CETAT, la borne limite également les consultations de textes intégraux.
+- Version API : 3.35.0. Aucun changement de schéma SQL ni migration supplémentaire.
+- Artefact : `CFDT-JURIS-V3.30-Kit-Developpeur`, identifiant `14319075913`, taille 4 666 924 octets, SHA-256 `1433779885341600771c952ba7e2b3428aa19aac92e28a0cd64d4632fb32715e`.
+- Conservation annoncée par GitHub jusqu'au 17 décembre 2026.
+
+Cette preuve concerne uniquement le commit indiqué et l'environnement PostgreSQL éphémère de la CI. Elle ne vaut pas recette sur Neon, validation des identifiants réels PISTE/OIDC/IA, test de restauration sur l'instance cible, audit indépendant ni autorisation de mise en production. Aucune migration Neon et aucun déploiement de production n'ont été effectués ; la branche `main` reste inchangée et la PR #1 demeure ouverte, non fusionnée.
