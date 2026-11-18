@@ -8,7 +8,6 @@ COPY deploy/keycloak/realm-cfdt.render.json /opt/keycloak/data/import/realm-cfdt
 COPY --chmod=0755 deploy/keycloak/dikevia-entrypoint.sh /opt/keycloak/dikevia-entrypoint.sh
 
 ENV KC_DB=postgres \
-    KC_FEATURES=stateless \
     KC_CACHE=local \
     KC_HEALTH_ENABLED=true \
     KC_METRICS_ENABLED=true \
