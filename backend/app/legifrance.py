@@ -102,6 +102,21 @@ class LegifranceConnector:
         except (httpx.HTTPError, ValueError) as exc:
             raise LegifranceUnavailable("Erreur réseau ou réponse API Légifrance invalide.") from exc
 
+    async def ping_diagnostics(self) -> dict[str, int | str]:
+        """Test each documented ping route independently using a fresh OAuth token."""
+        token = await self._get_token()
+        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        results: dict[str, int | str] = {}
+        async with httpx.AsyncClient(timeout=settings.legifrance_timeout_seconds,
+                                     transport=self.transport) as client:
+            for path in ("search/ping", "consult/ping", "list/ping"):
+                try:
+                    response = await client.get(urljoin(self.api_base, path), headers=headers)
+                    results[path] = response.status_code
+                except httpx.HTTPError:
+                    results[path] = "NETWORK_ERROR"
+        return results
+
     async def ping(self) -> bool:
         """Check the documented Légifrance ping endpoint, with guide-compatible fallback.
 
