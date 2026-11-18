@@ -22,4 +22,4 @@ RUN /opt/keycloak/bin/kc.sh build --db=postgres --health-enabled=true --metrics-
 EXPOSE 10000
 
 ENTRYPOINT ["/opt/keycloak/dikevia-entrypoint.sh"]
-CMD ["start", "--optimized", "--import-realm"]
+CMD ["start", "--optimized"]
