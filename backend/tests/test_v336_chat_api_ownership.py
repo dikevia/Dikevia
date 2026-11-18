@@ -131,3 +131,31 @@ def test_api_routes_are_bound_to_authenticated_tenant_context():
         if route.path.startswith("/api/v1/chat/conversations")
     }
     assert expected <= actual
+
+
+
+def test_member_cannot_mark_a_legal_dossier_as_human_validated():
+    from app.dossiers import build_dossier_content
+
+    class ExistingDossierConnection(HiddenRowsConnection):
+        async def fetchrow(self, query, *args):
+            self.fetchrow_calls.append((query, args))
+            return {"id": uuid4(), "content": {"status": "BROUILLON_A_VALIDER"}}
+
+    conn = ExistingDossierConnection()
+    ctx = context(conn)
+    dossier = build_dossier_content({"title": "Dossier test"}, [
+        {"role": "user", "content": "Question de test"}
+    ])
+    dossier["status"] = "VALIDE_HUMAINEMENT"
+    route = endpoint(
+        "/api/v1/chat/conversations/{conversation_id}/dossier", "PUT"
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(route(str(uuid4()), {"content": dossier}, ctx))
+
+    assert exc.value.status_code == 403
+    assert "responsables habilités" in exc.value.detail
+    assert len(conn.fetchrow_calls) == 1
+    assert not conn.execute_calls
