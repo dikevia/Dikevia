@@ -1,0 +1,76 @@
+name: Commercial backend smoke test
+
+on:
+  push:
+    branches:
+      - feature/dikevia-v3.38.5-cgfp-chat
+    paths:
+      - ".github/workflows/commercial-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for commercial API readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            if curl --connect-timeout 10 --max-time 20 -fsS https://dikevia-commercial-api-l2r8.onrender.com/ready -o /tmp/api-ready.json; then
+              cat /tmp/api-ready.json
+              exit 0
+            fi
+            echo "Commercial API not ready yet (attempt $attempt/30)"
+            sleep 10
+          done
+          echo "Commercial API did not become ready within five minutes."
+          exit 1
+
+      - name: Wait for Keycloak readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            if curl --connect-timeout 10 --max-time 20 -fsS https://dikevia-identity-l2r8.onrender.com/health/ready -o /tmp/id-ready.json; then
+              cat /tmp/id-ready.json
+              exit 0
+            fi
+            echo "Identity service not ready yet (attempt $attempt/30)"
+            sleep 10
+          done
+          echo "Identity service did not become ready within five minutes."
+          exit 1
+
+      - name: Verify OIDC discovery and issuer
+        run: |
+          set -euo pipefail
+          curl --connect-timeout 10 --max-time 20 -fsS \
+            https://dikevia-identity-l2r8.onrender.com/realms/cfdt/.well-known/openid-configuration \
+            -o /tmp/oidc.json
+          python - <<'PY'
+          import json
+          with open("/tmp/oidc.json", encoding="utf-8") as f:
+              data = json.load(f)
+          expected = "https://dikevia-identity-l2r8.onrender.com/realms/cfdt"
+          assert data.get("issuer") == expected, data.get("issuer")
+          assert data.get("authorization_endpoint")
+          assert data.get("token_endpoint")
+          assert data.get("jwks_uri")
+          print("OIDC discovery valid; issuer and endpoints match.")
+          PY
+
+      - name: Verify commercial web application and OIDC client configuration
+        run: |
+          set -euo pipefail
+          curl --connect-timeout 10 --max-time 20 -fsS \
+            https://dikevia-commercial-api-l2r8.onrender.com/ -o /tmp/app.html
+          grep -q "/static/oidc-auth.js" /tmp/app.html
+          curl --connect-timeout 10 --max-time 20 -fsS \
+            https://dikevia-commercial-api-l2r8.onrender.com/static/auth-config.js -o /tmp/auth-config.js
+          grep -q "dikevia-identity-l2r8.onrender.com/realms/cfdt" /tmp/auth-config.js
+          echo "Commercial web shell and OIDC client configuration are present."
