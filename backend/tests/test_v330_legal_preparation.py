@@ -4,6 +4,9 @@ import json
 
 import pytest
 
+from app.orchestrator import LegalOrchestrator
+from app.schemas import AskRequest
+
 @pytest.fixture(autouse=True)
 def _mock_available_ai_catalog(monkeypatch):
     import app.orchestrator as module
@@ -13,9 +16,6 @@ def _mock_available_ai_catalog(monkeypatch):
 
     monkeypatch.setattr(module, "check_provider_availability", available)
 
-
-from app.orchestrator import LegalOrchestrator
-from app.schemas import AskRequest
 
 async def _fake_piste_token(self):
     return "test-access-token"
