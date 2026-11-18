@@ -1,3 +1,4 @@
+import asyncio
 from datetime import date
 from uuid import uuid4
 import logging
@@ -12,7 +13,7 @@ from .ai_provider import analyze_question, AIAnalysisResult, AIProviderUnavailab
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector
 from .legal_corpus import search_legal_corpus
-from .legal_assurance import assess_source_set
+from .legal_assurance import assess_source_set, validate_answer_citations
 from .local_corpus import search_local_documents
 
 
@@ -44,40 +45,121 @@ class LegalOrchestrator:
         live_query = current_question[:500]
         live_sources: list[dict] = []
         regulatory_sources: list[dict] = []
+        case_law_sources: list[dict] = []
+        case_law_full_text_sources: list[dict] = []
         live_issue = None
         regulatory_issue = None
-        if legifrance.configured:
-            try:
-                live_sources = await legifrance.search_code_articles(live_query, effective_date)
-            except (LegifranceUnavailable, ValueError):
-                live_issue = "La recherche d'articles du CGFP sur Légifrance a échoué ; aucune source officielle en direct n'est retenue. Vérifier les identifiants, consentements PISTE et quotas."
-            try:
-                regulatory_sources = await legifrance.search_regulatory_texts(
-                    live_query, effective_date, limit=3
-                )
-            except (LegifranceUnavailable, ValueError):
-                regulatory_issue = "La recherche des lois, décrets et arrêtés complémentaires sur Légifrance a échoué."
-        else:
-            live_issue = "Identifiants PISTE non configurés : la recherche officielle en direct n'a pas été exécutée."
-            regulatory_issue = "Les textes réglementaires complémentaires n'ont pas été interrogés : identifiants PISTE non configurés."
-
-        case_law_sources: list[dict] = []
         case_law_issue = None
-        if legifrance.configured:
-            try:
-                case_law_sources = await case_law_connector.search(live_query, effective_date)
-            except (LegifranceUnavailable, ValueError):
-                case_law_issue = "La recherche de jurisprudence administrative (fonds CETAT) n'a pas abouti."
-        else:
-            case_law_issue = "Jurisprudence administrative non interrogée : identifiants PISTE non configurés."
+        case_law_fulltext_issue = None
+        cgfp_issue = None
 
-        found = None
-        if settings.cgfp_enabled:
+        async def search_cgfp_index():
+            if not settings.cgfp_enabled:
+                return None, "Index documentaire CGFP désactivé : le pilier CGFP n'a pas été interrogé."
             try:
-                found = search_cgfp(contextual_question, limit=8)
+                result = await asyncio.to_thread(search_cgfp, contextual_question, limit=8)
+                return result, None
             except (FileNotFoundError, OSError, ValueError):
-                found = None
+                logger.exception("Échec de la recherche dans l'index structuré du CGFP.")
+                return None, "Index documentaire CGFP indisponible ou invalide."
 
+        async def search_official_pillars():
+            if not legifrance.configured:
+                return (
+                    [], [], [],
+                    "Identifiants PISTE non configurés : la recherche officielle d'articles du CGFP n'a pas été exécutée.",
+                    "Identifiants PISTE non configurés : la recherche des textes réglementaires n'a pas été exécutée.",
+                    "Identifiants PISTE non configurés : la recherche de jurisprudence CETAT n'a pas été exécutée.",
+                )
+            try:
+                # Obtain one OAuth token before launching the three independent searches.
+                # This avoids concurrent token refresh races while keeping the searches parallel.
+                await legifrance._get_token()
+            except LegifranceUnavailable:
+                logger.exception("Authentification PISTE indisponible avant la recherche multi-sources.")
+                issue = "Authentification PISTE impossible : les trois recherches officielles n'ont pas pu être exécutées."
+                return [], [], [], issue, issue, issue
+
+            results = await asyncio.gather(
+                legifrance.search_code_articles(live_query, effective_date),
+                legifrance.search_regulatory_texts(live_query, effective_date, limit=3),
+                case_law_connector.search(live_query, effective_date),
+                return_exceptions=True,
+            )
+            code_result, regulatory_result, case_result = results
+            code_issue = None
+            regulatory_search_issue = None
+            case_search_issue = None
+            if isinstance(code_result, BaseException):
+                logger.error("Recherche Légifrance CGFP en échec.", exc_info=code_result)
+                code_issue = "La recherche d'articles du CGFP sur Légifrance a échoué."
+                code_result = []
+            if isinstance(regulatory_result, BaseException):
+                logger.error("Recherche Légifrance des textes réglementaires en échec.", exc_info=regulatory_result)
+                regulatory_search_issue = "La recherche des lois, décrets et arrêtés complémentaires sur Légifrance a échoué."
+                regulatory_result = []
+            if isinstance(case_result, BaseException):
+                logger.error("Recherche de jurisprudence CETAT en échec.", exc_info=case_result)
+                case_search_issue = "La recherche de jurisprudence administrative (fonds CETAT) n'a pas abouti."
+                case_result = []
+            return (
+                code_result, regulatory_result, case_result,
+                code_issue, regulatory_search_issue, case_search_issue,
+            )
+
+        # CGFP index + the three official search pillars are launched together.
+        cgfp_result, official_result = await asyncio.gather(
+            search_cgfp_index(),
+            search_official_pillars(),
+        )
+        found, cgfp_issue = cgfp_result
+        (
+            live_sources, regulatory_sources, case_law_sources,
+            live_issue, regulatory_issue, case_law_issue,
+        ) = official_result
+
+        # CETAT search hits are metadata only. If the full-text route has not
+        # been explicitly enabled and validated, never pass those hits to the model.
+        if case_law_sources:
+            if not settings.legifrance_cetat_fulltext_enabled:
+                case_law_fulltext_issue = (
+                    "Des décisions CETAT ont été repérées, mais leur consultation intégrale officielle "
+                    "est désactivée ; les métadonnées ne peuvent pas fonder une analyse IA."
+                )
+            else:
+                consultation_results = await asyncio.gather(
+                    *(case_law_connector.consult(item["source_id"])
+                      for item in case_law_sources[:3] if item.get("source_id")),
+                    return_exceptions=True,
+                )
+                for result in consultation_results:
+                    if isinstance(result, BaseException):
+                        logger.warning("Consultation intégrale CETAT indisponible.", exc_info=result)
+                        case_law_fulltext_issue = (
+                            "Au moins une décision CETAT n'a pas pu être consultée en texte intégral ; "
+                            "son résultat de recherche reste une métadonnée non probante."
+                        )
+                        continue
+                    try:
+                        decision_date = date.fromisoformat(str(result.get("decision_date") or "")[:10])
+                    except ValueError:
+                        decision_date = None
+                    result["temporal_status"] = (
+                        "DECISION_AVAILABLE_BY_REQUESTED_DATE"
+                        if decision_date is not None and decision_date <= effective_date
+                        else "TEMPORAL_SCOPE_INCOMPLETE"
+                    )
+                    result["content_kind"] = "FULL_TEXT"
+                    result["citation_integrity"] = {
+                        "valid": bool(result.get("source_id") and len(result.get("text") or "") >= 80),
+                        "verification_scope": "PISTE_CETAT_CONSULT_ID_AND_FULL_TEXT",
+                    }
+                    if result["citation_integrity"]["valid"]:
+                        case_law_full_text_sources.append(result)
+                    else:
+                        case_law_fulltext_issue = (
+                            "Une décision CETAT consultée n'a pas satisfait le contrôle d'identifiant et de texte intégral."
+                        )
         local_sources: list[dict] = []
         local_issue = None
         if request.employer != "NATIONAL":
