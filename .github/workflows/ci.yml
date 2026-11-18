@@ -185,6 +185,43 @@ jobs:
             -H "Access-Control-Request-Headers: content-type"
           grep -qi '^access-control-allow-origin: https://dikevia-commercial-api-l2r8.onrender.com' /tmp/token-cors.headers
           echo "OIDC token endpoint permits the commercial web origin."
+      - name: Verify OIDC authorization flow and PKCE client
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          with open("/tmp/oidc.json", encoding="utf-8") as f:
+              discovery = json.load(f)
+          verifier = "dikevia-ci-pkce-verifier-0123456789abcdef0123456789"
+          challenge = base64.urlsafe_b64encode(
+              hashlib.sha256(verifier.encode("ascii")).digest()
+          ).rstrip(b"=").decode("ascii")
+          params = {
+              "client_id": "cfdt-juris-web",
+              "redirect_uri": "https://dikevia-commercial-api-l2r8.onrender.com/",
+              "response_type": "code",
+              "scope": "openid",
+              "state": "dikevia-ci-state",
+              "nonce": "dikevia-ci-nonce",
+              "code_challenge": challenge,
+              "code_challenge_method": "S256",
+          }
+          url = discovery["authorization_endpoint"] + "?" + urlencode(params)
+          request = Request(url, headers={"Accept": "text/html"})
+          with urlopen(request, timeout=30) as response:
+              page = response.read().decode("utf-8", "replace")
+              assert response.status == 200, response.status
+          assert 'name="username"' in page and 'name="password"' in page, (
+              "OIDC authorization request did not reach the Keycloak login form"
+          )
+          print("Public OIDC client accepts the commercial redirect URI and PKCE S256.")
+          PY
       - name: Verify commercial web shell and browser OIDC configuration
         shell: bash
         run: |
