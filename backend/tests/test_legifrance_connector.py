@@ -16,7 +16,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
         seen.append((request.method, request.url.path))
         if request.url.path == "/api/oauth/token":
             return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
-        if request.url.path.endswith("/consult/ping"):
+        if request.url.path.endswith("/list/ping"):
             assert request.headers["Authorization"] == "Bearer unit-token"
             return httpx.Response(200, json={"status": "ok"})
         if request.url.path.endswith("/search"):
@@ -36,7 +36,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
     assert results[0]["valid_from"] == "2025-01-01"
     assert results[0]["requested_effective_date"] == "2025-11-16"
     assert results[0]["source_version_id"] == ARTICLE_ID
-    assert any(path.endswith("/search") for _, path in seen)
+    assert any(path.endswith("/search") for _, path in seen)\n    assert any(path.endswith("/list/ping") for _, path in seen)
 
 @pytest.mark.asyncio
 async def test_legifrance_rejects_incomplete_oauth(monkeypatch):
@@ -197,3 +197,25 @@ def test_code_article_excerpt_selects_relevant_sentences_not_only_the_beginning(
     )
     assert len(excerpt) <= 1800
     assert "indemnités horaires pour travaux supplémentaires" in excerpt
+
+@pytest.mark.asyncio
+async def test_legifrance_ping_falls_back_to_consult_route_only_when_list_route_missing(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_environment", "sandbox")
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/list/ping"):
+            return httpx.Response(404)
+        if request.url.path.endswith("/consult/ping"):
+            return httpx.Response(200, text="pong")
+        return httpx.Response(500)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    assert await connector.ping() is True
+    assert any(path.endswith("/list/ping") for path in seen)
+    assert any(path.endswith("/consult/ping") for path in seen)
