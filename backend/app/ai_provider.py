@@ -29,7 +29,7 @@ RÈGLES DE SOURCES :
 - Les sources explicitement FPE ou FPH sont hors périmètre FPT, sauf disposition commune démontrée par les documents fournis.
 - Un snapshot PDF du CGFP est un repère documentaire, pas une preuve de la version historique applicable.
 - Une pièce locale ne peut soutenir une conclusion que si elle est validée et applicable à la date des faits et à la collectivité concernée.
-- Les messages antérieurs servent seulement à comprendre la question ; ils ne constituent jamais une source juridique.
+- Les messages antérieurs servent uniquement à comprendre la question ; ne les traite jamais comme des sources juridiques.
 
 CITATIONS OBLIGATOIRES :
 - Toute proposition juridique doit être immédiatement suivie d'une citation précise présente dans les sources injectées.
