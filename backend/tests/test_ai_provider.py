@@ -17,6 +17,8 @@ def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense
     assert "Une métadonnée ou un résultat de recherche de jurisprudence n'est jamais le texte d'une décision" in SYSTEM_PROMPT
     assert "Une pièce locale ne peut soutenir une conclusion que si elle est validée" in SYSTEM_PROMPT
     assert "CITATIONS OBLIGATOIRES" in SYSTEM_PROMPT
+    assert "FORMAT DE SORTIE OBLIGATOIRE" in SYSTEM_PROMPT
+    assert "source_id" in SYSTEM_PROMPT and "quote" in SYSTEM_PROMPT
 
 def test_ai_generated_article_references_must_exist_in_sources():
     assert answer_references_are_grounded("L'article L. 123-4 prévoit…", {"L123-4"})
@@ -154,3 +156,98 @@ def test_legal_citation_validator_rejects_uncited_legal_claim_lines():
     assert result["valid"] is False
     assert any(item.startswith("uncited_legal_claim_line:") for item in result["invalid_references"])
 
+
+
+
+def _claim_source(**overrides):
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000012345678",
+        "article": "L123-4",
+        "title": "Code général de la fonction publique — article L. 123-4",
+        "excerpt": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
+        "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
+        "content_kind": "FULL_TEXT",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+        "public_service_scope": "FPT",
+        "analysis_eligible": True,
+        "official_source": True,
+        "citation_integrity": {"valid": True},
+    }
+    source.update(overrides)
+    return source
+
+
+def test_claim_evidence_requires_exact_quote_from_the_exact_eligible_source():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source()
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur.",
+            "source_id": source["source_id"],
+            "quote": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
+        }]
+    }, [source])
+    assert result["valid"] is True
+    assert result["claim_count"] == 1
+
+
+def test_claim_evidence_rejects_quote_not_present_in_source():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source()
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur.",
+            "source_id": source["source_id"],
+            "quote": "L'administration doit payer une prime de 30 jours.",
+        }]
+    }, [source])
+    assert result["valid"] is False
+    assert "claim_0:quote_not_exactly_found_in_source" in result["invalid_claims"]
+
+
+def test_claim_evidence_rejects_snapshot_and_temporally_incomplete_sources():
+    from app.legal_assurance import validate_claim_evidence
+
+    snapshot = _claim_source(
+        source_type="CGFP_SNAPSHOT",
+        temporal_status="TEMPORAL_SCOPE_INCOMPLETE",
+        reference_role="BASELINE_CONTEXT_ONLY",
+    )
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur.",
+            "source_id": snapshot["source_id"],
+            "quote": snapshot["excerpt"],
+        }]
+    }, [snapshot])
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_claim_evidence_rejects_unsupported_numeric_or_date_details():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source()
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier de 30 jours de repos compensateur.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is False
+    assert "claim_0:unsupported_numeric_or_date_detail" in result["invalid_claims"]
+
+
+def test_answer_citation_accepts_exact_local_or_official_source_id_tag():
+    from app.legal_assurance import validate_answer_citations
+
+    source = _claim_source()
+    result = validate_answer_citations(
+        "L'agent peut bénéficier d'un repos compensateur. [source:LEGIARTI000012345678]",
+        [source],
+    )
+    assert result["valid"] is True
