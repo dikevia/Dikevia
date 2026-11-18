@@ -93,7 +93,7 @@ services:
       - key: KC_CACHE
         value: local
       - key: KC_FEATURES
-        value: ""
+        value: stateless
       - key: KC_CACHE_EMBEDDED_CLUSTER_NAME
         value: ""
       - key: KC_DB
