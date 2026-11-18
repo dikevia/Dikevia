@@ -134,7 +134,8 @@ def test_api_routes_are_bound_to_authenticated_tenant_context():
 
 
 
-def test_member_cannot_mark_a_legal_dossier_as_human_validated():
+@pytest.mark.parametrize("restricted_status", ["VALIDE_HUMAINEMENT", "CLOTURE"])
+def test_member_cannot_human_validate_or_close_a_legal_dossier(restricted_status):
     from app.dossiers import build_dossier_content
 
     class ExistingDossierConnection(HiddenRowsConnection):
@@ -147,7 +148,7 @@ def test_member_cannot_mark_a_legal_dossier_as_human_validated():
     dossier = build_dossier_content({"title": "Dossier test"}, [
         {"role": "user", "content": "Question de test"}
     ])
-    dossier["status"] = "VALIDE_HUMAINEMENT"
+    dossier["status"] = restricted_status
     route = endpoint(
         "/api/v1/chat/conversations/{conversation_id}/dossier", "PUT"
     )
