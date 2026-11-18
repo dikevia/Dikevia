@@ -70,6 +70,8 @@ def validate_runtime_configuration(config: Settings) -> None:
     """Fail early on unsafe or incomplete production configuration."""
     if config.app_env not in {"development", "test", "production"}:
         raise RuntimeError("APP_ENV doit être development, test ou production.")
+    if config.app_env == "production" and config.debug:
+        raise RuntimeError("DEBUG doit être strictement désactivé en production.")
     algorithms = [part.strip() for part in config.oidc_algorithms.split(",") if part.strip()]
     if not algorithms or any(alg not in {"RS256", "ES256"} for alg in algorithms):
         raise RuntimeError("OIDC_ALGORITHMS doit contenir uniquement RS256 et/ou ES256.")
@@ -88,20 +90,6 @@ def validate_runtime_configuration(config: Settings) -> None:
         for billing_url in (config.billing_success_url, config.billing_cancel_url):
             if not _valid_https_or_local(billing_url, False):
                 raise RuntimeError("Les URL de retour Stripe doivent utiliser HTTPS en production.")
-    storage_values = (config.aws_endpoint_url_s3, config.aws_region, config.aws_access_key_id,
-                      config.aws_secret_access_key, config.document_storage_bucket)
-    if any(storage_values) and not all(storage_values):
-        raise RuntimeError("Configuration du stockage objet incomplète : endpoint, région, identifiants et bucket sont requis ensemble.")
-    if config.app_env == "production":
-        if not all(storage_values):
-            raise RuntimeError("Le stockage objet privé est obligatoire en production ; configurez le bucket Neon S3.")
-        storage_url = urlparse(config.aws_endpoint_url_s3)
-        if storage_url.scheme != "https" or not storage_url.hostname or storage_url.path not in ("", "/") or storage_url.query or storage_url.fragment:
-            raise RuntimeError("AWS_ENDPOINT_URL_S3 doit être une origine HTTPS valide.")
-        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", config.document_storage_bucket):
-            raise RuntimeError("DOCUMENT_STORAGE_BUCKET invalide.")
-        if config.debug:
-            raise RuntimeError("DEBUG doit être strictement désactivé en production.")
         if not config.database_url:
             raise RuntimeError("DATABASE_URL est obligatoire en production.")
         if not all(oidc_values):
@@ -180,5 +168,20 @@ def validate_runtime_configuration(config: Settings) -> None:
         if not _valid_https_or_local(config.invitation_base_url, config.app_env != "production"):
             raise RuntimeError("INVITATION_BASE_URL doit utiliser HTTPS en production (HTTP localhost autorisé en développement).")
 
+
+    storage_values = (config.aws_endpoint_url_s3, config.aws_region, config.aws_access_key_id,
+                      config.aws_secret_access_key, config.document_storage_bucket)
+    if any(storage_values) and not all(storage_values):
+        raise RuntimeError("Configuration du stockage objet incomplète : endpoint, région, identifiants et bucket sont requis ensemble.")
+    if config.app_env == "production":
+        if not all(storage_values):
+            raise RuntimeError("Le stockage objet privé est obligatoire en production ; configurez le bucket Neon S3.")
+        storage_url = urlparse(config.aws_endpoint_url_s3)
+        if storage_url.scheme != "https" or not storage_url.hostname or storage_url.path not in ("", "/") or storage_url.query or storage_url.fragment:
+            raise RuntimeError("AWS_ENDPOINT_URL_S3 doit être une origine HTTPS valide.")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", config.document_storage_bucket):
+            raise RuntimeError("DOCUMENT_STORAGE_BUCKET invalide.")
+        if config.debug:
+            raise RuntimeError("DEBUG doit être strictement désactivé en production.")
 
 settings = Settings()
