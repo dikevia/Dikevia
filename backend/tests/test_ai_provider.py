@@ -379,3 +379,22 @@ async def test_legacy_single_fact_date_remains_a_single_day():
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
     assert response.clarification_question is None
     assert any("2024-01-15" in item for item in response.missing_information)
+
+
+def test_period_scoped_official_source_id_remains_grounded_for_citation_validation():
+    from app.legal_assurance import validate_answer_citations
+
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000012345678_V20240101",
+        "official_source_id": "LEGIARTI000012345678",
+        "article": "L123-4",
+        "title": "Code général de la fonction publique — article L. 123-4",
+        "excerpt": "Article L. 123-4 : règle officielle vérifiée.",
+        "citation_integrity": {"valid": True},
+    }
+    result = validate_answer_citations(
+        "L'article L. 123-4 prévoit une règle documentée. [source:LEGIARTI000012345678_V20240101]",
+        [source],
+    )
+    assert result["valid"] is True
