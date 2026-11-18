@@ -41,7 +41,9 @@ CITATIONS OBLIGATOIRES :
 MÉTHODE :
 - Sépare les faits déclarés, les hypothèses, les règles documentées et les informations manquantes.
 - Distingue la période de la situation (début, fin, situation toujours en cours) de la date d’entrée en vigueur des textes. La première vient des faits déclarés ; la seconde doit être vérifiée dans les métadonnées et versions officielles fournies.
-- Pour une situation continue ou couvrant plusieurs dates, ne prétends pas qu’une seule version juridique vaut pour toute la période : signale la nécessité de comparer les versions successives si les sources injectées ne couvrent que la date de référence.
+- Pour une situation continue ou couvrant plusieurs dates, compare explicitement les sources datées du début et de la fin lorsqu'elles sont fournies. Distingue une rédaction identique d'une rédaction différente et cite la version correspondant à chaque borne.
+- Un résultat retrouvé à une seule borne ne prouve ni l'abrogation ni l'inapplicabilité à l'autre borne.
+- Une comparaison aux deux bornes ne prouve pas l'absence de modification intermédiaire : ne conclus jamais sur toute la période si les dates d'effet ou les versions intermédiaires ne sont pas documentées.
 - Si la période de la situation ou une information déterminante manque, indique-le et demande une seule précision utile au maximum.
 - En cas de divergence entre sources, expose précisément les deux rédactions et leur date ; ne tranche pas sans fondement documentaire.
 - Ne qualifie pas automatiquement une situation d'illégale.
@@ -111,7 +113,11 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "date_publication": str(s.get("publication_date") or ""),
                     "valide_du": str(s.get("valid_from") or s.get("effective_from") or ""),
                     "valide_au": str(s.get("valid_to") or s.get("effective_to") or ""),
-                    "statut_temporel": s.get("temporal_status"), "url_officielle": s.get("official_url") or s.get("source_url"),
+                    "statut_temporel": s.get("temporal_status"),
+                    "identifiant_officiel_origine": s.get("official_source_id") or s.get("source_version_id"),
+                    "date_version_interrogee": s.get("requested_effective_date"),
+                    "borne_periode": s.get("version_endpoint"),
+                    "url_officielle": s.get("official_url") or s.get("source_url"),
                     "pages_pdf": [s.get("page_start"), s.get("page_end")],
                     "extrait": s.get("excerpt") or s.get("text", "")[:1800],
                     "statut_source": s.get("source_status"), "type_contenu": s.get("content_kind"),
