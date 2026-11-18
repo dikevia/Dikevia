@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   smoke-test:
+    if: github.event_name == 'pull_request'
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
