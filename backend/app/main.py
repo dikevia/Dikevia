@@ -67,14 +67,28 @@ async def _startup_external_diagnostics() -> None:
     else:
         logger.warning("DIKEVIA_DIAGNOSTIC PISTE=NOT_CONFIGURED")
 
-    ai_status = await check_provider_availability()
+    ai_configured = bool(settings.ai_api_base_url and settings.ai_api_key and settings.ai_model)
     logger.info(
-        "DIKEVIA_DIAGNOSTIC AI_MODEL_CATALOG=%s model=%s http_status=%s reason=%s",
-        ai_status.get("status"),
+        "DIKEVIA_DIAGNOSTIC AI_CHECK_START configured=%s base_url=%s key=%s model=%s",
+        ai_configured,
+        bool(settings.ai_api_base_url),
+        bool(settings.ai_api_key),
         settings.ai_model or "not-configured",
-        ai_status.get("http_status", "-"),
-        ai_status.get("reason", "-"),
     )
+    try:
+        ai_status = await asyncio.wait_for(check_provider_availability(), timeout=12.0)
+    except asyncio.TimeoutError:
+        ai_status = {"status": "TIMEOUT"}
+    except Exception as exc:
+        logger.warning("DIKEVIA_DIAGNOSTIC AI_MODEL_CATALOG=FAILED error_type=%s", type(exc).__name__)
+    else:
+        logger.info(
+            "DIKEVIA_DIAGNOSTIC AI_MODEL_CATALOG=%s model=%s http_status=%s reason=%s",
+            ai_status.get("status"),
+            settings.ai_model or "not-configured",
+            ai_status.get("http_status", "-"),
+            ai_status.get("reason", "-"),
+        )
 
 
 @asynccontextmanager
