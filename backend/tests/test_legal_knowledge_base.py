@@ -129,8 +129,9 @@ async def test_search_marks_unknown_temporal_range_as_incomplete():
                 "version_status": "UNKNOWN", "full_text": full_text,
                 "text_sha256": sha256_text(full_text), "anchor": None, "content": full_text,
                 "content_kind": "FULL_TEXT", "rank": 0.5}]
-    result = await search_legal_corpus(FakeConn(), "decret fonction publique", date(2026, 1, 1))
-    assert "c.content_kind='FULL_TEXT'" in FakeConn.query
+    conn = FakeConn()
+    result = await search_legal_corpus(conn, "decret fonction publique", date(2026, 1, 1))
+    assert "c.content_kind='FULL_TEXT'" in conn.query
     assert result[0]["temporal_status"] == "TEMPORAL_SCOPE_INCOMPLETE"
     assert result[0]["citation_integrity"]["text_hash_verified"] is True
     assert result[0]["citation_integrity"]["valid"] is True
