@@ -22,7 +22,6 @@ wait_for_keycloak_ready() {
       printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
       response=""
       IFS= read -r -t 3 response <&3 || true
-      exec 3<&-
       exec 3>&-
       if [[ "$response" == *" 200 "* ]]; then
         return 0
@@ -77,6 +76,13 @@ if [[ -n "${DIKEVIA_BOOTSTRAP_ADMIN_USERNAME:-}" ||
         echo "Could not provision the initial Dikévia administrator." >&2
         exit 1
       fi
+    fi
+
+    existing="$("${KC_BIN}/kcadm.sh" get users -r cfdt \
+      -q "username=$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME")"
+    if [[ "$existing" != *"$DIKEVIA_BOOTSTRAP_ADMIN_SUBJECT"* ]]; then
+      echo "Keycloak did not preserve the configured administrator subject." >&2
+      exit 1
     fi
 
     "${KC_BIN}/kcadm.sh" set-password -r cfdt \
