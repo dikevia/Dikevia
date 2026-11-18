@@ -436,3 +436,20 @@ async def test_ai_gateway_availability_reports_disabled_model_without_inference(
 
     result = await check_provider_availability(transport=httpx.MockTransport(handler))
     assert result == {"status": "MODEL_DISABLED", "reason": "paid_plan_required"}
+
+
+def test_neon_gateway_bare_host_is_normalized_to_openai_v1(monkeypatch):
+    from app.ai_provider import _provider_api_base
+
+    monkeypatch.setattr(
+        settings, "ai_api_base_url",
+        "https://br-example-api.ai.c-8.us-east-2.aws.neon.tech",
+    )
+    assert _provider_api_base() == "https://br-example-api.ai.c-8.us-east-2.aws.neon.tech/v1"
+
+
+def test_non_neon_provider_base_url_is_preserved(monkeypatch):
+    from app.ai_provider import _provider_api_base
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://api.example/v1")
+    assert _provider_api_base() == "https://api.example/v1"
