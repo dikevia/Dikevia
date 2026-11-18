@@ -69,7 +69,7 @@ async def _startup_external_diagnostics() -> None:
         logger.warning("DIKEVIA_DIAGNOSTIC PISTE=NOT_CONFIGURED")
 
     ai_configured = bool(settings.ai_api_base_url and settings.ai_api_key and settings.ai_model)
-    logger.info(
+    logger.warning(
         "DIKEVIA_DIAGNOSTIC AI_CHECK_START configured=%s base_url=%s key=%s model=%s",
         ai_configured,
         bool(settings.ai_api_base_url),
@@ -84,7 +84,7 @@ async def _startup_external_diagnostics() -> None:
     except Exception as exc:
         logger.warning("DIKEVIA_DIAGNOSTIC AI_MODEL_CATALOG=FAILED error_type=%s", type(exc).__name__)
     else:
-        logger.info(
+        logger.warning(
             "DIKEVIA_DIAGNOSTIC AI_MODEL_CATALOG=%s model=%s http_status=%s reason=%s",
             ai_status.get("status"),
             settings.ai_model or "not-configured",
