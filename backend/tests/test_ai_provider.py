@@ -477,3 +477,50 @@ def test_non_neon_provider_base_url_is_preserved(monkeypatch):
 
     monkeypatch.setattr(settings, "ai_api_base_url", "https://api.example/v1")
     assert _provider_api_base() == "https://api.example/v1"
+
+
+@pytest.mark.asyncio
+async def test_gemini_model_availability_uses_read_only_models_get_and_header_key(monkeypatch):
+    import httpx
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-gemini-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-3.8-flash")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+
+    def handler(request):
+        assert request.method == "GET"
+        assert request.url.path == "/v1beta/models/gemini-3.8-flash"
+        assert request.url.query == ""
+        assert request.headers["x-goog-api-key"] == "test-gemini-key"
+        assert "Authorization" not in request.headers
+        return httpx.Response(200, json={
+            "name": "models/gemini-3.8-flash",
+            "supportedGenerationMethods": ["generateContent"],
+        })
+
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+    assert result == {"status": "AVAILABLE"}
+
+
+@pytest.mark.asyncio
+async def test_gemini_model_availability_fails_closed_when_model_is_missing(monkeypatch):
+    import httpx
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-gemini-key")
+    monkeypatch.setattr(settings, "ai_model", "missing-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+
+    def handler(request):
+        assert request.method == "GET"
+        return httpx.Response(404, json={"error": {"status": "NOT_FOUND"}})
+
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+    assert result == {"status": "MODEL_NOT_FOUND"}
+
+
+def test_gemini_openai_compatible_base_is_preserved(monkeypatch):
+    from app.ai_provider import _provider_api_base, _is_gemini_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai/")
+    assert _is_gemini_provider() is True
+    assert _provider_api_base() == "https://generativelanguage.googleapis.com/v1beta/openai"
