@@ -90,7 +90,7 @@ jobs:
           TEST_PLATFORM_ADMIN_DATABASE_URL: postgresql://cfdt_juris_platform_admin:ci-platform-admin-password@127.0.0.1:5432/cfdt_juris
         run: pytest -q backend/tests
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh deploy/init/*.sh
+        run: bash -n scripts/*.sh deploy/init/*.sh deploy/keycloak/*.sh
       - name: Validate Docker Compose configurations
         run: |
           cp deploy/.env.example .env
