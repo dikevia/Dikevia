@@ -6,6 +6,7 @@ legality or resolve conflicts without a complete legal analysis.
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 # This is a review order, not a universal rule for resolving every conflict.
@@ -107,6 +108,9 @@ _CASE_CITATION_RE = re.compile(
     re.IGNORECASE,
 )
 _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGNORECASE)
+_SOURCE_ID_CITATION_RE = re.compile(r"\[source:([A-Za-z0-9:_-]{6,128})\]", re.IGNORECASE)
+_NUMERIC_FACT_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)\b", re.IGNORECASE)
+_DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b")
 _LEGAL_CLAIM_RE = re.compile(
     r"\b(?:doit|doivent|peut|peuvent|ne peut pas|obligation|interdit|délai|droit|"
     r"prévoit|impose|autorise|permet|applicable|illégal|licite|est tenu|sont tenus|jurisprudence|juridiction|conformément|en vertu|"
@@ -173,6 +177,8 @@ def validate_answer_citations(
         detected.append(("case", match.group(1)))
     for match in _OFFICIAL_ID_RE.finditer(answer or ""):
         detected.append(("id", match.group(0)))
+    for match in _SOURCE_ID_CITATION_RE.finditer(answer or ""):
+        detected.append(("id", match.group(1)))
 
     invalid: list[str] = []
     for kind, value in detected:
@@ -194,6 +200,7 @@ def validate_answer_citations(
     citation_patterns = (
         _ARTICLE_CITATION_RE, _STANDALONE_CODE_ARTICLE_RE,
         _AUTHORITY_CITATION_RE, _CASE_CITATION_RE, _OFFICIAL_ID_RE,
+        _SOURCE_ID_CITATION_RE,
     )
     for line_number, line in enumerate((answer or "").splitlines(), start=1):
         stripped = line.strip()
@@ -218,3 +225,126 @@ def validate_answer_citations(
         "verification_scope": "EXACT_REFERENCE_MATCH_AGAINST_INJECTED_VALID_SOURCES_ONLY",
     }
 
+
+
+def _normalized_evidence_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
+
+
+def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict[str, Any]:
+    """Fail closed unless each generated legal claim quotes its own eligible source.
+
+    This verifies exact quote provenance, source identity, date/scope eligibility and
+    simple numeric/date consistency. It does not prove semantic entailment; human
+    legal review remains necessary for the interpretation of each quoted passage.
+    """
+    if not isinstance(payload, dict) or not isinstance(payload.get("claims"), list):
+        return {
+            "valid": False, "claims": [],
+            "invalid_claims": ["structured_claims_missing_or_invalid"],
+            "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_AND_NUMERIC_CHECKS",
+        }
+
+    raw_claims = payload["claims"]
+    if len(raw_claims) > 12:
+        return {
+            "valid": False, "claims": [],
+            "invalid_claims": ["too_many_claims"],
+            "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_AND_NUMERIC_CHECKS",
+        }
+
+    eligible_statuses = {
+        "IN_FORCE_ON_REQUESTED_DATE",
+        "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "VERIFIED_APPLICABLE",
+    }
+    eligible_by_id: dict[str, list[dict[str, Any]]] = {}
+    for source in sources:
+        source_id = source.get("source_id")
+        if not isinstance(source_id, str) or not source_id:
+            continue
+        source_type = str(source.get("source_type") or "")
+        integrity = source.get("citation_integrity") or {}
+        temporal_status = source.get("temporal_status")
+        if integrity.get("valid") is not True:
+            continue
+        if source_type in {"CGFP_SNAPSHOT", "LEGIFRANCE_CETAT_SEARCH"}:
+            continue
+        if source.get("content_kind") == "METADATA":
+            continue
+        if source.get("reference_role") == "BASELINE_CONTEXT_ONLY":
+            continue
+        if source.get("analysis_eligible") is False or source.get("public_service_scope") == "SCOPE_TO_VERIFY":
+            continue
+        if temporal_status not in eligible_statuses:
+            continue
+        if source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
+            if source.get("validation_status") != "VERIFIED_APPLICABLE":
+                continue
+        elif source_type not in {
+            "LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT",
+        } and source.get("official_source") is not True:
+            continue
+        evidence_text = source.get("excerpt") or str(source.get("text") or "")[:1800]
+        normalized_evidence = _normalized_evidence_text(evidence_text)
+        if len(normalized_evidence) < 20:
+            continue
+        eligible_by_id.setdefault(source_id, []).append({
+            "source": source,
+            "normalized_evidence": normalized_evidence,
+        })
+
+    validated: list[dict[str, str]] = []
+    invalid: list[str] = []
+    for index, item in enumerate(raw_claims):
+        if not isinstance(item, dict):
+            invalid.append(f"claim_{index}:not_an_object")
+            continue
+        claim_text = item.get("text")
+        source_id = item.get("source_id")
+        quote = item.get("quote")
+        if not isinstance(claim_text, str) or not 12 <= len(claim_text.strip()) <= 1500 or "\n" in claim_text or "\r" in claim_text:
+            invalid.append(f"claim_{index}:invalid_text")
+            continue
+        if not isinstance(source_id, str) or not 6 <= len(source_id) <= 128:
+            invalid.append(f"claim_{index}:invalid_source_id")
+            continue
+        if not isinstance(quote, str) or not 20 <= len(quote.strip()) <= 1000:
+            invalid.append(f"claim_{index}:invalid_quote")
+            continue
+        matching_sources = eligible_by_id.get(source_id, [])
+        if len(matching_sources) != 1:
+            invalid.append(f"claim_{index}:source_missing_ineligible_or_ambiguous")
+            continue
+        normalized_quote = _normalized_evidence_text(quote)
+        normalized_evidence = matching_sources[0]["normalized_evidence"]
+        if normalized_quote not in normalized_evidence:
+            invalid.append(f"claim_{index}:quote_not_exactly_found_in_source")
+            continue
+        # Dates and quantified rules are high-risk hallucination vectors. Require
+        # every such value in the paraphrase to appear in its exact supporting quote.
+        quote_folded = normalized_quote.casefold()
+        unsupported_numbers = [
+            value for value in _NUMERIC_FACT_RE.findall(claim_text)
+            if _normalized_evidence_text(value).casefold() not in quote_folded
+        ]
+        unsupported_dates = [
+            value for value in _DATE_FACT_RE.findall(claim_text)
+            if _normalized_evidence_text(value).casefold() not in quote_folded
+        ]
+        if unsupported_numbers or unsupported_dates:
+            invalid.append(f"claim_{index}:unsupported_numeric_or_date_detail")
+            continue
+        validated.append({
+            "text": " ".join(claim_text.split()),
+            "source_id": source_id,
+            "quote": " ".join(quote.split()),
+        })
+
+    return {
+        "valid": not invalid,
+        "claims": validated,
+        "invalid_claims": invalid,
+        "claim_count": len(validated),
+        "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_AND_NUMERIC_CHECKS_NOT_SEMANTIC_ENTAILMENT",
+    }
