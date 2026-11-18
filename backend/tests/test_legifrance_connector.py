@@ -16,7 +16,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
         seen.append((request.method, request.url.path))
         if request.url.path == "/api/oauth/token":
             return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
-        if request.url.path.endswith("/list/ping"):
+        if request.url.path.endswith("/consult/ping"):
             assert request.headers["Authorization"] == "Bearer unit-token"
             return httpx.Response(200, json={"status": "ok"})
         if request.url.path.endswith("/search"):
