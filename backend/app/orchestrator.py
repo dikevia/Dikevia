@@ -1,6 +1,7 @@
 import asyncio
 import json
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from uuid import uuid4
 import logging
 
@@ -22,6 +23,10 @@ case_law_connector = AdministrativeCaseLawConnector(legifrance)
 logger = logging.getLogger(__name__)
 
 
+def _france_today() -> date:
+    return datetime.now(ZoneInfo("Europe/Paris")).date()
+
+
 class LegalOrchestrator:
     async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None) -> AskResponse:
         request_id = str(uuid4())
@@ -37,7 +42,7 @@ class LegalOrchestrator:
             if period_start and period_end and period_end < period_start:
                 raise ValueError("La fin de la période ne peut pas précéder son début.")
             effective_date = (
-                date.today() if request.situation_ongoing or not (period_start or period_end)
+                _france_today() if request.situation_ongoing or not (period_start or period_end)
                 else (period_end or period_start)
             )
             # Only an explicitly described situation period authorizes a case-specific
