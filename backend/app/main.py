@@ -579,9 +579,13 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
     existing = await ctx.conn.fetchrow("SELECT id,content FROM legal_dossiers WHERE conversation_id=$1::uuid", conversation_uuid)
     if not existing:
         raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
-    if content.get("status") in {"VALIDE_HUMAINEMENT", "CLOTURE"} and ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR"):
-        raise HTTPException(403, "La validation humaine et la clôture d'un dossier sont réservées aux responsables habilités.")
     stored = decode_jsonb(existing["content"])
+    restricted_statuses = {"VALIDE_HUMAINEMENT", "CLOTURE"}
+    if (
+        content.get("status") in restricted_statuses
+        or stored.get("status") in restricted_statuses
+    ) and ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR"):
+        raise HTTPException(403, "La validation humaine, la réouverture et la modification d'un dossier validé ou clôturé sont réservées aux responsables habilités.")
     # Original exchanges, AI analyses, citations and verification metadata are immutable here.
     # Only the explicitly editable dossier fields may be changed by the user.
     editable = {"status", "title", "employer", "objective", "facts_summary", "chronology",
