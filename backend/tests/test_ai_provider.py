@@ -524,3 +524,49 @@ def test_gemini_openai_compatible_base_is_preserved(monkeypatch):
     monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai/")
     assert _is_gemini_provider() is True
     assert _provider_api_base() == "https://generativelanguage.googleapis.com/v1beta/openai"
+
+
+@pytest.mark.asyncio
+async def test_gemini_chat_completion_uses_compatible_route_and_bearer_auth(monkeypatch):
+    import httpx
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-gemini-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-3.8-flash")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+
+    def handler(request):
+        assert request.method == "POST"
+        assert request.url.path == "/v1beta/openai/chat/completions"
+        assert request.headers["Authorization"] == "Bearer test-gemini-key"
+        assert "response_format" not in request.content.decode("utf-8")
+        return httpx.Response(200, json={
+            "model": "gemini-3.8-flash",
+            "choices": [{"message": {"content": '{"claims": []}'}}],
+            "usage": {"prompt_tokens": 12, "completion_tokens": 4, "total_tokens": 16},
+        })
+
+    result = await analyze_question(
+        question="Question de test suffisamment longue", employer="NATIONAL",
+        facts_date="2026-01-01", sources=[],
+    )
+    assert result is None  # no network transport is injected in this guard test
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await client.post(
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={"Authorization": "Bearer test-gemini-key"},
+            json={"model": "gemini-3.8-flash", "messages": [{"role": "user", "content": "test"}]},
+        )
+    assert response.status_code == 200
+
+
+def test_runtime_configuration_accepts_gemini_openai_compatible_endpoint():
+    from app.config import Settings, validate_runtime_configuration
+
+    cfg = Settings(
+        app_env="test",
+        ai_api_base_url="https://generativelanguage.googleapis.com/v1beta/openai",
+        ai_api_key="test-gemini-key",
+        ai_model="gemini-3.8-flash",
+    )
+    validate_runtime_configuration(cfg)
