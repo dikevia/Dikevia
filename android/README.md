@@ -1,0 +1,12 @@
+# Dikévia Android beta
+
+This Android shell loads the commercial Dikévia web application over HTTPS and keeps the OIDC Authorization Code + PKCE flow inside the same WebView session.
+
+- Package: `fr.dikevia.commercial.beta`
+- Minimum Android: 7.0 (API 24)
+- Build: debug APK, signed automatically with the Android debug key by Gradle
+- Allowed in-app origins: the commercial API and the dedicated Keycloak identity service
+- External HTTPS links open in the device browser
+- File selection is enabled for document attachments
+
+The beta APK is not a Play Store release. A production release requires a dedicated signing key, device testing, and completed account provisioning.
