@@ -334,7 +334,7 @@ async def test_orchestrator_asks_for_situation_period_instead_of_assuming_today(
     request = AskRequest(employer="NATIONAL", question="Question juridique suffisamment longue")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
     assert response.clarification_question
-    assert "date d'entrée en vigueur" in response.answer
+    assert any("date d'entrée en vigueur" in item for item in response.missing_information)
     assert response.clarification_question
 
 
