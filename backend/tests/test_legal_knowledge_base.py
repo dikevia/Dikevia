@@ -117,7 +117,9 @@ async def test_search_marks_unknown_temporal_range_as_incomplete():
     from app.legal_corpus import search_legal_corpus
     full_text = "Texte intégral officiel conservé et contrôlé par son empreinte SHA-256."
     class FakeConn:
-        async def fetch(self, query, *args):
+        query = ""
+        async def fetch(self, sql, *args):
+            self.query = sql
             return [{"document_id": "d", "version_id": "v", "source_type": "LEGIFRANCE_LODA",
                 "source_id": "LEGITEXT000000000001", "title": "Décret test", "document_kind": "DECREE",
                 "official_number": "2024-100", "jurisdiction": None,
@@ -128,6 +130,7 @@ async def test_search_marks_unknown_temporal_range_as_incomplete():
                 "text_sha256": sha256_text(full_text), "anchor": None, "content": full_text,
                 "content_kind": "FULL_TEXT", "rank": 0.5}]
     result = await search_legal_corpus(FakeConn(), "decret fonction publique", date(2026, 1, 1))
+    assert "c.content_kind='FULL_TEXT'" in FakeConn.query
     assert result[0]["temporal_status"] == "TEMPORAL_SCOPE_INCOMPLETE"
     assert result[0]["citation_integrity"]["text_hash_verified"] is True
     assert result[0]["citation_integrity"]["valid"] is True
