@@ -8,8 +8,18 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /ready
+    buildFilter:
+      paths:
+        - backend/**
+        - frontend/**
+        - database/**
+        - Dockerfile
+        - requirements.txt
+        - render.yaml
     autoDeployTrigger: checksPass
     envVars:
+      - key: PORT
+        value: "8000"
       - key: APP_ENV
         value: production
       - key: DEBUG
@@ -70,10 +80,16 @@ services:
     dockerfilePath: ./deploy/keycloak/Dockerfile
     dockerContext: .
     healthCheckPath: /health/ready
+    buildFilter:
+      paths:
+        - deploy/keycloak/**
+        - render.yaml
     autoDeployTrigger: checksPass
     envVars:
       - key: KC_DB
         value: postgres
+      - key: KC_FEATURES
+        value: stateless
       - key: KC_DB_URL
         sync: false
       - key: KC_DB_SCHEMA
