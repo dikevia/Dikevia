@@ -22,7 +22,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
         if request.url.path.endswith("/search"):
             body = __import__("json").loads(request.content)
             assert body["fond"] == "CODE_DATE"
-            assert body["recherche"]["filtres"][1]["singleDate"] == 1763251200000
+            assert body["recherche"]["filtres"][1]["singleDate"] == "2025-11-16"
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
             return httpx.Response(200, json={"id": ARTICLE_ID, "dateDebut": "2025-01-01", "article": {"texte": "Article L. 123-4 Le texte réglementaire officiel est ici suffisamment long pour le test."}})
