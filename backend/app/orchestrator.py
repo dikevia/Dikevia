@@ -74,7 +74,7 @@ def _compare_official_period_versions(
         canonical = (
             str(source.get("article") or source.get("official_source_id") or source.get("source_version_id") or "")
             if source_type == "LEGIFRANCE_API" else
-            str(source.get("source_version_id") or source.get("official_source_id") or "")
+            str(source.get("official_number") or source.get("source_version_id") or source.get("official_source_id") or "")
         )
         if not canonical:
             continue
@@ -557,7 +557,7 @@ class LegalOrchestrator:
             missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
             if not temporal_context["period_start"]:
                 missing.insert(1, "Début de la situation non précisé : l'analyse porte sur les règles vérifiées à la date actuelle et ne permet pas de reconstituer toute l'histoire antérieure.")
-        elif period_version_comparison:
+        if period_version_comparison:
             missing.insert(0, (
                 "Comparaison Légifrance aux deux bornes : "
                 f"{period_version_comparison['changed_text_count']} rédaction(s) différente(s), "
