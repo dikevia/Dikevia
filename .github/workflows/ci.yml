@@ -115,6 +115,7 @@ jobs:
           retention-days: 30
 
   live-smoke:
+    if: github.event_name == 'pull_request'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
     continue-on-error: true
