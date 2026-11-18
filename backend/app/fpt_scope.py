@@ -88,7 +88,7 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     if is_ihts_reference:
         return {
             "scope": "FPT_REFERENCE",
-            "evidence": ["decret 2002-60 : reference IHTS a verifier avec le decret 91-875 et la deliberation locale"],
+            "evidence": ["Décret 2002-60 : référence IHTS à vérifier avec le décret 91-875 et la délibération locale"],
             "analysis_eligible": True,
         }
 
