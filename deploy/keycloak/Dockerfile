@@ -11,7 +11,7 @@ ENV KC_DB=postgres \
     JAVA_OPTS_KC_HEAP="-XX:MaxRAMPercentage=40 -XX:InitialRAMPercentage=20"
 
 # Build the optimized server image once, rather than augmenting it at every boot.
-RUN /opt/keycloak/bin/kc.sh build --db=postgres --health-enabled=true --metrics-enabled=true --http-enabled=true --proxy-headers=xforwarded
+RUN /opt/keycloak/bin/kc.sh build --db=postgres --health-enabled=true --metrics-enabled=true --http-enabled=true --proxy-headers=xforwarded --http-management-health-enabled=false
 
 EXPOSE 10000
 
