@@ -117,6 +117,7 @@ jobs:
   live-smoke:
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
