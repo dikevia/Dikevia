@@ -87,7 +87,9 @@
   window.CFDT_JURIS_AUTH = {
     ready,
     async getAccessToken() { await ready; if (!accessToken || Date.now() >= expiresAt-30000) return null; return accessToken; },
-    async login() { await ready; return login(); },
+    // Une callback précédente peut avoir échoué (code refusé, CORS, réseau).
+    // Cela ne doit pas empêcher l'utilisateur de relancer une authentification.
+    async login() { await ready.catch(() => {}); return login(); },
     async logout() { accessToken=null;expiresAt=0;sessionStorage.removeItem('cfdt_oidc_state');sessionStorage.removeItem('cfdt_oidc_verifier');const oidc=await metadata().catch(()=>null);if(oidc?.end_session_endpoint)window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({client_id:cfg.client_id,post_logout_redirect_uri:cfg.redirect_uri})); }
   };
 })();
