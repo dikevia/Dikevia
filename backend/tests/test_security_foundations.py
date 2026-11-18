@@ -20,7 +20,7 @@ def test_chat_never_fabricates_without_sources():
     response = asyncio.run(LegalOrchestrator().ask(
         AskRequest(employer="NATIONAL", question="Quelle règle s'applique ici ?"),
         "00000000-0000-0000-0000-000000000001"))
-    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.verification_status == "NON_VERIFIE"
     assert response.sources
     assert any("Légifrance" in item for item in response.missing_information)
 
