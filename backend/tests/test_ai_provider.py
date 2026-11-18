@@ -490,7 +490,7 @@ async def test_gemini_model_availability_uses_read_only_models_get_and_header_ke
     def handler(request):
         assert request.method == "GET"
         assert request.url.path == "/v1beta/models/gemini-3.8-flash"
-        assert request.url.query == ""
+        assert request.url.query == b""
         assert request.headers["x-goog-api-key"] == "test-gemini-key"
         assert "Authorization" not in request.headers
         return httpx.Response(200, json={
