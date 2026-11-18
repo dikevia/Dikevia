@@ -29,6 +29,11 @@ class LegalOrchestrator:
             legacy_date = parse_facts_date(request.facts_date)
             period_start = parse_facts_date(request.facts_start_date) or legacy_date
             period_end = parse_facts_date(request.facts_end_date)
+            if legacy_date and not request.facts_start_date and not request.facts_end_date:
+                # Compatibility: the former single-date field describes one exact day.
+                period_end = legacy_date
+            if request.situation_ongoing and period_end:
+                raise ValueError("Une situation déclarée toujours en cours ne peut pas avoir de date de fin.")
             if period_start and period_end and period_end < period_start:
                 raise ValueError("La fin de la période ne peut pas précéder son début.")
             effective_date = (
@@ -405,6 +410,8 @@ class LegalOrchestrator:
             missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
         if temporal_context["ongoing"]:
             missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
+            if not temporal_context["period_start"]:
+                missing.insert(1, "Début de la situation non précisé : l'analyse porte sur les règles vérifiées à la date actuelle et ne permet pas de reconstituer toute l'histoire antérieure.")
         elif temporal_context["period_start"] and temporal_context["period_end"] and temporal_context["period_start"] != temporal_context["period_end"]:
             missing.insert(0, "La période couvre plusieurs dates : la recherche actuelle est calée sur sa date de fin. Les versions successives des textes doivent être comparées avant de conclure sur l'ensemble de la période.")
 
