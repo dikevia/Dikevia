@@ -26,6 +26,82 @@ logger = logging.getLogger(__name__)
 def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
+def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
+    """Give each dated API result a unique citation key while retaining its official ID."""
+    tagged = []
+    for item in items:
+        source = dict(item)
+        official_id = source.get("source_id")
+        if not isinstance(official_id, str) or not official_id:
+            continue
+        source["official_source_id"] = official_id
+        source["source_version_id"] = source.get("source_version_id") or official_id
+        source["source_id"] = f"{official_id}_V{requested_date:%Y%m%d}"
+        source["requested_effective_date"] = requested_date.isoformat()
+        source["version_endpoint"] = endpoint
+        source["version_key"] = f"{official_id}:{requested_date.isoformat()}"
+        tagged.append(source)
+    return tagged
+
+
+def _compare_official_period_versions(
+    code_sources: list[dict], regulatory_sources: list[dict],
+    start_date: date, end_date: date,
+) -> dict:
+    """Compare the retrieved official texts at period endpoints without inferring missing law."""
+    grouped: dict[tuple[str, str], dict[str, dict]] = {}
+    for source in [*code_sources, *regulatory_sources]:
+        endpoint = source.get("version_endpoint")
+        if endpoint not in {"START", "END"}:
+            continue
+        source_type = str(source.get("source_type") or "")
+        canonical = (
+            str(source.get("article") or source.get("official_source_id") or source.get("source_version_id") or "")
+            if source_type == "LEGIFRANCE_API" else
+            str(source.get("source_version_id") or source.get("official_source_id") or "")
+        )
+        if not canonical:
+            continue
+        grouped.setdefault((source_type, canonical), {})[endpoint] = source
+
+    changed = unchanged = start_only = end_only = 0
+    details = []
+    for (source_type, canonical), versions in grouped.items():
+        start_source, end_source = versions.get("START"), versions.get("END")
+        if start_source and end_source:
+            start_text = " ".join(str(start_source.get("text") or start_source.get("full_text") or start_source.get("excerpt") or "").split())
+            end_text = " ".join(str(end_source.get("text") or end_source.get("full_text") or end_source.get("excerpt") or "").split())
+            status = "DIFFERENT_TEXT_AT_ENDPOINTS" if start_text != end_text else "SAME_TEXT_AT_ENDPOINTS"
+            if status == "DIFFERENT_TEXT_AT_ENDPOINTS":
+                changed += 1
+            else:
+                unchanged += 1
+        elif start_source:
+            status = "FOUND_ONLY_IN_START_SEARCH"
+            start_only += 1
+        else:
+            status = "FOUND_ONLY_IN_END_SEARCH"
+            end_only += 1
+        details.append({
+            "source_type": source_type, "canonical_reference": canonical,
+            "comparison": status,
+            "start_source_id": start_source.get("source_id") if start_source else None,
+            "end_source_id": end_source.get("source_id") if end_source else None,
+        })
+    return {
+        "status": "ENDPOINTS_COMPARED_NOT_COMPLETE_HISTORY",
+        "start_date": start_date.isoformat(), "end_date": end_date.isoformat(),
+        "changed_text_count": changed, "same_text_count": unchanged,
+        "start_only_search_count": start_only, "end_only_search_count": end_only,
+        "results": details[:30],
+        "limitation": (
+            "Comparaison des résultats Légifrance retrouvés aux deux bornes uniquement. "
+            "Un résultat absent à une borne ne prouve pas l'abrogation ou l'inapplicabilité. "
+            "Les modifications intermédiaires et dates d'effet de chaque version doivent être vérifiées."
+        ),
+    }
+
+
 
 class LegalOrchestrator:
     async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None) -> AskResponse:
@@ -95,55 +171,67 @@ class LegalOrchestrator:
 
         async def search_official_pillars():
             if not legifrance.configured:
-                return (
-                    [], [], [],
-                    "Identifiants PISTE non configurés : la recherche officielle d'articles du CGFP n'a pas été exécutée.",
-                    "Identifiants PISTE non configurés : la recherche des textes réglementaires n'a pas été exécutée.",
-                    "Identifiants PISTE non configurés : la recherche de jurisprudence CETAT n'a pas été exécutée.",
-                )
+                issue = "Identifiants PISTE non configurés : les recherches officielles Légifrance n'ont pas été exécutées."
+                return [], [], [], issue, issue, issue, issue
             try:
-                # Obtain one OAuth token before launching the three independent searches.
-                # This avoids concurrent token refresh races while keeping the searches parallel.
+                # Refresh OAuth once before the date-scoped searches to avoid token races.
                 await legifrance._get_token()
             except LegifranceUnavailable:
                 logger.exception("Authentification PISTE indisponible avant la recherche multi-sources.")
-                issue = "Authentification PISTE impossible : les trois recherches officielles n'ont pas pu être exécutées."
-                return [], [], [], issue, issue, issue
+                issue = "Authentification PISTE impossible : les recherches officielles n'ont pas pu être exécutées."
+                return [], [], [], issue, issue, issue, issue
 
-            results = await asyncio.gather(
-                legifrance.search_code_articles(live_query, effective_date),
-                legifrance.search_regulatory_texts(live_query, effective_date, limit=3),
-                case_law_connector.search(live_query, effective_date),
-                return_exceptions=True,
+            comparison_dates = (
+                [period_start, effective_date]
+                if period_start and period_start < effective_date else [effective_date]
             )
-            code_result, regulatory_result, case_result = results
-            code_issue = None
-            regulatory_search_issue = None
+            endpoint_results = await asyncio.gather(*[
+                asyncio.gather(
+                    legifrance.search_code_articles(live_query, requested_date),
+                    legifrance.search_regulatory_texts(live_query, requested_date, limit=3),
+                    return_exceptions=True,
+                )
+                for requested_date in comparison_dates
+            ])
+            code_result, regulatory_result = [], []
+            code_failures, regulatory_failures = [], []
+            for requested_date, pair in zip(comparison_dates, endpoint_results):
+                code_at_date, regulatory_at_date = pair
+                endpoint = "START" if requested_date == comparison_dates[0] and len(comparison_dates) > 1 else "END"
+                if isinstance(code_at_date, BaseException) or not isinstance(code_at_date, list):
+                    logger.error("Recherche code Légifrance en échec à %s : %r", requested_date, code_at_date)
+                    code_failures.append(requested_date.isoformat())
+                else:
+                    code_result.extend(_tag_official_versions(code_at_date, requested_date, endpoint))
+                if isinstance(regulatory_at_date, BaseException) or not isinstance(regulatory_at_date, list):
+                    logger.error("Recherche réglementaire Légifrance en échec à %s : %r", requested_date, regulatory_at_date)
+                    regulatory_failures.append(requested_date.isoformat())
+                else:
+                    regulatory_result.extend(_tag_official_versions(regulatory_at_date, requested_date, endpoint))
+
+            case_result = await case_law_connector.search(live_query, effective_date)
+            code_issue = (
+                "La recherche d'articles du CGFP sur Légifrance a échoué pour au moins une date de référence."
+                if code_failures else None
+            )
+            regulatory_search_issue = (
+                "La recherche des lois, décrets et arrêtés sur Légifrance a échoué pour au moins une date de référence."
+                if regulatory_failures else None
+            )
             case_search_issue = None
-            if isinstance(code_result, BaseException):
-                logger.error("Recherche Légifrance CGFP en échec : %r", code_result)
-                code_issue = "La recherche d'articles du CGFP sur Légifrance a échoué."
-                code_result = []
-            if isinstance(regulatory_result, BaseException):
-                logger.error("Recherche Légifrance des textes réglementaires en échec : %r", regulatory_result)
-                regulatory_search_issue = "La recherche des lois, décrets et arrêtés complémentaires sur Légifrance a échoué."
-                regulatory_result = []
-            if isinstance(case_result, BaseException):
-                logger.error("Recherche de jurisprudence CETAT en échec : %r", case_result)
+            if not isinstance(case_result, list):
+                logger.error("Recherche de jurisprudence CETAT non conforme : %r", case_result)
                 case_search_issue = "La recherche de jurisprudence administrative (fonds CETAT) n'a pas abouti."
                 case_result = []
-            if not isinstance(code_result, list):
-                code_issue = "La recherche d'articles du CGFP a retourné une structure non conforme."
-                code_result = []
-            if not isinstance(regulatory_result, list):
-                regulatory_search_issue = "La recherche réglementaire a retourné une structure non conforme."
-                regulatory_result = []
-            if not isinstance(case_result, list):
-                case_search_issue = "La recherche de jurisprudence a retourné une structure non conforme."
-                case_result = []
+            temporal_issue = None
+            if len(comparison_dates) > 1 and (code_failures or regulatory_failures):
+                temporal_issue = (
+                    "Comparaison temporelle incomplète : Légifrance n'a pas répondu pour les deux bornes "
+                    "de la période. Aucune conclusion couvrant toute la période n'est autorisée."
+                )
             return (
                 code_result, regulatory_result, case_result,
-                code_issue, regulatory_search_issue, case_search_issue,
+                code_issue, regulatory_search_issue, case_search_issue, temporal_issue,
             )
 
         # CGFP index + the three official search pillars are launched together.
@@ -154,8 +242,14 @@ class LegalOrchestrator:
         found, cgfp_issue = cgfp_result
         (
             live_sources, regulatory_sources, case_law_sources,
-            live_issue, regulatory_issue, case_law_issue,
+            live_issue, regulatory_issue, case_law_issue, temporal_issue,
         ) = official_result
+        period_version_comparison = None
+        if period_start and period_start < effective_date:
+            period_version_comparison = _compare_official_period_versions(
+                live_sources, regulatory_sources, period_start, effective_date,
+            )
+            temporal_context["version_comparison"] = period_version_comparison
 
         # CETAT search hits are metadata only. If the full-text route has not
         # been explicitly enabled and validated, never pass those hits to the model.
@@ -396,6 +490,8 @@ class LegalOrchestrator:
             missing.insert(0, "Certaines circulaires ou textes ne sont présents qu'au stade des métadonnées : ils ne sont pas utilisés pour produire une analyse IA.")
         if any(s.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE" for s in permanent_sources):
             missing.insert(0, "Des versions du corpus ont des dates d'effet incomplètes : elles sont signalées mais exclues des conclusions IA.")
+        if temporal_issue:
+            missing.insert(0, temporal_issue)
         if live_issue:
             missing.insert(0, live_issue)
         if regulatory_issue:
@@ -417,8 +513,12 @@ class LegalOrchestrator:
             missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
             if not temporal_context["period_start"]:
                 missing.insert(1, "Début de la situation non précisé : l'analyse porte sur les règles vérifiées à la date actuelle et ne permet pas de reconstituer toute l'histoire antérieure.")
-        elif temporal_context["period_start"] and temporal_context["period_end"] and temporal_context["period_start"] != temporal_context["period_end"]:
-            missing.insert(0, "La période couvre plusieurs dates : la recherche actuelle est calée sur sa date de fin. Les versions successives des textes doivent être comparées avant de conclure sur l'ensemble de la période.")
+        elif period_version_comparison:
+            missing.insert(0, (
+                "Comparaison Légifrance des textes retrouvés aux deux bornes effectuée. "
+                "Cette comparaison ne reconstitue pas toutes les modifications intermédiaires ; "
+                "les dates d'effet et éventuelles versions entre ces bornes restent à contrôler."
+            ))
 
         ai_sources: list[dict] = []
         ai_usage = None
@@ -428,7 +528,7 @@ class LegalOrchestrator:
                 0,
                 "Analyse juridique contextualisée suspendue : la date ou la période de la situation n'est pas renseignée. La recherche au jour présent sert uniquement au repérage documentaire ; elle ne permet pas de déterminer la règle applicable aux faits.",
             )
-        elif cgfp_issue or live_issue or regulatory_issue or case_law_issue:
+        elif cgfp_issue or live_issue or regulatory_issue or case_law_issue or temporal_issue:
             ai_answer = None
             missing.insert(
                 0,
