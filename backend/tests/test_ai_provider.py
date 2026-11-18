@@ -545,20 +545,16 @@ async def test_gemini_chat_completion_uses_compatible_route_and_bearer_auth(monk
             "usage": {"prompt_tokens": 12, "completion_tokens": 4, "total_tokens": 16},
         })
 
+    original_client = httpx.AsyncClient
+    monkeypatch.setattr(httpx, "AsyncClient", lambda *args, **kwargs: original_client(
+        *args, transport=httpx.MockTransport(handler), **kwargs
+    ))
     result = await analyze_question(
         question="Question de test suffisamment longue", employer="NATIONAL",
         facts_date="2026-01-01", sources=[],
     )
-    assert result is None  # no network transport is injected in this guard test
-
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        response = await client.post(
-            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-            headers={"Authorization": "Bearer test-gemini-key"},
-            json={"model": "gemini-3.8-flash", "messages": [{"role": "user", "content": "test"}]},
-        )
-    assert response.status_code == 200
-
+    assert result.content == '{"claims": []}'
+    assert result.total_tokens == 16
 
 def test_runtime_configuration_accepts_gemini_openai_compatible_endpoint():
     from app.config import Settings, validate_runtime_configuration
