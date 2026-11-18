@@ -52,6 +52,7 @@ def test_legifrance_search_payload_uses_code_date_and_article_number(monkeypatch
     payload = LegifranceConnector()._search_payload("article L. 123-4", date(2025, 1, 1))
     assert payload["fond"] == "CODE_DATE"
     assert payload["recherche"]["champs"][0]["criteres"][0]["valeur"] == "L123-4"
+    assert payload["recherche"]["typePagination"] == "DEFAUT"
 
 
 
@@ -78,7 +79,8 @@ async def test_legifrance_exact_article_query_rejects_consulted_body_for_another
 
 
 def test_legifrance_article_consultation_is_bounded_to_five_ids():
-    payload = {"results": [{"id": f"LEGIARTI{i:012d}"} for i in range(1, 12)]}
+    payload = {"results": [{"titles": [{"id": f"LEGIARTI{i:012d}", "cid": f"LEGIARTI{i:012d}"}]}
+                          for i in range(1, 12)]}
     ids = LegifranceConnector._find_article_ids(payload)
     assert len(ids) == 5
     assert ids[0] == "LEGIARTI000000000001"
