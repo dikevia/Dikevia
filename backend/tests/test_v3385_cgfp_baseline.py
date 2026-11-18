@@ -72,6 +72,10 @@ async def test_ai_receives_cgfp_baseline_before_date_verified_sources(monkeypatc
         }]}, ensure_ascii=False)
 
     monkeypatch.setattr(module, "analyze_question", fake_ai)
+    async def provider_available():
+        return {"status": "AVAILABLE"}
+
+    monkeypatch.setattr(module, "check_provider_availability", provider_available)
     async def supported_entailment(**kwargs):
         return {"valid": True, "invalid": []}
 
