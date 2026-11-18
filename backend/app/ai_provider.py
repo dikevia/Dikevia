@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 from dataclasses import dataclass
 import httpx
 from .config import settings
@@ -88,6 +88,11 @@ def _nonnegative_token_count(value):
 class AIProviderUnavailable(RuntimeError):
     pass
 
+def _is_gemini_provider() -> bool:
+    parsed = urlparse(settings.ai_api_base_url)
+    return parsed.hostname == "generativelanguage.googleapis.com" and parsed.path.rstrip("/") == "/v1beta/openai"
+
+
 def _provider_api_base() -> str:
     """Normalize Neon AI Gateway's documented bare host to its OpenAI-compatible /v1 route."""
     base = settings.ai_api_base_url.rstrip("/")
@@ -107,7 +112,6 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
     payload = {
         "model": settings.ai_model,
         "temperature": 0.1,
-        "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": json.dumps({
@@ -167,7 +171,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
 
 
 async def check_provider_availability(*, transport: httpx.AsyncBaseTransport | None = None) -> dict:
-    """Check the configured model catalog without generating text or consuming inference credits."""
+    """Check model availability through a read-only provider endpoint; never generate text."""
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
         return {"status": "NOT_CONFIGURED"}
     base = _provider_api_base()
@@ -175,6 +179,21 @@ async def check_provider_availability(*, transport: httpx.AsyncBaseTransport | N
         async with httpx.AsyncClient(
             timeout=min(settings.ai_timeout_seconds, 10.0), transport=transport
         ) as client:
+            if _is_gemini_provider():
+                # Native Gemini models.get is read-only and accepts the key in a header.
+                model_name = quote(settings.ai_model, safe="")
+                response = await client.get(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}",
+                    headers={"x-goog-api-key": settings.ai_api_key, "Accept": "application/json"},
+                )
+                if response.status_code == 404:
+                    return {"status": "MODEL_NOT_FOUND"}
+                response.raise_for_status()
+                payload = response.json()
+                methods = payload.get("supportedGenerationMethods", []) if isinstance(payload, dict) else []
+                if isinstance(methods, list) and "generateContent" in methods:
+                    return {"status": "AVAILABLE"}
+                return {"status": "MODEL_NOT_GENERATIVE"}
             response = await client.get(
                 base + "/models",
                 headers={"Authorization": f"Bearer {settings.ai_api_key}", "Accept": "application/json"},
@@ -199,6 +218,8 @@ async def check_provider_availability(*, transport: httpx.AsyncBaseTransport | N
             return {"status": "AVAILABLE"}
         return {"status": "MODEL_STATUS_UNKNOWN"}
     except httpx.HTTPStatusError as exc:
+        if _is_gemini_provider() and exc.response.status_code in (401, 403):
+            return {"status": "AUTH_ERROR", "http_status": exc.response.status_code}
         return {"status": "HTTP_ERROR", "http_status": exc.response.status_code}
     except (httpx.HTTPError, ValueError, TypeError):
         return {"status": "UNAVAILABLE"}
@@ -325,7 +346,6 @@ async def verify_claim_entailment(*, claims: list[dict], sources: list[dict]) ->
     payload = {
         "model": settings.ai_model,
         "temperature": 0,
-        "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": ENTAILMENT_SYSTEM_PROMPT},
             {"role": "user", "content": json.dumps({"items_to_verify": evidence}, ensure_ascii=False)},
@@ -334,7 +354,7 @@ async def verify_claim_entailment(*, claims: list[dict], sources: list[dict]) ->
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
-            response = await client.post(settings.ai_api_base_url.rstrip("/") + "/chat/completions",
+            response = await client.post(_provider_api_base() + "/chat/completions",
                                          headers=headers, json=payload)
             response.raise_for_status()
             data = response.json()
