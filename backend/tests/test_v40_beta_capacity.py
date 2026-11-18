@@ -3,14 +3,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_beta_user_cap_defaults_to_three_and_is_configurable():
+def test_beta_user_cap_defaults_to_one_and_is_configurable():
     config = (ROOT / "backend/app/config.py").read_text()
     render = (ROOT / "render.yaml").read_text()
     env = (ROOT / "deploy/.env.example").read_text()
-    assert "beta_max_users: int = 3" in config
+    assert "beta_max_users: int = 1" in config
     assert "BETA_MAX_USERS" in config
     assert '      - key: BETA_MAX_USERS\n        value: "3"' in render
-    assert "BETA_MAX_USERS=3" in env
+    assert "BETA_MAX_USERS=1" in env
 
 
 def test_beta_user_cap_is_enforced_for_invites_and_acceptance():
