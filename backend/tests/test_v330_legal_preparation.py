@@ -11,7 +11,7 @@ async def _fake_piste_token(self):
 
 
 def _enable_legifrance(monkeypatch, module):
-    _enable_legifrance(monkeypatch, module)
+    monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
     monkeypatch.setattr(type(module.legifrance), "_get_token", _fake_piste_token)
 
 
@@ -111,7 +111,7 @@ def test_fresh_schema_accepts_cgfp_snapshot_source_type():
 async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(monkeypatch):
     import app.orchestrator as module
 
-    monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
+    _enable_legifrance(monkeypatch, module)
 
     async def no_code_articles(*args, **kwargs):
         return []
@@ -161,7 +161,7 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
 async def test_live_legal_searches_prioritize_current_question_and_respect_500_char_limit(monkeypatch):
     import app.orchestrator as module
 
-    monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
+    _enable_legifrance(monkeypatch, module)
     seen = []
 
     async def capture_query(query, *args, **kwargs):
@@ -330,7 +330,7 @@ async def test_cgfp_import_batches_chunk_inserts_inside_one_transaction(monkeypa
 async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypatch):
     import app.orchestrator as module
 
-    monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
+    _enable_legifrance(monkeypatch, module)
 
     async def no_code_articles(*args, **kwargs):
         return []
@@ -516,7 +516,7 @@ async def test_follow_up_search_context_keeps_current_question_first(monkeypatch
 async def test_unverified_permanent_corpus_source_is_excluded_from_ai_even_with_a_valid_hash(monkeypatch):
     import app.orchestrator as module
 
-    monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
+    _enable_legifrance(monkeypatch, module)
 
     async def no_code(*args, **kwargs):
         return []
@@ -577,7 +577,7 @@ async def test_unverified_permanent_corpus_source_is_excluded_from_ai_even_with_
 async def test_current_date_repere_sources_are_not_labelled_applicable_without_facts_date(monkeypatch):
     import app.orchestrator as module
 
-    monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
+    _enable_legifrance(monkeypatch, module)
 
     async def code_sources(*args, **kwargs):
         return [{
