@@ -269,13 +269,24 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
             # on a single word such as "travail" is not enough.
             if overlap >= 2:
                 lexical_results.append(item)
+        # If the question contains no discriminating legal concept (for
+        # example, "les fonctionnaires territoriaux"), keep the lexical
+        # engine's best hits as documentary leads instead of returning an
+        # empty result set. These broad hits remain explicitly unverified
+        # and are never sufficient on their own to trigger a legal conclusion.
+        broad_fallback = not lexical_results
+        if broad_fallback:
+            lexical_results = base.get("results", [])
         return {
             **base,
             "results": [
-                {**item, "relevance_label": "Correspondance lexicale à confirmer"}
+                {**item, "relevance_label": (
+                    "Piste documentaire large — pertinence à vérifier"
+                    if broad_fallback else "Correspondance lexicale à confirmer"
+                )}
                 for item in lexical_results[:safe_limit]
             ],
-            "search_mode": "lexical",
+            "search_mode": "lexical_broad_fallback" if broad_fallback else "lexical",
         }
 
     expansion = " ".join(topic["expansion"] for topic in topics)
