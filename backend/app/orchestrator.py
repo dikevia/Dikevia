@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import date
 from uuid import uuid4
 import logging
@@ -13,7 +14,7 @@ from .ai_provider import analyze_question, AIAnalysisResult, AIProviderUnavailab
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector
 from .legal_corpus import search_legal_corpus
-from .legal_assurance import assess_source_set, validate_answer_citations
+from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
 
 
@@ -445,17 +446,76 @@ class LegalOrchestrator:
                         conversation_history=history,
                     )
                     if isinstance(ai_result, AIAnalysisResult):
-                        ai_answer = ai_result.content
+                        raw_ai_content = ai_result.content
                         ai_usage = {
                             "provider": "openai_compatible", "model": ai_result.model,
                             "prompt_tokens": ai_result.prompt_tokens,
                             "completion_tokens": ai_result.completion_tokens,
                             "total_tokens": ai_result.total_tokens,
-                            "outcome": "ANSWERED",
+                            "outcome": "STRUCTURED_OUTPUT_RECEIVED",
                         }
                     else:
-                        # Keep test doubles and alternate adapters returning plain strings compatible.
-                        ai_answer = ai_result
+                        # All providers and test adapters must use the same strict JSON contract.
+                        raw_ai_content = ai_result
+                    try:
+                        structured_answer = json.loads(raw_ai_content) if isinstance(raw_ai_content, str) else None
+                    except (TypeError, ValueError):
+                        structured_answer = None
+                    claim_validation = validate_claim_evidence(structured_answer, ai_sources)
+                    if not claim_validation["valid"]:
+                        ai_answer = None
+                        if ai_usage is not None:
+                            ai_usage["outcome"] = "REJECTED_UNSUPPORTED_CLAIMS"
+                        missing.insert(
+                            0,
+                            "La réponse IA a été bloquée : sortie structurée absente ou affirmation sans citation exacte dans une source officielle applicable.",
+                        )
+                    elif not claim_validation["claims"]:
+                        ai_answer = None
+                        if ai_usage is not None:
+                            ai_usage["outcome"] = "ABSTAINED_NO_SUPPORTED_CLAIMS"
+                        missing.insert(
+                            0,
+                            "Le moteur IA n'a produit aucune affirmation pouvant être reliée à un extrait documentaire exact. Aucune conclusion n'est formulée.",
+                        )
+                    else:
+                        sources_by_id = {
+                            source.get("source_id"): source
+                            for source in ai_sources
+                            if source.get("source_id")
+                            and (source.get("citation_integrity") or {}).get("valid") is True
+                            and source.get("temporal_status") in {
+                                "IN_FORCE_ON_REQUESTED_DATE",
+                                "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+                                "VERIFIED_APPLICABLE",
+                            }
+                            and source.get("source_type") not in {"CGFP_SNAPSHOT", "LEGIFRANCE_CETAT_SEARCH"}
+                            and source.get("content_kind") != "METADATA"
+                            and source.get("reference_role") != "BASELINE_CONTEXT_ONLY"
+                            and source.get("analysis_eligible") is not False
+                            and source.get("public_service_scope") != "SCOPE_TO_VERIFY"
+                        }
+                        rendered_claims = []
+                        for claim in claim_validation["claims"]:
+                            source = sources_by_id.get(claim["source_id"])
+                            if source is None:
+                                rendered_claims = []
+                                break
+                            source_title = str(source.get("title") or claim["source_id"])[:300]
+                            rendered_claims.append(
+                                f"{claim['text']} [source:{claim['source_id']}]\n"
+                                f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\n"
+                                f"Source : {source_title}"
+                            )
+                        if rendered_claims:
+                            ai_answer = "\n\n".join(rendered_claims)
+                            if ai_usage is not None:
+                                ai_usage["outcome"] = "ANSWERED_WITH_VERIFIED_QUOTES"
+                        else:
+                            ai_answer = None
+                            if ai_usage is not None:
+                                ai_usage["outcome"] = "REJECTED_AMBIGUOUS_SOURCE"
+                            missing.insert(0, "Une source citée n'a pas pu être retrouvée de façon univoque après validation.")
                 else:
                     ai_answer = None
                     missing.insert(
