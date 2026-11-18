@@ -109,7 +109,7 @@ _CASE_CITATION_RE = re.compile(
 _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGNORECASE)
 _LEGAL_CLAIM_RE = re.compile(
     r"\b(?:doit|doivent|peut|peuvent|ne peut pas|obligation|interdit|délai|droit|"
-    r"prévoit|impose|autorise|permet|applicable|illégal|licite|est tenu|sont tenus|"
+    r"prévoit|impose|autorise|permet|applicable|illégal|licite|est tenu|sont tenus|jurisprudence|juridiction|conformément|en vertu|"
     r"ouvre droit|est soumis|s'applique|s’applique)\b",
     re.IGNORECASE,
 )
