@@ -1,5 +1,5 @@
 import pytest
-from app.ai_provider import analyze_question, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count
+from app.ai_provider import analyze_question, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count, check_provider_availability
 from app.config import settings
 
 @pytest.mark.asyncio
@@ -398,3 +398,41 @@ def test_period_scoped_official_source_id_remains_grounded_for_citation_validati
         [source],
     )
     assert result["valid"] is True
+
+
+@pytest.mark.asyncio
+async def test_ai_gateway_availability_check_uses_only_non_billable_model_catalog(monkeypatch):
+    import httpx
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "gpt-5-mini")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+
+    def handler(request):
+        assert request.method == "GET"
+        assert request.url.path == "/v1/models"
+        return httpx.Response(200, json={"data": [
+            {"id": "gpt-5-mini", "enabled": True},
+            {"id": "other-model", "enabled": False},
+        ]})
+
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+    assert result == {"status": "AVAILABLE"}
+
+
+@pytest.mark.asyncio
+async def test_ai_gateway_availability_reports_disabled_model_without_inference(monkeypatch):
+    import httpx
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "gpt-5-mini")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+
+    def handler(request):
+        assert request.method == "GET"
+        return httpx.Response(200, json={"data": [
+            {"id": "gpt-5-mini", "enabled": False, "unavailable_reason": "paid_plan_required"}
+        ]})
+
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+    assert result == {"status": "MODEL_DISABLED", "reason": "paid_plan_required"}
