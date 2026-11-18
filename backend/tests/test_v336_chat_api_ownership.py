@@ -160,3 +160,47 @@ def test_member_cannot_human_validate_or_close_a_legal_dossier(restricted_status
     assert "responsables habilités" in exc.value.detail
     assert len(conn.fetchrow_calls) == 1
     assert not conn.execute_calls
+
+
+@pytest.mark.parametrize("privileged_role", ["ORG_ADMIN", "LEGAL_EDITOR"])
+@pytest.mark.parametrize("privileged_status", ["VALIDE_HUMAINEMENT", "CLOTURE"])
+def test_privileged_roles_can_human_validate_or_close_a_legal_dossier(
+    privileged_role, privileged_status
+):
+    from app.dossiers import build_dossier_content
+
+    class UpdatableDossierConnection(HiddenRowsConnection):
+        def __init__(self):
+            super().__init__()
+            self.updated_content = None
+
+        async def fetchrow(self, query, *args):
+            self.fetchrow_calls.append((query, args))
+            if query.lstrip().startswith("SELECT"):
+                return {"id": uuid4(), "content": {"status": "BROUILLON_A_VALIDER"}}
+            self.updated_content = args[1]
+            import json
+            return {
+                "id": uuid4(),
+                "content": json.loads(self.updated_content),
+                "created_at": None,
+                "updated_at": None,
+            }
+
+    conn = UpdatableDossierConnection()
+    ctx = context(conn)
+    ctx.role = privileged_role
+    dossier = build_dossier_content(
+        {"title": "Dossier test"},
+        [{"role": "user", "content": "Question de test"}],
+    )
+    dossier["status"] = privileged_status
+    route = endpoint(
+        "/api/v1/chat/conversations/{conversation_id}/dossier", "PUT"
+    )
+
+    result = asyncio.run(route(str(uuid4()), {"content": dossier}, ctx))
+
+    assert result["content"]["status"] == privileged_status
+    assert len(conn.fetchrow_calls) == 2
+    assert "UPDATE legal_dossiers" in conn.fetchrow_calls[1][0]
