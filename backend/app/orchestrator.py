@@ -534,7 +534,7 @@ class LegalOrchestrator:
 
         if ai_answer:
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
-                "Les extraits du snapshot PDF ne certifient pas l'authenticité officielle. Les versions du corpus dont les dates d'effet sont incomplètes ne sont pas utilisées pour les conclusions IA. Les actes locaux restent à vérifier. Une validation juridique humaine reste nécessaire.")
+                "Les extraits du snapshot PDF ne certifient pas l'authenticité officielle. Les versions du corpus dont les dates d'effet sont incomplètes ne sont pas utilisées pour les conclusions IA. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
         else:
             lines = ["Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis."]
             lines.append("Recherche documentaire effectuée : les résultats ci-dessous sont des sources à examiner, pas une qualification juridique définitive.")
