@@ -1,5 +1,6 @@
 from pathlib import Path
 import importlib.util
+import json
 
 import pytest
 
@@ -8,6 +9,20 @@ from app.schemas import AskRequest
 
 async def _fake_piste_token(self):
     return "test-access-token"
+
+
+
+
+def _structured_claim(source, text):
+    evidence = source.get("excerpt") or source.get("text", "")[:1800]
+    quote = " ".join(str(evidence).split())[:120]
+    return json.dumps({
+        "claims": [{
+            "text": text,
+            "source_id": source["source_id"],
+            "quote": quote,
+        }]
+    }, ensure_ascii=False)
 
 
 def _enable_legifrance(monkeypatch, module):
@@ -137,7 +152,8 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
 
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
-        return "Le décret n° 2024-100 doit être vérifié au regard de la situation exposée."
+        source = next(s for s in kwargs["sources"] if s["source_type"] == "LEGIFRANCE_LODA")
+        return _structured_claim(source, "Le décret n° 2024-100 doit être vérifié au regard de la situation exposée.")
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", no_code_articles)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
@@ -355,7 +371,8 @@ async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypat
         assert all(s.get("reference_role") == "BASELINE_CONTEXT_ONLY" for s in snapshots)
         assert all(s.get("temporal_status") == "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED" for s in snapshots)
         assert any(s.get("source_type") == "LEGIFRANCE_LODA" for s in kwargs["sources"])
-        return "L'article L4 prévoit cette règle."
+        source = next(s for s in kwargs["sources"] if s["source_type"] == "LEGIFRANCE_LODA")
+        return _structured_claim(source, "L'article L4 prévoit cette règle.")
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", no_code_articles)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
@@ -406,7 +423,8 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
 
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
-        return "L'article L. 123-4 doit être examiné avec la délibération locale."
+        source = next(s for s in kwargs["sources"] if s["source_type"] == "LOCAL_DOCUMENT")
+        return _structured_claim(source, "L'article L. 123-4 doit être examiné avec la délibération locale.")
 
     async def code_articles(*args, **kwargs):
         return [{
@@ -555,7 +573,8 @@ async def test_unverified_permanent_corpus_source_is_excluded_from_ai_even_with_
 
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
-        return "Le décret n° 2024-100 doit être examiné."
+        source = next(s for s in kwargs["sources"] if s["source_type"] == "LEGIFRANCE_LODA")
+        return _structured_claim(source, "Le décret n° 2024-100 doit être examiné.")
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", no_code)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory)
