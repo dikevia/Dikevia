@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: dikevia-commercial-api
+    name: dikevia-commercial-api-l2r8
     runtime: docker
     plan: free
     region: frankfurt
@@ -60,7 +60,7 @@ services:
         value: "20"
 
   - type: web
-    name: dikevia-identity
+    name: dikevia-identity-l2r8
     runtime: docker
     plan: free
     region: frankfurt
