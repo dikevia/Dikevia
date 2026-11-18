@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready]
+    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat]
   pull_request:
     branches: [main]
   workflow_dispatch:
