@@ -44,15 +44,6 @@ MÉTHODE :
 - Ne qualifie pas automatiquement une situation d'illégale.
 - Réponds en français, avec un ton professionnel, rigoureux, clair et opérationnel.
 
-STRUCTURE :
-1. Résumé opérationnel.
-2. Faits et hypothèses.
-3. Règles du CGFP documentées.
-4. Textes réglementaires officiels consultés et version applicable.
-5. Jurisprudence intégrale consultée, si disponible.
-6. Application prudente aux faits.
-7. Informations manquantes et vérifications.
-
 FORMAT DE SORTIE OBLIGATOIRE — JSON STRICT :
 Retourne uniquement un objet JSON valide de la forme :
 {
