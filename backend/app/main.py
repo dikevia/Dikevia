@@ -62,9 +62,9 @@ async def _startup_external_diagnostics() -> None:
                     len(probe_results),
                 )
             except Exception as exc:
-                logger.warning("DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=FAILED error_type=%s", type(exc).__name__)
+                logger.warning("DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=FAILED error_type=%s reason=%s", type(exc).__name__, str(exc))
         except Exception as exc:
-            logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING=FAILED error_type=%s", type(exc).__name__)
+            logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING=FAILED error_type=%s reason=%s", type(exc).__name__, str(exc))
     else:
         logger.warning("DIKEVIA_DIAGNOSTIC PISTE=NOT_CONFIGURED")
 
