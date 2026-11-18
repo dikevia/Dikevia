@@ -280,7 +280,14 @@ class LegalOrchestrator:
                     and s.get("content_kind") != "METADATA"
                     and (s.get("citation_integrity") or {}).get("valid") is True
                     and s.get("temporal_status") in eligible_temporal_statuses
-                    and s.get("analysis_eligible") is not False
+                    # Unknown scope is retained as a review lead; only
+                    # explicitly identified FPE/FPH sources are excluded.
+                    # The AI prompt receives this scope and must not infer
+                    # territorial applicability from an unknown classification.
+                    and (
+                        s.get("analysis_eligible") is not False
+                        or s.get("public_service_scope") == "SCOPE_TO_VERIFY"
+                    )
                     and s.get("ihts_relevant") is not False
                 ]
                 cgfp_context_sources = [
