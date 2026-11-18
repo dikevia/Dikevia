@@ -369,6 +369,12 @@ class LegalOrchestrator:
         if parsed_date is None:
             ai_answer = None
             missing.insert(0, "Analyse juridique contextualisée suspendue : préciser la date des faits pour vérifier la version applicable. La date du jour n'est utilisée que pour le repérage documentaire.")
+        elif cgfp_issue or live_issue or regulatory_issue or case_law_issue:
+            ai_answer = None
+            missing.insert(
+                0,
+                "Analyse IA suspendue : les trois piliers documentaires n'ont pas tous pu être interrogés avec succès. Aucune réponse juridique de mémoire n'est autorisée.",
+            )
         else:
             try:
                 eligible_temporal_statuses = {
@@ -447,17 +453,25 @@ class LegalOrchestrator:
             for value in (s.get("official_number"), s.get("source_id"), s.get("case_number"))
             if value
         }
-        if ai_answer and not answer_references_are_grounded(ai_answer, allowed_refs, allowed_authorities):
+        citation_validation = validate_answer_citations(ai_answer or "", ai_sources)
+        if ai_answer and (
+            not answer_references_are_grounded(ai_answer, allowed_refs, allowed_authorities)
+            or not citation_validation["valid"]
+        ):
             ai_answer = None
             if ai_usage is not None:
                 ai_usage["outcome"] = "REJECTED_UNGROUNDED"
-            missing.insert(0, "Une référence d'article générée n'était pas présente dans les sources récupérées ; la réponse IA a été écartée.")
+            missing.insert(
+                0,
+                "La réponse IA a été bloquée : au moins une référence juridique n'est pas retrouvée à l'identique dans les sources injectées, ou une citation explicite manque.",
+            )
 
         if ai_answer:
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
                 "Les extraits du snapshot PDF ne certifient pas l'authenticité officielle. Les versions du corpus dont les dates d'effet sont incomplètes ne sont pas utilisées pour les conclusions IA. Les actes locaux restent à vérifier. Une validation juridique humaine reste nécessaire.")
         else:
-            lines = ["Recherche documentaire effectuée. Les résultats ci-dessous sont des sources à examiner, pas une qualification juridique définitive."]
+            lines = ["Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis."]
+            lines.append("Recherche documentaire effectuée : les résultats ci-dessous sont des sources à examiner, pas une qualification juridique définitive.")
             if parsed_date is None:
                 lines.append("Date des faits non fournie : la date du jour sert uniquement au repérage documentaire. Aucune analyse juridique contextualisée n'est produite avant clarification de cette date.")
             for source in sources[:8]:
@@ -467,12 +481,14 @@ class LegalOrchestrator:
             lines.append("\nAucune conclusion définitive n'est formulée. Vérifier les versions, les textes d'application, la jurisprudence et les règles locales avant toute utilisation syndicale ou administrative.")
             answer = "\n".join(lines)
 
-        sources = assess_source_set(sources)["sources"]
         # Keep full texts server-side for checks/analysis, but return only bounded
         # excerpts to the browser and conversation history.
         for source in sources:
             source.pop("full_text", None)
             if isinstance(source.get("text"), str):
                 source["text"] = source.get("excerpt") or source["text"][:1800]
-        return AskResponse(request_id=request_id, verification_status="PARTIELLEMENT_VERIFIE",
-            answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage)
+        return AskResponse(
+            request_id=request_id,
+            verification_status="PARTIELLEMENT_VERIFIE" if ai_answer else "NON_VERIFIE",
+            answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage,
+        )
