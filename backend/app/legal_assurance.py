@@ -84,28 +84,28 @@ def _normalize_citation_reference(value: Any) -> str:
 
 
 _ARTICLE_CITATION_RE = re.compile(
-    r"\\b(?:articles?|art\\.?)\\s+([LDR]\\.?\\s*\\d+(?:-\\d+)*|\\d+(?:-\\d+)*)",
+    r"\b(?:articles?|art\.?)\s+([LDR]\.?\s*\d+(?:-\d+)*|\d+(?:-\d+)*)",
     re.IGNORECASE,
 )
 _STANDALONE_CODE_ARTICLE_RE = re.compile(
-    r"\\b([LDR])\\.\\s*(\\d+(?:-\\d+)*)\\b", re.IGNORECASE
+    r"\b([LDR])\.\s*(\d+(?:-\d+)*)\b", re.IGNORECASE
 )
 _ARTICLE_IN_SOURCE_RE = re.compile(
-    r"\\b(?:articles?|art\\.?)\\s*([LDR]\\.?\\s*\\d+(?:-\\d+)*|\\d+(?:-\\d+)*)",
+    r"\b(?:articles?|art\.?)\s*([LDR]\.?\s*\d+(?:-\d+)*|\d+(?:-\d+)*)",
     re.IGNORECASE,
 )
 _AUTHORITY_CITATION_RE = re.compile(
-    r"\\b(?:décret|decret|loi|arrêté|arrete|ordonnance|circulaire)\\s+"
-    r"(?:n[°o]\\s*)?((?:19|20)\\d{2}[-/]\\d+[A-Za-z0-9./-]*|\\d{2,3}[-/]\\d+[A-Za-z0-9./-]*)",
+    r"\b(?:décret|decret|loi|arrêté|arrete|ordonnance|circulaire)\s+"
+    r"(?:n[°o]\s*)?((?:19|20)\d{2}[-/]\d+[A-Za-z0-9./-]*|\d{2,3}[-/]\d+[A-Za-z0-9./-]*)",
     re.IGNORECASE,
 )
 _CASE_CITATION_RE = re.compile(
-    r"\\b(?:CE|CAA|TA|Conseil\\s+d['’]État|Cour\\s+administrative\\s+d['’]appel|"
-    r"Tribunal\\s+administratif)\\b[^;\\n]{0,180}?\\b(?:n[°o]\\s*|numéro\\s+)"
+    r"\b(?:CE|CAA|TA|Conseil\s+d['’]État|Cour\s+administrative\s+d['’]appel|"
+    r"Tribunal\s+administratif)\b[^;\n]{0,180}?\b(?:n[°o]\s*|numéro\s+)"
     r"([A-Z0-9][A-Z0-9./-]{3,})",
     re.IGNORECASE,
 )
-_OFFICIAL_ID_RE = re.compile(r"\\b(?:CETATEXT|LEGIARTI|LEGITEXT)\\d{12}\\b", re.IGNORECASE)
+_OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGNORECASE)
 
 
 def validate_answer_citations(
