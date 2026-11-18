@@ -59,19 +59,25 @@ async def _startup_external_diagnostics() -> None:
                 logger.warning("DIKEVIA_DIAGNOSTIC PISTE_ROUTE route=%s status=%s", route, status)
             reachable = any(isinstance(status, int) and 200 <= status < 300
                             for status in ping_results.values())
-            if reachable:
-                logger.info("DIKEVIA_DIAGNOSTIC PISTE_PING=CONNECTED environment=%s", legifrance.environment)
-                try:
-                    probe_date = datetime.now(ZoneInfo('Europe/Paris')).date()
-                    probe_results = await legifrance.search_code_articles("L. 1", probe_date)
-                    logger.info(
-                        "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=RESPONDED result_count=%d",
-                        len(probe_results),
-                    )
-                except Exception as exc:
-                    logger.warning("DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=FAILED error_type=%s reason=%s", type(exc).__name__, str(exc))
-            else:
-                logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING=FAILED all_routes_unavailable=true")
+            logger.warning(
+                "DIKEVIA_DIAGNOSTIC PISTE_PING=%s environment=%s",
+                "CONNECTED" if reachable else "UNAVAILABLE",
+                legifrance.environment,
+            )
+            # Ping endpoints are health checks only. Verify the real REST workflow
+            # independently so a broken /ping route cannot disable legal search.
+            try:
+                probe_date = datetime.now(ZoneInfo('Europe/Paris')).date()
+                probe_results = await legifrance.search_code_articles("L. 1", probe_date)
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=RESPONDED result_count=%d",
+                    len(probe_results),
+                )
+            except Exception as exc:
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=FAILED error_type=%s reason=%s",
+                    type(exc).__name__, str(exc),
+                )
         except Exception as exc:
             # OAuth failures are reported separately from authenticated API route failures.
             logger.warning("DIKEVIA_DIAGNOSTIC PISTE_OAUTH_OR_NETWORK=FAILED error_type=%s reason=%s", type(exc).__name__, str(exc))
