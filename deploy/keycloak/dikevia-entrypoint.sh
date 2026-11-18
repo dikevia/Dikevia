@@ -11,25 +11,24 @@ stop_keycloak() {
 }
 trap stop_keycloak TERM INT
 
-wait_for_keycloak_ready() {
+wait_for_admin_api() {
   for ((attempt=1; attempt<=180; attempt++)); do
     if ! kill -0 "$KC_PID" 2>/dev/null; then
       wait "$KC_PID"
       return 1
     fi
 
-    if exec 3<>/dev/tcp/127.0.0.1/10000 2>/dev/null; then
-      printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
-      response=""
-      IFS= read -r -t 3 response <&3 || true
-      exec 3>&-
-      if [[ "$response" == *" 200 "* ]]; then
-        return 0
-      fi
+    if "${KC_BIN}/kcadm.sh" config credentials \
+      --server http://127.0.0.1:10000 \
+      --realm master \
+      --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
+      --password "$KC_BOOTSTRAP_ADMIN_PASSWORD" \
+      >/dev/null 2>&1; then
+      return 0
     fi
     sleep 2
   done
-  echo "Keycloak did not become ready within six minutes." >&2
+  echo "Keycloak admin API did not become ready within six minutes." >&2
   return 1
 }
 
@@ -47,12 +46,9 @@ if [[ -n "${DIKEVIA_BOOTSTRAP_ADMIN_USERNAME:-}" ||
     exit 1
   fi
 
-  wait_for_keycloak_ready
-  "${KC_BIN}/kcadm.sh" config credentials \
-    --server http://127.0.0.1:10000 \
-    --realm master \
-    --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
-    --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
+  echo "Waiting for Keycloak administrator API..."
+  wait_for_admin_api
+  echo "Keycloak administrator API is ready; provisioning the beta account."
 
   existing="$("${KC_BIN}/kcadm.sh" get users -r cfdt \
     -q "username=$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME")"
