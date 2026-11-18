@@ -89,7 +89,7 @@ _ARTICLE_CITATION_RE = re.compile(
     re.IGNORECASE,
 )
 _STANDALONE_CODE_ARTICLE_RE = re.compile(
-    r"\b([LDR])\.\s*(\d+(?:-\d+)*)\b", re.IGNORECASE
+    r"\b([LDR])\.?\s*(\d+(?:-\d+)*)\b", re.IGNORECASE
 )
 _ARTICLE_IN_SOURCE_RE = re.compile(
     r"\b(?:articles?|art\.?)\s*([LDR]\.?\s*\d+(?:-\d+)*|\d+(?:-\d+)*)",
