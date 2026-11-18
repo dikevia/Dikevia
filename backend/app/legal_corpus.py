@@ -161,7 +161,8 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
           row_number() OVER(PARTITION BY v.id ORDER BY ts_rank_cd(c.search_vector,websearch_to_tsquery('french',$1)) DESC,c.ordinal) rn
         FROM legal_chunks c JOIN legal_document_versions v ON v.id=c.version_id
         JOIN legal_documents d ON d.id=v.document_id
-        WHERE c.search_vector @@ websearch_to_tsquery('french',$1)
+        WHERE c.content_kind='FULL_TEXT'
+          AND c.search_vector @@ websearch_to_tsquery('french',$1)
       )
       SELECT * FROM ranked WHERE rn=1 ORDER BY rank DESC,publication_date DESC NULLS LAST LIMIT $2
     """, query.strip(), limit)
