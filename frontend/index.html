@@ -128,7 +128,7 @@ $('#askForm').addEventListener('submit',async e=>{
  catch(err){typing.remove();addJurisMessage('assistant','La demande n’a pas pu être traitée : '+err.message+' Aucune réponse juridique de démonstration n’est générée.',{status:'NON_VERIFIE'});}
  finally{chatBusy=false;submit.disabled=false;submit.textContent='➤';$('#askQuestion').focus();}
 });
-$('#login').addEventListener('click',()=>auth.login());$('#logout').addEventListener('click',async()=>{token=null;activeOrg=null;if(auth&&typeof auth.logout==='function')await auth.logout();showAuth('Vous êtes déconnecté.');});
+$('#login').addEventListener('click',async()=>{const button=$('#login');button.disabled=true;try{await auth.login();}catch(e){showAuth('Connexion impossible : '+(e?.message||'erreur inconnue'));}finally{button.disabled=false;}});$('#logout').addEventListener('click',async()=>{token=null;activeOrg=null;try{if(auth&&typeof auth.logout==='function')await auth.logout();showAuth('Vous êtes déconnecté.');}catch(e){showAuth('Déconnexion locale effectuée. Fin de session fournisseur indisponible : '+(e?.message||'erreur inconnue'));}});
 window.addEventListener('cfdt:invitation-accepted',()=>{const el=document.querySelector('#joinMessage');if(el)el.textContent='Invitation acceptée. Votre accès à l’organisation est activé.';});window.addEventListener('cfdt:invitation-error',e=>{const el=document.querySelector('#joinMessage');if(el){el.textContent=e.detail.message;el.classList.add('error');}});
 if(auth&&auth.ready)auth.ready.catch(e=>showAuth(e.message));start();
 })();
