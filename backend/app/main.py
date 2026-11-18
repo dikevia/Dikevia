@@ -42,6 +42,7 @@ from .rate_limit import consume_chat_request
 import httpx
 
 logger = logging.getLogger("dikevia.startup")
+logger.setLevel(logging.INFO)
 
 
 async def _startup_external_diagnostics() -> None:
