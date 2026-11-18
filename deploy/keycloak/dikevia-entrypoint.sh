@@ -79,20 +79,18 @@ if [[ -n "${DIKEVIA_BOOTSTRAP_ADMIN_USERNAME:-}" ||
     exit 1
   fi
 
-  user_details="$("${KC_BIN}/kcadm.sh" get "users/$user_id" -r cfdt)"
-  if [[ "$user_details" != *"dikeviaBootstrapPasswordInitialized"* ]]; then
+  credentials="$("${KC_BIN}/kcadm.sh" get "users/$user_id/credentials" -r cfdt)"
+  if ! printf '%s' "$credentials" | jq -e 'any(.[]; .type == "password")' >/dev/null; then
     "${KC_BIN}/kcadm.sh" set-password -r cfdt \
       --username "$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME" \
       --new-password "$DIKEVIA_BOOTSTRAP_ADMIN_PASSWORD"
-    "${KC_BIN}/kcadm.sh" update "users/$user_id" -r cfdt \
-      -s 'attributes={"dikeviaBootstrapPasswordInitialized":["true"]}'
-    user_details="$("${KC_BIN}/kcadm.sh" get "users/$user_id" -r cfdt)"
-    if [[ "$user_details" != *"dikeviaBootstrapPasswordInitialized"* ]]; then
-      echo "Could not persist the initial administrator password marker." >&2
+    credentials="$("${KC_BIN}/kcadm.sh" get "users/$user_id/credentials" -r cfdt)"
+    if ! printf '%s' "$credentials" | jq -e 'any(.[]; .type == "password")' >/dev/null; then
+      echo "Could not verify the initial administrator password credential." >&2
       exit 1
     fi
   fi
-  echo "Initial Dikévia administrator is provisioned and password initialization is verified."
+  echo "Initial Dikévia administrator is provisioned; password credential presence is verified."
 fi
 
 wait "$KC_PID"
