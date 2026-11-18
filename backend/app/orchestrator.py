@@ -10,7 +10,7 @@ from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
 from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
-from .ai_provider import analyze_question, AIAnalysisResult, AIProviderUnavailable, answer_references_are_grounded
+from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, answer_references_are_grounded
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector
 from .legal_corpus import search_legal_corpus
@@ -479,23 +479,35 @@ class LegalOrchestrator:
                             "Le moteur IA n'a produit aucune affirmation pouvant être reliée à un extrait documentaire exact. Aucune conclusion n'est formulée.",
                         )
                     else:
-                        rendered_claims = []
-                        for claim in claim_validation["claims"]:
-                            source_title = " ".join(str(claim["source_title"]).split())[:300]
-                            rendered_claims.append(
-                                f"{claim['text']} [source:{claim['source_id']}]\n"
-                                f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\n"
-                                f"Source : {source_title} [source:{claim['source_id']}]"
-                            )
-                        if rendered_claims:
-                            ai_answer = "\n\n".join(rendered_claims)
-                            if ai_usage is not None:
-                                ai_usage["outcome"] = "ANSWERED_WITH_VERIFIED_QUOTES"
-                        else:
+                        entailment_validation = await verify_claim_entailment(
+                            claims=claim_validation["claims"], sources=ai_sources,
+                        )
+                        if not entailment_validation.get("valid"):
                             ai_answer = None
                             if ai_usage is not None:
-                                ai_usage["outcome"] = "REJECTED_AMBIGUOUS_SOURCE"
-                            missing.insert(0, "Une source citée n'a pas pu être retrouvée de façon univoque après validation.")
+                                ai_usage["outcome"] = "REJECTED_UNSUPPORTED_ENTAILMENT"
+                            missing.insert(
+                                0,
+                                "La réponse IA a été bloquée : le contrôle contradictoire n'a pas confirmé que chaque proposition découle directement de son passage officiel. Aucune conclusion n'est formulée.",
+                            )
+                        else:
+                            rendered_claims = []
+                            for claim in claim_validation["claims"]:
+                                source_title = " ".join(str(claim["source_title"]).split())[:300]
+                                rendered_claims.append(
+                                    f"{claim['text']} [source:{claim['source_id']}]\\n"
+                                    f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\\n"
+                                    f"Source : {source_title} [source:{claim['source_id']}]"
+                                )
+                            if rendered_claims:
+                                ai_answer = "\\n\\n".join(rendered_claims)
+                                if ai_usage is not None:
+                                    ai_usage["outcome"] = "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK"
+                            else:
+                                ai_answer = None
+                                if ai_usage is not None:
+                                    ai_usage["outcome"] = "REJECTED_AMBIGUOUS_SOURCE"
+                                missing.insert(0, "Une source citée n'a pas pu être retrouvée de façon univoque après validation.")
                 else:
                     ai_answer = None
                     missing.insert(
