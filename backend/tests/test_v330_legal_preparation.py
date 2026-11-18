@@ -25,6 +25,10 @@ def _structured_claim(source, text):
     }, ensure_ascii=False)
 
 
+def _always_supported(kwargs):
+    return {"valid": True, "invalid": []}
+
+
 def _enable_legifrance(monkeypatch, module):
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
     monkeypatch.setattr(type(module.legifrance), "_get_token", _fake_piste_token)
@@ -159,6 +163,7 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
     monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
     monkeypatch.setattr(module, "analyze_question", fake_ai)
+    monkeypatch.setattr(module, "verify_claim_entailment", lambda **kwargs: _always_supported(kwargs))
 
     response = await LegalOrchestrator().ask(
         AskRequest(employer="NATIONAL", facts_date="2024-06-01",
@@ -446,6 +451,7 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
     monkeypatch.setattr(module, "is_ihts_relevant_source", lambda *args, **kwargs: True)
     monkeypatch.setattr(module, "search_local_documents", local_search)
     monkeypatch.setattr(module, "analyze_question", fake_ai)
+    monkeypatch.setattr(module, "verify_claim_entailment", lambda **kwargs: _always_supported(kwargs))
 
     response = await LegalOrchestrator().ask(
         AskRequest(employer="VILLE_SAINT_ETIENNE", facts_date="2024-06-01",
@@ -581,6 +587,7 @@ async def test_unverified_permanent_corpus_source_is_excluded_from_ai_even_with_
     monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
     monkeypatch.setattr(module, "search_legal_corpus", permanent)
     monkeypatch.setattr(module, "analyze_question", fake_ai)
+    monkeypatch.setattr(module, "verify_claim_entailment", lambda **kwargs: _always_supported(kwargs))
 
     await LegalOrchestrator().ask(
         AskRequest(employer="NATIONAL", facts_date="2024-06-01",
