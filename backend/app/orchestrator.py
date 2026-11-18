@@ -31,19 +31,13 @@ class LegalOrchestrator:
             period_end = parse_facts_date(request.facts_end_date)
             if period_start and period_end and period_end < period_start:
                 raise ValueError("La fin de la période ne peut pas précéder son début.")
-            if not period_start and not period_end and not request.situation_ongoing:
-                return AskResponse(
-                    request_id=request_id,
-                    verification_status="NON_VERIFIE",
-                    answer="Pour déterminer la règle applicable, j'ai besoin de situer la période du problème. La date d'entrée en vigueur des textes sera recherchée séparément dans les sources officielles.",
-                    clarification_question="Quand le problème s'est-il produit ? Indiquez une date ou une période approximative, et précisez s'il est toujours en cours.",
-                    missing_information=[
-                        "Période de la situation non précisée : début, fin éventuelle et caractère toujours en cours.",
-                        "La date d'entrée en vigueur de chaque disposition sera vérifiée par Dikévia dans Légifrance ; elle n'a pas à être connue par l'utilisateur."
-                    ],
-                )
-            effective_date = date.today() if request.situation_ongoing else (period_end or period_start)
-            parsed_date = effective_date
+            effective_date = (
+                date.today() if request.situation_ongoing or not (period_start or period_end)
+                else (period_end or period_start)
+            )
+            # Only an explicitly described situation period authorizes a case-specific
+            # temporal conclusion. Today's date without facts is retrieval-only.
+            parsed_date = effective_date if (period_start or period_end or request.situation_ongoing) else None
             temporal_context = {
                 "period_start": period_start.isoformat() if period_start else None,
                 "period_end": period_end.isoformat() if period_end else None,
@@ -406,6 +400,8 @@ class LegalOrchestrator:
             missing.insert(0, "La recherche CETAT a été exécutée sans retrouver de décision pertinente pour cette requête.")
         if temporal_context["period_start"] or temporal_context["period_end"]:
             missing.insert(0, f"Période déclarée : du {temporal_context['period_start'] or 'début non précisé'} au {temporal_context['period_end'] or ('aujourd’hui' if temporal_context['ongoing'] else 'fin non précisée')}.")
+        elif not temporal_context["ongoing"]:
+            missing.insert(0, f"Période de la situation non précisée : Légifrance est interrogé au {effective_date.isoformat()} à titre de repérage documentaire uniquement.")
         if temporal_context["ongoing"]:
             missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
         elif temporal_context["period_start"] and temporal_context["period_end"] and temporal_context["period_start"] != temporal_context["period_end"]:
@@ -587,4 +583,8 @@ class LegalOrchestrator:
             request_id=request_id,
             verification_status="PARTIELLEMENT_VERIFIE" if ai_answer else "NON_VERIFIE",
             answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage,
+            clarification_question=(
+                "Quand le problème s'est-il produit ? Indiquez une date ou une période approximative, et précisez s'il est toujours en cours."
+                if parsed_date is None else None
+            ),
         )
