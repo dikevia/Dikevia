@@ -12,12 +12,21 @@ stop_keycloak() {
 trap stop_keycloak TERM INT
 
 wait_for_admin_api() {
+  # Wait for the HTTP listener without starting a JVM-backed CLI on every poll.
   for ((attempt=1; attempt<=180; attempt++)); do
     if ! kill -0 "$KC_PID" 2>/dev/null; then
       wait "$KC_PID"
       return 1
     fi
+    if { exec 3<>/dev/tcp/127.0.0.1/10000; } 2>/dev/null; then
+      exec 3>&-
+      break
+    fi
+    sleep 2
+  done
 
+  # The listener can accept connections while Keycloak is still bootstrapping.
+  for ((attempt=1; attempt<=180; attempt++)); do
     if "${KC_BIN}/kcadm.sh" config credentials \
       --server http://127.0.0.1:10000 \
       --realm master \
@@ -28,7 +37,7 @@ wait_for_admin_api() {
     fi
     sleep 2
   done
-  echo "Keycloak admin API did not become ready within six minutes." >&2
+  echo "Keycloak administrator API did not become ready within six minutes." >&2
   return 1
 }
 
