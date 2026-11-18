@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import asyncio
+import logging
 from uuid import uuid4, UUID
 import hashlib
 import json
@@ -33,18 +34,60 @@ from .jurisprudence import AdministrativeCaseLawConnector, DECISION_ID_RE
 from .billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
 from .legal_corpus import upsert_legal_document, search_legal_corpus
 from .legal_assurance import assess_source_set
-from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content
+from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
 from .legal_ingestion import parse_circulaires_xml
 from .dossiers import build_dossier_content, validate_dossier_content
 from .rate_limit import consume_chat_request
 import httpx
 
+logger = logging.getLogger("dikevia.startup")
+
+
+async def _startup_external_diagnostics() -> None:
+    """Non-billable startup checks: PISTE ping/search and AI model catalog only."""
+    if settings.app_env != "production":
+        return
+
+    if legifrance.configured:
+        try:
+            await legifrance.ping()
+            logger.info("DIKEVIA_DIAGNOSTIC PISTE_PING=CONNECTED environment=%s", legifrance.environment)
+            try:
+                probe_date = datetime.now().astimezone().date()
+                probe_results = await legifrance.search_code_articles("L. 1", probe_date)
+                logger.info(
+                    "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=RESPONDED result_count=%d",
+                    len(probe_results),
+                )
+            except Exception as exc:
+                logger.warning("DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=FAILED error_type=%s", type(exc).__name__)
+        except Exception as exc:
+            logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING=FAILED error_type=%s", type(exc).__name__)
+    else:
+        logger.warning("DIKEVIA_DIAGNOSTIC PISTE=NOT_CONFIGURED")
+
+    ai_status = await check_provider_availability()
+    logger.info(
+        "DIKEVIA_DIAGNOSTIC AI_MODEL_CATALOG=%s model=%s http_status=%s reason=%s",
+        ai_status.get("status"),
+        settings.ai_model or "not-configured",
+        ai_status.get("http_status", "-"),
+        ai_status.get("reason", "-"),
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_runtime_configuration(settings)
     await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
-    yield
-    await close_pool()
+    diagnostic_task = asyncio.create_task(_startup_external_diagnostics())
+    try:
+        yield
+    finally:
+        if not diagnostic_task.done():
+            diagnostic_task.cancel()
+        await asyncio.gather(diagnostic_task, return_exceptions=True)
+        await close_pool()
 
 app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifespan=lifespan,
               docs_url=None if settings.app_env == "production" else "/docs",
