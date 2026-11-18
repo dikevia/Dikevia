@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
+
 def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
     """Give each dated API result a unique citation key while retaining its official ID."""
     tagged = []
