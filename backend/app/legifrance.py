@@ -162,7 +162,7 @@ class LegifranceConnector:
                 {"facette": "DATE_VERSION", "singleDate": effective_date.isoformat()},
             ],
             "pageNumber": 1, "pageSize": 10, "operateur": "ET", "sort": "PERTINENCE",
-            "typePagination": "ARTICLE",
+            "typePagination": "DEFAUT",
         }}
 
     @staticmethod
