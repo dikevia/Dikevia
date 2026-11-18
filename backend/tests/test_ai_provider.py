@@ -135,3 +135,22 @@ def test_legal_citation_validator_requires_an_explicit_source_reference():
     assert result["valid"] is False
     assert "missing_explicit_source_citation" in result["invalid_references"]
 
+def test_legal_citation_validator_rejects_uncited_legal_claim_lines():
+    from app.legal_assurance import validate_answer_citations
+
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000012345678",
+        "article": "L123-4",
+        "title": "Code général de la fonction publique — article L. 123-4",
+        "excerpt": "Article L. 123-4 : règle officielle vérifiée.",
+        "citation_integrity": {"valid": True},
+    }
+    answer = (
+        "L'article L. 123-4 prévoit une règle documentée.\n"
+        "L'administration doit respecter un délai non cité."
+    )
+    result = validate_answer_citations(answer, [source])
+    assert result["valid"] is False
+    assert any(item.startswith("uncited_legal_claim_line:") for item in result["invalid_references"])
+
