@@ -111,6 +111,15 @@ _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGN
 _SOURCE_ID_CITATION_RE = re.compile(r"\[source:([A-Za-z0-9:_-]{6,128})\]", re.IGNORECASE)
 _NUMERIC_FACT_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)(?!\w)", re.IGNORECASE)
 _DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}(?:er)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})\b", re.IGNORECASE)
+_EVIDENCE_STOPWORDS = {
+    "article", "code", "general", "fonction", "publique", "territoriale", "territorial",
+    "agent", "agents", "doit", "doivent", "peut", "peuvent", "est", "sont", "etre",
+    "avoir", "dans", "pour", "avec", "selon", "une", "des", "les", "du", "de", "la",
+    "le", "aux", "au", "sur", "par", "sous", "qui", "que", "dont", "ainsi", "toute",
+    "toutes", "tous", "leur", "leurs", "ses", "son", "sa", "cette", "celui", "celle",
+    "ceux", "notamment", "relatif", "relative", "relatifs", "relatives", "faits",
+    "situation", "regard", "exposee", "expose", "numero",
+}
 _LEGAL_CLAIM_RE = re.compile(
     r"\b(?:doit|doivent|peut|peuvent|ne peut pas|obligation|interdit|délai|droit|"
     r"prévoit|impose|autorise|permet|applicable|illégal|licite|est tenu|sont tenus|jurisprudence|juridiction|conformément|en vertu|"
@@ -231,6 +240,13 @@ def _normalized_evidence_text(value: Any) -> str:
     return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
 
 
+def _evidence_tokens(value: Any) -> set[str]:
+    decomposed = unicodedata.normalize("NFKD", str(value or "").casefold())
+    plain = "".join(char for char in decomposed if not unicodedata.combining(char))
+    tokens = set(re.findall(r"[a-z]{4,}", plain))
+    return tokens - _EVIDENCE_STOPWORDS
+
+
 def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict[str, Any]:
     """Fail closed unless each generated legal claim quotes its own eligible source.
 
@@ -242,7 +258,7 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         return {
             "valid": False, "claims": [],
             "invalid_claims": ["structured_claims_missing_or_invalid"],
-            "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_AND_NUMERIC_CHECKS",
+            "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS",
         }
 
     raw_claims = payload["claims"]
@@ -321,6 +337,12 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         if normalized_quote not in normalized_evidence:
             invalid.append(f"claim_{index}:quote_not_exactly_found_in_source")
             continue
+        claim_tokens = _evidence_tokens(claim_text)
+        quote_tokens = _evidence_tokens(normalized_quote)
+        lexical_overlap = len(claim_tokens & quote_tokens) / max(1, len(claim_tokens))
+        if len(claim_tokens) < 2 or lexical_overlap < 0.25:
+            invalid.append(f"claim_{index}:quote_not_relevantly_aligned")
+            continue
         # Dates and quantified rules are high-risk hallucination vectors. Require
         # every such value in the paraphrase to appear in its exact supporting quote.
         quote_folded = normalized_quote.casefold()
@@ -352,5 +374,5 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         "claims": validated,
         "invalid_claims": invalid,
         "claim_count": len(validated),
-        "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_AND_NUMERIC_CHECKS_NOT_SEMANTIC_ENTAILMENT",
+        "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS_NOT_SEMANTIC_ENTAILMENT",
     }
