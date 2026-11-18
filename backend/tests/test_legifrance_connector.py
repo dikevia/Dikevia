@@ -36,7 +36,8 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
     assert results[0]["valid_from"] == "2025-01-01"
     assert results[0]["requested_effective_date"] == "2025-11-16"
     assert results[0]["source_version_id"] == ARTICLE_ID
-    assert any(path.endswith("/search") for _, path in seen)\n    assert any(path.endswith("/list/ping") for _, path in seen)
+    assert any(path.endswith("/search") for _, path in seen)
+    assert any(path.endswith("/list/ping") for _, path in seen)
 
 @pytest.mark.asyncio
 async def test_legifrance_rejects_incomplete_oauth(monkeypatch):
