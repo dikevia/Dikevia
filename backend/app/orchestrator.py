@@ -320,6 +320,7 @@ class LegalOrchestrator:
                 missing.insert(0, permanent_issue)
             if cgfp_issue:
                 missing.insert(0, cgfp_issue)
+            missing.insert(0, "Le snapshot CGFP seul, lorsqu'il existe, reste un repère documentaire et ne peut pas justifier une analyse IA contextualisée.")
             if local_issue:
                 missing.insert(0, local_issue)
             elif request.employer != "NATIONAL" and not local_sources:
