@@ -144,6 +144,9 @@ def test_production_requires_distinct_ingestion_database_role():
     base = dict(app_env="production", database_url="postgresql://cfdt_juris_app:app@db/cfdt_juris",
         oidc_issuer="https://id.example", oidc_audience="cfdt-juris-api",
         oidc_jwks_url="https://id.example/jwks", cors_origins="https://juris.example",
+        aws_endpoint_url_s3="https://storage.example", aws_region="us-east-2",
+        aws_access_key_id="test-access", aws_secret_access_key="test-secret",
+        document_storage_bucket="cfdt-juris-documents",
         platform_admin_database_url="postgresql://cfdt_juris_platform_admin:platform@db/cfdt_juris")
     with pytest.raises(RuntimeError, match="LEGAL_CORPUS_INGEST_DATABASE_URL"):
         validate_runtime_configuration(Settings(**base))
