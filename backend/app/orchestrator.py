@@ -147,6 +147,10 @@ class LegalOrchestrator:
                 period_end = legacy_date
             if request.situation_ongoing and period_end:
                 raise ValueError("Une situation déclarée toujours en cours ne peut pas avoir de date de fin.")
+            if request.facts_start_date and not request.situation_ongoing and not request.facts_end_date:
+                raise ValueError("Indiquez la date de fin de la situation ou cochez « Situation toujours en cours ».")
+            if request.facts_end_date and not request.facts_start_date:
+                raise ValueError("Indiquez également le début de la situation pour vérifier toute la période.")
             if period_start and period_end and period_end < period_start:
                 raise ValueError("La fin de la période ne peut pas précéder son début.")
             effective_date = (
