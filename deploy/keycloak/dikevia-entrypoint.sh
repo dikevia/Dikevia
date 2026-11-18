@@ -2,6 +2,10 @@
 set -Eeuo pipefail
 
 KC_BIN=/opt/keycloak/bin
+INSTANCE_ID="${RENDER_INSTANCE_ID:-$(hostname)}"
+export KC_CACHE_EMBEDDED_CLUSTER_NAME="dikevia-${INSTANCE_ID}"
+export KC_CACHE_EMBEDDED_NODE_NAME="${INSTANCE_ID}"
+echo "Keycloak stateless cluster instance: ${INSTANCE_ID}"
 ${KC_BIN}/kc.sh "$@" &
 KC_PID=$!
 
