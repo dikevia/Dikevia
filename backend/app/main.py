@@ -644,7 +644,8 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)
                     "article", "page_start", "page_end", "citation_integrity", "collectivity",
                     "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
                 for source in result.sources[:30]],
-            "missing_information": result.missing_information, "disclaimer": result.disclaimer,\n            "clarification_question": result.clarification_question},
+            "missing_information": result.missing_information, "disclaimer": result.disclaimer,
+            "clarification_question": result.clarification_question},
             ensure_ascii=False, default=str))
     await ctx.conn.execute("UPDATE chat_conversations SET updated_at=now() WHERE id=$1::uuid", str(conversation_id))
     return result
