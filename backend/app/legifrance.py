@@ -343,14 +343,37 @@ class LegifranceConnector:
             text = self._extract_text(detail)
             if article_id not in returned_ids or not text:
                 continue
+            article_metadata = next(
+                (node for node in self._walk_dicts(detail)
+                 if self._first_value(node, ("id", "idarticle", "id_article")) == article_id),
+                {},
+            )
             article_ref_match = re.search(r"\b(?:article\s+)?([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b", text, re.I)
             article_ref = re.sub(r"[.\s]+", "", article_ref_match.group(1)).upper() if article_ref_match else None
             if requested_ref and article_ref != requested_ref:
                 continue
+            valid_from = self._iso_date(self._first_value(
+                article_metadata, ("dateDebut", "dateDebutVersion", "dateEffet", "dateDebutApplication")
+            ))
+            valid_to = self._iso_date(self._first_value(
+                article_metadata, ("dateFin", "dateFinVersion", "dateFinApplication")
+            ))
             articles.append({
                 "source_type": "LEGIFRANCE_API", "source_id": article_id, "article": article_ref,
-                "article_id": article_id, "title": f"Code général de la fonction publique — {article_ref or article_id}",
+                "article_id": article_id, "source_version_id": article_id,
+                "title": f"Code général de la fonction publique — {article_ref or article_id}",
                 "text": text[:20000], "excerpt": text[:1800], "effective_date_requested": effective_date.isoformat(),
+                "requested_effective_date": effective_date.isoformat(),
+                "valid_from": valid_from.isoformat() if valid_from else None,
+                "valid_to": valid_to.isoformat() if valid_to else None,
+                "version_status": "IN_FORCE_ON_REQUESTED_DATE",
+                "version_key": f"{article_id}:{effective_date.isoformat()}",
+                "raw_version_payload": {
+                    "requested_date": effective_date.isoformat(),
+                    "date_filter": "CODE_DATE/DATE_VERSION",
+                    "matching_consulted_id": article_id,
+                    "api_method": "/consult/getArticle",
+                },
                 "official_source": True,
                 "source_url": "https://www.legifrance.gouv.fr/",
             })
