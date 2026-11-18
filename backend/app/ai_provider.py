@@ -66,7 +66,8 @@ Retourne uniquement un objet JSON valide de la forme :
 }
 - N'ajoute aucune clé, aucun commentaire, aucun Markdown et aucun texte hors JSON.
 - Chaque affirmation juridique doit être un élément distinct de claims.
-- Chaque claim doit référencer un seul source_id fourni et contenir une citation exacte d'au moins 20 caractères présente dans l'extrait de cette même source.
+- Le champ source_id doit reprendre à l'identique la valeur identifiant_source d'un seul document fourni.
+- Le champ quote doit être copié mot pour mot depuis le champ extrait de ce même document et contenir au moins 20 caractères.
 - N'utilise jamais un snapshot CGFP marqué BASELINE_CONTEXT_ONLY comme preuve d'une règle applicable.
 - N'utilise jamais une métadonnée CETAT comme preuve ; seule une décision intégrale fournie peut soutenir un claim.
 - Ne cite aucun numéro, date, montant, délai ou seuil qui n'apparaît pas dans la citation exacte.
