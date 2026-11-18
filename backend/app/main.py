@@ -1248,7 +1248,10 @@ async def upload_document(
     extracted_text, extraction_status = extract_document_text(data, mime)
     digest=hashlib.sha256(data).hexdigest()
     doc_id=str(uuid4())
-    storage_key=await asyncio.to_thread(store_private_file,ctx.organization_id,doc_id,1,data,Path(filename).suffix.lower(),mime)
+    try:
+        storage_key=await asyncio.to_thread(store_private_file,ctx.organization_id,doc_id,1,data,Path(filename).suffix.lower(),mime)
+    except StorageError:
+        raise HTTPException(503, "Le stockage privé est temporairement indisponible.")
     try:
         async with ctx.conn.transaction():
             row=await ctx.conn.fetchrow("""INSERT INTO documents(organization_id,id,collectivity_id,title,document_type,official_number,
@@ -1267,7 +1270,10 @@ async def upload_document(
               VALUES($1::uuid,$2::uuid,'DOCUMENT_UPLOADED','document',$3::uuid,jsonb_build_object('version',1,'sha256',$4))""",
               ctx.organization_id,ctx.user_id,doc_id,digest)
     except Exception:
-        await asyncio.to_thread(delete_private_file,storage_key)
+        try:
+            await asyncio.to_thread(delete_private_file,storage_key)
+        except StorageError:
+            pass
         raise
     return {"id":doc_id,"version":1,"title":title.strip(),"original_filename":filename,"mime_type":mime,
       "file_size_bytes":len(data),"sha256":digest,"scan_status":scan["scan_status"],
@@ -1316,9 +1322,14 @@ async def upload_document_version(document_id:str,file:UploadFile=File(...),effe
             await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
               VALUES($1::uuid,$2::uuid,'DOCUMENT_VERSION_UPLOADED','document',$3::uuid,jsonb_build_object('version',$4,'sha256',$5))""",
               ctx.organization_id,ctx.user_id,document_id,version,digest)
-    except Exception:
+    except Exception as exc:
         if storage_key:
-            await asyncio.to_thread(delete_private_file,storage_key)
+            try:
+                await asyncio.to_thread(delete_private_file,storage_key)
+            except StorageError:
+                pass
+        if isinstance(exc, StorageError):
+            raise HTTPException(503, "Le stockage privé est temporairement indisponible.")
         raise
     return {"document_id":document_id,"version":version,"original_filename":filename,"sha256":digest,
       "scan_status":scan["scan_status"],"extraction_status":extraction_status,"validation_status":"COLLECTED_UNVERIFIED"}
