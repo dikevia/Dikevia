@@ -1544,12 +1544,17 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
             occupied = seat_counts["paid_active_users"] + seat_counts["pending_paid_invitations"]
             if occupied >= current_plan["max_users"]:
                 raise HTTPException(402, f"Limite de {current_plan['max_users']} utilisateurs payants atteinte. Les adresses bénéficiant d'un accès gratuit ne consomment pas de place.")
-    row = await ctx.conn.fetchrow("""
-      INSERT INTO invitations(organization_id,email_normalized,role,invited_by,status,token_hash,expires_at)
-      VALUES($1::uuid,$2,$3,$4::uuid,'PENDING',$5,now()+interval '7 days')
-      ON CONFLICT (organization_id,(lower(email_normalized))) WHERE status='PENDING' DO NOTHING
-      RETURNING id,email_normalized,role,status,expires_at
-    """, ctx.organization_id, email, payload.role, ctx.user_id, token_hash)
+    async with ctx.conn.transaction():
+        allowed = await ctx.conn.fetchval(
+            "SELECT beta_user_slot_available($1,$2)", email, settings.beta_max_users)
+        if not allowed:
+            raise HTTPException(409, f"Limite temporaire de {settings.beta_max_users} utilisateurs atteinte pour la bêta.")
+        row = await ctx.conn.fetchrow("""
+          INSERT INTO invitations(organization_id,email_normalized,role,invited_by,status,token_hash,expires_at)
+          VALUES($1::uuid,$2,$3,$4::uuid,'PENDING',$5,now()+interval '7 days')
+          ON CONFLICT (organization_id,(lower(email_normalized))) WHERE status='PENDING' DO NOTHING
+          RETURNING id,email_normalized,role,status,expires_at
+        """, ctx.organization_id, email, payload.role, ctx.user_id, token_hash)
     if not row:
         raise HTTPException(409, "Une invitation est déjà en attente pour cette adresse dans cette organisation.")
     delivery = "MANUAL_SECURE_DELIVERY"
@@ -1631,6 +1636,10 @@ async def accept_invitation(payload: InvitationAccept, response: Response, princ
             normalized_email = str(claims_email).strip().lower()
             if normalized_email != invitation["email_normalized"]:
                 raise HTTPException(403, "Cette invitation ne correspond pas à l'adresse du compte connecté.")
+            allowed = await conn.fetchval(
+                "SELECT beta_user_slot_available($1,$2)", normalized_email, settings.beta_max_users)
+            if not allowed:
+                raise HTTPException(409, f"Limite temporaire de {settings.beta_max_users} utilisateurs atteinte pour la bêta.")
             user = await conn.fetchrow("""
               INSERT INTO users(oidc_issuer,oidc_subject,email,status)
               VALUES($1,$2,$3,'ACTIVE')
