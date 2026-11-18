@@ -92,3 +92,41 @@ def test_loda_excerpt_selects_relevant_sentences_instead_of_only_the_document_st
     )
     assert len(excerpt) <= 1800
     assert "durée annuelle du temps de travail" in excerpt
+
+
+def test_dated_versions_keep_official_id_and_have_distinct_citation_ids():
+    from app.orchestrator import _tag_official_versions, _compare_official_period_versions
+
+    start = date(2024, 1, 1)
+    end = date(2025, 1, 1)
+    start_sources = _tag_official_versions([{
+        "source_type": "LEGIFRANCE_API", "source_id": ARTICLE_ID,
+        "article": "L123-4", "text": "Ancienne rédaction officielle de l'article."
+    }], start, "START")
+    end_sources = _tag_official_versions([{
+        "source_type": "LEGIFRANCE_API", "source_id": ARTICLE_ID,
+        "article": "L123-4", "text": "Nouvelle rédaction officielle de l'article."
+    }], end, "END")
+
+    assert start_sources[0]["source_id"] != end_sources[0]["source_id"]
+    assert start_sources[0]["official_source_id"] == ARTICLE_ID
+    assert end_sources[0]["requested_effective_date"] == "2025-01-01"
+    comparison = _compare_official_period_versions(start_sources, end_sources, start, end)
+    assert comparison["changed_text_count"] == 1
+    assert comparison["status"] == "ENDPOINTS_COMPARED_NOT_COMPLETE_HISTORY"
+    assert "modifications intermédiaires" in comparison["limitation"]
+
+
+def test_version_comparison_does_not_treat_missing_endpoint_result_as_repeal():
+    from app.orchestrator import _tag_official_versions, _compare_official_period_versions
+
+    start = date(2024, 1, 1)
+    end = date(2025, 1, 1)
+    only_start = _tag_official_versions([{
+        "source_type": "LEGIFRANCE_LODA", "source_id": "LEGITEXT000012345678",
+        "source_version_id": "LEGITEXT000012345678", "full_text": "Texte intégral suffisamment long."
+    }], start, "START")
+    comparison = _compare_official_period_versions(only_start, [], start, end)
+    assert comparison["start_only_search_count"] == 1
+    assert comparison["results"][0]["comparison"] == "FOUND_ONLY_IN_START_SEARCH"
+    assert "n'est pas la preuve" not in comparison["results"][0]["comparison"]
