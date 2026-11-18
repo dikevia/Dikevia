@@ -1,5 +1,5 @@
 -- Temporary global beta capacity shared across all organizations.
--- Zero disables the cap; the production beta default is three distinct people.
+-- Zero disables the cap; the temporary beta default is one shared account.
 BEGIN;
 
 CREATE OR REPLACE FUNCTION beta_user_slot_available(p_email text, p_max_users integer)
