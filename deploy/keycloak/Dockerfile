@@ -1,7 +1,7 @@
 FROM quay.io/keycloak/keycloak:26.8.2
 
 COPY deploy/keycloak/realm-cfdt.render.json /opt/keycloak/data/import/realm-cfdt.json
-COPY deploy/keycloak/dikevia-entrypoint.sh /opt/keycloak/dikevia-entrypoint.sh
+COPY --chmod=0755 deploy/keycloak/dikevia-entrypoint.sh /opt/keycloak/dikevia-entrypoint.sh
 
 ENV KC_DB=postgres \
     KC_HEALTH_ENABLED=true \
@@ -12,8 +12,7 @@ ENV KC_DB=postgres \
     JAVA_OPTS_KC_HEAP="-XX:MaxRAMPercentage=30 -XX:InitialRAMPercentage=15"
 
 # Build the optimized server image once, rather than augmenting it at every boot.
-RUN chmod 0755 /opt/keycloak/dikevia-entrypoint.sh && \
-    /opt/keycloak/bin/kc.sh build --db=postgres --health-enabled=true --metrics-enabled=true --http-enabled=true --proxy-headers=xforwarded --http-management-health-enabled=false
+RUN /opt/keycloak/bin/kc.sh build --db=postgres --health-enabled=true --metrics-enabled=true --http-enabled=true --proxy-headers=xforwarded --http-management-health-enabled=false
 
 EXPOSE 10000
 
