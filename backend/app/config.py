@@ -72,12 +72,14 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("APP_ENV doit être development, test ou production.")
     if config.app_env == "production" and config.debug:
         raise RuntimeError("DEBUG doit être strictement désactivé en production.")
+
     algorithms = [part.strip() for part in config.oidc_algorithms.split(",") if part.strip()]
     if not algorithms or any(alg not in {"RS256", "ES256"} for alg in algorithms):
         raise RuntimeError("OIDC_ALGORITHMS doit contenir uniquement RS256 et/ou ES256.")
     oidc_values = (config.oidc_issuer, config.oidc_audience, config.oidc_jwks_url)
     if any(oidc_values) and not all(oidc_values):
         raise RuntimeError("Configuration OIDC incomplète : ISSUER, AUDIENCE et JWKS_URL sont requis ensemble.")
+
     if config.private_instance_mode and config.private_instance_max_users != 10:
         raise RuntimeError("PRIVATE_INSTANCE_MAX_USERS doit être égal à 10 pour l'instance privée CFDT JURIS.")
     if config.private_instance_mode and (config.stripe_secret_key or config.stripe_webhook_secret):
@@ -90,6 +92,8 @@ def validate_runtime_configuration(config: Settings) -> None:
         for billing_url in (config.billing_success_url, config.billing_cancel_url):
             if not _valid_https_or_local(billing_url, False):
                 raise RuntimeError("Les URL de retour Stripe doivent utiliser HTTPS en production.")
+
+    if config.app_env == "production":
         if not config.database_url:
             raise RuntimeError("DATABASE_URL est obligatoire en production.")
         if not all(oidc_values):
@@ -118,12 +122,29 @@ def validate_runtime_configuration(config: Settings) -> None:
             raise RuntimeError("PLATFORM_ADMIN_DATABASE_URL doit utiliser le rôle dédié cfdt_juris_platform_admin.")
         if config.platform_admin_database_url in {config.database_url, config.legal_corpus_ingest_database_url} or platform_db.username in {app_db.username, ingest_db.username}:
             raise RuntimeError("Le compte administrateur doit être distinct des comptes runtime et ingestion.")
+
+        storage_values = (config.aws_endpoint_url_s3, config.aws_region, config.aws_access_key_id,
+                          config.aws_secret_access_key, config.document_storage_bucket)
+        if not all(storage_values):
+            raise RuntimeError("Le stockage objet privé est obligatoire en production ; configurez le bucket Neon S3.")
+        storage_url = urlparse(config.aws_endpoint_url_s3)
+        if storage_url.scheme != "https" or not storage_url.hostname or storage_url.path not in ("", "/") or storage_url.query or storage_url.fragment:
+            raise RuntimeError("AWS_ENDPOINT_URL_S3 doit être une origine HTTPS valide.")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", config.document_storage_bucket):
+            raise RuntimeError("DOCUMENT_STORAGE_BUCKET invalide.")
+    else:
+        storage_values = (config.aws_endpoint_url_s3, config.aws_region, config.aws_access_key_id,
+                          config.aws_secret_access_key, config.document_storage_bucket)
+        if any(storage_values) and not all(storage_values):
+            raise RuntimeError("Configuration du stockage objet incomplète : endpoint, région, identifiants et bucket sont requis ensemble.")
+
     if config.legifrance_environment not in {"sandbox", "production"}:
         raise RuntimeError("LEGIFRANCE_ENVIRONMENT doit être sandbox ou production.")
     if bool(config.legifrance_client_id) != bool(config.legifrance_client_secret):
         raise RuntimeError("Configuration PISTE incomplète : CLIENT_ID et CLIENT_SECRET sont requis ensemble.")
     if not 2 <= config.legifrance_timeout_seconds <= 60:
         raise RuntimeError("LEGIFRANCE_TIMEOUT_SECONDS doit être compris entre 2 et 60.")
+
     ai_values = (config.ai_api_base_url, config.ai_api_key, config.ai_model)
     if any(ai_values) and not all(ai_values):
         raise RuntimeError("Configuration IA incomplète : AI_API_BASE_URL, AI_API_KEY et AI_MODEL sont requis ensemble.")
@@ -141,6 +162,7 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("DOCUMENT_MAX_SIZE_MB doit être compris entre 1 et 100.")
     if not 1 <= config.clamav_port <= 65535 or not 1 <= config.clamav_timeout_seconds <= 60:
         raise RuntimeError("Configuration ClamAV invalide.")
+
     admin_values = (config.keycloak_admin_base_url, config.keycloak_admin_client_secret)
     if any(admin_values) and not all(admin_values):
         raise RuntimeError("Configuration Keycloak Admin incomplète : URL et secret requis ensemble.")
@@ -154,6 +176,7 @@ def validate_runtime_configuration(config: Settings) -> None:
             raise RuntimeError("KEYCLOAK_ADMIN_BASE_URL doit utiliser HTTP ou HTTPS.")
     if not 1 <= config.keycloak_admin_timeout_seconds <= 30:
         raise RuntimeError("KEYCLOAK_ADMIN_TIMEOUT_SECONDS doit être compris entre 1 et 30.")
+
     smtp_values = (config.smtp_host, config.smtp_from)
     if any(smtp_values) and not all(smtp_values):
         raise RuntimeError("Configuration SMTP incomplète : hôte et adresse expéditeur requis.")
@@ -168,20 +191,5 @@ def validate_runtime_configuration(config: Settings) -> None:
         if not _valid_https_or_local(config.invitation_base_url, config.app_env != "production"):
             raise RuntimeError("INVITATION_BASE_URL doit utiliser HTTPS en production (HTTP localhost autorisé en développement).")
 
-
-    storage_values = (config.aws_endpoint_url_s3, config.aws_region, config.aws_access_key_id,
-                      config.aws_secret_access_key, config.document_storage_bucket)
-    if any(storage_values) and not all(storage_values):
-        raise RuntimeError("Configuration du stockage objet incomplète : endpoint, région, identifiants et bucket sont requis ensemble.")
-    if config.app_env == "production":
-        if not all(storage_values):
-            raise RuntimeError("Le stockage objet privé est obligatoire en production ; configurez le bucket Neon S3.")
-        storage_url = urlparse(config.aws_endpoint_url_s3)
-        if storage_url.scheme != "https" or not storage_url.hostname or storage_url.path not in ("", "/") or storage_url.query or storage_url.fragment:
-            raise RuntimeError("AWS_ENDPOINT_URL_S3 doit être une origine HTTPS valide.")
-        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", config.document_storage_bucket):
-            raise RuntimeError("DOCUMENT_STORAGE_BUCKET invalide.")
-        if config.debug:
-            raise RuntimeError("DEBUG doit être strictement désactivé en production.")
 
 settings = Settings()
