@@ -72,6 +72,7 @@ async def test_ai_receives_cgfp_baseline_before_date_verified_sources(monkeypatc
         }]}, ensure_ascii=False)
 
     monkeypatch.setattr(module, "analyze_question", fake_ai)
+    monkeypatch.setattr(module, "verify_claim_entailment", lambda **kwargs: {"valid": True, "invalid": []})
     response = await LegalOrchestrator().ask(
         AskRequest(
             employer="NATIONAL", facts_date="2024-06-01",
