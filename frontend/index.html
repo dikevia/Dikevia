@@ -117,6 +117,16 @@ function addJurisMessage(sender,text,extra={}){
   wrap.append(avatar,bubble);jurisMessages.appendChild(wrap);jurisMessages.scrollTop=jurisMessages.scrollHeight;return wrap;
 }
 $('#askQuestion').addEventListener('input',e=>$('#askCharCount').textContent=e.target.value.length+' / 5000');
+const factsStartInput=$('#askFactsStartDate'),factsEndInput=$('#askFactsEndDate'),situationOngoingInput=$('#askSituationOngoing');
+function syncSituationDates(){
+  factsEndInput.disabled=situationOngoingInput.checked;
+  if(situationOngoingInput.checked)factsEndInput.value='';
+  if(factsStartInput.value)factsEndInput.min=factsStartInput.value;
+  else factsEndInput.removeAttribute('min');
+}
+factsStartInput.addEventListener('change',syncSituationDates);
+situationOngoingInput.addEventListener('change',syncSituationDates);
+syncSituationDates();
 $('#askQuestion').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#askForm').requestSubmit();}});
 $$('[data-prompt]').forEach(b=>b.addEventListener('click',()=>{$('#askQuestion').value=b.dataset.prompt;$('#askCharCount').textContent=$('#askQuestion').value.length+' / 5000';$('#askQuestion').focus();}));
 $('#clearChat').addEventListener('click',startNewChat);
