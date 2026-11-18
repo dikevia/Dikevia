@@ -52,8 +52,10 @@ def _source_covers_period(source: dict, start_date: date, end_date: date) -> boo
     except (TypeError, ValueError):
         return False
     raw_valid_to = source.get("valid_to") or source.get("effective_to")
+    # A NULL end date may mean "unknown" rather than "still in force".
+    # Without an explicit upper bound, do not certify whole-period coverage.
     if not raw_valid_to:
-        return valid_from <= start_date
+        return False
     try:
         valid_to = date.fromisoformat(str(raw_valid_to)[:10])
     except (TypeError, ValueError):
@@ -72,11 +74,18 @@ def _compare_official_period_versions(
         if endpoint not in {"START", "END"}:
             continue
         source_type = str(source.get("source_type") or "")
-        canonical = (
-            str(source.get("article") or source.get("official_source_id") or source.get("source_version_id") or "")
-            if source_type == "LEGIFRANCE_API" else
-            str(source.get("official_number") or source.get("source_version_id") or source.get("official_source_id") or "")
-        )
+        if source_type == "LEGIFRANCE_API":
+            canonical = str(source.get("article") or source.get("official_source_id") or source.get("source_version_id") or "")
+        else:
+            # A number alone is not a unique instrument identity across legal
+            # document families (law, decree, order). Prefer the document kind
+            # together with the official number; fall back to the stable LEGITEXT ID.
+            document_kind = str(source.get("document_kind") or "UNKNOWN").upper()
+            official_number = str(source.get("official_number") or "")
+            canonical = (
+                f"{document_kind}:{official_number}" if official_number
+                else f"{document_kind}:{source.get('official_source_id') or source.get('source_version_id') or ''}"
+            )
         if not canonical:
             continue
         grouped.setdefault((source_type, canonical), {})[endpoint] = source
