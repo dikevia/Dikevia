@@ -200,7 +200,7 @@ def test_document_version_number_is_allocated_under_document_row_lock():
     transaction_start = route.index("async with ctx.conn.transaction():")
     lock_position = route.index("FOR UPDATE")
     version_position = route.index("COALESCE(max(version_number),0)+1")
-    file_position = route.index("store_private_file(")
+    file_position = route.index("store_private_file,")
     insert_position = route.index("INSERT INTO document_versions")
     assert transaction_start < lock_position < version_position < file_position < insert_position
     assert "storage_key=None" in route
