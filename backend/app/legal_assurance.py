@@ -109,8 +109,8 @@ _CASE_CITATION_RE = re.compile(
 )
 _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGNORECASE)
 _SOURCE_ID_CITATION_RE = re.compile(r"\[source:([A-Za-z0-9:_-]{6,128})\]", re.IGNORECASE)
-_NUMERIC_FACT_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)\b", re.IGNORECASE)
-_DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b")
+_NUMERIC_FACT_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)(?!\w)", re.IGNORECASE)
+_DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}(?:er)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})\b", re.IGNORECASE)
 _LEGAL_CLAIM_RE = re.compile(
     r"\b(?:doit|doivent|peut|peuvent|ne peut pas|obligation|interdit|délai|droit|"
     r"prévoit|impose|autorise|permet|applicable|illégal|licite|est tenu|sont tenus|jurisprudence|juridiction|conformément|en vertu|"
