@@ -171,7 +171,7 @@ class LegifranceConnector:
         def walk(node: Any):
             if isinstance(node, dict):
                 for key, child in node.items():
-                    if key.lower() in {"id", "idarticle", "id_article"} and isinstance(child, str) and ARTICLE_ID_RE.fullmatch(child):
+                    if key.lower() in {"id", "idarticle", "id_article", "cid"} and isinstance(child, str) and ARTICLE_ID_RE.fullmatch(child):
                         found.append(child)
                     else:
                         walk(child)
