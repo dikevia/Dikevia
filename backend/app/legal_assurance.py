@@ -164,7 +164,7 @@ def validate_answer_citations(
 
         source_text = " ".join(
             str(source.get(key) or "")
-            for key in ("title", "article", "official_number", "case_number", "excerpt", "text")
+            for key in ("title", "article", "official_number", "case_number", "official_source_id", "source_version_id", "excerpt", "text")
         )
         for match in _ARTICLE_IN_SOURCE_RE.finditer(source_text):
             allowed_articles.add(_normalize_citation_reference(match.group(1)))
