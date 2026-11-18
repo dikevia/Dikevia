@@ -53,8 +53,10 @@ async def _startup_external_diagnostics() -> None:
     if legifrance.configured:
         try:
             ping_results = await legifrance.ping_diagnostics()
+            logger.warning("DIKEVIA_DIAGNOSTIC PISTE_ROUTE_SUMMARY result_count=%d routes=%s",
+                           len(ping_results), ",".join(sorted(ping_results)) or "none")
             for route, status in ping_results.items():
-                logger.info("DIKEVIA_DIAGNOSTIC PISTE_ROUTE route=%s status=%s", route, status)
+                logger.warning("DIKEVIA_DIAGNOSTIC PISTE_ROUTE route=%s status=%s", route, status)
             reachable = any(isinstance(status, int) and 200 <= status < 300
                             for status in ping_results.values())
             if reachable:
