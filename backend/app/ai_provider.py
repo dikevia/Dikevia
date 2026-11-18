@@ -6,6 +6,7 @@ corpus validés par le backend et ne peut pas créer de citations exposées.
 from __future__ import annotations
 import json
 import re
+import unicodedata
 from dataclasses import dataclass
 import httpx
 from .config import settings
@@ -192,6 +193,10 @@ Aucun texte hors JSON.
 """
 
 
+def _normalize_entailment_text(value):
+    return re.sub(r"\\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
+
+
 def validate_entailment_verdicts(payload, claims, sources):
     """Strictly validate a second-stage, source-bound entailment decision."""
     if not isinstance(payload, dict) or not isinstance(payload.get("verdicts"), list):
@@ -225,7 +230,7 @@ def validate_entailment_verdicts(payload, claims, sources):
             invalid.append(f"verdict_{index}:support_quote_missing")
             continue
         source_text = str(matched[0].get("text") or matched[0].get("full_text") or matched[0].get("excerpt") or "")
-        if _normalized_evidence_text(support_quote) not in _normalized_evidence_text(source_text):
+        if _normalize_entailment_text(support_quote) not in _normalize_entailment_text(source_text):
             invalid.append(f"verdict_{index}:support_quote_not_in_source")
     return {"valid": not invalid, "invalid": invalid,
             "verification_scope": "SECOND_STAGE_CONSERVATIVE_MODEL_ENTAILMENT_WITH_EXACT_SOURCE_SPAN"}
