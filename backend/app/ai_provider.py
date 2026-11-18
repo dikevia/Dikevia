@@ -19,6 +19,8 @@ RÈGLES IMPÉRATIVES :
 - Les textes officiels Légifrance/PISTE servent à contrôler la rédaction et la version applicables à la date des faits ; ils complètent et actualisent le repérage dans le CGFP. En cas d'écart entre le snapshot et le texte officiel daté, signale précisément l'écart et privilégie le texte officiel applicable, sans masquer la différence.
 - Les décrets, arrêtés, jurisprudences et documents locaux sont des compléments ciblés : indique leur portée propre et ne les substitue pas silencieusement au CGFP.
 - Respecte strictement leur provenance, leur statut et leur temporalité ; ne déduis jamais leur applicabilité de leur seule présence.
+- Si une source porte le périmètre public_service_scope = SCOPE_TO_VERIFY, traite-la uniquement comme une piste à examiner : n'affirme pas qu'elle s'applique à la fonction publique territoriale sans vérification de son champ personnel et matériel.
+- Les sources explicitement classées FPE ou FPH sont hors périmètre d'une analyse FPT, sauf si la question porte expressément sur ces versants ou sur une disposition commune démontrée.
 - Un snapshot CGFP n'est pas une vérification en direct de Légifrance : c'est une photographie documentaire datée qui ne prouve pas à elle seule une version historique.
 - Lorsqu'un extrait porte le rôle BASELINE_CONTEXT_ONLY ou le statut SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED, utilise-le pour expliquer le cadre du CGFP, jamais pour affirmer seul qu'une disposition était en vigueur à la date des faits. Exige un texte officiel daté pour toute conclusion temporelle.
 - Une pièce locale ne peut soutenir une conclusion que si elle est validée et applicable à la date des faits et à la collectivité concernée.
@@ -67,6 +69,8 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                 "extraits_documentaires_valides": [{
                     "type_source": s.get("source_type"), "identifiant_source": s.get("source_id"),
                     "titre": s.get("title"), "article": s.get("article"),
+                    "perimetre_fonction_publique": s.get("public_service_scope"),
+                    "indices_perimetre": s.get("scope_evidence"),
                     "numero_officiel": s.get("official_number"), "juridiction": s.get("jurisdiction"),
                     "date_signature": str(s.get("signature_date") or ""),
                     "date_publication": str(s.get("publication_date") or ""),
