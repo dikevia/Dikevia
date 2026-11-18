@@ -9,7 +9,7 @@ def test_beta_user_cap_defaults_to_one_and_is_configurable():
     env = (ROOT / "deploy/.env.example").read_text()
     assert "beta_max_users: int = 1" in config
     assert "BETA_MAX_USERS" in config
-    assert '      - key: BETA_MAX_USERS\n        value: "3"' in render
+    assert '      - key: BETA_MAX_USERS\n        value: "1"' in render
     assert "BETA_MAX_USERS=1" in env
 
 
