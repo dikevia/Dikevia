@@ -42,18 +42,11 @@ wait_for_admin_api() {
 }
 
 if [[ -n "${DIKEVIA_BOOTSTRAP_ADMIN_USERNAME:-}" ||
-      -n "${DIKEVIA_BOOTSTRAP_ADMIN_PASSWORD:-}" ||
-      -n "${DIKEVIA_BOOTSTRAP_ADMIN_SUBJECT:-}" ]]; then
+      -n "${DIKEVIA_BOOTSTRAP_ADMIN_PASSWORD:-}" ]]; then
   : "${KC_BOOTSTRAP_ADMIN_USERNAME:?Missing Keycloak bootstrap administrator username}"
   : "${KC_BOOTSTRAP_ADMIN_PASSWORD:?Missing Keycloak bootstrap administrator password}"
   : "${DIKEVIA_BOOTSTRAP_ADMIN_USERNAME:?Missing Dikévia initial administrator username}"
   : "${DIKEVIA_BOOTSTRAP_ADMIN_PASSWORD:?Missing Dikévia initial administrator password}"
-  : "${DIKEVIA_BOOTSTRAP_ADMIN_SUBJECT:?Missing Dikévia initial administrator subject}"
-
-  if ! [[ "$DIKEVIA_BOOTSTRAP_ADMIN_SUBJECT" =~ ^[0-9a-fA-F-]{36}$ ]]; then
-    echo "Invalid initial administrator subject UUID." >&2
-    exit 1
-  fi
 
   echo "Waiting for Keycloak administrator API..."
   wait_for_admin_api
@@ -62,37 +55,35 @@ if [[ -n "${DIKEVIA_BOOTSTRAP_ADMIN_USERNAME:-}" ||
   existing="$("${KC_BIN}/kcadm.sh" get users -r cfdt \
     -q "username=$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME")"
 
-  if [[ "$existing" != *"$DIKEVIA_BOOTSTRAP_ADMIN_SUBJECT"* ]]; then
-    if [[ "$existing" != "[]" && "$existing" == *'"username"'* ]]; then
-      echo "A different Keycloak user already uses the configured initial administrator username." >&2
-      exit 1
-    fi
-
+  if [[ "$existing" == "[]" || "$existing" != *'"username"'* ]]; then
     if ! "${KC_BIN}/kcadm.sh" create users -r cfdt \
-      -s "id=$DIKEVIA_BOOTSTRAP_ADMIN_SUBJECT" \
       -s "username=$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME" \
       -s enabled=true \
-      -s emailVerified=true \
       -s "firstName=Dikevia" \
       -s "lastName=Administrateur"; then
       existing="$("${KC_BIN}/kcadm.sh" get users -r cfdt \
         -q "username=$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME")"
-      if [[ "$existing" != *"$DIKEVIA_BOOTSTRAP_ADMIN_SUBJECT"* ]]; then
+      if [[ "$existing" == "[]" || "$existing" != *'"username"'* ]]; then
         echo "Could not provision the initial Dikévia administrator." >&2
         exit 1
       fi
     fi
-
     existing="$("${KC_BIN}/kcadm.sh" get users -r cfdt \
       -q "username=$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME")"
-    if [[ "$existing" != *"$DIKEVIA_BOOTSTRAP_ADMIN_SUBJECT"* ]]; then
-      echo "Keycloak did not preserve the configured administrator subject." >&2
-      exit 1
-    fi
+  fi
 
+  user_id="$(printf '%s\n' "$existing" | sed -nE 's/.*"id"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' | head -n 1)"
+  if [[ -z "$user_id" ]]; then
+    echo "Could not read the generated Keycloak administrator subject." >&2
+    exit 1
+  fi
+
+  if [[ "$existing" != *"dikeviaBootstrapPasswordInitialized"* ]]; then
     "${KC_BIN}/kcadm.sh" set-password -r cfdt \
       --username "$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME" \
       --new-password "$DIKEVIA_BOOTSTRAP_ADMIN_PASSWORD"
+    "${KC_BIN}/kcadm.sh" update "users/$user_id" -r cfdt \
+      -s 'attributes.dikeviaBootstrapPasswordInitialized=["true"]'
   fi
   echo "Initial Dikévia administrator is provisioned."
 fi
