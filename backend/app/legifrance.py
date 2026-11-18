@@ -72,8 +72,13 @@ class LegifranceConnector:
             self._token = token
             self._token_expires_at = time.monotonic() + expires
             return token
+        except httpx.HTTPStatusError as exc:
+            # Log only the HTTP status; never expose OAuth response bodies or credentials.
+            raise LegifranceUnavailable(
+                f"Refus OAuth PISTE (HTTP {exc.response.status_code})."
+            ) from exc
         except (httpx.HTTPError, ValueError, TypeError) as exc:
-            raise LegifranceUnavailable("Authentification PISTE impossible.") from exc
+            raise LegifranceUnavailable("Échec réseau ou réponse OAuth PISTE invalide.") from exc
 
     async def _request(self, method: str, path: str, *, json_body: dict | None = None) -> dict:
         token = await self._get_token()
@@ -111,9 +116,11 @@ class LegifranceConnector:
                 except httpx.HTTPStatusError as exc:
                     if exc.response.status_code in {404, 405} and path == "list/ping":
                         continue
-                    raise LegifranceUnavailable("Point de contrôle Légifrance inaccessible.") from exc
+                    raise LegifranceUnavailable(
+                        f"Refus du point de contrôle PISTE {path} (HTTP {exc.response.status_code})."
+                    ) from exc
                 except httpx.HTTPError as exc:
-                    raise LegifranceUnavailable("Point de contrôle Légifrance inaccessible.") from exc
+                    raise LegifranceUnavailable(f"Erreur réseau sur le point de contrôle PISTE {path}.") from exc
         raise LegifranceUnavailable("Aucun point de contrôle Légifrance disponible.")
 
     @staticmethod
