@@ -1,7 +1,7 @@
 from datetime import date
 import pytest
 
-from app.legal_corpus import clean_text, sha256_text, split_text, temporal_status, safe_official_url
+from app.legal_corpus import clean_text, sha256_text, split_text, temporal_status, safe_official_url, expand_legal_query
 from app.legal_ingestion import parse_circulaires_xml
 from app.legifrance import LegifranceConnector
 
@@ -202,3 +202,18 @@ async def test_loda_date_filtered_consult_marks_unknown_search_status_as_applica
     assert result[0]["version_status"] == "IN_FORCE"
     assert result[0]["raw_version_payload"]["date_filter"] == "DATE_VERSION"
     assert result[0]["raw_version_payload"]["matching_consulted_id"] == "LEGITEXT000000000099"
+
+
+def test_legal_query_expansion_preserves_original_and_adds_fpt_terms():
+    expanded = expand_legal_query("Je ne suis pas payé pour mes heures supplémentaires")
+    assert expanded[0] == "Je ne suis pas payé pour mes heures supplémentaires"
+    assert "IHTS" in expanded
+    assert "indemnités horaires pour travaux supplémentaires" in expanded
+    assert len(expanded) <= 6
+    assert expand_legal_query("question sans terme juridique connu") == ["question sans terme juridique connu"]
+
+
+def test_legal_query_expansion_is_accent_and_case_insensitive():
+    expanded = expand_legal_query("CONGE MALADIE")
+    assert "congé de maladie" in expanded
+    assert "CMO" in expanded
