@@ -343,6 +343,11 @@ class LegalOrchestrator:
         # Official API articles have priority, and are included only after a successful
         # search -> getArticle round-trip with matching LEGIARTI identifier and text.
         for item in live_sources:
+            if item.get("requested_effective_date"):
+                item["title"] = (
+                    f"{item.get('title') or 'Article du CGFP'} — version consultée au "
+                    f"{item['requested_effective_date']}"
+                )
             scope_check = classify_public_service_scope(item)
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
@@ -360,6 +365,11 @@ class LegalOrchestrator:
                 }})
 
         for item in regulatory_sources:
+            if item.get("requested_effective_date"):
+                item["title"] = (
+                    f"{item.get('title') or 'Texte réglementaire'} — version consultée au "
+                    f"{item['requested_effective_date']}"
+                )
             full_text = item.get("full_text") or ""
             scope_check = classify_public_service_scope(item)
             item["public_service_scope"] = scope_check["scope"]
@@ -521,7 +531,12 @@ class LegalOrchestrator:
                 missing.insert(1, "Début de la situation non précisé : l'analyse porte sur les règles vérifiées à la date actuelle et ne permet pas de reconstituer toute l'histoire antérieure.")
         elif period_version_comparison:
             missing.insert(0, (
-                "Comparaison Légifrance des textes retrouvés aux deux bornes effectuée. "
+                "Comparaison Légifrance aux deux bornes : "
+                f"{period_version_comparison['changed_text_count']} rédaction(s) différente(s), "
+                f"{period_version_comparison['same_text_count']} identique(s), "
+                f"{period_version_comparison['start_only_search_count']} résultat(s) uniquement au début "
+                f"et {period_version_comparison['end_only_search_count']} uniquement à la fin. "
+                "Les résultats non retrouvés à une borne ne prouvent pas une abrogation. "
                 "Cette comparaison ne reconstitue pas toutes les modifications intermédiaires ; "
                 "les dates d'effet et éventuelles versions entre ces bornes restent à contrôler."
             ))
