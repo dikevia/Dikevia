@@ -367,7 +367,7 @@ async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypat
                    question="Quels droits pour les agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert any("référence d'article générée" in item for item in response.missing_information)
+    assert any("réponse IA a été bloquée" in item for item in response.missing_information)
     assert "L'article L4 prévoit cette règle." not in response.answer
     snapshot_sources = [s for s in response.sources if s.get("source_type") == "CGFP_SNAPSHOT"]
     assert snapshot_sources
