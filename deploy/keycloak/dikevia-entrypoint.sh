@@ -12,7 +12,7 @@ stop_keycloak() {
 trap stop_keycloak TERM INT
 
 wait_for_keycloak_ready() {
-  for attempt in $(seq 1 180); do
+  for ((attempt=1; attempt<=180; attempt++)); do
     if ! kill -0 "$KC_PID" 2>/dev/null; then
       wait "$KC_PID"
       return 1
