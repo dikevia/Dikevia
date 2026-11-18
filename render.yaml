@@ -21,15 +21,15 @@ services:
       - key: PLATFORM_ADMIN_DATABASE_URL
         sync: false
       - key: OIDC_ISSUER
-        value: https://dikevia-identity.onrender.com/realms/cfdt
+        value: https://dikevia-identity-l2r8.onrender.com/realms/cfdt
       - key: OIDC_AUDIENCE
         value: cfdt-juris-api
       - key: OIDC_JWKS_URL
-        value: https://dikevia-identity.onrender.com/realms/cfdt/protocol/openid-connect/certs
+        value: https://dikevia-identity-l2r8.onrender.com/realms/cfdt/protocol/openid-connect/certs
       - key: OIDC_ALGORITHMS
         value: RS256
       - key: CORS_ORIGINS
-        value: https://dikevia-commercial-api.onrender.com
+        value: https://dikevia-commercial-api-l2r8.onrender.com
       - key: AWS_ENDPOINT_URL_S3
         value: https://br-quiet-bird-bdmov90l.storage.c-8.us-east-2.aws.neon.tech
       - key: AWS_REGION
@@ -81,7 +81,7 @@ services:
       - key: KC_DB_PASSWORD
         sync: false
       - key: KC_HOSTNAME
-        value: https://dikevia-identity.onrender.com
+        value: https://dikevia-identity-l2r8.onrender.com
       - key: KC_HTTP_ENABLED
         value: "true"
       - key: KC_PROXY_HEADERS
