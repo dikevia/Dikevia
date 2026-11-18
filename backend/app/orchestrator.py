@@ -267,15 +267,29 @@ class LegalOrchestrator:
                         "citation_integrity": integrity, "document": found["source"]["source_file"]})
 
         for decision in case_law_sources:
+            # A CETAT search hit is metadata only; it is never passed as legal evidence to AI.
             sources.append({
                 **decision,
                 "page_start": None,
                 "page_end": None,
+                "content_kind": "METADATA",
                 "citation_integrity": {
-                    "valid": True,
-                    "verification_scope": "OFFICIAL_SEARCH_RESULT_ID_ONLY",
+                    "valid": False,
+                    "verification_scope": "OFFICIAL_SEARCH_RESULT_ID_ONLY_NOT_FULL_TEXT",
                 },
             })
+
+        for decision in case_law_full_text_sources:
+            scope_check = classify_public_service_scope(decision)
+            decision["public_service_scope"] = scope_check["scope"]
+            decision["scope_evidence"] = scope_check["evidence"]
+            decision["analysis_eligible"] = scope_check["analysis_eligible"]
+            decision["ihts_relevant"] = is_ihts_relevant_source(request.question, decision)
+            sources.append({**decision, "page_start": None, "page_end": None})
+
+        # Classification is computed before the model call so the prompt receives
+        # the legal-source family and the limitations attached to each document.
+        sources = assess_source_set(sources)["sources"]
 
         usable_permanent = [s for s in permanent_sources if s.get("content_kind") == "FULL_TEXT"
             and (s.get("citation_integrity") or {}).get("valid")
@@ -283,12 +297,14 @@ class LegalOrchestrator:
         usable_local = [s for s in local_sources
             if (s.get("citation_integrity") or {}).get("valid") is True
             and s.get("temporal_status") == "VERIFIED_APPLICABLE"]
-        if not any(s.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA", "CGFP_SNAPSHOT"} for s in sources) and not usable_permanent and not usable_local:
+        if not any(s.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT", "CGFP_SNAPSHOT"} for s in sources) and not usable_permanent and not usable_local:
             missing = ["Aucune disposition législative ou réglementaire exploitable n'a été récupérée.",
                 "Recherche officielle Légifrance/PISTE et vérification des textes réglementaires complémentaires.",
                 "Recherche de jurisprudence pertinente et vérification des sources locales applicables."]
             if permanent_issue:
                 missing.insert(0, permanent_issue)
+            if cgfp_issue:
+                missing.insert(0, cgfp_issue)
             if local_issue:
                 missing.insert(0, local_issue)
             elif request.employer != "NATIONAL" and not local_sources:
@@ -299,10 +315,12 @@ class LegalOrchestrator:
                 missing.insert(0, regulatory_issue)
             if case_law_issue:
                 missing.insert(0, case_law_issue)
-            if not found:
-                missing.insert(0, "Index documentaire CGFP indisponible ou invalide.")
+            if case_law_fulltext_issue:
+                missing.insert(0, case_law_fulltext_issue)
+            if not found and not cgfp_issue:
+                missing.insert(0, "L'index CGFP a été interrogé mais aucun article pertinent n'a été retrouvé.")
             return AskResponse(request_id=request_id, verification_status="NON_VERIFIE",
-                answer="Aucune source exploitable n'a été récupérée et contrôlée pour cette question. JURIS ne formule donc pas de conclusion juridique.",
+                answer="Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. Aucune conclusion juridique n'est formulée.",
                 sources=sources, missing_information=missing)
 
         missing = ["Vérifier les dates d'effet et la rédaction exacte applicable à la date des faits.",
@@ -311,6 +329,8 @@ class LegalOrchestrator:
             "Vérifier les actes locaux, délibérations et accords applicables à l'employeur concerné."]
         if permanent_issue:
             missing.insert(0, permanent_issue)
+        if cgfp_issue:
+            missing.insert(0, cgfp_issue)
         if local_issue:
             missing.insert(0, local_issue)
         elif request.employer != "NATIONAL" and not local_sources:
@@ -328,8 +348,12 @@ class LegalOrchestrator:
             missing.insert(0, regulatory_issue)
         if case_law_issue:
             missing.insert(0, case_law_issue)
-        if case_law_sources:
-            missing.insert(0, "Les résultats CETAT sont des métadonnées/extraits de recherche ; le texte intégral des décisions n'a pas été récupéré ni contrôlé.")
+        if case_law_fulltext_issue:
+            missing.insert(0, case_law_fulltext_issue)
+        if case_law_sources and not case_law_full_text_sources:
+            missing.insert(0, "Les résultats CETAT restent des métadonnées : aucun texte intégral de décision n'est utilisé pour l'analyse IA.")
+        if not case_law_sources and not case_law_issue:
+            missing.insert(0, "La recherche CETAT a été exécutée sans retrouver de décision pertinente pour cette requête.")
         if request.facts_date:
             missing.insert(0, f"Date des faits demandée : {request.facts_date}.")
         else:
