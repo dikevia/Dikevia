@@ -354,3 +354,28 @@ async def test_orchestrator_rejects_inverted_situation_period():
 def test_ai_prompt_distinguishes_fact_period_from_text_effective_date():
     assert "Distingue la période de la situation" in SYSTEM_PROMPT
     assert "comparer les versions successives" in SYSTEM_PROMPT
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_rejects_end_date_when_situation_is_ongoing():
+    from app.schemas import AskRequest
+    from app.orchestrator import LegalOrchestrator
+
+    request = AskRequest(employer="NATIONAL", facts_start_date="2024-01-01",
+                         facts_end_date="2024-06-30", situation_ongoing=True,
+                         question="Question juridique suffisamment longue")
+    response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
+    assert response.verification_status == "NON_VERIFIE"
+    assert "toujours en cours" in response.missing_information[0]
+
+
+@pytest.mark.asyncio
+async def test_legacy_single_fact_date_remains_a_single_day():
+    from app.schemas import AskRequest
+    from app.orchestrator import LegalOrchestrator
+
+    request = AskRequest(employer="NATIONAL", facts_date="2024-01-15",
+                         question="Question juridique suffisamment longue")
+    response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
+    assert response.clarification_question is None
+    assert any("2024-01-15" in item for item in response.missing_information)
