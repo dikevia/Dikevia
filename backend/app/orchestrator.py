@@ -4,7 +4,9 @@ import logging
 
 from .schemas import AskRequest, AskResponse
 from .config import settings
-from .cgfp import search_cgfp, get_cgfp_article
+from .cgfp import get_cgfp_article
+from .cgfp_relevance import search_cgfp
+from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, AIAnalysisResult, AIProviderUnavailable, answer_references_are_grounded
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -122,6 +124,11 @@ class LegalOrchestrator:
         # Official API articles have priority, and are included only after a successful
         # search -> getArticle round-trip with matching LEGIARTI identifier and text.
         for item in live_sources:
+            scope_check = classify_public_service_scope(item)
+            item["public_service_scope"] = scope_check["scope"]
+            item["scope_evidence"] = scope_check["evidence"]
+            item["analysis_eligible"] = scope_check["analysis_eligible"]
+            item["ihts_relevant"] = is_ihts_relevant_source(request.question, item)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": (
                     "IN_FORCE_ON_REQUESTED_DATE" if parsed_date is not None
@@ -132,6 +139,11 @@ class LegalOrchestrator:
 
         for item in regulatory_sources:
             full_text = item.get("full_text") or ""
+            scope_check = classify_public_service_scope(item)
+            item["public_service_scope"] = scope_check["scope"]
+            item["scope_evidence"] = scope_check["evidence"]
+            item["analysis_eligible"] = scope_check["analysis_eligible"]
+            item["ihts_relevant"] = is_ihts_relevant_source(request.question, item)
             sources.append({
                 **item,
                 "excerpt": item.get("excerpt") or full_text[:1800],
@@ -157,6 +169,8 @@ class LegalOrchestrator:
 
         if found:
             for hit in found["results"]:
+                if not is_ihts_relevant_source(request.question, hit):
+                    continue
                 article = get_cgfp_article(hit["article"])
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
                     "page_start": hit["page_start"], "page_end": hit["page_end"], "excerpt": hit["excerpt"]}
@@ -266,6 +280,8 @@ class LegalOrchestrator:
                     and s.get("content_kind") != "METADATA"
                     and (s.get("citation_integrity") or {}).get("valid") is True
                     and s.get("temporal_status") in eligible_temporal_statuses
+                    and s.get("analysis_eligible") is not False
+                    and s.get("ihts_relevant") is not False
                 ]
                 cgfp_context_sources = [
                     {**s, "reference_role": "BASELINE_CONTEXT_ONLY",
