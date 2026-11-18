@@ -579,6 +579,8 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
     existing = await ctx.conn.fetchrow("SELECT id,content FROM legal_dossiers WHERE conversation_id=$1::uuid", conversation_uuid)
     if not existing:
         raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
+    if content.get("status") == "VALIDE_HUMAINEMENT" and ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR"):
+        raise HTTPException(403, "La validation humaine d'un dossier est réservée aux responsables habilités.")
     stored = decode_jsonb(existing["content"])
     # Original exchanges, AI analyses, citations and verification metadata are immutable here.
     # Only the explicitly editable dossier fields may be changed by the user.
