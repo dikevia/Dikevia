@@ -7,7 +7,11 @@ Employer = Literal["NATIONAL", "VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE"]
 
 class AskRequest(BaseModel):
     employer: Employer
+    # Legacy exact date remains supported for existing clients.
     facts_date: str | None = None
+    facts_start_date: str | None = None
+    facts_end_date: str | None = None
+    situation_ongoing: bool = False
     question: str = Field(min_length=8, max_length=5000)
     conversation_id: UUID | None = None
 
