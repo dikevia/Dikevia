@@ -58,6 +58,8 @@ class LegalOrchestrator:
                 return None, "Index documentaire CGFP désactivé : le pilier CGFP n'a pas été interrogé."
             try:
                 result = await asyncio.to_thread(search_cgfp, contextual_question, limit=8)
+                if not isinstance(result, dict):
+                    return None, "Index documentaire CGFP indisponible : résultat de recherche non conforme."
                 return result, None
             except (FileNotFoundError, OSError, ValueError):
                 logger.exception("Échec de la recherche dans l'index structuré du CGFP.")
