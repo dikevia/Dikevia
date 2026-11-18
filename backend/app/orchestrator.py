@@ -42,7 +42,7 @@ class LegalOrchestrator:
                         "La date d'entrée en vigueur de chaque disposition sera vérifiée par Dikévia dans Légifrance ; elle n'a pas à être connue par l'utilisateur."
                     ],
                 )
-            effective_date = period_end or (date.today() if request.situation_ongoing else period_start)
+            effective_date = date.today() if request.situation_ongoing else (period_end or period_start)
             parsed_date = effective_date
             temporal_context = {
                 "period_start": period_start.isoformat() if period_start else None,
@@ -411,11 +411,6 @@ class LegalOrchestrator:
         elif temporal_context["period_start"] and temporal_context["period_end"] and temporal_context["period_start"] != temporal_context["period_end"]:
             missing.insert(0, "La période couvre plusieurs dates : la recherche actuelle est calée sur sa date de fin. Les versions successives des textes doivent être comparées avant de conclure sur l'ensemble de la période.")
 
-        # A search performed at today's date is not a substitute for the date of
-        # the facts. Without facts_date, keep the response at documentary-triage
-        # level and do not ask the model to produce a case-specific legal analysis.
-        # This prevents a current API result or a consolidated PDF snapshot from
-        # being silently treated as the law applicable to an undated situation.
         ai_sources: list[dict] = []
         ai_usage = None
         if cgfp_issue or live_issue or regulatory_issue or case_law_issue:
