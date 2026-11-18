@@ -24,7 +24,7 @@ async def test_orchestrator_never_claims_full_legal_verification_from_snapshot()
     response = await LegalOrchestrator().ask(
         AskRequest(employer="NATIONAL", question="Que prévoit le code sur les fonctionnaires territoriaux ?"),
         "00000000-0000-0000-0000-000000000001")
-    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.verification_status == "NON_VERIFIE"
     assert response.sources
     assert any("Légifrance" in item for item in response.missing_information)
 
