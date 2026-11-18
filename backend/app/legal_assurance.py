@@ -335,10 +335,15 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         if unsupported_numbers or unsupported_dates:
             invalid.append(f"claim_{index}:unsupported_numeric_or_date_detail")
             continue
+        source = matching_sources[0]["source"]
+        source_title = str(source.get("title") or source_id).strip()
+        source_reference = source.get("article") or source.get("official_number") or source.get("case_number")
+        if source_reference and str(source_reference).casefold() not in source_title.casefold():
+            source_title = f"{source_title} — réf. {source_reference}"
         validated.append({
             "text": " ".join(claim_text.split()),
             "source_id": source_id,
-            "source_title": str(matching_sources[0]["source"].get("title") or source_id)[:300],
+            "source_title": source_title[:300],
             "quote": " ".join(quote.split()),
         })
 
