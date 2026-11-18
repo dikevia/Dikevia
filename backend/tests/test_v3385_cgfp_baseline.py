@@ -1,3 +1,4 @@
+import json
 import pytest
 
 from app.orchestrator import LegalOrchestrator
@@ -62,7 +63,13 @@ async def test_ai_receives_cgfp_baseline_before_date_verified_sources(monkeypatc
 
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
-        return "Le décret n° 2024-100 doit être appliqué à la date des faits."
+        source = next(s for s in kwargs["sources"] if s["source_type"] == "LEGIFRANCE_LODA")
+        quote = " ".join(source["excerpt"].split())[:120]
+        return json.dumps({"claims": [{
+            "text": "Le décret n° 2024-100 doit être examiné au regard des faits.",
+            "source_id": source["source_id"],
+            "quote": quote,
+        }]}, ensure_ascii=False)
 
     monkeypatch.setattr(module, "analyze_question", fake_ai)
     response = await LegalOrchestrator().ask(
