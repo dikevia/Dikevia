@@ -155,6 +155,44 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         raise AIProviderUnavailable("Le fournisseur IA est temporairement indisponible.") from exc
 
 
+async def check_provider_availability(*, transport: httpx.AsyncBaseTransport | None = None) -> dict:
+    """Check the configured model catalog without generating text or consuming inference credits."""
+    if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
+        return {"status": "NOT_CONFIGURED"}
+    base = settings.ai_api_base_url.rstrip("/")
+    try:
+        async with httpx.AsyncClient(
+            timeout=min(settings.ai_timeout_seconds, 10.0), transport=transport
+        ) as client:
+            response = await client.get(
+                base + "/models",
+                headers={"Authorization": f"Bearer {settings.ai_api_key}", "Accept": "application/json"},
+            )
+            response.raise_for_status()
+            payload = response.json()
+        models = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(models, list):
+            return {"status": "INVALID_CATALOG"}
+        selected = next(
+            (item for item in models if isinstance(item, dict) and item.get("id") == settings.ai_model),
+            None,
+        )
+        if selected is None:
+            return {"status": "MODEL_NOT_LISTED"}
+        if selected.get("enabled") is False:
+            return {
+                "status": "MODEL_DISABLED",
+                "reason": str(selected.get("unavailable_reason") or "not_enabled")[:80],
+            }
+        if selected.get("enabled") is True:
+            return {"status": "AVAILABLE"}
+        return {"status": "MODEL_STATUS_UNKNOWN"}
+    except httpx.HTTPStatusError as exc:
+        return {"status": "HTTP_ERROR", "http_status": exc.response.status_code}
+    except (httpx.HTTPError, ValueError, TypeError):
+        return {"status": "UNAVAILABLE"}
+
+
 def extract_analysis_content(result):
     """Return only the text payload from supported AI adapter results."""
     if isinstance(result, AIAnalysisResult):
