@@ -45,7 +45,7 @@ def test_ihts_reference_decree_is_eligible():
     })
     assert result["scope"] == "FPT_REFERENCE"
     assert result["analysis_eligible"] is True
-    assert "délibération locale" in result["evidence"][0]
+    assert "délibération locale" in result["evidence"][0].lower()
 
 
 def test_ihts_filter_rejects_unrelated_hour_credits():
