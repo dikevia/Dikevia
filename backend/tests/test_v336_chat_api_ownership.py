@@ -204,3 +204,32 @@ def test_privileged_roles_can_human_validate_or_close_a_legal_dossier(
     assert result["content"]["status"] == privileged_status
     assert len(conn.fetchrow_calls) == 2
     assert "UPDATE legal_dossiers" in conn.fetchrow_calls[1][0]
+
+
+@pytest.mark.parametrize("stored_status", ["VALIDE_HUMAINEMENT", "CLOTURE"])
+def test_member_cannot_reopen_or_modify_a_finalized_legal_dossier(stored_status):
+    from app.dossiers import build_dossier_content
+
+    class FinalizedDossierConnection(HiddenRowsConnection):
+        async def fetchrow(self, query, *args):
+            self.fetchrow_calls.append((query, args))
+            return {"id": uuid4(), "content": {"status": stored_status}}
+
+    conn = FinalizedDossierConnection()
+    ctx = context(conn)
+    dossier = build_dossier_content(
+        {"title": "Dossier test"},
+        [{"role": "user", "content": "Question de test"}],
+    )
+    dossier["status"] = "BROUILLON_A_VALIDER"
+    route = endpoint(
+        "/api/v1/chat/conversations/{conversation_id}/dossier", "PUT"
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(route(str(uuid4()), {"content": dossier}, ctx))
+
+    assert exc.value.status_code == 403
+    assert "réouverture" in exc.value.detail
+    assert len(conn.fetchrow_calls) == 1
+    assert not conn.execute_calls
