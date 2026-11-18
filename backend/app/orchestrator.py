@@ -61,7 +61,7 @@ class LegalOrchestrator:
                 if not isinstance(result, dict):
                     return None, "Index documentaire CGFP indisponible : résultat de recherche non conforme."
                 return result, None
-            except (FileNotFoundError, OSError, ValueError):
+            except Exception:
                 logger.exception("Échec de la recherche dans l'index structuré du CGFP.")
                 return None, "Index documentaire CGFP indisponible ou invalide."
 
@@ -103,6 +103,15 @@ class LegalOrchestrator:
             if isinstance(case_result, BaseException):
                 logger.error("Recherche de jurisprudence CETAT en échec : %r", case_result)
                 case_search_issue = "La recherche de jurisprudence administrative (fonds CETAT) n'a pas abouti."
+                case_result = []
+            if not isinstance(code_result, list):
+                code_issue = "La recherche d'articles du CGFP a retourné une structure non conforme."
+                code_result = []
+            if not isinstance(regulatory_result, list):
+                regulatory_search_issue = "La recherche réglementaire a retourné une structure non conforme."
+                regulatory_result = []
+            if not isinstance(case_result, list):
+                case_search_issue = "La recherche de jurisprudence a retourné une structure non conforme."
                 case_result = []
             return (
                 code_result, regulatory_result, case_result,
