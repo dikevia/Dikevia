@@ -26,11 +26,34 @@ class LegalOrchestrator:
     async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None) -> AskResponse:
         request_id = str(uuid4())
         try:
-            parsed_date = parse_facts_date(request.facts_date)
-            effective_date = parsed_date or date.today()
+            legacy_date = parse_facts_date(request.facts_date)
+            period_start = parse_facts_date(request.facts_start_date) or legacy_date
+            period_end = parse_facts_date(request.facts_end_date)
+            if period_start and period_end and period_end < period_start:
+                raise ValueError("La fin de la période ne peut pas précéder son début.")
+            if not period_start and not period_end and not request.situation_ongoing:
+                return AskResponse(
+                    request_id=request_id,
+                    verification_status="NON_VERIFIE",
+                    answer="Pour déterminer la règle applicable, j'ai besoin de situer la période du problème. La date d'entrée en vigueur des textes sera recherchée séparément dans les sources officielles.",
+                    clarification_question="Quand le problème s'est-il produit ? Indiquez une date ou une période approximative, et précisez s'il est toujours en cours.",
+                    missing_information=[
+                        "Période de la situation non précisée : début, fin éventuelle et caractère toujours en cours.",
+                        "La date d'entrée en vigueur de chaque disposition sera vérifiée par Dikévia dans Légifrance ; elle n'a pas à être connue par l'utilisateur."
+                    ],
+                )
+            effective_date = period_end or (date.today() if request.situation_ongoing else period_start)
+            parsed_date = effective_date
+            temporal_context = {
+                "period_start": period_start.isoformat() if period_start else None,
+                "period_end": period_end.isoformat() if period_end else None,
+                "ongoing": bool(request.situation_ongoing),
+                "reference_date_for_retrieval": effective_date.isoformat(),
+                "legacy_exact_date": bool(legacy_date and not request.facts_start_date and not request.facts_end_date),
+            }
         except ValueError as exc:
             return AskResponse(request_id=request_id, verification_status="NON_VERIFIE",
-                answer="La date des faits n'a pas pu être interprétée. Aucune analyse juridique n'est produite.",
+                answer="La période de la situation n'a pas pu être interprétée. Aucune analyse juridique n'est produite.",
                 missing_information=[str(exc)])
 
         history = (conversation_history or [])[-12:]
@@ -381,10 +404,10 @@ class LegalOrchestrator:
             missing.insert(0, "Les résultats CETAT restent des métadonnées : aucun texte intégral de décision n'est utilisé pour l'analyse IA.")
         if not case_law_sources and not case_law_issue:
             missing.insert(0, "La recherche CETAT a été exécutée sans retrouver de décision pertinente pour cette requête.")
-        if request.facts_date:
-            missing.insert(0, f"Date des faits demandée : {request.facts_date}.")
-        else:
-            missing.insert(0, f"Date des faits absente : interrogation Légifrance effectuée au {effective_date.isoformat()} à titre de repérage seulement.")
+        if temporal_context["period_start"] or temporal_context["period_end"]:
+            missing.insert(0, f"Période déclarée : du {temporal_context['period_start'] or 'début non précisé'} au {temporal_context['period_end'] or ('aujourd’hui' if temporal_context['ongoing'] else 'fin non précisée')}.")
+        if temporal_context["ongoing"]:
+            missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
 
         # A search performed at today's date is not a substitute for the date of
         # the facts. Without facts_date, keep the response at documentary-triage
@@ -393,10 +416,7 @@ class LegalOrchestrator:
         # being silently treated as the law applicable to an undated situation.
         ai_sources: list[dict] = []
         ai_usage = None
-        if parsed_date is None:
-            ai_answer = None
-            missing.insert(0, "Analyse juridique contextualisée suspendue : préciser la date des faits pour vérifier la version applicable. La date du jour n'est utilisée que pour le repérage documentaire.")
-        elif cgfp_issue or live_issue or regulatory_issue or case_law_issue:
+        if cgfp_issue or live_issue or regulatory_issue or case_law_issue:
             ai_answer = None
             missing.insert(
                 0,
@@ -441,7 +461,8 @@ class LegalOrchestrator:
                     ai_result = await analyze_question(
                         question=request.question,
                         employer=request.employer,
-                        facts_date=request.facts_date,
+                        facts_date=effective_date.isoformat(),
+                        facts_period=temporal_context,
                         sources=ai_sources,
                         conversation_history=history,
                     )
