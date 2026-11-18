@@ -86,10 +86,14 @@ services:
         - render.yaml
     autoDeployTrigger: checksPass
     envVars:
+      - key: PORT
+        value: "10000"
+      - key: KC_HTTP_PORT
+        value: "10000"
+      - key: KC_CACHE
+        value: local
       - key: KC_DB
         value: postgres
-      - key: KC_FEATURES
-        value: stateless
       - key: KC_DB_URL
         sync: false
       - key: KC_DB_SCHEMA
