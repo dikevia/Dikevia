@@ -402,6 +402,7 @@ class LegalOrchestrator:
             missing.insert(0, f"Période déclarée : du {temporal_context['period_start'] or 'début non précisé'} au {temporal_context['period_end'] or ('aujourd’hui' if temporal_context['ongoing'] else 'fin non précisée')}.")
         elif not temporal_context["ongoing"]:
             missing.insert(0, f"Date des faits / période de la situation non précisée : Légifrance est interrogé au {effective_date.isoformat()} à titre de repérage documentaire uniquement.")
+            missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
         if temporal_context["ongoing"]:
             missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
         elif temporal_context["period_start"] and temporal_context["period_end"] and temporal_context["period_start"] != temporal_context["period_end"]:
