@@ -147,11 +147,57 @@ async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
             "text_imported": bool(text)}
 
 
+# Développements lexicaux prudents : uniquement des équivalences documentées
+# ou des formulations courantes du même mécanisme. Les notions voisines mais
+# juridiquement distinctes ne sont volontairement pas fusionnées.
+_LEGAL_QUERY_EXPANSIONS = {
+    "ihts": ("indemnités horaires pour travaux supplémentaires", "heures supplémentaires"),
+    "indemnités horaires pour travaux supplémentaires": ("IHTS", "heures supplémentaires"),
+    "heures supplémentaires": ("IHTS", "indemnités horaires pour travaux supplémentaires"),
+    "compte épargne temps": ("CET", "compte épargne-temps"),
+    "cet": ("compte épargne temps", "compte épargne-temps"),
+    "congé maladie": ("congé de maladie", "maladie ordinaire", "CMO"),
+    "maladie ordinaire": ("congé de maladie", "CMO"),
+    "protection fonctionnelle": ("protection juridique de l'agent", "assistance de la collectivité"),
+    "harcèlement moral": ("agissements répétés", "dégradation des conditions de travail"),
+    "temps de travail": ("durée du travail", "cycle de travail", "décompte du temps de travail"),
+    "astreinte": ("période d'astreinte", "intervention pendant astreinte"),
+}
+
+
+def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
+    """Ajoute quelques formulations FPT proches sans remplacer la requête d'origine."""
+    import unicodedata
+
+    def normalize(value: str) -> str:
+        folded = unicodedata.normalize("NFKD", value.casefold())
+        return re.sub(r"\\s+", " ", "".join(ch for ch in folded if not unicodedata.combining(ch))).strip()
+
+    original = re.sub(r"\\s+", " ", query).strip()
+    normalized = normalize(original)
+    variants = [original]
+    seen = {normalized}
+    for phrase, expansions in _LEGAL_QUERY_EXPANSIONS.items():
+        key = normalize(phrase)
+        if re.search(r"(?<!\\w)" + re.escape(key) + r"(?!\\w)", normalized):
+            for expansion in expansions:
+                candidate = normalize(expansion)
+                if candidate not in seen:
+                    variants.append(expansion)
+                    seen.add(candidate)
+                    if len(variants) >= max_variants:
+                        return variants
+    return variants
+
+
 async def search_legal_corpus(conn, query: str, requested_date: date, limit: int = 12) -> list[dict]:
     if not isinstance(query, str) or len(query.strip()) < 2 or len(query) > 500:
         raise ValueError("La recherche documentaire doit contenir entre 2 et 500 caractères.")
     if not 1 <= limit <= 30:
         raise ValueError("La limite doit être comprise entre 1 et 30.")
+    variants = expand_legal_query(query.strip())
+    # websearch_to_tsquery interprète OR comme une alternative.
+    search_expression = " OR ".join(variants)
     rows = await conn.fetch("""
       WITH ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
@@ -165,7 +211,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
           AND c.search_vector @@ websearch_to_tsquery('french',$1)
       )
       SELECT * FROM ranked WHERE rn=1 ORDER BY rank DESC,publication_date DESC NULLS LAST LIMIT $2
-    """, query.strip(), limit)
+    """, search_expression, limit)
     results = []
     for row in rows:
         item = dict(row)
