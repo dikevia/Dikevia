@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     clamav_timeout_seconds: float = 8.0
     private_instance_mode: bool = False
     private_instance_max_users: int = 10
-    beta_max_users: int = 3
+    beta_max_users: int = 1
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_automatic_tax_enabled: bool = True
