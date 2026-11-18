@@ -485,7 +485,7 @@ class LegalOrchestrator:
                             rendered_claims.append(
                                 f"{claim['text']} [source:{claim['source_id']}]\n"
                                 f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\n"
-                                f"Source : {source_title}"
+                                f"Source : {source_title} [source:{claim['source_id']}]"
                             )
                         if rendered_claims:
                             ai_answer = "\n\n".join(rendered_claims)
