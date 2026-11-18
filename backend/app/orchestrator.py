@@ -324,6 +324,16 @@ class LegalOrchestrator:
                 missing.insert(0, local_issue)
             elif request.employer != "NATIONAL" and not local_sources:
                 missing.insert(0, "Aucun document local correspondant n'a été trouvé pour cet employeur ; vérifier le code de collectivité et les pièces déposées.")
+            if any(
+                s.get("source_type") == "LOCAL_DOCUMENT"
+                and (s.get("validation_status") != "VERIFIED_APPLICABLE"
+                     or s.get("temporal_status") != "VERIFIED_APPLICABLE")
+                for s in local_sources
+            ):
+                missing.insert(
+                    0,
+                    "Des documents locaux ont été retrouvés, mais leur validation humaine ou leur période d'effet ne permet pas de les utiliser pour une conclusion.",
+                )
             if live_issue:
                 missing.insert(0, live_issue)
             if regulatory_issue:
