@@ -194,7 +194,7 @@ Aucun texte hors JSON.
 
 
 def _normalize_entailment_text(value):
-    return re.sub(r"\\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
 
 
 def validate_entailment_verdicts(payload, claims, sources):
