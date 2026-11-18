@@ -211,7 +211,8 @@ def validate_entailment_verdicts(payload, claims, sources):
             source_by_id.setdefault(source_id, []).append(source)
     invalid = []
     for index, (verdict, claim) in enumerate(zip(verdicts, claims)):
-        if not isinstance(verdict, dict) or verdict.get("claim_index") != index:
+        if (not isinstance(verdict, dict) or isinstance(verdict.get("claim_index"), bool)
+                or not isinstance(verdict.get("claim_index"), int) or verdict.get("claim_index") != index):
             invalid.append(f"verdict_{index}:index_mismatch")
             continue
         source_id = claim.get("source_id")
