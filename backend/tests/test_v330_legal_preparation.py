@@ -25,7 +25,7 @@ async def test_missing_facts_date_does_not_call_ai_for_case_specific_analysis(mo
         "00000000-0000-0000-0000-000000000001",
     )
     assert called is False
-    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.verification_status == "NON_VERIFIE"
     assert any("date des faits" in item.lower() for item in response.missing_information)
     assert "repérage documentaire" in response.answer.lower()
 
@@ -141,7 +141,7 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
                    question="Quelles règles encadrent les agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.verification_status == "NON_VERIFIE"
     loda_response = next(s for s in response.sources if s["source_type"] == "LEGIFRANCE_LODA")
     assert len(loda_response["text"]) <= 1800
     assert "full_text" not in loda_response
@@ -199,7 +199,7 @@ async def test_ai_is_not_called_when_only_unverified_cgfp_snapshot_is_available(
         "00000000-0000-0000-0000-000000000001",
     )
     assert called is False
-    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.verification_status == "NON_VERIFIE"
     assert any("snapshot CGFP seul" in item for item in response.missing_information)
 
 
@@ -409,7 +409,7 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
         "00000000-0000-0000-0000-000000000001",
         conn=object(),
     )
-    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.verification_status == "NON_VERIFIE"
     assert any(s["source_type"] == "LOCAL_DOCUMENT" for s in response.sources)
     assert any(s["source_type"] == "LOCAL_DOCUMENT" for s in captured["sources"])
 
@@ -455,7 +455,7 @@ async def test_orchestrator_does_not_use_unverified_local_documents_for_ai(monke
         conn=object(),
     )
     assert called is False
-    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.verification_status == "NON_VERIFIE"
     assert any("validation humaine" in item for item in response.missing_information)
 
 
