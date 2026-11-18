@@ -97,7 +97,7 @@ class LegifranceConnector:
         try:
             async with httpx.AsyncClient(timeout=settings.legifrance_timeout_seconds,
                                          transport=self.transport) as client:
-                response = await client.get(urljoin(self.api_base, "list/ping"),
+                response = await client.get(urljoin(self.api_base, "consult/ping"),
                     headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
                 response.raise_for_status()
             return True
