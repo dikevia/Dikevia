@@ -13,5 +13,7 @@ ENV KC_DB=postgres \
 # Build the optimized server image once, rather than augmenting it at every boot.
 RUN /opt/keycloak/bin/kc.sh build --db=postgres --health-enabled=true --metrics-enabled=true --http-enabled=true --proxy-headers=xforwarded
 
+EXPOSE 10000
+
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
 CMD ["start", "--optimized", "--import-realm"]
