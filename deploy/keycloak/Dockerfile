@@ -1,6 +1,7 @@
 FROM quay.io/keycloak/keycloak:26.8.2
 
 # Beta deployment target: one Render instance, no distributed JGroups cache.
+# Credential bootstrap is idempotent: existing password credentials are inspected via Keycloak Admin API.
 
 COPY deploy/keycloak/realm-cfdt.render.json /opt/keycloak/data/import/realm-cfdt.json
 COPY --chmod=0755 deploy/keycloak/dikevia-entrypoint.sh /opt/keycloak/dikevia-entrypoint.sh
