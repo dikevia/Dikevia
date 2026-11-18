@@ -1,4 +1,5 @@
 from urllib.parse import urlparse
+import re
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +26,11 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = ""
     document_storage_path: str = "/var/lib/cfdt-juris/documents"
+    aws_endpoint_url_s3: str = ""
+    aws_region: str = ""
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    document_storage_bucket: str = ""
     cgfp_index_path: str = ""
     cgfp_enabled: bool = True
     ai_api_base_url: str = ""
@@ -82,7 +88,18 @@ def validate_runtime_configuration(config: Settings) -> None:
         for billing_url in (config.billing_success_url, config.billing_cancel_url):
             if not _valid_https_or_local(billing_url, False):
                 raise RuntimeError("Les URL de retour Stripe doivent utiliser HTTPS en production.")
+    storage_values = (config.aws_endpoint_url_s3, config.aws_region, config.aws_access_key_id,
+                      config.aws_secret_access_key, config.document_storage_bucket)
+    if any(storage_values) and not all(storage_values):
+        raise RuntimeError("Configuration du stockage objet incomplète : endpoint, région, identifiants et bucket sont requis ensemble.")
     if config.app_env == "production":
+        if not all(storage_values):
+            raise RuntimeError("Le stockage objet privé est obligatoire en production ; configurez le bucket Neon S3.")
+        storage_url = urlparse(config.aws_endpoint_url_s3)
+        if storage_url.scheme != "https" or not storage_url.hostname or storage_url.path not in ("", "/") or storage_url.query or storage_url.fragment:
+            raise RuntimeError("AWS_ENDPOINT_URL_S3 doit être une origine HTTPS valide.")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", config.document_storage_bucket):
+            raise RuntimeError("DOCUMENT_STORAGE_BUCKET invalide.")
         if config.debug:
             raise RuntimeError("DEBUG doit être strictement désactivé en production.")
         if not config.database_url:
