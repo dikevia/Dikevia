@@ -78,3 +78,121 @@ def assess_source_set(sources: list[dict[str, Any]]) -> dict[str, Any]:
         "warnings": warnings,
         "status": "A_COMPARER" if local and national else ("VERIFICATION_INCOMPLETE" if warnings else "SOURCES_A_EXAMINER"),
     }
+
+def _normalize_citation_reference(value: Any) -> str:
+    return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+
+_ARTICLE_CITATION_RE = re.compile(
+    r"\\b(?:articles?|art\\.?)\\s+([LDR]\\.?\\s*\\d+(?:-\\d+)*|\\d+(?:-\\d+)*)",
+    re.IGNORECASE,
+)
+_STANDALONE_CODE_ARTICLE_RE = re.compile(
+    r"\\b([LDR])\\.\\s*(\\d+(?:-\\d+)*)\\b", re.IGNORECASE
+)
+_ARTICLE_IN_SOURCE_RE = re.compile(
+    r"\\b(?:articles?|art\\.?)\\s*([LDR]\\.?\\s*\\d+(?:-\\d+)*|\\d+(?:-\\d+)*)",
+    re.IGNORECASE,
+)
+_AUTHORITY_CITATION_RE = re.compile(
+    r"\\b(?:décret|decret|loi|arrêté|arrete|ordonnance|circulaire)\\s+"
+    r"(?:n[°o]\\s*)?((?:19|20)\\d{2}[-/]\\d+[A-Za-z0-9./-]*|\\d{2,3}[-/]\\d+[A-Za-z0-9./-]*)",
+    re.IGNORECASE,
+)
+_CASE_CITATION_RE = re.compile(
+    r"\\b(?:CE|CAA|TA|Conseil\\s+d['’]État|Cour\\s+administrative\\s+d['’]appel|"
+    r"Tribunal\\s+administratif)\\b[^;\\n]{0,180}?\\b(?:n[°o]\\s*|numéro\\s+)"
+    r"([A-Z0-9][A-Z0-9./-]{3,})",
+    re.IGNORECASE,
+)
+_OFFICIAL_ID_RE = re.compile(r"\\b(?:CETATEXT|LEGIARTI|LEGITEXT)\\d{12}\\b", re.IGNORECASE)
+
+
+def validate_answer_citations(
+    answer: str,
+    sources: list[dict[str, Any]],
+    *,
+    require_explicit_citation: bool = True,
+) -> dict[str, Any]:
+    """Validate every machine-detectable legal reference against model input sources.
+
+    This is a fail-closed citation check, not a legal opinion or proof that the
+    source itself is authentic/current. Only source records marked citation-valid
+    are admitted to the reference registry.
+    """
+    allowed_articles: set[str] = set()
+    allowed_authorities: set[str] = set()
+    allowed_case_numbers: set[str] = set()
+    allowed_ids: set[str] = set()
+
+    for source in sources:
+        integrity = source.get("citation_integrity") or {}
+        if integrity.get("valid") is not True:
+            continue
+        article = source.get("article")
+        if article:
+            allowed_articles.add(_normalize_citation_reference(article))
+        official_number = source.get("official_number")
+        if official_number:
+            allowed_authorities.add(_normalize_citation_reference(official_number))
+        case_number = source.get("case_number")
+        if case_number:
+            allowed_case_numbers.add(_normalize_citation_reference(case_number))
+        source_id = source.get("source_id")
+        if source_id:
+            allowed_ids.add(_normalize_citation_reference(source_id))
+
+        source_text = " ".join(
+            str(source.get(key) or "")
+            for key in ("title", "article", "official_number", "case_number", "excerpt", "text")
+        )
+        for match in _ARTICLE_IN_SOURCE_RE.finditer(source_text):
+            allowed_articles.add(_normalize_citation_reference(match.group(1)))
+        for match in _AUTHORITY_CITATION_RE.finditer(source_text):
+            allowed_authorities.add(_normalize_citation_reference(match.group(1)))
+        for match in _CASE_CITATION_RE.finditer(source_text):
+            allowed_case_numbers.add(_normalize_citation_reference(match.group(1)))
+        for match in _OFFICIAL_ID_RE.finditer(source_text):
+            allowed_ids.add(_normalize_citation_reference(match.group(0)))
+
+    detected: list[tuple[str, str]] = []
+    for match in _ARTICLE_CITATION_RE.finditer(answer or ""):
+        detected.append(("article", match.group(1)))
+    for match in _STANDALONE_CODE_ARTICLE_RE.finditer(answer or ""):
+        detected.append(("article", match.group(1) + match.group(2)))
+    for match in _AUTHORITY_CITATION_RE.finditer(answer or ""):
+        detected.append(("authority", match.group(1)))
+    for match in _CASE_CITATION_RE.finditer(answer or ""):
+        detected.append(("case", match.group(1)))
+    for match in _OFFICIAL_ID_RE.finditer(answer or ""):
+        detected.append(("id", match.group(0)))
+
+    invalid: list[str] = []
+    for kind, value in detected:
+        normalized = _normalize_citation_reference(value)
+        allowed = (
+            allowed_articles if kind == "article" else
+            allowed_authorities if kind == "authority" else
+            allowed_case_numbers if kind == "case" else allowed_ids
+        )
+        if normalized not in allowed:
+            invalid.append(f"{kind}:{value}")
+
+    has_explicit_citation = bool(detected)
+    if require_explicit_citation and not has_explicit_citation:
+        invalid.append("missing_explicit_source_citation")
+
+    return {
+        "valid": not invalid,
+        "has_explicit_citation": has_explicit_citation,
+        "detected_references": [f"{kind}:{value}" for kind, value in detected],
+        "invalid_references": invalid,
+        "registry_counts": {
+            "articles": len(allowed_articles),
+            "authorities": len(allowed_authorities),
+            "case_numbers": len(allowed_case_numbers),
+            "official_ids": len(allowed_ids),
+        },
+        "verification_scope": "EXACT_REFERENCE_MATCH_AGAINST_INJECTED_VALID_SOURCES_ONLY",
+    }
+
