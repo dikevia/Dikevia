@@ -79,6 +79,7 @@ async def _startup_external_diagnostics() -> None:
         ai_status = await asyncio.wait_for(check_provider_availability(), timeout=12.0)
     except asyncio.TimeoutError:
         ai_status = {"status": "TIMEOUT"}
+        logger.warning("DIKEVIA_DIAGNOSTIC AI_MODEL_CATALOG=TIMEOUT")
     except Exception as exc:
         logger.warning("DIKEVIA_DIAGNOSTIC AI_MODEL_CATALOG=FAILED error_type=%s", type(exc).__name__)
     else:
