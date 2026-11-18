@@ -25,7 +25,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
             assert body["recherche"]["filtres"][1]["singleDate"] == 1763251200000
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
-            return httpx.Response(200, json={"id": ARTICLE_ID, "article": {"texte": "Article L. 123-4 Le texte réglementaire officiel est ici suffisamment long pour le test."}})
+            return httpx.Response(200, json={"id": ARTICLE_ID, "dateDebut": "2025-01-01", "article": {"texte": "Article L. 123-4 Le texte réglementaire officiel est ici suffisamment long pour le test."}})
         return httpx.Response(404)
     connector = LegifranceConnector(transport=httpx.MockTransport(handler))
     assert await connector.ping() is True
@@ -33,6 +33,9 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
     assert len(results) == 1
     assert results[0]["source_id"] == ARTICLE_ID
     assert results[0]["article"] == "L123-4"
+    assert results[0]["valid_from"] == "2025-01-01"
+    assert results[0]["requested_effective_date"] == "2025-11-16"
+    assert results[0]["source_version_id"] == ARTICLE_ID
     assert any(path.endswith("/search") for _, path in seen)
 
 @pytest.mark.asyncio
