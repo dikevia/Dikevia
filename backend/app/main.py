@@ -25,6 +25,7 @@ from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept
 from .orchestrator import LegalOrchestrator
 from .cgfp import search_cgfp, get_cgfp_article
 from .document_processing import scan_with_clamav, ScannerUnavailable, MalwareDetected, extract_document_text, document_sha256_matches
+from .document_storage import StorageError, StorageNotFound, delete_private_file, read_private_file, store_private_file
 from .keycloak_admin import KeycloakAdmin, KeycloakAdminConfig, KeycloakAdminError
 from .mailer import send_invitation_email
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -1217,39 +1218,14 @@ async def read_and_validate_document(upload: UploadFile) -> tuple[bytes,str,str]
         raise HTTPException(415,"Le type MIME déclaré ne correspond pas au format du fichier.")
     return data,name,mime
 
-def private_document_path(storage_key: str) -> Path:
-    root=Path(settings.document_storage_path).resolve()
-    target=(root/storage_key).resolve()
-    if not target.is_relative_to(root):
-        raise HTTPException(404,"Document introuvable.")
-    return target
-
-def store_private_file(org_id: str, document_id: str, version: int, data: bytes, suffix: str) -> str:
-    key=f"{org_id}/{document_id}/v{version}-{uuid4().hex}{suffix}"
-    path=private_document_path(key)
-    root=Path(settings.document_storage_path).resolve()
-    org_dir=root/org_id
-    document_dir=org_dir/document_id
-    root.mkdir(parents=True,exist_ok=True,mode=0o700)
-    org_dir.mkdir(mode=0o700,exist_ok=True)
-    document_dir.mkdir(mode=0o700,exist_ok=True)
-    # Restrict directory traversal and file reads to the service account.
-    os.chmod(root,0o700)
-    os.chmod(org_dir,0o700)
-    os.chmod(document_dir,0o700)
-    temp=path.with_suffix(path.suffix+".tmp")
-    descriptor=os.open(temp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+async def load_private_document(storage_key: str, missing_message: str) -> bytes:
     try:
-        with os.fdopen(descriptor,"wb") as stream:
-            stream.write(data)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temp,path)
-        os.chmod(path,0o600)
-    except Exception:
-        temp.unlink(missing_ok=True)
-        raise
-    return key
+        return await asyncio.to_thread(read_private_file, storage_key)
+    except StorageNotFound:
+        raise HTTPException(404, missing_message)
+    except StorageError:
+        raise HTTPException(503, "Le stockage privé est temporairement indisponible.")
+
 
 @app.post("/api/v1/documents",status_code=201)
 async def upload_document(
@@ -1272,7 +1248,7 @@ async def upload_document(
     extracted_text, extraction_status = extract_document_text(data, mime)
     digest=hashlib.sha256(data).hexdigest()
     doc_id=str(uuid4())
-    storage_key=store_private_file(ctx.organization_id,doc_id,1,data,Path(filename).suffix.lower())
+    storage_key=await asyncio.to_thread(store_private_file,ctx.organization_id,doc_id,1,data,Path(filename).suffix.lower(),mime)
     try:
         async with ctx.conn.transaction():
             row=await ctx.conn.fetchrow("""INSERT INTO documents(organization_id,id,collectivity_id,title,document_type,official_number,
@@ -1291,7 +1267,7 @@ async def upload_document(
               VALUES($1::uuid,$2::uuid,'DOCUMENT_UPLOADED','document',$3::uuid,jsonb_build_object('version',1,'sha256',$4))""",
               ctx.organization_id,ctx.user_id,doc_id,digest)
     except Exception:
-        private_document_path(storage_key).unlink(missing_ok=True)
+        await asyncio.to_thread(delete_private_file,storage_key)
         raise
     return {"id":doc_id,"version":1,"title":title.strip(),"original_filename":filename,"mime_type":mime,
       "file_size_bytes":len(data),"sha256":digest,"scan_status":scan["scan_status"],
@@ -1325,7 +1301,7 @@ async def upload_document_version(document_id:str,file:UploadFile=File(...),effe
             version=await ctx.conn.fetchval(
                 "SELECT COALESCE(max(version_number),0)+1 FROM document_versions WHERE organization_id=$1::uuid AND document_id=$2::uuid",
                 ctx.organization_id,document_id)
-            storage_key=store_private_file(ctx.organization_id,document_id,version,data,Path(filename).suffix.lower())
+            storage_key=await asyncio.to_thread(store_private_file,ctx.organization_id,document_id,version,data,Path(filename).suffix.lower(),mime)
             await ctx.conn.execute("""INSERT INTO document_versions(organization_id,document_id,version_number,storage_key,sha256,
               effective_from,effective_to,original_filename,mime_type,file_size_bytes,uploaded_by,scan_status,scan_engine,scanned_at)
               VALUES($1::uuid,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11::uuid,$12,$13,now())""",ctx.organization_id,document_id,version,
@@ -1342,7 +1318,7 @@ async def upload_document_version(document_id:str,file:UploadFile=File(...),effe
               ctx.organization_id,ctx.user_id,document_id,version,digest)
     except Exception:
         if storage_key:
-            private_document_path(storage_key).unlink(missing_ok=True)
+            await asyncio.to_thread(delete_private_file,storage_key)
         raise
     return {"document_id":document_id,"version":version,"original_filename":filename,"sha256":digest,
       "scan_status":scan["scan_status"],"extraction_status":extraction_status,"validation_status":"COLLECTED_UNVERIFIED"}
@@ -1375,10 +1351,7 @@ async def reindex_document_versions(document_id: str, ctx: TenantContext = Depen
             raise HTTPException(409, "Toutes les versions doivent être analysées et déclarées saines avant réindexation.")
         if not row["storage_key"]:
             raise HTTPException(404, "Une version ne possède pas de fichier dans le stockage privé.")
-        path=private_document_path(row["storage_key"])
-        if not path.is_file():
-            raise HTTPException(404, "Un fichier de version est absent du stockage privé.")
-        data=await asyncio.to_thread(path.read_bytes)
+        data=await load_private_document(row["storage_key"], "Un fichier de version est absent du stockage privé.")
         if not document_sha256_matches(data, row["sha256"]):
             raise HTTPException(409, "Une version a été modifiée ou corrompue dans le stockage privé. Réparez le fichier avant réindexation.")
         text_value,status=extract_document_text(data,row["mime_type"] or "")
@@ -1416,10 +1389,7 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
     for row in rows:
         if not row["storage_key"]:
             raise HTTPException(404, "Une version ne possède pas de fichier dans le stockage privé.")
-        path=private_document_path(row["storage_key"])
-        if not path.is_file():
-            raise HTTPException(404, "Un fichier de version est absent du stockage privé.")
-        data=await asyncio.to_thread(path.read_bytes)
+        data=await load_private_document(row["storage_key"], "Un fichier de version est absent du stockage privé.")
         if not document_sha256_matches(data, row["sha256"]):
             results.append({"version":row["version_number"],"scan_status":"INFECTED","scan_engine":"INTEGRITY_CHECK"})
             continue
@@ -1468,10 +1438,7 @@ async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant
         raise HTTPException(404,"Fichier introuvable.")
     if row["scan_status"] != "CLEAN":
         raise HTTPException(423,"Le fichier n'est pas validé par le contrôle antivirus.")
-    path=private_document_path(row["storage_key"])
-    if not path.is_file():
-        raise HTTPException(404,"Fichier introuvable dans le stockage privé.")
-    data=await asyncio.to_thread(path.read_bytes)
+    data=await load_private_document(row["storage_key"], "Fichier introuvable dans le stockage privé.")
     if not document_sha256_matches(data, row["sha256"]):
         raise HTTPException(409,"Le fichier a été modifié ou corrompu dans le stockage privé. Téléchargement bloqué.")
     filename=row["original_filename"] or "document"
@@ -1487,10 +1454,7 @@ async def download_document_version(document_id:str,version_number:int,ctx:Tenan
         raise HTTPException(404,"Version introuvable.")
     if row["scan_status"] != "CLEAN":
         raise HTTPException(423,"La version n'est pas validée par le contrôle antivirus.")
-    path=private_document_path(row["storage_key"])
-    if not path.is_file():
-        raise HTTPException(404,"Fichier introuvable dans le stockage privé.")
-    data=await asyncio.to_thread(path.read_bytes)
+    data=await load_private_document(row["storage_key"], "Fichier introuvable dans le stockage privé.")
     if not document_sha256_matches(data, row["sha256"]):
         raise HTTPException(409,"Le fichier a été modifié ou corrompu dans le stockage privé. Téléchargement bloqué.")
     filename=row["original_filename"] or "document"
