@@ -5,6 +5,7 @@ legality or resolve conflicts without a complete legal analysis.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 # This is a review order, not a universal rule for resolving every conflict.
