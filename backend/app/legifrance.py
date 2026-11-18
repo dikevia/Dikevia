@@ -159,7 +159,7 @@ class LegifranceConnector:
             "champs": [field],
             "filtres": [
                 {"facette": "NOM_CODE", "valeurs": [settings.legifrance_code_name]},
-                {"facette": "DATE_VERSION", "singleDate": self._date_epoch_ms(effective_date)},
+                {"facette": "DATE_VERSION", "singleDate": effective_date.isoformat()},
             ],
             "pageNumber": 1, "pageSize": 10, "operateur": "ET", "sort": "PERTINENCE",
             "typePagination": "ARTICLE",
