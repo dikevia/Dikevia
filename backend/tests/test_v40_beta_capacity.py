@@ -26,3 +26,10 @@ def test_beta_capacity_counts_active_users_pending_invites_and_platform_admins()
     assert "FROM invitations i" in migration
     assert "FROM platform_admins pa" in migration
     assert "GRANT EXECUTE ON FUNCTION beta_user_slot_available(text,integer) TO cfdt_juris_app" in migration
+
+
+def test_beta_capacity_migration_has_a_reversible_down_script():
+    migration = ROOT / "database/migrations/019_temporary_beta_user_cap.sql"
+    rollback = ROOT / "database/migrations/rollback/019_temporary_beta_user_cap.down.sql"
+    assert migration.is_file()
+    assert rollback.is_file()
