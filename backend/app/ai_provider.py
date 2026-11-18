@@ -52,6 +52,25 @@ STRUCTURE :
 5. Jurisprudence intégrale consultée, si disponible.
 6. Application prudente aux faits.
 7. Informations manquantes et vérifications.
+
+FORMAT DE SORTIE OBLIGATOIRE — JSON STRICT :
+Retourne uniquement un objet JSON valide de la forme :
+{
+  "claims": [
+    {
+      "text": "Une seule proposition juridique, formulée prudemment et sans retour à la ligne.",
+      "source_id": "identifiant_source_exactement_fourni",
+      "quote": "Citation copiée mot pour mot depuis l'extrait de cette source."
+    }
+  ]
+}
+- N'ajoute aucune clé, aucun commentaire, aucun Markdown et aucun texte hors JSON.
+- Chaque affirmation juridique doit être un élément distinct de claims.
+- Chaque claim doit référencer un seul source_id fourni et contenir une citation exacte d'au moins 20 caractères présente dans l'extrait de cette même source.
+- N'utilise jamais un snapshot CGFP marqué BASELINE_CONTEXT_ONLY comme preuve d'une règle applicable.
+- N'utilise jamais une métadonnée CETAT comme preuve ; seule une décision intégrale fournie peut soutenir un claim.
+- Ne cite aucun numéro, date, montant, délai ou seuil qui n'apparaît pas dans la citation exacte.
+- Si aucune proposition ne peut être directement soutenue par une citation exacte, retourne exactement {"claims": []}.
 """
 
 @dataclass(frozen=True)
@@ -80,6 +99,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
     payload = {
         "model": settings.ai_model,
         "temperature": 0.1,
+        "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": json.dumps({
