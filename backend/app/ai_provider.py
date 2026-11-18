@@ -100,7 +100,9 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "extrait": s.get("excerpt") or s.get("text", "")[:1800],
                     "statut_source": s.get("source_status"), "type_contenu": s.get("content_kind"),
                     "type_document_local": s.get("local_document_type"), "statut_validation_locale": s.get("validation_status"),
-                    "collectivite": s.get("collectivity"), "classement_juridique": s.get("legal_assurance")
+                    "collectivite": s.get("collectivity"), "classement_juridique": s.get("legal_assurance"),
+                    "integrite_citation": s.get("citation_integrity"), "role_reference": s.get("reference_role"),
+                    "type_contenu": s.get("content_kind")
                 } for s in sources]
             }, ensure_ascii=False)}
         ]
