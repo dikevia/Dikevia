@@ -171,15 +171,15 @@ def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
 
     def normalize(value: str) -> str:
         folded = unicodedata.normalize("NFKD", value.casefold())
-        return re.sub(r"\\s+", " ", "".join(ch for ch in folded if not unicodedata.combining(ch))).strip()
+        return re.sub(r"\s+", " ", "".join(ch for ch in folded if not unicodedata.combining(ch))).strip()
 
-    original = re.sub(r"\\s+", " ", query).strip()
+    original = re.sub(r"\s+", " ", query).strip()
     normalized = normalize(original)
     variants = [original]
     seen = {normalized}
     for phrase, expansions in _LEGAL_QUERY_EXPANSIONS.items():
         key = normalize(phrase)
-        if re.search(r"(?<!\\w)" + re.escape(key) + r"(?!\\w)", normalized):
+        if re.search(r"(?<!\w)" + re.escape(key) + r"(?!\w)", normalized):
             for expansion in expansions:
                 candidate = normalize(expansion)
                 if candidate not in seen:
