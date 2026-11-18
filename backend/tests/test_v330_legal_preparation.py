@@ -208,7 +208,7 @@ async def test_ai_is_not_called_when_only_unverified_cgfp_snapshot_is_available(
     )
     assert called is False
     assert response.verification_status == "NON_VERIFIE"
-    assert any("snapshot CGFP seul" in item for item in response.missing_information)
+    assert response.answer.startswith("Les textes officiels actuels ne me permettent pas de répondre avec certitude")
 
 
 
