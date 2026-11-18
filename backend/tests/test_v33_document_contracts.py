@@ -10,7 +10,8 @@ def test_v33_document_routes_are_tenant_scoped_and_role_protected():
     assert '@app.post("/api/v1/documents/{document_id}/versions",status_code=201)' in main
     assert '@app.get("/api/v1/documents/{document_id}/download")' in main
     assert 'WHERE id=$1::uuid AND organization_id=$2::uuid' in main
-    assert 'private_document_path(row["storage_key"])' in main
+    assert "load_private_document(row[\"storage_key\"]" in main
+    assert "read_private_file, store_private_file" in main
 
 
 def test_v33_rejects_unexpected_formats_and_limits_upload_size():
