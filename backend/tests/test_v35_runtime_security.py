@@ -25,7 +25,9 @@ def test_production_requires_database_oidc_and_explicit_https_cors():
                 legal_corpus_ingest_database_url="postgresql://cfdt_juris_ingest:secret@db/app",
                 platform_admin_database_url="postgresql://cfdt_juris_platform_admin:platform@db/app",
                 oidc_issuer="https://issuer.example", oidc_audience="cfdt-juris",
-                oidc_jwks_url="https://issuer.example/jwks")
+                oidc_jwks_url="https://issuer.example/jwks", aws_endpoint_url_s3="https://storage.example",
+                aws_region="us-east-2", aws_access_key_id="test-access", aws_secret_access_key="test-secret",
+                document_storage_bucket="cfdt-juris-documents")
     with pytest.raises(RuntimeError, match="CORS_ORIGINS"):
         validate_runtime_configuration(Settings(**base))
     with pytest.raises(RuntimeError, match="HTTPS"):
@@ -38,7 +40,9 @@ def test_production_rejects_wildcard_cors():
         legal_corpus_ingest_database_url="postgresql://cfdt_juris_ingest:secret@db/app",
         platform_admin_database_url="postgresql://cfdt_juris_platform_admin:platform@db/app",
         oidc_issuer="https://issuer.example", oidc_audience="api",
-        oidc_jwks_url="https://issuer.example/jwks", cors_origins="*")
+        oidc_jwks_url="https://issuer.example/jwks", cors_origins="*", aws_endpoint_url_s3="https://storage.example",
+        aws_region="us-east-2", aws_access_key_id="test-access", aws_secret_access_key="test-secret",
+        document_storage_bucket="cfdt-juris-documents")
     with pytest.raises(RuntimeError, match="CORS_ORIGINS"):
         validate_runtime_configuration(cfg)
 
