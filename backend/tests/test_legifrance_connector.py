@@ -152,3 +152,16 @@ def test_non_api_sources_need_explicit_validity_covering_the_whole_period():
     assert not _source_covers_period(
         {"valid_to": "2025-12-31"}, start, end
     )
+
+
+def test_code_article_excerpt_selects_relevant_sentences_not_only_the_beginning():
+    irrelevant = "Dispositions générales sans rapport avec les heures supplémentaires. " * 50
+    relevant = (
+        "Les indemnités horaires pour travaux supplémentaires sont attribuées "
+        "selon les conditions fixées par le texte applicable."
+    )
+    excerpt = LegifranceConnector._relevant_excerpt(
+        irrelevant + relevant, "indemnités horaires travaux supplémentaires"
+    )
+    assert len(excerpt) <= 1800
+    assert "indemnités horaires pour travaux supplémentaires" in excerpt
