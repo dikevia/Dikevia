@@ -525,6 +525,10 @@ class LegalOrchestrator:
                 "Cette comparaison ne reconstitue pas toutes les modifications intermédiaires ; "
                 "les dates d'effet et éventuelles versions entre ces bornes restent à contrôler."
             ))
+            missing.insert(1, (
+                "La jurisprudence CETAT a été recherchée à la date de référence de fin de période ; "
+                "son évolution historique sur toute la période n'est pas établie par cette seule recherche."
+            ))
 
         ai_sources: list[dict] = []
         ai_usage = None
