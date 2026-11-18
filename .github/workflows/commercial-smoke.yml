@@ -6,6 +6,10 @@ on:
       - feature/dikevia-v3.38.5-cgfp-chat
     paths:
       - ".github/workflows/commercial-smoke.yml"
+      - "backend/**"
+      - "frontend/**"
+      - "deploy/keycloak/**"
+      - "render.yaml"
   workflow_dispatch:
 
 permissions:
