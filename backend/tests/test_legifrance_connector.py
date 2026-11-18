@@ -138,6 +138,35 @@ def test_version_comparison_does_not_treat_missing_endpoint_result_as_repeal():
     assert "ne prouve pas l'abrogation ou l'inapplicabilité" in comparison["limitation"]
 
 
+def test_loda_comparison_does_not_merge_different_instrument_kinds_with_same_number():
+    from app.orchestrator import _tag_official_versions, _compare_official_period_versions
+
+    start = date(2024, 1, 1)
+    end = date(2025, 1, 1)
+    start_sources = _tag_official_versions([
+        {
+            "source_type": "LEGIFRANCE_LODA", "source_id": "LEGITEXT000000000001",
+            "source_version_id": "LEGITEXT000000000001", "document_kind": "LAW",
+            "official_number": "2024-1", "full_text": "Texte de loi suffisamment long."
+        },
+        {
+            "source_type": "LEGIFRANCE_LODA", "source_id": "LEGITEXT000000000002",
+            "source_version_id": "LEGITEXT000000000002", "document_kind": "DECREE",
+            "official_number": "2024-1", "full_text": "Texte de décret suffisamment long."
+        },
+    ], start, "START")
+    end_sources = _tag_official_versions([{
+        "source_type": "LEGIFRANCE_LODA", "source_id": "LEGITEXT000000000001",
+        "source_version_id": "LEGITEXT000000000001", "document_kind": "LAW",
+        "official_number": "2024-1", "full_text": "Texte de loi modifié suffisamment long."
+    }], end, "END")
+
+    comparison = _compare_official_period_versions(start_sources, end_sources, start, end)
+    assert comparison["changed_text_count"] == 1
+    assert comparison["start_only_search_count"] == 1
+    assert any(item["comparison"] == "FOUND_ONLY_IN_START_SEARCH" for item in comparison["results"])
+
+
 def test_non_api_sources_need_explicit_validity_covering_the_whole_period():
     from app.orchestrator import _source_covers_period
 
@@ -151,6 +180,9 @@ def test_non_api_sources_need_explicit_validity_covering_the_whole_period():
     )
     assert not _source_covers_period(
         {"valid_to": "2025-12-31"}, start, end
+    )
+    assert not _source_covers_period(
+        {"valid_from": "2020-01-01", "valid_to": None}, start, end
     )
 
 
