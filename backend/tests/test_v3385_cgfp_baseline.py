@@ -4,12 +4,17 @@ from app.orchestrator import LegalOrchestrator
 from app.schemas import AskRequest
 
 
+async def _fake_piste_token(self):
+    return "test-access-token"
+
+
 @pytest.mark.asyncio
 async def test_ai_receives_cgfp_baseline_before_date_verified_sources(monkeypatch):
     import app.orchestrator as module
 
     monkeypatch.setattr(module.settings, "cgfp_enabled", True)
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
+    monkeypatch.setattr(type(module.legifrance), "_get_token", _fake_piste_token)
 
     async def no_code_articles(*args, **kwargs):
         return []
@@ -57,7 +62,7 @@ async def test_ai_receives_cgfp_baseline_before_date_verified_sources(monkeypatc
 
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
-        return "Le texte officiel doit être appliqué à la date des faits."
+        return "Le décret n° 2024-100 doit être appliqué à la date des faits."
 
     monkeypatch.setattr(module, "analyze_question", fake_ai)
     response = await LegalOrchestrator().ask(
