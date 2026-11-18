@@ -9,8 +9,6 @@ on:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
       - "frontend/**"
-      - "backend/**"
-      - "deploy/keycloak/**"
       - "render.yaml"
 
 permissions:
