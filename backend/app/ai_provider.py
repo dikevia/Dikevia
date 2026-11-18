@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from urllib.parse import urlparse
 from dataclasses import dataclass
 import httpx
 from .config import settings
@@ -87,10 +88,20 @@ def _nonnegative_token_count(value):
 class AIProviderUnavailable(RuntimeError):
     pass
 
+def _provider_api_base() -> str:
+    """Normalize Neon AI Gateway's documented bare host to its OpenAI-compatible /v1 route."""
+    base = settings.ai_api_base_url.rstrip("/")
+    parsed = urlparse(base)
+    hostname = parsed.hostname or ""
+    if ".ai." in hostname and hostname.endswith(".neon.tech") and parsed.path in ("", "/"):
+        return base + "/v1"
+    return base
+
+
 async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict], conversation_history: list[dict] | None = None, facts_period: dict | None = None) -> AIAnalysisResult | None:
     if not (settings.ai_api_key and settings.ai_model):
         return None
-    base = settings.ai_api_base_url.rstrip("/")
+    base = _provider_api_base()
     if not base:
         return None
     payload = {
@@ -159,7 +170,7 @@ async def check_provider_availability(*, transport: httpx.AsyncBaseTransport | N
     """Check the configured model catalog without generating text or consuming inference credits."""
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
         return {"status": "NOT_CONFIGURED"}
-    base = settings.ai_api_base_url.rstrip("/")
+    base = _provider_api_base()
     try:
         async with httpx.AsyncClient(
             timeout=min(settings.ai_timeout_seconds, 10.0), transport=transport
