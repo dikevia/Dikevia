@@ -216,8 +216,11 @@ class LegalOrchestrator:
                     "IN_FORCE_ON_REQUESTED_DATE" if parsed_date is not None
                     else "TEMPORAL_SCOPE_INCOMPLETE"
                 ),
-                "page_start": None, "page_end": None,
-                "citation_integrity": {"valid": True, "verification_scope": "PISTE_CODE_DATE_ID_AND_TEXT_PRESENT"}})
+                "page_start": None, "page_end": None, "content_kind": "FULL_TEXT",
+                "citation_integrity": {
+                    "valid": bool(item.get("source_id") and len(item.get("text") or "") >= 80),
+                    "verification_scope": "PISTE_CODE_DATE_ID_AND_FULL_TEXT",
+                }})
 
         for item in regulatory_sources:
             full_text = item.get("full_text") or ""
@@ -262,6 +265,7 @@ class LegalOrchestrator:
                         "title": f"Code général de la fonction publique — article {hit['article']}",
                         "article": hit["article"], "page_start": hit["page_start"], "page_end": hit["page_end"],
                         "excerpt": hit["excerpt"], "text": (article or {}).get("text", ""),
+                        "content_kind": "SNAPSHOT_EXCERPT",
                         "snapshot_modified_at": found["source"]["snapshot_modified_at"],
                         "source_status": found["source"]["verification_status"],
                         "citation_integrity": integrity, "document": found["source"]["source_file"]})
