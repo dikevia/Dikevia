@@ -33,6 +33,11 @@ BEGIN
       AND lower(u.email)=normalized_email
     UNION
     SELECT 1
+    FROM platform_admins pa
+    JOIN users u ON u.id=pa.user_id
+    WHERE u.status='ACTIVE' AND lower(u.email)=normalized_email
+    UNION
+    SELECT 1
     FROM invitations i
     WHERE i.status='PENDING' AND i.expires_at>now()
       AND lower(i.email_normalized)=normalized_email
@@ -48,6 +53,11 @@ BEGIN
     FROM memberships m
     JOIN users u ON u.id=m.user_id
     WHERE m.status='ACTIVE' AND u.status='ACTIVE'
+    UNION
+    SELECT lower(u.email) AS email
+    FROM platform_admins pa
+    JOIN users u ON u.id=pa.user_id
+    WHERE u.status='ACTIVE'
     UNION
     SELECT lower(i.email_normalized) AS email
     FROM invitations i
