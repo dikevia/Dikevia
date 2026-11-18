@@ -310,3 +310,47 @@ def test_entailment_verifier_rejects_missing_extra_or_reordered_verdicts():
         {"claim_index": 0, "source_id": "SRC000002", "verdict": "SUPPORTED", "support_quote": sources[1]["text"]},
     ]}
     assert validate_entailment_verdicts(reversed_verdicts, claims, sources)["valid"] is False
+
+
+def test_ask_request_distinguishes_situation_period_from_legacy_exact_date():
+    from app.schemas import AskRequest
+
+    legacy = AskRequest(employer="NATIONAL", facts_date="2024-01-15",
+                        question="Question juridique suffisamment longue")
+    assert legacy.facts_date == "2024-01-15"
+    period = AskRequest(employer="NATIONAL", facts_start_date="2024-01-01",
+                        facts_end_date="2024-06-30", situation_ongoing=False,
+                        question="Question juridique suffisamment longue")
+    assert period.facts_start_date == "2024-01-01"
+    assert period.facts_end_date == "2024-06-30"
+    assert period.situation_ongoing is False
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_asks_for_situation_period_instead_of_assuming_today():
+    from app.schemas import AskRequest
+    from app.orchestrator import LegalOrchestrator
+
+    request = AskRequest(employer="NATIONAL", question="Question juridique suffisamment longue")
+    response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
+    assert response.clarification_question
+    assert "date d'entrée en vigueur" in response.answer
+    assert response.sources == []
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_rejects_inverted_situation_period():
+    from app.schemas import AskRequest
+    from app.orchestrator import LegalOrchestrator
+
+    request = AskRequest(employer="NATIONAL", facts_start_date="2024-06-30",
+                         facts_end_date="2024-01-01",
+                         question="Question juridique suffisamment longue")
+    response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
+    assert response.verification_status == "NON_VERIFIE"
+    assert "ne peut pas précéder" in response.missing_information[0]
+
+
+def test_ai_prompt_distinguishes_fact_period_from_text_effective_date():
+    assert "Distingue la période de la situation" in SYSTEM_PROMPT
+    assert "comparer les versions successives" in SYSTEM_PROMPT
