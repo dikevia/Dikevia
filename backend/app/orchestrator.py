@@ -519,16 +519,28 @@ class LegalOrchestrator:
                                 "La réponse IA a été bloquée : le contrôle contradictoire n'a pas confirmé que chaque proposition découle directement de son passage officiel. Aucune conclusion n'est formulée.",
                             )
                         else:
-                            rendered_claims = []
-                            for claim in claim_validation["claims"]:
+                            claims = claim_validation["claims"]
+                            rendered_claims = [
+                                "Éléments juridiques étayés par les sources vérifiées :",
+                                "",
+                            ]
+                            unique_sources = {}
+                            for index, claim in enumerate(claims, start=1):
+                                source_id = claim["source_id"]
                                 source_title = " ".join(str(claim["source_title"]).split())[:300]
+                                unique_sources[source_id] = source_title
                                 rendered_claims.append(
-                                    f"{claim['text']} [source:{claim['source_id']}]\n"
-                                    f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\n"
-                                    f"Source : {source_title} [source:{claim['source_id']}]"
+                                    f"{index}. {claim['text']} [source:{source_id}]"
                                 )
-                            if rendered_claims:
-                                ai_answer = "\n\n".join(rendered_claims)
+                                rendered_claims.append(
+                                    f"   Passage exact contrôlé : «{claim['quote']}» [source:{source_id}]"
+                                )
+                                rendered_claims.append("")
+                            rendered_claims.append("Références documentaires :")
+                            for source_id, source_title in unique_sources.items():
+                                rendered_claims.append(f"• {source_title} [source:{source_id}]")
+                            if rendered_claims and claims:
+                                ai_answer = "\n".join(rendered_claims).strip()
                                 if ai_usage is not None:
                                     ai_usage["outcome"] = "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK"
                             else:
