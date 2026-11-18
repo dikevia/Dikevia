@@ -12,11 +12,14 @@ from typing import Any
 from urllib.parse import urljoin
 
 import httpx
+import json
+import logging
 
 from .config import settings
 
 TOKEN_TTL_SAFETY_SECONDS = 60
 ARTICLE_ID_RE = re.compile(r"^LEGIARTI\d{12}$")
+logger = logging.getLogger("dikevia.legifrance")
 
 
 class LegifranceUnavailable(RuntimeError):
@@ -113,6 +116,9 @@ class LegifranceConnector:
                 try:
                     response = await client.get(urljoin(self.api_base, path), headers=headers)
                     results[path] = response.status_code
+                    if response.status_code >= 500:
+                        logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING_UPSTREAM route=%s status=%d body_preview=%s",
+                                       path, response.status_code, response.text[:500])
                 except httpx.HTTPError:
                     results[path] = "NETWORK_ERROR"
         return results
@@ -362,7 +368,13 @@ class LegifranceConnector:
     async def search_code_articles(self, query: str, effective_date: date) -> list[dict]:
         if not query or len(query.strip()) < 2 or len(query) > 500:
             raise ValueError("La recherche Légifrance doit contenir entre 2 et 500 caractères.")
-        result = await self._request("POST", "/search", json_body=self._search_payload(query.strip(), effective_date))
+        payload = self._search_payload(query.strip(), effective_date)
+        result = await self._request("POST", "/search", json_body=payload)
+        # Temporary, bounded diagnostic: capture the actual PISTE search response,
+        # including total counters and nested result shape, without OAuth credentials.
+        raw_preview = json.dumps(result, ensure_ascii=False, default=str)[:4000]
+        logger.warning("DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH_RAW query=%s request=%s response=%s",
+                       query.strip()[:80], json.dumps(payload, ensure_ascii=False), raw_preview)
         article_ids = self._find_article_ids(result)
         if not article_ids:
             # Preserve the fact that the API was queried, but never infer that no law exists.
