@@ -129,4 +129,4 @@ def test_version_comparison_does_not_treat_missing_endpoint_result_as_repeal():
     comparison = _compare_official_period_versions(only_start, [], start, end)
     assert comparison["start_only_search_count"] == 1
     assert comparison["results"][0]["comparison"] == "FOUND_ONLY_IN_START_SEARCH"
-    assert "n'est pas la preuve" not in comparison["results"][0]["comparison"]
+    assert "Un résultat retrouvé à une seule borne ne prouve" in comparison["limitation"]
