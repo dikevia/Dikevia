@@ -93,16 +93,28 @@ class LegifranceConnector:
             raise LegifranceUnavailable("API Légifrance inaccessible ou réponse invalide.") from exc
 
     async def ping(self) -> bool:
+        """Check the documented Légifrance ping endpoint, with guide-compatible fallback.
+
+        The DILA FAQ documents /list/ping; the PISTE user guide also exposes
+        /consult/ping. Only a missing-route response triggers the fallback:
+        authentication and server errors remain visible as connection failures.
+        """
         token = await self._get_token()
-        try:
-            async with httpx.AsyncClient(timeout=settings.legifrance_timeout_seconds,
-                                         transport=self.transport) as client:
-                response = await client.get(urljoin(self.api_base, "consult/ping"),
-                    headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
-                response.raise_for_status()
-            return True
-        except httpx.HTTPError as exc:
-            raise LegifranceUnavailable("Point de contrôle Légifrance inaccessible.") from exc
+        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        async with httpx.AsyncClient(timeout=settings.legifrance_timeout_seconds,
+                                     transport=self.transport) as client:
+            for path in ("list/ping", "consult/ping"):
+                try:
+                    response = await client.get(urljoin(self.api_base, path), headers=headers)
+                    response.raise_for_status()
+                    return True
+                except httpx.HTTPStatusError as exc:
+                    if exc.response.status_code in {404, 405} and path == "list/ping":
+                        continue
+                    raise LegifranceUnavailable("Point de contrôle Légifrance inaccessible.") from exc
+                except httpx.HTTPError as exc:
+                    raise LegifranceUnavailable("Point de contrôle Légifrance inaccessible.") from exc
+        raise LegifranceUnavailable("Aucun point de contrôle Légifrance disponible.")
 
     @staticmethod
     def _date_epoch_ms(value: date) -> int:
