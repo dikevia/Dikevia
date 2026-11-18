@@ -88,8 +88,12 @@ REVOKE ALL ON ALL TABLES IN SCHEMA public FROM cfdt_juris_platform_admin;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM cfdt_juris_platform_admin;
 REVOKE ALL ON SCHEMA public FROM cfdt_juris_platform_admin;
 GRANT USAGE ON SCHEMA public TO cfdt_juris_platform_admin;
-REVOKE ALL ON DATABASE cfdt_juris FROM cfdt_juris_platform_admin;
-GRANT CONNECT ON DATABASE cfdt_juris TO cfdt_juris_platform_admin;
+DO $database$
+BEGIN
+  EXECUTE format('REVOKE ALL ON DATABASE %I FROM cfdt_juris_platform_admin', current_database());
+  EXECUTE format('GRANT CONNECT ON DATABASE %I TO cfdt_juris_platform_admin', current_database());
+END;
+$database$;
 
 REVOKE ALL ON FUNCTION platform_admin_create_organization(uuid,uuid,text,text,text,boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION platform_admin_grant_free_access(uuid,uuid,text) FROM PUBLIC;
