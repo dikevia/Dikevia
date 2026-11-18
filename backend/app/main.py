@@ -68,7 +68,7 @@ async def _startup_external_diagnostics() -> None:
             # independently so a broken /ping route cannot disable legal search.
             try:
                 probe_date = datetime.now(ZoneInfo('Europe/Paris')).date()
-                probe_results = await legifrance.search_code_articles("L. 1", probe_date)
+                probe_results = await legifrance.search_code_articles("L. 111-1", probe_date)
                 logger.warning(
                     "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=RESPONDED result_count=%d",
                     len(probe_results),
