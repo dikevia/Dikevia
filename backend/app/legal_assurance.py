@@ -107,6 +107,12 @@ _CASE_CITATION_RE = re.compile(
     re.IGNORECASE,
 )
 _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGNORECASE)
+_LEGAL_CLAIM_RE = re.compile(
+    r"\b(?:doit|doivent|peut|peuvent|ne peut pas|obligation|interdit|délai|droit|"
+    r"prévoit|impose|autorise|permet|applicable|illégal|licite|est tenu|sont tenus|"
+    r"ouvre droit|est soumis|s'applique|s’applique)\b",
+    re.IGNORECASE,
+)
 
 
 def validate_answer_citations(
@@ -182,6 +188,21 @@ def validate_answer_citations(
     has_explicit_citation = bool(detected)
     if require_explicit_citation and not has_explicit_citation:
         invalid.append("missing_explicit_source_citation")
+
+    # Every line that makes a legal/operative assertion must carry a reference
+    # on that same line; a citation elsewhere in the answer cannot validate it.
+    citation_patterns = (
+        _ARTICLE_CITATION_RE, _STANDALONE_CODE_ARTICLE_RE,
+        _AUTHORITY_CITATION_RE, _CASE_CITATION_RE, _OFFICIAL_ID_RE,
+    )
+    for line_number, line in enumerate((answer or "").splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if _LEGAL_CLAIM_RE.search(stripped) and not any(
+            pattern.search(stripped) for pattern in citation_patterns
+        ):
+            invalid.append(f"uncited_legal_claim_line:{line_number}")
 
     return {
         "valid": not invalid,
