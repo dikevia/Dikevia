@@ -425,6 +425,7 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
     monkeypatch.setattr(module.legifrance, "search_code_articles", code_articles)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", no_regulatory)
     monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
+    monkeypatch.setattr(module, "is_ihts_relevant_source", lambda *args, **kwargs: True)
     monkeypatch.setattr(module, "search_local_documents", local_search)
     monkeypatch.setattr(module, "analyze_question", fake_ai)
 
