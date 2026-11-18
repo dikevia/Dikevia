@@ -80,12 +80,12 @@ if [[ -n "${DIKEVIA_BOOTSTRAP_ADMIN_USERNAME:-}" ||
   fi
 
   credentials="$("${KC_BIN}/kcadm.sh" get "users/$user_id/credentials" -r cfdt)"
-  if ! printf '%s' "$credentials" | jq -e 'any(.[]; .type == "password")' >/dev/null; then
+  if ! printf '%s' "$credentials" | grep -Eq '"type"[[:space:]]*:[[:space:]]*"password"'; then
     "${KC_BIN}/kcadm.sh" set-password -r cfdt \
       --username "$DIKEVIA_BOOTSTRAP_ADMIN_USERNAME" \
       --new-password "$DIKEVIA_BOOTSTRAP_ADMIN_PASSWORD"
     credentials="$("${KC_BIN}/kcadm.sh" get "users/$user_id/credentials" -r cfdt)"
-    if ! printf '%s' "$credentials" | jq -e 'any(.[]; .type == "password")' >/dev/null; then
+    if ! printf '%s' "$credentials" | grep -Eq '"type"[[:space:]]*:[[:space:]]*"password"'; then
       echo "Could not verify the initial administrator password credential." >&2
       exit 1
     fi
