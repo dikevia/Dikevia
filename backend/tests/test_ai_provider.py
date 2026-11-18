@@ -267,3 +267,46 @@ def test_claim_evidence_rejects_an_exact_but_unrelated_quote():
     }, [source])
     assert result["valid"] is False
     assert "claim_0:quote_not_relevantly_aligned" in result["invalid_claims"]
+
+
+def test_entailment_verifier_fails_closed_on_unsupported_or_mismatched_verdicts():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claim = {"source_id": "LEGIARTI000012345678", "text": "L'agent peut bénéficier d'un repos compensateur."}
+    source = {"source_id": claim["source_id"], "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées."}
+    valid = {"verdicts": [{
+        "claim_index": 0, "source_id": claim["source_id"], "verdict": "SUPPORTED",
+        "support_quote": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
+    }]}
+    assert validate_entailment_verdicts(valid, [claim], [source])["valid"] is True
+
+    for verdict in ("CONTRADICTED", "INSUFFICIENT", "MAYBE"):
+        invalid = {"verdicts": [{**valid["verdicts"][0], "verdict": verdict}]}
+        assert validate_entailment_verdicts(invalid, [claim], [source])["valid"] is False
+
+    wrong_source = {"verdicts": [{**valid["verdicts"][0], "source_id": "OTHER"}]}
+    assert validate_entailment_verdicts(wrong_source, [claim], [source])["valid"] is False
+
+    invented_quote = {"verdicts": [{**valid["verdicts"][0], "support_quote": "L'agent reçoit toujours une prime garantie."}]}
+    assert validate_entailment_verdicts(invented_quote, [claim], [source])["valid"] is False
+
+
+def test_entailment_verifier_rejects_missing_extra_or_reordered_verdicts():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claims = [
+        {"source_id": "SRC000001", "text": "Proposition juridique numéro un."},
+        {"source_id": "SRC000002", "text": "Proposition juridique numéro deux."},
+    ]
+    sources = [
+        {"source_id": "SRC000001", "text": "Le premier passage officiel confirme une proposition juridique numéro un."},
+        {"source_id": "SRC000002", "text": "Le second passage officiel confirme une proposition juridique numéro deux."},
+    ]
+    one = {"verdicts": [{"claim_index": 0, "source_id": "SRC000001", "verdict": "SUPPORTED",
+                         "support_quote": sources[0]["text"]}]}
+    assert validate_entailment_verdicts(one, claims, sources)["valid"] is False
+    reversed_verdicts = {"verdicts": [
+        {"claim_index": 1, "source_id": "SRC000001", "verdict": "SUPPORTED", "support_quote": sources[0]["text"]},
+        {"claim_index": 0, "source_id": "SRC000002", "verdict": "SUPPORTED", "support_quote": sources[1]["text"]},
+    ]}
+    assert validate_entailment_verdicts(reversed_verdicts, claims, sources)["valid"] is False
