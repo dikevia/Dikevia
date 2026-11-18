@@ -44,6 +44,22 @@ def _tag_official_versions(items: list[dict], requested_date: date, endpoint: st
     return tagged
 
 
+def _source_covers_period(source: dict, start_date: date, end_date: date) -> bool:
+    """Require explicit validity metadata spanning the whole declared facts period."""
+    try:
+        valid_from = date.fromisoformat(str(source.get("valid_from") or source.get("effective_from"))[:10])
+    except (TypeError, ValueError):
+        return False
+    raw_valid_to = source.get("valid_to") or source.get("effective_to")
+    if not raw_valid_to:
+        return valid_from <= start_date
+    try:
+        valid_to = date.fromisoformat(str(raw_valid_to)[:10])
+    except (TypeError, ValueError):
+        return False
+    return valid_from <= start_date and valid_to >= end_date
+
+
 def _compare_official_period_versions(
     code_sources: list[dict], regulatory_sources: list[dict],
     start_date: date, end_date: date,
@@ -88,11 +104,17 @@ def _compare_official_period_versions(
             "start_source_id": start_source.get("source_id") if start_source else None,
             "end_source_id": end_source.get("source_id") if end_source else None,
         })
+    matched_source_ids = [
+        source_id
+        for item in details if item.get("start_source_id") and item.get("end_source_id")
+        for source_id in (item["start_source_id"], item["end_source_id"])
+    ]
     return {
         "status": "ENDPOINTS_COMPARED_NOT_COMPLETE_HISTORY",
         "start_date": start_date.isoformat(), "end_date": end_date.isoformat(),
         "changed_text_count": changed, "same_text_count": unchanged,
         "start_only_search_count": start_only, "end_only_search_count": end_only,
+        "matched_source_ids": matched_source_ids,
         "results": details[:30],
         "limitation": (
             "Comparaison des résultats Légifrance retrouvés aux deux bornes uniquement. "
@@ -253,7 +275,13 @@ class LegalOrchestrator:
             period_version_comparison = _compare_official_period_versions(
                 live_sources, regulatory_sources, period_start, effective_date,
             )
-            temporal_context["version_comparison"] = period_version_comparison
+            matched_version_ids = set(period_version_comparison["matched_source_ids"])
+            for version_source in [*live_sources, *regulatory_sources]:
+                version_source["period_endpoint_match"] = version_source.get("source_id") in matched_version_ids
+            temporal_context["version_comparison"] = {
+                key: value for key, value in period_version_comparison.items()
+                if key != "matched_source_ids"
+            }
 
         # CETAT search hits are metadata only. If the full-text route has not
         # been explicitly enabled and validated, never pass those hits to the model.
@@ -585,6 +613,20 @@ class LegalOrchestrator:
                         or s.get("public_service_scope") == "SCOPE_TO_VERIFY"
                     )
                     and s.get("ihts_relevant") is not False
+                    and (
+                        not period_version_comparison
+                        or (
+                            s.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}
+                            and s.get("period_endpoint_match") is True
+                        )
+                        or (
+                            s.get("source_type") not in {
+                                "LEGIFRANCE_API", "LEGIFRANCE_LODA",
+                                "LEGIFRANCE_CETAT_FULL_TEXT", "LEGIFRANCE_CETAT_SEARCH",
+                            }
+                            and _source_covers_period(s, period_start, effective_date)
+                        )
+                    )
                 ]
                 cgfp_context_sources = [
                     {**s, "reference_role": "BASELINE_CONTEXT_ONLY",
