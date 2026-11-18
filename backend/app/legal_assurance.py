@@ -338,6 +338,7 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         validated.append({
             "text": " ".join(claim_text.split()),
             "source_id": source_id,
+            "source_title": str(matching_sources[0]["source"].get("title") or source_id)[:300],
             "quote": " ".join(quote.split()),
         })
 
