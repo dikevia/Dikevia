@@ -117,6 +117,9 @@ def test_dated_versions_keep_official_id_and_have_distinct_citation_ids():
     comparison = _compare_official_period_versions(start_sources, end_sources, start, end)
     assert comparison["changed_text_count"] == 1
     assert comparison["status"] == "ENDPOINTS_COMPARED_NOT_COMPLETE_HISTORY"
+    assert set(comparison["matched_source_ids"]) == {
+        start_sources[0]["source_id"], end_sources[0]["source_id"]
+    }
     assert "modifications intermédiaires" in comparison["limitation"]
 
 
@@ -133,3 +136,19 @@ def test_version_comparison_does_not_treat_missing_endpoint_result_as_repeal():
     assert comparison["start_only_search_count"] == 1
     assert comparison["results"][0]["comparison"] == "FOUND_ONLY_IN_START_SEARCH"
     assert "ne prouve pas l'abrogation ou l'inapplicabilité" in comparison["limitation"]
+
+
+def test_non_api_sources_need_explicit_validity_covering_the_whole_period():
+    from app.orchestrator import _source_covers_period
+
+    start = date(2024, 1, 1)
+    end = date(2025, 1, 1)
+    assert _source_covers_period(
+        {"valid_from": "2020-01-01", "valid_to": "2025-01-01"}, start, end
+    )
+    assert not _source_covers_period(
+        {"valid_from": "2024-06-01", "valid_to": "2025-12-31"}, start, end
+    )
+    assert not _source_covers_period(
+        {"valid_to": "2025-12-31"}, start, end
+    )
