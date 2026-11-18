@@ -409,7 +409,13 @@ class LegalOrchestrator:
 
         ai_sources: list[dict] = []
         ai_usage = None
-        if cgfp_issue or live_issue or regulatory_issue or case_law_issue:
+        if parsed_date is None:
+            ai_answer = None
+            missing.insert(
+                0,
+                "Analyse juridique contextualisée suspendue : la date ou la période de la situation n'est pas renseignée. La recherche au jour présent sert uniquement au repérage documentaire ; elle ne permet pas de déterminer la règle applicable aux faits.",
+            )
+        elif cgfp_issue or live_issue or regulatory_issue or case_law_issue:
             ai_answer = None
             missing.insert(
                 0,
