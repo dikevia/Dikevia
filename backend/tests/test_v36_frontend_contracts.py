@@ -69,3 +69,11 @@ def test_chat_endpoint_uses_server_side_rate_limit_and_retry_after():
     migration = (ROOT / "database/migrations/017_chat_rate_limits.sql").read_text(encoding="utf-8")
     assert "ENABLE ROW LEVEL SECURITY" in migration
     assert "FORCE ROW LEVEL SECURITY" in migration
+
+
+
+def test_dossier_status_controls_reflect_privileged_roles():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "const canManageDossierStatus=role==='ORG_ADMIN'||role==='LEGAL_EDITOR'" in html
+    assert "option.disabled=!canManageDossierStatus&&['VALIDE_HUMAINEMENT','CLOTURE'].includes(option.value)" in html
+    assert "Validation et clôture réservées aux responsables habilités." in html
