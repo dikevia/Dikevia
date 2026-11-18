@@ -4,6 +4,16 @@ import json
 
 import pytest
 
+@pytest.fixture(autouse=True)
+def _mock_available_ai_catalog(monkeypatch):
+    import app.orchestrator as module
+
+    async def available():
+        return {"status": "AVAILABLE"}
+
+    monkeypatch.setattr(module, "check_provider_availability", available)
+
+
 from app.orchestrator import LegalOrchestrator
 from app.schemas import AskRequest
 
