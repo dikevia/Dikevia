@@ -94,8 +94,13 @@ class LegifranceConnector:
             if not isinstance(data, dict):
                 raise LegifranceUnavailable("Réponse Légifrance non conforme : objet JSON attendu.")
             return data
+        except httpx.HTTPStatusError as exc:
+            # Keep OAuth/API secrets and response bodies out of logs.
+            raise LegifranceUnavailable(
+                f"Refus API Légifrance (HTTP {exc.response.status_code}) sur {path}."
+            ) from exc
         except (httpx.HTTPError, ValueError) as exc:
-            raise LegifranceUnavailable("API Légifrance inaccessible ou réponse invalide.") from exc
+            raise LegifranceUnavailable("Erreur réseau ou réponse API Légifrance invalide.") from exc
 
     async def ping(self) -> bool:
         """Check the documented Légifrance ping endpoint, with guide-compatible fallback.
