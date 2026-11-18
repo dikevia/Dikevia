@@ -481,7 +481,7 @@ class LegalOrchestrator:
                     else:
                         rendered_claims = []
                         for claim in claim_validation["claims"]:
-                            source_title = claim["source_title"]
+                            source_title = " ".join(str(claim["source_title"]).split())[:300]
                             rendered_claims.append(
                                 f"{claim['text']} [source:{claim['source_id']}]\n"
                                 f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\n"
