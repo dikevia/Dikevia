@@ -91,15 +91,15 @@ class LegalOrchestrator:
             regulatory_search_issue = None
             case_search_issue = None
             if isinstance(code_result, BaseException):
-                logger.error("Recherche Légifrance CGFP en échec.", exc_info=code_result)
+                logger.error("Recherche Légifrance CGFP en échec : %r", code_result)
                 code_issue = "La recherche d'articles du CGFP sur Légifrance a échoué."
                 code_result = []
             if isinstance(regulatory_result, BaseException):
-                logger.error("Recherche Légifrance des textes réglementaires en échec.", exc_info=regulatory_result)
+                logger.error("Recherche Légifrance des textes réglementaires en échec : %r", regulatory_result)
                 regulatory_search_issue = "La recherche des lois, décrets et arrêtés complémentaires sur Légifrance a échoué."
                 regulatory_result = []
             if isinstance(case_result, BaseException):
-                logger.error("Recherche de jurisprudence CETAT en échec.", exc_info=case_result)
+                logger.error("Recherche de jurisprudence CETAT en échec : %r", case_result)
                 case_search_issue = "La recherche de jurisprudence administrative (fonds CETAT) n'a pas abouti."
                 case_result = []
             return (
@@ -134,7 +134,7 @@ class LegalOrchestrator:
                 )
                 for result in consultation_results:
                     if isinstance(result, BaseException):
-                        logger.warning("Consultation intégrale CETAT indisponible.", exc_info=result)
+                        logger.warning("Consultation intégrale CETAT indisponible : %r", result)
                         case_law_fulltext_issue = (
                             "Au moins une décision CETAT n'a pas pu être consultée en texte intégral ; "
                             "son résultat de recherche reste une métadonnée non probante."
@@ -317,7 +317,7 @@ class LegalOrchestrator:
                 missing.insert(0, case_law_issue)
             if case_law_fulltext_issue:
                 missing.insert(0, case_law_fulltext_issue)
-            if not found and not cgfp_issue:
+            if (not found or not found.get("results")) and not cgfp_issue:
                 missing.insert(0, "L'index CGFP a été interrogé mais aucun article pertinent n'a été retrouvé.")
             return AskResponse(request_id=request_id, verification_status="NON_VERIFIE",
                 answer="Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. Aucune conclusion juridique n'est formulée.",
