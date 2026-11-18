@@ -408,6 +408,8 @@ class LegalOrchestrator:
             missing.insert(0, f"Période déclarée : du {temporal_context['period_start'] or 'début non précisé'} au {temporal_context['period_end'] or ('aujourd’hui' if temporal_context['ongoing'] else 'fin non précisée')}.")
         if temporal_context["ongoing"]:
             missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
+        elif temporal_context["period_start"] and temporal_context["period_end"] and temporal_context["period_start"] != temporal_context["period_end"]:
+            missing.insert(0, "La période couvre plusieurs dates : la recherche actuelle est calée sur sa date de fin. Les versions successives des textes doivent être comparées avant de conclure sur l'ensemble de la période.")
 
         # A search performed at today's date is not a substitute for the date of
         # the facts. Without facts_date, keep the response at documentary-triage
