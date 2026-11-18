@@ -217,3 +217,26 @@ def test_legal_query_expansion_is_accent_and_case_insensitive():
     expanded = expand_legal_query("CONGE MALADIE")
     assert "congé de maladie" in expanded
     assert "CMO" in expanded
+
+@pytest.mark.asyncio
+async def test_search_prioritizes_original_terms_over_fpt_expansions():
+    from app.legal_corpus import search_legal_corpus
+
+    class FakeConn:
+        query = ""
+        args = ()
+        async def fetch(self, sql, *args):
+            self.query = sql
+            self.args = args
+            return []
+
+    conn = FakeConn()
+    original = "Je ne suis pas payé pour mes heures supplémentaires"
+    await search_legal_corpus(conn, original, date(2026, 1, 1))
+
+    assert "2.0 * ts_rank_cd(c.search_vector,st.original_query)" in conn.query
+    assert "ts_rank_cd(c.search_vector,st.expansion_query)" in conn.query
+    assert "c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query" in conn.query
+    assert conn.args[0] == original
+    assert "IHTS" in conn.args[1]
+    assert len(conn.args) == 3
