@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from urllib.parse import quote
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
@@ -53,7 +54,7 @@ async def _startup_external_diagnostics() -> None:
             await legifrance.ping()
             logger.info("DIKEVIA_DIAGNOSTIC PISTE_PING=CONNECTED environment=%s", legifrance.environment)
             try:
-                probe_date = datetime.now().astimezone().date()
+                probe_date = datetime.now(ZoneInfo('Europe/Paris')).date()
                 probe_results = await legifrance.search_code_articles("L. 1", probe_date)
                 logger.info(
                     "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=RESPONDED result_count=%d",
