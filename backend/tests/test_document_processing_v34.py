@@ -165,11 +165,11 @@ def test_document_routes_check_storage_digest_before_use():
 def test_private_storage_uses_restrictive_unix_permissions():
     from pathlib import Path
 
-    main = (Path(__file__).parents[1] / "app/main.py").read_text()
-    assert "os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600" in main
-    assert "os.chmod(document_dir,0o700)" in main
-    assert "os.chmod(path,0o600)" in main
-    assert "os.fsync(stream.fileno())" in main
+    storage = (Path(__file__).parents[1] / "app/document_storage.py").read_text()
+    assert "os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600" in storage
+    assert "os.chmod(document_dir, 0o700)" in storage
+    assert "os.chmod(path, 0o600)" in storage
+    assert "os.fsync(stream.fileno())" in storage
 
 
 def test_document_download_returns_the_verified_bytes_not_a_second_file_read():
