@@ -40,7 +40,7 @@ CITATIONS OBLIGATOIRES :
 
 MÉTHODE :
 - Sépare les faits déclarés, les hypothèses, les règles documentées et les informations manquantes.
-- Si la date des faits ou une information déterminante manque, indique-le et demande une seule précision utile au maximum.
+- Distingue la période de la situation (début, fin, situation toujours en cours) de la date d’entrée en vigueur des textes. La première vient des faits déclarés ; la seconde doit être vérifiée dans les métadonnées et versions officielles fournies.\n- Pour une situation continue ou couvrant plusieurs dates, ne prétends pas qu’une seule version juridique vaut pour toute la période : signale la nécessité de comparer les versions successives si les sources injectées ne couvrent que la date de référence.\n- Si la période de la situation ou une information déterminante manque, indique-le et demande une seule précision utile au maximum.
 - En cas de divergence entre sources, expose précisément les deux rédactions et leur date ; ne tranche pas sans fondement documentaire.
 - Ne qualifie pas automatiquement une situation d'illégale.
 - Réponds en français, avec un ton professionnel, rigoureux, clair et opérationnel.
@@ -83,7 +83,7 @@ def _nonnegative_token_count(value):
 class AIProviderUnavailable(RuntimeError):
     pass
 
-async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict], conversation_history: list[dict] | None = None) -> AIAnalysisResult | None:
+async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict], conversation_history: list[dict] | None = None, facts_period: dict | None = None) -> AIAnalysisResult | None:
     if not (settings.ai_api_key and settings.ai_model):
         return None
     base = settings.ai_api_base_url.rstrip("/")
@@ -96,7 +96,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": json.dumps({
-                "question_actuelle": question, "employeur": employer, "date_des_faits": facts_date,
+                "question_actuelle": question, "employeur": employer, "date_de_reference_pour_la_recherche": facts_date,\n                "periode_de_la_situation": facts_period or {"exact_date": facts_date},
                 "contexte_questions_utilisateur": [{"content": str(m.get("content", ""))[:1200]} for m in (conversation_history or [])[-12:] if m.get("role") == "user"],
                 "extraits_documentaires_valides": [{
                     "type_source": s.get("source_type"), "identifiant_source": s.get("source_id"),
