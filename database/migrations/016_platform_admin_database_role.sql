@@ -64,8 +64,18 @@ BEGIN
   IF admin_role_oid IS NULL THEN
     RAISE EXCEPTION 'Dedicated least-privilege role cfdt_juris_platform_admin is missing or unsafe';
   END IF;
-  IF EXISTS (SELECT 1 FROM pg_auth_members WHERE member=admin_role_oid OR roleid=admin_role_oid) THEN
-    RAISE EXCEPTION 'Platform-admin DB role must not inherit or be able to SET ROLE into another role';
+  -- Neon grants its project owner ADMIN OPTION on newly created roles by default.
+  -- Permit only that control-plane membership when it cannot INHERIT or SET ROLE;
+  -- the application role itself must never inherit another role or be inherited by one.
+  IF EXISTS (
+    SELECT 1 FROM pg_auth_members
+    WHERE member=admin_role_oid
+       OR (roleid=admin_role_oid AND NOT (
+            member=(SELECT oid FROM pg_roles WHERE rolname='neondb_owner')
+            AND admin_option AND NOT inherit_option AND NOT set_option
+          ))
+  ) THEN
+    RAISE EXCEPTION 'Platform-admin DB role has an unsafe role membership';
   END IF;
   IF EXISTS (SELECT 1 FROM pg_shdepend WHERE refclassid='pg_authid'::regclass
       AND refobjid=admin_role_oid AND deptype='o') THEN
