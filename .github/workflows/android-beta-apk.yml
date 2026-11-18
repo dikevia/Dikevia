@@ -40,6 +40,15 @@ jobs:
         working-directory: android
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
+      - name: Validate generated APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          test "$(stat -c%s "$apk")" -gt 100000
+          unzip -t "$apk" >/dev/null
+          echo "APK archive exists, is non-empty and passes ZIP integrity validation."
       - name: Upload beta APK
         uses: actions/upload-artifact@v4
         with:
