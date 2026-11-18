@@ -6,6 +6,14 @@ import pytest
 from app.orchestrator import LegalOrchestrator
 from app.schemas import AskRequest
 
+async def _fake_piste_token(self):
+    return "test-access-token"
+
+
+def _enable_legifrance(monkeypatch, module):
+    _enable_legifrance(monkeypatch, module)
+    monkeypatch.setattr(type(module.legifrance), "_get_token", _fake_piste_token)
+
 
 @pytest.mark.asyncio
 async def test_missing_facts_date_does_not_call_ai_for_case_specific_analysis(monkeypatch):
@@ -129,7 +137,7 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
 
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
-        return "Le texte réglementaire doit être vérifié au regard de la situation exposée."
+        return "Le décret n° 2024-100 doit être vérifié au regard de la situation exposée."
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", no_code_articles)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
@@ -141,7 +149,7 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
                    question="Quelles règles encadrent les agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert response.verification_status == "NON_VERIFIE"
+    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
     loda_response = next(s for s in response.sources if s["source_type"] == "LEGIFRANCE_LODA")
     assert len(loda_response["text"]) <= 1800
     assert "full_text" not in loda_response
@@ -370,7 +378,7 @@ async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypat
 async def test_orchestrator_uses_only_verified_local_documents_for_local_employer(monkeypatch):
     import app.orchestrator as module
 
-    monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: False))
+    _enable_legifrance(monkeypatch, module)
     async def no_permanent(*args, **kwargs):
         return []
 
@@ -398,8 +406,25 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
 
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
-        return "La délibération locale doit être examinée avec les textes nationaux."
+        return "L'article L. 123-4 doit être examiné avec la délibération locale."
 
+    async def code_articles(*args, **kwargs):
+        return [{
+            "source_type": "LEGIFRANCE_API", "source_id": "LEGIARTI000000000123",
+            "article": "L123-4", "title": "Code général de la fonction publique — article L. 123-4",
+            "text": "Article L. 123-4 : texte officiel consulté. " * 8,
+            "excerpt": "Article L. 123-4 : texte officiel consulté.",
+        }]
+
+    async def no_regulatory(*args, **kwargs):
+        return []
+
+    async def no_case_law(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(module.legifrance, "search_code_articles", code_articles)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", no_regulatory)
+    monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
     monkeypatch.setattr(module, "search_local_documents", local_search)
     monkeypatch.setattr(module, "analyze_question", fake_ai)
 
@@ -409,7 +434,7 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
         "00000000-0000-0000-0000-000000000001",
         conn=object(),
     )
-    assert response.verification_status == "NON_VERIFIE"
+    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
     assert any(s["source_type"] == "LOCAL_DOCUMENT" for s in response.sources)
     assert any(s["source_type"] == "LOCAL_DOCUMENT" for s in captured["sources"])
 
@@ -529,7 +554,7 @@ async def test_unverified_permanent_corpus_source_is_excluded_from_ai_even_with_
 
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
-        return "Le décret doit être examiné."
+        return "Le décret n° 2024-100 doit être examiné."
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", no_code)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory)
