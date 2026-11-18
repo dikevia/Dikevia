@@ -209,7 +209,11 @@ class LegalOrchestrator:
                 else:
                     regulatory_result.extend(_tag_official_versions(regulatory_at_date, requested_date, endpoint))
 
-            case_result = await case_law_connector.search(live_query, effective_date)
+            try:
+                case_result = await case_law_connector.search(live_query, effective_date)
+            except Exception as exc:
+                logger.error("Recherche de jurisprudence CETAT en échec : %r", exc)
+                case_result = None
             code_issue = (
                 "La recherche d'articles du CGFP sur Légifrance a échoué pour au moins une date de référence."
                 if code_failures else None
@@ -465,6 +469,8 @@ class LegalOrchestrator:
                 missing.insert(0, case_law_issue)
             if case_law_fulltext_issue:
                 missing.insert(0, case_law_fulltext_issue)
+            if temporal_issue:
+                missing.insert(0, temporal_issue)
             if (not found or not found.get("results")) and not cgfp_issue:
                 missing.insert(0, "L'index CGFP a été interrogé mais aucun article pertinent n'a été retrouvé.")
             return AskResponse(request_id=request_id, verification_status="NON_VERIFIE",
