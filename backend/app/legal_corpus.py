@@ -196,22 +196,30 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
     if not 1 <= limit <= 30:
         raise ValueError("La limite doit être comprise entre 1 et 30.")
     variants = expand_legal_query(query.strip())
-    # websearch_to_tsquery interprète OR comme une alternative.
-    search_expression = " OR ".join(variants)
+    # La requête d'origine reste prioritaire ; les variantes élargissent le rappel
+    # sans pouvoir dépasser un passage qui répond directement aux termes initiaux.
+    expansion_expression = " OR ".join(variants[1:])
     rows = await conn.fetch("""
-      WITH ranked AS (
+      WITH search_terms AS (
+        SELECT websearch_to_tsquery('french',$1) AS original_query,
+               websearch_to_tsquery('french',$2) AS expansion_query
+      ), ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
           d.source_status,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,c.anchor,c.content,c.content_kind,
-          ts_rank_cd(c.search_vector,websearch_to_tsquery('french',$1)) rank,
-          row_number() OVER(PARTITION BY v.id ORDER BY ts_rank_cd(c.search_vector,websearch_to_tsquery('french',$1)) DESC,c.ordinal) rn
+          (2.0 * ts_rank_cd(c.search_vector,st.original_query)
+             + ts_rank_cd(c.search_vector,st.expansion_query)) rank,
+          row_number() OVER(PARTITION BY v.id ORDER BY
+            (2.0 * ts_rank_cd(c.search_vector,st.original_query)
+             + ts_rank_cd(c.search_vector,st.expansion_query)) DESC,c.ordinal) rn
         FROM legal_chunks c JOIN legal_document_versions v ON v.id=c.version_id
         JOIN legal_documents d ON d.id=v.document_id
+        CROSS JOIN search_terms st
         WHERE c.content_kind='FULL_TEXT'
-          AND c.search_vector @@ websearch_to_tsquery('french',$1)
+          AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
       )
-      SELECT * FROM ranked WHERE rn=1 ORDER BY rank DESC,publication_date DESC NULLS LAST LIMIT $2
-    """, search_expression, limit)
+      SELECT * FROM ranked WHERE rn=1 ORDER BY rank DESC,publication_date DESC NULLS LAST LIMIT $3
+    """, query.strip(), expansion_expression, limit)
     results = []
     for row in rows:
         item = dict(row)
