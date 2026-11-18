@@ -479,29 +479,9 @@ class LegalOrchestrator:
                             "Le moteur IA n'a produit aucune affirmation pouvant être reliée à un extrait documentaire exact. Aucune conclusion n'est formulée.",
                         )
                     else:
-                        sources_by_id = {
-                            source.get("source_id"): source
-                            for source in ai_sources
-                            if source.get("source_id")
-                            and (source.get("citation_integrity") or {}).get("valid") is True
-                            and source.get("temporal_status") in {
-                                "IN_FORCE_ON_REQUESTED_DATE",
-                                "DECISION_AVAILABLE_BY_REQUESTED_DATE",
-                                "VERIFIED_APPLICABLE",
-                            }
-                            and source.get("source_type") not in {"CGFP_SNAPSHOT", "LEGIFRANCE_CETAT_SEARCH"}
-                            and source.get("content_kind") != "METADATA"
-                            and source.get("reference_role") != "BASELINE_CONTEXT_ONLY"
-                            and source.get("analysis_eligible") is not False
-                            and source.get("public_service_scope") != "SCOPE_TO_VERIFY"
-                        }
                         rendered_claims = []
                         for claim in claim_validation["claims"]:
-                            source = sources_by_id.get(claim["source_id"])
-                            if source is None:
-                                rendered_claims = []
-                                break
-                            source_title = str(source.get("title") or claim["source_id"])[:300]
+                            source_title = claim["source_title"]
                             rendered_claims.append(
                                 f"{claim['text']} [source:{claim['source_id']}]\n"
                                 f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\n"
