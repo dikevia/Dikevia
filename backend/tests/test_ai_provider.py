@@ -353,7 +353,7 @@ async def test_orchestrator_rejects_inverted_situation_period():
 
 def test_ai_prompt_distinguishes_fact_period_from_text_effective_date():
     assert "Distingue la période de la situation" in SYSTEM_PROMPT
-    assert "comparer les versions successives" in SYSTEM_PROMPT
+    assert "compare explicitement les sources datées du début et de la fin" in SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio
