@@ -251,3 +251,19 @@ def test_answer_citation_accepts_exact_local_or_official_source_id_tag():
         [source],
     )
     assert result["valid"] is True
+
+
+
+def test_claim_evidence_rejects_an_exact_but_unrelated_quote():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source()
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "La collectivité doit payer une indemnité supplémentaire.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is False
+    assert "claim_0:quote_not_relevantly_aligned" in result["invalid_claims"]
