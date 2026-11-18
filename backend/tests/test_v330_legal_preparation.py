@@ -25,7 +25,7 @@ def _structured_claim(source, text):
     }, ensure_ascii=False)
 
 
-def _always_supported(kwargs):
+async def _always_supported(kwargs):
     return {"valid": True, "invalid": []}
 
 
