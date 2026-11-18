@@ -495,12 +495,12 @@ class LegalOrchestrator:
                             for claim in claim_validation["claims"]:
                                 source_title = " ".join(str(claim["source_title"]).split())[:300]
                                 rendered_claims.append(
-                                    f"{claim['text']} [source:{claim['source_id']}]\\n"
-                                    f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\\n"
+                                    f"{claim['text']} [source:{claim['source_id']}]\n"
+                                    f"Extrait exact contrôlé : «{claim['quote']}» [source:{claim['source_id']}]\n"
                                     f"Source : {source_title} [source:{claim['source_id']}]"
                                 )
                             if rendered_claims:
-                                ai_answer = "\\n\\n".join(rendered_claims)
+                                ai_answer = "\\n\n".join(rendered_claims)
                                 if ai_usage is not None:
                                     ai_usage["outcome"] = "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK"
                             else:
