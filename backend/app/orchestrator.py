@@ -11,7 +11,7 @@ from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
 from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
-from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, answer_references_are_grounded
+from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector
 from .legal_corpus import search_legal_corpus
@@ -602,153 +602,168 @@ class LegalOrchestrator:
                 "Analyse IA suspendue : les trois piliers documentaires n'ont pas tous pu être interrogés avec succès. Aucune réponse juridique de mémoire n'est autorisée.",
             )
         else:
-            try:
-                eligible_temporal_statuses = {
-                    "IN_FORCE_ON_REQUESTED_DATE",
-                    "DECISION_AVAILABLE_BY_REQUESTED_DATE",
-                    "VERIFIED_APPLICABLE",
-                }
-                # The CGFP snapshot is the national baseline for explanation, but
-                # it is not temporally authoritative. Pass it to the model only
-                # alongside at least one independently verified, date-scoped
-                # source; never let the snapshot alone trigger an AI conclusion.
-                verified_sources = [
-                    s for s in sources
-                    if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
-                    and s.get("content_kind") != "METADATA"
-                    and (s.get("citation_integrity") or {}).get("valid") is True
-                    and s.get("temporal_status") in eligible_temporal_statuses
-                    # Unknown scope is retained as a review lead; only
-                    # explicitly identified FPE/FPH sources are excluded.
-                    # The AI prompt receives this scope and must not infer
-                    # territorial applicability from an unknown classification.
-                    and (
-                        s.get("analysis_eligible") is not False
-                        or s.get("public_service_scope") == "SCOPE_TO_VERIFY"
-                    )
-                    and s.get("ihts_relevant") is not False
-                    and (
-                        not period_version_comparison
-                        or (
-                            s.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}
-                            and s.get("period_endpoint_match") is True
-                        )
-                        or (
-                            s.get("source_type") not in {
-                                "LEGIFRANCE_API", "LEGIFRANCE_LODA",
-                                "LEGIFRANCE_CETAT_FULL_TEXT", "LEGIFRANCE_CETAT_SEARCH",
-                            }
-                            and _source_covers_period(s, period_start, effective_date)
-                        )
-                    )
-                ]
-                cgfp_context_sources = [
-                    {**s, "reference_role": "BASELINE_CONTEXT_ONLY",
-                     "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED"}
-                    for s in sources
-                    if s.get("source_type") == "CGFP_SNAPSHOT"
-                    and (s.get("citation_integrity") or {}).get("valid") is True
-                ]
-                ai_sources = cgfp_context_sources + verified_sources if verified_sources else []
-                if ai_sources:
-                    ai_result = await analyze_question(
-                        question=request.question,
-                        employer=request.employer,
-                        facts_date=effective_date.isoformat(),
-                        facts_period=temporal_context,
-                        sources=ai_sources,
-                        conversation_history=history,
-                    )
-                    if isinstance(ai_result, AIAnalysisResult):
-                        raw_ai_content = ai_result.content
-                        ai_usage = {
-                            "provider": "openai_compatible", "model": ai_result.model,
-                            "prompt_tokens": ai_result.prompt_tokens,
-                            "completion_tokens": ai_result.completion_tokens,
-                            "total_tokens": ai_result.total_tokens,
-                            "outcome": "STRUCTURED_OUTPUT_RECEIVED",
-                        }
-                    else:
-                        # All providers and test adapters must use the same strict JSON contract.
-                        raw_ai_content = ai_result
-                    try:
-                        structured_answer = json.loads(raw_ai_content) if isinstance(raw_ai_content, str) else None
-                    except (TypeError, ValueError):
-                        structured_answer = None
-                    claim_validation = validate_claim_evidence(structured_answer, ai_sources)
-                    if not claim_validation["valid"]:
-                        ai_answer = None
-                        if ai_usage is not None:
-                            ai_usage["outcome"] = "REJECTED_UNSUPPORTED_CLAIMS"
-                        missing.insert(
-                            0,
-                            "La réponse IA a été bloquée : sortie structurée absente ou affirmation sans citation exacte dans une source officielle applicable.",
-                        )
-                    elif not claim_validation["claims"]:
-                        ai_answer = None
-                        if ai_usage is not None:
-                            ai_usage["outcome"] = "ABSTAINED_NO_SUPPORTED_CLAIMS"
-                        missing.insert(
-                            0,
-                            "Le moteur IA n'a produit aucune affirmation pouvant être reliée à un extrait documentaire exact. Aucune conclusion n'est formulée.",
-                        )
-                    else:
-                        entailment_validation = await verify_claim_entailment(
-                            claims=claim_validation["claims"], sources=ai_sources,
-                        )
-                        if not entailment_validation.get("valid"):
-                            ai_answer = None
-                            if ai_usage is not None:
-                                ai_usage["outcome"] = "REJECTED_UNSUPPORTED_ENTAILMENT"
-                            missing.insert(
-                                0,
-                                "La réponse IA a été bloquée : le contrôle contradictoire n'a pas confirmé que chaque proposition découle directement de son passage officiel. Aucune conclusion n'est formulée.",
-                            )
-                        else:
-                            claims = claim_validation["claims"]
-                            rendered_claims = [
-                                "Éléments juridiques étayés par les sources vérifiées :",
-                                "",
-                            ]
-                            unique_sources = {}
-                            for index, claim in enumerate(claims, start=1):
-                                source_id = claim["source_id"]
-                                source_title = " ".join(str(claim["source_title"]).split())[:300]
-                                unique_sources[source_id] = source_title
-                                rendered_claims.append(
-                                    f"{index}. {claim['text']} [source:{source_id}]"
-                                )
-                                rendered_claims.append(
-                                    f"   Passage exact contrôlé : «{claim['quote']}» [source:{source_id}]"
-                                )
-                                rendered_claims.append("")
-                            rendered_claims.append("Références documentaires :")
-                            for source_id, source_title in unique_sources.items():
-                                rendered_claims.append(f"• {source_title} [source:{source_id}]")
-                            if rendered_claims and claims:
-                                ai_answer = "\n".join(rendered_claims).strip()
-                                if ai_usage is not None:
-                                    ai_usage["outcome"] = "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK"
-                            else:
-                                ai_answer = None
-                                if ai_usage is not None:
-                                    ai_usage["outcome"] = "REJECTED_AMBIGUOUS_SOURCE"
-                                missing.insert(0, "Une source citée n'a pas pu être retrouvée de façon univoque après validation.")
-                else:
-                    ai_answer = None
+            provider_status = await check_provider_availability()
+            if provider_status.get("status") != "AVAILABLE":
+                ai_answer = None
+                if provider_status.get("status") == "MODEL_DISABLED" and provider_status.get("reason") == "paid_plan_required":
                     missing.insert(
                         0,
-                        "Analyse IA suspendue : aucune source officielle datée et exploitable n'est disponible. Le snapshot CGFP seul reste une piste documentaire.",
+                        "Le modèle IA configuré est désactivé par le fournisseur : son activation exige une offre payante. Aucune inférence n'a été envoyée ; la réponse reste documentaire.",
                     )
-            except AIProviderUnavailable:
-                ai_answer = None
-                # Record a provider attempt even when it fails; token usage remains unknown.
-                if settings.ai_api_base_url and settings.ai_model:
-                    ai_usage = {
-                        "provider": "openai_compatible", "model": settings.ai_model[:160],
-                        "prompt_tokens": None, "completion_tokens": None,
-                        "total_tokens": None, "outcome": "PROVIDER_ERROR",
+                else:
+                    status_label = str(provider_status.get("status") or "UNKNOWN")[:60]
+                    missing.insert(
+                        0,
+                        f"Le fournisseur IA n'a pas confirmé la disponibilité du modèle (statut : {status_label}). Aucune inférence n'a été envoyée ; la réponse reste documentaire.",
+                    )
+            else:
+                try:
+                    eligible_temporal_statuses = {
+                        "IN_FORCE_ON_REQUESTED_DATE",
+                        "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+                        "VERIFIED_APPLICABLE",
                     }
+                    # The CGFP snapshot is the national baseline for explanation, but
+                    # it is not temporally authoritative. Pass it to the model only
+                    # alongside at least one independently verified, date-scoped
+                    # source; never let the snapshot alone trigger an AI conclusion.
+                    verified_sources = [
+                        s for s in sources
+                        if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
+                        and s.get("content_kind") != "METADATA"
+                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and s.get("temporal_status") in eligible_temporal_statuses
+                        # Unknown scope is retained as a review lead; only
+                        # explicitly identified FPE/FPH sources are excluded.
+                        # The AI prompt receives this scope and must not infer
+                        # territorial applicability from an unknown classification.
+                        and (
+                            s.get("analysis_eligible") is not False
+                            or s.get("public_service_scope") == "SCOPE_TO_VERIFY"
+                        )
+                        and s.get("ihts_relevant") is not False
+                        and (
+                            not period_version_comparison
+                            or (
+                                s.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}
+                                and s.get("period_endpoint_match") is True
+                            )
+                            or (
+                                s.get("source_type") not in {
+                                    "LEGIFRANCE_API", "LEGIFRANCE_LODA",
+                                    "LEGIFRANCE_CETAT_FULL_TEXT", "LEGIFRANCE_CETAT_SEARCH",
+                                }
+                                and _source_covers_period(s, period_start, effective_date)
+                            )
+                        )
+                    ]
+                    cgfp_context_sources = [
+                        {**s, "reference_role": "BASELINE_CONTEXT_ONLY",
+                         "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED"}
+                        for s in sources
+                        if s.get("source_type") == "CGFP_SNAPSHOT"
+                        and (s.get("citation_integrity") or {}).get("valid") is True
+                    ]
+                    ai_sources = cgfp_context_sources + verified_sources if verified_sources else []
+                    if ai_sources:
+                        ai_result = await analyze_question(
+                            question=request.question,
+                            employer=request.employer,
+                            facts_date=effective_date.isoformat(),
+                            facts_period=temporal_context,
+                            sources=ai_sources,
+                            conversation_history=history,
+                        )
+                        if isinstance(ai_result, AIAnalysisResult):
+                            raw_ai_content = ai_result.content
+                            ai_usage = {
+                                "provider": "openai_compatible", "model": ai_result.model,
+                                "prompt_tokens": ai_result.prompt_tokens,
+                                "completion_tokens": ai_result.completion_tokens,
+                                "total_tokens": ai_result.total_tokens,
+                                "outcome": "STRUCTURED_OUTPUT_RECEIVED",
+                            }
+                        else:
+                            # All providers and test adapters must use the same strict JSON contract.
+                            raw_ai_content = ai_result
+                        try:
+                            structured_answer = json.loads(raw_ai_content) if isinstance(raw_ai_content, str) else None
+                        except (TypeError, ValueError):
+                            structured_answer = None
+                        claim_validation = validate_claim_evidence(structured_answer, ai_sources)
+                        if not claim_validation["valid"]:
+                            ai_answer = None
+                            if ai_usage is not None:
+                                ai_usage["outcome"] = "REJECTED_UNSUPPORTED_CLAIMS"
+                            missing.insert(
+                                0,
+                                "La réponse IA a été bloquée : sortie structurée absente ou affirmation sans citation exacte dans une source officielle applicable.",
+                            )
+                        elif not claim_validation["claims"]:
+                            ai_answer = None
+                            if ai_usage is not None:
+                                ai_usage["outcome"] = "ABSTAINED_NO_SUPPORTED_CLAIMS"
+                            missing.insert(
+                                0,
+                                "Le moteur IA n'a produit aucune affirmation pouvant être reliée à un extrait documentaire exact. Aucune conclusion n'est formulée.",
+                            )
+                        else:
+                            entailment_validation = await verify_claim_entailment(
+                                claims=claim_validation["claims"], sources=ai_sources,
+                            )
+                            if not entailment_validation.get("valid"):
+                                ai_answer = None
+                                if ai_usage is not None:
+                                    ai_usage["outcome"] = "REJECTED_UNSUPPORTED_ENTAILMENT"
+                                missing.insert(
+                                    0,
+                                    "La réponse IA a été bloquée : le contrôle contradictoire n'a pas confirmé que chaque proposition découle directement de son passage officiel. Aucune conclusion n'est formulée.",
+                                )
+                            else:
+                                claims = claim_validation["claims"]
+                                rendered_claims = [
+                                    "Éléments juridiques étayés par les sources vérifiées :",
+                                    "",
+                                ]
+                                unique_sources = {}
+                                for index, claim in enumerate(claims, start=1):
+                                    source_id = claim["source_id"]
+                                    source_title = " ".join(str(claim["source_title"]).split())[:300]
+                                    unique_sources[source_id] = source_title
+                                    rendered_claims.append(
+                                        f"{index}. {claim['text']} [source:{source_id}]"
+                                    )
+                                    rendered_claims.append(
+                                        f"   Passage exact contrôlé : «{claim['quote']}» [source:{source_id}]"
+                                    )
+                                    rendered_claims.append("")
+                                rendered_claims.append("Références documentaires :")
+                                for source_id, source_title in unique_sources.items():
+                                    rendered_claims.append(f"• {source_title} [source:{source_id}]")
+                                if rendered_claims and claims:
+                                    ai_answer = "\n".join(rendered_claims).strip()
+                                    if ai_usage is not None:
+                                        ai_usage["outcome"] = "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK"
+                                else:
+                                    ai_answer = None
+                                    if ai_usage is not None:
+                                        ai_usage["outcome"] = "REJECTED_AMBIGUOUS_SOURCE"
+                                    missing.insert(0, "Une source citée n'a pas pu être retrouvée de façon univoque après validation.")
+                    else:
+                        ai_answer = None
+                        missing.insert(
+                            0,
+                            "Analyse IA suspendue : aucune source officielle datée et exploitable n'est disponible. Le snapshot CGFP seul reste une piste documentaire.",
+                        )
+                except AIProviderUnavailable:
+                    ai_answer = None
+                    # Record a provider attempt even when it fails; token usage remains unknown.
+                    if settings.ai_api_base_url and settings.ai_model:
+                        ai_usage = {
+                            "provider": "openai_compatible", "model": settings.ai_model[:160],
+                            "prompt_tokens": None, "completion_tokens": None,
+                            "total_tokens": None, "outcome": "PROVIDER_ERROR",
+                        }
         # Ground generated references only against sources actually supplied to
         # the model, never against excluded snapshot or metadata-only results.
         allowed_refs = {s.get("article") for s in ai_sources if s.get("article")}
