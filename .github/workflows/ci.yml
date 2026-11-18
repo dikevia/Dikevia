@@ -169,6 +169,20 @@ jobs:
             https://dikevia-identity-l2r8.onrender.com/realms/cfdt/protocol/openid-connect/certs \
             -o /tmp/jwks.json
           python -c 'import json; d=json.load(open("/tmp/jwks.json")); assert d.get("keys"), "JWKS keys missing"; print("JWKS published.")'
+          python - <<'PY'
+          import json
+          with open("/tmp/oidc.json", encoding="utf-8") as f:
+              data = json.load(f)
+          with open("/tmp/token-endpoint", "w", encoding="utf-8") as f:
+              f.write(data["token_endpoint"])
+          PY
+          curl --connect-timeout 10 --max-time 20 -sS -D /tmp/token-cors.headers -o /dev/null \
+            -X OPTIONS "$(cat /tmp/token-endpoint)" \
+            -H "Origin: https://dikevia-commercial-api-l2r8.onrender.com" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type"
+          grep -qi '^access-control-allow-origin: https://dikevia-commercial-api-l2r8.onrender.com' /tmp/token-cors.headers
+          echo "OIDC token endpoint permits the commercial web origin."
       - name: Verify commercial web shell and browser OIDC configuration
         shell: bash
         run: |
