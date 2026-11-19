@@ -58,7 +58,7 @@ _TOPIC_EXPANSIONS = (
         "accident de service maladie professionnelle CGFP décret 87-602",
     ),
     (
-        ("ifse", "rifseep", "nbi", "regime indemnitaire", "indemnite", "prime",
+        ("ifse", "rifseep", "nbi", "regime indemnitaire",
          "remuneration", "traitement indiciaire"),
         "rémunération fonctionnaires territoriaux régime indemnitaire RIFSEEP IFSE NBI "
         "délibération locale décret 91-875 CGFP",
