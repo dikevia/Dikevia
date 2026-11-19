@@ -397,11 +397,13 @@ class LegifranceConnector:
         if requested_ref_match is None:
             requested_ref_match = re.search(r"\barticle\s+(\d+(?:-\d+)*)\b", query, re.I)
         requested_ref = (
-            re.sub(r"[^A-Z0-9]", "", requested_ref_match.group(1).upper())
+            re.sub(r"[^A-Z0-9-]", "", requested_ref_match.group(1).upper())
             if requested_ref_match else None
         )
         articles: list[dict] = []
+        get_article_calls = 0
         for article_id in article_ids:
+            get_article_calls += 1
             detail = await self._request("POST", "/consult/getArticle", json_body={"id": article_id})
             returned_ids = self._find_article_ids(detail)
             text = self._extract_text(detail)
@@ -435,7 +437,7 @@ class LegifranceConnector:
                 matching_article_nodes[0] if matching_article_nodes else {},
             )
             raw_num = self._first_value(article_metadata, ("num", "numero", "numArticle"))
-            article_ref = re.sub(r"[^A-Z0-9]", "", raw_num.upper()) if raw_num else None
+            article_ref = re.sub(r"[^A-Z0-9-]", "", raw_num.upper()) if raw_num else None
             article_label = re.sub(r"[.\s]+", "", raw_num.upper()) if raw_num else None
             code_name = self._first_value(
                 article_metadata, ("nomCode", "titreCode", "codeName", "nameCode")
@@ -485,6 +487,10 @@ class LegifranceConnector:
                 "official_source": True,
                 "source_url": "https://www.legifrance.gouv.fr/",
             })
+        logger.warning(
+            "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH_COMPLETE result_count=%d get_article_calls=%d",
+            len(articles), get_article_calls,
+        )
         return articles
 
 
