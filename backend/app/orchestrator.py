@@ -552,6 +552,7 @@ class LegalOrchestrator:
                 missing.insert(0, f"Date des faits déclarée : {effective_date.isoformat()}.")
             else:
                 missing.insert(0, "Date des faits / période non précisée : une analyse contextualisée ne peut pas déterminer la règle applicable.")
+                missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
             if permanent_issue:
                 missing.insert(0, permanent_issue)
             if cgfp_issue:
@@ -583,9 +584,22 @@ class LegalOrchestrator:
                 missing.insert(0, temporal_issue)
             if (not found or not found.get("results")) and not cgfp_issue:
                 missing.insert(0, "L'index CGFP a été interrogé mais aucun article pertinent n'a été retrouvé.")
-            return AskResponse(request_id=request_id, verification_status="NON_VERIFIE",
-                answer="Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. Aucune conclusion juridique n'est formulée.",
-                sources=sources, missing_information=missing)
+            return AskResponse(
+                request_id=request_id,
+                verification_status="NON_VERIFIE",
+                answer=(
+                    "La date ou la période des faits n'est pas renseignée. La recherche au jour présent sert uniquement au repérage documentaire ; "
+                    "les textes officiels récupérés ne permettent pas de répondre avec certitude et aucune conclusion juridique contextualisée n'est formulée."
+                    if parsed_date is None else
+                    "Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. Aucune conclusion juridique n'est formulée."
+                ),
+                sources=sources,
+                missing_information=missing,
+                clarification_question=(
+                    "À quelle date les faits se sont-ils produits, ou sur quelle période s'étendent-ils ?"
+                    if parsed_date is None else None
+                ),
+            )
 
         missing = ["Vérifier les dates d'effet et la rédaction exacte applicable à la date des faits.",
             "Vérifier les dispositions réglementaires, décrets et textes spéciaux liés à la question.",
