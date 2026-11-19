@@ -153,7 +153,7 @@ def _compare_official_period_versions(
 
 
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False) -> AskResponse:
         request_id = str(uuid4())
         try:
             legacy_date = parse_facts_date(request.facts_date)
@@ -789,6 +789,7 @@ class LegalOrchestrator:
                             facts_period=temporal_context,
                             sources=ai_sources,
                             conversation_history=history,
+                            allow_local_documents=allow_local_documents,
                         )
                         if isinstance(ai_result, AIAnalysisResult):
                             raw_ai_content = ai_result.content
@@ -826,6 +827,7 @@ class LegalOrchestrator:
                         else:
                             entailment_validation = await verify_claim_entailment(
                                 claims=claim_validation["claims"], sources=ai_sources,
+                                allow_local_documents=allow_local_documents,
                             )
                             if not entailment_validation.get("valid"):
                                 ai_answer = None

@@ -98,3 +98,16 @@ def test_claim_evidence_rejects_wrong_source_identity_even_when_quote_exists():
     }, [source])
     assert result["valid"] is False
     assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_local_document_ai_review_requires_server_opt_in_and_per_request_confirmation():
+    import inspect
+    from app.main import review_local_rule_compliance
+
+    signature = inspect.signature(review_local_rule_compliance)
+    assert signature.parameters["confirm_external_ai_transfer"].default is False
+    source = inspect.getsource(review_local_rule_compliance)
+    assert "settings.ai_local_document_review_enabled and confirm_external_ai_transfer" in source
+    assert "allow_local_documents=True" in source
+    assert '"confirm_external_ai_transfer": confirm_external_ai_transfer' in source
+    assert '"external_ai_transfer_enabled": bool(' in source

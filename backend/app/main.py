@@ -822,7 +822,8 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_
         current_message_id = await ctx.conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
             VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
             str(conversation_id), ctx.user_id, payload.question,
-            json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
+            json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing,
+                "confirm_local_document_ai_transfer": payload.confirm_local_document_ai_transfer}, ensure_ascii=False))
         history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
             WHERE conversation_id=$1::uuid AND organization_id=$3::uuid AND user_id=$4::uuid
               AND id<>$2::uuid AND role IN ('user','assistant')
@@ -831,7 +832,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_
         history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
 
     # No database transaction remains open while PISTE or the AI provider is called.
-    result = await orchestrator.ask(payload,ctx.organization_id,conn=ctx.conn,conversation_history=history)
+    result = await orchestrator.ask(
+        payload, ctx.organization_id, conn=ctx.conn, conversation_history=history,
+        allow_local_documents=(payload.confirm_local_document_ai_transfer and settings.ai_local_documents_in_chat_enabled),
+    )
     result.conversation_id = conversation_id
 
     # Persist the answer, its provenance and metering atomically after analysis.
@@ -954,7 +958,8 @@ async def search_permanent_legal_knowledge(q: str, effective_date: date | None =
 
 @app.post("/api/v1/legal/compliance/review/{document_id}")
 async def review_local_rule_compliance(document_id: str, q: str,
-        effective_date: date | None = None, ctx: TenantContext = Depends(get_tenant_context_for_chat)):
+        effective_date: date | None = None, confirm_external_ai_transfer: bool = False,
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     """Prepare a sourced comparison of one tenant-local document with national sources.
 
     This endpoint flags review needs; it never declares a local act illegal.
@@ -1021,7 +1026,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}]
     ai_review = None
     if (usable_national and settings.ai_api_key and settings.ai_model
-            and settings.ai_local_document_review_enabled):
+            and settings.ai_local_document_review_enabled and confirm_external_ai_transfer):
         review_question = (
             "CONTROLE DE COHERENCE D'UNE REGLE LOCALE. Question de contrôle : " + query +
             "\nCompare uniquement le document local fourni avec les textes nationaux intégraux et temporellement exploitables. "
@@ -1033,7 +1038,8 @@ async def review_local_rule_compliance(document_id: str, q: str,
         try:
             candidate_result = await analyze_question(
                 question=review_question, employer="NATIONAL", facts_date=requested_date.isoformat(),
-                sources=[local_source] + usable_national, conversation_history=None)
+                sources=[local_source] + usable_national, conversation_history=None,
+                allow_local_documents=True)
             candidate = extract_analysis_content(candidate_result)
             usage = None
             if isinstance(candidate_result, AIAnalysisResult):
@@ -1066,7 +1072,13 @@ async def review_local_rule_compliance(document_id: str, q: str,
         await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
           VALUES($1::uuid,$2::uuid,'LOCAL_RULE_COMPLIANCE_REVIEWED','document',$3::uuid,$4::jsonb)""",
           ctx.organization_id, ctx.user_id, document_id,
-          json.dumps({"query": query, "effective_date": requested_date.isoformat(), "national_sources": len(national_sources)}, ensure_ascii=False))
+          json.dumps({"query": query, "effective_date": requested_date.isoformat(),
+              "national_sources": len(national_sources),
+              "confirm_external_ai_transfer": confirm_external_ai_transfer,
+              "external_ai_transfer_enabled": bool(
+                  confirm_external_ai_transfer and settings.ai_local_document_review_enabled
+                  and settings.ai_api_key and settings.ai_model and usable_national
+              )}, ensure_ascii=False))
     return {
       "status": "COMPARISON_REQUIRED" if national_sources else "NATIONAL_SOURCES_NOT_FOUND",
       "requested_date": requested_date.isoformat(),
