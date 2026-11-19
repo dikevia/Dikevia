@@ -359,6 +359,10 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
     plan_code = row["plan_code"] if row else "FOUNDING_FREE"
     plan_status = row["status"] if row else "FOUNDING_FREE"
     plan = PLANS.get(plan_code, PLANS["FOUNDING_FREE"])
+    founder_entitlement = await ctx.conn.fetchval("""SELECT EXISTS(
+        SELECT 1 FROM platform_founder_entitlements
+        WHERE user_id=$1::uuid AND revoked_at IS NULL
+    )""", ctx.user_id)
     seat_counts = await ctx.conn.fetchrow("SELECT * FROM tenant_billing_seat_counts($1::uuid)", ctx.organization_id)
     paid_active_users = seat_counts["paid_active_users"]
     free_active_users = seat_counts["free_active_users"]
@@ -369,6 +373,8 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
             "current_period_end": row["current_period_end"] if row else None,
             "cancel_at_period_end": row["cancel_at_period_end"] if row else False,
             "free_access_until": row["free_access_until"] if row else None,
+            "founder_entitlement": bool(founder_entitlement),
+            "premium_access": bool(founder_entitlement),
             "updated_at": row["updated_at"] if row else None}
 
 
@@ -647,6 +653,49 @@ async def platform_revoke_free_email_access(access_id: str, platform=Depends(req
                 VALUES($1::uuid,'FREE_EMAIL_ACCESS_REVOKED','free_email_access',$2::uuid,jsonb_build_object('email',$3))""",
                 platform["user_id"], row["id"], row["email_normalized"])
     return {"id": str(row["id"]), "email": row["email_normalized"], "active": False}
+
+
+@app.get("/api/v1/platform/founder-entitlements")
+async def platform_list_founder_entitlements(platform=Depends(require_platform_admin)):
+    rows = await get_platform_admin_pool().fetch("""SELECT user_id,note,granted_at,revoked_at
+        FROM platform_founder_entitlements ORDER BY granted_at DESC LIMIT 200""")
+    return {"entitlements": [
+        {"user_id": str(r["user_id"]), "note": r["note"], "granted_at": r["granted_at"],
+         "revoked_at": r["revoked_at"], "active": r["revoked_at"] is None}
+        for r in rows
+    ]}
+
+
+@app.post("/api/v1/platform/founder-entitlements", status_code=201)
+async def platform_grant_founder_entitlement(payload: dict,
+        platform=Depends(require_platform_admin)):
+    subject = str(payload.get("oidc_subject", "")).strip() if isinstance(payload, dict) else ""
+    note = str(payload.get("note", "")).strip()[:500] if isinstance(payload, dict) else ""
+    if not subject or len(subject) > 500 or len(note) < 8:
+        raise HTTPException(422, "Identité OIDC et motif d'attribution valides requis.")
+    # The SQL function grants only to an ACTIVE user already registered after
+    # successful OIDC verification for this exact configured issuer/subject.
+    target_user_id = await get_platform_admin_pool().fetchval(
+        "SELECT platform_admin_grant_founder_entitlement($1::uuid,$2,$3,$4)",
+        platform["user_id"], settings.oidc_issuer, subject, note)
+    if not target_user_id:
+        raise HTTPException(404, "Cette identité OIDC n'a pas encore été vérifiée par une connexion à Dikévia.")
+    return {"user_id": str(target_user_id), "active": True, "permanent": True}
+
+
+@app.delete("/api/v1/platform/founder-entitlements/{user_id}")
+async def platform_revoke_founder_entitlement(user_id: str,
+        platform=Depends(require_platform_admin)):
+    try:
+        target_user_id = str(UUID(user_id))
+    except ValueError:
+        raise HTTPException(422, "Identifiant utilisateur invalide.")
+    changed = await get_platform_admin_pool().fetchval(
+        "SELECT platform_admin_revoke_founder_entitlement($1::uuid,$2::uuid)",
+        platform["user_id"], target_user_id)
+    if not changed:
+        raise HTTPException(404, "Droit fondateur introuvable ou déjà révoqué.")
+    return {"user_id": target_user_id, "active": False}
 
 
 @app.post("/api/v1/platform/organizations/{organization_id}/grant-free")
