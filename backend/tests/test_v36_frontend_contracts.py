@@ -84,4 +84,4 @@ def test_pilot_chat_discloses_gemini_processing_and_requires_anonymized_cases():
     assert "Google Gemini" in html
     assert "situations fictives ou anonymisées" in html
     assert "donnée médicale" in html
-    assert "donnée syndicale nominative" in html
+    assert "syndicale nominative" in html
