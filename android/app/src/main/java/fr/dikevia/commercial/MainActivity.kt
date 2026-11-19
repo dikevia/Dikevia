@@ -403,7 +403,7 @@ private data class Entry(val title:String,val detail:String)
     }
 }
 @Composable private fun Nav(selected:String,showMembers:Boolean,choose:(String)->Unit){
-    val tabs=listOf("Accueil","Assistant","Historique","Documents","Collectivités","Profil") + if(showMembers) listOf("Membres") else emptyList()
+    val tabs=listOf("Accueil","Assistant","Historique","Documents","Collectivités") + (if(showMembers) listOf("Membres") else emptyList()) + listOf("Profil")
     Surface(color=Color.White,shadowElevation=5.dp){Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).navigationBarsPadding(),verticalAlignment=Alignment.CenterVertically){
         tabs.forEach{tab->TextButton(onClick={choose(tab)}){Text(tab,color=if(selected==tab)Deep else Muted,fontWeight=if(selected==tab)FontWeight.Bold else FontWeight.Normal,fontSize=11.sp)}}
     }}
