@@ -99,7 +99,9 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     if direct_eu_instrument_title or any(marker in european_metadata for marker in (
         "european union", "union europeenne", "eur lex", "eurlex",
         "eu regulation", "eu directive", "european directive",
-    )):
+        "european treaty", "european law", "droit europeen",
+        "convention europeenne",
+    )) or _fold(str(source.get("jurisdiction") or "")) in {"eu", "ue"}:
         return {
             "scope": "OUT_OF_SCOPE_EUROPEAN_LAW",
             "evidence": ["Instrument de droit de l'Union européenne hors périmètre Dikévia"],
