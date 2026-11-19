@@ -1,5 +1,7 @@
 # Dikévia Android beta
 
+> **Distribution bloquée à ce stade :** l'APK actuel est une démonstration WebView et ne doit pas être présenté comme une bêta sécurisée. La cible retenue pour la suite est une TWA vérifiée ; voir [la décision d'architecture et les critères de distribution](../docs/45_ANDROID_BETA_AUTHENTICATION.md). Aucun APK ne doit être distribué avant validation de ces critères.
+
 This Android shell loads the commercial Dikévia web application over HTTPS and keeps the OIDC Authorization Code + PKCE flow inside the same WebView session.
 
 - Package: `fr.dikevia.commercial.beta`
