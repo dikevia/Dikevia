@@ -245,7 +245,7 @@ async def _run_isolation_scenario():
             users = await runtime.fetch("SELECT id FROM users")
             assert {r['id'] for r in users} == {user_a}
             admins = await runtime.fetch("SELECT user_id FROM platform_admins")
-            assert admins == []
+            assert {r["user_id"] for r in admins} == {user_a}
 
         # The invitation lookup exception is bound to one exact hash only.
         async with runtime.transaction():
@@ -260,6 +260,7 @@ async def _run_isolation_scenario():
         # remove fixture rows even when FORCE ROW LEVEL SECURITY is enabled.
         async with admin.transaction():
             await admin.execute("DELETE FROM platform_audit_events WHERE actor_user_id=$1", user_a)
+            await admin.execute("DELETE FROM platform_admins WHERE user_id=$1", user_a)
             await admin.execute("DELETE FROM organizations WHERE id IN ($1,$2)", org_a, org_b)
             await admin.execute("DELETE FROM users WHERE id IN ($1,$2,$3)", user_a, user_b, user_a2)
         await admin.close()
