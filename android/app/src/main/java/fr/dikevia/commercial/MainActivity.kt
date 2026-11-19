@@ -210,7 +210,14 @@ private data class Entry(val title:String,val detail:String)
                 orgs=(0 until data.length()).map{val o=data.getJSONObject(it);Org(o.getString("id"),o.optString("display_name"),o.optString("role"))}
                 org=orgs.firstOrNull();if(org==null)error="Aucune organisation active n'est associée à ce compte."
             }catch(e:Exception){error=e.message?:"Connexion au service impossible."}finally{loading=false}
-        }else{user="";orgs=emptyList();org=null}
+        }else{
+            user=""
+            orgs=emptyList()
+            org=null
+            resumeConversationId=null
+            tab="Accueil"
+            error=null
+        }
     }
     Surface(Modifier.fillMaxSize(),color=Canvas){
         if(token==null)LoginPage(busy,authError,login)
