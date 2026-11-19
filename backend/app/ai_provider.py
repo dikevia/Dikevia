@@ -56,6 +56,7 @@ MÉTHODE :
 - Pour une situation continue ou couvrant plusieurs dates, compare explicitement les sources datées du début et de la fin lorsqu'elles sont fournies. Distingue une rédaction identique d'une rédaction différente et cite la version correspondant à chaque borne.
 - Un résultat retrouvé à une seule borne ne prouve ni l'abrogation ni l'inapplicabilité à l'autre borne.
 - Une comparaison aux deux bornes ne prouve pas l'absence de modification intermédiaire : ne conclus jamais sur toute la période si les dates d'effet ou les versions intermédiaires ne sont pas documentées.
+- Si une affirmation repose sur une source marquée START ou END pour une situation couvrant plusieurs dates, limite explicitement cette affirmation à la date exacte `requested_effective_date` au format AAAA-MM-JJ. Ne présente jamais une version de borne comme valable pendant toute la période ou toute l'année sans preuve d'une validité continue.
 - Si la période de la situation ou une information déterminante manque, indique-le et demande une seule précision utile au maximum.
 - En cas de divergence entre sources, expose précisément les deux rédactions et leur date ; ne tranche pas sans fondement documentaire.
 - Ne qualifie pas automatiquement une situation d'illégale.
