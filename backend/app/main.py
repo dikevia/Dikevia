@@ -657,8 +657,10 @@ async def platform_revoke_free_email_access(access_id: str, platform=Depends(req
 
 @app.get("/api/v1/platform/founder-entitlements")
 async def platform_list_founder_entitlements(platform=Depends(require_platform_admin)):
-    rows = await get_platform_admin_pool().fetch("""SELECT user_id,note,granted_at,revoked_at
-        FROM platform_founder_entitlements ORDER BY granted_at DESC LIMIT 200""")
+    rows = await get_platform_admin_pool().fetch(
+        "SELECT * FROM platform_admin_list_founder_entitlements($1::uuid)",
+        platform["user_id"],
+    )
     return {"entitlements": [
         {"user_id": str(r["user_id"]), "note": r["note"], "granted_at": r["granted_at"],
          "revoked_at": r["revoked_at"], "active": r["revoked_at"] is None}
