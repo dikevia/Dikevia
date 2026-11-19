@@ -56,6 +56,15 @@ def test_founder_entitlement_requires_the_target_identity_to_have_logged_in():
     assert "oidc_subject" not in main[main.index("async def platform_grant_founder_entitlement"):main.index("@app.delete(\"/api/v1/platform/founder-entitlements") ]
 
 
+def test_ai_outcome_migration_widens_column_for_long_verified_status():
+    migration = (ROOT / "database/migrations/020_ai_usage_outcome_compatibility.sql").read_text(encoding="utf-8")
+    rollback = (ROOT / "database/migrations/rollback/020_ai_usage_outcome_compatibility.down.sql").read_text(encoding="utf-8")
+    assert "ALTER COLUMN outcome TYPE varchar(80)" in migration
+    assert "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK" in migration
+    assert "length(outcome)>40" in rollback
+    assert "ALTER COLUMN outcome TYPE varchar(40)" in rollback
+
+
 def test_wallet_and_founder_migrations_have_rollback_scripts():
     rollback = ROOT / "database/migrations/rollback"
     assert (rollback / "020_ai_usage_outcome_compatibility.down.sql").exists()
