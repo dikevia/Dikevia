@@ -50,6 +50,18 @@ _FPE_MARKERS = (
     "ministeres",
 )
 
+_LOCAL_EMPLOYER_MARKERS = (
+    "commune", "mairie", "centre communal d action sociale",
+    "etablissement public de cooperation intercommunale", "epci",
+    "metropole", "departement", "region",
+)
+
+_EMPLOYMENT_CONTEXT_MARKERS = (
+    "agent", "agents", "fonctionnaire", "fonctionnaires",
+    "contractuel", "contractuels", "personnel", "personnels",
+    "emploi", "recrutement", "discipline", "remuneration",
+)
+
 _GENERAL_MARKERS = (
     "code general de la fonction publique",
     "fonction publique",
@@ -124,6 +136,23 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
             "scope": "FPE",
             "evidence": fpe_hits[:3],
             "analysis_eligible": False,
+        }
+
+    # Administrative case law often names the local employer ("commune de…")
+    # rather than repeating the words "fonction publique territoriale".
+    # Accept that combination only when the same decision also concerns an
+    # employment/HR subject; a municipal planning case must not pass this guard.
+    local_employer_hits = [
+        marker for marker in _LOCAL_EMPLOYER_MARKERS if _fold(marker) in corpus
+    ]
+    employment_context_hits = [
+        marker for marker in _EMPLOYMENT_CONTEXT_MARKERS if _fold(marker) in corpus
+    ]
+    if local_employer_hits and employment_context_hits:
+        return {
+            "scope": "FPT",
+            "evidence": (local_employer_hits[:2] + employment_context_hits[:2]),
+            "analysis_eligible": True,
         }
 
     general_hits = [marker for marker in _GENERAL_MARKERS if _fold(marker) in corpus]
