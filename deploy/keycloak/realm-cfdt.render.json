@@ -1,6 +1,6 @@
 {
   "realm": "cfdt",
-  "displayName": "CFDT JURIS",
+  "displayName": "Dikévia",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
@@ -18,7 +18,7 @@
   "clients": [
     {
       "clientId": "cfdt-juris-web",
-      "name": "CFDT JURIS — application web",
+      "name": "Dikévia — application web",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": true,
@@ -57,7 +57,7 @@
   "clientScopes": [
     {
       "name": "cfdt-juris-api-audience",
-      "description": "Ajoute l'audience API attendue par CFDT JURIS dans le jeton d'accès.",
+      "description": "Ajoute l'audience API attendue par Dikévia dans le jeton d'accès.",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "false",
