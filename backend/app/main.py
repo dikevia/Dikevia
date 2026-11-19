@@ -332,9 +332,6 @@ async def account_access_status(ctx: TenantContext = Depends(get_tenant_context)
         SELECT u.trial_started_at,u.trial_expires_at,
           EXISTS(SELECT 1 FROM founder_entitlements f
             WHERE f.user_id=u.id AND f.revoked_at IS NULL) AS founder,
-          EXISTS(SELECT 1 FROM platform_free_email_access f
-            WHERE f.email_normalized=lower(u.email) AND f.revoked_at IS NULL
-              AND (f.expires_at IS NULL OR f.expires_at>now())) AS complimentary,
           s.status AS subscription_status,s.current_period_end
         FROM users u LEFT JOIN subscriptions s ON s.organization_id=$2::uuid
         WHERE u.id=$1::uuid
@@ -344,10 +341,9 @@ async def account_access_status(ctx: TenantContext = Depends(get_tenant_context)
     now = await ctx.conn.fetchval("SELECT now()")
     paid = row["subscription_status"] in ("ACTIVE","TRIAL") and (
         row["current_period_end"] is None or row["current_period_end"] > now)
-    entitled = bool(row["founder"] or row["complimentary"] or paid)
+    entitled = bool(row["founder"] or paid)
     return {
         "access": "FOUNDER" if row["founder"] else "PAID" if paid else
-                  "COMPLIMENTARY" if row["complimentary"] else
                   "TRIAL" if row["trial_expires_at"] > now else "EXPIRED",
         "trial_started_at": row["trial_started_at"],
         "trial_expires_at": row["trial_expires_at"],
