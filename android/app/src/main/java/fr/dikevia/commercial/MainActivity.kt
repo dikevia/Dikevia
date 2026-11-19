@@ -1,149 +1,242 @@
 package fr.dikevia.commercial
 
-import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
 import android.net.Uri
-import android.net.http.SslError
 import android.os.Bundle
-import android.view.View
-import android.webkit.CookieManager
-import android.webkit.SslErrorHandler
-import android.webkit.ValueCallback
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import net.openid.appauth.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
-class MainActivity : Activity() {
-    private lateinit var webView: WebView
-    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+private val Emerald=Color(0xFF087F68)
+private val Deep=Color(0xFF075B4D)
+private val Dark=Color(0xFF063F37)
+private val Gold=Color(0xFFF0D79F)
+private val Ink=Color(0xFF142B25)
+private val Muted=Color(0xFF637B71)
+private val Canvas=Color(0xFFF3F8F5)
 
-    companion object {
-        private const val APP_URL = "https://dikevia-commercial-api-l2r8.onrender.com/"
-        private const val FILE_CHOOSER_REQUEST = 4107
-        private val TRUSTED_HOSTS = setOf(
-            "dikevia-commercial-api-l2r8.onrender.com",
-            "dikevia-identity-l2r8.onrender.com"
-        )
+class MainActivity:ComponentActivity(){
+    private var token by mutableStateOf<String?>(null)
+    private var authError by mutableStateOf<String?>(null)
+    private var authBusy by mutableStateOf(false)
+    private var authService:AuthorizationService?=null
+    companion object{
+        const val API="https://dikevia-commercial-api-l2r8.onrender.com"
+        const val ISSUER="https://dikevia-identity-l2r8.onrender.com/realms/cfdt"
+        const val CLIENT_ID="dikevia-android"
+        const val SCOPES="openid profile email"
+        const val REDIRECT="fr.dikevia.commercial:/oauth2redirect"
+        const val LOGIN_REQUEST=7301
     }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.rgb(18, 59, 50)
-        window.navigationBarColor = Color.rgb(18, 59, 50)
-
-        webView = WebView(this)
-        webView.setBackgroundColor(Color.rgb(243, 246, 244))
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            databaseEnabled = true
-            allowFileAccess = false
-            allowContentAccess = true
-            javaScriptCanOpenWindowsAutomatically = false
-            setSupportMultipleWindows(false)
-            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            cacheMode = WebSettings.LOAD_DEFAULT
-            safeBrowsingEnabled = true
+    override fun onCreate(savedInstanceState:Bundle?){
+        super.onCreate(savedInstanceState);authService=AuthorizationService(this)
+        setContent{MaterialTheme(colorScheme=lightColorScheme(primary=Deep,onPrimary=Gold,secondary=Emerald,background=Canvas,surface=Color.White,onSurface=Ink)){
+            Root(token,authBusy,authError,::login){token=null;authError=null}
+        }}
+    }
+    private fun login(){
+        if(authBusy)return
+        authBusy=true;authError=null
+        AuthorizationServiceConfiguration.fetchFromIssuer(Uri.parse(ISSUER)){cfg,ex->
+            if(cfg==null||ex!=null){runOnUiThread{authBusy=false;authError="Fournisseur de connexion indisponible."};return@fetchFromIssuer}
+            val verifier=CodeVerifierUtil.generateRandomCodeVerifier()
+            val req=AuthorizationRequest.Builder(cfg,CLIENT_ID,ResponseTypeValues.CODE,Uri.parse(REDIRECT))
+                .setScope(SCOPES).setCodeVerifier(verifier,null,CodeVerifierUtil.getDefaultCodeVerifierChallengeMethod()).build()
+            runOnUiThread{authBusy=false;startActivityForResult(authService!!.getAuthorizationRequestIntent(req),LOGIN_REQUEST)}
         }
-
-        CookieManager.getInstance().apply {
-            setAcceptCookie(true)
-            setAcceptThirdPartyCookies(webView, true)
+    }
+    @Deprecated("AppAuth activity result compatibility")
+    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
+        super.onActivityResult(requestCode,resultCode,data);if(requestCode!=LOGIN_REQUEST)return
+        val intent=data?:Intent();val response=AuthorizationResponse.fromIntent(intent)
+        val failure=AuthorizationException.fromIntent(intent)
+        if(response==null){authError=if(failure!=null)"Connexion annulée ou refusée." else "Réponse OIDC invalide.";return}
+        authBusy=true
+        authService?.performTokenRequest(response.createTokenExchangeRequest()){result,error->
+            runOnUiThread{authBusy=false
+                if(error!=null||result?.accessToken.isNullOrBlank())authError="Échange du code OIDC impossible."
+                else{token=result!!.accessToken;authError=null}
+            }
         }
+    }
+    override fun onDestroy(){authService?.dispose();authService=null;super.onDestroy()}
+}
+private class Api{
+    private val http=OkHttpClient.Builder().connectTimeout(20,TimeUnit.SECONDS).readTimeout(90,TimeUnit.SECONDS).callTimeout(100,TimeUnit.SECONDS).build()
+    fun call(token:String,org:String?,path:String,method:String="GET",json:JSONObject?=null):String{
+        val b=Request.Builder().url(MainActivity.API+path).header("Authorization","Bearer "+token).header("Accept","application/json")
+        if(!org.isNullOrBlank())b.header("X-Organization-ID",org)
+        if(method=="POST"||method=="PATCH")b.header("Content-Type","application/json").method(method,(json?:JSONObject()).toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
+        else b.method(method,null)
+        http.newCall(b.build()).execute().use{r->
+            val body=r.body?.string().orEmpty()
+            if(!r.isSuccessful)throw IllegalStateException(runCatching{JSONObject(body).optString("detail")}.getOrNull()?.takeIf{it.isNotBlank()}?:"Erreur serveur HTTP "+r.code)
+            return body
+        }
+    }
+}
+private data class Org(val id:String,val name:String,val role:String)
+private data class Entry(val title:String,val detail:String)
 
-        webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val uri = request.url
-                if (uri.scheme == "https" && uri.host in TRUSTED_HOSTS) return false
-                if (uri.scheme == "https" || uri.scheme == "mailto" || uri.scheme == "tel") {
-                    return try {
-                        startActivity(Intent(Intent.ACTION_VIEW, uri))
-                        true
-                    } catch (_: Exception) {
-                        true
-                    }
+@Composable private fun Root(token:String?,busy:Boolean,authError:String?,login:()->Unit,logout:()->Unit){
+    val api=remember{Api()};var user by remember{mutableStateOf("")};var orgs by remember{mutableStateOf(emptyList<Org>())}
+    var org by remember{mutableStateOf<Org?>(null)};var tab by remember{mutableStateOf("Accueil")}
+    var loading by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)}
+    LaunchedEffect(token){
+        if(token!=null){loading=true;error=null
+            try{
+                val me=withContext(Dispatchers.IO){JSONObject(api.call(token,null,"/api/v1/auth/me"))}
+                user=me.optString("display_name").ifBlank{me.optString("email")}
+                val data=withContext(Dispatchers.IO){JSONArray(api.call(token,null,"/api/v1/organizations"))}
+                orgs=(0 until data.length()).map{val o=data.getJSONObject(it);Org(o.getString("id"),o.optString("display_name"),o.optString("role"))}
+                org=orgs.firstOrNull();if(org==null)error="Aucune organisation active n'est associée à ce compte."
+            }catch(e:Exception){error=e.message?:"Connexion au service impossible."}finally{loading=false}
+        }else{user="";orgs=emptyList();org=null}
+    }
+    Surface(Modifier.fillMaxSize(),color=Canvas){
+        if(token==null)LoginPage(busy,authError,login)
+        else Column(Modifier.fillMaxSize()){
+            Header(user,orgs,org){org=it}
+            if(loading)LinearProgressIndicator(Modifier.fillMaxWidth(),color=Emerald)
+            error?.let{ErrorBox(it)}
+            org?.let{current->Box(Modifier.weight(1f).fillMaxWidth()){
+                when(tab){
+                    "Accueil"->Home(user,current){tab=it}
+                    "Assistant"->Assistant(token,current,api)
+                    "Historique"->Listing("Historique",token,current,api,"/api/v1/chat/conversations"){Entry(it.optString("title","Conversation"),it.optInt("message_count").toString()+" message(s)")}
+                    "Documents"->Listing("Documents",token,current,api,"/api/v1/documents"){Entry(it.optString("title"),listOf(it.optString("document_type"),it.optString("validation_status"),it.optString("collectivity_name")).filter{s->s.isNotBlank()}.joinToString(" · "))}
+                    "Collectivités"->Listing("Collectivités",token,current,api,"/api/v1/collectivities"){Entry(it.optString("name"),it.optString("code"))}
+                    "Membres"->Listing("Membres",token,current,api,"/api/v1/organizations/me/members"){Entry(it.optString("display_name").ifBlank{it.optString("email")},it.optString("role")+" · "+it.optString("status"))}
+                    else->Profile(user,current,logout)
                 }
-                return true
-            }
-
-            override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
-                handler.cancel()
-            }
-        }
-
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onShowFileChooser(
-                view: WebView?,
-                callback: ValueCallback<Array<Uri>>?,
-                params: FileChooserParams?
-            ): Boolean {
-                if (callback == null || params == null) return false
-                filePathCallback?.onReceiveValue(null)
-                filePathCallback = callback
-                return try {
-                    startActivityForResult(params.createIntent(), FILE_CHOOSER_REQUEST)
-                    true
-                } catch (_: Exception) {
-                    filePathCallback?.onReceiveValue(null)
-                    filePathCallback = null
-                    false
-                }
-            }
-        }
-
-        setContentView(webView)
-        if (savedInstanceState == null) {
-            webView.loadUrl(APP_URL)
-        } else {
-            webView.restoreState(savedInstanceState)
+            }}
+            Nav(tab){tab=it}
         }
     }
-
-    @Deprecated("Deprecated by Android; retained for WebView file selection compatibility.")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != FILE_CHOOSER_REQUEST) return
-
-        val selected = if (resultCode == RESULT_OK && data != null) {
-            val clip = data.clipData
-            when {
-                clip != null -> Array(clip.itemCount) { index -> clip.getItemAt(index).uri }
-                data.data != null -> arrayOf(data.data!!)
-                else -> null
+}
+@Composable private fun LoginPage(busy:Boolean,error:String?,login:()->Unit){
+    Column(Modifier.fillMaxSize().padding(25.dp),verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally){
+        Text("Dikévia",fontSize=35.sp,fontWeight=FontWeight.ExtraBold,color=Dark)
+        Text("Votre espace d'assistance juridique",color=Muted);Spacer(Modifier.height(25.dp))
+        Card(shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=Color.White)){
+            Column(Modifier.padding(22.dp),horizontalAlignment=Alignment.CenterHorizontally){
+                Text("Accéder à votre espace",fontSize=21.sp,fontWeight=FontWeight.Bold)
+                Text("La connexion est assurée par le fournisseur d'identité de votre organisation.",color=Muted,fontSize=13.sp,modifier=Modifier.padding(top=10.dp))
+                Button(onClick=login,enabled=!busy,modifier=Modifier.fillMaxWidth().padding(top=18.dp).height(50.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(if(busy)"Connexion…" else "Se connecter")}
+                error?.let{Text(it,color=Color(0xFF9B3030),fontSize=12.sp,modifier=Modifier.padding(top=10.dp))}
+                Text("Aucun mot de passe n'est demandé ni stocké par Dikévia.",color=Muted,fontSize=11.sp,modifier=Modifier.padding(top=12.dp))
             }
-        } else {
-            null
-        }
-        filePathCallback?.onReceiveValue(selected)
-        filePathCallback = null
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        webView.saveState(outState)
-        super.onSaveInstanceState(outState)
-    }
-
-    @Deprecated("Deprecated by Android; use the system back dispatcher in a future UI migration.")
-    override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
         }
     }
-
-    override fun onDestroy() {
-        filePathCallback?.onReceiveValue(null)
-        filePathCallback = null
-        if (::webView.isInitialized) {
-            webView.stopLoading()
-            webView.destroy()
+}
+@Composable private fun Header(user:String,orgs:List<Org>,org:Org?,select:(Org)->Unit){
+    Column(Modifier.fillMaxWidth().background(Dark).padding(15.dp)){Row(verticalAlignment=Alignment.CenterVertically){
+        Column(Modifier.weight(1f)){Text("Dikévia",color=Color.White,fontSize=20.sp,fontWeight=FontWeight.Bold);Text(user,color=Color(0xFFD4E7DF),fontSize=12.sp)}
+        if(orgs.size>1){var expanded by remember{mutableStateOf(false)};Box{
+            TextButton(onClick={expanded=true}){Text(org?.name?:"Organisation",color=Gold)}
+            DropdownMenu(expanded,{expanded=false}){orgs.forEach{o->DropdownMenuItem(text={Text(o.name)},onClick={select(o);expanded=false})}}
+        }}
+    }}
+}
+@Composable private fun Home(user:String,org:Org,navigate:(String)->Unit){
+    LazyColumn(Modifier.fillMaxSize().padding(17.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+        item{Text("Bonjour "+user.substringBefore(" ").ifBlank{"et bienvenue"},fontSize=24.sp,fontWeight=FontWeight.Bold,color=Ink)}
+        item{Card(colors=CardDefaults.cardColors(containerColor=Color.White)){Column(Modifier.padding(16.dp)){Text(org.name,color=Dark,fontWeight=FontWeight.Bold,fontSize=17.sp);Text("Rôle : "+org.role,color=Muted,fontSize=12.sp)}}}
+        item{Action("Assistant juridique","Posez une question et consultez les sources.","Ouvrir l'assistant"){navigate("Assistant")}}
+        item{Action("Mes documents","Retrouvez les documents de votre collectivité.","Consulter"){navigate("Documents")}}
+        item{Action("Historique","Reprenez vos précédentes conversations.","Voir l'historique"){navigate("Historique")}}
+    }
+}
+@Composable private fun Action(title:String,desc:String,button:String,click:()->Unit){
+    Card(colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(15.dp)){Column(Modifier.padding(16.dp)){
+        Text(title,fontWeight=FontWeight.Bold,color=Ink,fontSize=17.sp);Text(desc,color=Muted,fontSize=13.sp)
+        Button(onClick=click,modifier=Modifier.padding(top=9.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(button)}
+    }}
+}
+@Composable private fun Assistant(token:String,org:Org,api:Api){
+    var q by remember{mutableStateOf("")};var employer by remember{mutableStateOf("NATIONAL")};var answer by remember{mutableStateOf<JSONObject?>(null)}
+    var waiting by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)};val scope=rememberCoroutineScope()
+    Column(Modifier.fillMaxSize().padding(13.dp)){
+        Text("Assistant juridique",fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink)
+        Text("Le statut de vérification et les sources accompagnent chaque réponse.",color=Muted,fontSize=12.sp);Spacer(Modifier.height(9.dp))
+        LazyColumn(Modifier.weight(1f).fillMaxWidth()){
+            item{answer?.let{r->Card(colors=CardDefaults.cardColors(containerColor=Color.White)){Column(Modifier.padding(14.dp)){
+                val status=r.optString("verification_status","NON_VERIFIE")
+                Text("Vérification : "+status,color=if(status=="VERIFIE")Emerald else Color(0xFF946A19),fontWeight=FontWeight.Bold)
+                Text(r.optString("answer"),color=Ink,modifier=Modifier.padding(top=8.dp))
+                r.optString("clarification_question").takeIf{it.isNotBlank()}?.let{Text("Précision nécessaire : "+it,color=Muted)}
+                val sources=r.optJSONArray("sources")?:JSONArray()
+                Text("Sources documentaires ("+sources.length()+")",fontWeight=FontWeight.Bold,color=Dark,modifier=Modifier.padding(top=10.dp))
+                for(i in 0 until sources.length()){val s=sources.optJSONObject(i)?:continue;Text("• "+s.optString("title","Source juridique"),fontSize=12.sp,color=Ink);s.optString("excerpt").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=11.sp,color=Muted)}}
+                r.optString("disclaimer").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=8.dp))}
+            }}}?:Text("Posez votre question. Dikévia indiquera si la réponse est vérifiée ou si des précisions sont nécessaires.",color=Muted)}
         }
-        super.onDestroy()
+        error?.let{ErrorBox(it)}
+        OutlinedTextField(q,{if(it.length<=5000)q=it},modifier=Modifier.fillMaxWidth(),label={Text("Votre question (8 à 5 000 caractères)")},minLines=3)
+        var expanded by remember{mutableStateOf(false)}
+        Box{OutlinedButton(onClick={expanded=true}){Text(when(employer){"VILLE_SAINT_ETIENNE"->"Ville de Saint-Étienne";"SAINT_ETIENNE_METROPOLE"->"Saint-Étienne Métropole";else->"National / autre collectivité"})}
+            DropdownMenu(expanded,{expanded=false}){
+                DropdownMenuItem(text={Text("National / autre collectivité")},onClick={employer="NATIONAL";expanded=false})
+                DropdownMenuItem(text={Text("Ville de Saint-Étienne")},onClick={employer="VILLE_SAINT_ETIENNE";expanded=false})
+                DropdownMenuItem(text={Text("Saint-Étienne Métropole")},onClick={employer="SAINT_ETIENNE_METROPOLE";expanded=false})
+            }}
+        Button(onClick={val question=q.trim();if(question.length>=8&&!waiting){waiting=true;error=null;scope.launch{
+            try{val payload=JSONObject().put("employer",employer).put("question",question);answer=withContext(Dispatchers.IO){JSONObject(api.call(token,org.id,"/api/v1/chat/ask","POST",payload))};q=""}
+            catch(e:Exception){error=e.message?:"Demande impossible."}finally{waiting=false}
+        }}},enabled=!waiting&&q.trim().length>=8,modifier=Modifier.fillMaxWidth().height(48.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(if(waiting)"Analyse juridique en cours…" else "Envoyer ma question")}
+    }
+}
+@Composable private fun Listing(title:String,token:String,org:Org,api:Api,path:String,convert:(JSONObject)->Entry){
+    var rows by remember{mutableStateOf(emptyList<Entry>())};var loading by remember{mutableStateOf(true)};var error by remember{mutableStateOf<String?>(null)}
+    LaunchedEffect(path,org.id){loading=true;try{val data=withContext(Dispatchers.IO){JSONArray(api.call(token,org.id,path))};rows=(0 until data.length()).map{convert(data.getJSONObject(it))}}
+        catch(e:Exception){error=e.message?:"Chargement impossible."}finally{loading=false}}
+    Column(Modifier.fillMaxSize().padding(17.dp)){Text(title,fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink)
+        if(loading)LinearProgressIndicator(Modifier.fillMaxWidth().padding(top=10.dp),color=Emerald)
+        error?.let{ErrorBox(it)}
+        if(!loading&&error==null&&rows.isEmpty())Text("Aucun élément pour le moment.",color=Muted,modifier=Modifier.padding(top=12.dp))
+        LazyColumn(Modifier.padding(top=10.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){items(rows){row->Card(colors=CardDefaults.cardColors(containerColor=Color.White)){
+            Column(Modifier.fillMaxWidth().padding(14.dp)){Text(row.title,color=Ink,fontWeight=FontWeight.SemiBold);if(row.detail.isNotBlank())Text(row.detail,color=Muted,fontSize=12.sp)}
+        }}}
+    }
+}
+@Composable private fun Profile(user:String,org:Org,logout:()->Unit){
+    Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+        Text("Mon profil",fontSize=24.sp,fontWeight=FontWeight.Bold,color=Ink)
+        Card(colors=CardDefaults.cardColors(containerColor=Color.White)){Column(Modifier.padding(16.dp)){Text(user,fontWeight=FontWeight.Bold);Text(org.name,color=Muted);Text("Rôle : "+org.role,color=Muted,fontSize=12.sp)}}
+        Button(onClick=logout,colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF9B3030))){Text("Se déconnecter",color=Color.White)}
+    }
+}
+@Composable private fun Nav(selected:String,choose:(String)->Unit){
+    val tabs=listOf("Accueil","Assistant","Historique","Documents","Collectivités","Membres","Profil")
+    Surface(color=Color.White,shadowElevation=5.dp){Row(Modifier.fillMaxWidth().navigationBarsPadding()){
+        tabs.forEach{tab->TextButton(onClick={choose(tab)},modifier=Modifier.weight(1f)){Text(tab.take(1),color=if(selected==tab)Deep else Muted,fontWeight=if(selected==tab)FontWeight.Bold else FontWeight.Normal,fontSize=11.sp)}}
+    }}
+}
+@Composable private fun ErrorBox(message:String){
+    Card(colors=CardDefaults.cardColors(containerColor=Color(0xFFFFF0EF)),modifier=Modifier.fillMaxWidth().padding(8.dp)){
+        Text(message,color=Color(0xFF8B2929),fontSize=12.sp,modifier=Modifier.padding(12.dp))
     }
 }
