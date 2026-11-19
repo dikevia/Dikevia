@@ -266,6 +266,11 @@ def decode_jsonb(value):
             return {}
     return value if isinstance(value, (dict, list)) else {}
 
+
+def _france_today() -> date:
+    """Use the legal application's local calendar date, not the host's UTC date."""
+    return datetime.now(ZoneInfo("Europe/Paris")).date()
+
 @app.middleware("http")
 async def security_headers(request, call_next):
     response = await call_next(request)
@@ -920,12 +925,12 @@ async def search_legifrance(q: str, effective_date: date | None = None,
         raise HTTPException(422, "La recherche Légifrance doit contenir entre 2 et 500 caractères.")
     await enforce_legal_connector_rate_limit(ctx)
     try:
-        results = await legifrance.search_code_articles(q, effective_date or date.today())
+        results = await legifrance.search_code_articles(q, effective_date or _france_today())
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     except LegifranceUnavailable:
         raise HTTPException(503, "Recherche Légifrance indisponible. Vérifier les identifiants, consentements et quotas.")
-    return {"requested_date": (effective_date or date.today()).isoformat(),
+    return {"requested_date": (effective_date or _france_today()).isoformat(),
             "results_count": len(results), "results": results,
             "warning": "Résultats API à vérifier ; l'absence de résultat ne prouve pas l'absence de règle."}
 
@@ -937,7 +942,7 @@ async def search_administrative_case_law(q: str, effective_date: date | None = N
     if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
         raise HTTPException(422, "La recherche de jurisprudence doit contenir entre 2 et 500 caractères.")
     await enforce_legal_connector_rate_limit(ctx)
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     try:
         results = await case_law_connector.search(q, requested_date)
     except ValueError as exc:
@@ -974,7 +979,7 @@ async def consult_administrative_case_law(decision_id: str,
 @app.get("/api/v1/legal/knowledge/search")
 async def search_permanent_legal_knowledge(q: str, effective_date: date | None = None,
         limit: int = 12, ctx: TenantContext = Depends(get_tenant_context)):
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     try:
         results = await search_legal_corpus(ctx.conn, q, requested_date, limit)
     except ValueError as exc:
@@ -1011,7 +1016,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
             content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
             headers={"Retry-After": str(rate.retry_after_seconds)},
         )
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     local = await ctx.conn.fetchrow("""
       SELECT d.id,d.title,d.document_type,d.official_number,d.official_url,d.validation_status,
         d.validation_note,d.effective_from,d.effective_to,d.adopted_at,d.published_at,
@@ -1151,7 +1156,7 @@ async def ingest_regulatory_corpus(q: str, effective_date: date | None = None,
         raise HTTPException(422, "La limite d'import réglementaire doit être comprise entre 1 et 20.")
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     pool = get_corpus_ingest_pool()
     async with pool.acquire() as conn:
         run = await conn.fetchrow("""INSERT INTO legal_ingestion_runs(source_type,run_mode,status,query_text)
@@ -1194,7 +1199,7 @@ async def ingest_administrative_case_law(q: str, effective_date: date | None = N
         raise HTTPException(503, "L'import du texte intégral CETAT est désactivé jusqu'à validation du contrat de consultation sur PISTE.")
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     if not 1 <= limit <= 20:
         raise HTTPException(422, "La limite doit être comprise entre 1 et 20.")
     pool = get_corpus_ingest_pool()
