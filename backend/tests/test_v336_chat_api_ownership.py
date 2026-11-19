@@ -474,3 +474,23 @@ def test_invitation_provisioning_uses_transaction_free_tenant_context():
     assert "Depends(require_org_admin_for_external)" in route_source
     assert "await admin.ensure_user(email)" in route_source
     assert "send_invitation_email" in route_source
+
+
+def test_document_storage_and_antivirus_routes_use_transaction_free_editor_context():
+    import inspect
+    from app import dependencies
+    from app.main import (
+        upload_document, upload_document_version, reindex_document_versions,
+        rescan_document_versions, download_document, download_document_version,
+    )
+
+    dependency_source = inspect.getsource(dependencies.require_legal_editor_for_external)
+    assert "Depends(get_tenant_context_for_chat)" in dependency_source
+    assert "ctx.role not in (\"ORG_ADMIN\", \"LEGAL_EDITOR\")" in dependency_source
+    for route in (
+        upload_document, upload_document_version, reindex_document_versions,
+        rescan_document_versions,
+    ):
+        assert "Depends(require_legal_editor_for_external)" in inspect.getsource(route)
+    for route in (download_document, download_document_version):
+        assert "Depends(get_tenant_context_for_chat)" in inspect.getsource(route)
