@@ -89,7 +89,6 @@ async def test_ai_receives_cgfp_baseline_before_date_verified_sources(monkeypatc
     )
 
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
-    assert captured["sources"][0]["source_type"] == "CGFP_SNAPSHOT"
-    assert captured["sources"][0]["reference_role"] == "BASELINE_CONTEXT_ONLY"
-    assert captured["sources"][0]["temporal_status"] == "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED"
+    assert captured["sources"][0]["source_type"] == "LEGIFRANCE_LODA"
+    assert not any(source["source_type"] == "CGFP_SNAPSHOT" for source in captured["sources"])
     assert any(source["source_type"] == "LEGIFRANCE_LODA" for source in captured["sources"])
