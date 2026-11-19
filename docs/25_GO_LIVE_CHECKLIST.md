@@ -104,3 +104,36 @@ Recette à effectuer :
 - [ ] Recetter la recherche locale avec les deux employeurs : Ville de Saint-Étienne et Saint-Étienne Métropole ; vérifier l'isolation organisationnelle, le filtrage collectivité, les scans CLEAN, les empreintes, la validation et les dates d'effet (voir `docs/38_RECHERCHE_DOCUMENTS_LOCAUX.md`).
 
 - [ ] Garder `LEGIFRANCE_CETAT_FULLTEXT_ENABLED=false` tant que le point d'entrée `/consult/juri` n'a pas été validé avec un identifiant CETAT réel en sandbox PISTE ; n'activer l'import intégral qu'après cette recette.
+
+
+## G. État de la bêta technique non commerciale — 19 novembre 2026
+
+Cette section décrit l'état de préparation de la bêta Dikévia. Elle ne vaut ni autorisation de mise en service ni certification juridique.
+
+### Éléments préparés et vérifiés en CI
+
+- [x] Suite automatisée exécutée sur une base PostgreSQL jetable : migrations 001 à 019, tests applicatifs et contrôles RLS.
+- [x] Test d'intégration de la capacité bêta : réservation transactionnelle, invitations en attente, rôle runtime et concurrence sur la dernière place.
+- [x] Coque PWA préparée ; le service worker ne met en cache que les ressources statiques de la page hors connexion.
+- [x] Compilation Android de debug réussie sur runner GitHub Actions. L'APK est signé par une clé debug éphémère et n'est pas distribuable.
+- [x] Les changements de préparation sont isolés dans des PR brouillon ; aucune fusion ni mise en production n'est présumée.
+
+### Éléments non encore réalisés — bloquants avant la bêta sur hébergement
+
+- [ ] Revoir puis fusionner explicitement les PR de préparation dans l'ordre convenu ; vérifier les contrôles CI après chaque étape. La branche commerciale suivie par Render déclenche un déploiement automatique : ne pas y pousser directement.
+- [ ] Appliquer la migration 019 sur la base cible uniquement après sauvegarde, validation de la procédure et décision explicite de mise en service. Le test CI sur PostgreSQL jetable ne prouve pas que Neon a été migré.
+- [ ] Vérifier sur l'environnement hébergé la connexion réelle, les rôles, les invitations, le plafond d'un utilisateur et les parcours de récupération de compte.
+- [ ] Choisir l'origine HTTPS définitive de l'application Android, la méthode de signature et l'empreinte du certificat ; configurer puis vérifier Digital Asset Links si la TWA est retenue.
+- [ ] Installer et tester l'application sur un appareil Android réel, notamment connexion, retour d'authentification et pièces jointes.
+- [ ] Vérifier les sauvegardes/restaurations, la journalisation expurgée, les paramètres de sécurité et l'absence de secrets dans les artefacts.
+
+### Conditions avant toute utilisation juridique opérationnelle
+
+- [ ] Valider en sandbox PISTE les parcours Légifrance nécessaires, notamment le texte intégral CETAT avec un identifiant réel ; garder `LEGIFRANCE_CETAT_FULLTEXT_ENABLED=false` jusque-là.
+- [ ] Faire examiner un jeu représentatif de situations FPT et les résultats par un juriste compétent ; les tests logiciels ne certifient pas la justesse juridique.
+- [ ] Vérifier les obligations RGPD, les mentions d'information, la conservation/suppression, les sous-traitants et les droits sur les contenus.
+- [ ] Faire tourner les identifiants OAuth précédemment exposés dans des échanges de développement avant tout usage réel ou production.
+
+### Limites et règle de prudence
+
+Les tests automatisés réussis démontrent le comportement des versions testées dans l'environnement CI, pas celui de l'environnement hébergé. Aucun déploiement, aucune migration distante et aucun test d'authentification sur appareil réel ne sont attestés par cette checklist. La bêta reste une préversion technique non commerciale tant que les cases bloquantes applicables ne sont pas validées.
