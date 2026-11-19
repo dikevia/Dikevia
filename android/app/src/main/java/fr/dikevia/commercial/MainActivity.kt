@@ -30,6 +30,15 @@ class MainActivity : Activity() {
         )
     }
 
+    private fun isTrustedOrigin(uri: Uri): Boolean {
+        val standardHttpsPort = uri.port == -1 || uri.port == 443
+        val trustedHost = TRUSTED_HOSTS.any { it.equals(uri.host, ignoreCase = true) }
+        return uri.scheme.equals("https", ignoreCase = true) &&
+            standardHttpsPort &&
+            uri.userInfo == null &&
+            trustedHost
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.rgb(18, 59, 50)
@@ -64,7 +73,7 @@ class MainActivity : Activity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val uri = request.url
-                if (uri.scheme == "https" && uri.host in TRUSTED_HOSTS) return false
+                if (isTrustedOrigin(uri)) return false
                 if (uri.scheme == "https" || uri.scheme == "mailto" || uri.scheme == "tel") {
                     return try {
                         startActivity(Intent(Intent.ACTION_VIEW, uri))
