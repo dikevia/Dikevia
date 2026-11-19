@@ -16,10 +16,11 @@ Packs envisagés : 200 crédits à 29 € TTC ; 600 crédits à 79 € TTC.
 Cette grille remplace la grille publique historique comme catalogue cible. Les codes historiques restent présents et non publics pour préserver les abonnements existants. Les nouveaux codes sont définis côté serveur et le Checkout mensuel accepte ces quatre codes.
 
 **Limites explicites de cette première intégration :**
-- Les tarifs annuels sont enregistrés dans le catalogue mais le Checkout annuel n'est pas encore activé.
+- Le Checkout annuel est implémenté côté serveur : montant et intervalle Stripe sont déterminés depuis le catalogue. L'interface ne déclenche volontairement pas encore de paiement.
 - Les packs sont définis côté serveur mais leur paiement et leur attribution ne sont pas activés.
 - Les crédits mensuels sont des quotas commerciaux déclaratifs : aucun portefeuille transactionnel, débit atomique, expiration, report ou journal de crédits n'est encore implémenté. Ne pas les présenter comme des crédits techniquement disponibles avant ce chantier.
 - Le plafond d'accès est raccordé aux quatre nouvelles offres ; le module de facturation Chorus Pro et les fonctions CAP/CST/CCP/F3SCT ne sont pas activés par ce changement.
+- L'interface tarifaire TTC est préparée dans la PR brouillon #19, non intégrée à cette branche tant que cette PR n'est pas fusionnée.
 - Aucun abonnement, paiement, migration de base ou configuration Stripe réelle n'a été modifié.
 
 ## Audit des hypothèses économiques
@@ -46,10 +47,10 @@ Ces marges sont des contributions avant frais fixes et fiscalité, pas des bén�
 
 1. Implémenter le portefeuille de crédits côté serveur (ledger append-only, débit atomique, idempotence, gestion des erreurs et remboursements).
 2. Définir les coûts unitaires distincts : question simple, analyse approfondie, rapport de commission, stockage et génération PDF.
-3. Activer le Checkout annuel avec facturation réellement annuelle et metadata webhook cohérente.
+3. Conserver le Checkout annuel serveur et ajouter le choix mensuel/annuel dans l'interface au moment de l'activation commerciale ; vérifier le cycle annuel et les metadata webhook.
 4. Activer les packs via Checkout en paiement ponctuel, puis créditer uniquement après webhook signé et idempotent.
 5. Définir report/expiration des crédits, priorité de consommation, dépassement, remboursement et résiliation.
-6. Adapter l'interface tarifaire et tester les plafonds 1/5/15 ainsi que la compatibilité des abonnements historiques.
+6. Intégrer la PR #19, vérifier l'interface tarifaire et tester les plafonds 1/5/15 ainsi que la compatibilité des abonnements historiques.
 7. Valider fiscalité, CGV, facturation et frais Stripe réels avec le comptable avant toute commercialisation.
 
 ## État de déploiement
