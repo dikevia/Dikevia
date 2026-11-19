@@ -162,6 +162,36 @@ def test_period_endpoint_claim_accepts_exact_date_but_not_whole_period_conclusio
     assert "claim_0:period_wide_claim_from_endpoint_only" in whole_year["invalid_claims"]
 
 
+def test_period_endpoint_claim_rejects_year_and_fiscal_period_scope_variants():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = {
+        **_eligible_official_source(),
+        "source_id": "LEGIARTI000012345678_V20240101",
+        "version_endpoint": "START",
+        "requested_effective_date": "2024-01-01",
+    }
+    facts_period = {
+        "period_start": "2024-01-01", "period_end": "2024-12-31",
+        "ongoing": False,
+    }
+    for wording in (
+        "Au 2024-01-01, le droit reste applicable pour l'année 2024.",
+        "Au 2024-01-01, le droit reste applicable sur l'exercice 2024.",
+        "Au 2024-01-01, le droit reste applicable au titre de 2024.",
+        "Au 2024-01-01, le droit reste applicable pendant l'exercice 2024.",
+    ):
+        result = validate_claim_evidence({
+            "claims": [{
+                "text": wording,
+                "source_id": source["source_id"],
+                "quote": source["excerpt"],
+            }]
+        }, [source], facts_period=facts_period)
+        assert result["valid"] is False, wording
+        assert "claim_0:period_wide_claim_from_endpoint_only" in result["invalid_claims"]
+
+
 def test_claim_evidence_rejects_wrong_source_identity_even_when_quote_exists():
     from app.legal_assurance import validate_claim_evidence
 
