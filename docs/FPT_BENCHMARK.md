@@ -1,7 +1,7 @@
 # Benchmark juridique Dikévia — 100 questions FPT
 
 ## But
-Mesurer la qualité réelle des réponses de Dikévia sur le jeu de référence Q001–Q100. Ce benchmark est distinct des tests unitaires et de l'audit juridique du corrigé.
+Mesurer la qualité réelle des réponses de Dikévia sur le jeu de référence FPT-001–FPT-100. Ce benchmark est distinct des tests unitaires et de l'audit juridique du corrigé.
 
 ## Règle de sécurité
 Le benchmark doit rester sans dépense non autorisée. Le script `scripts/fpt_benchmark.py` est strictement hors ligne : il ne contacte ni l'API Dikévia, ni fournisseur IA, ni Légifrance/PISTE, ni Render, ni Neon.
@@ -9,7 +9,7 @@ Le benchmark doit rester sans dépense non autorisée. Le script `scripts/fpt_be
 **Ne pas exécuter 100 requêtes sur l'API de production avant vérification écrite du coût et des quotas.** Le endpoint de chat peut déclencher l'orchestrateur, un fournisseur IA et des connecteurs juridiques.
 
 ## Fichiers attendus
-- `benchmark/fpt_questions.json` : les 100 questions de référence. Conserver les champs originaux, notamment `criteres_cles`, `notes_annotation` et `statut_annotation`.
+- `benchmark/fpt_questions.json` : les 100 questions de référence. Conserver les champs originaux du jeu `FPT_Juridique_100_Questions` : `category_id`, `category`, `action_type`, `estimated_credits` et `expected_criteria`.
 - `benchmark/dikevia_responses.json` : une réponse réelle par ID, avec au minimum `id`, `answer`, `sources` et `verification_status`. Exporter depuis un environnement de test sans secrets ni données personnelles.
 - `benchmark/review_100.json` : grille remplie par les évaluateurs.
 - `benchmark/results.json` : agrégat calculé.
@@ -40,4 +40,4 @@ Le benchmark doit rester sans dépense non autorisée. Le script `scripts/fpt_be
 - Le résultat global est déclaré complet uniquement après évaluation des 100 réponses. Aucun score partiel ne doit être présenté comme le taux de fiabilité global.
 
 ## État initial
-Le référentiel Q001–Q100 a été transmis par le propriétaire le 19 novembre 2026. Les réponses réelles de Dikévia ne sont pas encore capturées. Les appels live sont suspendus tant que leur coût n'est pas démontré nul. Les constats d'audit du corrigé de référence doivent être intégrés avant de figer les attentes.
+Le référentiel FPT-001–FPT-100 a été transmis par le propriétaire le 19 novembre 2026. Les réponses réelles de Dikévia ne sont pas encore capturées. Les appels live sont suspendus tant que leur coût n'est pas démontré nul. Les constats d'audit du corrigé de référence doivent être intégrés avant de figer les attentes.
