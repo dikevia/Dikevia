@@ -41,10 +41,12 @@ private val Ink=Color(0xFF142B25)
 private val Muted=Color(0xFF637B71)
 private val Canvas=Color(0xFFF3F8F5)
 
-private data class RetainedAuthState(val accessToken:String?)
+private data class RetainedAuthState(val accessToken:String?,val idToken:String?)
 
 class MainActivity:ComponentActivity(){
     private var token by mutableStateOf<String?>(null)
+    private var idToken:String?=null
+    private var serviceConfig:AuthorizationServiceConfiguration?=null
     private var authError by mutableStateOf<String?>(null)
     private var authBusy by mutableStateOf(false)
     private var authService:AuthorizationService?=null
@@ -55,13 +57,16 @@ class MainActivity:ComponentActivity(){
         const val SCOPES="openid profile email"
         const val REDIRECT="fr.dikevia.commercial:/oauth2redirect"
         const val LOGIN_REQUEST=7301
+        const val LOGOUT_REQUEST=7302
     }
     override fun onCreate(savedInstanceState:Bundle?){
         super.onCreate(savedInstanceState)
-        token=(lastCustomNonConfigurationInstance as? RetainedAuthState)?.accessToken
+        val retained=lastCustomNonConfigurationInstance as? RetainedAuthState
+        token=retained?.accessToken
+        idToken=retained?.idToken
         authService=AuthorizationService(this)
         setContent{MaterialTheme(colorScheme=lightColorScheme(primary=Deep,onPrimary=Gold,secondary=Emerald,background=Canvas,surface=Color.White,onSurface=Ink)){
-            Root(token,authBusy,authError,::login){token=null;authError=null}
+            Root(token,authBusy,authError,::login,::logout)
         }}
     }
     private fun login(){
@@ -69,6 +74,7 @@ class MainActivity:ComponentActivity(){
         authBusy=true;authError=null
         AuthorizationServiceConfiguration.fetchFromIssuer(Uri.parse(ISSUER)){cfg,ex->
             if(cfg==null||ex!=null){runOnUiThread{authBusy=false;authError="Fournisseur de connexion indisponible."};return@fetchFromIssuer}
+            serviceConfig=cfg
             val verifier=CodeVerifierUtil.generateRandomCodeVerifier()
             val req=AuthorizationRequest.Builder(cfg,CLIENT_ID,ResponseTypeValues.CODE,Uri.parse(REDIRECT))
                 .setScope(SCOPES).setCodeVerifier(verifier).build()
@@ -77,7 +83,13 @@ class MainActivity:ComponentActivity(){
     }
     @Deprecated("AppAuth activity result compatibility")
     override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
-        super.onActivityResult(requestCode,resultCode,data);if(requestCode!=LOGIN_REQUEST)return
+        super.onActivityResult(requestCode,resultCode,data)
+        if(requestCode==LOGOUT_REQUEST){
+            val failure=AuthorizationException.fromIntent(data)
+            if(failure!=null)authError="Session locale fermée. La fermeture de session distante a échoué."
+            return
+        }
+        if(requestCode!=LOGIN_REQUEST)return
         val intent=data?:Intent();val response=AuthorizationResponse.fromIntent(intent)
         val failure=AuthorizationException.fromIntent(intent)
         if(response==null){authError=if(failure!=null)"Connexion annulée ou refusée." else "Réponse OIDC invalide.";return}
@@ -85,11 +97,23 @@ class MainActivity:ComponentActivity(){
         authService?.performTokenRequest(response.createTokenExchangeRequest()){result,error->
             runOnUiThread{authBusy=false
                 if(error!=null||result?.accessToken.isNullOrBlank())authError="Échange du code OIDC impossible."
-                else{token=result!!.accessToken;authError=null}
+                else{token=result!!.accessToken;idToken=result.idToken;authError=null}
             }
         }
     }
-    override fun onRetainCustomNonConfigurationInstance():Any? = RetainedAuthState(token)
+    private fun logout(){
+        val hint=idToken
+        token=null
+        idToken=null
+        authError=null
+        val cfg=serviceConfig
+        if(hint.isNullOrBlank()||cfg?.endSessionEndpoint==null)return
+        runCatching {
+            val request=EndSessionRequest.Builder(cfg,hint,Uri.parse(REDIRECT)).build()
+            startActivityForResult(authService!!.getEndSessionRequestIntent(request),LOGOUT_REQUEST)
+        }.onFailure { authError="Session locale fermée. La fermeture de session du fournisseur n'a pas pu être lancée." }
+    }
+    override fun onRetainCustomNonConfigurationInstance():Any? = RetainedAuthState(token,idToken)
     override fun onDestroy(){authService?.dispose();authService=null;super.onDestroy()}
 }
 private class Api{
