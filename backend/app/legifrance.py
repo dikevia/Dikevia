@@ -92,8 +92,18 @@ class LegifranceConnector:
                 response = await client.request(method, url, json=json_body,
                     headers={"Authorization": f"Bearer {token}", "Accept": "application/json",
                              "Content-Type": "application/json"})
+                if path.lstrip("/") == "consult/getArticle":
+                    logger.warning(
+                        "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_HTTP status=%d content_type=%s",
+                        response.status_code, response.headers.get("content-type", "unknown"),
+                    )
                 response.raise_for_status()
                 data = response.json()
+                if path.lstrip("/") == "consult/getArticle":
+                    logger.warning(
+                        "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_RESPONSE top_keys=%s",
+                        sorted(data.keys()) if isinstance(data, dict) else type(data).__name__,
+                    )
             if not isinstance(data, dict):
                 raise LegifranceUnavailable("Réponse Légifrance non conforme : objet JSON attendu.")
             return data
