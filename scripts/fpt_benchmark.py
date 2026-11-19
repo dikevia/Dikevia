@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-EXPECTED_IDS = [f"FPT-{i:03d}" for i in range(1, 101)]
+EXPECTED_IDS = [f"Q{i:03d}" for i in range(1, 101)]
 REQUIRED_QUESTION_FIELDS = {
     "id", "category_id", "category", "action_type", "estimated_credits", "question", "expected_criteria"
 }
@@ -109,7 +109,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         responses = responses.get("responses")
     response_ids = {r.get("id") for r in responses if isinstance(r, dict)}
     if response_ids != set(EXPECTED_IDS) or len(responses) != 100:
-        raise ValueError("Le fichier de réponses doit contenir exactement une réponse pour chacun des FPT-001–FPT-100.")
+        raise ValueError("Le fichier de réponses doit contenir exactement une réponse pour chacun des Q001–Q100.")
     reviews = load_json(reviews_path)
     if not isinstance(reviews, list):
         raise ValueError("Le fichier de revue doit être une liste JSON.")
@@ -192,7 +192,7 @@ def main() -> int:
     try:
         if args.command == "validate":
             questions = validate_dataset(args.dataset)
-            print(f"OK — {len(questions)} questions, FPT-001 à FPT-100, champs obligatoires présents.")
+            print(f"OK — {len(questions)} questions, Q001 à Q100, champs obligatoires présents.")
         elif args.command == "prepare-review":
             prepare_review(args.dataset, args.responses, args.out)
             print(f"Grille créée : {args.out}")
