@@ -104,12 +104,30 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION platform_admin_list_founder_entitlements(
+    p_actor_user_id uuid
+) RETURNS TABLE(user_id uuid,note text,granted_at timestamptz,revoked_at timestamptz)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=public,pg_temp
+SET row_security=off
+AS $
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=p_actor_user_id) THEN
+      RAISE EXCEPTION 'platform administrator required' USING ERRCODE='42501';
+    END IF;
+    RETURN QUERY SELECT e.user_id,e.note,e.granted_at,e.revoked_at
+      FROM platform_founder_entitlements e ORDER BY e.granted_at DESC LIMIT 200;
+END;
+$;
+
 REVOKE ALL ON FUNCTION platform_admin_grant_founder_entitlement(uuid,text,text,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION platform_admin_revoke_founder_entitlement(uuid,uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_admin_list_founder_entitlements(uuid) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION platform_admin_grant_founder_entitlement(uuid,text,text,text) FROM cfdt_juris_app;
 REVOKE EXECUTE ON FUNCTION platform_admin_revoke_founder_entitlement(uuid,uuid) FROM cfdt_juris_app;
 GRANT EXECUTE ON FUNCTION platform_admin_grant_founder_entitlement(uuid,text,text,text) TO cfdt_juris_platform_admin;
 GRANT EXECUTE ON FUNCTION platform_admin_revoke_founder_entitlement(uuid,uuid) TO cfdt_juris_platform_admin;
-GRANT SELECT ON platform_founder_entitlements TO cfdt_juris_platform_admin;
+REVOKE SELECT ON platform_founder_entitlements FROM cfdt_juris_platform_admin;
+GRANT EXECUTE ON FUNCTION platform_admin_list_founder_entitlements(uuid) TO cfdt_juris_platform_admin;
 
 COMMIT;
