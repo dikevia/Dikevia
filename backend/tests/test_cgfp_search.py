@@ -119,3 +119,45 @@ def test_cgfp_explicit_existing_reference_returns_only_that_article():
     assert result["requested_reference"] == "L4"
     assert result["reference_found_in_snapshot"] is True
     assert [item["article"] for item in result["results"]] == ["L4"]
+
+
+
+def test_snapshot_fallback_is_used_when_live_cgfp_is_unavailable():
+    from app.orchestrator import should_use_cgfp_snapshot_fallback
+
+    found = {"results": [{
+        "article": "L134-5",
+        "source_id": "FR-CGFP-2026-10-31",
+        "excerpt": "Protection fonctionnelle",
+    }]}
+    assert should_use_cgfp_snapshot_fallback(
+        "La recherche officielle CGFP a échoué.", found,
+        "Mon employeur refuse ma protection fonctionnelle",
+    )
+
+
+def test_snapshot_fallback_is_not_used_when_live_cgfp_is_available():
+    from app.orchestrator import should_use_cgfp_snapshot_fallback
+
+    found = {"results": [{
+        "article": "L134-5",
+        "source_id": "FR-CGFP-2026-10-31",
+        "excerpt": "Protection fonctionnelle",
+    }]}
+    assert not should_use_cgfp_snapshot_fallback(
+        None, found, "Mon employeur refuse ma protection fonctionnelle",
+    )
+
+
+def test_snapshot_fallback_rejects_irrelevant_hits_for_overtime():
+    from app.orchestrator import should_use_cgfp_snapshot_fallback
+
+    found = {"results": [{
+        "article": "R422-96",
+        "source_id": "FR-CGFP-2026-10-31",
+        "excerpt": "Crédit d'heures supplémentaires pour prévenir une inaptitude.",
+    }]}
+    assert not should_use_cgfp_snapshot_fallback(
+        "Recherche CGFP indisponible.", found,
+        "On ne me paie pas mes heures supplémentaires",
+    )
