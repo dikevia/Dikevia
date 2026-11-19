@@ -354,7 +354,6 @@ async def account_access_status(ctx: TenantContext = Depends(get_tenant_context)
         "remaining_seconds": max(0, int((row["trial_expires_at"]-now).total_seconds()))
             if not entitled else None,
         "founder": bool(row["founder"]),
-        "billing_enabled": bool(settings.stripe_billing_enabled) if hasattr(settings, "stripe_billing_enabled") else False,
     }
 
 
