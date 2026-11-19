@@ -316,7 +316,7 @@ def test_local_document_ai_review_is_gated_by_explicit_opt_in():
 
     source = inspect.getsource(review_local_rule_compliance)
     assert "settings.ai_local_document_review_enabled" in source
-    assert "if (usable_national and settings.ai_api_key and settings.ai_model" in source
+    assert "if (usable_national and settings.ai_api_base_url and settings.ai_api_key and settings.ai_model" in source
 
 
 @pytest.mark.asyncio
@@ -461,3 +461,36 @@ def test_local_compliance_review_uses_short_transaction_dependency():
     # short transactions for rate limiting, usage metering and audit persistence.
     assert source.index("await analyze_question(") > source.index("async with ctx.conn.transaction():")
     assert source.count("async with ctx.conn.transaction():") == 4
+
+
+def test_invitation_provisioning_uses_transaction_free_tenant_context():
+    import inspect
+    from app import dependencies
+    from app.main import create_invitation
+
+    dependency_source = inspect.getsource(dependencies.require_org_admin_for_external)
+    route_source = inspect.getsource(create_invitation)
+    assert "Depends(get_tenant_context_for_chat)" in dependency_source
+    assert "Depends(require_org_admin_for_external)" in route_source
+    assert "await admin.ensure_user(email)" in route_source
+    assert "send_invitation_email" in route_source
+
+
+def test_document_storage_and_antivirus_routes_use_transaction_free_editor_context():
+    import inspect
+    from app import dependencies
+    from app.main import (
+        upload_document, upload_document_version, reindex_document_versions,
+        rescan_document_versions, download_document, download_document_version,
+    )
+
+    dependency_source = inspect.getsource(dependencies.require_legal_editor_for_external)
+    assert "Depends(get_tenant_context_for_chat)" in dependency_source
+    assert "ctx.role not in (\"ORG_ADMIN\", \"LEGAL_EDITOR\")" in dependency_source
+    for route in (
+        upload_document, upload_document_version, reindex_document_versions,
+        rescan_document_versions,
+    ):
+        assert "Depends(require_legal_editor_for_external)" in inspect.getsource(route)
+    for route in (download_document, download_document_version):
+        assert "Depends(get_tenant_context_for_chat)" in inspect.getsource(route)

@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
-from .dependencies import get_principal, get_tenant_context, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
+from .dependencies import get_principal, get_tenant_context, get_tenant_context_for_chat, require_org_admin, require_org_admin_for_external, require_legal_editor, require_legal_editor_for_external, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
@@ -34,8 +34,8 @@ from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, DECISION_ID_RE
 from .billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
 from .legal_corpus import upsert_legal_document, search_legal_corpus
-from .legal_assurance import assess_source_set
-from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
+from .legal_assurance import assess_source_set, validate_claim_evidence
+from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, extract_analysis_content, check_provider_availability
 from .legal_ingestion import parse_circulaires_xml
 from .dossiers import build_dossier_content, validate_dossier_content
 from .rate_limit import consume_chat_request
@@ -46,8 +46,8 @@ logger.setLevel(logging.INFO)
 
 
 async def _startup_external_diagnostics() -> None:
-    """Non-billable startup checks: PISTE ping/search and AI model catalog only."""
-    if settings.app_env != "production":
+    """Optional startup probes; may consume external API quotas, never generate AI text."""
+    if settings.app_env != "production" or not settings.startup_external_diagnostics_enabled:
         return
 
     logger.warning(
@@ -212,13 +212,18 @@ async def _startup_external_diagnostics() -> None:
 async def lifespan(app: FastAPI):
     validate_runtime_configuration(settings)
     await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
-    diagnostic_task = asyncio.create_task(_startup_external_diagnostics())
+    diagnostic_task = (
+        asyncio.create_task(_startup_external_diagnostics())
+        if settings.app_env == "production" and settings.startup_external_diagnostics_enabled
+        else None
+    )
     try:
         yield
     finally:
-        if not diagnostic_task.done():
-            diagnostic_task.cancel()
-        await asyncio.gather(diagnostic_task, return_exceptions=True)
+        if diagnostic_task is not None:
+            if not diagnostic_task.done():
+                diagnostic_task.cancel()
+            await asyncio.gather(diagnostic_task, return_exceptions=True)
         await close_pool()
 
 app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifespan=lifespan,
@@ -265,6 +270,11 @@ def decode_jsonb(value):
         except (ValueError, TypeError):
             return {}
     return value if isinstance(value, (dict, list)) else {}
+
+
+def _france_today() -> date:
+    """Use the legal application's local calendar date, not the host's UTC date."""
+    return datetime.now(ZoneInfo("Europe/Paris")).date()
 
 @app.middleware("http")
 async def security_headers(request, call_next):
@@ -401,7 +411,7 @@ async def platform_commercial_organizations(platform=Depends(require_platform_ad
 
 
 @app.post("/api/v1/billing/checkout")
-async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin)):
+async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin_for_external)):
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
     plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
@@ -449,7 +459,7 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
 
 
 @app.post("/api/v1/billing/portal")
-async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
+async def billing_portal(ctx: TenantContext = Depends(require_org_admin_for_external)):
     if settings.private_instance_mode:
         raise HTTPException(404, "La facturation est désactivée sur cette instance privée.")
     if not settings.stripe_secret_key:
@@ -794,6 +804,38 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
 
 
+def _ai_safe_conversation_history(rows):
+    """Exclude assistant turns that may contain local-document text from prior answers.
+
+    Consent for local-document transfer is per request. Historical assistant
+    messages with local sources (or missing provenance metadata) are therefore
+    never re-sent to the external model as conversational context.
+    """
+    safe = []
+    for row in reversed(rows):
+        role = row["role"]
+        if role == "assistant":
+            metadata = row["metadata"]
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except (TypeError, ValueError):
+                    metadata = None
+            if isinstance(metadata, dict) and metadata.get("contains_local_documents") is True:
+                continue
+            sources = metadata.get("sources") if isinstance(metadata, dict) else None
+            if not isinstance(sources, list):
+                continue
+            if any(
+                isinstance(source, dict)
+                and source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                for source in sources
+            ):
+                continue
+        safe.append({"role": role, "content": row["content"]})
+    return safe
+
+
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
 async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_for_chat)):
     # Commit the rate-limit reservation and user turn before any network call.
@@ -822,16 +864,20 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_
         current_message_id = await ctx.conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
             VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
             str(conversation_id), ctx.user_id, payload.question,
-            json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
-        history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
+            json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing,
+                "confirm_local_document_ai_transfer": payload.confirm_local_document_ai_transfer}, ensure_ascii=False))
+        history_rows = await ctx.conn.fetch("""SELECT role,content,metadata FROM chat_messages
             WHERE conversation_id=$1::uuid AND organization_id=$3::uuid AND user_id=$4::uuid
               AND id<>$2::uuid AND role IN ('user','assistant')
             ORDER BY created_at DESC,id DESC LIMIT 12""", str(conversation_id), current_message_id,
             ctx.organization_id, ctx.user_id)
-        history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
+        history = _ai_safe_conversation_history(history_rows)
 
     # No database transaction remains open while PISTE or the AI provider is called.
-    result = await orchestrator.ask(payload,ctx.organization_id,conn=ctx.conn,conversation_history=history)
+    result = await orchestrator.ask(
+        payload, ctx.organization_id, conn=ctx.conn, conversation_history=history,
+        allow_local_documents=(payload.confirm_local_document_ai_transfer and settings.ai_local_documents_in_chat_enabled),
+    )
     result.conversation_id = conversation_id
 
     # Persist the answer, its provenance and metering atomically after analysis.
@@ -844,6 +890,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_
             VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
             str(conversation_id), ctx.user_id, result.answer,
             json.dumps({"verification_status": result.verification_status,
+                "contains_local_documents": any(
+                    source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                    for source in result.sources
+                ),
                 "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
                     if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
                         "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
@@ -866,7 +916,7 @@ async def legifrance_status(ctx: TenantContext = Depends(get_tenant_context)):
             "credentials_exposed": False}
 
 @app.post("/api/v1/integrations/legifrance/check")
-async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context)):
+async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     await enforce_legal_connector_rate_limit(ctx)
@@ -879,31 +929,32 @@ async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context)):
 
 @app.get("/api/v1/legal/legifrance/search")
 async def search_legifrance(q: str, effective_date: date | None = None,
-        ctx: TenantContext = Depends(get_tenant_context)):
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
         raise HTTPException(422, "La recherche Légifrance doit contenir entre 2 et 500 caractères.")
     await enforce_legal_connector_rate_limit(ctx)
+    requested_date = effective_date or _france_today()
     try:
-        results = await legifrance.search_code_articles(q, effective_date or date.today())
+        results = await legifrance.search_code_articles(q, requested_date)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     except LegifranceUnavailable:
         raise HTTPException(503, "Recherche Légifrance indisponible. Vérifier les identifiants, consentements et quotas.")
-    return {"requested_date": (effective_date or date.today()).isoformat(),
+    return {"requested_date": requested_date.isoformat(),
             "results_count": len(results), "results": results,
             "warning": "Résultats API à vérifier ; l'absence de résultat ne prouve pas l'absence de règle."}
 
 @app.get("/api/v1/legal/jurisprudence/administrative/search")
 async def search_administrative_case_law(q: str, effective_date: date | None = None,
-        ctx: TenantContext = Depends(get_tenant_context)):
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
         raise HTTPException(422, "La recherche de jurisprudence doit contenir entre 2 et 500 caractères.")
     await enforce_legal_connector_rate_limit(ctx)
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     try:
         results = await case_law_connector.search(q, requested_date)
     except ValueError as exc:
@@ -921,7 +972,7 @@ async def search_administrative_case_law(q: str, effective_date: date | None = N
 
 @app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}")
 async def consult_administrative_case_law(decision_id: str,
-        ctx: TenantContext = Depends(get_tenant_context)):
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     if not isinstance(decision_id, str) or not DECISION_ID_RE.fullmatch(decision_id):
@@ -940,7 +991,7 @@ async def consult_administrative_case_law(decision_id: str,
 @app.get("/api/v1/legal/knowledge/search")
 async def search_permanent_legal_knowledge(q: str, effective_date: date | None = None,
         limit: int = 12, ctx: TenantContext = Depends(get_tenant_context)):
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     try:
         results = await search_legal_corpus(ctx.conn, q, requested_date, limit)
     except ValueError as exc:
@@ -954,7 +1005,8 @@ async def search_permanent_legal_knowledge(q: str, effective_date: date | None =
 
 @app.post("/api/v1/legal/compliance/review/{document_id}")
 async def review_local_rule_compliance(document_id: str, q: str,
-        effective_date: date | None = None, ctx: TenantContext = Depends(get_tenant_context_for_chat)):
+        effective_date: date | None = None, confirm_external_ai_transfer: bool = False,
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     """Prepare a sourced comparison of one tenant-local document with national sources.
 
     This endpoint flags review needs; it never declares a local act illegal.
@@ -976,7 +1028,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
             content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
             headers={"Retry-After": str(rate.retry_after_seconds)},
         )
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     local = await ctx.conn.fetchrow("""
       SELECT d.id,d.title,d.document_type,d.official_number,d.official_url,d.validation_status,
         d.validation_note,d.effective_from,d.effective_to,d.adopted_at,d.published_at,
@@ -985,7 +1037,12 @@ async def review_local_rule_compliance(document_id: str, q: str,
       FROM documents d
       JOIN collectivities c ON c.id=d.collectivity_id AND c.organization_id=d.organization_id
       LEFT JOIN LATERAL (SELECT x.extracted_text,x.extraction_status,x.version_number,x.sha256
-        FROM document_text x WHERE x.organization_id=d.organization_id AND x.document_id=d.id
+        FROM document_text x
+        JOIN document_versions v
+          ON v.organization_id=x.organization_id AND v.document_id=x.document_id
+         AND v.version_number=x.version_number AND v.sha256=x.sha256 AND v.scan_status='CLEAN'
+        WHERE x.organization_id=d.organization_id AND x.document_id=d.id
+          AND x.sha256=d.sha256 AND x.extraction_status='EXTRACTED'
         ORDER BY x.version_number DESC LIMIT 1) dt ON true
       WHERE d.id=$1::uuid AND d.organization_id=$2::uuid
     """, document_id, ctx.organization_id)
@@ -1020,8 +1077,8 @@ async def review_local_rule_compliance(document_id: str, q: str,
     usable_national = [item for item in national_sources if item.get("temporal_status") in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}]
     ai_review = None
-    if (usable_national and settings.ai_api_key and settings.ai_model
-            and settings.ai_local_document_review_enabled):
+    if (usable_national and settings.ai_api_base_url and settings.ai_api_key and settings.ai_model
+            and settings.ai_local_document_review_enabled and confirm_external_ai_transfer):
         review_question = (
             "CONTROLE DE COHERENCE D'UNE REGLE LOCALE. Question de contrôle : " + query +
             "\nCompare uniquement le document local fourni avec les textes nationaux intégraux et temporellement exploitables. "
@@ -1033,7 +1090,8 @@ async def review_local_rule_compliance(document_id: str, q: str,
         try:
             candidate_result = await analyze_question(
                 question=review_question, employer="NATIONAL", facts_date=requested_date.isoformat(),
-                sources=[local_source] + usable_national, conversation_history=None)
+                sources=[local_source] + usable_national, conversation_history=None,
+                allow_local_documents=True)
             candidate = extract_analysis_content(candidate_result)
             usage = None
             if isinstance(candidate_result, AIAnalysisResult):
@@ -1043,13 +1101,22 @@ async def review_local_rule_compliance(document_id: str, q: str,
                     "completion_tokens": candidate_result.completion_tokens,
                     "total_tokens": candidate_result.total_tokens, "outcome": "ANSWERED",
                 }
-            allowed_refs = {item.get("article") for item in usable_national if item.get("article")}
-            allowed_authorities = {value for item in usable_national for value in
-                (item.get("official_number"), item.get("source_id"), item.get("case_number")) if value}
-            if candidate and answer_references_are_grounded(candidate, allowed_refs, allowed_authorities):
-                ai_review = candidate
+            try:
+                structured_candidate = json.loads(candidate) if isinstance(candidate, str) else None
+            except (TypeError, ValueError):
+                structured_candidate = None
+            candidate_validation = validate_claim_evidence(structured_candidate, usable_national)
+            if candidate_validation["valid"] and candidate_validation["claims"]:
+                ai_review = "\n".join(
+                    f"{claim['text']} — {claim['source_title']} (citation exacte : « {claim['quote']} »)"
+                    for claim in candidate_validation["claims"]
+                )
             elif usage is not None:
-                usage["outcome"] = "REJECTED_UNGROUNDED"
+                usage["outcome"] = (
+                    "REJECTED_UNSUPPORTED_CLAIMS"
+                    if candidate_validation["invalid_claims"]
+                    else "ABSTAINED_NO_SUPPORTED_CLAIMS"
+                )
             if usage is not None:
                 async with ctx.conn.transaction():
                     await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
@@ -1066,7 +1133,13 @@ async def review_local_rule_compliance(document_id: str, q: str,
         await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
           VALUES($1::uuid,$2::uuid,'LOCAL_RULE_COMPLIANCE_REVIEWED','document',$3::uuid,$4::jsonb)""",
           ctx.organization_id, ctx.user_id, document_id,
-          json.dumps({"query": query, "effective_date": requested_date.isoformat(), "national_sources": len(national_sources)}, ensure_ascii=False))
+          json.dumps({"query": query, "effective_date": requested_date.isoformat(),
+              "national_sources": len(national_sources),
+              "confirm_external_ai_transfer": confirm_external_ai_transfer,
+              "external_ai_transfer_enabled": bool(
+                  confirm_external_ai_transfer and settings.ai_local_document_review_enabled
+                  and settings.ai_api_base_url and settings.ai_api_key and settings.ai_model and usable_national
+              )}, ensure_ascii=False))
     return {
       "status": "COMPARISON_REQUIRED" if national_sources else "NATIONAL_SOURCES_NOT_FOUND",
       "requested_date": requested_date.isoformat(),
@@ -1109,7 +1182,7 @@ async def ingest_regulatory_corpus(q: str, effective_date: date | None = None,
         raise HTTPException(422, "La limite d'import réglementaire doit être comprise entre 1 et 20.")
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     pool = get_corpus_ingest_pool()
     async with pool.acquire() as conn:
         run = await conn.fetchrow("""INSERT INTO legal_ingestion_runs(source_type,run_mode,status,query_text)
@@ -1152,7 +1225,7 @@ async def ingest_administrative_case_law(q: str, effective_date: date | None = N
         raise HTTPException(503, "L'import du texte intégral CETAT est désactivé jusqu'à validation du contrat de consultation sur PISTE.")
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
-    requested_date = effective_date or date.today()
+    requested_date = effective_date or _france_today()
     if not 1 <= limit <= 20:
         raise HTTPException(422, "La limite doit être comprise entre 1 et 20.")
     pool = get_corpus_ingest_pool()
@@ -1162,31 +1235,39 @@ async def ingest_administrative_case_law(q: str, effective_date: date | None = N
         imported = rejected = 0
         try:
             hits = await case_law_connector.search(q, requested_date)
-            async with conn.transaction():
-                for hit in hits[:limit]:
+            # Complete every PISTE consultation before opening the database
+            # transaction. Network latency must never hold corpus write locks.
+            prepared_documents = []
+            for hit in hits[:limit]:
+                try:
+                    decision = await case_law_connector.consult(hit["source_id"])
+                    decision_date = None
                     try:
-                        decision = await case_law_connector.consult(hit["source_id"])
-                        decision_date = None
-                        try:
-                            decision_date = date.fromisoformat((decision.get("decision_date") or "")[:10])
-                        except ValueError:
-                            pass
-                        await upsert_legal_document(conn, {
-                            "source_type": "LEGIFRANCE_CETAT", "source_id": decision["source_id"],
-                            "title": decision.get("title") or hit.get("title") or decision["source_id"],
-                            "document_kind": "ADMIN_CASELAW", "official_number": decision.get("case_number"),
-                            "jurisdiction": decision.get("jurisdiction"), "publisher": "Juridictions administratives",
-                            "official_url": decision.get("source_url"), "signature_date": decision_date,
-                            "status": "UNKNOWN", "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
-                            "valid_from": None, "valid_to": None, "version_status": "UNKNOWN",
-                            "version_key": "decision-" + decision["source_id"],
-                            "source_version_id": decision["source_id"], "full_text": decision.get("text", ""),
-                            "raw_metadata": {"case_number": decision.get("case_number"),
-                                "decision_date": decision.get("decision_date"), "jurisdiction": decision.get("jurisdiction")},
-                            "raw_version_payload": {"requested_date": requested_date.isoformat(),
-                                "api_method": "/consult/juri"}})
+                        decision_date = date.fromisoformat((decision.get("decision_date") or "")[:10])
+                    except ValueError:
+                        pass
+                    prepared_documents.append({
+                        "source_type": "LEGIFRANCE_CETAT", "source_id": decision["source_id"],
+                        "title": decision.get("title") or hit.get("title") or decision["source_id"],
+                        "document_kind": "ADMIN_CASELAW", "official_number": decision.get("case_number"),
+                        "jurisdiction": decision.get("jurisdiction"), "publisher": "Juridictions administratives",
+                        "official_url": decision.get("source_url"), "signature_date": decision_date,
+                        "status": "UNKNOWN", "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+                        "valid_from": None, "valid_to": None, "version_status": "UNKNOWN",
+                        "version_key": "decision-" + decision["source_id"],
+                        "source_version_id": decision["source_id"], "full_text": decision.get("text", ""),
+                        "raw_metadata": {"case_number": decision.get("case_number"),
+                            "decision_date": decision.get("decision_date"), "jurisdiction": decision.get("jurisdiction")},
+                        "raw_version_payload": {"requested_date": requested_date.isoformat(),
+                            "api_method": "/consult/juri"}})
+                except (LegifranceUnavailable, ValueError, KeyError, TypeError):
+                    rejected += 1
+            async with conn.transaction():
+                for item in prepared_documents:
+                    try:
+                        await upsert_legal_document(conn, item)
                         imported += 1
-                    except (LegifranceUnavailable, ValueError, KeyError, TypeError):
+                    except (ValueError, TypeError):
                         rejected += 1
             status = "SUCCEEDED" if imported and not rejected else "PARTIAL"
             await conn.execute("UPDATE legal_ingestion_runs SET status=$2,records_seen=$3,records_imported=$4,records_rejected=$5,finished_at=now() WHERE id=$1",
@@ -1447,7 +1528,7 @@ async def upload_document(
     official_number: str | None = Form(default=None), official_url: str | None = Form(default=None),
     adopted_at: date | None = Form(default=None), published_at: date | None = Form(default=None),
     effective_from: date | None = Form(default=None), effective_to: date | None = Form(default=None),
-    file: UploadFile = File(...), ctx: TenantContext = Depends(require_legal_editor)):
+    file: UploadFile = File(...), ctx: TenantContext = Depends(require_legal_editor_for_external)):
     if not title.strip() or len(title)>300 or not document_type.strip() or len(document_type)>80:
         raise HTTPException(422,"Titre ou type de document invalide.")
     try:
@@ -1495,7 +1576,7 @@ async def upload_document(
 
 @app.post("/api/v1/documents/{document_id}/versions",status_code=201)
 async def upload_document_version(document_id:str,file:UploadFile=File(...),effective_from:date|None=Form(default=None),
-    effective_to:date|None=Form(default=None),ctx:TenantContext=Depends(require_legal_editor)):
+    effective_to:date|None=Form(default=None),ctx:TenantContext=Depends(require_legal_editor_for_external)):
     try:
         UUID(document_id)
     except ValueError:
@@ -1560,7 +1641,7 @@ async def document_versions(document_id:str,ctx:TenantContext=Depends(get_tenant
       "effective_from":r["effective_from"],"effective_to":r["effective_to"],"created_at":r["created_at"]} for r in rows]
 
 @app.post("/api/v1/documents/{document_id}/reindex")
-async def reindex_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor)):
+async def reindex_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor_for_external)):
     try:
         UUID(document_id)
     except ValueError:
@@ -1595,7 +1676,7 @@ async def reindex_document_versions(document_id: str, ctx: TenantContext = Depen
 
 
 @app.post("/api/v1/documents/{document_id}/rescan")
-async def rescan_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor)):
+async def rescan_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor_for_external)):
     try:
         UUID(document_id)
     except ValueError:
@@ -1657,7 +1738,7 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
 
 
 @app.get("/api/v1/documents/{document_id}/download")
-async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context)):
+async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid",document_id,ctx.organization_id)
     if not row or not row["storage_key"]:
         raise HTTPException(404,"Fichier introuvable.")
@@ -1672,7 +1753,7 @@ async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant
         "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
 @app.get("/api/v1/documents/{document_id}/versions/{version_number}/download")
-async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context)):
+async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("""SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM document_versions
       WHERE organization_id=$1::uuid AND document_id=$2::uuid AND version_number=$3""",ctx.organization_id,document_id,version_number)
     if not row or not row["storage_key"]:
@@ -1726,7 +1807,7 @@ async def validate_document(document_id:str,payload:DocumentValidationUpdate,ctx
 
 
 @app.post("/api/v1/organizations/me/invitations", status_code=201)
-async def create_invitation(payload: InvitationCreate, response: Response, ctx: TenantContext = Depends(require_org_admin)):
+async def create_invitation(payload: InvitationCreate, response: Response, ctx: TenantContext = Depends(require_org_admin_for_external)):
     """Create a one-time invitation. The raw token is returned once for secure manual delivery."""
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"

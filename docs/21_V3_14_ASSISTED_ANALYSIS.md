@@ -21,6 +21,15 @@ En production, l'URL doit être HTTPS. Le fournisseur doit être validé contrac
 5. Les citations exposées restent celles établies par le backend ; le modèle ne peut pas créer une nouvelle source.
 6. Le statut demeure `PARTIELLEMENT_VERIFIE` : le modèle ne valide ni l'authenticité officielle, ni la version historique, ni les textes locaux ou la jurisprudence.
 
+## Confidentialité des documents locaux — bêta
+
+La transmission des documents propres à une collectivité est désactivée par défaut.
+
+- Chat : `AI_LOCAL_DOCUMENTS_IN_CHAT_ENABLED=false` par défaut. Un extrait local ne peut être transmis que si ce réglage serveur est activé **et** si l'utilisateur coche `confirm_local_document_ai_transfer` pour la question concernée. La case est décochée et réinitialisée à chaque envoi ; son choix est conservé dans les métadonnées du message.
+- Revue dédiée d'un document local : `AI_LOCAL_DOCUMENT_REVIEW_ENABLED=false` par défaut. L'appel doit aussi contenir `confirm_external_ai_transfer=true` pour cette demande. La confirmation et l'état effectif du transfert sont inscrits dans l'événement d'audit.
+- Les deux mécanismes sont indépendants. Le réglage serveur ne remplace pas l'information des personnes, l'analyse RGPD ni un consentement légalement requis.
+- Même sans document local, la question, le contexte récent et les extraits juridiques nationaux retenus peuvent être transmis au fournisseur configuré. Le pilote doit donc utiliser uniquement des situations fictives ou anonymisées.
+
 ## Limites
 
 - Ce connecteur est OpenAI-compatible ; la compatibilité réelle dépend du fournisseur choisi.

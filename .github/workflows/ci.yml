@@ -1,9 +1,10 @@
 name: CI
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat, security/chat-explicit-ownership]
+    # Pull-request head branches are checked by pull_request; avoid duplicate CI runs.
+    branches: [main, develop]
   pull_request:
-    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, feature/dikevia-v3.38.5-cgfp-chat, security/chat-explicit-ownership, security/chat-local-documents-opt-in]
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,10 +34,46 @@ jobs:
           cache-dependency-path: |
             backend/requirements.txt
             backend/requirements-dev.txt
-      - name: Install PostgreSQL client
+      - name: Configure PostgreSQL client from the disposable service container
         run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          mkdir -p "$RUNNER_TEMP/pg-client"
+          cat > "$RUNNER_TEMP/pg-client/psql" <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          container_id="$(docker ps --filter 'ancestor=postgres:16-alpine' --format '{{.ID}}' | head -n1)"
+          if [[ -z "$container_id" ]]; then
+            echo "The disposable PostgreSQL service container is not running." >&2
+            exit 1
+          fi
+          args=(-i)
+          for name in PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE POSTGRES_USER POSTGRES_DB POSTGRES_APP_PASSWORD POSTGRES_INGEST_PASSWORD POSTGRES_MONITOR_PASSWORD POSTGRES_PLATFORM_ADMIN_PASSWORD; do
+            if [[ -n "${!name:-}" ]]; then
+              args+=(-e "$name=${!name}")
+            fi
+          done
+          psql_args=()
+          input_file=""
+          while (($#)); do
+            if [[ "$1" == "-f" || "$1" == "--file" ]]; then
+              if (($# < 2)); then
+                echo "psql -f requires a file path." >&2
+                exit 2
+              fi
+              input_file="$2"
+              psql_args+=("-f" "-")
+              shift 2
+            else
+              psql_args+=("$1")
+              shift
+            fi
+          done
+          if [[ -n "$input_file" ]]; then
+            exec docker exec "${args[@]}" "$container_id" psql "${psql_args[@]}" < "$input_file"
+          fi
+          exec docker exec "${args[@]}" "$container_id" psql "${psql_args[@]}"
+          SH
+          chmod +x "$RUNNER_TEMP/pg-client/psql"
+          echo "$RUNNER_TEMP/pg-client" >> "$GITHUB_PATH"
       - name: Install dependencies and quality tools
         run: |
           python -m pip install --upgrade pip
@@ -128,7 +165,8 @@ jobs:
           retention-days: 30
 
   live-smoke:
-    if: github.event_name == 'pull_request'
+    # These probes contact Render-hosted services and may wake paid compute. Disabled unless explicitly enabled in repository variables.
+    if: github.event_name == 'pull_request' && vars.ENABLE_LIVE_SMOKE_TESTS == 'true'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
     runs-on: ubuntu-latest
