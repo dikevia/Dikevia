@@ -128,8 +128,8 @@ private data class Entry(val title:String,val detail:String)
             org?.let{current->Box(Modifier.weight(1f).fillMaxWidth()){
                 when(tab){
                     "Accueil"->Home(user,current){tab=it}
-                    "Assistant"->Assistant(token,current,api)
-                    "Historique"->HistoryPage(token,current,api)
+                    "Assistant"->Assistant(token,current,api,resumeConversationId)
+                    "Historique"->HistoryPage(token,current,api){id->resumeConversationId=id;tab="Assistant"}
                     "Documents"->Listing("Documents",token,current,api,"/api/v1/documents"){Entry(it.optString("title"),listOf(it.optString("document_type"),it.optString("validation_status"),it.optString("collectivity_name")).filter{s->s.isNotBlank()}.joinToString(" · "))}
                     "Collectivités"->Listing("Collectivités",token,current,api,"/api/v1/collectivities"){Entry(it.optString("name"),it.optString("code"))}
                     "Membres"->Listing("Membres",token,current,api,"/api/v1/organizations/me/members"){Entry(it.optString("display_name").ifBlank{it.optString("email")},it.optString("role")+" · "+it.optString("status"))}
@@ -179,10 +179,10 @@ private data class Entry(val title:String,val detail:String)
         Button(onClick=click,modifier=Modifier.padding(top=9.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(button)}
     }}
 }
-@Composable private fun Assistant(token:String,org:Org,api:Api){
+@Composable private fun Assistant(token:String,org:Org,api:Api,initialConversationId:String?){
     val context=LocalContext.current
     var q by remember{mutableStateOf("")};var employer by remember{mutableStateOf("NATIONAL")};var answer by remember{mutableStateOf<JSONObject?>(null)}
-    var conversationId by remember(org.id){mutableStateOf<String?>(null)}
+    var conversationId by remember(org.id,initialConversationId){mutableStateOf(initialConversationId)}
     var factsStart by remember{mutableStateOf("")};var factsEnd by remember{mutableStateOf("")};var ongoing by remember{mutableStateOf(false)}
     var collectivityId by remember{mutableStateOf<String?>(null)};var collectivities by remember{mutableStateOf(emptyList<JSONObject>())}
     var collectivityExpanded by remember{mutableStateOf(false)}
@@ -193,7 +193,7 @@ private data class Entry(val title:String,val detail:String)
         }catch(_:Exception){collectivities=emptyList()}
     }
     Column(Modifier.fillMaxSize().padding(13.dp)){
-        Text("Assistant juridique",fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink)
+        Text(if(initialConversationId==null)"Assistant juridique" else "Conversation reprise",fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink)
         Text("Le statut de vérification et les sources accompagnent chaque réponse.",color=Muted,fontSize=12.sp);Spacer(Modifier.height(9.dp))
         LazyColumn(Modifier.weight(1f).fillMaxWidth()){
             item{answer?.let{r->Card(colors=CardDefaults.cardColors(containerColor=Color.White)){Column(Modifier.padding(14.dp)){
@@ -269,7 +269,7 @@ private data class Entry(val title:String,val detail:String)
     }
 }
 
-@Composable private fun HistoryPage(token:String,org:Org,api:Api){
+@Composable private fun HistoryPage(token:String,org:Org,api:Api,onContinue:(String)->Unit){
     val context=LocalContext.current
     var conversations by remember{mutableStateOf(emptyList<JSONObject>())}
     var selected by remember{mutableStateOf<String?>(null)}
@@ -310,7 +310,10 @@ private data class Entry(val title:String,val detail:String)
                         Column(Modifier.fillMaxWidth().padding(13.dp)){
                             Text(c.optString("title","Conversation"),fontWeight=FontWeight.SemiBold,color=Ink)
                             Text(c.optInt("message_count").toString()+" message(s)",color=Muted,fontSize=11.sp)
-                            TextButton(onClick={selected=c.optString("id")}){Text("Ouvrir",color=Deep)}
+                            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                                TextButton(onClick={selected=c.optString("id")}){Text("Ouvrir",color=Deep)}
+                                TextButton(onClick={onContinue(c.optString("id"))}){Text("Continuer",color=Emerald)}
+                            }
                         }
                     }
                 }
