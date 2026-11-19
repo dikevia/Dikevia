@@ -428,7 +428,7 @@ class LegifranceConnector:
             if not id_matches or not text_valid:
                 continue
             title = nested_value(record, ("titre", "titreTexte", "title", "intitule")) or identifier
-            title_number = re.search(r"\b(?:n[°ºo]?\s*)?(\d{4}-\d{1,4})\b", title, re.I)
+            title_number = re.search(r"\b(?:n[°ºo]?\s*)?(\d{2,4}-\d{1,4})\b", title, re.I)
             number = (
                 title_number.group(1) if title_number
                 else nested_value(record, ("numero", "num"))
