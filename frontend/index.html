@@ -288,6 +288,67 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* Finition produit : écrans métier, formulaires et tableaux */
+.view>.heading{padding:2px 1px 17px;border-bottom:1px solid #e5ece7;margin-bottom:19px}
+.view>.heading h1{font-size:28px;font-weight:780;letter-spacing:-.045em}
+.view>.heading .muted{margin-top:5px;font-size:13px}
+.view>.panel>.tablewrap{border:1px solid #e7ede9;border-radius:12px;background:#fff}
+.view .tablewrap table{min-width:620px}
+.view .tablewrap th{position:sticky;top:0;z-index:1;background:#f5f8f6;border-bottom:1px solid #e1e9e4;white-space:nowrap}
+.view .tablewrap tbody tr{transition:background .12s ease}
+.view .tablewrap tbody tr:hover{background:#f8fbf9}
+.view .tablewrap tbody tr:last-child td{border-bottom:0}
+.view .toolbar{align-items:center;padding:2px 0 11px}
+.view .toolbar input{flex:1 1 260px;max-width:480px;min-height:43px}
+.view .toolbar button{min-height:42px}
+.view .panel>h2{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.view .panel>h2+.muted,.view .panel>h2+p{margin:0 0 15px;line-height:1.6}
+.view form .field{min-width:180px}
+.view form button[type=submit],.view form>button{min-height:43px}
+.view input[type=file]{padding:10px;background:#f8faf9;border:1px dashed #b9cbbf;border-radius:11px;font-size:12px}
+.view input[type=file]::file-selector-button{border:0;border-radius:8px;background:#e8f1ec;color:#24513c;padding:8px 11px;margin-right:12px;font-weight:700;cursor:pointer}
+.view .message:empty{display:none}
+.view .cards .card{display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+.view .cards .card p{margin:0 0 8px}
+.view .cards .card button{margin-top:auto}
+#view-documents #complianceQuestion{margin:2px 0 10px}
+#view-documents .panel[style*="background"]{border:1px solid #e6ece7!important;border-radius:13px!important}
+#view-collectivities .panel:first-of-type,#view-members .panel:first-of-type{padding:10px}
+#view-billing #billingCurrent{padding:13px 15px;border:1px solid #e3ebe5;border-radius:11px;background:#f8fbf9;color:#294b39;font-weight:650}
+#view-billing .cards{align-items:stretch}
+#view-billing .cards .card{min-height:210px}
+#view-billing .cards .metric{font-size:31px}
+#view-billing>.muted{padding:12px 14px;border-radius:10px;background:#f7f9f7}
+#platformScreen .panel{overflow:hidden}
+#platformScreen .tablewrap{border:1px solid #e7ede9;border-radius:12px}
+#platformScreen table{min-width:700px}
+#platformScreen th{position:sticky;top:0;background:#f5f8f6}
+#platformScreen tbody tr:hover{background:#f8fbf9}
+#uploadMessage,#collectivityMessage,#inviteMessage{margin-top:10px}
+@media(max-width:900px){
+ .view>.heading h1{font-size:25px}
+ .view>.panel{padding:17px}
+}
+@media(max-width:600px){
+ .view>.heading{padding-bottom:13px;margin-bottom:14px}
+ .view>.heading h1{font-size:23px}
+ .view>.heading .muted{font-size:12px}
+ .view>.panel{padding:13px;border-radius:14px}
+ .view .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+ .view .toolbar input{grid-column:1/-1;max-width:none;width:100%}
+ .view .toolbar button{width:100%;padding:10px 8px;font-size:12px}
+ .view form .row{display:grid;grid-template-columns:1fr;gap:0}
+ .view form .field{min-width:0;width:100%}
+ .view .tablewrap{margin-left:-2px;margin-right:-2px}
+ #view-billing .heading .row{margin-top:10px}
+ #view-billing .heading .row button{font-size:11px;padding:9px}
+ #view-billing .cards .card{min-height:185px}
+}
+@media(hover:none){
+ .view .tablewrap tbody tr:hover{background:transparent}
+ .card:hover{transform:none}
+}
 </style></head><body>
 <a class="skip-link" href="#mainContent">Aller au contenu principal</a>
 <header class="top"><div class="brand">Dikévia<small>Assistant d'information juridique · Fonction publique territoriale</small></div><div class="topright"><span id="userLabel">Session non connectée</span><button id="logout" class="secondary hidden">Déconnexion</button></div></header>
