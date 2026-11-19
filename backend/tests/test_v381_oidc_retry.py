@@ -35,3 +35,11 @@ def test_oidc_callback_credentials_are_removed_before_network_exchange():
     assert cleanup < exchange
     assert "for (const key of ['code', 'state', 'error', 'error_description', 'iss', 'session_state'])" in auth
     assert "cleanUrl.searchParams.delete(key);" in auth
+
+def test_logout_clears_pending_invitation_and_oidc_transient_state():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    logout = auth[auth.index("async logout()"):]
+    assert "accessToken=null;expiresAt=0;" in logout
+    assert "sessionStorage.removeItem('cfdt_oidc_state');" in logout
+    assert "sessionStorage.removeItem('cfdt_oidc_verifier');" in logout
+    assert "sessionStorage.removeItem('cfdt_pending_invitation');" in logout
