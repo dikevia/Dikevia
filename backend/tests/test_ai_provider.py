@@ -551,10 +551,41 @@ async def test_gemini_chat_completion_uses_compatible_route_and_bearer_auth(monk
     ))
     result = await analyze_question(
         question="Question de test suffisamment longue", employer="NATIONAL",
-        facts_date="2026-01-01", sources=[],
+        facts_date="2026-01-01", sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678_V20260101",
+            "title": "Code général de la fonction publique",
+            "article": "L111-1",
+            "valid_from": "2022-03-01",
+            "valid_to": "2999-01-01",
+            "requested_effective_date": "2026-01-01",
+            "excerpt": "Extrait officiel daté de test suffisamment long.",
+        }],
     )
     assert result.content == '{"claims": []}'
     assert result.total_tokens == 16
+
+
+@pytest.mark.asyncio
+async def test_ai_provider_never_sends_inference_without_verified_sources(monkeypatch):
+    import httpx
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-gemini-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-3.8-flash")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+
+    class ForbiddenClient:
+        def __init__(self, *args, **kwargs):
+            raise AssertionError("Une inférence ne doit jamais être envoyée sans source.")
+
+    monkeypatch.setattr(httpx, "AsyncClient", ForbiddenClient)
+    result = await analyze_question(
+        question="Question de test suffisamment longue",
+        employer="NATIONAL",
+        facts_date="2026-01-01",
+        sources=[],
+    )
+    assert result is None
 
 def test_runtime_configuration_accepts_gemini_openai_compatible_endpoint():
     from app.config import Settings, validate_runtime_configuration
