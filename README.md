@@ -133,7 +133,7 @@ Cette version ne comprend toujours pas le connecteur Légifrance/PISTE ni un mod
 
 
 ### V3.14 — Analyse assistée par IA (facultative)
-Un adaptateur serveur compatible OpenAI Chat Completions est disponible. Configurer `AI_API_BASE_URL`, `AI_API_KEY` et `AI_MODEL` dans `.env`. Sans configuration, le service conserve le mode documentaire. Seuls les extraits CGFP dont les citations ont passé les contrôles backend sont transmis au modèle. Les références affichées restent issues du backend. Le statut reste `PARTIELLEMENT_VERIFIE` : le modèle ne vérifie pas les versions historiques ni les sources locales. Voir `docs/21_V3_14_ASSISTED_ANALYSIS.md`.
+Un adaptateur serveur compatible OpenAI Chat Completions est disponible. Configurer `AI_API_BASE_URL`, `AI_API_KEY` et `AI_MODEL` dans `.env`. Sans configuration, le service conserve le mode documentaire. Seuls les extraits CGFP dont les citations ont passé les contrôles backend sont transmis au modèle. Les références affichées restent issues du backend. Le statut reste `PARTIELLEMENT_VERIFIE` : le modèle ne vérifie pas les versions historiques ni les sources locales. Voir `docs/21_V3_14_ASSISTED_ANALYSIS.md`. La revue IA des documents locaux téléversés est désactivée par défaut ; elle ne peut être activée qu'après validation explicite de la confidentialité et du cadre de traitement, via `AI_LOCAL_DOCUMENT_REVIEW_ENABLED=true`.
 
 ## V3.15 — Connecteur PISTE et installation locale
 

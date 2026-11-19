@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
-from .dependencies import get_principal, get_tenant_context, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
+from .dependencies import get_principal, get_tenant_context, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
@@ -653,9 +653,14 @@ async def platform_grant_free(organization_id: str, payload: dict,
 @app.get("/api/v1/chat/conversations")
 async def list_chat_conversations(ctx: TenantContext = Depends(get_tenant_context)):
     rows = await ctx.conn.fetch("""SELECT c.id,c.title,c.created_at,c.updated_at,
-        (SELECT count(*) FROM chat_messages m WHERE m.conversation_id=c.id) AS message_count,
-        (SELECT content FROM chat_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message
-        FROM chat_conversations c ORDER BY c.updated_at DESC LIMIT 100""")
+        (SELECT count(*) FROM chat_messages m WHERE m.conversation_id=c.id
+            AND m.organization_id=$1::uuid AND m.user_id=$2::uuid) AS message_count,
+        (SELECT content FROM chat_messages m WHERE m.conversation_id=c.id
+            AND m.organization_id=$1::uuid AND m.user_id=$2::uuid
+            ORDER BY m.created_at DESC,m.id DESC LIMIT 1) AS last_message
+        FROM chat_conversations c
+        WHERE c.organization_id=$1::uuid AND c.user_id=$2::uuid
+        ORDER BY c.updated_at DESC LIMIT 100""", ctx.organization_id, ctx.user_id)
     return [{"id": str(r["id"]), "title": r["title"], "created_at": r["created_at"],
         "updated_at": r["updated_at"], "message_count": r["message_count"],
         "last_message": (r["last_message"] or "")[:180]} for r in rows]
@@ -678,7 +683,9 @@ async def get_chat_messages(conversation_id: str, ctx: TenantContext = Depends(g
         raise HTTPException(422, "Identifiant de conversation invalide.")
     rows = await ctx.conn.fetch("""SELECT m.id,m.role,m.content,m.metadata,m.created_at
         FROM chat_messages m JOIN chat_conversations c ON c.id=m.conversation_id
-        WHERE c.id=$1::uuid ORDER BY m.created_at,m.id""", conversation_uuid)
+        WHERE c.id=$1::uuid AND c.organization_id=$2::uuid AND c.user_id=$3::uuid
+          AND m.organization_id=$2::uuid AND m.user_id=$3::uuid
+        ORDER BY m.created_at,m.id""", conversation_uuid, ctx.organization_id, ctx.user_id)
     return [{"id": str(r["id"]), "role": r["role"], "content": r["content"],
         "metadata": r["metadata"], "created_at": r["created_at"]} for r in rows]
 
@@ -689,7 +696,9 @@ async def delete_chat_conversation(conversation_id: str, ctx: TenantContext = De
         conversation_uuid = str(UUID(conversation_id))
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
-    result = await ctx.conn.execute("DELETE FROM chat_conversations WHERE id=$1::uuid", conversation_uuid)
+    result = await ctx.conn.execute("""DELETE FROM chat_conversations
+        WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if result == "DELETE 0":
         raise HTTPException(404, "Conversation introuvable.")
     return None
@@ -703,17 +712,21 @@ async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
     conversation = await ctx.conn.fetchrow(
-        "SELECT id,title FROM chat_conversations WHERE id=$1::uuid", conversation_uuid)
+        """SELECT id,title FROM chat_conversations
+           WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if not conversation:
         raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
     existing = await ctx.conn.fetchrow(
-        "SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-        conversation_uuid)
+        """SELECT id,content,created_at,updated_at FROM legal_dossiers
+           WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if existing:
         return {"id": str(existing["id"]), "content": decode_jsonb(existing["content"]),
                 "created_at": existing["created_at"], "updated_at": existing["updated_at"], "created": False}
     messages = await ctx.conn.fetch("""SELECT id,role,content,metadata,created_at FROM chat_messages
-        WHERE conversation_id=$1::uuid ORDER BY created_at,id""", conversation_uuid)
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid
+        ORDER BY created_at,id""", conversation_uuid, ctx.organization_id, ctx.user_id)
     if not messages:
         raise HTTPException(409, "Ajoutez au moins un échange avant de constituer un dossier.")
     content = build_dossier_content(dict(conversation), [dict(row) for row in messages])
@@ -723,8 +736,9 @@ async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends
         RETURNING id,content,created_at,updated_at""",
         ctx.organization_id, conversation_uuid, ctx.user_id, json.dumps(content, ensure_ascii=False, default=str))
     if not row:
-        row = await ctx.conn.fetchrow("SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-                                      conversation_uuid)
+        row = await ctx.conn.fetchrow("""SELECT id,content,created_at,updated_at FROM legal_dossiers
+            WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                                      conversation_uuid, ctx.organization_id, ctx.user_id)
         created = False
     else:
         created = True
@@ -738,8 +752,9 @@ async def get_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(g
         conversation_uuid = str(UUID(conversation_id))
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
-    row = await ctx.conn.fetchrow("SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-                                  conversation_uuid)
+    row = await ctx.conn.fetchrow("""SELECT id,content,created_at,updated_at FROM legal_dossiers
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                                  conversation_uuid, ctx.organization_id, ctx.user_id)
     if not row:
         raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
@@ -752,7 +767,9 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
         content = validate_dossier_content(payload.get("content"))
     except ValueError as exc:
         raise HTTPException(422, str(exc))
-    existing = await ctx.conn.fetchrow("SELECT id,content FROM legal_dossiers WHERE conversation_id=$1::uuid", conversation_uuid)
+    existing = await ctx.conn.fetchrow("""SELECT id,content FROM legal_dossiers
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if not existing:
         raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
     stored = decode_jsonb(existing["content"])
@@ -770,59 +787,75 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
         if key in content:
             stored[key] = content[key]
     row = await ctx.conn.fetchrow("""UPDATE legal_dossiers SET content=$2::jsonb,updated_at=now()
-        WHERE conversation_id=$1::uuid RETURNING id,content,created_at,updated_at""",
-        conversation_uuid, json.dumps(stored, ensure_ascii=False, default=str))
+        WHERE conversation_id=$1::uuid AND organization_id=$3::uuid AND user_id=$4::uuid
+        RETURNING id,content,created_at,updated_at""",
+        conversation_uuid, json.dumps(stored, ensure_ascii=False, default=str),
+        ctx.organization_id, ctx.user_id)
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
 
 
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
-async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)):
-    rate = await consume_chat_request(
-        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
-    )
-    if not rate.allowed:
-        return JSONResponse(
-            status_code=429,
-            content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
-            headers={"Retry-After": str(rate.retry_after_seconds)},
+async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_for_chat)):
+    # Commit the rate-limit reservation and user turn before any network call.
+    async with ctx.conn.transaction():
+        rate = await consume_chat_request(
+            ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
         )
-    conversation_id = payload.conversation_id
-    if conversation_id is None:
-        row = await ctx.conn.fetchrow("""INSERT INTO chat_conversations(organization_id,user_id,title)
-            VALUES($1::uuid,$2::uuid,$3) RETURNING id""", ctx.organization_id, ctx.user_id,
-            payload.question[:157] + ("…" if len(payload.question) > 157 else ""))
-        conversation_id = row["id"]
-    else:
-        exists = await ctx.conn.fetchval("SELECT id FROM chat_conversations WHERE id=$1::uuid", str(conversation_id))
-        if not exists:
-            raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
-    current_message_id = await ctx.conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
-        VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
-        str(conversation_id), ctx.user_id, payload.question,
-        json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
-    history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
-        WHERE conversation_id=$1::uuid AND id<>$2::uuid AND role IN ('user','assistant')
-        ORDER BY created_at DESC,id DESC LIMIT 12""", str(conversation_id), current_message_id)
-    history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
+        if not rate.allowed:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
+                headers={"Retry-After": str(rate.retry_after_seconds)},
+            )
+        conversation_id = payload.conversation_id
+        if conversation_id is None:
+            row = await ctx.conn.fetchrow("""INSERT INTO chat_conversations(organization_id,user_id,title)
+                VALUES($1::uuid,$2::uuid,$3) RETURNING id""", ctx.organization_id, ctx.user_id,
+                payload.question[:157] + ("…" if len(payload.question) > 157 else ""))
+            conversation_id = row["id"]
+        else:
+            exists = await ctx.conn.fetchval("""SELECT id FROM chat_conversations
+                WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                str(conversation_id), ctx.organization_id, ctx.user_id)
+            if not exists:
+                raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
+        current_message_id = await ctx.conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
+            VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
+            str(conversation_id), ctx.user_id, payload.question,
+            json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
+        history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
+            WHERE conversation_id=$1::uuid AND organization_id=$3::uuid AND user_id=$4::uuid
+              AND id<>$2::uuid AND role IN ('user','assistant')
+            ORDER BY created_at DESC,id DESC LIMIT 12""", str(conversation_id), current_message_id,
+            ctx.organization_id, ctx.user_id)
+        history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
+
+    # No database transaction remains open while PISTE or the AI provider is called.
     result = await orchestrator.ask(payload,ctx.organization_id,conn=ctx.conn,conversation_history=history)
     result.conversation_id = conversation_id
-    if result.ai_usage is not None:
-        usage = result.ai_usage
-        await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, result.request_id, usage)
-    await ctx.conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
-        VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
-        str(conversation_id), ctx.user_id, result.answer,
-        json.dumps({"verification_status": result.verification_status,
-            "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
-                if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
-                    "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
-                    "article", "page_start", "page_end", "citation_integrity", "collectivity",
-                    "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
-                for source in result.sources[:30]],
-            "missing_information": result.missing_information, "disclaimer": result.disclaimer,
-            "clarification_question": result.clarification_question},
-            ensure_ascii=False, default=str))
-    await ctx.conn.execute("UPDATE chat_conversations SET updated_at=now() WHERE id=$1::uuid", str(conversation_id))
+
+    # Persist the answer, its provenance and metering atomically after analysis.
+    async with ctx.conn.transaction():
+        if result.ai_usage is not None:
+            await record_ai_usage_event(
+                ctx.conn, ctx.organization_id, ctx.user_id, result.request_id, result.ai_usage
+            )
+        await ctx.conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
+            VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
+            str(conversation_id), ctx.user_id, result.answer,
+            json.dumps({"verification_status": result.verification_status,
+                "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
+                    if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
+                        "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
+                        "article", "page_start", "page_end", "citation_integrity", "collectivity",
+                        "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
+                    for source in result.sources[:30]],
+                "missing_information": result.missing_information, "disclaimer": result.disclaimer,
+                "clarification_question": result.clarification_question},
+                ensure_ascii=False, default=str))
+        await ctx.conn.execute("""UPDATE chat_conversations SET updated_at=now()
+            WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+            str(conversation_id), ctx.organization_id, ctx.user_id)
     return result
 
 @app.get("/api/v1/integrations/legifrance/status")
@@ -921,7 +954,7 @@ async def search_permanent_legal_knowledge(q: str, effective_date: date | None =
 
 @app.post("/api/v1/legal/compliance/review/{document_id}")
 async def review_local_rule_compliance(document_id: str, q: str,
-        effective_date: date | None = None, ctx: TenantContext = Depends(get_tenant_context)):
+        effective_date: date | None = None, ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     """Prepare a sourced comparison of one tenant-local document with national sources.
 
     This endpoint flags review needs; it never declares a local act illegal.
@@ -933,9 +966,10 @@ async def review_local_rule_compliance(document_id: str, q: str,
     query = q.strip()
     if len(query) < 8 or len(query) > 500:
         raise HTTPException(422, "La question de contrôle doit contenir entre 8 et 500 caractères.")
-    rate = await consume_chat_request(
-        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
-    )
+    async with ctx.conn.transaction():
+        rate = await consume_chat_request(
+            ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+        )
     if not rate.allowed:
         return JSONResponse(
             status_code=429,
@@ -986,7 +1020,8 @@ async def review_local_rule_compliance(document_id: str, q: str,
     usable_national = [item for item in national_sources if item.get("temporal_status") in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}]
     ai_review = None
-    if usable_national and settings.ai_api_key and settings.ai_model:
+    if (usable_national and settings.ai_api_key and settings.ai_model
+            and settings.ai_local_document_review_enabled):
         review_question = (
             "CONTROLE DE COHERENCE D'UNE REGLE LOCALE. Question de contrôle : " + query +
             "\nCompare uniquement le document local fourni avec les textes nationaux intégraux et temporellement exploitables. "
@@ -1016,19 +1051,22 @@ async def review_local_rule_compliance(document_id: str, q: str,
             elif usage is not None:
                 usage["outcome"] = "REJECTED_UNGROUNDED"
             if usage is not None:
-                await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
+                async with ctx.conn.transaction():
+                    await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
         except AIProviderUnavailable:
-            await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, {
-                "provider": "openai_compatible", "model": settings.ai_model[:160],
-                "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
-                "outcome": "PROVIDER_ERROR",
-            })
+            async with ctx.conn.transaction():
+                await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, {
+                    "provider": "openai_compatible", "model": settings.ai_model[:160],
+                    "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
+                    "outcome": "PROVIDER_ERROR",
+                })
         except Exception:
             ai_review = None
-    await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
-      VALUES($1::uuid,$2::uuid,'LOCAL_RULE_COMPLIANCE_REVIEWED','document',$3::uuid,$4::jsonb)""",
-      ctx.organization_id, ctx.user_id, document_id,
-      json.dumps({"query": query, "effective_date": requested_date.isoformat(), "national_sources": len(national_sources)}, ensure_ascii=False))
+    async with ctx.conn.transaction():
+        await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
+          VALUES($1::uuid,$2::uuid,'LOCAL_RULE_COMPLIANCE_REVIEWED','document',$3::uuid,$4::jsonb)""",
+          ctx.organization_id, ctx.user_id, document_id,
+          json.dumps({"query": query, "effective_date": requested_date.isoformat(), "national_sources": len(national_sources)}, ensure_ascii=False))
     return {
       "status": "COMPARISON_REQUIRED" if national_sources else "NATIONAL_SOURCES_NOT_FOUND",
       "requested_date": requested_date.isoformat(),

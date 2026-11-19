@@ -140,3 +140,22 @@ def test_municipal_non_employment_case_law_is_not_admitted_by_locality_alone():
         "full_text": "Le maire a refusé le permis de construire.",
     })
     assert result["analysis_eligible"] is False
+
+@pytest.mark.asyncio
+async def test_ongoing_situation_requires_a_start_date_before_any_legal_search():
+    from app.orchestrator import LegalOrchestrator
+    from app.schemas import AskRequest
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            question="Quels sont mes droits dans cette situation ?",
+            situation_ongoing=True,
+        ),
+        organization_id="00000000-0000-0000-0000-000000000001",
+        conn=None,
+    )
+
+    assert response.verification_status == "NON_VERIFIE"
+    assert "date de début" in response.missing_information[0]
+    assert response.sources == []

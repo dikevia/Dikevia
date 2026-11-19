@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat, security/chat-explicit-ownership]
   pull_request:
-    branches: [main]
+    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
   workflow_dispatch:
 permissions:
   contents: read
