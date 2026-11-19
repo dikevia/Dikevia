@@ -34,8 +34,8 @@ from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, DECISION_ID_RE
 from .billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
 from .legal_corpus import upsert_legal_document, search_legal_corpus
-from .legal_assurance import assess_source_set
-from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
+from .legal_assurance import assess_source_set, validate_claim_evidence
+from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, extract_analysis_content, check_provider_availability
 from .legal_ingestion import parse_circulaires_xml
 from .dossiers import build_dossier_content, validate_dossier_content
 from .rate_limit import consume_chat_request
@@ -1096,13 +1096,22 @@ async def review_local_rule_compliance(document_id: str, q: str,
                     "completion_tokens": candidate_result.completion_tokens,
                     "total_tokens": candidate_result.total_tokens, "outcome": "ANSWERED",
                 }
-            allowed_refs = {item.get("article") for item in usable_national if item.get("article")}
-            allowed_authorities = {value for item in usable_national for value in
-                (item.get("official_number"), item.get("source_id"), item.get("case_number")) if value}
-            if candidate and answer_references_are_grounded(candidate, allowed_refs, allowed_authorities):
-                ai_review = candidate
+            try:
+                structured_candidate = json.loads(candidate) if isinstance(candidate, str) else None
+            except (TypeError, ValueError):
+                structured_candidate = None
+            candidate_validation = validate_claim_evidence(structured_candidate, usable_national)
+            if candidate_validation["valid"] and candidate_validation["claims"]:
+                ai_review = "\\n".join(
+                    f"{claim['text']} — {claim['source_title']} (citation exacte : « {claim['quote']} »)"
+                    for claim in candidate_validation["claims"]
+                )
             elif usage is not None:
-                usage["outcome"] = "REJECTED_UNGROUNDED"
+                usage["outcome"] = (
+                    "REJECTED_UNSUPPORTED_CLAIMS"
+                    if candidate_validation["invalid_claims"]
+                    else "ABSTAINED_NO_SUPPORTED_CLAIMS"
+                )
             if usage is not None:
                 async with ctx.conn.transaction():
                     await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
