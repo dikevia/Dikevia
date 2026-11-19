@@ -89,7 +89,7 @@ BEGIN
   END IF;
   RETURN QUERY SELECT f.slot_number,f.user_id,u.email,f.granted_at,f.revoked_at,f.note
     FROM founder_entitlements f JOIN users u ON u.id=f.user_id ORDER BY f.slot_number;
-END; $;
+END; $fn$;
 REVOKE ALL ON FUNCTION platform_admin_grant_founder_entitlement(uuid,smallint,uuid,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION platform_admin_revoke_founder_entitlement(uuid,smallint,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION platform_admin_list_founder_entitlements(uuid) FROM PUBLIC;
