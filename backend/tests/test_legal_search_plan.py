@@ -38,3 +38,11 @@ def test_substantive_question_with_article_reference_still_searches_related_fpt_
     assert query.startswith(question)
     assert "décret 2002-60" in query
     assert "décret 91-875" in query
+
+
+def test_short_follow_up_keeps_prior_context_but_expands_current_topic():
+    query = build_official_search_query(
+        "Et pour les contractuels ?\nQue prévoit l'article L999-999 du CGFP ?"
+    )
+    assert query.startswith("Et pour les contractuels ?")
+    assert "décret 88-145" in query
