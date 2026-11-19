@@ -656,12 +656,21 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
         "valid_from": "2020-01-01",
         "valid_to": "2999-01-01",
     }
+    decision = {
+        "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+        "source_id": "CETATEXT000012345678",
+        "decision_date": "2024-05-10",
+        "case_number": "123456",
+        "jurisdiction": "Conseil d'État",
+        "content_kind": "FULL_TEXT",
+        "excerpt": "Texte intégral officiel de la décision administrative suffisamment long.",
+    }
 
     result = await ai_provider.analyze_question(
         question="Question de test sur le texte officiel",
         employer="NATIONAL",
         facts_date="2026-11-19",
-        sources=[source],
+        sources=[source, decision],
     )
 
     assert result.content == '{"claims": []}'
@@ -671,6 +680,8 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
     assert "LEGIARTI000012345678" in serialized
     assert "2026-11-19" in serialized
     assert "Extrait officiel de test suffisamment explicite." in serialized
+    assert "CETATEXT000012345678" in serialized
+    assert '"date_decision": "2024-05-10"' in serialized
 
 
 
