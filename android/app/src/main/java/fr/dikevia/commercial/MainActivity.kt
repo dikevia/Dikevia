@@ -180,7 +180,16 @@ private data class Entry(val title:String,val detail:String)
 @Composable private fun Assistant(token:String,org:Org,api:Api){
     val context=LocalContext.current
     var q by remember{mutableStateOf("")};var employer by remember{mutableStateOf("NATIONAL")};var answer by remember{mutableStateOf<JSONObject?>(null)}
+    var conversationId by remember(org.id){mutableStateOf<String?>(null)}
+    var factsStart by remember{mutableStateOf("")};var factsEnd by remember{mutableStateOf("")};var ongoing by remember{mutableStateOf(false)}
+    var collectivityId by remember{mutableStateOf<String?>(null)};var collectivities by remember{mutableStateOf(emptyList<JSONObject>())}
+    var collectivityExpanded by remember{mutableStateOf(false)}
     var waiting by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)};val scope=rememberCoroutineScope()
+    LaunchedEffect(org.id){
+        try{val data=withContext(Dispatchers.IO){JSONArray(api.call(token,org.id,"/api/v1/collectivities"))}
+            collectivities=(0 until data.length()).map{data.getJSONObject(it)}
+        }catch(_:Exception){collectivities=emptyList()}
+    }
     Column(Modifier.fillMaxSize().padding(13.dp)){
         Text("Assistant juridique",fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink)
         Text("Le statut de vérification et les sources accompagnent chaque réponse.",color=Muted,fontSize=12.sp);Spacer(Modifier.height(9.dp))
@@ -206,6 +215,25 @@ private data class Entry(val title:String,val detail:String)
         }
         error?.let{ErrorBox(it)}
         OutlinedTextField(q,{if(it.length<=5000)q=it},modifier=Modifier.fillMaxWidth(),label={Text("Votre question (8 à 5 000 caractères)")},minLines=3)
+        Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+            OutlinedTextField(factsStart,{factsStart=it},modifier=Modifier.weight(1f),label={Text("Début (AAAA-MM-JJ)")},singleLine=true)
+            OutlinedTextField(factsEnd,{factsEnd=it},modifier=Modifier.weight(1f),label={Text("Fin (AAAA-MM-JJ)")},singleLine=true,enabled=!ongoing)
+        }
+        Row(verticalAlignment=Alignment.CenterVertically){
+            Checkbox(checked=ongoing,onCheckedChange={ongoing=it;if(it)factsEnd=""})
+            Text("Situation toujours en cours",fontSize=12.sp,color=Muted)
+        }
+        if(collectivities.isNotEmpty()){
+            Box{OutlinedButton(onClick={collectivityExpanded=true}){
+                val chosen=collectivities.firstOrNull{it.optString("id")==collectivityId}
+                Text(chosen?.optString("name")?:"Choisir une collectivité (facultatif)")
+            }
+                DropdownMenu(collectivityExpanded,{collectivityExpanded=false}){
+                    DropdownMenuItem(text={Text("Aucune collectivité précise")},onClick={collectivityId=null;collectivityExpanded=false})
+                    collectivities.forEach{c->DropdownMenuItem(text={Text(c.optString("name"))},onClick={collectivityId=c.optString("id");collectivityExpanded=false})}
+                }
+            }
+        }
         var expanded by remember{mutableStateOf(false)}
         Box{OutlinedButton(onClick={expanded=true}){Text(when(employer){"VILLE_SAINT_ETIENNE"->"Ville de Saint-Étienne";"SAINT_ETIENNE_METROPOLE"->"Saint-Étienne Métropole";else->"National / autre collectivité"})}
             DropdownMenu(expanded,{expanded=false}){
@@ -213,10 +241,23 @@ private data class Entry(val title:String,val detail:String)
                 DropdownMenuItem(text={Text("Ville de Saint-Étienne")},onClick={employer="VILLE_SAINT_ETIENNE";expanded=false})
                 DropdownMenuItem(text={Text("Saint-Étienne Métropole")},onClick={employer="SAINT_ETIENNE_METROPOLE";expanded=false})
             }}
-        Button(onClick={val question=q.trim();if(question.length>=8&&!waiting){waiting=true;error=null;scope.launch{
-            try{val payload=JSONObject().put("employer",employer).put("question",question);answer=withContext(Dispatchers.IO){JSONObject(api.call(token,org.id,"/api/v1/chat/ask","POST",payload))};q=""}
+        Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){
+            Button(onClick={val question=q.trim();if(question.length>=8&&!waiting){waiting=true;error=null;scope.launch{
+            try{
+                val payload=JSONObject().put("employer",employer).put("question",question).put("situation_ongoing",ongoing)
+                if(factsStart.isNotBlank())payload.put("facts_start_date",factsStart.trim())
+                if(factsEnd.isNotBlank()&&!ongoing)payload.put("facts_end_date",factsEnd.trim())
+                collectivityId?.let{payload.put("collectivity_id",it)}
+                conversationId?.let{payload.put("conversation_id",it)}
+                val response=withContext(Dispatchers.IO){JSONObject(api.call(token,org.id,"/api/v1/chat/ask","POST",payload))}
+                answer=response
+                conversationId=response.optString("conversation_id").takeIf{it.isNotBlank()&&it!="null"}
+                q=""
+            }
             catch(e:Exception){error=e.message?:"Demande impossible."}finally{waiting=false}
-        }}},enabled=!waiting&&q.trim().length>=8,modifier=Modifier.fillMaxWidth().height(48.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(if(waiting)"Analyse juridique en cours…" else "Envoyer ma question")}
+        }}},enabled=!waiting&&q.trim().length>=8,modifier=Modifier.weight(1f).height(48.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(if(waiting)"Analyse en cours…" else "Envoyer")}
+            OutlinedButton(onClick={conversationId=null;answer=null;q="";factsStart="";factsEnd="";ongoing=false;collectivityId=null},enabled=!waiting){Text("Nouveau")}
+        }
     }
 }
 
