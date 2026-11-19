@@ -52,3 +52,9 @@ def test_unvalidated_exact_looking_hit_does_not_satisfy_lookup():
     question = "Quel est le contenu de l'article L111-1 du CGFP ?"
     sources = [_source("CGFP_SNAPSHOT", "L111-1", valid=False)]
     assert missing_direct_article_reference(question, sources) == "L111-1"
+
+
+def test_direct_lookup_checks_every_requested_article_reference():
+    question = "Que prévoit l'article L111-1 et l'article L999-999 du CGFP ?"
+    sources = [_source("LEGIFRANCE_API", "L111-1")]
+    assert missing_direct_article_reference(question, sources) == "L999-999"
