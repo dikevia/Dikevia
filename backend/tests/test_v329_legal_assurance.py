@@ -180,6 +180,7 @@ def test_period_endpoint_claim_rejects_year_and_fiscal_period_scope_variants():
         "Au 2024-01-01, le droit reste applicable sur l'exercice 2024.",
         "Au 2024-01-01, le droit reste applicable au titre de 2024.",
         "Au 2024-01-01, le droit reste applicable pendant l'exercice 2024.",
+        "Au 2024-01-01, le droit reste applicable au titre de l'exercice 2024.",
     ):
         result = validate_claim_evidence({
             "claims": [{
