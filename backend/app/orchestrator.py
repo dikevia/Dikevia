@@ -548,6 +548,10 @@ class LegalOrchestrator:
             missing = ["Aucune disposition législative ou réglementaire exploitable n'a été récupérée.",
                 "Recherche officielle Légifrance/PISTE et vérification des textes réglementaires complémentaires.",
                 "Recherche de jurisprudence pertinente et vérification des sources locales applicables."]
+            if parsed_date is not None:
+                missing.insert(0, f"Date des faits déclarée : {effective_date.isoformat()}.")
+            else:
+                missing.insert(0, "Date des faits / période non précisée : une analyse contextualisée ne peut pas déterminer la règle applicable.")
             if permanent_issue:
                 missing.insert(0, permanent_issue)
             if cgfp_issue:
@@ -691,7 +695,13 @@ class LegalOrchestrator:
                         # explicitly identified FPE/FPH sources are excluded.
                         # The AI prompt receives this scope and must not infer
                         # territorial applicability from an unknown classification.
-                        and s.get("analysis_eligible") is True
+                        and (
+                            s.get("analysis_eligible") is True
+                            or (
+                                s.get("source_type") == "LOCAL_DOCUMENT"
+                                and s.get("validation_status") == "VERIFIED_APPLICABLE"
+                            )
+                        )
                         and s.get("ihts_relevant") is not False
                         and (
                             not period_version_comparison
