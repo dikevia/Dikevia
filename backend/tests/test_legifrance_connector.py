@@ -414,11 +414,14 @@ async def test_loda_search_consults_matching_official_text_at_requested_date(mon
                 "facette": "DATE_VERSION", "singleDate": expected_stamp
             }
             return httpx.Response(200, json={"results": [{
-                "id": "LEGITEXT000012345678_01-01-2023",
-                "titre": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
-                "numero": "2002-60",
-                "dateDebut": "2002-01-01",
-                "dateFin": "2999-01-01",
+                "titles": [{
+                    "id": "LEGITEXT000012345678_01-01-2023",
+                    "title": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+                }],
+                "nature": "DECRET",
+                "nor": "FPPA0100150D",
+                "date": "2002-01-14",
+                "datePublication": "2002-01-15",
                 "etat": "VIGUEUR",
             }]})
         if request.url.path.endswith("/consult/legiPart"):
@@ -442,6 +445,9 @@ async def test_loda_search_consults_matching_official_text_at_requested_date(mon
     assert source["source_id"] == "LEGITEXT000012345678"
     assert source["document_kind"] == "DECREE"
     assert source["official_number"] == "2002-60"
+    assert source["nor"] == "FPPA0100150D"
+    assert source["title"].startswith("Décret n° 2002-60")
+    assert source["signature_date"].isoformat() == "2002-01-14"
     assert source["source_status"] == "OFFICIAL_TEXT_ID_VERIFIED"
     assert source["version_status"] == "IN_FORCE"
     assert source["full_text"] == full_text.strip()
