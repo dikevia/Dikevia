@@ -18,7 +18,7 @@ def test_frontend_uses_oidc_pkce_and_does_not_persist_access_token():
     auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
     assert "code_challenge_method:'S256'" in auth
     assert "code_verifier:verifier" in auth
-    assert "sessionStorage.setItem('cfdt_oidc_state'" in auth
+    assert "sessionStorage.setItem('dikevia_oidc_state'" in auth
     assert "accessToken = data.access_token" in auth
     assert "localStorage" not in auth
     assert "refresh_token" not in auth
@@ -120,3 +120,25 @@ def test_billing_screen_uses_validated_commercial_reference_prices():
     assert "100 questions par section et par jour" in html
     assert "souscription en ligne sera activée après alignement" in html
     assert 'data-checkout="SYNDICAT_10"' not in html
+
+
+def test_dikevia_oidc_globals_are_branded_and_auth_module_survives_missing_config():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    config = (ROOT / "frontend/auth-config.render.js").read_text(encoding="utf-8")
+    assert "window.DIKEVIA_OIDC" in config
+    assert "window.DIKEVIA_AUTH" in auth
+    assert "window.CFDT_JURIS" not in auth + html + config
+    root_auth = (ROOT / "oidc-auth.js").read_text(encoding="utf-8")
+    root_config = (ROOT / "auth-config.js").read_text(encoding="utf-8")
+    assert "window.CFDT_JURIS" not in root_auth + root_config
+    assert "if (!cfg || !cfg.issuer || !cfg.client_id || !cfg.redirect_uri) return;" not in auth
+    assert "Configuration OIDC Dikévia absente ou incomplète" in auth
+    assert "const auth=window.DIKEVIA_AUTH||null;" in html
+    assert "dikevia_oidc_state" in auth
+
+
+def test_login_button_remains_visible_when_browser_auth_module_is_missing():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "$('#login').classList.remove('hidden')" in html
+    assert "Le module OIDC navigateur Dikévia est introuvable" in html

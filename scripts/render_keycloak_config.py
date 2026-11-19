@@ -39,7 +39,7 @@ def main() -> None:
         "scopes": "openid profile email"
     }
     FRONTEND_CONFIG.write_text("// Généré par scripts/render_keycloak_config.py — ne pas ajouter de secret ici.\n"
-        "window.CFDT_JURIS_OIDC = " + json.dumps(config, ensure_ascii=False, indent=2) + ";\n", encoding="utf-8")
+        "window.DIKEVIA_OIDC = " + json.dumps(config, ensure_ascii=False, indent=2) + ";\n", encoding="utf-8")
     print(f"Configuration générée : issuer={config['issuer']} ; application={app}")
     print("Aucun secret client n'est nécessaire pour cette application navigateur publique.")
 
