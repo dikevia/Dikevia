@@ -45,3 +45,16 @@ def get_platform_admin_pool():
     if _platform_admin_pool is None:
         raise HTTPException(503, "Connexion PostgreSQL administrateur non configurée.")
     return _platform_admin_pool
+
+
+async def assert_runtime_role_is_safe():
+    """Fail closed when the API connection can bypass PostgreSQL row-level security."""
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        role = await conn.fetchrow(
+            "SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user"
+        )
+    if role is None or role["rolsuper"] or role["rolbypassrls"]:
+        raise RuntimeError(
+            "Le rôle PostgreSQL de l'API doit exister et ne doit être ni SUPERUSER ni BYPASSRLS."
+        )
