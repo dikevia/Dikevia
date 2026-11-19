@@ -1,6 +1,7 @@
 {
   "realm": "cfdt",
   "displayName": "Dikévia",
+  "displayNameHtml": "Dikévia",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
