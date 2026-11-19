@@ -7,7 +7,13 @@ import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
+import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.ValueCallback
@@ -19,6 +25,8 @@ import android.webkit.WebViewClient
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
+    private lateinit var loadingView: LinearLayout
+    private lateinit var errorView: LinearLayout
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     companion object {
@@ -71,6 +79,35 @@ class MainActivity : Activity() {
         }
 
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                errorView.visibility = View.GONE
+                loadingView.visibility = View.VISIBLE
+            }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+                super.onPageFinished(view, url)
+                loadingView.visibility = View.GONE
+            }
+
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: android.webkit.WebResourceError
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request.isForMainFrame) showLoadError()
+            }
+
+            override fun onReceivedHttpError(
+                view: WebView,
+                request: WebResourceRequest,
+                response: android.webkit.WebResourceResponse
+            ) {
+                super.onReceivedHttpError(view, request, response)
+                if (request.isForMainFrame && response.statusCode >= 500) showLoadError()
+            }
+
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val uri = request.url
                 if (isTrustedOrigin(uri)) return false
@@ -110,12 +147,65 @@ class MainActivity : Activity() {
             }
         }
 
-        setContentView(webView)
+        val root = FrameLayout(this)
+        root.addView(webView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+
+        loadingView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.rgb(243, 246, 244))
+            addView(ProgressBar(this@MainActivity))
+            addView(TextView(this@MainActivity).apply {
+                text = "Chargement de Dikévia…"
+                setTextColor(Color.rgb(35, 59, 49))
+                textSize = 15f
+                setPadding(0, 16, 0, 0)
+            })
+        }
+        root.addView(loadingView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+
+        errorView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(32, 24, 32, 24)
+            setBackgroundColor(Color.rgb(243, 246, 244))
+            visibility = View.GONE
+            addView(TextView(this@MainActivity).apply {
+                text = "Dikévia est momentanément inaccessible. Vérifiez votre connexion puis réessayez."
+                setTextColor(Color.rgb(35, 59, 49))
+                textSize = 16f
+                gravity = Gravity.CENTER
+            })
+            addView(Button(this@MainActivity).apply {
+                text = "Réessayer"
+                setOnClickListener {
+                    errorView.visibility = View.GONE
+                    webView.reload()
+                }
+            })
+        }
+        root.addView(errorView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+
+        setContentView(root)
         if (savedInstanceState == null) {
             webView.loadUrl(APP_URL)
-        } else {
-            webView.restoreState(savedInstanceState)
+        } else if (webView.restoreState(savedInstanceState) == null) {
+            webView.loadUrl(APP_URL)
         }
+    }
+
+    private fun showLoadError() {
+        loadingView.visibility = View.GONE
+        errorView.visibility = View.VISIBLE
     }
 
     @Deprecated("Deprecated by Android; retained for WebView file selection compatibility.")
