@@ -632,6 +632,28 @@ async def platform_list_founder_entitlements(platform=Depends(require_platform_a
              "active": r["revoked_at"] is None} for r in rows]
 
 
+@app.post("/api/v1/platform/founder-entitlements/owner", status_code=201)
+async def platform_claim_owner_founder_entitlement(platform=Depends(require_platform_admin)):
+    owner_email = settings.founder_owner_email.strip().lower()
+    if not owner_email:
+        raise HTTPException(503, "FOUNDER_OWNER_EMAIL doit être configuré avant l'attribution de la place réservée.")
+    user = await get_pool().fetchrow(
+        "SELECT id FROM users WHERE lower(email)=lower($1) AND status='ACTIVE' AND email_verified_at IS NOT NULL",
+        owner_email)
+    if not user:
+        raise HTTPException(409, "Le propriétaire doit d'abord se connecter avec son adresse vérifiée.")
+    try:
+        await get_platform_admin_pool().fetchval(
+            "SELECT platform_admin_grant_founder_entitlement($1::uuid,1::smallint,$2::uuid,$3)",
+            platform["user_id"], str(user["id"]), "Proprietaire fondateur Dikévia")
+    except Exception as exc:
+        message = str(exc).lower()
+        if "already assigned" in message or "duplicate" in message:
+            raise HTTPException(409, "La place fondatrice du propriétaire est déjà attribuée.")
+        raise
+    return {"slot_number": 1, "email": owner_email, "active": True}
+
+
 @app.post("/api/v1/platform/founder-entitlements", status_code=201)
 async def platform_grant_founder_entitlement(payload: dict, platform=Depends(require_platform_admin)):
     if not isinstance(payload, dict):
