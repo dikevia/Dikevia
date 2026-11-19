@@ -500,14 +500,19 @@ class LegalOrchestrator:
                 request_id=request_id,
                 verification_status="NON_VERIFIE",
                 answer=(
-                    f"Je n'ai pas retrouvé de source officielle vérifiable correspondant exactement "
-                    f"à l'article {missing_article} du Code général de la fonction publique. "
-                    "Je ne peux donc ni en reproduire le contenu ni en déduire des conséquences juridiques. "
+                    (
+                        f"La recherche officielle n'a pas abouti : {live_issue} "
+                        if live_issue else
+                        f"Je n'ai pas retrouvé de source officielle vérifiable correspondant exactement "
+                        f"à l'article {missing_article} du Code général de la fonction publique. "
+                    )
+                    + "Je ne peux donc ni en reproduire le contenu ni en déduire des conséquences juridiques. "
                     "Aucune conclusion juridique n'est formulée. Les résultats documentaires sans correspondance exacte sont écartés pour éviter toute confusion."
                 ),
                 sources=[],
                 missing_information=[
-                    f"Référence exacte {missing_article} non retrouvée dans les sources officielles consultées.",
+                    f"Référence exacte {missing_article} non confirmée dans une source CGFP vérifiée.",
+                    *([live_issue] if live_issue else []),
                     "Vérifier la référence ou transmettre le lien officiel Légifrance de l'article recherché.",
                 ],
             )
