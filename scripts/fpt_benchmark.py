@@ -46,7 +46,10 @@ def questions_from(data: Any) -> list[dict]:
 
 
 def validate_dataset(path: str) -> list[dict]:
-    data = load_json(path)\n    if not isinstance(data, dict) or data.get("benchmark_name") != "FPT_Juridique_100_Questions" or data.get("total_questions") != 100:\n        raise ValueError("Métadonnées invalides : benchmark_name ou total_questions.")\n    questions = questions_from(data)
+    data = load_json(path)
+    if not isinstance(data, dict) or data.get("benchmark_name") != "FPT_Juridique_100_Questions" or data.get("total_questions") != 100:
+        raise ValueError("Métadonnées invalides : benchmark_name ou total_questions.")
+    questions = questions_from(data)
     ids = [q.get("id") for q in questions]
     duplicates = sorted({x for x in ids if ids.count(x) > 1})
     missing = [x for x in EXPECTED_IDS if x not in ids]
@@ -55,7 +58,13 @@ def validate_dataset(path: str) -> list[dict]:
         {"id": q.get("id"), "missing_fields": sorted(REQUIRED_QUESTION_FIELDS - q.keys())}
         for q in questions if REQUIRED_QUESTION_FIELDS - q.keys()
     ]
-    categories = data.get("categories", [])\n    category_counts = {cat.get("id"): 0 for cat in categories if isinstance(cat, dict)}\n    for q in questions:\n        if q.get("category_id") in category_counts:\n            category_counts[q["category_id"]] += 1\n    bad_categories = {cat.get("id"): {"declared": cat.get("count"), "actual": category_counts.get(cat.get("id"), 0)} for cat in categories if not isinstance(cat, dict) or category_counts.get(cat.get("id"), 0) != cat.get("count")}\n    if duplicates or missing or unexpected or malformed or len(questions) != 100 or len(categories) != 5 or bad_categories:
+    categories = data.get("categories", [])
+    category_counts = {cat.get("id"): 0 for cat in categories if isinstance(cat, dict)}
+    for q in questions:
+        if q.get("category_id") in category_counts:
+            category_counts[q["category_id"]] += 1
+    bad_categories = {cat.get("id"): {"declared": cat.get("count"), "actual": category_counts.get(cat.get("id"), 0)} for cat in categories if not isinstance(cat, dict) or category_counts.get(cat.get("id"), 0) != cat.get("count")}
+    if duplicates or missing or unexpected or malformed or len(questions) != 100 or len(categories) != 5 or bad_categories:
         raise ValueError(json.dumps({
             "question_count": len(questions), "duplicates": duplicates,
             "missing_ids": missing, "unexpected_ids": unexpected,
@@ -85,7 +94,10 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
         r = by_id[q["id"]]
         review.append({
             "id": q["id"],
-            "category_id": q["category_id"],\n            "category": q["category"],\n            "action_type": q["action_type"],\n            "estimated_credits": q["estimated_credits"],
+            "category_id": q["category_id"],
+            "category": q["category"],
+            "action_type": q["action_type"],
+            "estimated_credits": q["estimated_credits"],
             "question": q["question"],
             "criteres_attendus": q["expected_criteria"],
             "reponse_dikevia": r.get("answer", ""),
@@ -98,7 +110,8 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
             "sources_officielles_de_controle": [],
             "date_controle": None,
         })
-    Path(output_path).write_text(json.dumps(review, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    Path(output_path).write_text(json.dumps(review, ensure_ascii=False, indent=2) + "
+", encoding="utf-8")
 
 
 def score(dataset_path: str, responses_path: str, reviews_path: str, output_path: str) -> dict:
@@ -170,7 +183,8 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         "scores_question": question_scores,
         "methodologie": "Notation humaine documentée, 0=incorrect/absent, 1=partiel, 2=conforme. Le score n'est publiable que si les 100 questions sont évaluées.",
     }
-    Path(output_path).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    Path(output_path).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "
+", encoding="utf-8")
     return result
 
 
