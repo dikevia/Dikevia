@@ -185,6 +185,7 @@ class LegalOrchestrator:
         # PISTE search methods cap their query at 500 characters. The current
         # question must take precedence over older conversational context.
         live_query = build_official_search_query(current_question)
+        contextual_search_query = build_official_search_query(contextual_question)
         live_sources: list[dict] = []
         regulatory_sources: list[dict] = []
         case_law_sources: list[dict] = []
@@ -350,7 +351,7 @@ class LegalOrchestrator:
                 try:
                     local_sources = await search_local_documents(
                         conn, organization_id, request.employer,
-                        contextual_question[:500], effective_date, limit=5,
+                        contextual_search_query[:500], effective_date, limit=5,
                     )
                     if parsed_date is None:
                         for local_source in local_sources:
@@ -363,7 +364,7 @@ class LegalOrchestrator:
         permanent_issue = None
         if conn is not None:
             try:
-                stored = await search_legal_corpus(conn, contextual_question, effective_date, limit=12)
+                stored = await search_legal_corpus(conn, contextual_search_query, effective_date, limit=12)
                 for item in stored:
                     permanent_sources.append({
                         "source_type": item.get("source_type"), "source_id": item.get("source_id"),
