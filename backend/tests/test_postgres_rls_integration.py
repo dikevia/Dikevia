@@ -16,6 +16,7 @@ import pytest
 
 ADMIN_URL = os.getenv("TEST_DATABASE_ADMIN_URL")
 RUNTIME_URL = os.getenv("TEST_DATABASE_URL")
+PLATFORM_ADMIN_URL = os.getenv("TEST_PLATFORM_ADMIN_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not (ADMIN_URL and RUNTIME_URL), reason="PostgreSQL test URLs not configured")
 
 
@@ -30,6 +31,7 @@ async def _run_isolation_scenario():
     usage_request_id = uuid.uuid4()
     admin = await asyncpg.connect(ADMIN_URL)
     runtime = await asyncpg.connect(RUNTIME_URL)
+    platform = await asyncpg.connect(PLATFORM_ADMIN_URL) if PLATFORM_ADMIN_URL else admin
     try:
         runtime_role = await runtime.fetchrow(
             "SELECT r.rolsuper, r.rolbypassrls FROM pg_roles r WHERE r.rolname=current_user"
@@ -48,7 +50,7 @@ async def _run_isolation_scenario():
             await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE'),($4,'https://issuer.test',$5,$6,'ACTIVE')",
                 user_a, "sub-a-"+user_a.hex, "a@example.test", user_b, "sub-b-"+user_b.hex, "b@example.test")
             await admin.execute("INSERT INTO platform_admins(user_id) VALUES($1)", user_a)
-            founder_user_id = await admin.fetchval(
+            founder_user_id = await platform.fetchval(
                 "SELECT platform_admin_grant_founder_entitlement($1,$2,$3,$4)",
                 user_a, "https://issuer.test", "sub-a-"+user_a.hex,
                 "Permanent founder entitlement for verified test identity",
@@ -245,6 +247,8 @@ async def _run_isolation_scenario():
             assert {r['token_hash'] for r in invitations} == {token_a}
     finally:
         await runtime.close()
+        if platform is not admin:
+            await platform.close()
         # Admin URL should be a disposable test DB owner/superuser so it can
         # remove fixture rows even when FORCE ROW LEVEL SECURITY is enabled.
         async with admin.transaction():
