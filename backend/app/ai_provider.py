@@ -388,7 +388,7 @@ def validate_entailment_verdicts(payload, claims, sources):
             continue
         source_excerpt = matched[0].get("excerpt")
         source_text = (
-            str(source_excerpt) if isinstance(source_excerpt, str) and source_excerpt.strip()
+            str(source_excerpt)[:12000] if isinstance(source_excerpt, str) and source_excerpt.strip()
             else str(matched[0].get("text") or "")[:1800]
         )
         if _normalize_entailment_text(support_quote) not in _normalize_entailment_text(source_text):
