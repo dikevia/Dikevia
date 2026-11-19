@@ -406,7 +406,10 @@ async def test_loda_search_consults_matching_official_text_at_requested_date(mon
         if request.url.path.endswith("/search"):
             body = json.loads(request.content)
             assert body["fond"] == "LODA_DATE"
-            assert body["recherche"]["champs"][0]["typeChamp"] == "ALL"
+            assert body["recherche"]["champs"][0]["typeChamp"] == "NUM"
+            assert body["recherche"]["champs"][0]["criteres"][0] == {
+                "typeRecherche": "EXACTE", "valeur": "2002-60", "operateur": "ET"
+            }
             assert body["recherche"]["filtres"][0] == {
                 "facette": "DATE_VERSION", "singleDate": expected_stamp
             }
@@ -455,6 +458,9 @@ async def test_loda_search_rejects_mismatched_consulted_identifier(monkeypatch):
         if request.url.path == "/api/oauth/token":
             return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
         if request.url.path.endswith("/search"):
+            body = json.loads(request.content)
+            assert body["recherche"]["champs"][0]["typeChamp"] == "ALL"
+            assert body["recherche"]["champs"][0]["criteres"][0]["proximite"] == 5
             return httpx.Response(200, json={"results": [{
                 "id": "LEGITEXT000012345678",
                 "titre": "Décret relatif aux agents territoriaux",
