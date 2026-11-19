@@ -165,7 +165,8 @@ jobs:
           retention-days: 30
 
   live-smoke:
-    if: github.event_name == 'pull_request'
+    # These probes contact Render-hosted services and may wake paid compute. Disabled unless explicitly enabled in repository variables.
+    if: github.event_name == 'pull_request' && vars.ENABLE_LIVE_SMOKE_TESTS == 'true'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
     runs-on: ubuntu-latest
