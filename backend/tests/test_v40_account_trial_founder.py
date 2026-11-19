@@ -75,4 +75,4 @@ def test_frontend_displays_trial_countdown_and_routes_expired_users_to_billing()
     assert "Essai gratuit actif" in frontend
     assert "loadAccessStatus" in frontend
     assert "setView('billing')" in frontend
-    assert "14,90" in frontend and "29,00" in frontend
+    assert "14,90" in frontend and "29 €" in frontend
