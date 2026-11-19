@@ -12,9 +12,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-EXPECTED_IDS = [f"Q{i:03d}" for i in range(1, 101)]
+EXPECTED_IDS = [f"FPT-{i:03d}" for i in range(1, 101)]
 REQUIRED_QUESTION_FIELDS = {
-    "id", "domaine", "type_question", "question", "reponse_attendue_reference"
+    "id", "category_id", "category", "action_type", "estimated_credits", "question", "expected_criteria"
 }
 DIMENSIONS = (
     "exactitude_juridique",
@@ -39,14 +39,14 @@ def questions_from(data: Any) -> list[dict]:
     if isinstance(data, dict):
         data = data.get("questions")
     if not isinstance(data, list):
-        raise ValueError("Le jeu de questions doit être une liste JSON ou un objet {questions:[...]}.")
+        raise ValueError("Le jeu doit être un objet JSON contenant benchmark_name, total_questions, categories et questions.")
     if any(not isinstance(item, dict) for item in data):
         raise ValueError("Chaque question doit être un objet JSON.")
     return data
 
 
 def validate_dataset(path: str) -> list[dict]:
-    questions = questions_from(load_json(path))
+    data = load_json(path)\n    if not isinstance(data, dict) or data.get("benchmark_name") != "FPT_Juridique_100_Questions" or data.get("total_questions") != 100:\n        raise ValueError("Métadonnées invalides : benchmark_name ou total_questions.")\n    questions = questions_from(data)
     ids = [q.get("id") for q in questions]
     duplicates = sorted({x for x in ids if ids.count(x) > 1})
     missing = [x for x in EXPECTED_IDS if x not in ids]
@@ -55,11 +55,11 @@ def validate_dataset(path: str) -> list[dict]:
         {"id": q.get("id"), "missing_fields": sorted(REQUIRED_QUESTION_FIELDS - q.keys())}
         for q in questions if REQUIRED_QUESTION_FIELDS - q.keys()
     ]
-    if duplicates or missing or unexpected or malformed or len(questions) != 100:
+    categories = data.get("categories", [])\n    category_counts = {cat.get("id"): 0 for cat in categories if isinstance(cat, dict)}\n    for q in questions:\n        if q.get("category_id") in category_counts:\n            category_counts[q["category_id"]] += 1\n    bad_categories = {cat.get("id"): {"declared": cat.get("count"), "actual": category_counts.get(cat.get("id"), 0)} for cat in categories if not isinstance(cat, dict) or category_counts.get(cat.get("id"), 0) != cat.get("count")}\n    if duplicates or missing or unexpected or malformed or len(questions) != 100 or len(categories) != 5 or bad_categories:
         raise ValueError(json.dumps({
             "question_count": len(questions), "duplicates": duplicates,
             "missing_ids": missing, "unexpected_ids": unexpected,
-            "malformed_questions": malformed,
+            "malformed_questions": malformed, "category_counts": bad_categories,
         }, ensure_ascii=False, indent=2))
     return questions
 
@@ -85,9 +85,9 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
         r = by_id[q["id"]]
         review.append({
             "id": q["id"],
-            "domaine": q["domaine"],
+            "category_id": q["category_id"],\n            "category": q["category"],\n            "action_type": q["action_type"],\n            "estimated_credits": q["estimated_credits"],
             "question": q["question"],
-            "reponse_attendue_reference": q["reponse_attendue_reference"],
+            "criteres_attendus": q["expected_criteria"],
             "reponse_dikevia": r.get("answer", ""),
             "sources_dikevia": r.get("sources", []),
             "statut_verification": r.get("verification_status"),
@@ -109,7 +109,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         responses = responses.get("responses")
     response_ids = {r.get("id") for r in responses if isinstance(r, dict)}
     if response_ids != set(EXPECTED_IDS) or len(responses) != 100:
-        raise ValueError("Le fichier de réponses doit contenir exactement une réponse pour chacun des Q001–Q100.")
+        raise ValueError("Le fichier de réponses doit contenir exactement une réponse pour chacun des FPT-001–FPT-100.")
     reviews = load_json(reviews_path)
     if not isinstance(reviews, list):
         raise ValueError("Le fichier de revue doit être une liste JSON.")
@@ -145,7 +145,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
             unreviewed.append(q["id"])
             continue
         question_scores.append({"id": q["id"], "score": points, "max": 14, "severity": severity})
-        domain = str(q.get("domaine") or "Non classé")
+        domain = str(q.get("category") or "Non classé")
         stat = domain_stats.setdefault(domain, {"reviewed": 0, "points": 0, "max": 0, "critical": 0, "major": 0})
         stat["reviewed"] += 1
         stat["points"] += points
@@ -192,7 +192,7 @@ def main() -> int:
     try:
         if args.command == "validate":
             questions = validate_dataset(args.dataset)
-            print(f"OK — {len(questions)} questions, Q001 à Q100, champs obligatoires présents.")
+            print(f"OK — {len(questions)} questions, FPT-001 à FPT-100, champs obligatoires présents.")
         elif args.command == "prepare-review":
             prepare_review(args.dataset, args.responses, args.out)
             print(f"Grille créée : {args.out}")
