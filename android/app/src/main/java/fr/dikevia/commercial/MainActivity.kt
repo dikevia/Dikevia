@@ -41,6 +41,8 @@ private val Ink=Color(0xFF142B25)
 private val Muted=Color(0xFF637B71)
 private val Canvas=Color(0xFFF3F8F5)
 
+private data class RetainedAuthState(val accessToken:String?)
+
 class MainActivity:ComponentActivity(){
     private var token by mutableStateOf<String?>(null)
     private var authError by mutableStateOf<String?>(null)
@@ -55,7 +57,9 @@ class MainActivity:ComponentActivity(){
         const val LOGIN_REQUEST=7301
     }
     override fun onCreate(savedInstanceState:Bundle?){
-        super.onCreate(savedInstanceState);authService=AuthorizationService(this)
+        super.onCreate(savedInstanceState)
+        token=(lastCustomNonConfigurationInstance as? RetainedAuthState)?.accessToken
+        authService=AuthorizationService(this)
         setContent{MaterialTheme(colorScheme=lightColorScheme(primary=Deep,onPrimary=Gold,secondary=Emerald,background=Canvas,surface=Color.White,onSurface=Ink)){
             Root(token,authBusy,authError,::login){token=null;authError=null}
         }}
@@ -85,6 +89,7 @@ class MainActivity:ComponentActivity(){
             }
         }
     }
+    override fun onRetainCustomNonConfigurationInstance():Any? = RetainedAuthState(token)
     override fun onDestroy(){authService?.dispose();authService=null;super.onDestroy()}
 }
 private class Api{
