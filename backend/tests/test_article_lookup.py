@@ -58,3 +58,8 @@ def test_direct_lookup_checks_every_requested_article_reference():
     question = "Que prévoit l'article L111-1 et l'article L999-999 du CGFP ?"
     sources = [_source("LEGIFRANCE_API", "L111-1")]
     assert missing_direct_article_reference(question, sources) == "L999-999"
+
+
+def test_direct_lookup_accepts_dotted_article_reference_notation():
+    question = "Que prévoit l'article L. 999-999 du CGFP ?"
+    assert missing_direct_article_reference(question, []) == "L999-999"
