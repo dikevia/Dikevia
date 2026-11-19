@@ -233,3 +233,52 @@ def test_member_cannot_reopen_or_modify_a_finalized_legal_dossier(stored_status)
     assert "réouverture" in exc.value.detail
     assert len(conn.fetchrow_calls) == 1
     assert not conn.execute_calls
+
+
+def test_chat_and_dossier_queries_bind_both_organization_and_owner():
+    """Application SQL must retain explicit ownership even if PostgreSQL RLS is misconfigured."""
+    conn = HiddenRowsConnection()
+    ctx = context(conn)
+    conversation_id = str(uuid4())
+
+    asyncio.run(endpoint("/api/v1/chat/conversations", "GET")(ctx))
+    asyncio.run(endpoint(
+        "/api/v1/chat/conversations/{conversation_id}/messages", "GET"
+    )(conversation_id, ctx))
+    with pytest.raises(HTTPException):
+        asyncio.run(endpoint(
+            "/api/v1/chat/conversations/{conversation_id}", "DELETE"
+        )(conversation_id, ctx))
+    with pytest.raises(HTTPException):
+        asyncio.run(endpoint(
+            "/api/v1/chat/conversations/{conversation_id}/dossier", "POST"
+        )(conversation_id, ctx))
+    with pytest.raises(HTTPException):
+        asyncio.run(endpoint(
+            "/api/v1/chat/conversations/{conversation_id}/dossier", "GET"
+        )(conversation_id, ctx))
+
+    list_query, list_args = conn.fetch_calls[0]
+    messages_query, messages_args = conn.fetch_calls[1]
+    assert "c.organization_id=$1::uuid" in list_query
+    assert "c.user_id=$2::uuid" in list_query
+    assert list_args == (ctx.organization_id, ctx.user_id)
+    assert "c.organization_id=$2::uuid" in messages_query
+    assert "c.user_id=$3::uuid" in messages_query
+    assert "m.organization_id=$2::uuid" in messages_query
+    assert "m.user_id=$3::uuid" in messages_query
+    assert messages_args == (conversation_id, ctx.organization_id, ctx.user_id)
+
+    delete_query, delete_args = conn.execute_calls[0]
+    assert "organization_id=$2::uuid" in delete_query
+    assert "user_id=$3::uuid" in delete_query
+    assert delete_args == (conversation_id, ctx.organization_id, ctx.user_id)
+
+    dossier_lookup = conn.fetchrow_calls[0]
+    assert "organization_id=$2::uuid" in dossier_lookup[0]
+    assert "user_id=$3::uuid" in dossier_lookup[0]
+    assert dossier_lookup[1] == (conversation_id, ctx.organization_id, ctx.user_id)
+    dossier_read = conn.fetchrow_calls[1]
+    assert "organization_id=$2::uuid" in dossier_read[0]
+    assert "user_id=$3::uuid" in dossier_read[0]
+    assert dossier_read[1] == (conversation_id, ctx.organization_id, ctx.user_id)
