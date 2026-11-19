@@ -6,7 +6,11 @@ ROOT = Path(__file__).parents[2]
 def test_v33_document_routes_are_tenant_scoped_and_role_protected():
     main = (ROOT / "backend/app/main.py").read_text()
     assert '@app.post("/api/v1/documents",status_code=201)' in main
-    assert 'ctx: TenantContext = Depends(require_legal_editor)' in main
+    assert 'ctx: TenantContext = Depends(require_legal_editor_for_external)' in main
+    dependencies = (ROOT / "backend/app/dependencies.py").read_text()
+    assert "async def require_legal_editor_for_external(" in dependencies
+    assert 'if ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR")' in dependencies
+    assert 'Depends(get_tenant_context_for_chat)' in main
     assert '@app.post("/api/v1/documents/{document_id}/versions",status_code=201)' in main
     assert '@app.get("/api/v1/documents/{document_id}/download")' in main
     assert 'WHERE id=$1::uuid AND organization_id=$2::uuid' in main
