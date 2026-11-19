@@ -115,31 +115,33 @@ async def _startup_external_diagnostics() -> None:
     else:
         logger.warning("DIKEVIA_DIAGNOSTIC PISTE=NOT_CONFIGURED")
 
-    # Probe the regulatory-text pillar with a representative FPT overtime regime.
+    # Probe the regulatory-text pillar with several grounded FPT overtime query forms.
     if legifrance.configured:
-        try:
-            regulatory_probe = await legifrance.search_regulatory_texts(
-                "décret n° 2002-60 indemnités horaires pour travaux supplémentaires",
-                probe_date,
-                limit=3,
-            )
-            full_text_count = sum(
-                1 for item in regulatory_probe
-                if item.get("source_type") == "LEGIFRANCE_LODA"
-                and item.get("source_id")
-                and len(item.get("full_text") or "") >= 80
-            )
-            logger.warning(
-                "DIKEVIA_DIAGNOSTIC PISTE_LODA_IHTS_PROBE verdict=%s result_count=%d full_text_count=%d",
-                "PASS" if full_text_count else "NO_RESULT",
-                len(regulatory_probe),
-                full_text_count,
-            )
-        except Exception as exc:
-            logger.warning(
-                "DIKEVIA_DIAGNOSTIC PISTE_LODA_IHTS_PROBE verdict=ERROR error_type=%s",
-                type(exc).__name__,
-            )
+        for label, query in (
+            ("IHTS_NUMBER", "2002-60"),
+            ("IHTS_TITLE", "indemnités horaires"),
+            ("IHTS_WORKS", "travaux supplémentaires"),
+        ):
+            try:
+                regulatory_probe = await legifrance.search_regulatory_texts(
+                    query, probe_date, limit=3,
+                )
+                full_text_count = sum(
+                    1 for item in regulatory_probe
+                    if item.get("source_type") == "LEGIFRANCE_LODA"
+                    and item.get("source_id")
+                    and len(item.get("full_text") or "") >= 80
+                )
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_LODA_IHTS_PROBE name=%s verdict=%s result_count=%d full_text_count=%d",
+                    label, "PASS" if full_text_count else "NO_RESULT",
+                    len(regulatory_probe), full_text_count,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_LODA_IHTS_PROBE name=%s verdict=ERROR error_type=%s",
+                    label, type(exc).__name__,
+                )
 
     # Validate the experimental CETAT consultation contract independently.
     # Search metadata is never promoted to legal evidence unless the returned
