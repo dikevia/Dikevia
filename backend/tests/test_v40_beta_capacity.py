@@ -23,6 +23,7 @@ def test_beta_capacity_counts_active_users_pending_invites_and_platform_admins()
     migration = (ROOT / "database/migrations/019_temporary_beta_user_cap.sql").read_text()
     assert "pg_advisory_xact_lock(33010331)" in migration
     assert "FROM memberships m" in migration
+    assert "m.status IN ('ACTIVE','INVITED')" in migration
     assert "FROM invitations i" in migration
     assert "FROM platform_admins pa" in migration
     assert "GRANT EXECUTE ON FUNCTION beta_user_slot_available(text,integer) TO cfdt_juris_app" in migration

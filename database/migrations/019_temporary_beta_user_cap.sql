@@ -29,7 +29,7 @@ BEGIN
     SELECT 1
     FROM memberships m
     JOIN users u ON u.id=m.user_id
-    WHERE m.status='ACTIVE' AND u.status='ACTIVE'
+    WHERE m.status IN ('ACTIVE','INVITED') AND u.status='ACTIVE'
       AND lower(u.email)=normalized_email
     UNION
     SELECT 1
@@ -52,7 +52,7 @@ BEGIN
     SELECT lower(u.email) AS email
     FROM memberships m
     JOIN users u ON u.id=m.user_id
-    WHERE m.status='ACTIVE' AND u.status='ACTIVE'
+    WHERE m.status IN ('ACTIVE','INVITED') AND u.status='ACTIVE'
     UNION
     SELECT lower(u.email) AS email
     FROM platform_admins pa
