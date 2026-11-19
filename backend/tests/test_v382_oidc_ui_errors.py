@@ -26,3 +26,7 @@ def test_oidc_config_is_generated_and_served_from_the_static_directory():
     assert 'app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")' in app
     assert '<script src="/static/auth-config.js"></script>' in html
     assert "window.CFDT_JURIS_OIDC" in config.read_text(encoding="utf-8")
+
+def test_auth_pages_do_not_leak_url_tokens_through_referrers():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert '<meta name="referrer" content="no-referrer">' in html
