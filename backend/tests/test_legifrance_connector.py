@@ -414,7 +414,7 @@ async def test_loda_search_consults_matching_official_text_at_requested_date(mon
                 "facette": "DATE_VERSION", "singleDate": expected_stamp
             }
             return httpx.Response(200, json={"results": [{
-                "id": "LEGITEXT000012345678",
+                "id": "LEGITEXT000012345678_01-01-2023",
                 "titre": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
                 "numero": "2002-60",
                 "dateDebut": "2002-01-01",
@@ -425,7 +425,7 @@ async def test_loda_search_consults_matching_official_text_at_requested_date(mon
             body = json.loads(request.content)
             assert body == {"date": expected_stamp, "textId": "LEGITEXT000012345678"}
             return httpx.Response(200, json={"text": {
-                "id": "LEGITEXT000012345678", "texte": full_text,
+                "id": "LEGITEXT000012345678_01-01-2023", "texte": full_text,
             }})
         return httpx.Response(404)
 
@@ -462,7 +462,7 @@ async def test_loda_search_rejects_mismatched_consulted_identifier(monkeypatch):
             assert body["recherche"]["champs"][0]["typeChamp"] == "ALL"
             assert body["recherche"]["champs"][0]["criteres"][0]["proximite"] == 5
             return httpx.Response(200, json={"results": [{
-                "id": "LEGITEXT000012345678",
+                "id": "LEGITEXT000012345678_01-01-2023",
                 "titre": "Décret relatif aux agents territoriaux",
             }]})
         if request.url.path.endswith("/consult/legiPart"):
