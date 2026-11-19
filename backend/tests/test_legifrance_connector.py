@@ -554,3 +554,28 @@ async def test_loda_exact_91_875_lookup_preserves_territorial_decree_number(monk
     assert results[0]["nor"] == "INTB9100377D"
     assert results[0]["source_id"] == "LEGITEXT000052196548"
     assert results[0]["full_text"] == full_text.strip()
+
+@pytest.mark.asyncio
+async def test_legifrance_rejects_article_version_outside_requested_date(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID,
+                "num": "L. 123-4",
+                "nomCode": "Code général de la fonction publique",
+                "dateDebut": "2025-12-01",
+                "dateFin": "2026-12-31",
+                "texte": "Texte de version postérieure à la date demandée, assez long pour être contrôlé.",
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles("article L. 123-4", date(2025, 11, 16))
+    assert results == []
