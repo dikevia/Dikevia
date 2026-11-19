@@ -4,15 +4,22 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - integration/beta-commercial-security
+      - android/beta-apk-delivery
       - feature/dikevia-v3.38.5-cgfp-chat
     paths:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
       - "frontend/**"
+      - "backend/tests/**"
       - "render.yaml"
 
 permissions:
   contents: read
+
+concurrency:
+  group: android-beta-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-android-beta:
@@ -20,10 +27,30 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      - name: Validate authentication assets
+        run: |
+          node --check frontend/oidc-auth.js
+          python -m py_compile backend/tests/test_v381_oidc_retry.py backend/tests/test_v382_oidc_ui_errors.py
+          python - <<'PY'
+          import runpy
+          from pathlib import Path
+
+          for path in (
+              "backend/tests/test_v381_oidc_retry.py",
+              "backend/tests/test_v382_oidc_ui_errors.py",
+          ):
+              namespace = runpy.run_path(path)
+              checks = [(name, fn) for name, fn in namespace.items()
+                        if name.startswith("test_") and callable(fn)]
+              for name, check in checks:
+                  check()
+                  print(f"PASS {Path(path).name}::{name}")
+          PY
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -32,15 +59,16 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.9"
+          cache-provider: basic
 
       - name: Build beta APK
         working-directory: android
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Validate generated APK
+      - name: Validate APK and create checksum
         shell: bash
         run: |
           set -euo pipefail
@@ -48,11 +76,19 @@ jobs:
           test -s "$apk"
           test "$(stat -c%s "$apk")" -gt 100000
           unzip -t "$apk" >/dev/null
-          echo "APK archive exists, is non-empty and passes ZIP integrity validation."
-      - name: Upload beta APK
-        uses: actions/upload-artifact@v4
+          aapt="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -n "$aapt"
+          package="$("$aapt" dump badging "$apk" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -n 1)"
+          test "$package" = "fr.dikevia.commercial.beta"
+          sha256sum "$apk" > "$apk.sha256"
+          echo "APK valide : package=$package ; taille=$(stat -c%s "$apk") octets"
+
+      - name: Upload beta APK and checksum
+        uses: actions/upload-artifact@v7
         with:
           name: dikevia-commercial-beta-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/app-debug.apk.sha256
           if-no-files-found: error
           retention-days: 14
