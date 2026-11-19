@@ -293,16 +293,18 @@ class LegalOrchestrator:
                 code_issue, regulatory_search_issue, case_search_issue, temporal_issue,
             )
 
-        # CGFP index + the three official search pillars are launched together.
-        cgfp_result, official_result = await asyncio.gather(
-            search_cgfp_index(),
-            search_official_pillars(),
-        )
-        found, cgfp_issue = cgfp_result
+        # Primary path: query Légifrance/PISTE first for the CGFP, regulatory
+        # texts and CETAT case law. Consult the bundled PDF snapshot only when
+        # the live CGFP article search is unavailable or fails.
+        official_result = await search_official_pillars()
         (
             live_sources, regulatory_sources, case_law_sources,
             live_issue, regulatory_issue, case_law_issue, temporal_issue,
         ) = official_result
+        if live_issue:
+            found, cgfp_issue = await search_cgfp_index()
+        else:
+            found, cgfp_issue = None, None
         period_version_comparison = None
         if period_start and period_start < effective_date:
             period_version_comparison = _compare_official_period_versions(
