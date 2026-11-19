@@ -165,6 +165,8 @@ class LegifranceConnector:
 
     def _search_payload(self, query: str, effective_date: date, code_name: str | None = None) -> dict:
         ref = re.search(r"\b([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b", query, re.I)
+        if ref is None:
+            ref = re.search(r"\barticle\s+(\d+(?:-\d+)*)\b", query, re.I)
         if ref:
             field = {"typeChamp": "NUM_ARTICLE", "criteres": [{
                 "typeRecherche": "EXACTE", "valeur": re.sub(r"[.\s]+", "", ref.group(1)).upper(), "operateur": "ET"}], "operateur": "ET"}
@@ -380,11 +382,10 @@ class LegifranceConnector:
             raise ValueError("La recherche Légifrance doit contenir entre 2 et 500 caractères.")
         payload = self._search_payload(query.strip(), effective_date, code_name)
         result = await self._request("POST", "/search", json_body=payload)
-        # Temporary, bounded diagnostic: capture the actual PISTE search response,
-        # including total counters and nested result shape, without OAuth credentials.
-        raw_preview = json.dumps(result, ensure_ascii=False, default=str)[:4000]
-        logger.warning("DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH_RAW query=%s request=%s response=%s",
-                       query.strip()[:80], json.dumps(payload, ensure_ascii=False), raw_preview)
+        logger.warning(
+            "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH_SUMMARY result_count=%d",
+            len(self._find_article_ids(result)),
+        )
         article_ids = self._find_article_ids(result)
         if not article_ids:
             # Preserve the fact that the API was queried, but never infer that no law exists.
@@ -393,6 +394,8 @@ class LegifranceConnector:
             r"\b(?:article\s+)?([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b",
             query, re.I,
         )
+        if requested_ref_match is None:
+            requested_ref_match = re.search(r"\barticle\s+(\d+(?:-\d+)*)\b", query, re.I)
         requested_ref = (
             re.sub(r"[^A-Z0-9]", "", requested_ref_match.group(1).upper())
             if requested_ref_match else None
