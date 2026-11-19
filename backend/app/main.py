@@ -1204,31 +1204,39 @@ async def ingest_administrative_case_law(q: str, effective_date: date | None = N
         imported = rejected = 0
         try:
             hits = await case_law_connector.search(q, requested_date)
-            async with conn.transaction():
-                for hit in hits[:limit]:
+            # Complete every PISTE consultation before opening the database
+            # transaction. Network latency must never hold corpus write locks.
+            prepared_documents = []
+            for hit in hits[:limit]:
+                try:
+                    decision = await case_law_connector.consult(hit["source_id"])
+                    decision_date = None
                     try:
-                        decision = await case_law_connector.consult(hit["source_id"])
-                        decision_date = None
-                        try:
-                            decision_date = date.fromisoformat((decision.get("decision_date") or "")[:10])
-                        except ValueError:
-                            pass
-                        await upsert_legal_document(conn, {
-                            "source_type": "LEGIFRANCE_CETAT", "source_id": decision["source_id"],
-                            "title": decision.get("title") or hit.get("title") or decision["source_id"],
-                            "document_kind": "ADMIN_CASELAW", "official_number": decision.get("case_number"),
-                            "jurisdiction": decision.get("jurisdiction"), "publisher": "Juridictions administratives",
-                            "official_url": decision.get("source_url"), "signature_date": decision_date,
-                            "status": "UNKNOWN", "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
-                            "valid_from": None, "valid_to": None, "version_status": "UNKNOWN",
-                            "version_key": "decision-" + decision["source_id"],
-                            "source_version_id": decision["source_id"], "full_text": decision.get("text", ""),
-                            "raw_metadata": {"case_number": decision.get("case_number"),
-                                "decision_date": decision.get("decision_date"), "jurisdiction": decision.get("jurisdiction")},
-                            "raw_version_payload": {"requested_date": requested_date.isoformat(),
-                                "api_method": "/consult/juri"}})
+                        decision_date = date.fromisoformat((decision.get("decision_date") or "")[:10])
+                    except ValueError:
+                        pass
+                    prepared_documents.append({
+                        "source_type": "LEGIFRANCE_CETAT", "source_id": decision["source_id"],
+                        "title": decision.get("title") or hit.get("title") or decision["source_id"],
+                        "document_kind": "ADMIN_CASELAW", "official_number": decision.get("case_number"),
+                        "jurisdiction": decision.get("jurisdiction"), "publisher": "Juridictions administratives",
+                        "official_url": decision.get("source_url"), "signature_date": decision_date,
+                        "status": "UNKNOWN", "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+                        "valid_from": None, "valid_to": None, "version_status": "UNKNOWN",
+                        "version_key": "decision-" + decision["source_id"],
+                        "source_version_id": decision["source_id"], "full_text": decision.get("text", ""),
+                        "raw_metadata": {"case_number": decision.get("case_number"),
+                            "decision_date": decision.get("decision_date"), "jurisdiction": decision.get("jurisdiction")},
+                        "raw_version_payload": {"requested_date": requested_date.isoformat(),
+                            "api_method": "/consult/juri"}})
+                except (LegifranceUnavailable, ValueError, KeyError, TypeError):
+                    rejected += 1
+            async with conn.transaction():
+                for item in prepared_documents:
+                    try:
+                        await upsert_legal_document(conn, item)
                         imported += 1
-                    except (LegifranceUnavailable, ValueError, KeyError, TypeError):
+                    except (ValueError, TypeError):
                         rejected += 1
             status = "SUCCEEDED" if imported and not rejected else "PARTIAL"
             await conn.execute("UPDATE legal_ingestion_runs SET status=$2,records_seen=$3,records_imported=$4,records_rejected=$5,finished_at=now() WHERE id=$1",
