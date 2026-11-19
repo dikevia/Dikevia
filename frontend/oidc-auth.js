@@ -52,15 +52,25 @@
       scope:cfg.scopes||'openid profile email',state,code_challenge:await challenge(verifier),code_challenge_method:'S256'});
     window.location.assign(url.toString());
   }
+  function cleanAuthCallbackUrl() {
+    const cleanUrl = new URL(window.location.href);
+    for (const key of ['code', 'state', 'error', 'error_description', 'iss', 'session_state']) {
+      cleanUrl.searchParams.delete(key);
+    }
+    history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+  }
   async function completeCallback() {
     const params = new URLSearchParams(window.location.search);
+    // Authorization codes are short-lived bearer credentials. Remove callback
+    // parameters before any asynchronous network request or error handling.
+    if (['code', 'state', 'error', 'error_description', 'iss', 'session_state']
+      .some(key => params.has(key))) cleanAuthCallbackUrl();
     const providerError = params.get('error');
     if (providerError) {
       const state = params.get('state');
       const expected = sessionStorage.getItem('cfdt_oidc_state');
       sessionStorage.removeItem('cfdt_oidc_state');
       sessionStorage.removeItem('cfdt_oidc_verifier');
-      history.replaceState({}, document.title, window.location.pathname + window.location.hash);
       if (!state || !expected || state !== expected)
         throw new Error('État OIDC invalide. Relancez la connexion.');
       const code = providerError.slice(0, 80);
@@ -101,8 +111,6 @@
         window.dispatchEvent(new CustomEvent('cfdt:invitation-error', {detail: {message: detail.detail || 'Impossible d’accepter l’invitation.'}}));
       }
     }
-    // Nettoyage des paramètres OAuth de l'URL sans toucher au chemin.
-    history.replaceState({},document.title,window.location.pathname+window.location.hash);
   }
   const ready = completeCallback();
   window.CFDT_JURIS_AUTH = {
