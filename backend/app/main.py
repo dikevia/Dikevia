@@ -109,6 +109,37 @@ async def _startup_external_diagnostics() -> None:
     else:
         logger.warning("DIKEVIA_DIAGNOSTIC PISTE=NOT_CONFIGURED")
 
+    # Validate the experimental CETAT consultation contract independently.
+    # Search metadata is never promoted to legal evidence unless the returned
+    # decision identifier and a substantial full text both match.
+    if legifrance.configured:
+        try:
+            cetat_probe = AdministrativeCaseLawConnector(legifrance)
+            decisions = await cetat_probe.search(
+                "fonction publique territoriale agent public", probe_date
+            )
+            if not decisions:
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_CETAT_FULLTEXT_PROBE verdict=NO_RESULT result_count=0"
+                )
+            else:
+                decision = await cetat_probe.consult(decisions[0]["source_id"])
+                full_text_length = len(decision.get("text") or "")
+                passed = (
+                    decision.get("source_id") == decisions[0].get("source_id")
+                    and decision.get("full_text_retrieved") is True
+                    and full_text_length >= 80
+                )
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_CETAT_FULLTEXT_PROBE verdict=%s result_count=%d text_length=%d",
+                    "PASS" if passed else "FAIL", len(decisions), full_text_length,
+                )
+        except Exception as exc:
+            logger.warning(
+                "DIKEVIA_DIAGNOSTIC PISTE_CETAT_FULLTEXT_PROBE verdict=ERROR error_type=%s",
+                type(exc).__name__,
+            )
+
     ai_configured = bool(settings.ai_api_base_url and settings.ai_api_key and settings.ai_model)
     logger.warning(
         "DIKEVIA_DIAGNOSTIC AI_CHECK_START configured=%s base_url=%s key=%s model=%s",
