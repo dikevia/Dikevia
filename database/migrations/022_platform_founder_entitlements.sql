@@ -112,7 +112,7 @@ SET search_path=public,pg_temp
 SET row_security=off
 AS $founder_list$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=p_actor_user_id) THEN
+    IF NOT EXISTS (SELECT 1 FROM platform_admins pa WHERE pa.user_id=p_actor_user_id) THEN
       RAISE EXCEPTION 'platform administrator required' USING ERRCODE='42501';
     END IF;
     RETURN QUERY SELECT e.user_id,e.note,e.granted_at,e.revoked_at
