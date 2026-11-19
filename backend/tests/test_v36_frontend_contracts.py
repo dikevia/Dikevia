@@ -97,3 +97,13 @@ def test_workspace_navigation_is_accessible_and_mobile_options_remain_visible():
     assert "grid-template-columns:repeat(2,minmax(0,1fr))" in html
     assert "@media(prefers-reduced-motion:reduce)" in html
     assert "b.setAttribute('aria-current','page')" in html
+
+
+def test_commercial_workspace_has_polished_responsive_tables_and_forms():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert ".view>.heading{padding:2px 1px 17px" in html
+    assert ".view .tablewrap th{position:sticky" in html
+    assert ".view input[type=file]::file-selector-button" in html
+    assert "#view-billing #billingCurrent" in html
+    assert ".view .toolbar{display:grid;grid-template-columns:1fr 1fr" in html
+    assert "@media(hover:none)" in html
