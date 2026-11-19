@@ -91,3 +91,31 @@ async def test_orchestrator_rejects_ambiguous_facts_date():
         "00000000-0000-0000-0000-000000000001")
     assert response.verification_status == "NON_VERIFIE"
     assert "AAAA-MM-JJ" in response.missing_information[0]
+
+
+def test_cgfp_explicit_reference_never_falls_back_to_unrelated_articles():
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    result = search_ranked_cgfp(
+        "Que prévoit l'article L999-999 du Code général de la fonction publique ? "
+        "Donne-moi son contenu et ses conséquences juridiques.",
+        limit=8,
+    )
+    assert result["search_mode"] == "reference_directe"
+    assert result["requested_reference"] == "L999-999"
+    assert result["reference_found_in_snapshot"] is False
+    assert result["results"] == []
+
+
+def test_cgfp_explicit_existing_reference_returns_only_that_article():
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    result = search_ranked_cgfp(
+        "Que prévoit l'article L4 du Code général de la fonction publique "
+        "pour les fonctionnaires territoriaux ?",
+        limit=8,
+    )
+    assert result["search_mode"] == "reference_directe"
+    assert result["requested_reference"] == "L4"
+    assert result["reference_found_in_snapshot"] is True
+    assert [item["article"] for item in result["results"]] == ["L4"]
