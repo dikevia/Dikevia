@@ -133,3 +133,9 @@ def test_dikevia_oidc_globals_are_branded_and_auth_module_survives_missing_confi
     assert "Configuration OIDC Dikévia absente ou incomplète" in auth
     assert "const auth=window.DIKEVIA_AUTH||null;" in html
     assert "dikevia_oidc_state" in auth
+
+
+def test_login_button_remains_visible_when_browser_auth_module_is_missing():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "$('#login').classList.remove('hidden')" in html
+    assert "Le module OIDC navigateur Dikévia est introuvable" in html
