@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.net.http.SslError
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.CookieManager
@@ -48,12 +49,16 @@ class MainActivity : Activity() {
             setSupportMultipleWindows(false)
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
-            safeBrowsingEnabled = true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                safeBrowsingEnabled = true
+            }
         }
 
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
-            setAcceptThirdPartyCookies(webView, true)
+            // The OIDC identity provider is a top-level navigation, not an embedded third-party frame.
+            // Keep third-party cookies disabled; the first-party Keycloak session cookie still works.
+            setAcceptThirdPartyCookies(webView, false)
         }
 
         webView.webViewClient = object : WebViewClient() {
