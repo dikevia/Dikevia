@@ -50,7 +50,26 @@ jobs:
               args+=(-e "$name=${!name}")
             fi
           done
-          exec docker exec "${args[@]}" "$container_id" psql "$@"
+          psql_args=()
+          input_file=""
+          while (($#)); do
+            if [[ "$1" == "-f" || "$1" == "--file" ]]; then
+              if (($# < 2)); then
+                echo "psql -f requires a file path." >&2
+                exit 2
+              fi
+              input_file="$2"
+              psql_args+=("-f" "-")
+              shift 2
+            else
+              psql_args+=("$1")
+              shift
+            fi
+          done
+          if [[ -n "$input_file" ]]; then
+            exec docker exec "${args[@]}" "$container_id" psql "${psql_args[@]}" < "$input_file"
+          fi
+          exec docker exec "${args[@]}" "$container_id" psql "${psql_args[@]}"
           SH
           chmod +x "$RUNNER_TEMP/pg-client/psql"
           echo "$RUNNER_TEMP/pg-client" >> "$GITHUB_PATH"
