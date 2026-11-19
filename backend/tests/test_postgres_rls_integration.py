@@ -50,12 +50,6 @@ async def _run_isolation_scenario():
             await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE'),($4,'https://issuer.test',$5,$6,'ACTIVE')",
                 user_a, "sub-a-"+user_a.hex, "a@example.test", user_b, "sub-b-"+user_b.hex, "b@example.test")
             await admin.execute("INSERT INTO platform_admins(user_id) VALUES($1)", user_a)
-            founder_user_id = await platform.fetchval(
-                "SELECT platform_admin_grant_founder_entitlement($1,$2,$3,$4)",
-                user_a, "https://issuer.test", "sub-a-"+user_a.hex,
-                "Permanent founder entitlement for verified test identity",
-            )
-            assert founder_user_id == user_a
             await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE')", user_a2, "sub-a2-"+user_a2.hex, "a2@example.test")
             await admin.execute("INSERT INTO memberships(organization_id,user_id,role,status) VALUES($1,$2,'ORG_ADMIN','ACTIVE'),($3,$4,'ORG_ADMIN','ACTIVE'),($1,$5,'MEMBER','ACTIVE')", org_a,user_a,org_b,user_b,user_a2)
             conversation_a, conversation_a2 = uuid.uuid4(), uuid.uuid4()
@@ -72,6 +66,14 @@ async def _run_isolation_scenario():
             await admin.execute("""INSERT INTO stripe_invoice_records(stripe_invoice_id,organization_id,invoice_number,status,currency,amount_due,amount_paid)
                 VALUES($1,$2,'INV-A','paid','eur',1500,1500),($3,$4,'INV-B','paid','eur',8000,8000)""",
                 "in_test_"+uuid.uuid4().hex, org_a, "in_test_"+uuid.uuid4().hex, org_b)
+
+        # Use the dedicated platform DB role only after the seed transaction commits.
+        founder_user_id = await platform.fetchval(
+            "SELECT platform_admin_grant_founder_entitlement($1,$2,$3,$4)",
+            user_a, "https://issuer.test", "sub-a-"+user_a.hex,
+            "Permanent founder entitlement for verified test identity",
+        )
+        assert founder_user_id == user_a
 
         # Tenant A sees only its own documents and cannot update tenant B's row.
         async with runtime.transaction():
