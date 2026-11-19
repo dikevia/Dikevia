@@ -28,6 +28,10 @@
 Ne pas saisir noms/prénoms d'agents, matricules, adresses, coordonnées, bulletins de paie, diagnostics, comptes rendus médicaux, arrêts identifiants, données disciplinaires nominatives ou données syndicales nominatives tant que le cadre de traitement, les habilitations et les mesures de sécurité adaptées n'ont pas été validés.
 
 ## Fournisseur IA et RGPD
+
+L'instance de développement utilise actuellement Google Gemini 2.5 Flash via l'API Google. Lorsqu'une analyse IA est déclenchée, le backend transmet au fournisseur la question, l'employeur déclaré, la date ou période des faits, le contexte récent de conversation et les extraits documentaires retenus. Les métadonnées de consommation IA ne conservent pas les prompts ni les réponses, mais les échanges eux-mêmes restent enregistrés dans PostgreSQL conformément au fonctionnement du chat.
+
+L'interface du pilote doit informer explicitement de cette transmission et imposer l'usage de situations fictives ou anonymisées tant que le cadre de traitement, les contrats et les garanties du fournisseur n'ont pas été validés.
 Avant tout choix : vérifier contrat de sous-traitance, localisation, transferts, rétention, usage des données, sous-traitants, suppression et non-entraînement. Responsable de traitement et DPO déterminent finalités, base légale, information, durées, sous-traitants, transferts et nécessité d'une AIPD.
 
 ## État de conformité
