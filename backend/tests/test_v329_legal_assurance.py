@@ -86,6 +86,113 @@ def test_claim_evidence_rejects_unsupported_numeric_entitlement():
     assert "claim_0:unsupported_numeric_or_date_detail" in result["invalid_claims"]
 
 
+def test_period_endpoint_claim_must_be_scoped_to_its_exact_version_date():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = {
+        **_eligible_official_source(),
+        "source_id": "LEGIARTI000012345678_V20240101",
+        "version_endpoint": "START",
+        "requested_effective_date": "2024-01-01",
+    }
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period={
+        "period_start": "2024-01-01", "period_end": "2024-12-31",
+        "ongoing": False,
+    })
+    assert result["valid"] is False
+    assert "claim_0:period_endpoint_not_date_scoped" in result["invalid_claims"]
+
+
+def test_period_endpoint_claim_accepts_exact_date_but_not_whole_period_conclusion():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = {
+        **_eligible_official_source(),
+        "source_id": "LEGIARTI000012345678_V20240101",
+        "version_endpoint": "START",
+        "requested_effective_date": "2024-01-01",
+    }
+    facts_period = {
+        "period_start": "2024-01-01", "period_end": "2024-12-31",
+        "ongoing": False,
+    }
+    scoped = validate_claim_evidence({
+        "claims": [{
+            "text": "Au 2024-01-01, l'agent bénéficie d'un congé annuel dans les conditions prévues.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period=facts_period)
+    assert scoped["valid"] is True
+
+    broad = validate_claim_evidence({
+        "claims": [{
+            "text": "Au 2024-01-01, l'agent bénéficie de ce droit pendant toute la période.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period=facts_period)
+    assert broad["valid"] is False
+    assert "claim_0:period_wide_claim_from_endpoint_only" in broad["invalid_claims"]
+
+    year_wide = validate_claim_evidence({
+        "claims": [{
+            "text": "Au 2024-01-01, le droit reste applicable en 2024.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period=facts_period)
+    assert year_wide["valid"] is False
+    assert "claim_0:period_wide_claim_from_endpoint_only" in year_wide["invalid_claims"]
+
+    whole_year = validate_claim_evidence({
+        "claims": [{
+            "text": "Au 2024-01-01, le droit s'applique toute l'année 2024.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period=facts_period)
+    assert whole_year["valid"] is False
+    assert "claim_0:period_wide_claim_from_endpoint_only" in whole_year["invalid_claims"]
+
+
+def test_period_endpoint_claim_rejects_year_and_fiscal_period_scope_variants():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = {
+        **_eligible_official_source(),
+        "source_id": "LEGIARTI000012345678_V20240101",
+        "version_endpoint": "START",
+        "requested_effective_date": "2024-01-01",
+    }
+    facts_period = {
+        "period_start": "2024-01-01", "period_end": "2024-12-31",
+        "ongoing": False,
+    }
+    for wording in (
+        "Au 2024-01-01, le droit reste applicable pour l'année 2024.",
+        "Au 2024-01-01, le droit reste applicable sur l'exercice 2024.",
+        "Au 2024-01-01, le droit reste applicable au titre de 2024.",
+        "Au 2024-01-01, le droit reste applicable pendant l'exercice 2024.",
+        "Au 2024-01-01, le droit reste applicable au titre de l'exercice 2024.",
+    ):
+        result = validate_claim_evidence({
+            "claims": [{
+                "text": wording,
+                "source_id": source["source_id"],
+                "quote": source["excerpt"],
+            }]
+        }, [source], facts_period=facts_period)
+        assert result["valid"] is False, wording
+        assert "claim_0:period_wide_claim_from_endpoint_only" in result["invalid_claims"]
+
+
 def test_claim_evidence_rejects_wrong_source_identity_even_when_quote_exists():
     from app.legal_assurance import validate_claim_evidence
 
@@ -126,3 +233,231 @@ def test_local_compliance_review_uses_only_current_clean_document_version_text()
     assert r'ai_review = "\n".join(' in source
     assert "v.version_number=x.version_number AND v.sha256=x.sha256 AND v.scan_status='CLEAN'" in source
     assert "x.sha256=d.sha256 AND x.extraction_status='EXTRACTED'" in source
+
+
+def test_entailment_verifier_uses_the_same_excerpt_as_the_claim_validator():
+    from app.ai_provider import validate_entailment_verdicts
+
+    excerpt = "L'agent bénéficie d'un congé annuel dans les conditions prévues par le présent code."
+    source = {
+        **_eligible_official_source(),
+        "text": "Extrait de recherche sans valeur probante et sans lien avec le congé.",
+        "excerpt": excerpt,
+        "full_text": "Texte intégral contenant de nombreux autres chapitres.",
+    }
+    claim = {
+        "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+        "quote": excerpt,
+    }
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": excerpt,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is True
+
+    wrong_span = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": "Extrait de recherche sans valeur probante et sans lien avec le congé.",
+        }]
+    }, [claim], [source])
+    assert wrong_span["valid"] is False
+    assert "verdict_0:support_quote_not_in_source" in wrong_span["invalid"]
+
+
+
+def test_entailment_request_sends_the_same_excerpt_and_temporal_metadata(monkeypatch):
+    import asyncio
+    import json
+    import app.ai_provider as provider
+
+    excerpt = "L'agent bénéficie d'un congé annuel dans les conditions prévues par le présent code."
+    source = {
+        **_eligible_official_source(),
+        "text": "Passage différent qui ne doit pas être envoyé au vérificateur.",
+        "excerpt": excerpt,
+        "full_text": "Texte intégral non pertinent pour cette vérification ciblée.",
+        "requested_effective_date": "2024-01-01",
+        "version_endpoint": "START",
+        "valid_from": "2024-01-01",
+        "valid_to": None,
+    }
+    claim = {
+        "text": "Au 2024-01-01, l'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+        "quote": excerpt,
+    }
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({
+                            "verdicts": [{
+                                "claim_index": 0,
+                                "source_id": source["source_id"],
+                                "verdict": "SUPPORTED",
+                                "support_quote": excerpt,
+                            }]
+                        })
+                    }
+                }]
+            }
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, *, headers, json):
+            captured["url"] = url
+            captured["payload"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(provider.httpx, "AsyncClient", FakeClient)
+    monkeypatch.setattr(provider.settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(provider.settings, "ai_model", "test-model")
+    monkeypatch.setattr(provider.settings, "ai_api_base_url", "https://provider.invalid/v1")
+
+    result = asyncio.run(provider.verify_claim_entailment(
+        claims=[claim],
+        sources=[source],
+        facts_period={
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "ongoing": False,
+        },
+    ))
+
+    assert result["valid"] is True
+    sent = json.loads(captured["payload"]["messages"][1]["content"])["items_to_verify"][0]
+    assert sent["official_text"] == excerpt
+    assert sent["requested_effective_date"] == "2024-01-01"
+    assert sent["version_endpoint"] == "START"
+    assert sent["facts_period"]["period_end"] == "2024-12-31"
+    assert "Passage différent" not in sent["official_text"]
+    assert "Texte intégral non pertinent" not in sent["official_text"]
+
+
+
+def test_entailment_verifier_cannot_use_text_beyond_the_claim_validator_fallback_excerpt(monkeypatch):
+    import asyncio
+    import json
+    import app.ai_provider as provider
+
+    prefix = "L'agent bénéficie d'un congé annuel dans les conditions prévues par le présent code. "
+    text_value = prefix + ("Contexte documentaire supplémentaire. " * 70) + "PASSAGE ULTRA TARDIF UNIQUE NON FOURNI AU VERIFICATEUR."
+    source = {
+        **_eligible_official_source(),
+        "text": text_value,
+        "excerpt": None,
+        "requested_effective_date": "2025-01-01",
+    }
+    claim = {
+        "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+    }
+    late_quote = "PASSAGE ULTRA TARDIF UNIQUE NON FOURNI AU VERIFICATEUR."
+    checked = provider.validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": late_quote,
+        }]
+    }, [claim], [source])
+    assert checked["valid"] is False
+    assert "verdict_0:support_quote_not_in_source" in checked["invalid"]
+
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({
+                            "verdicts": [{
+                                "claim_index": 0,
+                                "source_id": source["source_id"],
+                                "verdict": "SUPPORTED",
+                                "support_quote": prefix.strip(),
+                            }]
+                        })
+                    }
+                }]
+            }
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, *, headers, json):
+            captured["payload"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(provider.httpx, "AsyncClient", FakeClient)
+    monkeypatch.setattr(provider.settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(provider.settings, "ai_model", "test-model")
+    monkeypatch.setattr(provider.settings, "ai_api_base_url", "https://provider.invalid/v1")
+
+    result = asyncio.run(provider.verify_claim_entailment(
+        claims=[claim],
+        sources=[source],
+        facts_period={"exact_date": "2025-01-01"},
+    ))
+    assert result["valid"] is True
+    sent = json.loads(captured["payload"]["messages"][1]["content"])["items_to_verify"][0]
+    assert sent["official_text"] == text_value[:1800]
+    assert "PASSAGE ULTRA TARDIF UNIQUE" not in sent["official_text"]
+
+
+
+def test_entailment_verdict_quote_must_be_inside_the_exact_12000_character_payload():
+    from app.ai_provider import validate_entailment_verdicts
+
+    excerpt = ("Passage juridique pertinent. " * 500) + "MARQUEUR TARDIF HORS PAYLOAD UNIQUE."
+    source = {
+        **_eligible_official_source(),
+        "excerpt": excerpt,
+    }
+    claim = {
+        "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+    }
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": "MARQUEUR TARDIF HORS PAYLOAD UNIQUE.",
+        }]
+    }, [claim], [source])
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_not_in_source" in result["invalid"]

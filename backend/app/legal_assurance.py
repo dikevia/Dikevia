@@ -111,6 +111,16 @@ _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGN
 _SOURCE_ID_CITATION_RE = re.compile(r"\[source:([A-Za-z0-9:_-]{6,128})\]", re.IGNORECASE)
 _NUMERIC_FACT_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)(?!\w)", re.IGNORECASE)
 _DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}(?:er)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})\b", re.IGNORECASE)
+_WHOLE_PERIOD_ASSERTION_RE = re.compile(
+    r"\b(?:pendant|durant|sur|pour)\s+(?:toute|l'ensemble de|la totalite de)\s+(?:la\s+)?p[ée]riode\b"
+    r"|\b(?:tout au long de|au cours de)\s+(?:la\s+)?p[ée]riode\b"
+    r"|\bentre\s+le\s+\d{4}-\d{2}-\d{2}\s+et\s+le\s+\d{4}-\d{2}-\d{2}\b"
+    r"|\b(?:en|sur|pendant|durant|au cours de|pour|au titre de)\s+(?:(?:l'année|l'exercice|l'année civile)\s+)?20\d{2}\b(?!-\d{2}-\d{2})"
+    r"|\b(?:sur|pendant|durant|pour|au titre de)\s+(?:l'exercice|l'année)\s+20\d{2}\b"
+    r"|\btout au long de\s+l'année\s+20\d{2}\b"
+    r"|\b(?:(?:pendant|durant|sur)\s+)?toute\s+l'année\s+20\d{2}\b",
+    re.IGNORECASE,
+)
 _EVIDENCE_STOPWORDS = {
     "article", "code", "general", "fonction", "publique", "territoriale", "territorial",
     "agent", "agents", "doit", "doivent", "peut", "peuvent", "est", "sont", "etre",
@@ -247,7 +257,9 @@ def _evidence_tokens(value: Any) -> set[str]:
     return tokens - _EVIDENCE_STOPWORDS
 
 
-def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict[str, Any]:
+def validate_claim_evidence(
+    payload: Any, sources: list[dict[str, Any]], *, facts_period: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Fail closed unless each generated legal claim quotes its own eligible source.
 
     This verifies exact quote provenance, source identity, date/scope eligibility and
@@ -310,6 +322,10 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
             "normalized_evidence": normalized_evidence,
         })
 
+    period_start = (facts_period or {}).get("period_start")
+    period_end = (facts_period or {}).get("period_end") or (facts_period or {}).get("reference_date_for_retrieval")
+    period_spans_multiple_dates = bool(period_start and period_end and str(period_start) < str(period_end))
+
     validated: list[dict[str, str]] = []
     invalid: list[str] = []
     for index, item in enumerate(raw_claims):
@@ -332,6 +348,18 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         if len(matching_sources) != 1:
             invalid.append(f"claim_{index}:source_missing_ineligible_or_ambiguous")
             continue
+        source = matching_sources[0]["source"]
+        endpoint = source.get("version_endpoint")
+        requested_effective_date = source.get("requested_effective_date")
+        if period_spans_multiple_dates and endpoint in {"START", "END"}:
+            # Endpoint snapshots establish the rule at that exact date, not every
+            # intervening day. Require date-scoped claims and reject period-wide wording.
+            if not isinstance(requested_effective_date, str) or requested_effective_date not in claim_text:
+                invalid.append(f"claim_{index}:period_endpoint_not_date_scoped")
+                continue
+            if _WHOLE_PERIOD_ASSERTION_RE.search(claim_text):
+                invalid.append(f"claim_{index}:period_wide_claim_from_endpoint_only")
+                continue
         normalized_quote = _normalized_evidence_text(quote)
         normalized_evidence = matching_sources[0]["normalized_evidence"]
         if normalized_quote not in normalized_evidence:
@@ -350,14 +378,15 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
             value for value in _NUMERIC_FACT_RE.findall(claim_text)
             if _normalized_evidence_text(value).casefold() not in quote_folded
         ]
+        requested_date_normalized = _normalized_evidence_text(requested_effective_date).casefold()
         unsupported_dates = [
             value for value in _DATE_FACT_RE.findall(claim_text)
             if _normalized_evidence_text(value).casefold() not in quote_folded
+            and _normalized_evidence_text(value).casefold() != requested_date_normalized
         ]
         if unsupported_numbers or unsupported_dates:
             invalid.append(f"claim_{index}:unsupported_numeric_or_date_detail")
             continue
-        source = matching_sources[0]["source"]
         source_title = str(source.get("title") or source_id).strip()
         source_reference = source.get("article") or source.get("official_number") or source.get("case_number")
         if source_reference and str(source_reference).casefold() not in source_title.casefold():

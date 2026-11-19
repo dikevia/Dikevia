@@ -113,3 +113,52 @@ def test_decree_91_875_with_territorial_scope_is_eligible_for_fpt():
     })
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
+
+
+def test_document_wide_fpt_mention_cannot_authorize_an_unrelated_evidence_excerpt():
+    result = classify_public_service_scope({
+        "title": "Décret portant dispositions relatives aux agents publics",
+        "excerpt": "Les agents de l'État et les administrations centrales sont concernés.",
+        "full_text": (
+            "Chapitre I : dispositions applicables aux fonctionnaires territoriaux. "
+            "Chapitre II : les agents de l'État et les administrations centrales."
+        ),
+    })
+    assert result["scope"] == "FPE"
+    assert result["analysis_eligible"] is False
+
+
+def test_relevant_fpt_excerpt_takes_precedence_over_unrelated_document_context():
+    result = classify_public_service_scope({
+        "title": "Décret relatif aux agents publics",
+        "excerpt": "Les fonctionnaires territoriaux et les collectivités territoriales sont concernés.",
+        "full_text": "Les agents de l'État et les administrations centrales sont concernés.",
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True
+
+
+
+def test_mixed_fpt_and_fpe_scope_is_not_eligible_even_when_title_mentions_fpt():
+    result = classify_public_service_scope({
+        "title": "Décret relatif à la fonction publique territoriale",
+        "excerpt": "Les agents de l'État et les administrations centrales sont concernés.",
+        "full_text": (
+            "Chapitre I : fonctionnaires territoriaux. "
+            "Chapitre II : agents de l'État et administrations centrales."
+        ),
+    })
+    assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+    assert result["analysis_eligible"] is False
+
+
+def test_mixed_fpt_and_fph_scope_is_not_eligible():
+    result = classify_public_service_scope({
+        "title": "Dispositions relatives à la fonction publique territoriale",
+        "excerpt": (
+            "Les fonctionnaires territoriaux et les personnels hospitaliers "
+            "des établissements publics de santé sont concernés."
+        ),
+    })
+    assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+    assert result["analysis_eligible"] is False

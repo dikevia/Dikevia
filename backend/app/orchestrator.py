@@ -807,7 +807,9 @@ class LegalOrchestrator:
                             structured_answer = json.loads(raw_ai_content) if isinstance(raw_ai_content, str) else None
                         except (TypeError, ValueError):
                             structured_answer = None
-                        claim_validation = validate_claim_evidence(structured_answer, ai_sources)
+                        claim_validation = validate_claim_evidence(
+                            structured_answer, ai_sources, facts_period=temporal_context,
+                        )
                         if not claim_validation["valid"]:
                             ai_answer = None
                             if ai_usage is not None:
@@ -827,7 +829,7 @@ class LegalOrchestrator:
                         else:
                             entailment_validation = await verify_claim_entailment(
                                 claims=claim_validation["claims"], sources=ai_sources,
-                                allow_local_documents=allow_local_documents,
+                                allow_local_documents=allow_local_documents, facts_period=temporal_context,
                             )
                             if not entailment_validation.get("valid"):
                                 ai_answer = None

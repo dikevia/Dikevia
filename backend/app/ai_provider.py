@@ -56,6 +56,7 @@ MÉTHODE :
 - Pour une situation continue ou couvrant plusieurs dates, compare explicitement les sources datées du début et de la fin lorsqu'elles sont fournies. Distingue une rédaction identique d'une rédaction différente et cite la version correspondant à chaque borne.
 - Un résultat retrouvé à une seule borne ne prouve ni l'abrogation ni l'inapplicabilité à l'autre borne.
 - Une comparaison aux deux bornes ne prouve pas l'absence de modification intermédiaire : ne conclus jamais sur toute la période si les dates d'effet ou les versions intermédiaires ne sont pas documentées.
+- Si une affirmation repose sur une source marquée START ou END pour une situation couvrant plusieurs dates, limite explicitement cette affirmation à la date exacte `requested_effective_date` au format AAAA-MM-JJ. Ne présente jamais une version de borne comme valable pendant toute la période ou toute l'année sans preuve d'une validité continue.
 - Si la période de la situation ou une information déterminante manque, indique-le et demande une seule précision utile au maximum.
 - En cas de divergence entre sources, expose précisément les deux rédactions et leur date ; ne tranche pas sans fondement documentaire.
 - Ne qualifie pas automatiquement une situation d'illégale.
@@ -334,6 +335,7 @@ ENTAILMENT_SYSTEM_PROMPT = """Tu es un vérificateur contradictoire de l'appui d
 Tu ne réponds pas à la question juridique et tu n'utilises aucune connaissance externe.
 Tu dois vérifier exclusivement si la proposition est entièrement et directement impliquée par le texte officiel fourni.
 Contrôle notamment : même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
+Pour les situations couvrant plusieurs dates, les métadonnées de version et de borne temporelle font foi : une source marquée START ou END n'établit la règle qu'à sa date de consultation exacte. Ne valide jamais une proposition présentée comme applicable pendant toute la période à partir de seules versions aux bornes ; une telle proposition doit être INSUFFICIENT. Les propositions soutenues par une version de borne doivent être explicitement limitées à la date exacte indiquée.
 Une simple proximité de vocabulaire, un thème commun ou une citation exacte ne suffisent jamais.
 Si un élément de la proposition n'est pas expressément établi, si le texte est ambigu, incomplet, contradictoire, ou si une condition/exception empêche une conclusion certaine, réponds INSUFFICIENT.
 Si le texte contredit la proposition, réponds CONTRADICTED.
@@ -384,14 +386,21 @@ def validate_entailment_verdicts(payload, claims, sources):
         if not isinstance(support_quote, str) or len(support_quote.strip()) < 20:
             invalid.append(f"verdict_{index}:support_quote_missing")
             continue
-        source_text = str(matched[0].get("text") or matched[0].get("full_text") or matched[0].get("excerpt") or "")
+        source_excerpt = matched[0].get("excerpt")
+        source_text = (
+            str(source_excerpt)[:12000] if isinstance(source_excerpt, str) and source_excerpt.strip()
+            else str(matched[0].get("text") or "")[:1800]
+        )
         if _normalize_entailment_text(support_quote) not in _normalize_entailment_text(source_text):
             invalid.append(f"verdict_{index}:support_quote_not_in_source")
     return {"valid": not invalid, "invalid": invalid,
             "verification_scope": "SECOND_STAGE_CONSERVATIVE_MODEL_ENTAILMENT_WITH_EXACT_SOURCE_SPAN"}
 
 
-async def verify_claim_entailment(*, claims: list[dict], sources: list[dict], allow_local_documents: bool = False) -> dict:
+async def verify_claim_entailment(
+    *, claims: list[dict], sources: list[dict], allow_local_documents: bool = False,
+    facts_period: dict | None = None,
+) -> dict:
     """Ask the configured model for a conservative second-stage entailment check.
 
     This is an additional probabilistic safeguard, not a legal certification.
@@ -412,12 +421,22 @@ async def verify_claim_entailment(*, claims: list[dict], sources: list[dict], al
         source = matches[0]
         if source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"} and not allow_local_documents:
             return {"valid": False, "invalid": [f"claim_{index}:local_document_ai_transfer_disabled"]}
-        evidence_text = str(source.get("text") or source.get("full_text") or source.get("excerpt") or "")[:12000]
+        source_excerpt = source.get("excerpt")
+        evidence_text = (
+            str(source_excerpt)[:12000]
+            if isinstance(source_excerpt, str) and source_excerpt.strip()
+            else str(source.get("text") or "")[:1800]
+        )
         evidence.append({
             "claim_index": index,
             "source_id": claim.get("source_id"),
             "claim": claim.get("text"),
             "source_title": source.get("title"),
+            "requested_effective_date": source.get("requested_effective_date"),
+            "version_endpoint": source.get("version_endpoint"),
+            "valid_from": source.get("valid_from") or source.get("effective_from"),
+            "valid_to": source.get("valid_to") or source.get("effective_to"),
+            "facts_period": facts_period,
             "official_text": evidence_text,
         })
     payload = {
