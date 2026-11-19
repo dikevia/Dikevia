@@ -68,3 +68,11 @@ def test_owner_founder_slot_is_reserved_and_requires_verified_configured_identit
     assert "FOUNDER_OWNER_EMAIL" in config and "FOUNDER_OWNER_EMAIL=" in env
     assert '"/api/v1/platform/founder-entitlements/owner"' in main
     assert "La place 1 est réservée au propriétaire fondateur" in main
+
+def test_frontend_displays_trial_countdown_and_routes_expired_users_to_billing():
+    frontend = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'id="trialBanner"' in frontend
+    assert "Essai gratuit actif" in frontend
+    assert "loadAccessStatus" in frontend
+    assert "setView('billing')" in frontend
+    assert "14,90" in frontend and "29,00" in frontend
