@@ -77,7 +77,7 @@ pas la connexion OIDC, PISTE, IA, SMTP, Stripe ou l'exactitude juridique.
 
 | Domaine | Test à lancer | Preuve attendue |
 |---|---|---|
-| PostgreSQL | Migrations 001–018 sur une base jetable, puis tests RLS avec rôles runtime | Sortie SQL + pytest sans test d'intégration ignoré |
+| PostgreSQL | Migrations 001–019 sur une base jetable, puis tests RLS avec rôles runtime | Sortie SQL + pytest sans test d'intégration ignoré |
 | Keycloak/OIDC | Connexion PKCE, audience/issuer, e-mail vérifié, expiration et révocation | Parcours navigateur/API réussi et logs expurgés |
 | Invitations | Créer, envoyer, accepter une fois, refuser mauvaise adresse, expirer/révoquer | Tests fonctionnels et audit |
 | Documents | Import PDF/DOCX, ClamAV sain/infecté/indisponible, téléchargement, versions, reindex, suppression | Fichier de test, statuts et vérification stockage/DB |
