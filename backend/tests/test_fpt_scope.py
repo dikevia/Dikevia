@@ -50,3 +50,21 @@ def test_fpe_and_fph_only_sources_are_not_eligible():
     })
     assert fpe["analysis_eligible"] is False
     assert fph["analysis_eligible"] is False
+
+
+def test_eu_instrument_is_excluded_from_title_even_without_jurisdiction_metadata():
+    result = classify_public_service_scope({
+        "title": "Règlement (UE) 2024/1234 relatif aux agents publics",
+        "text": "Dispositions générales.",
+    })
+    assert result["scope"] == "OUT_OF_SCOPE_EUROPEAN_LAW"
+    assert result["analysis_eligible"] is False
+
+
+def test_french_transposition_decree_is_not_misclassified_as_eu_instrument():
+    result = classify_public_service_scope({
+        "title": "Décret portant transposition de la directive (UE) 2024/1234",
+        "text": "Dispositions applicables aux agents de la fonction publique territoriale.",
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True
