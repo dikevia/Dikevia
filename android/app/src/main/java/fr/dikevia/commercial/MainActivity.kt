@@ -229,7 +229,7 @@ private data class Entry(val title:String,val detail:String)
                 for(i in 0 until sources.length()){val s=sources.optJSONObject(i)?:continue
                     Text("• "+s.optString("title","Source juridique"),fontSize=12.sp,color=Ink)
                     s.optString("excerpt").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=11.sp,color=Muted)}
-                    val official=s.optString("official_url")
+                    val official=s.optString("official_url").ifBlank{s.optString("source_url")}
                     val host=runCatching{Uri.parse(official).host}.getOrNull()
                     if(official.startsWith("https://") && (host=="legifrance.gouv.fr" || host=="www.legifrance.gouv.fr")){
                         TextButton(onClick={context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(official)))}){Text("Consulter la source officielle",color=Emerald,fontSize=11.sp)}
@@ -357,7 +357,7 @@ private data class Entry(val title:String,val detail:String)
                                     val source=sources.optJSONObject(i)?:continue
                                     Text("• "+source.optString("title","Source juridique"),fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=4.dp))
                                     source.optString("excerpt").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=10.sp,color=Muted)}
-                                    val url=source.optString("official_url")
+                                    val url=source.optString("official_url").ifBlank{source.optString("source_url")}
                                     val host=runCatching{Uri.parse(url).host}.getOrNull()
                                     if(url.startsWith("https://")&&(host=="legifrance.gouv.fr"||host=="www.legifrance.gouv.fr")){
                                         TextButton(onClick={context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)))}){Text("Consulter Légifrance",fontSize=10.sp,color=Emerald)}
