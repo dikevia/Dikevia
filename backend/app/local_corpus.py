@@ -30,11 +30,16 @@ async def search_local_documents(
     query: str,
     effective_date: date,
     limit: int = 5,
+    collectivity_id: str | None = None,
 ) -> list[dict]:
-    """Search only clean, extracted documents belonging to the current tenant."""
-    if employer == "NATIONAL":
+    """Search clean, extracted documents in this tenant and optional selected collectivity."""
+    if collectivity_id is None and employer == "NATIONAL":
         return []
-    if employer not in COLLECTIVITY_FILTERS:
+    if collectivity_id is not None:
+        aliases = {"codes": (), "names": ()}
+    elif employer in COLLECTIVITY_FILTERS:
+        aliases = COLLECTIVITY_FILTERS[employer]
+    else:
         raise ValueError("Employeur local non pris en charge.")
     query = query.strip()
     if len(query) < 3:
@@ -44,7 +49,6 @@ async def search_local_documents(
     if not 1 <= limit <= 10:
         raise ValueError("La limite de recherche locale doit être comprise entre 1 et 10.")
 
-    aliases = COLLECTIVITY_FILTERS[employer]
     rows = await conn.fetch(
         """
         SELECT d.id, d.title, d.document_type, d.official_number, d.official_url,
@@ -74,8 +78,11 @@ async def search_local_documents(
           AND d.scan_status='CLEAN'
           AND dv.scan_status='CLEAN'
           AND (
-            upper(c.code) = ANY($2::text[])
-            OR lower(c.name) = ANY($3::text[])
+            ($6::uuid IS NOT NULL AND c.id=$6::uuid)
+            OR ($6::uuid IS NULL AND (
+              upper(c.code) = ANY($2::text[])
+              OR lower(c.name) = ANY($3::text[])
+            ))
           )
         ORDER BY relevance DESC, d.published_at DESC NULLS LAST
         LIMIT $5
@@ -85,6 +92,7 @@ async def search_local_documents(
         list(aliases["names"]),
         query,
         limit,
+        collectivity_id,
     )
 
     results: list[dict] = []
