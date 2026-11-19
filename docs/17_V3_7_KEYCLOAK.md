@@ -23,6 +23,22 @@ Keycloak utilise sa propre base PostgreSQL `keycloak-db`, séparée de la base m
 
 Le realm est importé au premier démarrage si le realm `cfdt` n'existe pas déjà. L'import au démarrage n'écrase pas un realm existant : après une première initialisation, les changements doivent être appliqués explicitement depuis la console ou via une procédure d'administration contrôlée.
 
+## Client Android natif (Dikévia 0.3.x)
+
+Le client Android est un client public distinct du client web. Il utilise Authorization Code + PKCE S256 ; aucun secret client ne doit être créé ni embarqué dans l’APK.
+
+- Client ID : `dikevia-android`
+- Type : OpenID Connect, **Public client** activé
+- Standard flow : activé ; Implicit flow, Direct access grants et Service accounts : désactivés
+- PKCE Code Challenge Method : `S256`
+- Valid Redirect URI exacte : `fr.dikevia.commercial:/oauth2redirect`
+- Client scope par défaut : `cfdt-juris-api-audience` (en plus de `profile`, `email` et `acr`)
+- Audience ajoutée au jeton d’accès : `cfdt-juris-api`
+
+**Attention pour un realm déjà existant :** l’import automatique au démarrage ne met pas à jour un realm existant. Un administrateur Keycloak doit donc créer/mettre à jour ce client explicitement dans `Clients` et lui associer le client scope `cfdt-juris-api-audience` comme *Default*. Ne pas supprimer ni réimporter le realm de production pour cette opération. Le JSON `deploy/keycloak/realm-cfdt.render.json` décrit le client attendu ; il ne prouve pas que le serveur en production l’a reçu.
+
+Avant de distribuer l’APK, contrôler dans un jeton d’accès de test : `iss` = `https://dikevia-identity-l2r8.onrender.com/realms/cfdt`, `aud` contient `cfdt-juris-api`, `sub` est présent et `exp - iat` ne dépasse pas 900 secondes. Puis vérifier `GET /api/v1/auth/me` avec ce jeton. Un jeton valide sans utilisateur provisionné doit rester refusé en HTTP 403 ; l’authentification ne doit jamais créer automatiquement un compte ou une appartenance.
+
 ## Paramètres API
 - `OIDC_ISSUER` doit correspondre exactement à l'issuer public annoncé dans le jeton, par exemple `http://localhost:8081/realms/cfdt` en local.
 - `OIDC_AUDIENCE=cfdt-juris-api` correspond à l'audience ajoutée par le client scope `cfdt-juris-api-audience`.
