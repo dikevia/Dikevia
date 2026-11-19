@@ -494,7 +494,7 @@ class LegalOrchestrator:
         # do not let lexical CGFP hits, unrelated decrees or CETAT metadata create
         # a misleading partially-verified answer.
         missing_article = missing_direct_article_reference(request.question, sources)
-        if missing_article:
+        if missing_article and not live_issue:
             return AskResponse(
                 request_id=request_id,
                 verification_status="NON_VERIFIE",
@@ -515,13 +515,33 @@ class LegalOrchestrator:
         # the legal-source family and the limitations attached to each document.
         sources = assess_source_set(sources)["sources"]
 
-        usable_permanent = [s for s in permanent_sources if s.get("content_kind") == "FULL_TEXT"
-            and (s.get("citation_integrity") or {}).get("valid")
-            and s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}]
+        permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
+        usable_permanent = [
+            s for s in sources
+            if s.get("source_id") in permanent_source_ids
+            and s.get("content_kind") == "FULL_TEXT"
+            and (s.get("citation_integrity") or {}).get("valid") is True
+            and s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}
+            and s.get("analysis_eligible") is True
+            and s.get("ihts_relevant") is not False
+        ]
+        usable_official = [
+            s for s in sources
+            if s.get("source_type") in {
+                "LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT",
+            }
+            and s.get("content_kind") != "METADATA"
+            and (s.get("citation_integrity") or {}).get("valid") is True
+            and s.get("temporal_status") in {
+                "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+            }
+            and s.get("analysis_eligible") is True
+            and s.get("ihts_relevant") is not False
+        ]
         usable_local = [s for s in local_sources
             if (s.get("citation_integrity") or {}).get("valid") is True
             and s.get("temporal_status") == "VERIFIED_APPLICABLE"]
-        if not any(s.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT", "CGFP_SNAPSHOT"} for s in sources) and not usable_permanent and not usable_local:
+        if not usable_official and not usable_permanent and not usable_local:
             missing = ["Aucune disposition législative ou réglementaire exploitable n'a été récupérée.",
                 "Recherche officielle Légifrance/PISTE et vérification des textes réglementaires complémentaires.",
                 "Recherche de jurisprudence pertinente et vérification des sources locales applicables."]
