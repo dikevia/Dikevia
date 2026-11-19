@@ -405,7 +405,7 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
     plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
-    if plan_code not in ("INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50"):
+    if plan_code not in ("ESSENTIEL", "PRO", "EQUIPE_INSTANCES", "COLLECTIVITE_SYNDICATS"):
         raise HTTPException(422, "Offre inconnue.")
     if not settings.stripe_secret_key:
         raise HTTPException(503, "Le paiement en ligne n'est pas encore configuré.")
