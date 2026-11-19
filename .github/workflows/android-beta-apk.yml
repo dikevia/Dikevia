@@ -46,6 +46,14 @@ jobs:
         working-directory: android
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
+      - name: Run native UI smoke test on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          script: gradle --no-daemon :app:connectedDebugAndroidTest
+
       - name: Validate generated APK
         shell: bash
         run: |
