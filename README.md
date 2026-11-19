@@ -2,6 +2,10 @@
 
 La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des textes réglementaires complémentaires sur Légifrance et interrogation sécurisée des documents propres à l’employeur.
 
+## Diagnostics externes au démarrage
+
+Les diagnostics Légifrance/PISTE et la vérification du catalogue du fournisseur IA sont **désactivés par défaut**. Ils ne sont lancés en production que si la variable `ENABLE_EXTERNAL_STARTUP_DIAGNOSTICS=true` est explicitement définie. Ces contrôles peuvent consommer des quotas d'API ou entraîner des coûts selon les fournisseurs ; laissez cette option désactivée pour la bêta privée et tout environnement soumis à une contrainte de dépense nulle.
+
 ## État réel de cette livraison
 - Code FastAPI versionné `3.38.5`.
 - Console plateforme : annuaire des syndicats, création d’espaces, attribution d’accès offerts, suspension et réactivation journalisées.
