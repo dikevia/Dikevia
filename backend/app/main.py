@@ -1072,7 +1072,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
     usable_national = [item for item in national_sources if item.get("temporal_status") in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}]
     ai_review = None
-    if (usable_national and settings.ai_api_key and settings.ai_model
+    if (usable_national and settings.ai_api_base_url and settings.ai_api_key and settings.ai_model
             and settings.ai_local_document_review_enabled and confirm_external_ai_transfer):
         review_question = (
             "CONTROLE DE COHERENCE D'UNE REGLE LOCALE. Question de contrôle : " + query +
@@ -1124,7 +1124,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
               "confirm_external_ai_transfer": confirm_external_ai_transfer,
               "external_ai_transfer_enabled": bool(
                   confirm_external_ai_transfer and settings.ai_local_document_review_enabled
-                  and settings.ai_api_key and settings.ai_model and usable_national
+                  and settings.ai_api_base_url and settings.ai_api_key and settings.ai_model and usable_national
               )}, ensure_ascii=False))
     return {
       "status": "COMPARISON_REQUIRED" if national_sources else "NATIONAL_SOURCES_NOT_FOUND",
