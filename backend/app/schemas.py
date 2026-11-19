@@ -13,6 +13,7 @@ class AskRequest(BaseModel):
     facts_end_date: str | None = None
     situation_ongoing: bool = False
     question: str = Field(min_length=8, max_length=5000)
+    confirm_local_document_ai_transfer: bool = False
     conversation_id: UUID | None = None
 
 class AskResponse(BaseModel):
