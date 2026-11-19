@@ -2,6 +2,8 @@
 -- This intentionally removes trial history and entitlement assignments; export/audit first.
 BEGIN;
 DROP FUNCTION IF EXISTS platform_admin_list_founder_entitlements(uuid);
+DROP FUNCTION IF EXISTS claim_trial_email(uuid,text);
+DROP TABLE IF EXISTS trial_email_claims;
 DROP FUNCTION IF EXISTS platform_admin_revoke_founder_entitlement(uuid,smallint,text);
 DROP FUNCTION IF EXISTS platform_admin_grant_founder_entitlement(uuid,smallint,uuid,text);
 DROP TABLE IF EXISTS founder_entitlements;
