@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
-from .dependencies import get_principal, get_tenant_context, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
+from .dependencies import get_principal, get_tenant_context, get_tenant_context_for_chat, require_org_admin, require_org_admin_for_external, require_legal_editor, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
@@ -1807,7 +1807,7 @@ async def validate_document(document_id:str,payload:DocumentValidationUpdate,ctx
 
 
 @app.post("/api/v1/organizations/me/invitations", status_code=201)
-async def create_invitation(payload: InvitationCreate, response: Response, ctx: TenantContext = Depends(require_org_admin)):
+async def create_invitation(payload: InvitationCreate, response: Response, ctx: TenantContext = Depends(require_org_admin_for_external)):
     """Create a one-time invitation. The raw token is returned once for secure manual delivery."""
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
