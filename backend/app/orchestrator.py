@@ -597,7 +597,7 @@ class LegalOrchestrator:
                 missing.insert(0, "Aucun document local correspondant n'a été trouvé pour cet employeur ; vérifier le code de collectivité et les pièces déposées.")
             if any(
                 s.get("source_type") == "LOCAL_DOCUMENT"
-                and (s.get("validation_status") != "VERIFIED_APPLICABLE"
+                and (s.get("validation_status") not in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}
                      or s.get("temporal_status") != "VERIFIED_APPLICABLE")
                 for s in local_sources
             ):
@@ -754,7 +754,7 @@ class LegalOrchestrator:
                             s.get("analysis_eligible") is True
                             or (
                                 s.get("source_type") == "LOCAL_DOCUMENT"
-                                and s.get("validation_status") == "VERIFIED_APPLICABLE"
+                                and s.get("validation_status") in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}
                             )
                         )
                         and s.get("ihts_relevant") is not False
