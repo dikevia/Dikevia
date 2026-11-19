@@ -343,6 +343,12 @@ async def billing_plans():
     return {"plans": public_plans(), "billing_provider": "stripe", "currency": "EUR"}
 
 
+@app.get("/api/v1/account/identity")
+async def account_identity(ctx: TenantContext = Depends(get_tenant_context)):
+    """Return only the authenticated user's internal ID for secure founder-grant workflows."""
+    return {"user_id": ctx.user_id, "identity_verified": True}
+
+
 @app.get("/api/v1/billing/subscription")
 async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context)):
     if settings.private_instance_mode:
@@ -671,17 +677,21 @@ async def platform_list_founder_entitlements(platform=Depends(require_platform_a
 @app.post("/api/v1/platform/founder-entitlements", status_code=201)
 async def platform_grant_founder_entitlement(payload: dict,
         platform=Depends(require_platform_admin)):
-    subject = str(payload.get("oidc_subject", "")).strip() if isinstance(payload, dict) else ""
+    target_id = str(payload.get("user_id", "")).strip() if isinstance(payload, dict) else ""
     note = str(payload.get("note", "")).strip()[:500] if isinstance(payload, dict) else ""
-    if not subject or len(subject) > 500 or len(note) < 8:
-        raise HTTPException(422, "Identité OIDC et motif d'attribution valides requis.")
-    # The SQL function grants only to an ACTIVE user already registered after
-    # successful OIDC verification for this exact configured issuer/subject.
+    try:
+        target_user_id = str(UUID(target_id))
+    except ValueError:
+        raise HTTPException(422, "Identifiant du compte cible invalide.")
+    if len(note) < 8:
+        raise HTTPException(422, "Un motif d'attribution d'au moins 8 caractères est requis.")
+    # SQL resolves the immutable issuer/subject from an ACTIVE user row created
+    # only after successful OIDC verification; the API never accepts an email or subject.
     target_user_id = await get_platform_admin_pool().fetchval(
-        "SELECT platform_admin_grant_founder_entitlement($1::uuid,$2,$3,$4)",
-        platform["user_id"], settings.oidc_issuer, subject, note)
+        "SELECT platform_admin_grant_founder_entitlement($1::uuid,$2::uuid,$3)",
+        platform["user_id"], target_user_id, note)
     if not target_user_id:
-        raise HTTPException(404, "Cette identité OIDC n'a pas encore été vérifiée par une connexion à Dikévia.")
+        raise HTTPException(404, "Ce compte n'a pas encore été vérifié par une connexion OIDC à Dikévia.")
     return {"user_id": str(target_user_id), "active": True, "permanent": True}
 
 
