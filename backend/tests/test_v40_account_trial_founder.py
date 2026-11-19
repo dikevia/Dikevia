@@ -48,3 +48,14 @@ def test_trial_and_founder_entitlement_are_not_organization_seat_limits():
 
 def test_trial_and_founder_migration_has_rollback():
     assert (ROOT / "database/migrations/rollback/020_account_trial_founder_entitlements.down.sql").is_file()
+
+def test_legacy_complimentary_email_allowlist_does_not_override_trial_expiry():
+    dependencies = (ROOT / "backend/app/dependencies.py").read_text(encoding="utf-8")
+    assert "platform_free_email_access" not in dependencies
+    assert "SUBSCRIPTION_REQUIRED" in dependencies
+    assert "TRIAL_EXPIRED" in dependencies
+
+
+def test_platform_founder_admin_operations_require_verified_oidc_email():
+    dependencies = (ROOT / "backend/app/dependencies.py").read_text(encoding="utf-8")
+    assert "Une adresse e-mail vérifiée est requise pour les opérations administrateur" in dependencies
