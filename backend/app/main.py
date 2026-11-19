@@ -1011,7 +1011,8 @@ async def review_local_rule_compliance(document_id: str, q: str,
     usable_national = [item for item in national_sources if item.get("temporal_status") in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}]
     ai_review = None
-    if usable_national and settings.ai_api_key and settings.ai_model:
+    if (usable_national and settings.ai_api_key and settings.ai_model
+            and settings.ai_local_document_review_enabled):
         review_question = (
             "CONTROLE DE COHERENCE D'UNE REGLE LOCALE. Question de contrôle : " + query +
             "\nCompare uniquement le document local fourni avec les textes nationaux intégraux et temporellement exploitables. "
