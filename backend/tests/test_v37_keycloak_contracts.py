@@ -28,6 +28,9 @@ def test_keycloak_realm_has_public_pkce_client_and_api_audience():
 
     imported = json.loads((ROOT / "deploy/keycloak/import/realm-cfdt.json").read_text())
     imported_android = next(c for c in imported["clients"] if c["clientId"] == "dikevia-android")
+    rendered = json.loads((ROOT / "deploy/keycloak/realm-cfdt.render.json").read_text())
+    rendered_android = next(c for c in rendered["clients"] if c["clientId"] == "dikevia-android")
+    assert rendered_android["attributes"]["post.logout.redirect.uris"] == android["attributes"]["post.logout.redirect.uris"]
     assert imported_android["redirectUris"] == android["redirectUris"]
     assert imported_android["attributes"]["pkce.code.challenge.method"] == "S256"
     assert imported_android["attributes"]["post.logout.redirect.uris"] == "fr.dikevia.commercial:/oauth2redirect"
