@@ -363,7 +363,7 @@ class LegalOrchestrator:
                         )
         local_sources: list[dict] = []
         local_issue = None
-        if request.employer != "NATIONAL":
+        if request.employer != "NATIONAL" or request.collectivity_id is not None:
             if conn is None:
                 local_issue = "Les documents propres à l'employeur ne sont pas accessibles dans ce contexte."
             else:
@@ -371,6 +371,7 @@ class LegalOrchestrator:
                     local_sources = await search_local_documents(
                         conn, organization_id, request.employer,
                         contextual_search_query[:500], effective_date, limit=5,
+                        collectivity_id=str(request.collectivity_id) if request.collectivity_id else None,
                     )
                     if parsed_date is None:
                         for local_source in local_sources:
