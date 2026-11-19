@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,7 +67,7 @@ class MainActivity:ComponentActivity(){
             if(cfg==null||ex!=null){runOnUiThread{authBusy=false;authError="Fournisseur de connexion indisponible."};return@fetchFromIssuer}
             val verifier=CodeVerifierUtil.generateRandomCodeVerifier()
             val req=AuthorizationRequest.Builder(cfg,CLIENT_ID,ResponseTypeValues.CODE,Uri.parse(REDIRECT))
-                .setScope(SCOPES).setCodeVerifier(verifier,null,CodeVerifierUtil.getDefaultCodeVerifierChallengeMethod()).build()
+                .setScope(SCOPES).setCodeVerifier(verifier).build()
             runOnUiThread{authBusy=false;startActivityForResult(authService!!.getAuthorizationRequestIntent(req),LOGIN_REQUEST)}
         }
     }
@@ -344,8 +346,8 @@ private data class Entry(val title:String,val detail:String)
 }
 @Composable private fun Nav(selected:String,choose:(String)->Unit){
     val tabs=listOf("Accueil","Assistant","Historique","Documents","Collectivités","Membres","Profil")
-    Surface(color=Color.White,shadowElevation=5.dp){Row(Modifier.fillMaxWidth().navigationBarsPadding()){
-        tabs.forEach{tab->TextButton(onClick={choose(tab)},modifier=Modifier.weight(1f)){Text(tab.take(1),color=if(selected==tab)Deep else Muted,fontWeight=if(selected==tab)FontWeight.Bold else FontWeight.Normal,fontSize=11.sp)}}
+    Surface(color=Color.White,shadowElevation=5.dp){Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).navigationBarsPadding(),verticalAlignment=Alignment.CenterVertically){
+        tabs.forEach{tab->TextButton(onClick={choose(tab)}){Text(tab,color=if(selected==tab)Deep else Muted,fontWeight=if(selected==tab)FontWeight.Bold else FontWeight.Normal,fontSize=11.sp)}}
     }}
 }
 @Composable private fun ErrorBox(message:String){
