@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat, ci/commercial-pr-checks, test/pwa-ci-validation]
   pull_request:
-    branches: [main]
+    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
   workflow_dispatch:
 permissions:
   contents: read
@@ -128,7 +128,7 @@ jobs:
           retention-days: 30
 
   live-smoke:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
     runs-on: ubuntu-latest
@@ -264,3 +264,39 @@ jobs:
           grep -q "dikevia-identity-l2r8.onrender.com/realms/cfdt" /tmp/auth-config.js
           grep -q "dikevia-commercial-api-l2r8.onrender.com/" /tmp/auth-config.js
           echo "Commercial web shell and OIDC client configuration are present."
+
+
+  android-debug-build:
+    name: Android beta debug build (unsigned)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK 35 from the hosted runner SDK
+        run: |
+          test -x "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" || test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Generate wrapper and compile debug APK
+        working-directory: android
+        run: |
+          gradle wrapper --gradle-version 8.9 --distribution-type bin
+          ./gradlew --no-daemon assembleDebug
+      - name: Upload unsigned debug APK for technical testing only
+        uses: actions/upload-artifact@v4
+        with:
+          name: dikevia-android-debug-unsigned
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
