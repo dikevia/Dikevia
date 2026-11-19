@@ -73,3 +73,49 @@ def test_other_topics_are_not_filtered_by_ihts_guard():
         "Mon chef me menace",
         {"title": "CGFP L134-5", "full_text": "Protection fonctionnelle."},
     )
+
+import pytest
+
+
+@pytest.mark.asyncio
+async def test_nonexistent_article_abstains_before_any_gemini_call(monkeypatch):
+    from app import orchestrator as orchestrator_module
+    from app.config import settings
+    from app.orchestrator import LegalOrchestrator
+    from app.schemas import AskRequest
+
+    async def no_token_refresh():
+        return None
+
+    async def no_code_results(query, requested_date, code_name=None):
+        assert "L999-999" in query
+        return []
+
+    async def no_regulatory_results(query, requested_date, limit=3):
+        return []
+
+    async def no_case_results(query, requested_date):
+        return []
+
+    async def forbidden_gemini_call(**kwargs):
+        raise AssertionError("Gemini ne doit jamais être appelé sans source officielle exploitable.")
+
+    monkeypatch.setattr(settings, "cgfp_enabled", False)
+    monkeypatch.setattr(orchestrator_module.legifrance, "configured", True)
+    monkeypatch.setattr(orchestrator_module.legifrance, "_get_token", no_token_refresh)
+    monkeypatch.setattr(orchestrator_module.legifrance, "search_code_articles", no_code_results)
+    monkeypatch.setattr(orchestrator_module.legifrance, "search_regulatory_texts", no_regulatory_results)
+    monkeypatch.setattr(orchestrator_module.case_law_connector, "search", no_case_results)
+    monkeypatch.setattr(orchestrator_module, "analyze_question", forbidden_gemini_call)
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(employer="NATIONAL", question="Que prévoit l'article L999-999 ?"),
+        organization_id="00000000-0000-0000-0000-000000000001",
+        conn=None,
+    )
+
+    assert response.verification_status == "NON_VERIFIE"
+    assert "Aucune conclusion juridique n'est formulée" in response.answer
+    assert any("Aucune disposition législative ou réglementaire exploitable" in item
+               for item in response.missing_information)
+
