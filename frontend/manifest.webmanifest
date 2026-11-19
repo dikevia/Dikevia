@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "Dikévia — Espace juridique",
+  "short_name": "Dikévia",
+  "description": "Votre espace juridique pour la fonction publique territoriale.",
+  "lang": "fr-FR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f6f4",
+  "theme_color": "#123b32",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/static/dikevia-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
