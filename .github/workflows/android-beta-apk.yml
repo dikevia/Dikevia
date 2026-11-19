@@ -28,6 +28,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate authentication assets
+        run: |
+          node --check frontend/oidc-auth.js
+          python -m py_compile backend/tests/test_v381_oidc_retry.py backend/tests/test_v382_oidc_ui_errors.py
+          grep -Fq '<script src="/static/auth-config.js"></script>' frontend/index.html
+          grep -Fq 'COPY frontend/auth-config.render.js /srv/frontend/auth-config.js' Dockerfile
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
