@@ -8,7 +8,7 @@ This is the installable Android shell for the Dikévia commercial beta. It loads
 - Allowed in-app origins: the commercial API and the dedicated Keycloak identity service
 - External HTTPS links open in the device browser
 - File selection is enabled for document attachments
-- OIDC Authorization Code + PKCE currently completes in the WebView session; the APK contains no client secret
+- The browser client is configured for OIDC Authorization Code + PKCE; the APK contains no client secret. **The live sign-in flow has not yet been validated on a physical Android device**, so WebView / Keycloak compatibility remains a manual beta acceptance check.
 
 ## Build and retrieve the beta APK
 
