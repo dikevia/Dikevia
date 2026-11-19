@@ -567,7 +567,7 @@ async def test_gemini_chat_completion_uses_compatible_route_and_bearer_auth(monk
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("sources", [None, [], [{}], [{"excerpt": ""}], [{"excerpt": "  ", "text": ""}], [{"text": "   "}], [{"text": "!!!"}], [{"text": "...", "source_id": "LEGI123", "requested_effective_date": "2026-01-01"}], [{"text": "Texte utile", "source_id": "LEGI123"}], [{"text": "Texte utile", "requested_effective_date": "2026-01-01"}], ["not-a-document"]])
+@pytest.mark.parametrize("sources", [None, [], [{}], [{"excerpt": ""}], [{"excerpt": "  ", "text": ""}], [{"text": "   "}], [{"text": "!!!"}], [{"text": "...", "source_id": "LEGI123", "requested_effective_date": "2026-01-01"}], [{"text": "Texte utile", "source_id": "LEGI123"}], [{"text": "Texte utile", "requested_effective_date": "2026-01-01"}], [{"text": "Texte utile", "source_id": "LEGI123", "requested_effective_date": "date-invalide"}], ["not-a-document"]])
 async def test_ai_provider_refuses_missing_or_empty_source_text_without_http(monkeypatch, sources):
     import httpx
 
