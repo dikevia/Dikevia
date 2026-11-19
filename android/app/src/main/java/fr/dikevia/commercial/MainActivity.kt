@@ -129,7 +129,7 @@ private data class Entry(val title:String,val detail:String)
             org?.let{current->Box(Modifier.weight(1f).fillMaxWidth()){
                 when(tab){
                     "Accueil"->Home(user,current){tab=it}
-                    "Assistant"->Assistant(token,current,api,resumeConversationId)
+                    "Assistant"->Assistant(token,current,api,resumeConversationId){resumeConversationId=null}
                     "Historique"->HistoryPage(token,current,api){id->resumeConversationId=id;tab="Assistant"}
                     "Documents"->Listing("Documents",token,current,api,"/api/v1/documents"){Entry(it.optString("title"),listOf(it.optString("document_type"),it.optString("validation_status"),it.optString("collectivity_name")).filter{s->s.isNotBlank()}.joinToString(" · "))}
                     "Collectivités"->Listing("Collectivités",token,current,api,"/api/v1/collectivities"){Entry(it.optString("name"),it.optString("code"))}
@@ -180,14 +180,22 @@ private data class Entry(val title:String,val detail:String)
         Button(onClick=click,modifier=Modifier.padding(top=9.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(button)}
     }}
 }
-@Composable private fun Assistant(token:String,org:Org,api:Api,initialConversationId:String?){
+@Composable private fun Assistant(token:String,org:Org,api:Api,initialConversationId:String?,onNewConversation:()->Unit){
     val context=LocalContext.current
     var q by remember{mutableStateOf("")};var employer by remember{mutableStateOf("NATIONAL")};var answer by remember{mutableStateOf<JSONObject?>(null)}
+    var previousMessages by remember(org.id,initialConversationId){mutableStateOf(emptyList<JSONObject>())}
     var conversationId by remember(org.id,initialConversationId){mutableStateOf(initialConversationId)}
     var factsStart by remember{mutableStateOf("")};var factsEnd by remember{mutableStateOf("")};var ongoing by remember{mutableStateOf(false)}
     var collectivityId by remember{mutableStateOf<String?>(null)};var collectivities by remember{mutableStateOf(emptyList<JSONObject>())}
     var collectivityExpanded by remember{mutableStateOf(false)}
     var waiting by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)};val scope=rememberCoroutineScope()
+    LaunchedEffect(org.id,initialConversationId){
+        if(initialConversationId==null){previousMessages=emptyList();answer=null}
+        else try{
+            val data=withContext(Dispatchers.IO){JSONArray(api.call(token,org.id,"/api/v1/chat/conversations/"+initialConversationId+"/messages"))}
+            previousMessages=(0 until data.length()).map{data.getJSONObject(it)}
+        }catch(e:Exception){error=e.message?:"Impossible de charger cette conversation."}
+    }
     LaunchedEffect(org.id){
         try{val data=withContext(Dispatchers.IO){JSONArray(api.call(token,org.id,"/api/v1/collectivities"))}
             collectivities=(0 until data.length()).map{data.getJSONObject(it)}
@@ -197,6 +205,15 @@ private data class Entry(val title:String,val detail:String)
         Text(if(conversationId==null)"Assistant juridique" else "Conversation reprise",fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink)
         Text("Le statut de vérification et les sources accompagnent chaque réponse.",color=Muted,fontSize=12.sp);Spacer(Modifier.height(9.dp))
         LazyColumn(Modifier.weight(1f).fillMaxWidth()){
+            items(previousMessages){m->
+                val isUser=m.optString("role")=="user"
+                Card(Modifier.fillMaxWidth().padding(vertical=3.dp),colors=CardDefaults.cardColors(containerColor=if(isUser)Color(0xFFE2F5EE) else Color.White)){
+                    Column(Modifier.padding(11.dp)){
+                        Text(if(isUser)"Vous" else "Dikévia",fontSize=10.sp,fontWeight=FontWeight.Bold,color=if(isUser)Deep else Emerald)
+                        Text(m.optString("content"),fontSize=13.sp,color=Ink)
+                    }
+                }
+            }
             item{answer?.let{r->Card(colors=CardDefaults.cardColors(containerColor=Color.White)){Column(Modifier.padding(14.dp)){
                 val status=r.optString("verification_status","NON_VERIFIE")
                 Text("Vérification : "+status,color=if(status=="VERIFIE")Emerald else Color(0xFF946A19),fontWeight=FontWeight.Bold)
@@ -260,12 +277,17 @@ private data class Entry(val title:String,val detail:String)
                 conversationId?.let{payload.put("conversation_id",it)}
                 val response=withContext(Dispatchers.IO){JSONObject(api.call(token,org.id,"/api/v1/chat/ask","POST",payload))}
                 answer=response
+                val prior=answer
+                if(prior!=null && previousMessages.lastOrNull()?.optString("role")!="assistant"){
+                    previousMessages=previousMessages+JSONObject().put("role","assistant").put("content",prior.optString("answer"))
+                }
+                previousMessages=previousMessages+JSONObject().put("role","user").put("content",question)
                 conversationId=response.optString("conversation_id").takeIf{it.isNotBlank()&&it!="null"}
                 q=""
             }
             catch(e:Exception){error=e.message?:"Demande impossible."}finally{waiting=false}
         }}},enabled=!waiting&&q.trim().length>=8,modifier=Modifier.weight(1f).height(48.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(if(waiting)"Analyse en cours…" else "Envoyer")}
-            OutlinedButton(onClick={conversationId=null;answer=null;q="";factsStart="";factsEnd="";ongoing=false;collectivityId=null},enabled=!waiting){Text("Nouveau")}
+            OutlinedButton(onClick={conversationId=null;answer=null;previousMessages=emptyList();q="";factsStart="";factsEnd="";ongoing=false;collectivityId=null;onNewConversation()},enabled=!waiting){Text("Nouveau")}
         }
     }
 }
