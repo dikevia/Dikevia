@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
-from .dependencies import get_principal, get_tenant_context, get_tenant_context_for_chat, require_org_admin, require_org_admin_for_external, require_legal_editor, require_platform_admin, TenantContext
+from .dependencies import get_principal, get_tenant_context, get_tenant_context_for_chat, require_org_admin, require_org_admin_for_external, require_legal_editor, require_legal_editor_for_external, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
@@ -1528,7 +1528,7 @@ async def upload_document(
     official_number: str | None = Form(default=None), official_url: str | None = Form(default=None),
     adopted_at: date | None = Form(default=None), published_at: date | None = Form(default=None),
     effective_from: date | None = Form(default=None), effective_to: date | None = Form(default=None),
-    file: UploadFile = File(...), ctx: TenantContext = Depends(require_legal_editor)):
+    file: UploadFile = File(...), ctx: TenantContext = Depends(require_legal_editor_for_external)):
     if not title.strip() or len(title)>300 or not document_type.strip() or len(document_type)>80:
         raise HTTPException(422,"Titre ou type de document invalide.")
     try:
@@ -1576,7 +1576,7 @@ async def upload_document(
 
 @app.post("/api/v1/documents/{document_id}/versions",status_code=201)
 async def upload_document_version(document_id:str,file:UploadFile=File(...),effective_from:date|None=Form(default=None),
-    effective_to:date|None=Form(default=None),ctx:TenantContext=Depends(require_legal_editor)):
+    effective_to:date|None=Form(default=None),ctx:TenantContext=Depends(require_legal_editor_for_external)):
     try:
         UUID(document_id)
     except ValueError:
@@ -1641,7 +1641,7 @@ async def document_versions(document_id:str,ctx:TenantContext=Depends(get_tenant
       "effective_from":r["effective_from"],"effective_to":r["effective_to"],"created_at":r["created_at"]} for r in rows]
 
 @app.post("/api/v1/documents/{document_id}/reindex")
-async def reindex_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor)):
+async def reindex_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor_for_external)):
     try:
         UUID(document_id)
     except ValueError:
@@ -1676,7 +1676,7 @@ async def reindex_document_versions(document_id: str, ctx: TenantContext = Depen
 
 
 @app.post("/api/v1/documents/{document_id}/rescan")
-async def rescan_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor)):
+async def rescan_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor_for_external)):
     try:
         UUID(document_id)
     except ValueError:
@@ -1738,7 +1738,7 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
 
 
 @app.get("/api/v1/documents/{document_id}/download")
-async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context)):
+async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid",document_id,ctx.organization_id)
     if not row or not row["storage_key"]:
         raise HTTPException(404,"Fichier introuvable.")
@@ -1753,7 +1753,7 @@ async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant
         "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
 @app.get("/api/v1/documents/{document_id}/versions/{version_number}/download")
-async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context)):
+async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("""SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM document_versions
       WHERE organization_id=$1::uuid AND document_id=$2::uuid AND version_number=$3""",ctx.organization_id,document_id,version_number)
     if not row or not row["storage_key"]:
