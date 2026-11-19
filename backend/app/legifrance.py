@@ -321,7 +321,7 @@ class LegifranceConnector:
         if not 1 <= limit <= 20:
             raise ValueError("La limite réglementaire doit être comprise entre 1 et 20.")
         stamp = self._date_epoch_ms(effective_date)
-        number_match = re.search(r"(?<!\\d)(\\d{4}-\\d{1,4})(?!\\d)", query)
+        number_match = re.search(r"\\b(?:décret|decret|arrêté|arrete|loi|ordonnance)\\s*(?:n[°ºo]?\\s*)?(\\d{4}-\\d{1,4})\\b", query, re.I)
         if number_match:
             search_field = {
                 "typeChamp": "NUM",
