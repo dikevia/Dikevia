@@ -72,7 +72,8 @@
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "oauth2.device.authorization.grant.enabled": "false"
+        "oauth2.device.authorization.grant.enabled": "false",
+        "post.logout.redirect.uris": "fr.dikevia.commercial:/oauth2redirect"
       },
       "defaultClientScopes": [
         "acr",
