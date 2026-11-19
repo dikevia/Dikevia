@@ -58,5 +58,6 @@ def test_founder_entitlement_requires_the_target_identity_to_have_logged_in():
 
 def test_wallet_and_founder_migrations_have_rollback_scripts():
     rollback = ROOT / "database/migrations/rollback"
+    assert (rollback / "020_ai_usage_outcome_compatibility.down.sql").exists()
     assert (rollback / "021_credit_wallet_foundation.down.sql").exists()
     assert (rollback / "022_platform_founder_entitlements.down.sql").exists()
