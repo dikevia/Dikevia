@@ -91,7 +91,12 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     european_metadata = _fold(" ".join(str(source.get(key) or "") for key in (
         "jurisdiction", "source_type", "official_source", "document_kind"
     )))
-    if any(marker in european_metadata for marker in (
+    title_folded = _fold(title)
+    direct_eu_instrument_title = title_folded.startswith((
+        "directive ue ", "directive europeenne ", "reglement ue ",
+        "reglement europeen ", "decision ue ", "decision europeenne ",
+    ))
+    if direct_eu_instrument_title or any(marker in european_metadata for marker in (
         "european union", "union europeenne", "eur lex", "eurlex",
         "eu regulation", "eu directive", "european directive",
     )):
