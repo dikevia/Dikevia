@@ -96,22 +96,21 @@ async def _run_isolation_scenario():
             assert first.allowed and second.allowed and not third.allowed
             assert third.request_count == 3
             wallet_key = "rls-wallet-" + uuid.uuid4().hex
-            first_credit = await runtime.fetchrow(
-                "SELECT * FROM wallet_apply_entry($1,100,'MONTHLY_ALLOCATION',$2,'CI allocation')",
-                org_a, wallet_key,
+            first_credit = await platform.fetchrow(
+                "SELECT * FROM wallet_admin_grant_entry($1,$2,100,'MONTHLY_ALLOCATION',$3,'CI allocation')",
+                user_a, org_a, wallet_key,
             )
             assert first_credit["applied"] is True and first_credit["current_balance"] == 100
-            replay_credit = await runtime.fetchrow(
-                "SELECT * FROM wallet_apply_entry($1,100,'MONTHLY_ALLOCATION',$2,'CI allocation')",
-                org_a, wallet_key,
+            replay_credit = await platform.fetchrow(
+                "SELECT * FROM wallet_admin_grant_entry($1,$2,100,'MONTHLY_ALLOCATION',$3,'CI allocation')",
+                user_a, org_a, wallet_key,
             )
             assert replay_credit["applied"] is False and replay_credit["ledger_entry_id"] == first_credit["ledger_entry_id"]
             with pytest.raises(asyncpg.InvalidParameterValueError):
-                async with runtime.transaction():
-                    await runtime.fetchrow(
-                        "SELECT * FROM wallet_apply_entry($1,99,'MONTHLY_ALLOCATION',$2,'Changed payload')",
-                        org_a, wallet_key,
-                    )
+                await platform.fetchrow(
+                    "SELECT * FROM wallet_admin_grant_entry($1,$2,99,'MONTHLY_ALLOCATION',$3,'Changed payload')",
+                    user_a, org_a, wallet_key,
+                )
             debit_credit = await runtime.fetchrow(
                 "SELECT * FROM wallet_apply_entry($1,-30,'USAGE_DEBIT',$2,'CI usage')",
                 org_a, "rls-debit-" + uuid.uuid4().hex,
