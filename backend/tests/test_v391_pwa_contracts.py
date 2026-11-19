@@ -50,3 +50,15 @@ def test_android_shell_disables_backup_cleartext_and_ssl_error_bypass():
     assert "handler.cancel()" in activity
     assert "handler.proceed()" not in activity
     assert "addJavascriptInterface" not in activity
+
+
+def test_offline_fallback_is_static_and_never_persists_private_state():
+    worker = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
+    offline = (ROOT / "frontend/offline.html").read_text(encoding="utf-8")
+    assert "localStorage" not in worker
+    assert "indexedDB" not in worker
+    assert "cache.put(" not in worker
+    assert "Authorization" not in worker
+    assert "ne conserve pas les dossiers juridiques ni les conversations" in offline
+    assert "localStorage" not in offline
+    assert "indexedDB" not in offline
