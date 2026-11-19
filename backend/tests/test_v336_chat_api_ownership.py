@@ -461,3 +461,16 @@ def test_local_compliance_review_uses_short_transaction_dependency():
     # short transactions for rate limiting, usage metering and audit persistence.
     assert source.index("await analyze_question(") > source.index("async with ctx.conn.transaction():")
     assert source.count("async with ctx.conn.transaction():") == 4
+
+
+def test_invitation_provisioning_uses_transaction_free_tenant_context():
+    import inspect
+    from app import dependencies
+    from app.main import create_invitation
+
+    dependency_source = inspect.getsource(dependencies.require_org_admin_for_external)
+    route_source = inspect.getsource(create_invitation)
+    assert "Depends(get_tenant_context_for_chat)" in dependency_source
+    assert "Depends(require_org_admin_for_external)" in route_source
+    assert "await admin.ensure_user(email)" in route_source
+    assert "send_invitation_email" in route_source
