@@ -93,10 +93,15 @@ async def get_tenant_context(request: Request, principal: Principal = Depends(ge
                         "code": "TRIAL_ALREADY_USED",
                         "message": "Cette adresse e-mail vérifiée a déjà servi à activer une période d'essai. Connectez-vous au compte initial ou souscrivez une offre.",
                     })
+                if account["trial_expires_at"] is None:
+                    raise HTTPException(402, {
+                        "code": "SUBSCRIPTION_REQUIRED",
+                        "message": "Aucun essai disponible ou abonnement actif. Souscrivez une offre pour accéder à Dikévia. Vos données sont conservées.",
+                    })
                 raise HTTPException(402, {
                     "code": "TRIAL_EXPIRED",
                     "message": "Votre période d'essai de 72 heures est terminée. Souscrivez une offre pour retrouver l'accès à Dikévia. Vos données sont conservées.",
-                    "trial_expires_at": account["trial_expires_at"].isoformat() if account["trial_expires_at"] else None,
+                    "trial_expires_at": account["trial_expires_at"].isoformat(),
                 })
             yield TenantContext(principal, org_id, str(row["user_id"]), row["role"], conn)
 
