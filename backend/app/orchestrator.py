@@ -532,9 +532,6 @@ class LegalOrchestrator:
             }
             and s.get("content_kind") != "METADATA"
             and (s.get("citation_integrity") or {}).get("valid") is True
-            and s.get("temporal_status") in {
-                "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
-            }
             and s.get("analysis_eligible") is True
             and s.get("ihts_relevant") is not False
         ]
