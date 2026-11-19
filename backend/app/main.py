@@ -816,6 +816,8 @@ def _ai_safe_conversation_history(rows):
                     metadata = json.loads(metadata)
                 except (TypeError, ValueError):
                     metadata = None
+            if isinstance(metadata, dict) and metadata.get("contains_local_documents") is True:
+                continue
             sources = metadata.get("sources") if isinstance(metadata, dict) else None
             if not isinstance(sources, list):
                 continue
@@ -883,6 +885,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_
             VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
             str(conversation_id), ctx.user_id, result.answer,
             json.dumps({"verification_status": result.verification_status,
+                "contains_local_documents": any(
+                    source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                    for source in result.sources
+                ),
                 "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
                     if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
                         "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
