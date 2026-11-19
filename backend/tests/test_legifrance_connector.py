@@ -39,8 +39,18 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
     assert any(path.endswith("/search") for _, path in seen)
     assert any(path.endswith("/list/ping") for _, path in seen)
 
+@pytest.mark.parametrize(
+    ("requested_ref", "returned_num"),
+    [
+        ("L. 111-1", "L111-1"),
+        ("l111-1", "L. 111-1"),
+        ("L111-1", "l111-1"),
+    ],
+)
 @pytest.mark.asyncio
-async def test_legifrance_accepts_short_official_article_text_when_metadata_matches(monkeypatch):
+async def test_legifrance_accepts_short_official_article_text_when_metadata_matches(
+    monkeypatch, requested_ref, returned_num
+):
     monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
     monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
     short_text = "La liberté d'opinion est garantie aux agents publics."
@@ -53,18 +63,43 @@ async def test_legifrance_accepts_short_official_article_text_when_metadata_matc
         if request.url.path.endswith("/consult/getArticle"):
             return httpx.Response(200, json={"article": {
                 "id": ARTICLE_ID,
-                "num": "L111-1",
+                "num": returned_num,
                 "nomCode": "Code général de la fonction publique",
                 "texte": short_text,
             }})
         return httpx.Response(404)
 
     connector = LegifranceConnector(transport=httpx.MockTransport(handler))
-    results = await connector.search_code_articles("article L. 111-1", date(2026, 11, 19))
+    results = await connector.search_code_articles(f"article {requested_ref}", date(2026, 11, 19))
     assert len(results) == 1
     assert results[0]["article"] == "L111-1"
     assert results[0]["text"] == short_text
     assert len(results[0]["text"]) == 53
+
+
+@pytest.mark.asyncio
+async def test_legifrance_uses_search_article_id_when_get_article_omits_num(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    short_text = "Disposition brève."
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID, "texte": short_text,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles("article L. 111-1", date(2026, 11, 19))
+    assert len(results) == 1
+    assert results[0]["source_id"] == ARTICLE_ID
+    assert results[0]["article"] is None
+    assert results[0]["text"] == short_text
 
 
 @pytest.mark.asyncio
