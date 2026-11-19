@@ -3,6 +3,9 @@
 BEGIN;
 
 ALTER TABLE ai_usage_events
+  ALTER COLUMN outcome TYPE varchar(80);
+
+ALTER TABLE ai_usage_events
   DROP CONSTRAINT IF EXISTS ai_usage_events_outcome_check;
 
 ALTER TABLE ai_usage_events
