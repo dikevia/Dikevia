@@ -354,9 +354,10 @@ class LegifranceConnector:
         records: list[dict] = []
         seen: set[str] = set()
         for record in nodes:
-            identifier = self._first_value(record, ("id", "idTexte", "id_text", "textId"))
+            raw_identifier = self._first_value(record, ("id", "idTexte", "id_text", "textId"))
+            identifier = raw_identifier.split("_", 1)[0] if raw_identifier else None
             if identifier and re.fullmatch(r"LEGITEXT\d{12}", identifier) and identifier not in seen:
-                records.append(record)
+                records.append({**record, "_resolved_text_id": identifier})
                 seen.add(identifier)
             if len(records) >= limit:
                 break
@@ -389,10 +390,15 @@ class LegifranceConnector:
         )
         output = []
         for record in records:
-            identifier = self._first_value(record, ("id", "idTexte", "id_text", "textId"))
+            identifier = record.get("_resolved_text_id") or self._first_value(
+                record, ("id", "idTexte", "id_text", "textId")
+            )
             detail = await self._request("POST", "/consult/legiPart", json_body={"date": stamp, "textId": identifier})
-            returned_ids = [self._first_value(node, ("id", "idTexte", "id_text", "textId"))
-                            for node in self._walk_dicts(detail)]
+            returned_ids = [
+                raw_id.split("_", 1)[0]
+                for node in self._walk_dicts(detail)
+                if (raw_id := self._first_value(node, ("id", "idTexte", "id_text", "textId")))
+            ]
             text = self._extract_text(detail)
             id_matches = identifier in returned_ids
             text_valid = len(text) >= 80
