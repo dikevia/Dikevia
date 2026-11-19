@@ -12,14 +12,17 @@ ALTER TABLE users ADD CONSTRAINT users_trial_window_check CHECK (
 CREATE INDEX IF NOT EXISTS users_trial_expiry_idx ON users(trial_expires_at)
   WHERE trial_expires_at IS NOT NULL;
 CREATE TABLE IF NOT EXISTS founder_entitlements (
-  slot_number smallint PRIMARY KEY CHECK (slot_number BETWEEN 1 AND 10),
-  user_id uuid NOT NULL UNIQUE REFERENCES users(id),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slot_number smallint NOT NULL CHECK (slot_number BETWEEN 1 AND 10),
+  user_id uuid NOT NULL REFERENCES users(id),
   granted_by uuid NOT NULL REFERENCES users(id),
   granted_at timestamptz NOT NULL DEFAULT now(),
   revoked_at timestamptz,
   note text NOT NULL DEFAULT ''
 );
-CREATE INDEX IF NOT EXISTS founder_entitlements_active_user_idx
+CREATE UNIQUE INDEX IF NOT EXISTS founder_entitlements_one_active_per_slot_idx
+  ON founder_entitlements(slot_number) WHERE revoked_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS founder_entitlements_one_active_per_user_idx
   ON founder_entitlements(user_id) WHERE revoked_at IS NULL;
 ALTER TABLE founder_entitlements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE founder_entitlements FORCE ROW LEVEL SECURITY;
@@ -49,9 +52,7 @@ BEGIN
     RAISE EXCEPTION 'founder slot already assigned' USING ERRCODE='23505';
   END IF;
   INSERT INTO founder_entitlements(slot_number,user_id,granted_by,note)
-    VALUES(p_slot_number,p_user_id,p_admin_id,trim(p_note))
-    ON CONFLICT(slot_number) DO UPDATE SET user_id=EXCLUDED.user_id,
-      granted_by=EXCLUDED.granted_by,granted_at=now(),revoked_at=NULL,note=EXCLUDED.note;
+    VALUES(p_slot_number,p_user_id,p_admin_id,trim(p_note));
   INSERT INTO platform_audit_events(actor_user_id,event_type,target_type,target_id,metadata)
     VALUES(p_admin_id,'FOUNDER_ENTITLEMENT_GRANTED','founder_entitlement',p_user_id,
       jsonb_build_object('slot_number',p_slot_number,'note',trim(p_note)));
