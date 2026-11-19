@@ -48,3 +48,6 @@ Aucune migration de base, modification de configuration hébergée, dépense, fu
 
 
 Build trigger: cette branche native est incluse dans le workflow de génération de l'APK debug ; consulter l'onglet Actions du dépôt pour le résultat de compilation avant installation.
+
+
+La branche d'intégration native est construite par GitHub Actions lors des modifications Android. Le résultat doit être contrôlé dans Actions avant toute installation.
