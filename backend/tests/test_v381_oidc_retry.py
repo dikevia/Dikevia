@@ -62,3 +62,18 @@ def test_oidc_authorization_and_logout_preserve_endpoint_query_parameters():
     assert "for (const [key, value] of Object.entries(authorizationParams)) url.searchParams.set(key, value);" in auth
     assert "url.searchParams.set('client_id',cfg.client_id);" in auth
     assert "url.searchParams.set('post_logout_redirect_uri',cfg.redirect_uri);" in auth
+
+def test_local_keycloak_issuer_allows_realm_path_over_http():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    assert "function isLocalHttpUrl(value)" in auth
+    assert "url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')" in auth
+    assert "const localIssuer = isLocalHttpUrl(issuer);" in auth
+    assert "const issuer = validateIssuer(cfg.issuer).replace(/\\/$/,'');" in auth
+
+
+def test_oidc_redirect_uri_must_remain_on_the_application_origin():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    assert "function validateRedirectUri(redirectUri)" in auth
+    assert "url.origin !== current.origin" in auth
+    assert "const redirectUri = validateRedirectUri(cfg.redirect_uri);" in auth
+
