@@ -69,9 +69,8 @@ async def _run_isolation_scenario():
 
         # Use the dedicated platform DB role only after the seed transaction commits.
         founder_user_id = await platform.fetchval(
-            "SELECT platform_admin_grant_founder_entitlement($1,$2,$3,$4)",
-            user_a, "https://issuer.test", "sub-a-"+user_a.hex,
-            "Permanent founder entitlement for verified test identity",
+            "SELECT platform_admin_grant_founder_entitlement($1,$2,$3)",
+            user_a, user_a, "Permanent founder entitlement for verified test identity",
         )
         assert founder_user_id == user_a
 
