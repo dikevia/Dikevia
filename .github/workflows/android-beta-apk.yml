@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - android/native-compose-beta-v2
       - feature/dikevia-v3.38.5-cgfp-chat
     paths:
       - "android/**"
