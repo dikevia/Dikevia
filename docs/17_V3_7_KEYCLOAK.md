@@ -32,10 +32,11 @@ Le client Android est un client public distinct du client web. Il utilise Author
 - Standard flow : activé ; Implicit flow, Direct access grants et Service accounts : désactivés
 - PKCE Code Challenge Method : `S256`
 - Valid Redirect URI exacte : `fr.dikevia.commercial:/oauth2redirect`
+- URI de retour après déconnexion : autoriser exactement `fr.dikevia.commercial:/oauth2redirect` dans le paramètre client `post.logout.redirect.uris`
 - Client scope par défaut : `cfdt-juris-api-audience` (en plus de `profile`, `email` et `acr`)
 - Audience ajoutée au jeton d’accès : `cfdt-juris-api`
 
-**Attention pour un realm déjà existant :** l’import automatique au démarrage ne met pas à jour un realm existant. Un administrateur Keycloak doit donc créer/mettre à jour ce client explicitement dans `Clients` et lui associer le client scope `cfdt-juris-api-audience` comme *Default*. Ne pas supprimer ni réimporter le realm de production pour cette opération. Le JSON `deploy/keycloak/realm-cfdt.render.json` décrit le client attendu ; il ne prouve pas que le serveur en production l’a reçu.
+**Attention pour un realm déjà existant :** l’import automatique au démarrage ne met pas à jour un realm existant. Un administrateur Keycloak doit donc créer/mettre à jour ce client explicitement dans `Clients`, lui associer le client scope `cfdt-juris-api-audience` comme *Default* et autoriser l'URI de retour après déconnexion dans `post.logout.redirect.uris`. Ne pas supprimer ni réimporter le realm de production pour cette opération. Le JSON `deploy/keycloak/realm-cfdt.render.json` décrit le client attendu ; il ne prouve pas que le serveur en production l’a reçu.
 
 Avant de distribuer l’APK, contrôler dans un jeton d’accès de test : `iss` = `https://dikevia-identity-l2r8.onrender.com/realms/cfdt`, `aud` contient `cfdt-juris-api`, `sub` est présent et `exp - iat` ne dépasse pas 900 secondes. Puis vérifier `GET /api/v1/auth/me` avec ce jeton. Un jeton valide sans utilisateur provisionné doit rester refusé en HTTP 403 ; l’authentification ne doit jamais créer automatiquement un compte ou une appartenance.
 
