@@ -146,7 +146,7 @@ private data class Entry(val title:String,val detail:String)
                     else->Profile(user,current){logout();resumeConversationId=null;tab="Accueil"}
                 }
             }}
-            Nav(tab){tab=it}
+            Nav(tab,org?.role?.uppercase()=="ORG_ADMIN"){tab=it}
         }
     }
 }
@@ -402,8 +402,8 @@ private data class Entry(val title:String,val detail:String)
         Button(onClick=logout,colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF9B3030))){Text("Se déconnecter",color=Color.White)}
     }
 }
-@Composable private fun Nav(selected:String,choose:(String)->Unit){
-    val tabs=listOf("Accueil","Assistant","Historique","Documents","Collectivités","Membres","Profil")
+@Composable private fun Nav(selected:String,showMembers:Boolean,choose:(String)->Unit){
+    val tabs=listOf("Accueil","Assistant","Historique","Documents","Collectivités","Profil") + if(showMembers) listOf("Membres") else emptyList()
     Surface(color=Color.White,shadowElevation=5.dp){Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).navigationBarsPadding(),verticalAlignment=Alignment.CenterVertically){
         tabs.forEach{tab->TextButton(onClick={choose(tab)}){Text(tab,color=if(selected==tab)Deep else Muted,fontWeight=if(selected==tab)FontWeight.Bold else FontWeight.Normal,fontSize=11.sp)}}
     }}
