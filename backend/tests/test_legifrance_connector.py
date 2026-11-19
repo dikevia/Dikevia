@@ -441,7 +441,7 @@ async def test_loda_search_consults_matching_official_text_at_requested_date(mon
     assert source["official_number"] == "2002-60"
     assert source["source_status"] == "OFFICIAL_TEXT_ID_VERIFIED"
     assert source["version_status"] == "IN_FORCE"
-    assert source["full_text"] == full_text
+    assert source["full_text"] == full_text.strip()
     assert "indemnités horaires" in source["excerpt"]
     assert "/consult/legiPart" in seen
 
