@@ -1,0 +1,43 @@
+# Benchmark juridique Dikévia — 100 questions FPT
+
+## But
+Mesurer la qualité réelle des réponses de Dikévia sur le jeu de référence Q001–Q100. Ce benchmark est distinct des tests unitaires et de l'audit juridique du corrigé.
+
+## Règle de sécurité
+Le benchmark doit rester sans dépense non autorisée. Le script `scripts/fpt_benchmark.py` est strictement hors ligne : il ne contacte ni l'API Dikévia, ni fournisseur IA, ni Légifrance/PISTE, ni Render, ni Neon.
+
+**Ne pas exécuter 100 requêtes sur l'API de production avant vérification écrite du coût et des quotas.** Le endpoint de chat peut déclencher l'orchestrateur, un fournisseur IA et des connecteurs juridiques.
+
+## Fichiers attendus
+- `benchmark/fpt_questions.json` : les 100 questions de référence. Conserver les champs originaux, notamment `criteres_cles`, `notes_annotation` et `statut_annotation`.
+- `benchmark/dikevia_responses.json` : une réponse réelle par ID, avec au minimum `id`, `answer`, `sources` et `verification_status`. Exporter depuis un environnement de test sans secrets ni données personnelles.
+- `benchmark/review_100.json` : grille remplie par les évaluateurs.
+- `benchmark/results.json` : agrégat calculé.
+
+## Procédure
+1. Valider le jeu de référence :
+   `python scripts/fpt_benchmark.py validate --dataset benchmark/fpt_questions.json`
+2. Collecter les 100 réponses via un environnement dont le coût est confirmé nul. Ne pas simuler les réponses.
+3. Préparer la grille :
+   `python scripts/fpt_benchmark.py prepare-review --dataset benchmark/fpt_questions.json --responses benchmark/dikevia_responses.json --out benchmark/review_100.json`
+4. Évaluer chaque réponse sur les sept dimensions (0 à 2) :
+   - exactitude juridique ;
+   - actualité juridique à la date de référence ;
+   - respect du périmètre FPT ;
+   - exhaustivité ;
+   - sources et citations vérifiables ;
+   - prudence, limites et abstention ;
+   - précision factuelle.
+5. Attribuer une sévérité par question : `conforme`, `mineur`, `majeur` ou `critique`. Documenter les constats, la correction attendue, les sources officielles et la date de contrôle.
+6. Calculer :
+   `python scripts/fpt_benchmark.py score --dataset benchmark/fpt_questions.json --responses benchmark/dikevia_responses.json --reviews benchmark/review_100.json --out benchmark/results.json`
+
+## Règles d'annotation
+- 0 = faux, absent, non sourcé ou dangereux ; 1 = partiellement correct / incomplet ; 2 = correct, à jour, suffisamment complet et correctement sourcé.
+- Une erreur critique (mauvais droit applicable, règle inventée, citation inexistante, confusion FPT/FPE/FPH susceptible d'induire l'agent en erreur) doit être marquée `critique`, même si la réponse obtient des points sur d'autres dimensions.
+- Une réponse qui s'abstient faute de source ne doit pas être pénalisée comme une hallucination ; évaluer si l'abstention était justifiée.
+- Ne jamais confondre score de tests logiciels et fiabilité juridique.
+- Le résultat global est déclaré complet uniquement après évaluation des 100 réponses. Aucun score partiel ne doit être présenté comme le taux de fiabilité global.
+
+## État initial
+Le référentiel Q001–Q100 a été transmis par le propriétaire le 19 novembre 2026. Les réponses réelles de Dikévia ne sont pas encore capturées. Les appels live sont suspendus tant que leur coût n'est pas démontré nul. Les constats d'audit du corrigé de référence doivent être intégrés avant de figer les attentes.
