@@ -148,7 +148,14 @@ class MainActivity:ComponentActivity(){
             val generation=authGeneration
             val cfg=serviceConfig
             val refresh=refreshToken
-            if(cfg==null || refresh.isNullOrBlank())return@launch
+            if(cfg==null || refresh.isNullOrBlank()){
+                token=null
+                idToken=null
+                refreshToken=null
+                accessTokenExpiresAt=null
+                authError="Session expirée. Veuillez vous reconnecter."
+                return@launch
+            }
             val request=TokenRequest.Builder(cfg,CLIENT_ID)
                 .setGrantType(GrantTypeValues.REFRESH_TOKEN)
                 .setRefreshToken(refresh)
