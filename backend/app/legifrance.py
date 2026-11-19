@@ -558,6 +558,15 @@ class LegifranceConnector:
             valid_to = self._iso_date(self._first_value(
                 article_metadata, ("dateFin", "dateFinVersion", "dateFinApplication")
             ))
+            if ((valid_from is not None and effective_date < valid_from)
+                    or (valid_to is not None and effective_date > valid_to)):
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_REJECTED_TEMPORAL id=%s requested_date=%s valid_from=%s valid_to=%s",
+                    article_id, effective_date.isoformat(),
+                    valid_from.isoformat() if valid_from else None,
+                    valid_to.isoformat() if valid_to else None,
+                )
+                continue
             articles.append({
                 "source_type": "LEGIFRANCE_API", "source_id": article_id, "article": article_label,
                 "article_id": article_id, "source_version_id": article_id,
