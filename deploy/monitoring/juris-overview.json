@@ -1,8 +1,8 @@
 {
   "id": null,
   "uid": "cfdt-juris-overview",
-  "title": "CFDT JURIS — Supervision",
-  "tags": ["cfdt-juris", "production"],
+  "title": "Dikévia — Supervision",
+  "tags": ["dikevia", "production"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
