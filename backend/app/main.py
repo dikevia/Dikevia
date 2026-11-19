@@ -404,6 +404,8 @@ async def platform_commercial_organizations(platform=Depends(require_platform_ad
 async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin)):
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
+    if not settings.stripe_billing_enabled:
+        raise HTTPException(404, "La facturation est désactivée.")
     plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
     billing_interval = payload.get("billing_interval", "month") if isinstance(payload, dict) else "month"
     try:
@@ -455,6 +457,8 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
 async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
     if settings.private_instance_mode:
         raise HTTPException(404, "La facturation est désactivée sur cette instance privée.")
+    if not settings.stripe_billing_enabled:
+        raise HTTPException(404, "La facturation est désactivée.")
     if not settings.stripe_secret_key:
         raise HTTPException(503, "Le portail de facturation n'est pas encore configuré.")
     customer_id = await ctx.conn.fetchval("SELECT provider_customer_id FROM subscriptions WHERE organization_id=$1::uuid", ctx.organization_id)
@@ -476,6 +480,8 @@ async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
 async def stripe_webhook(request: Request):
     if settings.private_instance_mode:
         raise HTTPException(404, "Les webhooks de paiement sont désactivés sur cette instance privée.")
+    if not settings.stripe_billing_enabled:
+        raise HTTPException(404, "Les webhooks de paiement sont désactivés.")
     raw = await request.body()
     signature = request.headers.get("stripe-signature")
     if not verify_stripe_signature(raw, signature, settings.stripe_webhook_secret):
