@@ -317,8 +317,8 @@ async def auth_me(principal: Principal = Depends(get_principal)):
                         "SELECT claim_trial_email($1::uuid,$2)", str(row["id"]), row["email"])
                     if claimed:
                         row = await conn.fetchrow("""
-                            UPDATE users SET trial_started_at=now(),
-                              trial_expires_at=now()+interval '72 hours'
+                            UPDATE users SET trial_started_at=COALESCE(trial_started_at,now()),
+                              trial_expires_at=COALESCE(trial_expires_at,COALESCE(trial_started_at,now())+interval '72 hours')
                             WHERE id=$1::uuid
                             RETURNING id,email,display_name,status,trial_started_at,trial_expires_at
                         """, str(row["id"]))
