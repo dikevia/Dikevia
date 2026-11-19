@@ -350,13 +350,14 @@ async def account_access_status(ctx: TenantContext = Depends(get_tenant_context)
     paid = row["subscription_status"] in ("ACTIVE","TRIAL") and (
         row["current_period_end"] is None or row["current_period_end"] > now)
     entitled = bool(row["founder"] or paid)
+    trial_active = bool(row["trial_expires_at"] and row["trial_expires_at"] > now)
     return {
         "access": "FOUNDER" if row["founder"] else "PAID" if paid else
-                  "TRIAL" if row["trial_expires_at"] > now else "EXPIRED",
+                  "TRIAL" if trial_active else "EXPIRED" if row["trial_expires_at"] else "TRIAL_UNAVAILABLE",
         "trial_started_at": row["trial_started_at"],
         "trial_expires_at": row["trial_expires_at"],
         "remaining_seconds": max(0, int((row["trial_expires_at"]-now).total_seconds()))
-            if not entitled else None,
+            if row["trial_expires_at"] and not entitled else None,
         "founder": bool(row["founder"]),
     }
 
