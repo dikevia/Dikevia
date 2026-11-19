@@ -60,11 +60,6 @@ async def get_tenant_context(request: Request, principal: Principal = Depends(ge
                 SELECT EXISTS(SELECT 1 FROM founder_entitlements
                   WHERE user_id=$1::uuid AND revoked_at IS NULL)
             """, str(row["user_id"]))
-            free_email = await conn.fetchval("""
-                SELECT EXISTS(SELECT 1 FROM platform_free_email_access
-                  WHERE email_normalized=$1 AND revoked_at IS NULL
-                    AND (expires_at IS NULL OR expires_at>now()))
-            """, account["email"])
             subscription = await conn.fetchrow("""
                 SELECT status,current_period_end FROM subscriptions
                 WHERE organization_id=$1::uuid
@@ -79,7 +74,7 @@ async def get_tenant_context(request: Request, principal: Principal = Depends(ge
                 "/api/v1/billing/checkout", "/api/v1/billing/portal",
                 "/api/v1/access/status",
             }
-            if not (founder or free_email or paid or account["trial_expires_at"] > await conn.fetchval("SELECT now()")):
+            if not (founder or paid or account["trial_expires_at"] > await conn.fetchval("SELECT now()")):
                 if request.url.path not in billing_access_paths:
                     raise HTTPException(402, {
                         "code": "TRIAL_EXPIRED",
