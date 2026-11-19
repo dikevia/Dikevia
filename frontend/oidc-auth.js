@@ -119,6 +119,6 @@
     // Une callback précédente peut avoir échoué (code refusé, CORS, réseau).
     // Cela ne doit pas empêcher l'utilisateur de relancer une authentification.
     async login() { await ready.catch(() => {}); return login(); },
-    async logout() { accessToken=null;expiresAt=0;sessionStorage.removeItem('cfdt_oidc_state');sessionStorage.removeItem('cfdt_oidc_verifier');const oidc=await metadata().catch(()=>null);if(oidc?.end_session_endpoint)window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({client_id:cfg.client_id,post_logout_redirect_uri:cfg.redirect_uri})); }
+    async logout() { accessToken=null;expiresAt=0;sessionStorage.removeItem('cfdt_oidc_state');sessionStorage.removeItem('cfdt_oidc_verifier');sessionStorage.removeItem('cfdt_pending_invitation');const oidc=await metadata().catch(()=>null);if(oidc?.end_session_endpoint)window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({client_id:cfg.client_id,post_logout_redirect_uri:cfg.redirect_uri})); }
   };
 })();
