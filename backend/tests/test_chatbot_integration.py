@@ -100,7 +100,8 @@ async def test_nonexistent_article_abstains_before_any_gemini_call(monkeypatch):
         raise AssertionError("Gemini ne doit jamais être appelé sans source officielle exploitable.")
 
     monkeypatch.setattr(settings, "cgfp_enabled", False)
-    monkeypatch.setattr(orchestrator_module.legifrance, "configured", True)
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client-id")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-client-secret")
     monkeypatch.setattr(orchestrator_module.legifrance, "_get_token", no_token_refresh)
     monkeypatch.setattr(orchestrator_module.legifrance, "search_code_articles", no_code_results)
     monkeypatch.setattr(orchestrator_module.legifrance, "search_regulatory_texts", no_regulatory_results)
