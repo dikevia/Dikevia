@@ -1,25 +1,43 @@
-# Dikévia Android beta
+# Dikévia Android — préversion bêta
 
-This Android shell loads the commercial Dikévia web application over HTTPS and keeps the OIDC Authorization Code + PKCE flow inside the same WebView session.
+Le projet Android fournit actuellement une coque de démonstration qui ouvre l'application web commerciale Dikévia en HTTPS dans une WebView.
 
-- Package: `fr.dikevia.commercial.beta`
-- Minimum Android: 7.0 (API 24)
-- Build: debug APK, signed automatically with the Android debug key by Gradle
-- Allowed in-app origins: the commercial API and the dedicated Keycloak identity service
-- External HTTPS links open in the device browser
-- File selection is enabled for document attachments
+- Identifiant d'application de debug : `fr.dikevia.commercial.beta` (suffixe de debug)
+- SDK de compilation : Android 35
+- Android minimum : API 24
+- Version de base Gradle : `0.1.0-beta` ; le suffixe de build debug ajoute actuellement `-beta`.
+- Construction actuelle : APK `debug`, signé automatiquement avec la clé debug de l'environnement de compilation.
 
-## Demonstration build
+## Statut de l'APK
 
-The GitHub Actions workflow **Android beta APK** builds and validates the APK on this development branch. A successful run publishes the file as the artifact `dikevia-commercial-beta-apk` (retained for 14 days).
+La PR de préparation CI #8 ajoute une compilation Android automatisée et publie, après fusion de cette PR et exécution réussie du workflow, l'artefact :
 
-The APK is a demonstration build, not a Play Store release. It uses the commercial beta environment and currently has a one-active-user limit. Do not distribute credentials in the APK or in demonstration materials.
+- Nom : `dikevia-android-debug-signed`
+- Fichier : `app-debug.apk`
+- Conservation GitHub Actions : 7 jours
 
-## Before the CFDT demonstration
+Cet artefact est destiné exclusivement aux essais techniques internes. La clé debug est éphémère et ne constitue pas une signature de distribution. Ne pas publier cet APK sur un store ni le considérer comme une version de production.
 
-- Verify the commercial API and identity service are healthy.
-- Install the APK on the demonstration Android device and complete sign-in before the meeting.
-- Test at least one FPT question with documentary sources and one question for which the assistant must ask for missing facts or abstain.
-- Keep a browser access as a fallback if the device blocks installation.
+## Authentification et architecture cible
 
-A production release requires a dedicated signing key, device testing, account provisioning and a separate release process.
+L'authentification actuellement documentée repose sur le client web OIDC Authorization Code + PKCE. La coque WebView ne constitue pas à elle seule une architecture Android de production validée.
+
+La voie cible proposée est une Trusted Web Activity (TWA), sous réserve de confirmer :
+- le domaine HTTPS définitif de l'application ;
+- l'identifiant de paquet de publication ;
+- le certificat de signature définitif et son empreinte SHA-256 ;
+- le fichier Digital Asset Links (`/.well-known/assetlinks.json`) ;
+- le parcours OIDC et les retours d'authentification sur un appareil réel.
+
+Une authentification native AppAuth serait une autre architecture et demanderait un client OIDC Android dédié ainsi qu'une conception sécurisée du pont de session. Aucun de ces choix ne doit être simulé avec des valeurs fictives.
+
+## Conditions avant distribution
+
+- [ ] Décider et valider l'architecture TWA ou native.
+- [ ] Fixer le domaine HTTPS et vérifier Digital Asset Links.
+- [ ] Générer et conserver une clé de signature de publication dans un processus sécurisé, hors du dépôt.
+- [ ] Tester sur un appareil Android physique : connexion, expiration de session, déconnexion, liens externes et pièces jointes.
+- [ ] Vérifier la configuration de sécurité et les secrets de l'environnement cible.
+- [ ] Produire une version release signée et contrôler son empreinte avant toute distribution.
+
+Tant que ces points ne sont pas validés, Dikévia Android reste une préversion de démonstration non distribuable.
