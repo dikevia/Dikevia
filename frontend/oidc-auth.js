@@ -5,7 +5,13 @@
 (() => {
   'use strict';
   const initialInvitation = new URLSearchParams(window.location.search).get('invitation_token');
-  if (initialInvitation) sessionStorage.setItem('cfdt_pending_invitation', initialInvitation);
+  if (initialInvitation) {
+    sessionStorage.setItem('cfdt_pending_invitation', initialInvitation);
+    // An invitation token is a bearer secret: keep it out of browser history and referrers.
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete('invitation_token');
+    history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+  }
   const cfg = window.CFDT_JURIS_OIDC;
   if (!cfg || !cfg.issuer || !cfg.client_id || !cfg.redirect_uri) return;
   let accessToken = null;
