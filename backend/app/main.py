@@ -561,7 +561,7 @@ async def stripe_webhook(request: Request):
                         org_id, state.get("provider_customer_id"), state.get("provider_subscription_id"),
                         state.get("plan_code"), state["status"], state.get("current_period_end"),
                         state.get("cancel_at_period_end", False))
-                    if state.get("plan_code") in ("INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50", "LEGACY_ESSENTIAL_3", "LEGACY_SYNDICAT_10"):
+                    if state.get("plan_code") in ("ESSENTIEL", "PRO", "EQUIPE_INSTANCES", "COLLECTIVITE_SYNDICATS", "INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50", "LEGACY_ESSENTIAL_3", "LEGACY_SYNDICAT_10"):
                         await conn.execute("UPDATE organizations SET plan_code=$2 WHERE id=$1::uuid", org_id, state["plan_code"])
     return {"received": True, "duplicate": False}
 
