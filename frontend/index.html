@@ -472,6 +472,73 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 @media(prefers-reduced-motion:reduce){.auth #login{transition:none}.auth #login:hover{transform:none}}
 
+
+/* Emerald identity refinement — presentation layer only */
+:root{
+  --brand:#087f68;
+  --brand-deep:#075b4d;
+  --brand-soft:#e2f5ee;
+  --ink:#142b25;
+  --muted:#637b71;
+  --line:#dcebe4;
+  --canvas:#f3f8f5;
+  --surface:#ffffff;
+  --surface-soft:#f7fcf9;
+  --accent:#c9a45d;
+  --shadow:0 14px 38px rgba(5,83,66,.10);
+  color:var(--ink);
+  background:var(--canvas);
+}
+body{background:radial-gradient(ellipse at 88% 0%,rgba(20,184,132,.075),transparent 34%),var(--canvas)}
+.top{background:linear-gradient(112deg,#063f37 0%,#087f68 58%,#13a47d 100%);box-shadow:0 8px 28px rgba(4,75,59,.18)}
+.brand{letter-spacing:.015em}
+.notice{border-color:#e8d8ad;background:linear-gradient(110deg,#fffaf0,#fffdf8)}
+.side,.panel,.card{border-color:var(--line)}
+.side{box-shadow:0 8px 26px rgba(5,83,66,.045)}
+.nav{color:#36574b}
+.nav.active,.nav:hover{background:linear-gradient(100deg,#e1f5ec,#effaf5);color:#056b58}
+.heading h1{color:#123d32}
+.metric{color:#087f68}
+button,.button{background:linear-gradient(115deg,#087f68,#0a9474);box-shadow:0 3px 10px rgba(8,127,104,.12)}
+button:hover,.button:hover{background:linear-gradient(115deg,#066451,#087f68);box-shadow:0 7px 18px rgba(8,127,104,.2)}
+button.secondary{background:#e6f3ed;color:#145c49}
+button.secondary:hover{background:#d7eee4}
+input:focus,select:focus,textarea:focus{border-color:#0a9877;box-shadow:0 0 0 3px rgba(10,152,119,.14)}
+.pill{background:#e2f5ed;color:#11634f}
+.auth{background:linear-gradient(155deg,#fff 0%,#fbfffc 100%)}
+.juris-chat{border-color:#d8ebe1;box-shadow:0 16px 44px rgba(5,83,66,.09)}
+.juris-chat-head{background:linear-gradient(105deg,#fff 0%,#f0faf5 100%)}
+.juris-brand-mark,.juris-welcome-icon{background:linear-gradient(145deg,#dff7ed,#c7efdf);color:#087f68}
+.juris-messages{background:radial-gradient(ellipse at 50% 0%,rgba(16,185,129,.045),transparent 58%),#fff}
+.juris-welcome h2{color:#075b4d}
+.juris-suggestions button{background:#f0faf5;color:#12664f;border-color:#d5eee2}
+.juris-suggestions button:hover{background:#e0f5eb;border-color:#b7e4d0}
+.juris-avatar{background:linear-gradient(145deg,#0a9877,#056451)}
+.juris-message.user .juris-avatar{background:#658477}
+.juris-message.user .juris-bubble{background:#e4f6ed;border-color:#cfeadd}
+.juris-bubble{border-color:#deeee5;background:#f7fcf9}
+.juris-status{background:#e2f5ed;color:#11634f}
+.juris-source{border-color:#dcebe3;background:#fff}
+.juris-source a{color:#087f68}
+.juris-composer{background:linear-gradient(180deg,#fbfefc,#f4faf6)}
+.juris-input-row:focus-within{border-color:#0a9877;box-shadow:0 0 0 3px rgba(10,152,119,.12)}
+.home-hero{background:radial-gradient(circle at 82% 45%,rgba(81,226,174,.24),transparent 28%),linear-gradient(112deg,#063f37 0%,#087f68 58%,#13a47d 100%);box-shadow:0 18px 44px rgba(5,83,66,.2)}
+.home-eyebrow{color:#b9f0d8}
+.home-scale{background:rgba(210,255,235,.13);border-color:rgba(210,255,235,.3);box-shadow:0 12px 40px rgba(2,44,35,.16)}
+.home-metric-icon,.home-source-icon{background:#e1f5eb;color:#087f68}
+.home-guide{background:linear-gradient(145deg,#fff,#f0faf5)}
+.dossier-panel{border-color:#cce7d8;background:#f7fcf9}
+.message{background:#e8f7ef}
+:focus-visible{outline-color:rgba(8,127,104,.42)}
+@media(max-width:600px){
+  .top{background:linear-gradient(112deg,#063f37,#087f68 72%,#13a47d)}
+  .nav.active{box-shadow:inset 0 0 0 1px #c9ead9}
+  .home-hero{background:radial-gradient(circle at 88% 12%,rgba(81,226,174,.2),transparent 35%),linear-gradient(112deg,#063f37,#087f68 72%,#13a47d)}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+
 </style></head><body>
 <a class="skip-link" href="#mainContent">Aller au contenu principal</a>
 <header class="top"><div class="brand">Dikévia<small>Assistant d'information juridique · Fonction publique territoriale</small></div><div class="topright"><span id="userLabel">Session non connectée</span><button id="logout" class="secondary hidden">Déconnexion</button></div></header>
