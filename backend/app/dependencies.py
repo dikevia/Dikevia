@@ -71,8 +71,8 @@ async def get_tenant_context(request: Request, principal: Principal = Depends(ge
                     "SELECT claim_trial_email($1::uuid,$2)", str(row["user_id"]), account["email"])
                 if claimed:
                     account = await conn.fetchrow("""
-                        UPDATE users SET trial_started_at=now(),
-                          trial_expires_at=now()+interval '72 hours'
+                        UPDATE users SET trial_started_at=COALESCE(trial_started_at,now()),
+                          trial_expires_at=COALESCE(trial_expires_at,COALESCE(trial_started_at,now())+interval '72 hours')
                         WHERE id=$1::uuid
                         RETURNING email,trial_started_at,trial_expires_at
                     """, str(row["user_id"]))
