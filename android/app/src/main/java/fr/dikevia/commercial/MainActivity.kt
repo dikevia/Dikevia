@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import androidx.lifecycle.lifecycleScope
 import net.openid.appauth.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -41,12 +44,15 @@ private val Ink=Color(0xFF142B25)
 private val Muted=Color(0xFF637B71)
 private val Canvas=Color(0xFFF3F8F5)
 
-private data class RetainedAuthState(val accessToken:String?,val idToken:String?)
+private data class RetainedAuthState(val accessToken:String?,val idToken:String?,val refreshToken:String?,val expiresAt:Long?,val serviceConfig:AuthorizationServiceConfiguration?)
 
 class MainActivity:ComponentActivity(){
     private var token by mutableStateOf<String?>(null)
     private var idToken:String?=null
+    private var refreshToken:String?=null
+    private var accessTokenExpiresAt:Long?=null
     private var serviceConfig:AuthorizationServiceConfiguration?=null
+    private var refreshJob:Job?=null
     private var authError by mutableStateOf<String?>(null)
     private var authBusy by mutableStateOf(false)
     private var authService:AuthorizationService?=null
@@ -64,6 +70,10 @@ class MainActivity:ComponentActivity(){
         val retained=lastCustomNonConfigurationInstance as? RetainedAuthState
         token=retained?.accessToken
         idToken=retained?.idToken
+        refreshToken=retained?.refreshToken
+        accessTokenExpiresAt=retained?.expiresAt
+        serviceConfig=retained?.serviceConfig
+        if(refreshToken!=null && token!=null) scheduleTokenRefresh()
         authService=AuthorizationService(this)
         setContent{MaterialTheme(colorScheme=lightColorScheme(primary=Deep,onPrimary=Gold,secondary=Emerald,background=Canvas,surface=Color.White,onSurface=Ink)){
             Root(token,authBusy,authError,::login,::logout)
@@ -97,14 +107,24 @@ class MainActivity:ComponentActivity(){
         authService?.performTokenRequest(response.createTokenExchangeRequest()){result,error->
             runOnUiThread{authBusy=false
                 if(error!=null||result?.accessToken.isNullOrBlank())authError="Échange du code OIDC impossible."
-                else{token=result!!.accessToken;idToken=result.idToken;authError=null}
+                else{
+                    token=result!!.accessToken
+                    idToken=result.idToken
+                    refreshToken=result.refreshToken
+                    accessTokenExpiresAt=result.accessTokenExpirationTime
+                    authError=null
+                    scheduleTokenRefresh()
+                }
             }
         }
     }
     private fun logout(){
         val hint=idToken
+        refreshJob?.cancel();refreshJob=null
         token=null
         idToken=null
+        refreshToken=null
+        accessTokenExpiresAt=null
         authError=null
         val cfg=serviceConfig
         if(hint.isNullOrBlank()||cfg?.endSessionEndpoint==null)return
@@ -113,7 +133,38 @@ class MainActivity:ComponentActivity(){
             startActivityForResult(authService!!.getEndSessionRequestIntent(request),LOGOUT_REQUEST)
         }.onFailure { authError="Session locale fermée. La fermeture de session du fournisseur n'a pas pu être lancée." }
     }
-    override fun onRetainCustomNonConfigurationInstance():Any? = RetainedAuthState(token,idToken)
+    private fun scheduleTokenRefresh(){
+        refreshJob?.cancel()
+        val expires=accessTokenExpiresAt ?: (System.currentTimeMillis()+300_000L)
+        val waitMs=(expires-System.currentTimeMillis()-60_000L).coerceAtLeast(5_000L)
+        refreshJob=lifecycleScope.launch {
+            delay(waitMs)
+            val cfg=serviceConfig
+            val refresh=refreshToken
+            if(cfg==null || refresh.isNullOrBlank())return@launch
+            val request=TokenRequest.Builder(cfg,CLIENT_ID)
+                .setGrantType(GrantTypeValues.REFRESH_TOKEN)
+                .setRefreshToken(refresh)
+                .build()
+            authService?.performTokenRequest(request){result,error->
+                if(error!=null || result?.accessToken.isNullOrBlank()){
+                    token=null
+                    idToken=null
+                    refreshToken=null
+                    accessTokenExpiresAt=null
+                    authError="Session expirée. Veuillez vous reconnecter."
+                }else{
+                    token=result!!.accessToken
+                    idToken=result.idToken ?: idToken
+                    refreshToken=result.refreshToken ?: refreshToken
+                    accessTokenExpiresAt=result.accessTokenExpirationTime
+                    authError=null
+                    scheduleTokenRefresh()
+                }
+            }
+        }
+    }
+    override fun onRetainCustomNonConfigurationInstance():Any? = RetainedAuthState(token,idToken,refreshToken,accessTokenExpiresAt,serviceConfig)
     override fun onDestroy(){authService?.dispose();authService=null;super.onDestroy()}
 }
 private class Api{
