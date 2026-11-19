@@ -17,7 +17,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from .config import settings, validate_runtime_configuration
-from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool
+from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
 from .dependencies import get_principal, get_tenant_context, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
@@ -39,7 +39,7 @@ import httpx
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_runtime_configuration(settings)
-    await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url)
+    await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
     yield
     await close_pool()
 
@@ -156,24 +156,24 @@ async def billing_invoice_history(limit: int = 50, ctx: TenantContext = Depends(
 
 @app.get("/api/v1/platform/commercial/summary")
 async def platform_commercial_summary(month: date | None = None, platform=Depends(require_platform_admin)):
-    rows = await get_pool().fetch("SELECT * FROM platform_admin_commercial_summary($1::uuid,COALESCE($2::date,date_trunc('month',now())::date))",
+    rows = await get_platform_admin_pool().fetch("SELECT * FROM platform_admin_commercial_summary($1::uuid,COALESCE($2::date,date_trunc('month',now())::date))",
                                   platform["user_id"], month)
     return dict(rows[0]) if rows else {}
 
 
 @app.get("/api/v1/platform/commercial/invoices")
 async def platform_commercial_invoices(limit: int = 100, platform=Depends(require_platform_admin)):
-    rows = await get_pool().fetch("SELECT * FROM platform_admin_commercial_invoices($1::uuid,$2)",
+    rows = await get_platform_admin_pool().fetch("SELECT * FROM platform_admin_commercial_invoices($1::uuid,$2)",
                                   platform["user_id"], min(max(limit, 1), 200))
     return {"invoices": [dict(r) for r in rows]}
 
 
 @app.get("/api/v1/platform/commercial/organizations")
 async def platform_commercial_organizations(platform=Depends(require_platform_admin)):
-    rows = await get_pool().fetch("SELECT * FROM platform_admin_list_organizations($1::uuid)", platform["user_id"])
+    rows = await get_platform_admin_pool().fetch("SELECT * FROM platform_admin_list_organizations($1::uuid)", platform["user_id"])
     output = []
     for r in rows:
-        counts = await get_pool().fetchrow("""SELECT * FROM platform_admin_organization_seat_counts($1::uuid,$2::uuid)""",
+        counts = await get_platform_admin_pool().fetchrow("""SELECT * FROM platform_admin_organization_seat_counts($1::uuid,$2::uuid)""",
                                            platform["user_id"], r["id"])
         output.append({"id":str(r["id"]),"name":r["display_name"],"slug":r["slug"],
             "plan_code":r["plan_code"],"subscription_status":r["subscription_status"],
@@ -345,7 +345,7 @@ async def stripe_webhook(request: Request):
 
 @app.get("/api/v1/platform/free-email-access")
 async def platform_list_free_email_access(platform=Depends(require_platform_admin)):
-    rows = await get_pool().fetch("""SELECT id,email_normalized,note,expires_at,created_at,revoked_at
+    rows = await get_platform_admin_pool().fetch("""SELECT id,email_normalized,note,expires_at,created_at,revoked_at
         FROM platform_free_email_access ORDER BY created_at DESC LIMIT 500""")
     return [{"id": str(r["id"]), "email": r["email_normalized"], "note": r["note"],
              "expires_at": r["expires_at"], "created_at": r["created_at"],
@@ -369,7 +369,7 @@ async def platform_add_free_email_access(payload: dict, platform=Depends(require
                 raise ValueError("expiration passée")
         except ValueError:
             raise HTTPException(422, "La date d'expiration doit être une date future valide.")
-    async with get_pool().acquire() as conn:
+    async with get_platform_admin_pool().acquire() as conn:
         async with conn.transaction():
             row = await conn.fetchrow("""INSERT INTO platform_free_email_access(email_normalized,note,granted_by,expires_at)
                 VALUES($1,$2,$3::uuid,$4::timestamptz)
@@ -389,7 +389,7 @@ async def platform_revoke_free_email_access(access_id: str, platform=Depends(req
         access_uuid = str(UUID(access_id))
     except ValueError:
         raise HTTPException(422, "Identifiant d'accès invalide.")
-    async with get_pool().acquire() as conn:
+    async with get_platform_admin_pool().acquire() as conn:
         async with conn.transaction():
             row = await conn.fetchrow("""UPDATE platform_free_email_access SET revoked_at=now(),updated_at=now()
                 WHERE id=$1::uuid AND revoked_at IS NULL RETURNING id,email_normalized""", access_uuid)
@@ -1494,7 +1494,7 @@ async def accept_invitation(payload: InvitationAccept, response: Response, princ
 @app.get("/api/v1/platform/organizations")
 async def platform_list_organizations(platform=Depends(require_platform_admin)):
     """Cross-tenant directory exposed only through a DBA-owned guarded SQL function."""
-    rows = await get_pool().fetch(
+    rows = await get_platform_admin_pool().fetch(
         "SELECT * FROM platform_admin_list_organizations($1::uuid)", platform["user_id"])
     return [{
         "id": str(r["id"]), "slug": r["slug"], "legal_name": r["legal_name"],
@@ -1516,7 +1516,7 @@ async def platform_set_organization_status(organization_id: str, payload: dict,
     status = payload.get("status") if isinstance(payload, dict) else None
     if status not in ("ACTIVE", "SUSPENDED"):
         raise HTTPException(422, "État demandé invalide.")
-    changed = await get_pool().fetchval(
+    changed = await get_platform_admin_pool().fetchval(
         "SELECT platform_admin_set_organization_status($1::uuid,$2::uuid,$3)",
         platform["user_id"], org_id, status)
     if not changed:
