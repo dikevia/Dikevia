@@ -43,3 +43,11 @@ def test_logout_clears_pending_invitation_and_oidc_transient_state():
     assert "sessionStorage.removeItem('cfdt_oidc_state');" in logout
     assert "sessionStorage.removeItem('cfdt_oidc_verifier');" in logout
     assert "sessionStorage.removeItem('cfdt_pending_invitation');" in logout
+
+def test_oidc_protocol_endpoints_require_https_outside_local_development():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    assert "function validateEndpoint(endpoint, issuer, label)" in auth
+    assert "url.protocol !== 'https:' && !(localIssuer && localEndpoint)" in auth
+    assert "data.authorization_endpoint = validateEndpoint(data.authorization_endpoint, issuer, 'authorization');" in auth
+    assert "data.token_endpoint = validateEndpoint(data.token_endpoint, issuer, 'token');" in auth
+    assert "data.end_session_endpoint = validateEndpoint(data.end_session_endpoint, issuer, 'logout');" in auth
