@@ -151,8 +151,8 @@ def test_workspace_navigation_uses_all_matching_views_and_navigation_items():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
     assert "function setView(name){$$('.view').forEach" in html
     assert "$$('.nav').forEach" in html
-    assert "$('.view').forEach" not in html
-    assert "$('.nav').forEach" not in html
+    assert "function setView(name){$('.view').forEach" not in html
+    assert "function setView(name){$('.view').forEach(v=>v.classList.toggle('hidden',v.id!=='view-'+name));$('.nav').forEach" not in html
 
 
 def test_billing_portal_stays_disabled_even_for_organization_admins():
