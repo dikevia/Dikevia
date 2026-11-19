@@ -113,12 +113,12 @@ def test_historical_assistant_turns_with_local_sources_are_excluded_from_ai_cont
     from app.main import _ai_safe_conversation_history
 
     rows = [
-        {"role": "assistant", "content": "Réponse avec extrait local", "metadata": {
-            "sources": [{"source_type": "LOCAL_COLLECTIVITY_DOCUMENT", "source_id": "local-1"}],
-        }},
-        {"role": "user", "content": "Ma question suivante", "metadata": {}},
         {"role": "assistant", "content": "Réponse fondée sur le droit national", "metadata": {
             "sources": [{"source_type": "LEGIFRANCE_API", "source_id": "LEGIARTI000012345678"}],
+        }},
+        {"role": "user", "content": "Ma question suivante", "metadata": {}},
+        {"role": "assistant", "content": "Réponse avec extrait local", "metadata": {
+            "sources": [{"source_type": "LOCAL_COLLECTIVITY_DOCUMENT", "source_id": "local-1"}],
         }},
     ]
 
