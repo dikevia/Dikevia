@@ -25,7 +25,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
             assert body["recherche"]["filtres"][1]["singleDate"] == "2025-11-16"
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
-            return httpx.Response(200, json={"id": ARTICLE_ID, "dateDebut": "2025-01-01", "article": {"texte": "Article L. 123-4 Le texte réglementaire officiel est ici suffisamment long pour le test."}})
+            return httpx.Response(200, json={"article": {"id": ARTICLE_ID, "num": "L. 123-4", "nomCode": "Code général de la fonction publique", "dateDebut": "2025-01-01", "texte": "Le texte réglementaire officiel est ici suffisamment long pour le test."}})
         return httpx.Response(404)
     connector = LegifranceConnector(transport=httpx.MockTransport(handler))
     assert await connector.ping() is True
@@ -38,6 +38,34 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
     assert results[0]["source_version_id"] == ARTICLE_ID
     assert any(path.endswith("/search") for _, path in seen)
     assert any(path.endswith("/list/ping") for _, path in seen)
+
+@pytest.mark.asyncio
+async def test_legifrance_accepts_short_official_article_text_when_metadata_matches(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    short_text = "La liberté d'opinion est garantie aux agents publics."
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID,
+                "num": "L111-1",
+                "nomCode": "Code général de la fonction publique",
+                "texte": short_text,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles("article L. 111-1", date(2026, 11, 19))
+    assert len(results) == 1
+    assert results[0]["article"] == "L111-1"
+    assert results[0]["text"] == short_text
+    assert len(results[0]["text"]) == 53
+
 
 @pytest.mark.asyncio
 async def test_legifrance_rejects_incomplete_oauth(monkeypatch):
@@ -67,8 +95,10 @@ async def test_legifrance_exact_article_query_rejects_consulted_body_for_another
         if request.url.path.endswith("/search"):
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
-            return httpx.Response(200, json={"id": ARTICLE_ID, "article": {
-                "texte": "Article L. 123-5 Le texte officiel est suffisamment long pour ce test."
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID, "num": "L123-5",
+                "nomCode": "Code général de la fonction publique",
+                "texte": "Le texte officiel est suffisamment long pour ce test."
             }})
         return httpx.Response(404)
 
