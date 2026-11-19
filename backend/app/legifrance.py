@@ -321,9 +321,30 @@ class LegifranceConnector:
         if not 1 <= limit <= 20:
             raise ValueError("La limite réglementaire doit être comprise entre 1 et 20.")
         stamp = self._date_epoch_ms(effective_date)
+        number_match = re.search(r"(?<!\\d)(\\d{4}-\\d{1,4})(?!\\d)", query)
+        if number_match:
+            search_field = {
+                "typeChamp": "NUM",
+                "criteres": [{
+                    "typeRecherche": "EXACTE",
+                    "valeur": number_match.group(1),
+                    "operateur": "ET",
+                }],
+                "operateur": "ET",
+            }
+        else:
+            search_field = {
+                "typeChamp": "ALL",
+                "criteres": [{
+                    "typeRecherche": "UN_DES_MOTS",
+                    "valeur": query.strip()[:250],
+                    "proximite": 5,
+                    "operateur": "ET",
+                }],
+                "operateur": "ET",
+            }
         payload = {"fond": "LODA_DATE", "recherche": {
-            "champs": [{"criteres": [{"valeur": query.strip()[:250], "proximite": 2,
-                "operateur": "ET", "typeRecherche": "UN_DES_MOTS"}], "operateur": "ET", "typeChamp": "ALL"}],
+            "champs": [search_field],
             "filtres": [{"facette": "DATE_VERSION", "singleDate": stamp}],
             "fromAdvancedRecherche": False, "pageSize": limit, "pageNumber": 1,
             "operateur": "ET", "sort": "PERTINENCE", "secondSort": "SIGNATURE_DATE_DESC",
