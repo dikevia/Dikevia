@@ -708,3 +708,12 @@ def test_usable_sources_accept_dated_cetat_full_text_but_reject_search_metadata(
         "excerpt": "Simple extrait de recherche non probant.",
     }
     assert _usable_document_sources([metadata]) == []
+
+
+def test_system_prompt_treats_fpt_reference_sources_as_non_applicable_without_local_bridge():
+    from app.ai_provider import SYSTEM_PROMPT
+
+    assert "FPT_REFERENCE" in SYSTEM_PROMPT
+    assert "décret 91-875" in SYSTEM_PROMPT
+    assert "délibération locale" in SYSTEM_PROMPT
+    assert "ne conclus pas au droit individuel" in SYSTEM_PROMPT
