@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     private_instance_mode: bool = False
     private_instance_max_users: int = 10
     beta_max_users: int = 1
+    founder_owner_email: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_automatic_tax_enabled: bool = True
@@ -85,6 +86,8 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("PRIVATE_INSTANCE_MAX_USERS doit être égal à 10 pour l'instance privée CFDT JURIS.")
     if not 0 <= config.beta_max_users <= 1000:
         raise RuntimeError("BETA_MAX_USERS doit être compris entre 0 (désactivé) et 1000.")
+    if config.founder_owner_email and (len(config.founder_owner_email) > 254 or not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", config.founder_owner_email.strip())):
+        raise RuntimeError("FOUNDER_OWNER_EMAIL doit être une adresse électronique valide.")
     if config.private_instance_mode and (config.stripe_secret_key or config.stripe_webhook_secret):
         raise RuntimeError("Stripe doit être entièrement désactivé en mode instance privée.")
     if bool(config.stripe_secret_key) != bool(config.stripe_webhook_secret):
