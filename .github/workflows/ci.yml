@@ -267,7 +267,7 @@ jobs:
 
 
   android-debug-build:
-    name: Android beta debug build (unsigned)
+    name: Android beta debug build (debug-signed)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -293,7 +293,7 @@ jobs:
         run: |
           gradle wrapper --gradle-version 8.9 --distribution-type bin
           ./gradlew --no-daemon assembleDebug
-      - name: Upload unsigned debug APK for technical testing only
+      - name: Upload debug-signed APK for technical testing only
         uses: actions/upload-artifact@v4
         with:
           name: dikevia-android-debug-unsigned
