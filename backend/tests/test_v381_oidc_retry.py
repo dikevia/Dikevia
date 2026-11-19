@@ -17,7 +17,7 @@ def test_oidc_provider_errors_are_state_checked_and_cleaned_from_the_url():
     assert "const providerError = params.get('error');" in auth
     assert "state !== expected" in auth
     assert "sessionStorage.removeItem('cfdt_oidc_state');" in auth
-    assert "history.replaceState({}, document.title, window.location.pathname + window.location.hash);" in auth
+    assert "cleanAuthCallbackUrl();" in auth
     assert "error_description" in auth and ".slice(0, 300)" in auth
 
 def test_invitation_bearer_token_is_removed_from_the_url_immediately():
