@@ -61,3 +61,24 @@ def test_checkout_event_maps_org_and_new_plan():
 
 def test_unrecognized_event_is_ignored():
     assert extract_subscription_state({"type": "customer.created", "data": {"object": {}}}) is None
+
+
+
+def test_resolve_plan_price_supports_monthly_and_annual_server_prices():
+    from app.billing import resolve_plan_price
+
+    assert resolve_plan_price("ESSENTIEL", "month") == (1490, "month")
+    assert resolve_plan_price("ESSENTIEL", "year") == (14900, "year")
+    assert resolve_plan_price("COLLECTIVITE_SYNDICATS", "year") == (299000, "year")
+
+
+def test_resolve_plan_price_rejects_unknown_private_and_invalid_intervals():
+    from app.billing import resolve_plan_price
+    import pytest
+
+    with pytest.raises(ValueError):
+        resolve_plan_price("FOUNDING_FREE", "month")
+    with pytest.raises(ValueError):
+        resolve_plan_price("UNKNOWN", "year")
+    with pytest.raises(ValueError):
+        resolve_plan_price("PRO", "weekly")
