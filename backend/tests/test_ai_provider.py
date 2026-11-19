@@ -672,3 +672,28 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
     assert "2026-11-19" in serialized
     assert "Extrait officiel de test suffisamment explicite." in serialized
 
+
+
+def test_usable_sources_accept_dated_cetat_full_text_but_reject_search_metadata():
+    from app.ai_provider import _usable_document_sources
+
+    full_text = {
+        "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+        "source_id": "CETATEXT000012345678",
+        "decision_date": "2024-05-10",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "text": "Décision officielle intégrale relative à un agent territorial. " * 3,
+    }
+    accepted = _usable_document_sources([full_text])
+    assert len(accepted) == 1
+    assert accepted[0]["source_id"] == "CETATEXT000012345678"
+    assert accepted[0]["excerpt"] == full_text["text"]
+
+    metadata = {
+        **full_text,
+        "source_type": "LEGIFRANCE_CETAT_SEARCH",
+        "content_kind": "METADATA",
+        "excerpt": "Simple extrait de recherche non probant.",
+    }
+    assert _usable_document_sources([metadata]) == []
