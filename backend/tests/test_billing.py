@@ -91,3 +91,13 @@ def test_founder_access_remains_zero_cost_private_and_outside_checkout():
     assert founder["max_users"] == 10
     assert "annual_amount" not in founder
     assert "FOUNDING_FREE" not in {plan["code"] for plan in public_plans()}
+
+
+
+def test_stripe_billing_is_disabled_by_default_even_when_secrets_exist():
+    from app.config import Settings
+
+    assert Settings(_env_file=None).stripe_billing_enabled is False
+    configured = Settings(_env_file=None, stripe_secret_key="sk_test_example",
+                          stripe_webhook_secret="whsec_example")
+    assert configured.stripe_billing_enabled is False
