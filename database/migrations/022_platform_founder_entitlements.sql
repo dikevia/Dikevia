@@ -110,7 +110,7 @@ CREATE OR REPLACE FUNCTION platform_admin_list_founder_entitlements(
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path=public,pg_temp
 SET row_security=off
-AS $
+AS $founder_list$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=p_actor_user_id) THEN
       RAISE EXCEPTION 'platform administrator required' USING ERRCODE='42501';
@@ -118,7 +118,7 @@ BEGIN
     RETURN QUERY SELECT e.user_id,e.note,e.granted_at,e.revoked_at
       FROM platform_founder_entitlements e ORDER BY e.granted_at DESC LIMIT 200;
 END;
-$;
+$founder_list$;
 
 REVOKE ALL ON FUNCTION platform_admin_grant_founder_entitlement(uuid,text,text,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION platform_admin_revoke_founder_entitlement(uuid,uuid) FROM PUBLIC;
