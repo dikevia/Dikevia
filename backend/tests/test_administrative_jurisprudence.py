@@ -118,3 +118,107 @@ async def test_administrative_connector_rejects_judicial_juritext_identifiers():
     connector = AdministrativeCaseLawConnector(LegifranceConnector())
     with pytest.raises(ValueError):
         await connector.consult("JURITEXT000012345678")
+
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_enabled(monkeypatch):
+    import json
+    import app.orchestrator as module
+    from app.orchestrator import LegalOrchestrator
+    from app.schemas import AskRequest
+
+    monkeypatch.setattr(settings, "legifrance_cetat_fulltext_enabled", True)
+    monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
+
+    async def fake_token(self):
+        return "test-token"
+
+    async def no_code_articles(*args, **kwargs):
+        return []
+
+    regulatory_text = (
+        "Le décret relatif aux indemnités horaires pour travaux supplémentaires "
+        "définit les conditions de versement applicables aux agents territoriaux. "
+    ) * 3
+
+    async def regulatory_texts(*args, **kwargs):
+        return [{
+            "source_type": "LEGIFRANCE_LODA",
+            "source_id": "LEGITEXT000012345678",
+            "title": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+            "document_kind": "DECREE",
+            "official_number": "2002-60",
+            "full_text": regulatory_text,
+        }]
+
+    decision_id = "CETATEXT000012345678"
+    decision_text = (
+        "Le Conseil d'État examine la situation d'un agent territorial d'une commune "
+        "au regard des indemnités horaires pour travaux supplémentaires et des règles "
+        "applicables à la fonction publique territoriale. "
+    ) * 4
+
+    async def case_search(*args, **kwargs):
+        return [{
+            "source_type": "LEGIFRANCE_CETAT_SEARCH",
+            "source_id": decision_id,
+            "title": "Décision concernant un agent territorial",
+            "decision_date": "2024-05-10",
+            "text": "Extrait de recherche non probant.",
+            "full_text_retrieved": False,
+        }]
+
+    async def case_consult(source_id):
+        assert source_id == decision_id
+        return {
+            "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+            "source_id": decision_id,
+            "title": "Décision concernant un agent territorial",
+            "decision_date": "2024-05-10",
+            "case_number": "123456",
+            "jurisdiction": "Conseil d'État",
+            "text": decision_text,
+            "full_text_retrieved": True,
+            "official_source": True,
+            "source_status": "OFFICIAL_FULL_TEXT_ID_MATCHED",
+        }
+
+    captured = {}
+
+    async def fake_ai(**kwargs):
+        captured["sources"] = kwargs["sources"]
+        return json.dumps({"claims": []})
+
+    async def provider_available():
+        return {"status": "AVAILABLE"}
+
+    monkeypatch.setattr(type(module.legifrance), "_get_token", fake_token)
+    monkeypatch.setattr(module.legifrance, "search_code_articles", no_code_articles)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
+    monkeypatch.setattr(module.case_law_connector, "search", case_search)
+    monkeypatch.setattr(module.case_law_connector, "consult", case_consult)
+    monkeypatch.setattr(module, "analyze_question", fake_ai)
+    monkeypatch.setattr(module, "check_provider_availability", provider_available)
+
+    await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            facts_date="2025-01-01",
+            question="On ne me paie pas mes heures supplémentaires.",
+        ),
+        organization_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    ai_sources = captured["sources"]
+    assert any(
+        source.get("source_type") == "LEGIFRANCE_CETAT_FULL_TEXT"
+        and source.get("source_id") == decision_id
+        and source.get("content_kind") == "FULL_TEXT"
+        and source.get("citation_integrity", {}).get("valid") is True
+        for source in ai_sources
+    )
+    assert not any(
+        source.get("source_type") == "LEGIFRANCE_CETAT_SEARCH"
+        for source in ai_sources
+    )
