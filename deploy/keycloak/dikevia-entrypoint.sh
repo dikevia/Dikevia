@@ -57,7 +57,18 @@ sync_dikevia_realm_branding() {
     && HOME="$temp_home" /opt/keycloak/bin/kcadm.sh update realms/cfdt \
         -s displayName=Dikévia \
         -s displayNameHtml=Dikévia >/dev/null 2>&1; then
-    echo "Keycloak realm display name synchronized to Dikévia."
+    local client_internal_id
+    client_internal_id="$(
+      HOME="$temp_home" /opt/keycloak/bin/kcadm.sh get clients -r cfdt \
+        --query clientId=cfdt-juris-web --fields id --format csv --noquotes 2>/dev/null | head -n 1
+    )"
+    if [[ -n "$client_internal_id" ]] && HOME="$temp_home" /opt/keycloak/bin/kcadm.sh \
+        update "clients/${client_internal_id}" -r cfdt \
+        -s 'name=Dikévia — application web' >/dev/null 2>&1; then
+      echo "Keycloak realm and OIDC client display names synchronized to Dikévia."
+    else
+      echo "WARNING: Keycloak realm display name synchronized, but OIDC client display name could not be updated." >&2
+    fi
   else
     echo "WARNING: Keycloak realm display name could not be synchronized; service will continue." >&2
   fi
