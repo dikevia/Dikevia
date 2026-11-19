@@ -699,7 +699,7 @@ def test_usable_sources_accept_dated_cetat_full_text_but_reject_search_metadata(
     accepted = _usable_document_sources([full_text])
     assert len(accepted) == 1
     assert accepted[0]["source_id"] == "CETATEXT000012345678"
-    assert accepted[0]["excerpt"] == full_text["text"]
+    assert accepted[0]["excerpt"] == full_text["text"].strip()
 
     metadata = {
         **full_text,
