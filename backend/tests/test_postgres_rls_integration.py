@@ -47,6 +47,13 @@ async def _run_isolation_scenario():
                 org_a, "rls-a-"+org_a.hex[:10], "Org A", "Org A", org_b, "rls-b-"+org_b.hex[:10], "Org B", "Org B")
             await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE'),($4,'https://issuer.test',$5,$6,'ACTIVE')",
                 user_a, "sub-a-"+user_a.hex, "a@example.test", user_b, "sub-b-"+user_b.hex, "b@example.test")
+            await admin.execute("INSERT INTO platform_admins(user_id) VALUES($1)", user_a)
+            founder_user_id = await admin.fetchval(
+                "SELECT platform_admin_grant_founder_entitlement($1,$2,$3,$4)",
+                user_a, "https://issuer.test", "sub-a-"+user_a.hex,
+                "Permanent founder entitlement for verified test identity",
+            )
+            assert founder_user_id == user_a
             await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE')", user_a2, "sub-a2-"+user_a2.hex, "a2@example.test")
             await admin.execute("INSERT INTO memberships(organization_id,user_id,role,status) VALUES($1,$2,'ORG_ADMIN','ACTIVE'),($3,$4,'ORG_ADMIN','ACTIVE'),($1,$5,'MEMBER','ACTIVE')", org_a,user_a,org_b,user_b,user_a2)
             conversation_a, conversation_a2 = uuid.uuid4(), uuid.uuid4()
@@ -68,12 +75,40 @@ async def _run_isolation_scenario():
         async with runtime.transaction():
             await runtime.execute("SELECT set_config('app.current_org_id',$1,true)", str(org_a))
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
+            await runtime.execute("SELECT set_config('app.oidc_issuer',$1,true)", "https://issuer.test")
+            await runtime.execute("SELECT set_config('app.oidc_subject',$1,true)", "sub-a-"+user_a.hex)
+            assert await runtime.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements WHERE user_id=$1)", user_a
+            ) is True
             from app.rate_limit import consume_chat_request
             first = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
             second = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
             third = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
             assert first.allowed and second.allowed and not third.allowed
             assert third.request_count == 3
+            wallet_key = "rls-wallet-" + uuid.uuid4().hex
+            first_credit = await runtime.fetchrow(
+                "SELECT * FROM wallet_apply_entry($1,100,'MONTHLY_ALLOCATION',$2,'CI allocation')",
+                org_a, wallet_key,
+            )
+            assert first_credit["applied"] is True and first_credit["current_balance"] == 100
+            replay_credit = await runtime.fetchrow(
+                "SELECT * FROM wallet_apply_entry($1,100,'MONTHLY_ALLOCATION',$2,'CI allocation')",
+                org_a, wallet_key,
+            )
+            assert replay_credit["applied"] is False and replay_credit["ledger_entry_id"] == first_credit["ledger_entry_id"]
+            debit_credit = await runtime.fetchrow(
+                "SELECT * FROM wallet_apply_entry($1,-30,'USAGE_DEBIT',$2,'CI usage')",
+                org_a, "rls-debit-" + uuid.uuid4().hex,
+            )
+            assert debit_credit["applied"] is True and debit_credit["current_balance"] == 70
+            rejected_debit = await runtime.fetchrow(
+                "SELECT * FROM wallet_apply_entry($1,-100,'USAGE_DEBIT',$2,'Insufficient funds test')",
+                org_a, "rls-reject-" + uuid.uuid4().hex,
+            )
+            assert rejected_debit["applied"] is False and rejected_debit["current_balance"] == 70
+            assert await runtime.fetchval("SELECT balance FROM credit_accounts WHERE organization_id=$1", org_a) == 70
+            assert await runtime.fetchval("SELECT count(*) FROM credit_ledger_entries") == 2
             await runtime.execute("""INSERT INTO ai_usage_events(
                 request_id,organization_id,user_id,provider,model,prompt_tokens,
                 completion_tokens,total_tokens,outcome)
@@ -107,6 +142,11 @@ async def _run_isolation_scenario():
                 async with runtime.transaction():
                     await runtime.execute("INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content) VALUES($1,$2,$3,'user','tentative de falsification')", org_a,conversation_a2,user_a)
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a2))
+            await runtime.execute("SELECT set_config('app.oidc_subject',$1,true)", "sub-a2-"+user_a2.hex)
+            assert await runtime.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements WHERE user_id=$1)", user_a2
+            ) is False
+            assert await runtime.fetchval("SELECT count(*) FROM platform_founder_entitlements") == 0
             second_user_conversations = await runtime.fetch("SELECT id FROM chat_conversations")
             assert {r["id"] for r in second_user_conversations} == {conversation_a2}
             second_user_dossiers = await runtime.fetch("SELECT content->>'title' AS title FROM legal_dossiers")
@@ -116,6 +156,7 @@ async def _run_isolation_scenario():
             assert await runtime.fetchval("SELECT count(*) FROM chat_messages WHERE conversation_id=$1", conversation_a) == 0
             assert await runtime.fetchval("SELECT count(*) FROM legal_dossiers WHERE conversation_id=$1", conversation_a) == 0
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
+            await runtime.execute("SELECT set_config('app.oidc_subject',$1,true)", "sub-a-"+user_a.hex)
             rows = await runtime.fetch("SELECT id,title FROM documents ORDER BY title")
             assert {r['id'] for r in rows} == {doc_a}
             hidden = await runtime.fetchval("SELECT count(*) FROM documents WHERE id=$1", doc_b)
@@ -207,6 +248,7 @@ async def _run_isolation_scenario():
         # Admin URL should be a disposable test DB owner/superuser so it can
         # remove fixture rows even when FORCE ROW LEVEL SECURITY is enabled.
         async with admin.transaction():
+            await admin.execute("DELETE FROM platform_audit_events WHERE actor_user_id=$1", user_a)
             await admin.execute("DELETE FROM organizations WHERE id IN ($1,$2)", org_a, org_b)
             await admin.execute("DELETE FROM users WHERE id IN ($1,$2,$3)", user_a, user_b, user_a2)
         await admin.close()
