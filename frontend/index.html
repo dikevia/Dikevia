@@ -474,6 +474,23 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
 
 /* Emerald identity refinement — presentation layer only */
+
+/* Or discret : réservé aux commandes et repères d'interface, jamais au texte des réponses du chatbot */
+button:not(.secondary),.button,#login,#askSubmit{
+  color:#f0d79f;
+  font-weight:650;
+  letter-spacing:.012em;
+  text-shadow:0 1px 0 rgba(45,35,12,.12);
+}
+button:not(.secondary):hover,.button:hover,#login:hover,#askSubmit:hover{color:#ffebbd}
+button.secondary{color:#175b49}
+.nav.active{box-shadow:inset 3px 0 0 #c9a45d}
+.auth-brand strong{color:#075b4d}
+.auth-brand-mark{box-shadow:0 0 0 1px rgba(201,164,93,.38),0 8px 22px rgba(5,83,66,.10)}
+/* Neutralité éditoriale : les contenus juridiques restent dans les couleurs de lecture */
+.juris-bubble,.juris-bubble p,.juris-bubble div,.juris-message .juris-meta,
+.juris-source,.juris-source p,.juris-source strong{color:inherit}
+
 :root{
   --brand:#087f68;
   --brand-deep:#075b4d;
