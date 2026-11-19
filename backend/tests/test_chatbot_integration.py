@@ -116,8 +116,10 @@ async def test_nonexistent_article_abstains_before_any_gemini_call(monkeypatch):
 
     assert response.verification_status == "NON_VERIFIE"
     assert "Aucune conclusion juridique n'est formulée" in response.answer
-    assert any("Aucune disposition législative ou réglementaire exploitable" in item
-               for item in response.missing_information)
+    assert "L999-999" in response.answer
+    assert "Aucune conclusion juridique n'est formulée" in response.answer
+    assert response.sources == []
+    assert any("Référence exacte L999-999" in item for item in response.missing_information)
 
 
 
