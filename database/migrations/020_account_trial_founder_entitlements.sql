@@ -11,6 +11,39 @@ ALTER TABLE users ADD CONSTRAINT users_trial_window_check CHECK (
 );
 CREATE INDEX IF NOT EXISTS users_trial_expiry_idx ON users(trial_expires_at)
   WHERE trial_expires_at IS NOT NULL;
+-- One verified email can consume only one discovery trial across OIDC identities.
+CREATE TABLE IF NOT EXISTS trial_email_claims (
+  email_normalized text PRIMARY KEY CHECK (email_normalized=lower(trim(email_normalized))),
+  user_id uuid NOT NULL UNIQUE REFERENCES users(id),
+  claimed_at timestamptz NOT NULL DEFAULT now()
+);
+REVOKE ALL ON trial_email_claims FROM PUBLIC;
+REVOKE ALL ON trial_email_claims FROM cfdt_juris_app;
+
+CREATE OR REPLACE FUNCTION claim_trial_email(p_user_id uuid,p_email text)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=public,pg_temp SET row_security=off AS $claim$
+DECLARE normalized text := lower(trim(coalesce(p_email,'')));
+DECLARE existing_user uuid;
+DECLARE existing_email text;
+BEGIN
+  IF normalized='' OR length(normalized)>254 OR
+     NOT EXISTS(SELECT 1 FROM users WHERE id=p_user_id AND status='ACTIVE'
+       AND email_verified_at IS NOT NULL AND lower(email)=normalized) THEN
+    RETURN false;
+  END IF;
+  PERFORM pg_advisory_xact_lock(33010341);
+  SELECT user_id INTO existing_user FROM trial_email_claims WHERE email_normalized=normalized;
+  IF FOUND THEN RETURN existing_user=p_user_id; END IF;
+  SELECT email_normalized INTO existing_email FROM trial_email_claims WHERE user_id=p_user_id;
+  IF FOUND THEN RETURN existing_email=normalized; END IF;
+  INSERT INTO trial_email_claims(email_normalized,user_id) VALUES(normalized,p_user_id)
+    ON CONFLICT DO NOTHING;
+  RETURN EXISTS(SELECT 1 FROM trial_email_claims WHERE email_normalized=normalized AND user_id=p_user_id);
+END; $claim$;
+REVOKE ALL ON FUNCTION claim_trial_email(uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claim_trial_email(uuid,text) TO cfdt_juris_app;
+
 CREATE TABLE IF NOT EXISTS founder_entitlements (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slot_number smallint NOT NULL CHECK (slot_number BETWEEN 1 AND 10),
