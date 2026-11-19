@@ -144,3 +144,4 @@ def test_chat_can_target_any_collectivity_in_the_active_organization():
     assert 'id="askCollectivity"' in html
     assert "$('#askCollectivity').innerHTML" in html
     assert "collectivity_id:collectivityId" in html
+    assert "applyPermissions();await loadCollectivities();await loadOverview();" in html
