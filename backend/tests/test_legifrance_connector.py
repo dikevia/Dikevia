@@ -126,17 +126,17 @@ async def test_legifrance_second_code_civil_article_control(monkeypatch):
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
             return httpx.Response(200, json={"article": {
-                "id": ARTICLE_ID, "num": "1103", "nomCode": "Code civil",
-                "dateDebut": "2016-10-01", "texte": long_text,
+                "id": ARTICLE_ID, "num": "1217", "nomCode": "Code civil",
+                "dateDebut": "2018-10-01", "texte": long_text,
             }})
         return httpx.Response(404)
 
     connector = LegifranceConnector(transport=httpx.MockTransport(handler))
     results = await connector.search_code_articles(
-        "article 1103", date(2026, 11, 19), code_name="Code civil"
+        "article 1217", date(2026, 11, 19), code_name="Code civil"
     )
     assert len(results) == 1
-    assert results[0]["article"] == "1103"
+    assert results[0]["article"] == "1217"
     assert results[0]["title"].startswith("Code civil")
     assert results[0]["text"] == long_text
     assert len(results[0]["text"]) > 150
