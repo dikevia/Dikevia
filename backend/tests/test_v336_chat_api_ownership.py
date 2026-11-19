@@ -447,3 +447,17 @@ async def test_chat_endpoint_does_not_hold_transaction_during_orchestration(monk
 
 async def _async_allowed_decision():
     return SimpleNamespace(allowed=True, retry_after_seconds=0)
+
+
+def test_local_compliance_review_uses_short_transaction_dependency():
+    import inspect
+    from app.main import review_local_rule_compliance
+
+    source = inspect.getsource(review_local_rule_compliance)
+    assert "get_tenant_context_for_chat" in source
+    assert "async with ctx.conn.transaction():" in source
+    assert "await analyze_question(" in source
+    # The model call is not nested in a transaction block: the route only opens
+    # short transactions for rate limiting, usage metering and audit persistence.
+    assert source.index("await analyze_question(") > source.index("async with ctx.conn.transaction():")
+    assert source.count("async with ctx.conn.transaction():") == 4
