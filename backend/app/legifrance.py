@@ -440,13 +440,20 @@ class LegifranceConnector:
                 "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_METADATA id=%s num=%s normalized_num=%s code_name=%s",
                 article_id, raw_num, article_ref, code_name,
             )
-            # For an exact article query, missing metadata is not proof of a match.
-            if requested_ref and article_ref != requested_ref:
+            # The search result already supplied this exact LEGIARTI id.
+            # If getArticle omits num, retain the id-bound result but mark its
+            # article number as unverified; an explicit conflicting num is rejected.
+            if requested_ref and article_ref and article_ref != requested_ref:
                 logger.warning(
                     "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_REJECTED_REFERENCE id=%s requested_num=%s returned_num=%s",
                     article_id, requested_ref, article_ref,
                 )
                 continue
+            if requested_ref and not article_ref:
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_ID_FALLBACK id=%s requested_num=%s",
+                    article_id, requested_ref,
+                )
             valid_from = self._iso_date(self._first_value(
                 article_metadata, ("dateDebut", "dateDebutVersion", "dateEffet", "dateDebutApplication")
             ))
