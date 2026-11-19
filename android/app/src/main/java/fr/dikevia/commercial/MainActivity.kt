@@ -107,6 +107,7 @@ private data class Entry(val title:String,val detail:String)
 @Composable private fun Root(token:String?,busy:Boolean,authError:String?,login:()->Unit,logout:()->Unit){
     val api=remember{Api()};var user by remember{mutableStateOf("")};var orgs by remember{mutableStateOf(emptyList<Org>())}
     var org by remember{mutableStateOf<Org?>(null)};var tab by remember{mutableStateOf("Accueil")}
+    var resumeConversationId by remember{mutableStateOf<String?>(null)}
     var loading by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)}
     LaunchedEffect(token){
         if(token!=null){loading=true;error=null
