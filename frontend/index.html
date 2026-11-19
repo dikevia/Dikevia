@@ -456,7 +456,7 @@ function renderLegalSearchResults(rows,type){
   const meta=document.createElement('p');meta.className='muted';meta.textContent=[item.article,item.official_number,item.case_number,item.jurisdiction,item.temporal_status||item.status,item.source_status].filter(Boolean).join(' · ');card.appendChild(meta);
   const excerpt=document.createElement('p');excerpt.textContent=item.excerpt||item.text||item.summary||'Aucun extrait textuel fourni par la source.';card.appendChild(excerpt);
   const url=item.official_url||item.source_url;
-  if(typeof url==='string'&&/^https?:\\/\\//i.test(url)){const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Ouvrir la source officielle';card.appendChild(link);}
+  if(typeof url==='string'&&/^https?:\/\//i.test(url)){const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Ouvrir la source officielle';card.appendChild(link);}
   if(type==='jurisprudence'&&item.source_id){
    const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='Consulter le texte intégral contrôlé';
    button.addEventListener('click',async()=>{
