@@ -8,8 +8,12 @@ def test_account_trial_starts_once_after_verified_oidc_sign_in():
     dependencies = (ROOT / "backend/app/dependencies.py").read_text(encoding="utf-8")
     assert "principal.email_verified and principal.email" in main
     assert "trial_started_at=COALESCE(trial_started_at,now())" in main
-    assert "trial_expires_at=COALESCE(trial_expires_at,now()+interval '72 hours')" in main
+    assert "trial_expires_at=COALESCE(trial_expires_at,COALESCE(trial_started_at,now())+interval '72 hours')" in main
     assert "if not principal.email_verified or not principal.email" in dependencies
+    migration = (ROOT / "database/migrations/020_account_trial_founder_entitlements.sql").read_text(encoding="utf-8")
+    assert "trial_email_claims" in migration
+    assert "pg_advisory_xact_lock(33010341)" in migration
+    assert "claim_trial_email" in dependencies and "TRIAL_ALREADY_USED" in dependencies
 
 
 def test_expired_trial_is_blocked_server_side_but_billing_and_identity_remain_available():
