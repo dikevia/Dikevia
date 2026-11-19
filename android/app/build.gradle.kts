@@ -8,6 +8,11 @@ android {
     namespace = "fr.dikevia.commercial"
     compileSdk = 35
 
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "fr.dikevia.commercial"
         minSdk = 24
