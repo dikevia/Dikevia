@@ -200,7 +200,12 @@ private data class Entry(val title:String,val detail:String)
                 val status=r.optString("verification_status","NON_VERIFIE")
                 Text("Vérification : "+status,color=if(status=="VERIFIE")Emerald else Color(0xFF946A19),fontWeight=FontWeight.Bold)
                 Text(r.optString("answer"),color=Ink,modifier=Modifier.padding(top=8.dp))
-                r.optString("clarification_question").takeIf{it.isNotBlank()}?.let{Text("Précision nécessaire : "+it,color=Muted)}
+                r.optString("clarification_question").takeIf{it.isNotBlank()}?.let{Text("Précision nécessaire : "+it,color=Muted,modifier=Modifier.padding(top=8.dp))}
+                val missing=r.optJSONArray("missing_information")?:JSONArray()
+                if(missing.length()>0){
+                    Text("Informations manquantes",fontWeight=FontWeight.Bold,color=Dark,modifier=Modifier.padding(top=10.dp))
+                    for(i in 0 until missing.length())Text("• "+missing.optString(i),fontSize=12.sp,color=Muted)
+                }
                 val sources=r.optJSONArray("sources")?:JSONArray()
                 Text("Sources documentaires ("+sources.length()+")",fontWeight=FontWeight.Bold,color=Dark,modifier=Modifier.padding(top=10.dp))
                 for(i in 0 until sources.length()){val s=sources.optJSONObject(i)?:continue
@@ -213,6 +218,7 @@ private data class Entry(val title:String,val detail:String)
                     }
                 }
                 r.optString("disclaimer").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=8.dp))}
+                Text("Une réponse assistée ne remplace pas la vérification du texte applicable ni l'avis du service juridique.",fontSize=10.sp,color=Muted,modifier=Modifier.padding(top=6.dp))
             }}}?:Text("Posez votre question. Dikévia indiquera si la réponse est vérifiée ou si des précisions sont nécessaires.",color=Muted)}
         }
         error?.let{ErrorBox(it)}
@@ -264,6 +270,7 @@ private data class Entry(val title:String,val detail:String)
 }
 
 @Composable private fun HistoryPage(token:String,org:Org,api:Api){
+    val context=LocalContext.current
     var conversations by remember{mutableStateOf(emptyList<JSONObject>())}
     var selected by remember{mutableStateOf<String?>(null)}
     var messages by remember{mutableStateOf(emptyList<JSONObject>())}
@@ -316,6 +323,24 @@ private data class Entry(val title:String,val detail:String)
                         Column(Modifier.fillMaxWidth().padding(13.dp)){
                             Text(if(isUser)"Vous" else "Dikévia",fontWeight=FontWeight.Bold,color=if(isUser)Deep else Emerald,fontSize=11.sp)
                             Text(m.optString("content"),color=Ink,fontSize=13.sp)
+                            if(!isUser){
+                                val metadata=m.optJSONObject("metadata")?:JSONObject()
+                                metadata.optString("verification_status").takeIf{it.isNotBlank()}?.let{
+                                    Text("Vérification : "+it,fontSize=10.sp,fontWeight=FontWeight.Bold,color=if(it=="VERIFIE")Emerald else Color(0xFF946A19),modifier=Modifier.padding(top=6.dp))
+                                }
+                                val sources=metadata.optJSONArray("sources")?:JSONArray()
+                                for(i in 0 until sources.length()){
+                                    val source=sources.optJSONObject(i)?:continue
+                                    Text("• "+source.optString("title","Source juridique"),fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=4.dp))
+                                    source.optString("excerpt").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=10.sp,color=Muted)}
+                                    val url=source.optString("official_url")
+                                    val host=runCatching{Uri.parse(url).host}.getOrNull()
+                                    if(url.startsWith("https://")&&(host=="legifrance.gouv.fr"||host=="www.legifrance.gouv.fr")){
+                                        TextButton(onClick={context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)))}){Text("Consulter Légifrance",fontSize=10.sp,color=Emerald)}
+                                    }
+                                }
+                                metadata.optString("disclaimer").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=10.sp,color=Muted)}
+                            }
                         }
                     }
                 }
