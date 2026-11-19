@@ -305,11 +305,25 @@ async def auth_me(principal: Principal = Depends(get_principal)):
         async with conn.transaction():
             await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", principal.issuer)
             await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", principal.subject)
-            row = await conn.fetchrow("SELECT id,email,display_name,status FROM users WHERE oidc_issuer=$1 AND oidc_subject=$2",
-                                      principal.issuer, principal.subject)
+            if principal.email_verified and principal.email:
+                row = await conn.fetchrow("""
+                    UPDATE users SET email=lower(trim($3)),
+                      email_verified_at=COALESCE(email_verified_at,now()),
+                      trial_started_at=COALESCE(trial_started_at,now()),
+                      trial_expires_at=COALESCE(trial_expires_at,now()+interval '72 hours')
+                    WHERE oidc_issuer=$1 AND oidc_subject=$2 AND status='ACTIVE'
+                    RETURNING id,email,display_name,status,trial_started_at,trial_expires_at
+                """, principal.issuer, principal.subject, principal.email)
+            else:
+                row = await conn.fetchrow("""
+                    SELECT id,email,display_name,status,trial_started_at,trial_expires_at
+                    FROM users WHERE oidc_issuer=$1 AND oidc_subject=$2
+                """, principal.issuer, principal.subject)
     if not row or row["status"] != "ACTIVE":
         raise HTTPException(403,"Compte désactivé ou non provisionné.")
-    return {"id":str(row["id"]),"email":row["email"],"display_name":row["display_name"]}
+    return {"id":str(row["id"]),"email":row["email"],"display_name":row["display_name"],
+            "email_verified":principal.email_verified,
+            "trial_started_at":row["trial_started_at"],"trial_expires_at":row["trial_expires_at"]}
 
 
 @app.get("/api/v1/access/status")
