@@ -437,6 +437,14 @@ class LegalOrchestrator:
             response_source = {**item, "source_url": item.get("official_url")}
             if parsed_date is None:
                 response_source["temporal_status"] = "TEMPORAL_SCOPE_INCOMPLETE"
+            # Apply the same French FPT perimeter to the permanent corpus as
+            # to live Légifrance and CETAT results. Otherwise a stored EU or
+            # FPE/FPH document could bypass the live-source scope guard.
+            scope_check = classify_public_service_scope(response_source)
+            response_source["public_service_scope"] = scope_check["scope"]
+            response_source["scope_evidence"] = scope_check["evidence"]
+            response_source["analysis_eligible"] = scope_check["analysis_eligible"]
+            response_source["ihts_relevant"] = is_ihts_relevant_source(request.question, response_source)
             sources.append(response_source)
 
         sources.extend(local_sources)
