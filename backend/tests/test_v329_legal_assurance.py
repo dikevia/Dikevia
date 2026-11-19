@@ -233,3 +233,40 @@ def test_local_compliance_review_uses_only_current_clean_document_version_text()
     assert r'ai_review = "\n".join(' in source
     assert "v.version_number=x.version_number AND v.sha256=x.sha256 AND v.scan_status='CLEAN'" in source
     assert "x.sha256=d.sha256 AND x.extraction_status='EXTRACTED'" in source
+
+
+def test_entailment_verifier_uses_the_same_excerpt_as_the_claim_validator():
+    from app.ai_provider import validate_entailment_verdicts
+
+    excerpt = "L'agent bénéficie d'un congé annuel dans les conditions prévues par le présent code."
+    source = {
+        **_eligible_official_source(),
+        "text": "Extrait de recherche sans valeur probante et sans lien avec le congé.",
+        "excerpt": excerpt,
+        "full_text": "Texte intégral contenant de nombreux autres chapitres.",
+    }
+    claim = {
+        "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+        "quote": excerpt,
+    }
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": excerpt,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is True
+
+    wrong_span = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": "Extrait de recherche sans valeur probante et sans lien avec le congé.",
+        }]
+    }, [claim], [source])
+    assert wrong_span["valid"] is False
+    assert "verdict_0:support_quote_not_in_source" in wrong_span["invalid"]
