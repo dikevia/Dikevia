@@ -145,3 +145,16 @@ def test_chat_can_target_any_collectivity_in_the_active_organization():
     assert "$('#askCollectivity').innerHTML" in html
     assert "collectivity_id:collectivityId" in html
     assert "applyPermissions();await loadCollectivities();await loadOverview();" in html
+
+
+def test_workspace_navigation_uses_all_matching_views_and_navigation_items():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "function setView(name){$$('.view').forEach" in html
+    assert "$$('.nav').forEach" in html
+    assert "$('.view').forEach" not in html
+    assert "$('.nav').forEach" not in html
+
+
+def test_billing_portal_stays_disabled_even_for_organization_admins():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "$('#openBillingPortal').disabled=true;" in html
