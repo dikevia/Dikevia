@@ -4,7 +4,7 @@ import re
 import unicodedata
 
 
-_ARTICLE_REFERENCE = re.compile(r"\b([LRD])\s*(\d+(?:-\d+)*)\b", re.IGNORECASE)
+_ARTICLE_REFERENCE = re.compile(r"\b([LRD])\.?\s*(\d+(?:-\d+)*)\b", re.IGNORECASE)
 _DIRECT_LOOKUP_INTENT = re.compile(
     r"\b(?:"
     r"que\s+(?:prevoit|dit|dispose)\s+(?:l['’]\s*)?article"
