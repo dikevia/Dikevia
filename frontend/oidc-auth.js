@@ -48,6 +48,21 @@
   }
   async function completeCallback() {
     const params = new URLSearchParams(window.location.search);
+    const providerError = params.get('error');
+    if (providerError) {
+      const state = params.get('state');
+      const expected = sessionStorage.getItem('cfdt_oidc_state');
+      sessionStorage.removeItem('cfdt_oidc_state');
+      sessionStorage.removeItem('cfdt_oidc_verifier');
+      history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+      if (!state || !expected || state !== expected)
+        throw new Error('État OIDC invalide. Relancez la connexion.');
+      const code = providerError.slice(0, 80);
+      const description = (params.get('error_description') || '').slice(0, 300);
+      throw new Error(description
+        ? 'Connexion refusée par le fournisseur : ' + description
+        : 'Connexion refusée par le fournisseur (' + code + ').');
+    }
     const code = params.get('code');
     if (!code) return;
     const state = params.get('state');
