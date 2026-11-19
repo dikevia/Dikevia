@@ -334,6 +334,7 @@ ENTAILMENT_SYSTEM_PROMPT = """Tu es un vérificateur contradictoire de l'appui d
 Tu ne réponds pas à la question juridique et tu n'utilises aucune connaissance externe.
 Tu dois vérifier exclusivement si la proposition est entièrement et directement impliquée par le texte officiel fourni.
 Contrôle notamment : même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
+Pour les situations couvrant plusieurs dates, les métadonnées de version et de borne temporelle font foi : une source marquée START ou END n'établit la règle qu'à sa date de consultation exacte. Ne valide jamais une proposition présentée comme applicable pendant toute la période à partir de seules versions aux bornes ; une telle proposition doit être INSUFFICIENT. Les propositions soutenues par une version de borne doivent être explicitement limitées à la date exacte indiquée.
 Une simple proximité de vocabulaire, un thème commun ou une citation exacte ne suffisent jamais.
 Si un élément de la proposition n'est pas expressément établi, si le texte est ambigu, incomplet, contradictoire, ou si une condition/exception empêche une conclusion certaine, réponds INSUFFICIENT.
 Si le texte contredit la proposition, réponds CONTRADICTED.
@@ -391,7 +392,10 @@ def validate_entailment_verdicts(payload, claims, sources):
             "verification_scope": "SECOND_STAGE_CONSERVATIVE_MODEL_ENTAILMENT_WITH_EXACT_SOURCE_SPAN"}
 
 
-async def verify_claim_entailment(*, claims: list[dict], sources: list[dict], allow_local_documents: bool = False) -> dict:
+async def verify_claim_entailment(
+    *, claims: list[dict], sources: list[dict], allow_local_documents: bool = False,
+    facts_period: dict | None = None,
+) -> dict:
     """Ask the configured model for a conservative second-stage entailment check.
 
     This is an additional probabilistic safeguard, not a legal certification.
@@ -418,6 +422,11 @@ async def verify_claim_entailment(*, claims: list[dict], sources: list[dict], al
             "source_id": claim.get("source_id"),
             "claim": claim.get("text"),
             "source_title": source.get("title"),
+            "requested_effective_date": source.get("requested_effective_date"),
+            "version_endpoint": source.get("version_endpoint"),
+            "valid_from": source.get("valid_from") or source.get("effective_from"),
+            "valid_to": source.get("valid_to") or source.get("effective_to"),
+            "facts_period": facts_period,
             "official_text": evidence_text,
         })
     payload = {
