@@ -28,6 +28,7 @@ The workflow checks that the APK exists, is a valid ZIP archive, exceeds the min
 3. Launch **Dikévia**, sign in with an already provisioned beta account, and verify that the application returns to its authenticated screen.
 4. Check navigation, conversation history, file selection, dossier save/reopen and logout.
 5. If sign-in or loading fails, record the visible error and the device Android/WebView version; do not bypass certificate or HTTPS errors.
+6. On Android 15 (target SDK 35), also verify that the status/navigation bars do not cover the page, that gesture navigation remains usable, and that the keyboard does not hide the active form field.
 
 The APK is a demonstration build, not a Play Store release. It uses the commercial beta environment and currently has a one-active-user limit. Do not distribute credentials in the APK or in demonstration materials. Hosted API and Keycloak services must already be configured and available; this Android build does not deploy or wake them.
 
