@@ -116,7 +116,8 @@ _WHOLE_PERIOD_ASSERTION_RE = re.compile(
     r"|\b(?:tout au long de|au cours de)\s+(?:la\s+)?p[ée]riode\b"
     r"|\bentre\s+le\s+\d{4}-\d{2}-\d{2}\s+et\s+le\s+\d{4}-\d{2}-\d{2}\b"
     r"|\b(?:en|sur|pendant|durant|au cours de)\s+(?:l'année\s+)?20\d{2}\b(?!-\d{2}-\d{2})"
-    r"|\btout au long de\s+l'année\s+20\d{2}\b",
+    r"|\btout au long de\s+l'année\s+20\d{2}\b"
+    r"|\b(?:(?:pendant|durant|sur)\s+)?toute\s+l'année\s+20\d{2}\b",
     re.IGNORECASE,
 )
 _EVIDENCE_STOPWORDS = {
