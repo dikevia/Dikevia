@@ -107,12 +107,24 @@ async def test_legifrance_uses_search_article_id_when_get_article_omits_num(monk
 async def test_legifrance_second_code_civil_article_control(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
     monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
-    long_text = (
-        "La partie envers laquelle l'engagement n'a pas été exécuté, ou l'a été imparfaitement, peut : "
-        "refuser d'exécuter ou suspendre l'exécution de sa propre obligation ; poursuivre l'exécution "
-        "forcée en nature de l'obligation ; obtenir une réduction du prix ; provoquer la résolution "
-        "du contrat ; demander réparation des conséquences de l'inexécution. Les sanctions qui ne "
-        "sont pas incompatibles peuvent être cumulées ; des dommages et intérêts peuvent toujours s'y ajouter."
+    control_text = (
+        "La partie envers laquelle l'engagement n'a pas été exécuté, ou l'a été imparfaitement, peut :\n"
+        "- refuser d'exécuter ou suspendre l'exécution de sa propre obligation ;\n"
+        "- poursuivre l'exécution forcée en nature de l'obligation ;\n"
+        "- obtenir une réduction du prix ;\n"
+        "- provoquer la résolution du contrat ;\n"
+        "- demander réparation des conséquences de l'inexécution.\n"
+        "Les sanctions qui ne sont pas incompatibles peuvent être cumulées ; des dommages et intérêts "
+        "peuvent toujours s'y ajouter."
+    )
+    control_html = (
+        "<p>La partie envers laquelle l'engagement n'a pas été exécuté, ou l'a été imparfaitement, peut :</p>"
+        "<ul><li>refuser d'exécuter ou suspendre l'exécution de sa propre obligation ;</li>"
+        "<li>poursuivre l'exécution forcée en nature de l'obligation ;</li>"
+        "<li>obtenir une réduction du prix ;</li><li>provoquer la résolution du contrat ;</li>"
+        "<li>demander réparation des conséquences de l'inexécution.</li></ul>"
+        "<p>Les sanctions qui ne sont pas incompatibles peuvent être cumulées ; des dommages et intérêts "
+        "peuvent toujours s'y ajouter.</p>"
     )
 
     def handler(request):
@@ -127,7 +139,7 @@ async def test_legifrance_second_code_civil_article_control(monkeypatch):
         if request.url.path.endswith("/consult/getArticle"):
             return httpx.Response(200, json={"article": {
                 "id": ARTICLE_ID, "num": "1217", "nomCode": "Code civil",
-                "dateDebut": "2018-10-01", "texte": long_text,
+                "dateDebut": "2018-10-01", "texte": control_text, "texteHtml": control_html,
             }})
         return httpx.Response(404)
 
@@ -138,8 +150,9 @@ async def test_legifrance_second_code_civil_article_control(monkeypatch):
     assert len(results) == 1
     assert results[0]["article"] == "1217"
     assert results[0]["title"].startswith("Code civil")
-    assert results[0]["text"] == long_text
-    assert len(results[0]["text"]) > 150
+    assert results[0]["text"] == control_text
+    assert "\n- poursuivre l'exécution forcée en nature de l'obligation ;" in results[0]["text"]
+    assert len(results[0]["text"]) > 0
 
 
 @pytest.mark.asyncio
