@@ -421,12 +421,16 @@ class LegifranceConnector:
                     article_id, article_id in returned_ids, bool(text),
                 )
                 continue
+            matching_article_nodes = [
+                node for node in self._walk_dicts(detail)
+                if self._first_value(node, ("id", "idarticle", "id_article")) == article_id
+            ]
+            # Prefer the matching article object that actually carries its metadata.
             article_metadata = next(
-                (node for node in self._walk_dicts(detail)
-                 if self._first_value(node, ("id", "idarticle", "id_article")) == article_id),
-                {},
+                (node for node in matching_article_nodes
+                 if self._first_value(node, ("num", "numero", "numArticle"))),
+                matching_article_nodes[0] if matching_article_nodes else {},
             )
-            # Article number belongs to metadata; it may not appear in the body.
             raw_num = self._first_value(article_metadata, ("num", "numero", "numArticle"))
             article_ref = re.sub(r"[^A-Z0-9]", "", raw_num.upper()) if raw_num else None
             code_name = self._first_value(
@@ -436,7 +440,12 @@ class LegifranceConnector:
                 "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_METADATA id=%s num=%s normalized_num=%s code_name=%s",
                 article_id, raw_num, article_ref, code_name,
             )
-            if requested_ref and article_ref and article_ref != requested_ref:
+            # For an exact article query, missing metadata is not proof of a match.
+            if requested_ref and article_ref != requested_ref:
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_REJECTED_REFERENCE id=%s requested_num=%s returned_num=%s",
+                    article_id, requested_ref, article_ref,
+                )
                 continue
             valid_from = self._iso_date(self._first_value(
                 article_metadata, ("dateDebut", "dateDebutVersion", "dateEffet", "dateDebutApplication")
