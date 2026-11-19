@@ -139,3 +139,18 @@ def test_legacy_assistant_turn_without_source_provenance_is_excluded_from_ai_con
     assert _ai_safe_conversation_history(rows) == [
         {"role": "user", "content": "Question suivante"},
     ]
+
+def test_history_excludes_turn_when_local_source_was_beyond_persisted_source_preview():
+    from app.main import _ai_safe_conversation_history
+
+    rows = [
+        {"role": "assistant", "content": "Réponse contenant un extrait local", "metadata": {
+            "contains_local_documents": True,
+            "sources": [{"source_type": "LEGIFRANCE_API", "source_id": "LEGIARTI000012345678"}],
+        }},
+        {"role": "user", "content": "Question suivante", "metadata": {}},
+    ]
+
+    assert _ai_safe_conversation_history(rows) == [
+        {"role": "user", "content": "Question suivante"},
+    ]
