@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -126,7 +127,7 @@ private data class Entry(val title:String,val detail:String)
                 when(tab){
                     "Accueil"->Home(user,current){tab=it}
                     "Assistant"->Assistant(token,current,api)
-                    "Historique"->Listing("Historique",token,current,api,"/api/v1/chat/conversations"){Entry(it.optString("title","Conversation"),it.optInt("message_count").toString()+" message(s)")}
+                    "Historique"->HistoryPage(token,current,api)
                     "Documents"->Listing("Documents",token,current,api,"/api/v1/documents"){Entry(it.optString("title"),listOf(it.optString("document_type"),it.optString("validation_status"),it.optString("collectivity_name")).filter{s->s.isNotBlank()}.joinToString(" · "))}
                     "Collectivités"->Listing("Collectivités",token,current,api,"/api/v1/collectivities"){Entry(it.optString("name"),it.optString("code"))}
                     "Membres"->Listing("Membres",token,current,api,"/api/v1/organizations/me/members"){Entry(it.optString("display_name").ifBlank{it.optString("email")},it.optString("role")+" · "+it.optString("status"))}
@@ -177,6 +178,7 @@ private data class Entry(val title:String,val detail:String)
     }}
 }
 @Composable private fun Assistant(token:String,org:Org,api:Api){
+    val context=LocalContext.current
     var q by remember{mutableStateOf("")};var employer by remember{mutableStateOf("NATIONAL")};var answer by remember{mutableStateOf<JSONObject?>(null)}
     var waiting by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)};val scope=rememberCoroutineScope()
     Column(Modifier.fillMaxSize().padding(13.dp)){
@@ -190,7 +192,15 @@ private data class Entry(val title:String,val detail:String)
                 r.optString("clarification_question").takeIf{it.isNotBlank()}?.let{Text("Précision nécessaire : "+it,color=Muted)}
                 val sources=r.optJSONArray("sources")?:JSONArray()
                 Text("Sources documentaires ("+sources.length()+")",fontWeight=FontWeight.Bold,color=Dark,modifier=Modifier.padding(top=10.dp))
-                for(i in 0 until sources.length()){val s=sources.optJSONObject(i)?:continue;Text("• "+s.optString("title","Source juridique"),fontSize=12.sp,color=Ink);s.optString("excerpt").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=11.sp,color=Muted)}}
+                for(i in 0 until sources.length()){val s=sources.optJSONObject(i)?:continue
+                    Text("• "+s.optString("title","Source juridique"),fontSize=12.sp,color=Ink)
+                    s.optString("excerpt").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=11.sp,color=Muted)}
+                    val official=s.optString("official_url")
+                    val host=runCatching{Uri.parse(official).host}.getOrNull()
+                    if(official.startsWith("https://") && (host=="legifrance.gouv.fr" || host=="www.legifrance.gouv.fr")){
+                        TextButton(onClick={context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(official)))}){Text("Consulter la source officielle",color=Emerald,fontSize=11.sp)}
+                    }
+                }
                 r.optString("disclaimer").takeIf{it.isNotBlank()}?.let{Text(it,fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=8.dp))}
             }}}?:Text("Posez votre question. Dikévia indiquera si la réponse est vérifiée ou si des précisions sont nécessaires.",color=Muted)}
         }
@@ -209,6 +219,68 @@ private data class Entry(val title:String,val detail:String)
         }}},enabled=!waiting&&q.trim().length>=8,modifier=Modifier.fillMaxWidth().height(48.dp),colors=ButtonDefaults.buttonColors(containerColor=Deep,contentColor=Gold)){Text(if(waiting)"Analyse juridique en cours…" else "Envoyer ma question")}
     }
 }
+
+@Composable private fun HistoryPage(token:String,org:Org,api:Api){
+    var conversations by remember{mutableStateOf(emptyList<JSONObject>())}
+    var selected by remember{mutableStateOf<String?>(null)}
+    var messages by remember{mutableStateOf(emptyList<JSONObject>())}
+    var loading by remember{mutableStateOf(true)}
+    var error by remember{mutableStateOf<String?>(null)}
+    LaunchedEffect(token,org.id){
+        loading=true;error=null
+        try{
+            val data=withContext(Dispatchers.IO){JSONArray(api.call(token,org.id,"/api/v1/chat/conversations"))}
+            conversations=(0 until data.length()).map{data.getJSONObject(it)}
+        }catch(e:Exception){error=e.message?:"Chargement de l'historique impossible."}
+        finally{loading=false}
+    }
+    LaunchedEffect(selected){
+        val id=selected
+        if(id!=null){
+            loading=true;error=null
+            try{
+                val data=withContext(Dispatchers.IO){JSONArray(api.call(token,org.id,"/api/v1/chat/conversations/"+id+"/messages"))}
+                messages=(0 until data.length()).map{data.getJSONObject(it)}
+            }catch(e:Exception){error=e.message?:"Impossible de rouvrir cette conversation."}
+            finally{loading=false}
+        }else{messages=emptyList()}
+    }
+    Column(Modifier.fillMaxSize().padding(16.dp)){
+        Row(verticalAlignment=Alignment.CenterVertically){
+            Text(if(selected==null)"Historique" else "Conversation",fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink,modifier=Modifier.weight(1f))
+            if(selected!=null)TextButton(onClick={selected=null}){Text("Retour",color=Deep)}
+        }
+        if(loading)LinearProgressIndicator(Modifier.fillMaxWidth(),color=Emerald)
+        error?.let{ErrorBox(it)}
+        if(selected==null){
+            if(!loading&&conversations.isEmpty()&&error==null)Text("Aucune conversation enregistrée.",color=Muted)
+            LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)){
+                items(conversations){c->
+                    Card(colors=CardDefaults.cardColors(containerColor=Color.White)){
+                        Column(Modifier.fillMaxWidth().padding(13.dp)){
+                            Text(c.optString("title","Conversation"),fontWeight=FontWeight.SemiBold,color=Ink)
+                            Text(c.optInt("message_count").toString()+" message(s)",color=Muted,fontSize=11.sp)
+                            TextButton(onClick={selected=c.optString("id")}){Text("Ouvrir",color=Deep)}
+                        }
+                    }
+                }
+            }
+        }else{
+            LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)){
+                items(messages){m->
+                    val isUser=m.optString("role")=="user"
+                    Card(colors=CardDefaults.cardColors(containerColor=if(isUser)Color(0xFFE2F5EE) else Color.White)){
+                        Column(Modifier.fillMaxWidth().padding(13.dp)){
+                            Text(if(isUser)"Vous" else "Dikévia",fontWeight=FontWeight.Bold,color=if(isUser)Deep else Emerald,fontSize=11.sp)
+                            Text(m.optString("content"),color=Ink,fontSize=13.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable private fun Listing(title:String,token:String,org:Org,api:Api,path:String,convert:(JSONObject)->Entry){
     var rows by remember{mutableStateOf(emptyList<Entry>())};var loading by remember{mutableStateOf(true)};var error by remember{mutableStateOf<String?>(null)}
     LaunchedEffect(path,org.id){loading=true;try{val data=withContext(Dispatchers.IO){JSONArray(api.call(token,org.id,path))};rows=(0 until data.length()).map{convert(data.getJSONObject(it))}}
