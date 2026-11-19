@@ -17,6 +17,7 @@ from .jurisprudence import AdministrativeCaseLawConnector
 from .legal_corpus import search_legal_corpus
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
+from .article_lookup import missing_direct_article_reference
 
 
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
@@ -487,6 +488,28 @@ class LegalOrchestrator:
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
             decision["ihts_relevant"] = is_ihts_relevant_source(request.question, decision)
             sources.append({**decision, "page_start": None, "page_end": None})
+
+        # A direct request for the text/content of a numbered CGFP article is an
+        # exact-reference lookup. If that article was not independently retrieved,
+        # do not let lexical CGFP hits, unrelated decrees or CETAT metadata create
+        # a misleading partially-verified answer.
+        missing_article = missing_direct_article_reference(request.question, sources)
+        if missing_article:
+            return AskResponse(
+                request_id=request_id,
+                verification_status="NON_VERIFIE",
+                answer=(
+                    f"Je n'ai pas retrouvé de source officielle vérifiable correspondant exactement "
+                    f"à l'article {missing_article} du Code général de la fonction publique. "
+                    "Je ne peux donc ni en reproduire le contenu ni en déduire des conséquences juridiques. "
+                    "Les résultats documentaires sans correspondance exacte sont écartés pour éviter toute confusion."
+                ),
+                sources=[],
+                missing_information=[
+                    f"Référence exacte {missing_article} non retrouvée dans les sources officielles consultées.",
+                    "Vérifier la référence ou transmettre le lien officiel Légifrance de l'article recherché.",
+                ],
+            )
 
         # Classification is computed before the model call so the prompt receives
         # the legal-source family and the limitations attached to each document.
