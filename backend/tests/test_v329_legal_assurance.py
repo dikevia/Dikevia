@@ -354,3 +354,85 @@ def test_entailment_request_sends_the_same_excerpt_and_temporal_metadata(monkeyp
     assert sent["facts_period"]["period_end"] == "2024-12-31"
     assert "Passage différent" not in sent["official_text"]
     assert "Texte intégral non pertinent" not in sent["official_text"]
+
+
+
+def test_entailment_verifier_cannot_use_text_beyond_the_claim_validator_fallback_excerpt(monkeypatch):
+    import asyncio
+    import json
+    import app.ai_provider as provider
+
+    prefix = "L'agent bénéficie d'un congé annuel dans les conditions prévues par le présent code. "
+    text_value = prefix + ("Contexte documentaire supplémentaire. " * 70)
+    source = {
+        **_eligible_official_source(),
+        "text": text_value,
+        "excerpt": None,
+        "requested_effective_date": "2025-01-01",
+    }
+    claim = {
+        "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+    }
+    late_quote = text_value[1850:1900]
+    checked = provider.validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": late_quote,
+        }]
+    }, [claim], [source])
+    assert checked["valid"] is False
+    assert "verdict_0:support_quote_not_in_source" in checked["invalid"]
+
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({
+                            "verdicts": [{
+                                "claim_index": 0,
+                                "source_id": source["source_id"],
+                                "verdict": "SUPPORTED",
+                                "support_quote": prefix.strip(),
+                            }]
+                        })
+                    }
+                }]
+            }
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, *, headers, json):
+            captured["payload"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(provider.httpx, "AsyncClient", FakeClient)
+    monkeypatch.setattr(provider.settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(provider.settings, "ai_model", "test-model")
+    monkeypatch.setattr(provider.settings, "ai_api_base_url", "https://provider.invalid/v1")
+
+    result = asyncio.run(provider.verify_claim_entailment(
+        claims=[claim],
+        sources=[source],
+        facts_period={"exact_date": "2025-01-01"},
+    ))
+    assert result["valid"] is True
+    sent = json.loads(captured["payload"]["messages"][1]["content"])["items_to_verify"][0]
+    assert sent["official_text"] == text_value[:1800]
+    assert "Contexte documentaire supplémentaire." not in sent["official_text"] or len(sent["official_text"]) == 1800
