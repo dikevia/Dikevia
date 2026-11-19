@@ -411,19 +411,11 @@ async def platform_grant_free(organization_id: str, payload: dict,
     note = str(payload.get("reason", "")).strip()[:500] if isinstance(payload, dict) else ""
     if len(note) < 8:
         raise HTTPException(422, "Un motif d'attribution d'au moins 8 caractères est requis.")
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        async with conn.transaction():
-            await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_id)
-            await conn.execute("""INSERT INTO subscriptions(organization_id,plan_code,status,admin_note,updated_at)
-                VALUES($1::uuid,'FOUNDING_FREE','FOUNDING_FREE',$2,now())
-                ON CONFLICT(organization_id) DO UPDATE SET plan_code='FOUNDING_FREE',status='FOUNDING_FREE',
-                provider=NULL,provider_customer_id=NULL,provider_subscription_id=NULL,
-                free_access_until=NULL,admin_note=EXCLUDED.admin_note,updated_at=now()""", org_id, note)
-            await conn.execute("UPDATE organizations SET plan_code='FOUNDING_FREE' WHERE id=$1::uuid", org_id)
-            await conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,metadata)
-                VALUES($1::uuid,$2::uuid,'FOUNDING_ACCESS_GRANTED','subscription',jsonb_build_object('reason',$3))""",
-                org_id, admin["user_id"], note)
+    changed = await get_platform_admin_pool().fetchval(
+        "SELECT platform_admin_grant_free_access($1::uuid,$2::uuid,$3)",
+        admin["user_id"], org_id, note)
+    if not changed:
+        raise HTTPException(404, "Organisation introuvable.")
     return {"organization_id": org_id, "plan_code": "FOUNDING_FREE", "status": "FOUNDING_FREE"}
 
 
@@ -1526,36 +1518,23 @@ async def platform_set_organization_status(organization_id: str, payload: dict,
 
 @app.post("/api/v1/platform/organizations", status_code=201)
 async def create_organization(payload: OrganizationCreate, platform=Depends(require_platform_admin)):
-    """Only the dedicated platform-admin registry can create organizations."""
-    pool = get_pool()
+    """Organization creation is delegated to the guarded DBA-owned function."""
     org_id = str(uuid4())
-    async with pool.acquire() as conn:
-        async with conn.transaction():
-            await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_id)
-            try:
-                await conn.execute("""
-                  INSERT INTO organizations(id,slug,legal_name,display_name,plan_code)
-                  VALUES($1::uuid,$2,$3,$4,'FOUNDING_FREE')
-                """, org_id, payload.slug, payload.legal_name, payload.display_name)
-            except Exception as exc:
-                if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():
-                    raise HTTPException(409, "Cet identifiant d'organisation est déjà utilisé.")
-                raise
-            await conn.execute("""
-              INSERT INTO memberships(organization_id,user_id,role,status)
-              VALUES($1::uuid,$2::uuid,'ORG_ADMIN','ACTIVE')
-            """, org_id, platform["user_id"])
-            await conn.execute("INSERT INTO organization_settings(organization_id) VALUES($1::uuid)", org_id)
-            await conn.execute("""
-              INSERT INTO subscriptions(organization_id,plan_code,status)
-              VALUES($1::uuid,'FOUNDING_FREE','FOUNDING_FREE')
-            """, org_id)
-            await conn.execute("""
-              INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id)
-              VALUES($1::uuid,$2::uuid,'ORGANIZATION_CREATED','organization',$1::uuid)
-            """, org_id, platform["user_id"])
+    try:
+        created = await get_platform_admin_pool().fetchval(
+            """SELECT platform_admin_create_organization(
+                $1::uuid,$2::uuid,$3,$4,$5,$6)""",
+            platform["user_id"], org_id, payload.slug, payload.legal_name,
+            payload.display_name, settings.private_instance_mode)
+    except Exception as exc:
+        if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():
+            raise HTTPException(409, "Cet identifiant d'organisation est déjà utilisé.")
+        raise
+    if not created:
+        raise HTTPException(500, "La création de l'organisation n'a pas abouti.")
     return {"id": org_id, "slug": payload.slug, "display_name": payload.display_name,
             "founding_plan": "FOUNDING_FREE", "creator_role": "ORG_ADMIN"}
+
 
 @app.patch("/api/v1/organizations/me/members/{user_id}/role")
 async def update_member_role(user_id: str, payload: MemberRoleUpdate, ctx: TenantContext = Depends(require_org_admin)):
