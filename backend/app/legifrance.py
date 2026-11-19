@@ -388,7 +388,10 @@ class LegifranceConnector:
         )
         article_ids = self._find_article_ids(result)
         if not article_ids:
-            # Preserve the fact that the API was queried, but never infer that no law exists.
+            # No result IDs means getArticle is deliberately never called.
+            logger.warning(
+                "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH_COMPLETE result_count=0 get_article_calls=0"
+            )
             return []
         requested_ref_match = re.search(
             r"\b(?:article\s+)?([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b",
