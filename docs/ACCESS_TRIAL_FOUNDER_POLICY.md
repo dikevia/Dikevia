@@ -70,6 +70,9 @@ La branche `feature/72h-trial-founder-access-design` contient désormais :
 - accès maintenu aux routes d'identité, d'état d'accès et de facturation ;
 - table des dix places fondateurs, historique conservé des attributions/révocations, verrou transactionnel et fonctions d'administration ;
 - routes d'administration des places 2 à 10 ; la place 1 reste réservée au propriétaire ;
+- affichage du compte à rebours dans l'interface et redirection des comptes expirés vers la facturation ;
+- boutons de souscription mensuelle/annuelle reliés au checkout, mais désactivés tant que Stripe n'est pas explicitement activé ;
+- Stripe désactivé par défaut dans la configuration, avec blocage serveur du checkout, du portail et des webhooks ;
 - tests contractuels offline ajoutés, mais non exécutés.
 
 Les clés d'activation ne remplacent pas l'identité OIDC et ne sont pas requises pour l'essai général. Le mécanisme anti-multicompte livré ici limite à un essai par adresse e-mail vérifiée exacte ; il ne peut pas garantir qu'une personne ne crée jamais plusieurs adresses e-mail distinctes. Les clés d'invitation ponctuelles peuvent être ajoutées pour des campagnes ou invitations privées ultérieures.
