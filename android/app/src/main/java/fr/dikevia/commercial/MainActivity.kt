@@ -193,7 +193,7 @@ private data class Entry(val title:String,val detail:String)
         }catch(_:Exception){collectivities=emptyList()}
     }
     Column(Modifier.fillMaxSize().padding(13.dp)){
-        Text(if(initialConversationId==null)"Assistant juridique" else "Conversation reprise",fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink)
+        Text(if(conversationId==null)"Assistant juridique" else "Conversation reprise",fontSize=23.sp,fontWeight=FontWeight.Bold,color=Ink)
         Text("Le statut de vérification et les sources accompagnent chaque réponse.",color=Muted,fontSize=12.sp);Spacer(Modifier.height(9.dp))
         LazyColumn(Modifier.weight(1f).fillMaxWidth()){
             item{answer?.let{r->Card(colors=CardDefaults.cardColors(containerColor=Color.White)){Column(Modifier.padding(14.dp)){
