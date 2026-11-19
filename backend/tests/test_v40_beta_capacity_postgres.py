@@ -24,11 +24,13 @@ async def _run_beta_capacity_scenario():
     org_id = uuid.uuid4()
     member_id = uuid.uuid4()
     platform_admin_id = uuid.uuid4()
+    invited_member_id = uuid.uuid4()
     invited_by_id = member_id
     suffix = uuid.uuid4().hex
     active_email = f"active-{suffix}@example.test"
     admin_email = f"admin-{suffix}@example.test"
     pending_email = f"pending-{suffix}@example.test"
+    awaiting_email = f"awaiting-{suffix}@example.test"
     admin = await asyncpg.connect(ADMIN_URL)
     runtime = await asyncpg.connect(RUNTIME_URL)
     try:
@@ -44,6 +46,7 @@ async def _run_beta_capacity_scenario():
                 [
                     (member_id, "member-" + suffix, active_email),
                     (platform_admin_id, "admin-" + suffix, admin_email),
+                    (invited_member_id, "awaiting-" + suffix, awaiting_email),
                 ],
             )
             await admin.execute(
@@ -54,6 +57,13 @@ async def _run_beta_capacity_scenario():
             await admin.execute(
                 "INSERT INTO platform_admins(user_id) VALUES($1)",
                 platform_admin_id,
+            )
+            # Accepted private-instance invitations create INVITED memberships.
+            # They still reserve a beta slot while waiting for platform approval.
+            await admin.execute(
+                "INSERT INTO memberships(organization_id,user_id,role,status) "
+                "VALUES($1,$2,'MEMBER','INVITED')",
+                org_id, invited_member_id,
             )
             await admin.execute(
                 "INSERT INTO invitations(organization_id,email_normalized,role,invited_by,status,token_hash,expires_at) "
@@ -101,6 +111,11 @@ async def _run_beta_capacity_scenario():
             "SELECT beta_user_slot_available($1,$2)",
             f"new-{suffix}@example.test", 3,
         ) is False
+        # INVITED memberships must count even after their invitation token was consumed.
+        assert await runtime.fetchval(
+            "SELECT beta_user_slot_available($1,$2)",
+            f"new-after-approval-{suffix}@example.test", 4,
+        ) is False
 
         # A zero cap explicitly disables the temporary restriction.
         assert await runtime.fetchval(
@@ -113,7 +128,7 @@ async def _run_beta_capacity_scenario():
             try:
                 async with conn.transaction():
                     allowed = await conn.fetchval(
-                        "SELECT beta_user_slot_available($1,$2)", email, 4
+                        "SELECT beta_user_slot_available($1,$2)", email, 5
                     )
                     if allowed:
                         await conn.execute(
@@ -149,7 +164,7 @@ async def _run_beta_capacity_scenario():
             )
             await admin.execute(
                 "DELETE FROM users WHERE id=ANY($1::uuid[])",
-                [member_id, platform_admin_id],
+                [member_id, platform_admin_id, invited_member_id],
             )
         await admin.close()
 
