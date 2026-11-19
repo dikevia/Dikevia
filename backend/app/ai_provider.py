@@ -118,7 +118,8 @@ def _usable_document_sources(sources, *, allow_local_documents: bool = False):
         if not isinstance(source, dict):
             continue
         # Local employer records are private tenant data: never send them to AI by default.
-        if source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"} and not allow_local_documents:
+        is_local_document = source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+        if is_local_document and not allow_local_documents:
             continue
         # Search hits are metadata, never evidence, even if they carry a date or snippet.
         if (
@@ -138,7 +139,10 @@ def _usable_document_sources(sources, *, allow_local_documents: bool = False):
                 break
             except ValueError:
                 continue
-        if not source_id or not has_date:
+        # A specifically consented local-document comparison may inspect an undated
+        # local text as a comparison target, never as proof of temporal applicability.
+        # Ordinary chat still requires the orchestrator's VERIFIED_APPLICABLE gate.
+        if not source_id or (not has_date and not (is_local_document and allow_local_documents)):
             continue
         excerpt = source.get("excerpt")
         if not isinstance(excerpt, str) or not excerpt.strip():
