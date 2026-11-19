@@ -136,3 +136,29 @@ def test_relevant_fpt_excerpt_takes_precedence_over_unrelated_document_context()
     })
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
+
+
+
+def test_mixed_fpt_and_fpe_scope_is_not_eligible_even_when_title_mentions_fpt():
+    result = classify_public_service_scope({
+        "title": "Décret relatif à la fonction publique territoriale",
+        "excerpt": "Les agents de l'État et les administrations centrales sont concernés.",
+        "full_text": (
+            "Chapitre I : fonctionnaires territoriaux. "
+            "Chapitre II : agents de l'État et administrations centrales."
+        ),
+    })
+    assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+    assert result["analysis_eligible"] is False
+
+
+def test_mixed_fpt_and_fph_scope_is_not_eligible():
+    result = classify_public_service_scope({
+        "title": "Dispositions relatives à la fonction publique territoriale",
+        "excerpt": (
+            "Les fonctionnaires territoriaux et les personnels hospitaliers "
+            "des établissements publics de santé sont concernés."
+        ),
+    })
+    assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+    assert result["analysis_eligible"] is False
