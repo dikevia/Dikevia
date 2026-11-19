@@ -121,6 +121,8 @@ async def test_legifrance_second_code_civil_article_control(monkeypatch):
         if request.url.path.endswith("/search"):
             body = json.loads(request.content)
             assert body["recherche"]["filtres"][0]["valeurs"] == ["Code civil"]
+            assert body["recherche"]["champs"][0]["typeChamp"] == "NUM_ARTICLE"
+            assert body["recherche"]["champs"][0]["criteres"][0]["valeur"] == "1217"
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
             return httpx.Response(200, json={"article": {
