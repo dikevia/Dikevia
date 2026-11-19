@@ -579,3 +579,34 @@ async def test_legifrance_rejects_article_version_outside_requested_date(monkeyp
     connector = LegifranceConnector(transport=httpx.MockTransport(handler))
     results = await connector.search_code_articles("article L. 123-4", date(2025, 11, 16))
     assert results == []
+
+@pytest.mark.asyncio
+async def test_loda_rejects_consulted_version_outside_requested_date(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    full_text = "Texte officiel suffisamment long pour le contrôle de version temporelle. " * 3
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"results": [{
+                "titles": [{"id": "LEGITEXT000012345678_01-12-2025",
+                            "title": "Décret n° 2002-60 relatif aux indemnités horaires"}],
+                "nature": "DECRET",
+                "dateDebut": "2025-12-01",
+                "dateFin": "2026-12-31",
+                "etat": "VIGUEUR",
+            }]})
+        if request.url.path.endswith("/consult/legiPart"):
+            return httpx.Response(200, json={"text": {
+                "id": "LEGITEXT000012345678",
+                "texte": full_text,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_regulatory_texts(
+        "décret 2002-60", date(2025, 11, 16), limit=3
+    )
+    assert results == []
