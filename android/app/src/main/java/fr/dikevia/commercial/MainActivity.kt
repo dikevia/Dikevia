@@ -53,6 +53,7 @@ class MainActivity:ComponentActivity(){
     private var accessTokenExpiresAt:Long?=null
     private var serviceConfig:AuthorizationServiceConfiguration?=null
     private var refreshJob:Job?=null
+    private var authGeneration=0
     private var authError by mutableStateOf<String?>(null)
     private var authBusy by mutableStateOf(false)
     private var authService:AuthorizationService?=null
@@ -81,6 +82,7 @@ class MainActivity:ComponentActivity(){
     }
     private fun login(){
         if(authBusy)return
+        authGeneration++
         authBusy=true;authError=null
         AuthorizationServiceConfiguration.fetchFromIssuer(Uri.parse(ISSUER)){cfg,ex->
             if(cfg==null||ex!=null){runOnUiThread{authBusy=false;authError="Fournisseur de connexion indisponible."};return@fetchFromIssuer}
@@ -119,6 +121,7 @@ class MainActivity:ComponentActivity(){
         }
     }
     private fun logout(){
+        authGeneration++
         val hint=idToken
         refreshJob?.cancel();refreshJob=null
         token=null
@@ -142,6 +145,7 @@ class MainActivity:ComponentActivity(){
         val waitMs=(expires-System.currentTimeMillis()-60_000L).coerceAtLeast(5_000L)
         refreshJob=lifecycleScope.launch {
             delay(waitMs)
+            val generation=authGeneration
             val cfg=serviceConfig
             val refresh=refreshToken
             if(cfg==null || refresh.isNullOrBlank())return@launch
@@ -150,6 +154,7 @@ class MainActivity:ComponentActivity(){
                 .setRefreshToken(refresh)
                 .build()
             authService?.performTokenRequest(request){result,error->
+                if(generation!=authGeneration)return@performTokenRequest
                 if(error!=null || result?.accessToken.isNullOrBlank()){
                     token=null
                     idToken=null
