@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat, ci/commercial-pr-checks]
   pull_request:
-    branches: [main]
+    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
   workflow_dispatch:
 permissions:
   contents: read
@@ -128,7 +128,7 @@ jobs:
           retention-days: 30
 
   live-smoke:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
     runs-on: ubuntu-latest
