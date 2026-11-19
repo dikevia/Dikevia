@@ -350,18 +350,30 @@ class LegifranceConnector:
             "operateur": "ET", "sort": "PERTINENCE", "secondSort": "SIGNATURE_DATE_DESC",
             "typePagination": "DEFAUT"}}
         found = await self._request("POST", "/search", json_body=payload)
+        nodes = list(self._walk_dicts(found))
         records: list[dict] = []
         seen: set[str] = set()
-        for record in self._walk_dicts(found):
+        for record in nodes:
             identifier = self._first_value(record, ("id", "idTexte", "id_text", "textId"))
             if identifier and re.fullmatch(r"LEGITEXT\d{12}", identifier) and identifier not in seen:
                 records.append(record)
                 seen.add(identifier)
             if len(records) >= limit:
                 break
+        top_keys = list(found.keys())[:20] if isinstance(found, dict) else []
+        result_count = (
+            len(found.get("results") or [])
+            if isinstance(found, dict) and isinstance(found.get("results"), list)
+            else -1
+        )
+        sample_keys = (
+            list(found["results"][0].keys())[:20]
+            if result_count > 0 and isinstance(found["results"][0], dict)
+            else []
+        )
         logger.warning(
-            "DIKEVIA_DIAGNOSTIC PISTE_LODA_SEARCH candidate_count=%d",
-            len(records),
+            "DIKEVIA_DIAGNOSTIC PISTE_LODA_SEARCH response_keys=%s result_count=%d sample_keys=%s candidate_count=%d",
+            top_keys, result_count, sample_keys, len(records),
         )
         output = []
         for record in records:
