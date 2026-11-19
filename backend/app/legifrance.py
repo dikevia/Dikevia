@@ -371,9 +371,21 @@ class LegifranceConnector:
             if result_count > 0 and isinstance(found["results"][0], dict)
             else []
         )
+        identifier_samples = []
+        for node in nodes:
+            identifier_fields = {
+                key: str(value)[:80]
+                for key, value in node.items()
+                if ("id" in key.lower() or key.lower() in {"num", "nor", "nature", "type"})
+                and isinstance(value, (str, int, float))
+            }
+            if identifier_fields:
+                identifier_samples.append(identifier_fields)
+            if len(identifier_samples) >= 5:
+                break
         logger.warning(
-            "DIKEVIA_DIAGNOSTIC PISTE_LODA_SEARCH response_keys=%s result_count=%d sample_keys=%s candidate_count=%d",
-            top_keys, result_count, sample_keys, len(records),
+            "DIKEVIA_DIAGNOSTIC PISTE_LODA_SEARCH response_keys=%s result_count=%d sample_keys=%s identifier_samples=%s candidate_count=%d",
+            top_keys, result_count, sample_keys, identifier_samples, len(records),
         )
         output = []
         for record in records:
