@@ -411,7 +411,7 @@ async def platform_commercial_organizations(platform=Depends(require_platform_ad
 
 
 @app.post("/api/v1/billing/checkout")
-async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin)):
+async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin_for_external)):
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
     plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
@@ -459,7 +459,7 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
 
 
 @app.post("/api/v1/billing/portal")
-async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
+async def billing_portal(ctx: TenantContext = Depends(require_org_admin_for_external)):
     if settings.private_instance_mode:
         raise HTTPException(404, "La facturation est désactivée sur cette instance privée.")
     if not settings.stripe_secret_key:
