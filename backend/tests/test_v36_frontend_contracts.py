@@ -107,3 +107,16 @@ def test_commercial_workspace_has_polished_responsive_tables_and_forms():
     assert "#view-billing #billingCurrent" in html
     assert ".view .toolbar{display:grid;grid-template-columns:1fr 1fr" in html
     assert "@media(hover:none)" in html
+
+
+def test_billing_screen_uses_validated_commercial_reference_prices():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "15 €" in html and "HT / mois" in html
+    assert "170 €" in html and "HT / an" in html
+    assert "790 €" in html and "5 accès" in html
+    assert "19 € HT / mois" in html
+    assert "9 à 15 € HT / mois / section" in html
+    assert "20 questions par accès et par jour" in html
+    assert "100 questions par section et par jour" in html
+    assert "souscription en ligne sera activée après alignement" in html
+    assert 'data-checkout="SYNDICAT_10"' not in html
