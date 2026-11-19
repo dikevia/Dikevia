@@ -129,6 +129,9 @@ def test_dikevia_oidc_globals_are_branded_and_auth_module_survives_missing_confi
     assert "window.DIKEVIA_OIDC" in config
     assert "window.DIKEVIA_AUTH" in auth
     assert "window.CFDT_JURIS" not in auth + html + config
+    root_auth = (ROOT / "oidc-auth.js").read_text(encoding="utf-8")
+    root_config = (ROOT / "auth-config.js").read_text(encoding="utf-8")
+    assert "window.CFDT_JURIS" not in root_auth + root_config
     assert "if (!cfg || !cfg.issuer || !cfg.client_id || !cfg.redirect_uri) return;" not in auth
     assert "Configuration OIDC Dikévia absente ou incomplète" in auth
     assert "const auth=window.DIKEVIA_AUTH||null;" in html
