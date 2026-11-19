@@ -262,14 +262,18 @@ class LegifranceConnector:
         # Prefer the longest text-like field; HTML remains source text and is not rendered as HTML.
         raw = max(candidates, key=len)
         raw = re.sub(r"<br\s*/?>", "\n", raw, flags=re.I)
-        raw = re.sub(r"</(?:p|div|li|h[1-6])\s*>", "\n", raw, flags=re.I)
+        raw = re.sub(r"<li\b[^>]*>", "\n- ", raw, flags=re.I)
+        raw = re.sub(r"</li\s*>", "\n", raw, flags=re.I)
+        raw = re.sub(r"</(?:p|div|h[1-6]|ul|ol)\s*>", "\n", raw, flags=re.I)
+        raw = re.sub(r"<(?:p|div|ul|ol)\b[^>]*>", "\n", raw, flags=re.I)
         raw = re.sub(r"<[^>]+>", " ", raw)
         raw = re.sub(r"&nbsp;", " ", raw, flags=re.I)
         raw = re.sub(r"&amp;", "&", raw, flags=re.I)
         raw = re.sub(r"&lt;", "<", raw, flags=re.I)
         raw = re.sub(r"&gt;", ">", raw, flags=re.I)
         raw = re.sub(r"&quot;", '"', raw, flags=re.I)
-        return re.sub(r"\s+", " ", raw).strip()
+        lines = [re.sub(r"[ \t]+", " ", line).strip() for line in raw.splitlines()]
+        return "\n".join(line for line in lines if line).strip()
 
 
     @staticmethod
