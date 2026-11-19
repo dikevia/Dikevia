@@ -10,7 +10,7 @@ _DIRECT_LOOKUP_INTENT = re.compile(
     r"que\s+(?:prevoit|dit|dispose)\s+(?:l['’]\s*)?article"
     r"|(?:texte|contenu|teneur)\s+(?:integral\s+)?(?:de\s+)?(?:l['’]\s*)?article"
     r"|(?:donne|fournis|reproduis)\s+(?:moi\s+)?(?:le\s+)?texte\s+(?:de\s+)?(?:l['’]\s*)?article"
-    r"|article\s+[lrd]\s*\d+(?:-\d+)*.{0,100}\b(?:texte|contenu|teneur|prevoit|dispose)"
+    r"|article\s+[lrd]\.?\s*\d+(?:-\d+)*.{0,100}\b(?:texte|contenu|teneur|prevoit|dispose)"
     r")\b",
     re.IGNORECASE,
 )
