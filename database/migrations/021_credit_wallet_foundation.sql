@@ -61,6 +61,8 @@ DECLARE
     v_user_id uuid;
     v_balance bigint;
     v_existing_id uuid;
+    v_existing_delta bigint;
+    v_existing_type text;
 BEGIN
     IF NULLIF(current_setting('app.current_org_id',true),'') IS NULL
        OR NULLIF(current_setting('app.current_org_id',true),'')::uuid <> p_organization_id THEN
@@ -84,9 +86,14 @@ BEGIN
     SELECT balance INTO v_balance FROM credit_accounts
       WHERE organization_id=p_organization_id FOR UPDATE;
 
-    SELECT id INTO v_existing_id FROM credit_ledger_entries
+    SELECT id,delta,entry_type INTO v_existing_id,v_existing_delta,v_existing_type
+      FROM credit_ledger_entries
       WHERE organization_id=p_organization_id AND idempotency_key=p_idempotency_key;
     IF v_existing_id IS NOT NULL THEN
+      IF v_existing_delta <> p_delta OR v_existing_type <> p_entry_type THEN
+        RAISE EXCEPTION 'idempotency key reused with different wallet operation'
+          USING ERRCODE='22023';
+      END IF;
       RETURN QUERY SELECT false,v_balance,v_existing_id;
       RETURN;
     END IF;
