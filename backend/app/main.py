@@ -311,6 +311,39 @@ async def auth_me(principal: Principal = Depends(get_principal)):
         raise HTTPException(403,"Compte désactivé ou non provisionné.")
     return {"id":str(row["id"]),"email":row["email"],"display_name":row["display_name"]}
 
+
+@app.get("/api/v1/access/status")
+async def account_access_status(ctx: TenantContext = Depends(get_tenant_context)):
+    row = await ctx.conn.fetchrow("""
+        SELECT u.trial_started_at,u.trial_expires_at,
+          EXISTS(SELECT 1 FROM founder_entitlements f
+            WHERE f.user_id=u.id AND f.revoked_at IS NULL) AS founder,
+          EXISTS(SELECT 1 FROM platform_free_email_access f
+            WHERE f.email_normalized=lower(u.email) AND f.revoked_at IS NULL
+              AND (f.expires_at IS NULL OR f.expires_at>now())) AS complimentary,
+          s.status AS subscription_status,s.current_period_end
+        FROM users u LEFT JOIN subscriptions s ON s.organization_id=$2::uuid
+        WHERE u.id=$1::uuid
+    """, ctx.user_id, ctx.organization_id)
+    if not row:
+        raise HTTPException(404, "Compte introuvable.")
+    now = await ctx.conn.fetchval("SELECT now()")
+    paid = row["subscription_status"] in ("ACTIVE","TRIAL") and (
+        row["current_period_end"] is None or row["current_period_end"] > now)
+    entitled = bool(row["founder"] or row["complimentary"] or paid)
+    return {
+        "access": "FOUNDER" if row["founder"] else "PAID" if paid else
+                  "COMPLIMENTARY" if row["complimentary"] else
+                  "TRIAL" if row["trial_expires_at"] > now else "EXPIRED",
+        "trial_started_at": row["trial_started_at"],
+        "trial_expires_at": row["trial_expires_at"],
+        "remaining_seconds": max(0, int((row["trial_expires_at"]-now).total_seconds()))
+            if not entitled else None,
+        "founder": bool(row["founder"]),
+        "billing_enabled": bool(settings.stripe_billing_enabled) if hasattr(settings, "stripe_billing_enabled") else False,
+    }
+
+
 @app.get("/api/v1/organizations")
 async def organizations(principal: Principal = Depends(get_principal)):
     async with get_pool().acquire() as conn:
@@ -567,6 +600,66 @@ async def stripe_webhook(request: Request):
                     if state.get("plan_code") in ("ESSENTIEL", "PRO", "EQUIPE_INSTANCES", "COLLECTIVITE_SYNDICATS", "INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50", "LEGACY_ESSENTIAL_3", "LEGACY_SYNDICAT_10"):
                         await conn.execute("UPDATE organizations SET plan_code=$2 WHERE id=$1::uuid", org_id, state["plan_code"])
     return {"received": True, "duplicate": False}
+
+
+@app.get("/api/v1/platform/founder-entitlements")
+async def platform_list_founder_entitlements(platform=Depends(require_platform_admin)):
+    rows = await get_platform_admin_pool().fetch(
+        "SELECT * FROM platform_admin_list_founder_entitlements($1::uuid)",
+        platform["user_id"])
+    return [{"slot_number": r["slot_number"], "user_id": str(r["user_id"]),
+             "email": r["email"], "granted_at": r["granted_at"],
+             "revoked_at": r["revoked_at"], "note": r["note"],
+             "active": r["revoked_at"] is None} for r in rows]
+
+
+@app.post("/api/v1/platform/founder-entitlements", status_code=201)
+async def platform_grant_founder_entitlement(payload: dict, platform=Depends(require_platform_admin)):
+    if not isinstance(payload, dict):
+        raise HTTPException(422, "Corps de requête invalide.")
+    try:
+        slot = int(payload.get("slot_number"))
+    except (TypeError, ValueError):
+        raise HTTPException(422, "Numéro de place invalide.")
+    if slot not in range(2, 11):
+        raise HTTPException(422, "La place 1 est réservée au propriétaire fondateur.")
+    email = str(payload.get("email", "")).strip().lower()
+    note = str(payload.get("note", "")).strip()[:500]
+    if len(email) > 254 or not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", email):
+        raise HTTPException(422, "Adresse électronique invalide.")
+    if len(note) < 8:
+        raise HTTPException(422, "Un motif d'au moins 8 caractères est requis.")
+    user = await get_pool().fetchrow(
+        "SELECT id FROM users WHERE lower(email)=lower($1) AND status='ACTIVE' AND email_verified_at IS NOT NULL",
+        email)
+    if not user:
+        raise HTTPException(404, "Aucun compte actif avec cette adresse vérifiée.")
+    try:
+        await get_platform_admin_pool().fetchval(
+            "SELECT platform_admin_grant_founder_entitlement($1::uuid,$2::smallint,$3::uuid,$4)",
+            platform["user_id"], slot, str(user["id"]), note)
+    except Exception as exc:
+        message = str(exc).lower()
+        if "already assigned" in message or "duplicate" in message:
+            raise HTTPException(409, "Cette place ou ce compte dispose déjà d'une attribution active.")
+        raise
+    return {"slot_number": slot, "email": email, "active": True}
+
+
+@app.delete("/api/v1/platform/founder-entitlements/{slot_number}")
+async def platform_revoke_founder_entitlement(slot_number: int, payload: dict,
+        platform=Depends(require_platform_admin)):
+    if slot_number not in range(1, 11):
+        raise HTTPException(422, "Numéro de place invalide.")
+    reason = str(payload.get("reason", "")).strip()[:500] if isinstance(payload, dict) else ""
+    if len(reason) < 8:
+        raise HTTPException(422, "Un motif d'au moins 8 caractères est requis.")
+    changed = await get_platform_admin_pool().fetchval(
+        "SELECT platform_admin_revoke_founder_entitlement($1::uuid,$2::smallint,$3)",
+        platform["user_id"], slot_number, reason)
+    if not changed:
+        raise HTTPException(404, "Place fondatrice active introuvable.")
+    return {"slot_number": slot_number, "active": False}
 
 
 @app.get("/api/v1/platform/free-email-access")
