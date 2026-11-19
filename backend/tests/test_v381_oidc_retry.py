@@ -19,3 +19,10 @@ def test_oidc_provider_errors_are_state_checked_and_cleaned_from_the_url():
     assert "sessionStorage.removeItem('cfdt_oidc_state');" in auth
     assert "history.replaceState({}, document.title, window.location.pathname + window.location.hash);" in auth
     assert "error_description" in auth and ".slice(0, 300)" in auth
+
+def test_invitation_bearer_token_is_removed_from_the_url_immediately():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    store = auth.index("sessionStorage.setItem('cfdt_pending_invitation', initialInvitation);")
+    cleanup = auth.index("cleanUrl.searchParams.delete('invitation_token');", store)
+    assert store < cleanup
+    assert "history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);" in auth
