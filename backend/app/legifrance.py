@@ -353,23 +353,42 @@ class LegifranceConnector:
         nodes = list(self._walk_dicts(found))
         records: list[dict] = []
         seen: set[str] = set()
-        for record in nodes:
-            raw_identifier = self._first_value(record, ("id", "idTexte", "id_text", "textId"))
-            identifier = raw_identifier.split("_", 1)[0] if raw_identifier else None
-            if identifier and re.fullmatch(r"LEGITEXT\d{12}", identifier) and identifier not in seen:
-                records.append({**record, "_resolved_text_id": identifier})
+        search_results = (
+            found.get("results")
+            if isinstance(found, dict) and isinstance(found.get("results"), list)
+            else []
+        )
+        for search_result in search_results:
+            raw_ids = [
+                self._first_value(node, ("id", "idTexte", "id_text", "textId"))
+                for node in self._walk_dicts(search_result)
+            ]
+            identifier = next(
+                (
+                    raw_id.split("_", 1)[0]
+                    for raw_id in raw_ids
+                    if raw_id and re.fullmatch(r"LEGITEXT\d{12}", raw_id.split("_", 1)[0])
+                ),
+                None,
+            )
+            if identifier and identifier not in seen:
+                records.append({**search_result, "_resolved_text_id": identifier})
                 seen.add(identifier)
             if len(records) >= limit:
                 break
+
+        def nested_value(value: Any, keys: tuple[str, ...]):
+            for node in self._walk_dicts(value):
+                found_value = self._first_value(node, keys)
+                if found_value:
+                    return found_value
+            return None
+
         top_keys = list(found.keys())[:20] if isinstance(found, dict) else []
-        result_count = (
-            len(found.get("results") or [])
-            if isinstance(found, dict) and isinstance(found.get("results"), list)
-            else -1
-        )
+        result_count = len(search_results)
         sample_keys = (
-            list(found["results"][0].keys())[:20]
-            if result_count > 0 and isinstance(found["results"][0], dict)
+            list(search_results[0].keys())[:20]
+            if result_count > 0 and isinstance(search_results[0], dict)
             else []
         )
         identifier_samples = []
@@ -408,22 +427,27 @@ class LegifranceConnector:
             )
             if not id_matches or not text_valid:
                 continue
-            title = self._first_value(record, ("titre", "titreTexte", "title", "intitule")) or identifier
-            number = self._first_value(record, ("nor", "NOR", "numero", "num"))
-            status_raw = (self._first_value(record, ("etat", "etatJuridique", "status", "etatTexte")) or "").upper()
+            title = nested_value(record, ("titre", "titreTexte", "title", "intitule")) or identifier
+            title_number = re.search(r"\b(?:n[°ºo]?\s*)?(\d{4}-\d{1,4})\b", title, re.I)
+            number = (
+                title_number.group(1) if title_number
+                else nested_value(record, ("numero", "num"))
+            )
+            nor = nested_value(record, ("nor", "NOR"))
+            status_raw = (nested_value(record, ("etat", "etatJuridique", "status", "etatTexte")) or "").upper()
             status = "IN_FORCE" if any(token in status_raw for token in ("VIGUEUR", "EN VIGUEUR")) else (
                 "REPEALED" if "ABROG" in status_raw else ("NOT_IN_FORCE" if "PERIME" in status_raw else "UNKNOWN"))
-            signature = self._iso_date(self._first_value(record, ("dateTexte", "dateSignature", "date")))
-            publication = self._iso_date(self._first_value(record, ("datePublication", "datePubli")))
-            valid_from = self._iso_date(self._first_value(record, ("dateDebut", "dateDebutVersion", "dateEffet")))
-            valid_to = self._iso_date(self._first_value(record, ("dateFin", "dateFinVersion")))
+            signature = self._iso_date(nested_value(record, ("dateTexte", "dateSignature", "date")))
+            publication = self._iso_date(nested_value(record, ("datePublication", "datePubli")))
+            valid_from = self._iso_date(nested_value(record, ("dateDebut", "dateDebutVersion", "dateEffet")))
+            valid_to = self._iso_date(nested_value(record, ("dateFin", "dateFinVersion")))
             kind_raw = (title + " " + (number or "")).lower()
             kind = "DECREE" if "décret" in kind_raw or "decret" in kind_raw else (
                 "ORDER" if "arrêté" in kind_raw or "arrete" in kind_raw else (
                 "ORDONNANCE" if "ordonnance" in kind_raw else "LAW"))
             output.append({"source_type": "LEGIFRANCE_LODA", "source_id": identifier,
-                "title": title, "document_kind": kind, "official_number": number,
-                "publisher": self._first_value(record, ("emetteur", "ministere", "autorite")),
+                "title": title, "document_kind": kind, "official_number": number, "nor": nor,
+                "publisher": nested_value(record, ("emetteur", "ministere", "autorite")),
                 "official_url": f"https://www.legifrance.gouv.fr/loda/id/{identifier}",
                 "signature_date": signature, "publication_date": publication,
                 "status": status, "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
