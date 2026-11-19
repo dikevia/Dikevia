@@ -316,7 +316,7 @@ def test_local_document_ai_review_is_gated_by_explicit_opt_in():
 
     source = inspect.getsource(review_local_rule_compliance)
     assert "settings.ai_local_document_review_enabled" in source
-    assert "if (usable_national and settings.ai_api_key and settings.ai_model" in source
+    assert "if (usable_national and settings.ai_api_base_url and settings.ai_api_key and settings.ai_model" in source
 
 
 @pytest.mark.asyncio
