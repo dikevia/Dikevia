@@ -25,7 +25,7 @@ _TOPIC_EXPANSIONS = (
         "délibération assemblée délibérante repos compensateur",
     ),
     (
-        ("harcelement moral", "agissements repetes", "degradation des conditions de travail"),
+        ("harcelement moral",),
         "harcèlement moral agents territoriaux CGFP protection fonctionnelle "
         "décret procédure fonction publique territoriale jurisprudence administrative",
     ),
@@ -35,7 +35,7 @@ _TOPIC_EXPANSIONS = (
         "protection fonctionnelle jurisprudence administrative",
     ),
     (
-        ("protection fonctionnelle", "menace", "injure", "agression", "diffamation", "outrage"),
+        ("protection fonctionnelle",),
         "protection fonctionnelle agent territorial CGFP obligations employeur public "
         "jurisprudence Conseil d'État collectivités territoriales",
     ),
