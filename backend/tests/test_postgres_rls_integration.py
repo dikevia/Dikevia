@@ -112,15 +112,17 @@ async def _run_isolation_scenario():
                     user_a, org_a, wallet_key,
                 )
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await runtime.fetchrow(
-                    "SELECT * FROM wallet_admin_grant_entry($1,$2,50,'MONTHLY_ALLOCATION',$3,'forged grant')",
-                    user_a, org_a, "rls-forged-" + uuid.uuid4().hex,
-                )
+                async with runtime.transaction():
+                    await runtime.fetchrow(
+                        "SELECT * FROM wallet_admin_grant_entry($1,$2,50,'MONTHLY_ALLOCATION',$3,'forged grant')",
+                        user_a, org_a, "rls-forged-" + uuid.uuid4().hex,
+                    )
             with pytest.raises(asyncpg.InvalidParameterValueError):
-                await runtime.fetchrow(
-                    "SELECT * FROM wallet_apply_entry($1,50,'USAGE_DEBIT',$2,'positive debit forgery')",
-                    org_a, "rls-positive-" + uuid.uuid4().hex,
-                )
+                async with runtime.transaction():
+                    await runtime.fetchrow(
+                        "SELECT * FROM wallet_apply_entry($1,50,'USAGE_DEBIT',$2,'positive debit forgery')",
+                        org_a, "rls-positive-" + uuid.uuid4().hex,
+                    )
             debit_credit = await runtime.fetchrow(
                 "SELECT * FROM wallet_apply_entry($1,-30,'USAGE_DEBIT',$2,'CI usage')",
                 org_a, "rls-debit-" + uuid.uuid4().hex,
