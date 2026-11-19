@@ -113,3 +113,26 @@ def test_decree_91_875_with_territorial_scope_is_eligible_for_fpt():
     })
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
+
+
+def test_document_wide_fpt_mention_cannot_authorize_an_unrelated_evidence_excerpt():
+    result = classify_public_service_scope({
+        "title": "Décret portant dispositions relatives aux agents publics",
+        "excerpt": "Les agents de l'État et les administrations centrales sont concernés.",
+        "full_text": (
+            "Chapitre I : dispositions applicables aux fonctionnaires territoriaux. "
+            "Chapitre II : les agents de l'État et les administrations centrales."
+        ),
+    })
+    assert result["scope"] == "FPE"
+    assert result["analysis_eligible"] is False
+
+
+def test_relevant_fpt_excerpt_takes_precedence_over_unrelated_document_context():
+    result = classify_public_service_scope({
+        "title": "Décret relatif aux agents publics",
+        "excerpt": "Les fonctionnaires territoriaux et les collectivités territoriales sont concernés.",
+        "full_text": "Les agents de l'État et les administrations centrales sont concernés.",
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True
