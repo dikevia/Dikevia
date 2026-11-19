@@ -108,6 +108,7 @@ def test_local_document_ai_review_requires_server_opt_in_and_per_request_confirm
     assert signature.parameters["confirm_external_ai_transfer"].default is False
     source = inspect.getsource(review_local_rule_compliance)
     assert "settings.ai_local_document_review_enabled and confirm_external_ai_transfer" in source
+    assert "settings.ai_api_base_url and settings.ai_api_key and settings.ai_model" in source
     assert "allow_local_documents=True" in source
     assert '"confirm_external_ai_transfer": confirm_external_ai_transfer' in source
     assert '"external_ai_transfer_enabled": bool(' in source
