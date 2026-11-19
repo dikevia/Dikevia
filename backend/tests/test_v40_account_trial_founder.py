@@ -1,0 +1,45 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_account_trial_starts_once_after_verified_oidc_sign_in():
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    dependencies = (ROOT / "backend/app/dependencies.py").read_text(encoding="utf-8")
+    assert "principal.email_verified and principal.email" in main
+    assert "trial_started_at=COALESCE(trial_started_at,now())" in main
+    assert "trial_expires_at=COALESCE(trial_expires_at,now()+interval '72 hours')" in main
+    assert "if not principal.email_verified or not principal.email" in dependencies
+
+
+def test_expired_trial_is_blocked_server_side_but_billing_and_identity_remain_available():
+    dependencies = (ROOT / "backend/app/dependencies.py").read_text(encoding="utf-8")
+    assert '"/api/v1/billing/checkout"' in dependencies
+    assert '"/api/v1/billing/portal"' in dependencies
+    assert '"/api/v1/access/status"' in dependencies
+    assert 'raise HTTPException(402' in dependencies
+    assert '"TRIAL_EXPIRED"' in dependencies
+    assert "Vos données sont conservées" in dependencies
+
+
+def test_founder_entitlements_are_individual_and_limited_to_ten_atomic_slots():
+    migration = (ROOT / "database/migrations/020_account_trial_founder_entitlements.sql").read_text(encoding="utf-8")
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    assert "slot_number BETWEEN 1 AND 10" in migration
+    assert "pg_advisory_xact_lock(33010340)" in migration
+    assert "UNIQUE REFERENCES users(id)" in migration
+    assert "platform_admin_grant_founder_entitlement" in migration
+    assert "platform_admin_list_founder_entitlements" in migration
+    assert "La place 1 est réservée au propriétaire fondateur" in main
+    assert "founder_entitlements" in (ROOT / "backend/app/dependencies.py").read_text(encoding="utf-8")
+
+
+def test_trial_and_founder_entitlement_are_not_organization_seat_limits():
+    migration = (ROOT / "database/migrations/020_account_trial_founder_entitlements.sql").read_text(encoding="utf-8")
+    assert "organization_id" not in migration
+    assert "founder_entitlements" in migration
+    assert "72 hours" in migration
+
+
+def test_trial_and_founder_migration_has_rollback():
+    assert (ROOT / "database/migrations/rollback/020_account_trial_founder_entitlements.down.sql").is_file()
