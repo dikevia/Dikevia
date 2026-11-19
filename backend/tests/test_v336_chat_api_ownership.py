@@ -282,3 +282,29 @@ def test_chat_and_dossier_queries_bind_both_organization_and_owner():
     assert "organization_id=$2::uuid" in dossier_read[0]
     assert "user_id=$3::uuid" in dossier_read[0]
     assert dossier_read[1] == (conversation_id, ctx.organization_id, ctx.user_id)
+
+
+def test_chat_ask_and_dossier_update_sql_include_explicit_owner_scope():
+    import inspect
+    from app.main import ask, update_legal_dossier
+    from app.dossiers import build_dossier_content
+
+    ask_source = inspect.getsource(ask)
+    assert "organization_id=$2::uuid AND user_id=$3::uuid" in ask_source
+    assert "organization_id=$3::uuid AND user_id=$4::uuid" in ask_source
+    assert "WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid" in ask_source
+
+    conn = HiddenRowsConnection()
+    ctx = context(conn)
+    dossier = build_dossier_content(
+        {"title": "Dossier test"},
+        [{"role": "user", "content": "Question juridique de test"}],
+    )
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(update_legal_dossier(
+            str(uuid4()), {"content": dossier}, ctx
+        ))
+    assert exc.value.status_code == 404
+    query, args = conn.fetchrow_calls[0]
+    assert "organization_id=$2::uuid AND user_id=$3::uuid" in query
+    assert args[1:] == (ctx.organization_id, ctx.user_id)
