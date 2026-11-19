@@ -73,9 +73,7 @@ BEGIN
     END IF;
     v_user_id := NULLIF(current_setting('app.current_user_id',true),'')::uuid;
 
-    IF p_delta = 0 OR p_entry_type NOT IN
-       ('MONTHLY_ALLOCATION','PURCHASE','USAGE_DEBIT','EXPIRATION','ADJUSTMENT')
-       OR (p_entry_type IN ('USAGE_DEBIT','EXPIRATION') AND p_delta > 0)
+    IF p_delta IS NULL OR p_delta >= 0 OR p_entry_type IS DISTINCT FROM 'USAGE_DEBIT'
        OR length(COALESCE(p_idempotency_key,'')) NOT BETWEEN 8 AND 128
        OR length(COALESCE(p_reference,'')) > 160 THEN
         RAISE EXCEPTION 'invalid wallet entry' USING ERRCODE='22023';
@@ -116,7 +114,69 @@ BEGIN
 END;
 $$;
 
+-- Positive allocations and purchases use a separate privileged path.
+-- The tenant runtime role can never mint credits by choosing a positive delta.
+CREATE OR REPLACE FUNCTION wallet_admin_grant_entry(
+    p_actor_user_id uuid,
+    p_organization_id uuid,
+    p_delta bigint,
+    p_entry_type text,
+    p_idempotency_key text,
+    p_reference text DEFAULT NULL
+) RETURNS TABLE(applied boolean,current_balance bigint,ledger_entry_id uuid)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=public,pg_temp
+SET row_security=off
+AS $wallet_admin$
+DECLARE
+    v_balance bigint;
+    v_existing_id uuid;
+    v_existing_delta bigint;
+    v_existing_type text;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=p_actor_user_id) THEN
+      RAISE EXCEPTION 'platform administrator required' USING ERRCODE='42501';
+    END IF;
+    IF p_delta IS NULL OR p_delta <= 0
+       OR p_entry_type NOT IN ('MONTHLY_ALLOCATION','PURCHASE','ADJUSTMENT')
+       OR length(COALESCE(p_idempotency_key,'')) NOT BETWEEN 8 AND 128
+       OR length(COALESCE(p_reference,'')) > 160 THEN
+      RAISE EXCEPTION 'invalid wallet grant' USING ERRCODE='22023';
+    END IF;
+
+    INSERT INTO credit_accounts(organization_id,balance)
+      VALUES(p_organization_id,0) ON CONFLICT(organization_id) DO NOTHING;
+    SELECT balance INTO v_balance FROM credit_accounts
+      WHERE organization_id=p_organization_id FOR UPDATE;
+
+    SELECT id,delta,entry_type INTO v_existing_id,v_existing_delta,v_existing_type
+      FROM credit_ledger_entries
+      WHERE organization_id=p_organization_id AND idempotency_key=p_idempotency_key;
+    IF v_existing_id IS NOT NULL THEN
+      IF v_existing_delta <> p_delta OR v_existing_type <> p_entry_type THEN
+        RAISE EXCEPTION 'idempotency key reused with different wallet operation'
+          USING ERRCODE='22023';
+      END IF;
+      RETURN QUERY SELECT false,v_balance,v_existing_id;
+      RETURN;
+    END IF;
+
+    v_balance := v_balance + p_delta;
+    UPDATE credit_accounts SET balance=v_balance,updated_at=now()
+      WHERE organization_id=p_organization_id;
+    INSERT INTO credit_ledger_entries(
+      organization_id,actor_user_id,entry_type,delta,balance_after,idempotency_key,reference
+    ) VALUES (
+      p_organization_id,p_actor_user_id,p_entry_type,p_delta,v_balance,p_idempotency_key,NULLIF(p_reference,'')
+    ) RETURNING id INTO v_existing_id;
+    RETURN QUERY SELECT true,v_balance,v_existing_id;
+END;
+$wallet_admin$;
+
 REVOKE ALL ON FUNCTION wallet_apply_entry(uuid,bigint,text,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION wallet_apply_entry(uuid,bigint,text,text,text) TO cfdt_juris_app;
+REVOKE ALL ON FUNCTION wallet_admin_grant_entry(uuid,uuid,bigint,text,text,text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION wallet_admin_grant_entry(uuid,uuid,bigint,text,text,text) FROM cfdt_juris_app;
+GRANT EXECUTE ON FUNCTION wallet_admin_grant_entry(uuid,uuid,bigint,text,text,text) TO cfdt_juris_platform_admin;
 
 COMMIT;
