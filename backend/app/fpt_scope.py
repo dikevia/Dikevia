@@ -73,6 +73,21 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     title = str(source.get("title") or "")
     text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
     corpus = _fold((title + " " + text)[:500_000])
+    # Dikévia is deliberately limited to French territorial public-service law.
+    # Exclude EU instruments by structured metadata before looking at generic
+    # public-service wording that may also appear in comparative documents.
+    european_metadata = _fold(" ".join(str(source.get(key) or "") for key in (
+        "jurisdiction", "source_type", "official_source", "document_kind"
+    )))
+    if any(marker in european_metadata for marker in (
+        "european union", "union europeenne", "eur lex", "eurlex",
+        "eu regulation", "eu directive", "european directive",
+    )):
+        return {
+            "scope": "OUT_OF_SCOPE_EUROPEAN_LAW",
+            "evidence": ["Instrument de droit de l'Union européenne hors périmètre Dikévia"],
+            "analysis_eligible": False,
+        }
 
     fpt_hits = [marker for marker in _FPT_MARKERS if _fold(marker) in corpus]
     fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in corpus]
@@ -119,7 +134,9 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
             "analysis_eligible": True,
         }
     return {
-        "scope": "SCOPE_TO_VERIFY",
+        # Do not let an unclassified document enter the AI evidence set.
+        # The user-facing research may still disclose it as an unverified lead.
+        "scope": "OUT_OF_SCOPE_OR_UNCONFIRMED",
         "evidence": general_hits[:2],
         "analysis_eligible": False,
     }
