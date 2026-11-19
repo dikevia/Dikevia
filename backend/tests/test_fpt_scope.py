@@ -68,3 +68,14 @@ def test_french_transposition_decree_is_not_misclassified_as_eu_instrument():
     })
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
+
+
+def test_european_treaty_source_family_is_out_of_scope():
+    result = classify_public_service_scope({
+        "title": "Convention européenne applicable aux agents publics",
+        "jurisdiction": "UE",
+        "document_kind": "EUROPEAN_TREATY",
+        "text": "Dispositions relatives à la fonction publique.",
+    })
+    assert result["scope"] == "OUT_OF_SCOPE_EUROPEAN_LAW"
+    assert result["analysis_eligible"] is False
