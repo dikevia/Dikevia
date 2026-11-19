@@ -103,6 +103,58 @@ async def test_legifrance_uses_search_article_id_when_get_article_omits_num(monk
 
 
 @pytest.mark.asyncio
+async def test_legifrance_second_code_civil_article_control(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    long_text = (
+        "Les contrats légalement formés tiennent lieu de loi à ceux qui les ont faits. "
+        "Ils ne peuvent être révoqués que de leur consentement mutuel, ou pour les causes "
+        "que la loi autorise. Ils doivent être exécutés de bonne foi."
+    )
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            body = json.loads(request.content)
+            assert body["recherche"]["filtres"][0]["valeurs"] == ["Code civil"]
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID, "num": "1103", "nomCode": "Code civil",
+                "dateDebut": "2016-10-01", "texte": long_text,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles(
+        "article 1103", date(2026, 11, 19), code_name="Code civil"
+    )
+    assert len(results) == 1
+    assert results[0]["article"] == "1103"
+    assert results[0]["title"].startswith("Code civil")
+    assert results[0]["text"] == long_text
+    assert len(results[0]["text"]) > 150
+
+
+@pytest.mark.asyncio
+async def test_legifrance_nonexistent_article_returns_no_official_result(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"results": [], "totalResultNumber": 0})
+        raise AssertionError("getArticle must not be called without a search result")
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles("article L999-999", date(2026, 11, 19))
+    assert results == []
+
+
+@pytest.mark.asyncio
 async def test_legifrance_rejects_incomplete_oauth(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_client_id", "")
     monkeypatch.setattr(settings, "legifrance_client_secret", "")
