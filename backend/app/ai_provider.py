@@ -95,17 +95,30 @@ class AIAnalysisRefusedNoSources(RuntimeError):
 
 
 def _usable_document_sources(sources):
+    """Keep only identified, dated documents with meaningful retrieved text."""
     if not isinstance(sources, (list, tuple)):
         return []
     usable = []
+    date_fields = ("requested_effective_date", "valid_from", "effective_from", "publication_date", "signature_date")
     for source in sources:
         if not isinstance(source, dict):
+            continue
+        source_id = source.get("source_id") or source.get("official_source_id") or source.get("source_version_id")
+        has_date = any(str(source.get(key) or "").strip() for key in date_fields)
+        if not source_id or not has_date:
             continue
         excerpt = source.get("excerpt")
         if not isinstance(excerpt, str) or not excerpt.strip():
             excerpt = source.get("text")
-        if isinstance(excerpt, str) and excerpt.strip():
-            usable.append({**source, "excerpt": excerpt.strip()})
+        if not isinstance(excerpt, str):
+            continue
+        excerpt = excerpt.strip()
+        # Whitespace and punctuation alone are not documentary evidence.
+        if not any(char.isalnum() for char in excerpt):
+            continue
+        # Copy rather than reconstruct: preserve source ID, article/reference,
+        # version dates, and all provenance metadata for the model payload.
+        usable.append({**source, "excerpt": excerpt})
     return usable
 
 def _is_gemini_provider() -> bool:
