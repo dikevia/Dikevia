@@ -73,6 +73,12 @@ async def _run_isolation_scenario():
             user_a, user_a, "Permanent founder entitlement for verified test identity",
         )
         assert founder_user_id == user_a
+        founder_rows = await platform.fetch(
+            "SELECT user_id,note FROM platform_admin_list_founder_entitlements($1)", user_a
+        )
+        assert len(founder_rows) == 1 and founder_rows[0]["user_id"] == user_a
+        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+            await platform.fetch("SELECT user_id FROM platform_founder_entitlements")
 
         # Tenant A sees only its own documents and cannot update tenant B's row.
         async with runtime.transaction():
@@ -252,6 +258,13 @@ async def _run_isolation_scenario():
             await runtime.execute("SELECT set_config('app.invitation_token_hash',$1,true)", token_a)
             invitations = await runtime.fetch("SELECT token_hash FROM invitations")
             assert {r['token_hash'] for r in invitations} == {token_a}
+
+        assert await platform.fetchval(
+            "SELECT platform_admin_revoke_founder_entitlement($1,$2)", user_a, user_a
+        ) is True
+        assert await platform.fetchval(
+            "SELECT platform_admin_revoke_founder_entitlement($1,$2)", user_a, user_a
+        ) is False
     finally:
         await runtime.close()
         if platform is not admin:
