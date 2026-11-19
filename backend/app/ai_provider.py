@@ -183,6 +183,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "numero_officiel": s.get("official_number"), "juridiction": s.get("jurisdiction"),
                     "date_signature": str(s.get("signature_date") or ""),
                     "date_publication": str(s.get("publication_date") or ""),
+                    "date_decision": str(s.get("decision_date") or ""),
                     "valide_du": str(s.get("valid_from") or s.get("effective_from") or ""),
                     "valide_au": str(s.get("valid_to") or s.get("effective_to") or ""),
                     "statut_temporel": s.get("temporal_status"),
