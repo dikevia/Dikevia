@@ -383,3 +383,91 @@ async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monke
         "consult/ping": 200,
         "list/ping": 500,
     }
+
+
+@pytest.mark.asyncio
+async def test_loda_search_consults_matching_official_text_at_requested_date(monkeypatch):
+    from datetime import datetime, timezone
+
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    requested_date = date(2026, 11, 19)
+    expected_stamp = int(datetime(2026, 11, 19, tzinfo=timezone.utc).timestamp() * 1000)
+    full_text = (
+        "Le présent décret fixe les conditions d'attribution des indemnités horaires "
+        "pour travaux supplémentaires aux agents territoriaux. "
+    ) * 3
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            body = json.loads(request.content)
+            assert body["fond"] == "LODA_DATE"
+            assert body["recherche"]["champs"][0]["typeChamp"] == "ALL"
+            assert body["recherche"]["filtres"][0] == {
+                "facette": "DATE_VERSION", "singleDate": expected_stamp
+            }
+            return httpx.Response(200, json={"results": [{
+                "id": "LEGITEXT000012345678",
+                "titre": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+                "numero": "2002-60",
+                "dateDebut": "2002-01-01",
+                "dateFin": "2999-01-01",
+                "etat": "VIGUEUR",
+            }]})
+        if request.url.path.endswith("/consult/legiPart"):
+            body = json.loads(request.content)
+            assert body == {"date": expected_stamp, "textId": "LEGITEXT000012345678"}
+            return httpx.Response(200, json={"text": {
+                "id": "LEGITEXT000012345678", "texte": full_text,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_regulatory_texts(
+        "décret 2002-60 indemnités horaires pour travaux supplémentaires",
+        requested_date,
+        limit=3,
+    )
+
+    assert len(results) == 1
+    source = results[0]
+    assert source["source_type"] == "LEGIFRANCE_LODA"
+    assert source["source_id"] == "LEGITEXT000012345678"
+    assert source["document_kind"] == "DECREE"
+    assert source["official_number"] == "2002-60"
+    assert source["source_status"] == "OFFICIAL_TEXT_ID_VERIFIED"
+    assert source["version_status"] == "IN_FORCE"
+    assert source["full_text"] == full_text
+    assert "indemnités horaires" in source["excerpt"]
+    assert "/consult/legiPart" in seen
+
+
+@pytest.mark.asyncio
+async def test_loda_search_rejects_mismatched_consulted_identifier(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"results": [{
+                "id": "LEGITEXT000012345678",
+                "titre": "Décret relatif aux agents territoriaux",
+            }]})
+        if request.url.path.endswith("/consult/legiPart"):
+            return httpx.Response(200, json={"text": {
+                "id": "LEGITEXT000099999999",
+                "texte": "Texte officiel suffisamment long pour dépasser le seuil de validation. " * 3,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_regulatory_texts(
+        "décret relatif aux agents territoriaux", date(2026, 11, 19)
+    )
+    assert results == []
