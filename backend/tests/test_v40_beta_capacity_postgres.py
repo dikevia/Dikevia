@@ -78,7 +78,8 @@ async def _run_beta_capacity_scenario():
             JOIN pg_namespace n ON n.oid=p.pronamespace
             JOIN pg_roles owner ON owner.oid=p.proowner
             WHERE n.nspname='public' AND p.proname='beta_user_slot_available'
-              AND pg_get_function_identity_arguments(p.oid)='p_email text, p_max_users integer'
+              AND p.pronargs=2
+              AND p.proargtypes='25 23'::oidvector
         """)
         assert function_security is not None
         assert function_security["prosecdef"] is True
