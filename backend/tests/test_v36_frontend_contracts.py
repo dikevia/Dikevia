@@ -77,3 +77,11 @@ def test_dossier_status_controls_reflect_privileged_roles():
     assert "const canManageDossierStatus=role==='ORG_ADMIN'||role==='LEGAL_EDITOR'" in html
     assert "option.disabled=!canManageDossierStatus&&['VALIDE_HUMAINEMENT','CLOTURE'].includes(option.value)" in html
     assert "Validation et clôture réservées aux responsables habilités." in html
+
+
+def test_pilot_chat_discloses_gemini_processing_and_requires_anonymized_cases():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "Google Gemini" in html
+    assert "situations fictives ou anonymisées" in html
+    assert "donnée médicale" in html
+    assert "donnée syndicale nominative" in html
