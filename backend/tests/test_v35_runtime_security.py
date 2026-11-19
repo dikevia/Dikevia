@@ -68,3 +68,17 @@ def test_chat_rate_limit_configuration_is_bounded():
 def test_external_startup_diagnostics_are_disabled_by_default():
     assert Settings(_env_file=None).startup_external_diagnostics_enabled is False
     assert Settings(_env_file=None, startup_external_diagnostics_enabled=True).startup_external_diagnostics_enabled is True
+
+@pytest.mark.asyncio
+async def test_external_startup_diagnostics_return_without_network_when_disabled(monkeypatch):
+    from app import main
+
+    monkeypatch.setattr(main.settings, "app_env", "production")
+    monkeypatch.setattr(main.settings, "startup_external_diagnostics_enabled", False)
+
+    async def unexpected_call(*args, **kwargs):
+        raise AssertionError("External diagnostic must not run while disabled.")
+
+    monkeypatch.setattr(main.legifrance, "search_code_articles", unexpected_call)
+    monkeypatch.setattr(main.legifrance, "search_regulatory_texts", unexpected_call)
+    await main._startup_external_diagnostics()
