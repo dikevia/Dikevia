@@ -88,6 +88,26 @@ def _nonnegative_token_count(value):
 class AIProviderUnavailable(RuntimeError):
     pass
 
+
+class AIAnalysisRefusedNoSources(RuntimeError):
+    """Explicit safe refusal when no non-empty retrieved excerpt is available."""
+    pass
+
+
+def _usable_document_sources(sources):
+    if not isinstance(sources, (list, tuple)):
+        return []
+    usable = []
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        excerpt = source.get("excerpt")
+        if not isinstance(excerpt, str) or not excerpt.strip():
+            excerpt = source.get("text")
+        if isinstance(excerpt, str) and excerpt.strip():
+            usable.append({**source, "excerpt": excerpt.strip()})
+    return usable
+
 def _is_gemini_provider() -> bool:
     parsed = urlparse(settings.ai_api_base_url)
     return parsed.hostname == "generativelanguage.googleapis.com" and parsed.path.rstrip("/") == "/v1beta/openai"
@@ -103,13 +123,13 @@ def _provider_api_base() -> str:
     return base
 
 
-async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict], conversation_history: list[dict] | None = None, facts_period: dict | None = None) -> AIAnalysisResult | None:
-    # Defense in depth: no document, no inference. The orchestrator already
-    # enforces this rule, but the provider adapter must be safe on its own.
-    if not sources:
-        return None
+async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict] | None, conversation_history: list[dict] | None = None, facts_period: dict | None = None) -> AIAnalysisResult | None:
     if not (settings.ai_api_key and settings.ai_model):
         return None
+    # Defense in depth: only non-empty retrieved excerpts may reach the provider.
+    sources = _usable_document_sources(sources)
+    if not sources:
+        raise AIAnalysisRefusedNoSources("Analyse refusée : aucun extrait documentaire non vide n'est disponible.")
     base = _provider_api_base()
     if not base:
         return None
