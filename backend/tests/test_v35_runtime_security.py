@@ -64,3 +64,70 @@ def test_chat_rate_limit_configuration_is_bounded():
     with pytest.raises(RuntimeError, match="CHAT_RATE_LIMIT_PER_MINUTE"):
         validate_runtime_configuration(Settings(chat_rate_limit_per_minute=121))
     validate_runtime_configuration(Settings(chat_rate_limit_per_minute=10))
+
+class _RuntimeRoleConnection:
+    def __init__(self, role):
+        self.role = role
+        self.checked = False
+
+    async def fetchrow(self, query):
+        assert "rolsuper" in query and "rolbypassrls" in query
+        self.checked = True
+        return self.role
+
+
+class _RuntimeRolePool:
+    def __init__(self, role):
+        self.connection = _RuntimeRoleConnection(role)
+
+    def acquire(self):
+        return self
+
+    async def __aenter__(self):
+        return self.connection
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
+@pytest.mark.asyncio
+async def test_runtime_role_guard_checks_all_configured_database_pools(monkeypatch):
+    from app import db
+
+    api = _RuntimeRolePool({"rolsuper": False, "rolbypassrls": False})
+    ingest = _RuntimeRolePool({"rolsuper": False, "rolbypassrls": False})
+    platform = _RuntimeRolePool({"rolsuper": False, "rolbypassrls": False})
+    monkeypatch.setattr(db, "_pool", api)
+    monkeypatch.setattr(db, "_ingest_pool", ingest)
+    monkeypatch.setattr(db, "_platform_admin_pool", platform)
+
+    await db.assert_runtime_role_is_safe()
+
+    assert api.connection.checked
+    assert ingest.connection.checked
+    assert platform.connection.checked
+
+
+@pytest.mark.parametrize(
+    ("unsafe_pool", "expected_label"),
+    [
+        ("_pool", "API"),
+        ("_ingest_pool", "ingestion du corpus"),
+        ("_platform_admin_pool", "administration de plateforme"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_runtime_role_guard_rejects_privileged_role_in_every_pool(
+    monkeypatch, unsafe_pool, expected_label
+):
+    from app import db
+
+    safe = _RuntimeRolePool({"rolsuper": False, "rolbypassrls": False})
+    unsafe = _RuntimeRolePool({"rolsuper": False, "rolbypassrls": True})
+    monkeypatch.setattr(db, "_pool", safe)
+    monkeypatch.setattr(db, "_ingest_pool", safe)
+    monkeypatch.setattr(db, "_platform_admin_pool", safe)
+    monkeypatch.setattr(db, unsafe_pool, unsafe)
+
+    with pytest.raises(RuntimeError, match=expected_label):
+        await db.assert_runtime_role_is_safe()

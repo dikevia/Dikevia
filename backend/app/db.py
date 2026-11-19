@@ -48,13 +48,19 @@ def get_platform_admin_pool():
 
 
 async def assert_runtime_role_is_safe():
-    """Fail closed when the API connection can bypass PostgreSQL row-level security."""
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        role = await conn.fetchrow(
-            "SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user"
-        )
-    if role is None or role["rolsuper"] or role["rolbypassrls"]:
-        raise RuntimeError(
-            "Le rôle PostgreSQL de l'API doit exister et ne doit être ni SUPERUSER ni BYPASSRLS."
-        )
+    """Fail closed when any configured application pool can bypass PostgreSQL RLS."""
+    pools = [("API", get_pool())]
+    if _ingest_pool is not None:
+        pools.append(("ingestion du corpus", _ingest_pool))
+    if _platform_admin_pool is not None:
+        pools.append(("administration de plateforme", _platform_admin_pool))
+
+    for pool_name, pool in pools:
+        async with pool.acquire() as conn:
+            role = await conn.fetchrow(
+                "SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user"
+            )
+        if role is None or role["rolsuper"] or role["rolbypassrls"]:
+            raise RuntimeError(
+                f"Le rôle PostgreSQL de {pool_name} doit exister et ne doit être ni SUPERUSER ni BYPASSRLS."
+            )
