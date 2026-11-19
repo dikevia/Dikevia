@@ -7,6 +7,12 @@ import unicodedata
 
 
 _ARTICLE_REFERENCE = re.compile(r"\b(?:article\s+)?[LRD]\.?\s*\d+(?:-\d+)*\b", re.IGNORECASE)
+_DIRECT_ARTICLE_LOOKUP = re.compile(
+    r"\b(?:que\s+(?:prevoit|dit|dispose)\s+(?:l['’]\s*)?article"
+    r"|(?:texte|contenu|teneur)\s+(?:integral\s+)?(?:de\s+)?(?:l['’]\s*)?article"
+    r"|(?:donne|fournis|reproduis)\s+(?:moi\s+)?(?:le\s+)?texte\s+(?:de\s+)?(?:l['’]\s*)?article)\b",
+    re.IGNORECASE,
+)
 
 # The most specific topic wins. Expansions are deliberately tied to French
 # territorial public-service source families and their implementing texts.
@@ -79,10 +85,10 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
         return original
     # Exact legal-reference requests must remain exact; extra terms can turn
     # a direct lookup into an unrelated full-text search.
-    if _ARTICLE_REFERENCE.search(original):
+    folded = _fold(original)
+    if _ARTICLE_REFERENCE.search(original) and _DIRECT_ARTICLE_LOOKUP.search(folded):
         return original[:max_length]
 
-    folded = _fold(original)
     expansion = next(
         (
             terms for triggers, terms in _TOPIC_EXPANSIONS
