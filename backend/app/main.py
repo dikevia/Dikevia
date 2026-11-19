@@ -117,12 +117,12 @@ async def _startup_external_diagnostics() -> None:
 
     # Probe the regulatory-text pillar with several grounded FPT overtime query forms.
     if legifrance.configured:
-        for label, query in (
-            ("IHTS_FPT_FRAMEWORK", "décret n° 91-875"),
-            ("IHTS_FPT_WORKTIME", "décret n° 2001-623"),
-            ("IHTS_NUMBER", "décret n° 2002-60"),
-            ("IHTS_TITLE", "indemnités horaires"),
-            ("IHTS_WORKS", "travaux supplémentaires"),
+        for label, query, expected_number in (
+            ("IHTS_FPT_FRAMEWORK", "décret n° 91-875", "91-875"),
+            ("IHTS_FPT_WORKTIME", "décret n° 2001-623", "2001-623"),
+            ("IHTS_NUMBER", "décret n° 2002-60", "2002-60"),
+            ("IHTS_TITLE", "indemnités horaires", None),
+            ("IHTS_WORKS", "travaux supplémentaires", None),
         ):
             try:
                 regulatory_probe = await legifrance.search_regulatory_texts(
@@ -134,10 +134,17 @@ async def _startup_external_diagnostics() -> None:
                     and item.get("source_id")
                     and len(item.get("full_text") or "") >= 80
                 )
+                exact_reference_count = sum(
+                    1 for item in regulatory_probe
+                    if expected_number and item.get("official_number") == expected_number
+                )
+                passed = full_text_count and (
+                    not expected_number or exact_reference_count > 0
+                )
                 logger.warning(
-                    "DIKEVIA_DIAGNOSTIC PISTE_LODA_IHTS_PROBE name=%s verdict=%s result_count=%d full_text_count=%d",
-                    label, "PASS" if full_text_count else "NO_RESULT",
-                    len(regulatory_probe), full_text_count,
+                    "DIKEVIA_DIAGNOSTIC PISTE_LODA_IHTS_PROBE name=%s verdict=%s result_count=%d full_text_count=%d exact_reference_count=%d",
+                    label, "PASS" if passed else "NO_RESULT",
+                    len(regulatory_probe), full_text_count, exact_reference_count,
                 )
             except Exception as exc:
                 logger.warning(
