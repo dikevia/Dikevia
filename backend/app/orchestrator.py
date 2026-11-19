@@ -512,7 +512,11 @@ class LegalOrchestrator:
                 ),
                 sources=[],
                 missing_information=[
-                    f"Référence exacte {missing_article} non confirmée dans une source CGFP vérifiée.",
+                    (
+                        f"Recherche officielle indisponible : la référence {missing_article} n'a pas pu être vérifiée."
+                        if live_issue else
+                        f"Référence exacte {missing_article} non retrouvée dans les sources CGFP vérifiées."
+                    ),
                     *([live_issue] if live_issue else []),
                     "Vérifier la référence ou transmettre le lien officiel Légifrance de l'article recherché.",
                 ],
