@@ -338,6 +338,10 @@ class LegifranceConnector:
                 seen.add(identifier)
             if len(records) >= limit:
                 break
+        logger.warning(
+            "DIKEVIA_DIAGNOSTIC PISTE_LODA_SEARCH candidate_count=%d",
+            len(records),
+        )
         output = []
         for record in records:
             identifier = self._first_value(record, ("id", "idTexte", "id_text", "textId"))
@@ -345,7 +349,13 @@ class LegifranceConnector:
             returned_ids = [self._first_value(node, ("id", "idTexte", "id_text", "textId"))
                             for node in self._walk_dicts(detail)]
             text = self._extract_text(detail)
-            if identifier not in returned_ids or len(text) < 80:
+            id_matches = identifier in returned_ids
+            text_valid = len(text) >= 80
+            logger.warning(
+                "DIKEVIA_DIAGNOSTIC PISTE_LODA_CONSULT id=%s id_matches=%s text_length=%d accepted=%s",
+                identifier, id_matches, len(text), id_matches and text_valid,
+            )
+            if not id_matches or not text_valid:
                 continue
             title = self._first_value(record, ("titre", "titreTexte", "title", "intitule")) or identifier
             number = self._first_value(record, ("nor", "NOR", "numero", "num"))
