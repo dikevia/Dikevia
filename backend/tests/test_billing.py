@@ -82,3 +82,12 @@ def test_resolve_plan_price_rejects_unknown_private_and_invalid_intervals():
         resolve_plan_price("UNKNOWN", "year")
     with pytest.raises(ValueError):
         resolve_plan_price("PRO", "weekly")
+
+
+def test_founder_access_remains_zero_cost_private_and_outside_checkout():
+    founder = PLANS["FOUNDING_FREE"]
+    assert founder["amount"] == 0
+    assert founder["public"] is False
+    assert founder["max_users"] == 10
+    assert "annual_amount" not in founder
+    assert "FOUNDING_FREE" not in {plan["code"] for plan in public_plans()}
