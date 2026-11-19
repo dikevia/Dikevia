@@ -15,6 +15,15 @@ def test_keycloak_realm_has_public_pkce_client_and_api_audience():
     assert client["directAccessGrantsEnabled"] is False
     assert "cfdt-juris-api-audience" in client["defaultClientScopes"]
     assert client["attributes"]["pkce.code.challenge.method"] == "S256"
+
+    android = next(c for c in realm["clients"] if c["clientId"] == "dikevia-android")
+    assert android["publicClient"] is True
+    assert android["standardFlowEnabled"] is True
+    assert android["implicitFlowEnabled"] is False
+    assert android["directAccessGrantsEnabled"] is False
+    assert android["redirectUris"] == ["fr.dikevia.commercial:/oauth2redirect"]
+    assert android["attributes"]["pkce.code.challenge.method"] == "S256"
+    assert "cfdt-juris-api-audience" in android["defaultClientScopes"]
     scope = next(s for s in realm["clientScopes"] if s["name"] == "cfdt-juris-api-audience")
     mapper = scope["protocolMappers"][0]
     assert mapper["protocolMapper"] == "oidc-audience-mapper"
