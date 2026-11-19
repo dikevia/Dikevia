@@ -900,7 +900,7 @@ async def legifrance_status(ctx: TenantContext = Depends(get_tenant_context)):
             "credentials_exposed": False}
 
 @app.post("/api/v1/integrations/legifrance/check")
-async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context)):
+async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     await enforce_legal_connector_rate_limit(ctx)
@@ -913,7 +913,7 @@ async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context)):
 
 @app.get("/api/v1/legal/legifrance/search")
 async def search_legifrance(q: str, effective_date: date | None = None,
-        ctx: TenantContext = Depends(get_tenant_context)):
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
@@ -931,7 +931,7 @@ async def search_legifrance(q: str, effective_date: date | None = None,
 
 @app.get("/api/v1/legal/jurisprudence/administrative/search")
 async def search_administrative_case_law(q: str, effective_date: date | None = None,
-        ctx: TenantContext = Depends(get_tenant_context)):
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
@@ -955,7 +955,7 @@ async def search_administrative_case_law(q: str, effective_date: date | None = N
 
 @app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}")
 async def consult_administrative_case_law(decision_id: str,
-        ctx: TenantContext = Depends(get_tenant_context)):
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     if not isinstance(decision_id, str) or not DECISION_ID_RE.fullmatch(decision_id):
