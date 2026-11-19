@@ -232,7 +232,10 @@ jobs:
           assert 'name="username"' in page and 'name="password"' in page, (
               "OIDC authorization request did not reach the Keycloak login form"
           )
-          print("Public OIDC client accepts the commercial redirect URI and PKCE S256.")
+          assert "CFDT JURIS" not in page.upper() and "CFDT-JURIS" not in page.upper(), (
+              "The Keycloak login page still displays the obsolete application brand"
+          )
+          print("Public OIDC client accepts the commercial redirect URI and PKCE S256; obsolete branding is absent.")
           PY
       - name: Verify commercial web shell and browser OIDC configuration
         shell: bash
@@ -242,6 +245,11 @@ jobs:
             https://dikevia-commercial-api-l2r8.onrender.com/ -o /tmp/app.html
           grep -q "/static/auth-config.js" /tmp/app.html
           grep -q "/static/oidc-auth.js" /tmp/app.html
+          grep -q "Dikévia" /tmp/app.html
+          if grep -Eiq "CFDT[ -]JURIS" /tmp/app.html; then
+            echo "The commercial web shell still displays the obsolete application brand."
+            exit 1
+          fi
           curl --connect-timeout 10 --max-time 20 -fsS \
             https://dikevia-commercial-api-l2r8.onrender.com/static/auth-config.js -o /tmp/auth-config.js
           grep -q "dikevia-identity-l2r8.onrender.com/realms/cfdt" /tmp/auth-config.js
