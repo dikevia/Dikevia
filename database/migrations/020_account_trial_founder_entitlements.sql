@@ -83,7 +83,7 @@ END; $$;
 CREATE OR REPLACE FUNCTION platform_admin_list_founder_entitlements(p_admin_id uuid)
 RETURNS TABLE(slot_number smallint,user_id uuid,email text,granted_at timestamptz,revoked_at timestamptz,note text)
 LANGUAGE plpgsql SECURITY DEFINER
-SET search_path=public,pg_temp SET row_security=off AS $
+SET search_path=public,pg_temp SET row_security=off AS $fn$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=p_admin_id) THEN
     RAISE EXCEPTION 'platform administrator required' USING ERRCODE='42501';
