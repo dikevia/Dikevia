@@ -382,7 +382,8 @@ async def billing_plans():
     """Public catalogue; hidden entirely for private instances."""
     if settings.private_instance_mode:
         raise HTTPException(404, "La facturation n'est pas disponible sur cette instance privée.")
-    return {"plans": public_plans(), "billing_provider": "stripe", "currency": "EUR"}
+    return {"plans": public_plans(), "billing_provider": "stripe", "currency": "EUR",
+            "billing_enabled": settings.stripe_billing_enabled}
 
 
 @app.get("/api/v1/billing/subscription")
@@ -454,6 +455,8 @@ async def platform_commercial_organizations(platform=Depends(require_platform_ad
 
 @app.post("/api/v1/billing/checkout")
 async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin)):
+    if not settings.stripe_billing_enabled:
+        raise HTTPException(503, "Les paiements sont désactivés jusqu’à leur activation explicite.")
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
     plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
@@ -505,6 +508,8 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
 
 @app.post("/api/v1/billing/portal")
 async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
+    if not settings.stripe_billing_enabled:
+        raise HTTPException(503, "Le portail de paiement est désactivé jusqu’à son activation explicite.")
     if settings.private_instance_mode:
         raise HTTPException(404, "La facturation est désactivée sur cette instance privée.")
     if not settings.stripe_secret_key:
@@ -526,6 +531,8 @@ async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
 
 @app.post("/api/v1/billing/stripe/webhook")
 async def stripe_webhook(request: Request):
+    if not settings.stripe_billing_enabled:
+        raise HTTPException(404, "Les paiements sont désactivés.")
     if settings.private_instance_mode:
         raise HTTPException(404, "Les webhooks de paiement sont désactivés sur cette instance privée.")
     raw = await request.body()
