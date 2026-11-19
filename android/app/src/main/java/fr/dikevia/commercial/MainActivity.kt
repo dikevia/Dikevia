@@ -132,7 +132,7 @@ private data class Entry(val title:String,val detail:String)
     Surface(Modifier.fillMaxSize(),color=Canvas){
         if(token==null)LoginPage(busy,authError,login)
         else Column(Modifier.fillMaxSize()){
-            Header(user,orgs,org){if(org?.id!=it.id){resumeConversationId=null;error=null};org=it}
+            Header(user,orgs,org){if(org?.id!=it.id){resumeConversationId=null;error=null;tab="Accueil"};org=it}
             if(loading)LinearProgressIndicator(Modifier.fillMaxWidth(),color=Emerald)
             error?.let{ErrorBox(it)}
             org?.let{current->Box(Modifier.weight(1f).fillMaxWidth()){
