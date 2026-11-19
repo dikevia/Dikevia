@@ -474,6 +474,6 @@ async def test_loda_search_rejects_mismatched_consulted_identifier(monkeypatch):
 
     connector = LegifranceConnector(transport=httpx.MockTransport(handler))
     results = await connector.search_regulatory_texts(
-        "décret relatif aux agents territoriaux", date(2026, 11, 19)
+        "heures supplémentaires 2024-2025 agents territoriaux", date(2026, 11, 19)
     )
     assert results == []
