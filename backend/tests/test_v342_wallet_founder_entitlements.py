@@ -28,22 +28,23 @@ def test_founder_entitlement_is_bound_to_verified_oidc_identity_not_email():
     migration = (ROOT / "database/migrations/022_platform_founder_entitlements.sql").read_text(encoding="utf-8")
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     assert "UNIQUE (oidc_issuer, oidc_subject)" in migration
-    assert "WHERE oidc_issuer=p_oidc_issuer AND oidc_subject=p_oidc_subject AND status='ACTIVE'" in migration
+    assert "FROM users WHERE id=p_target_user_id AND status='ACTIVE'" in migration
     assert "platform_admin_grant_founder_entitlement" in migration
     assert "platform_admin_revoke_founder_entitlement" in migration
     assert "platform_admin_list_founder_entitlements" in migration
     assert "REVOKE SELECT ON platform_founder_entitlements FROM cfdt_juris_platform_admin" in migration
     assert "platform_founder_self_read" in migration
     assert "/api/v1/platform/founder-entitlements" in main
-    assert "settings.oidc_issuer, subject, note" in main
+    assert 'platform_admin_grant_founder_entitlement($1::uuid,$2::uuid,$3)' in main
+    assert '/api/v1/account/identity' in main
     assert "founder_entitlement" in main
     assert "email_normalized" not in migration
 
 
 def test_founder_entitlement_requires_the_target_identity_to_have_logged_in():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
-    assert "Cette identité OIDC n'a pas encore été vérifiée" in main
-    assert "email" not in main[main.index('async def platform_grant_founder_entitlement'):main.index('@app.delete("/api/v1/platform/founder-entitlements')]
+    assert "Ce compte n'a pas encore été vérifié par une connexion OIDC" in main
+    assert "oidc_subject" not in main[main.index("async def platform_grant_founder_entitlement"):main.index("@app.delete(\"/api/v1/platform/founder-entitlements") ]
 
 
 def test_wallet_and_founder_migrations_have_rollback_scripts():
