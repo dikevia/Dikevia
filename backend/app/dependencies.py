@@ -49,6 +49,13 @@ async def require_org_admin(ctx: TenantContext = Depends(get_tenant_context)):
     if ctx.role != "ORG_ADMIN":
         raise HTTPException(403, "Permission insuffisante.")
     return ctx
+
+async def require_org_admin_for_external(
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
+    """Authorize organization admins without holding a transaction across external services."""
+    if ctx.role != "ORG_ADMIN":
+        raise HTTPException(403, "Permission insuffisante.")
+    return ctx
 async def require_legal_editor(ctx: TenantContext = Depends(get_tenant_context)):
     if ctx.role not in ("ORG_ADMIN","LEGAL_EDITOR"):
         raise HTTPException(403, "Permission insuffisante.")
