@@ -47,16 +47,18 @@ jobs:
           gradle-version: "8.9"
 
       - name: Build beta APK
+        timeout-minutes: 15
         working-directory: android
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        run: gradle --no-daemon --console=plain --stacktrace --max-workers=2 :app:assembleDebug
 
       - name: Run native UI smoke test on Android emulator
+        timeout-minutes: 20
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           arch: x86_64
           profile: pixel_6
-          script: cd android && gradle --no-daemon :app:connectedDebugAndroidTest
+          script: cd android && gradle --no-daemon --console=plain --stacktrace --max-workers=2 :app:connectedDebugAndroidTest
 
       - name: Validate generated APK
         shell: bash
