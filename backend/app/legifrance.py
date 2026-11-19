@@ -247,7 +247,7 @@ class LegifranceConnector:
         def walk(node: Any):
             if isinstance(node, dict):
                 for key, child in node.items():
-                    if key.lower() in keys and isinstance(child, str) and len(child.strip()) > 30:
+                    if key.lower() in keys and isinstance(child, str) and child.strip():
                         candidates.append(child)
                     else:
                         walk(child)
@@ -433,6 +433,7 @@ class LegifranceConnector:
             )
             raw_num = self._first_value(article_metadata, ("num", "numero", "numArticle"))
             article_ref = re.sub(r"[^A-Z0-9]", "", raw_num.upper()) if raw_num else None
+            article_label = re.sub(r"[.\s]+", "", raw_num.upper()) if raw_num else None
             code_name = self._first_value(
                 article_metadata, ("nomCode", "titreCode", "codeName", "nameCode")
             )
@@ -461,9 +462,9 @@ class LegifranceConnector:
                 article_metadata, ("dateFin", "dateFinVersion", "dateFinApplication")
             ))
             articles.append({
-                "source_type": "LEGIFRANCE_API", "source_id": article_id, "article": article_ref,
+                "source_type": "LEGIFRANCE_API", "source_id": article_id, "article": article_label,
                 "article_id": article_id, "source_version_id": article_id,
-                "title": f"Code général de la fonction publique — {article_ref or article_id}",
+                "title": f"{code_name or settings.legifrance_code_name} — {article_label or article_id}",
                 "text": text[:20000],
                 "excerpt": self._relevant_excerpt(text, query.strip(), max_chars=1800),
                 "effective_date_requested": effective_date.isoformat(),
