@@ -51,36 +51,34 @@ async def _startup_external_diagnostics() -> None:
         return
 
     if legifrance.configured:
-        try:
-            ping_results = await legifrance.ping_diagnostics()
-            logger.warning("DIKEVIA_DIAGNOSTIC PISTE_ROUTE_SUMMARY result_count=%d routes=%s",
-                           len(ping_results), ",".join(sorted(ping_results)) or "none")
-            for route, status in ping_results.items():
-                logger.warning("DIKEVIA_DIAGNOSTIC PISTE_ROUTE route=%s status=%s", route, status)
-            reachable = any(isinstance(status, int) and 200 <= status < 300
-                            for status in ping_results.values())
-            logger.warning(
-                "DIKEVIA_DIAGNOSTIC PISTE_PING=%s environment=%s",
-                "CONNECTED" if reachable else "UNAVAILABLE",
-                legifrance.environment,
-            )
-            # Ping endpoints are health checks only. Verify the real REST workflow
-            # independently so a broken /ping route cannot disable legal search.
+        probe_date = datetime.now(ZoneInfo("Europe/Paris")).date()
+        probes = (
+            ("CGFP_L111_1", "article L. 111-1", None),
+            ("CODE_CIVIL_1217", "article 1217", "Code civil"),
+            ("CGFP_NONEXISTENT_L999_999", "article L999-999", None),
+        )
+        for label, query, code_name in probes:
             try:
-                probe_date = datetime.now(ZoneInfo('Europe/Paris')).date()
-                probe_results = await legifrance.search_code_articles("L. 111-1", probe_date)
-                logger.warning(
-                    "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=RESPONDED result_count=%d",
-                    len(probe_results),
+                results = await legifrance.search_code_articles(
+                    query, probe_date, code_name=code_name,
                 )
+                if not results:
+                    logger.warning(
+                        "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s result_count=0 status=NO_OFFICIAL_RESULT",
+                        label,
+                    )
+                    continue
+                for item in results:
+                    logger.warning(
+                        "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s result_count=%d id=%s num=%s valid_from=%s valid_to=%s version_status=%s",
+                        label, len(results), item.get("source_id"), item.get("article"),
+                        item.get("valid_from"), item.get("valid_to"), item.get("version_status"),
+                    )
             except Exception as exc:
                 logger.warning(
-                    "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH=FAILED error_type=%s reason=%s",
-                    type(exc).__name__, str(exc),
+                    "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s status=FAILED error_type=%s",
+                    label, type(exc).__name__,
                 )
-        except Exception as exc:
-            # OAuth failures are reported separately from authenticated API route failures.
-            logger.warning("DIKEVIA_DIAGNOSTIC PISTE_OAUTH_OR_NETWORK=FAILED error_type=%s reason=%s", type(exc).__name__, str(exc))
     else:
         logger.warning("DIKEVIA_DIAGNOSTIC PISTE=NOT_CONFIGURED")
 
