@@ -194,6 +194,71 @@ footer{color:#849188}
  .juris-input-row textarea{font-size:16px}
  .juris-composer-foot{font-size:9px}
 }
+
+/* Mobile navigation, document workspace and dossier readability */
+.side{z-index:20}
+.nav{position:relative;min-height:43px}
+.nav:focus-visible{outline:3px solid rgba(45,112,78,.22);outline-offset:2px}
+.nav.active:before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:4px;background:#2b7250}
+.tablewrap{border:1px solid #e7ede8;border-radius:11px;background:#fff;scrollbar-width:thin}
+.tablewrap table{min-width:620px}
+#view-documents>.panel:first-of-type .toolbar{align-items:center}
+#view-documents .toolbar input{flex:1;min-width:180px;max-width:none}
+#view-documents .toolbar button{white-space:nowrap}
+#uploadPanel form{margin-top:13px}
+#uploadPanel input[type=file]{padding:10px;background:#f9fbf9}
+#view-collectivities .panel,#view-members .panel{overflow:hidden}
+#view-collectivities form .row,#view-members form .row{align-items:flex-end}
+.dossier-panel{border-radius:15px;box-shadow:0 6px 22px rgba(20,55,42,.045)}
+.dossier-panel> .row:first-child{align-items:flex-start}
+.dossier-panel h3{font-size:19px;letter-spacing:-.02em;color:#203b2d}
+.dossier-panel .field label{font-size:11px;font-weight:750;color:#53675b}
+.dossier-panel textarea{line-height:1.6;padding:11px 12px}
+.dossier-readonly{line-height:1.65;border-color:#e3eae4;background:#fff}
+.dossier-warning{border-radius:10px;line-height:1.6}
+#dossierFooter{font-size:11px;line-height:1.6;margin-top:12px}
+@media(max-width:900px){
+ .side{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:6px;padding:8px;margin:0 -2px 14px;border-radius:13px;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);box-shadow:0 5px 18px rgba(20,55,42,.07);overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+ .side::-webkit-scrollbar{display:none}
+ .nav{flex:0 0 auto;width:auto;min-height:39px;padding:9px 12px;margin:0;border-radius:9px;font-size:12px}
+ .nav.active:before{left:10px;right:10px;top:auto;bottom:2px;width:auto;height:2px}
+ .tablewrap{max-width:100%;overscroll-behavior-x:contain}
+}
+@media(max-width:600px){
+ .shell{margin:10px auto;padding:0 10px}
+ .side{margin:0 -1px 12px;padding:7px;gap:4px;top:0}
+ .nav{font-size:11px;padding:9px 10px;min-height:38px}
+ .heading{margin-bottom:14px}
+ .heading h1{font-size:22px}
+ #view-documents>.panel{padding:12px}
+ #view-documents .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ #view-documents .toolbar input{grid-column:1/-1;min-width:0}
+ #view-documents .toolbar button{width:100%;padding:10px 8px;font-size:12px}
+ #view-documents .panel[style]{padding:13px!important}
+ #view-documents .panel[style] h2{font-size:15px;line-height:1.4}
+ #uploadPanel{padding:15px}
+ #uploadPanel .row{display:grid;grid-template-columns:1fr;gap:0}
+ #uploadPanel form button{width:100%}
+ #view-collectivities .panel,#view-members .panel,#view-billing .panel{padding:13px}
+ #view-collectivities form .row,#view-members form .row{display:grid;grid-template-columns:1fr;gap:0}
+ #view-collectivities form button,#view-members form button{width:100%}
+ .dossier-panel{margin:9px;padding:13px}
+ .dossier-panel>.row:first-child{display:flex;flex-direction:column;gap:12px}
+ .dossier-panel>.row:first-child>.row{width:100%;display:grid;grid-template-columns:1fr 1fr}
+ .dossier-panel>.row:first-child>.row button{width:100%;font-size:11px;padding:9px 7px}
+ .dossier-panel>.row:first-child>.row button:first-child{grid-column:1/-1}
+ .dossier-panel h3{font-size:17px}
+ .dossier-grid{grid-template-columns:1fr;gap:0}
+ .dossier-panel textarea{min-height:100px;font-size:14px}
+ .dossier-readonly{font-size:12px;padding:11px}
+ .dossier-warning{font-size:11px;padding:10px}
+}
+@media(max-width:380px){
+ .nav{font-size:10px;padding:8px 9px}
+ #view-documents .toolbar button{font-size:11px}
+ .dossier-panel>.row:first-child>.row{grid-template-columns:1fr}
+ .dossier-panel>.row:first-child>.row button:first-child{grid-column:auto}
+}
 </style></head><body>
 <header class="top"><div class="brand">Dikévia<small>Assistant d'information juridique · Fonction publique territoriale</small></div><div class="topright"><span id="userLabel">Session non connectée</span><button id="logout" class="secondary hidden">Déconnexion</button></div></header>
 <main class="shell">
