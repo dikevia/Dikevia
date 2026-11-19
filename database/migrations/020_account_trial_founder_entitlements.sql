@@ -24,8 +24,8 @@ CREATE OR REPLACE FUNCTION claim_trial_email(p_user_id uuid,p_email text)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
 SET search_path=public,pg_temp SET row_security=off AS $claim$
 DECLARE normalized text := lower(trim(coalesce(p_email,'')));
-DECLARE existing_user uuid;
-DECLARE existing_email text;
+        existing_user uuid;
+        existing_email text;
 BEGIN
   IF normalized='' OR length(normalized)>254 OR
      NOT EXISTS(SELECT 1 FROM users WHERE id=p_user_id AND status='ACTIVE'
