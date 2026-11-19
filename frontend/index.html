@@ -497,12 +497,12 @@ body{background:radial-gradient(ellipse at 88% 0%,rgba(20,184,132,.075),transpar
 .metric{color:var(--brand)}
 /* Les boutons d'action sont vert profond : le doré reste lisible et réservé à leur libellé. */
 button,.button{background:linear-gradient(115deg,var(--brand-deep),var(--brand-dark));color:var(--accent-light);box-shadow:0 3px 10px rgba(8,83,68,.16)}
-button:not(.secondary):not(.nav):not(.history-delete):hover,.button:hover{background:linear-gradient(115deg,var(--brand-dark),#032f29);color:#ffebbd;box-shadow:0 7px 18px rgba(8,83,68,.22)}
-button:not(.secondary):not(.nav):not(.history-delete){font-weight:650;letter-spacing:.012em}
+button:not(.secondary):not(.nav):not(.history-delete):not(.danger):hover,.button:hover{background:linear-gradient(115deg,var(--brand-dark),#032f29);color:#ffebbd;box-shadow:0 7px 18px rgba(8,83,68,.22)}
+button:not(.secondary):not(.nav):not(.history-delete):not(.danger){font-weight:650;letter-spacing:.012em}
 button.secondary{background:#e6f3ed;color:#145c49}
 button.secondary:hover{background:#d7eee4;box-shadow:none}
 button.nav{background:transparent;color:#36574b;box-shadow:none}
-button.history-delete{background:transparent;color:#9b2e2e;box-shadow:none}
+button.history-delete{background:transparent;color:#9b2e2e;box-shadow:none}\nbutton.danger{background:#9b2e2e;color:#fff}\nbutton.danger:hover{background:#812525;color:#fff}
 .auth #login{background:linear-gradient(115deg,var(--brand-deep),var(--brand-dark));color:var(--accent-light)}
 .auth #login:hover{color:#ffebbd}
 input:focus,select:focus,textarea:focus{border-color:#0a9877;box-shadow:0 0 0 3px rgba(10,152,119,.14)}
