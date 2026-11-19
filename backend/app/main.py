@@ -331,7 +331,8 @@ async def auth_me(principal: Principal = Depends(get_principal)):
         raise HTTPException(403,"Compte désactivé ou non provisionné.")
     return {"id":str(row["id"]),"email":row["email"],"display_name":row["display_name"],
             "email_verified":principal.email_verified,
-            "trial_started_at":row["trial_started_at"],"trial_expires_at":row["trial_expires_at"]}
+            "trial_started_at":row["trial_started_at"],"trial_expires_at":row["trial_expires_at"],
+            "trial_available":row["trial_expires_at"] is not None}
 
 
 @app.get("/api/v1/access/status")
