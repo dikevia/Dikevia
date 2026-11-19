@@ -502,7 +502,7 @@ class LegalOrchestrator:
                     f"Je n'ai pas retrouvé de source officielle vérifiable correspondant exactement "
                     f"à l'article {missing_article} du Code général de la fonction publique. "
                     "Je ne peux donc ni en reproduire le contenu ni en déduire des conséquences juridiques. "
-                    "Les résultats documentaires sans correspondance exacte sont écartés pour éviter toute confusion."
+                    "Aucune conclusion juridique n'est formulée. Les résultats documentaires sans correspondance exacte sont écartés pour éviter toute confusion."
                 ),
                 sources=[],
                 missing_information=[
