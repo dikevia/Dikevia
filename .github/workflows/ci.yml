@@ -128,7 +128,8 @@ jobs:
           retention-days: 30
 
   live-smoke:
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    # Live probes may wake paid Render compute; require explicit repository opt-in even for main-targeted PRs.
+    if: github.event_name == 'pull_request' && github.base_ref == 'main' && vars.ENABLE_LIVE_SMOKE_TESTS == 'true'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
     runs-on: ubuntu-latest
