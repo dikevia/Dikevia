@@ -384,6 +384,19 @@ class LegalOrchestrator:
         else:
             permanent_issue = "Le corpus juridique permanent n'est pas connecté à cette analyse."
 
+        # If the live CGFP article endpoint is unavailable, use the bundled
+        # Légifrance PDF/index as a clearly-labelled documentary fallback.
+        # It remains a dated snapshot (not proof of the version applicable to
+        # the facts); it may accompany independently verified decrees/case law,
+        # but must never replace those sources or authorize a standalone opinion.
+        cgfp_snapshot_fallback = bool(
+            live_issue and found and found.get("results")
+            and any(
+                is_ihts_relevant_source(request.question, hit)
+                for hit in found["results"]
+            )
+        )
+
         sources: list[dict] = []
         # Official API articles have priority, and are included only after a successful
         # search -> getArticle round-trip with matching LEGIARTI identifier and text.
@@ -629,6 +642,14 @@ class LegalOrchestrator:
             missing.insert(0, temporal_issue)
         if live_issue:
             missing.insert(0, live_issue)
+        if cgfp_snapshot_fallback:
+            missing.insert(
+                0,
+                "Mode de secours CGFP activé : utilisation du PDF Légifrance local consolidé au 31 octobre 2026. "
+                "Cette copie permet de consulter les articles et leur rédaction dans ce snapshot, "
+                "mais ne confirme pas leur version applicable à la date des faits ni les modifications postérieures. "
+                "Les décrets, textes complémentaires et la jurisprudence doivent toujours être vérifiés séparément.",
+            )
         if regulatory_issue:
             missing.insert(0, regulatory_issue)
         if case_law_issue:
@@ -672,7 +693,7 @@ class LegalOrchestrator:
                 0,
                 "Analyse juridique contextualisée suspendue : la date ou la période de la situation n'est pas renseignée. La recherche au jour présent sert uniquement au repérage documentaire ; elle ne permet pas de déterminer la règle applicable aux faits.",
             )
-        elif cgfp_issue or live_issue or regulatory_issue or case_law_issue or temporal_issue:
+        elif cgfp_issue or (live_issue and not cgfp_snapshot_fallback) or regulatory_issue or case_law_issue or temporal_issue:
             ai_answer = None
             missing.insert(
                 0,
