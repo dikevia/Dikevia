@@ -109,14 +109,18 @@ def test_commercial_workspace_has_polished_responsive_tables_and_forms():
     assert "@media(hover:none)" in html
 
 
-def test_billing_screen_uses_validated_commercial_reference_prices():
+def test_billing_screen_uses_validated_four_tier_commercial_reference_prices():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "15 €" in html and "HT / mois" in html
-    assert "170 €" in html and "HT / an" in html
-    assert "790 €" in html and "5 accès" in html
-    assert "19 € HT / mois" in html
-    assert "9 à 15 € HT / mois / section" in html
-    assert "20 questions par accès et par jour" in html
-    assert "100 questions par section et par jour" in html
-    assert "souscription en ligne sera activée après alignement" in html
+    assert "14,90 €" in html and "149 € TTC / an" in html
+    assert "29 €" in html and "290 € TTC / an" in html
+    assert "119 €" in html and "1 190 € TTC / an" in html
+    assert "299 €" in html and "2 990 € TTC / an" in html
+    assert "125 crédits par mois" in html
+    assert "248 crédits par mois" in html
+    assert "1 000 crédits par mois" in html
+    assert "2 450 crédits par mois" in html
+    assert "Recharge · 200 crédits" in html and "29 € TTC" in html
+    assert "Recharge · 600 crédits" in html and "79 € TTC" in html
+    assert "Les crédits mensuels et les recharges sont affichés à titre informatif" in html
+    assert "les paiements restent désactivés" in html
     assert 'data-checkout="SYNDICAT_10"' not in html
