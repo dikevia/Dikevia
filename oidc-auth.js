@@ -5,9 +5,8 @@
 (() => {
   'use strict';
   const initialInvitation = new URLSearchParams(window.location.search).get('invitation_token');
-  if (initialInvitation) sessionStorage.setItem('cfdt_pending_invitation', initialInvitation);
-  const cfg = window.CFDT_JURIS_OIDC;
-  if (!cfg || !cfg.issuer || !cfg.client_id || !cfg.redirect_uri) return;
+  if (initialInvitation) sessionStorage.setItem('dikevia_pending_invitation', initialInvitation);
+  const cfg = window.DIKEVIA_OIDC;
   let accessToken = null;
   let expiresAt = 0;
   let discovery = null;
@@ -22,6 +21,8 @@
     return base64url(await crypto.subtle.digest('SHA-256', encoder.encode(verifier)));
   }
   async function metadata() {
+    if (!cfg || !cfg.issuer || !cfg.client_id || !cfg.redirect_uri)
+      throw new Error('Configuration OIDC Dikévia absente ou incomplète. Vérifiez le fichier auth-config.js servi par le serveur.');
     if (discovery) return discovery;
     const issuer = cfg.issuer.replace(/\/$/,'');
     if (!issuer.startsWith('https://') && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(issuer))
@@ -36,11 +37,11 @@
   }
   async function login() {
     const pending = new URLSearchParams(window.location.search).get('invitation_token');
-    if (pending) sessionStorage.setItem('cfdt_pending_invitation', pending);
+    if (pending) sessionStorage.setItem('dikevia_pending_invitation', pending);
     const oidc = await metadata();
     const state = random(24), verifier = random(48);
-    sessionStorage.setItem('cfdt_oidc_state',state);
-    sessionStorage.setItem('cfdt_oidc_verifier',verifier);
+    sessionStorage.setItem('dikevia_oidc_state',state);
+    sessionStorage.setItem('dikevia_oidc_verifier',verifier);
     const url = new URL(oidc.authorization_endpoint);
     url.search = new URLSearchParams({client_id:cfg.client_id,response_type:'code',redirect_uri:cfg.redirect_uri,
       scope:cfg.scopes||'openid profile email',state,code_challenge:await challenge(verifier),code_challenge_method:'S256'});
@@ -51,10 +52,10 @@
     const code = params.get('code');
     if (!code) return;
     const state = params.get('state');
-    const expected = sessionStorage.getItem('cfdt_oidc_state');
-    const verifier = sessionStorage.getItem('cfdt_oidc_verifier');
-    sessionStorage.removeItem('cfdt_oidc_state');
-    sessionStorage.removeItem('cfdt_oidc_verifier');
+    const expected = sessionStorage.getItem('dikevia_oidc_state');
+    const verifier = sessionStorage.getItem('dikevia_oidc_verifier');
+    sessionStorage.removeItem('dikevia_oidc_state');
+    sessionStorage.removeItem('dikevia_oidc_verifier');
     if (!state || !expected || state !== expected || !verifier) throw new Error('État OIDC invalide. Relancez la connexion.');
     const oidc = await metadata();
     const body = new URLSearchParams({grant_type:'authorization_code',client_id:cfg.client_id,code,
@@ -65,7 +66,7 @@
     if (!data.access_token || !Number.isFinite(data.expires_in)) throw new Error('Réponse OIDC incomplète.');
     accessToken = data.access_token;
     expiresAt = Date.now() + data.expires_in * 1000;
-    const pendingInvitation = sessionStorage.getItem('cfdt_pending_invitation');
+    const pendingInvitation = sessionStorage.getItem('dikevia_pending_invitation');
     if (pendingInvitation) {
       const accepted = await fetch('/api/v1/invitations/accept', {
         method: 'POST', cache: 'no-store',
@@ -73,21 +74,21 @@
         body: JSON.stringify({token: pendingInvitation})
       });
       if (accepted.ok) {
-        sessionStorage.removeItem('cfdt_pending_invitation');
-        window.dispatchEvent(new CustomEvent('cfdt:invitation-accepted', {detail: await accepted.json()}));
+        sessionStorage.removeItem('dikevia_pending_invitation');
+        window.dispatchEvent(new CustomEvent('dikevia:invitation-accepted', {detail: await accepted.json()}));
       } else {
         const detail = await accepted.json().catch(() => ({}));
-        window.dispatchEvent(new CustomEvent('cfdt:invitation-error', {detail: {message: detail.detail || 'Impossible d’accepter l’invitation.'}}));
+        window.dispatchEvent(new CustomEvent('dikevia:invitation-error', {detail: {message: detail.detail || 'Impossible d’accepter l’invitation.'}}));
       }
     }
     // Nettoyage des paramètres OAuth de l'URL sans toucher au chemin.
     history.replaceState({},document.title,window.location.pathname+window.location.hash);
   }
   const ready = completeCallback();
-  window.CFDT_JURIS_AUTH = {
+  window.DIKEVIA_AUTH = {
     ready,
     async getAccessToken() { await ready; if (!accessToken || Date.now() >= expiresAt-30000) return null; return accessToken; },
     async login() { await ready; return login(); },
-    async logout() { accessToken=null;expiresAt=0;sessionStorage.removeItem('cfdt_oidc_state');sessionStorage.removeItem('cfdt_oidc_verifier');const oidc=await metadata().catch(()=>null);if(oidc?.end_session_endpoint)window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({client_id:cfg.client_id,post_logout_redirect_uri:cfg.redirect_uri})); }
+    async logout() { accessToken=null;expiresAt=0;sessionStorage.removeItem('dikevia_oidc_state');sessionStorage.removeItem('dikevia_oidc_verifier');const oidc=await metadata().catch(()=>null);if(oidc?.end_session_endpoint)window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({client_id:cfg.client_id,post_logout_redirect_uri:cfg.redirect_uri})); }
   };
 })();
