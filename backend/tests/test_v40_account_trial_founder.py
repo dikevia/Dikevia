@@ -59,3 +59,12 @@ def test_legacy_complimentary_email_allowlist_does_not_override_trial_expiry():
 def test_platform_founder_admin_operations_require_verified_oidc_email():
     dependencies = (ROOT / "backend/app/dependencies.py").read_text(encoding="utf-8")
     assert "Une adresse e-mail vérifiée est requise pour les opérations administrateur" in dependencies
+
+def test_owner_founder_slot_is_reserved_and_requires_verified_configured_identity():
+    config = (ROOT / "backend/app/config.py").read_text(encoding="utf-8")
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    env = (ROOT / "deploy/.env.example").read_text(encoding="utf-8")
+    assert "founder_owner_email: str = \"\"" in config
+    assert "FOUNDER_OWNER_EMAIL" in config and "FOUNDER_OWNER_EMAIL=" in env
+    assert '"/api/v1/platform/founder-entitlements/owner"' in main
+    assert "La place 1 est réservée au propriétaire fondateur" in main
