@@ -79,10 +79,24 @@ BEGIN
       jsonb_build_object('slot_number',p_slot_number,'reason',trim(p_reason)));
   RETURN true;
 END; $$;
+CREATE OR REPLACE FUNCTION platform_admin_list_founder_entitlements(p_admin_id uuid)
+RETURNS TABLE(slot_number smallint,user_id uuid,email text,granted_at timestamptz,revoked_at timestamptz,note text)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=public,pg_temp SET row_security=off AS $
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=p_admin_id) THEN
+    RAISE EXCEPTION 'platform administrator required' USING ERRCODE='42501';
+  END IF;
+  RETURN QUERY SELECT f.slot_number,f.user_id,u.email,f.granted_at,f.revoked_at,f.note
+    FROM founder_entitlements f JOIN users u ON u.id=f.user_id ORDER BY f.slot_number;
+END; $;
 REVOKE ALL ON FUNCTION platform_admin_grant_founder_entitlement(uuid,smallint,uuid,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION platform_admin_revoke_founder_entitlement(uuid,smallint,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION platform_admin_list_founder_entitlements(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION platform_admin_grant_founder_entitlement(uuid,smallint,uuid,text)
   TO cfdt_juris_platform_admin;
 GRANT EXECUTE ON FUNCTION platform_admin_revoke_founder_entitlement(uuid,smallint,text)
+  TO cfdt_juris_platform_admin;
+GRANT EXECUTE ON FUNCTION platform_admin_list_founder_entitlements(uuid)
   TO cfdt_juris_platform_admin;
 COMMIT;
