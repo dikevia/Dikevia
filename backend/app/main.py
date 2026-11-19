@@ -874,7 +874,8 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_
             VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
             str(conversation_id), ctx.user_id, payload.question,
             json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing,
-                "confirm_local_document_ai_transfer": payload.confirm_local_document_ai_transfer}, ensure_ascii=False))
+                "confirm_local_document_ai_transfer": payload.confirm_local_document_ai_transfer,
+                "collectivity_id": str(payload.collectivity_id) if payload.collectivity_id else None}, ensure_ascii=False))
         history_rows = await ctx.conn.fetch("""SELECT role,content,metadata FROM chat_messages
             WHERE conversation_id=$1::uuid AND organization_id=$3::uuid AND user_id=$4::uuid
               AND id<>$2::uuid AND role IN ('user','assistant')
