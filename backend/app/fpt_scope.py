@@ -57,9 +57,11 @@ _LOCAL_EMPLOYER_MARKERS = (
 )
 
 _EMPLOYMENT_CONTEXT_MARKERS = (
-    "agent", "agents", "fonctionnaire", "fonctionnaires",
-    "contractuel", "contractuels", "personnel", "personnels",
-    "emploi", "recrutement", "discipline", "remuneration",
+    "agent public", "agents publics", "agent territorial", "agents territoriaux",
+    "fonctionnaire", "fonctionnaires", "contractuel", "contractuels",
+    "personnel communal", "personnels communaux", "personnel territorial",
+    "mesure disciplinaire", "procedure disciplinaire", "recrutement",
+    "remuneration", "contrat de travail", "licenciement", "sanction disciplinaire",
 )
 
 _GENERAL_MARKERS = (
