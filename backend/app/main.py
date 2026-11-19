@@ -638,7 +638,7 @@ async def platform_grant_founder_entitlement(payload: dict, platform=Depends(req
         raise HTTPException(422, "La place 1 est réservée au propriétaire fondateur.")
     email = str(payload.get("email", "")).strip().lower()
     note = str(payload.get("note", "")).strip()[:500]
-    if len(email) > 254 or not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", email):
+    if len(email) > 254 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
         raise HTTPException(422, "Adresse électronique invalide.")
     if len(note) < 8:
         raise HTTPException(422, "Un motif d'au moins 8 caractères est requis.")
