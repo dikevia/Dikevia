@@ -69,6 +69,24 @@ async def _run_beta_capacity_scenario():
         assert runtime_role is not None
         assert runtime_role["rolsuper"] is False
         assert runtime_role["rolbypassrls"] is False
+
+        # The function must be SECURITY DEFINER and owned by a role that can
+        # bypass tenant RLS; the application role itself must remain restricted.
+        function_security = await runtime.fetchrow("""
+            SELECT p.prosecdef, owner.rolsuper, owner.rolbypassrls
+            FROM pg_proc p
+            JOIN pg_namespace n ON n.oid=p.pronamespace
+            JOIN pg_roles owner ON owner.oid=p.proowner
+            WHERE n.nspname='public' AND p.proname='beta_user_slot_available'
+              AND pg_get_function_identity_arguments(p.oid)='p_email text, p_max_users integer'
+        """)
+        assert function_security is not None
+        assert function_security["prosecdef"] is True
+        assert (
+            function_security["rolsuper"] is True
+            or function_security["rolbypassrls"] is True
+        )
+
         assert await runtime.fetchval(
             "SELECT beta_user_slot_available($1,$2)", active_email, 3
         ) is True
