@@ -117,6 +117,16 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in corpus]
     fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in corpus]
 
+    # A title or passage that mixes territorial and State/hospital scope is
+    # ambiguous for claim-level applicability. Do not let the FPT marker win
+    # merely because it appears first or in the instrument title.
+    if fpt_hits and (fpe_hits or fph_hits):
+        return {
+            "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+            "evidence": (fpt_hits[:2] + fpe_hits[:1] + fph_hits[:1]),
+            "analysis_eligible": False,
+        }
+
     # Narrow FPT bridge: decree n° 2002-60 is the IHTS reference regime
     # used through the territorial indemnity framework. The prompt still
     # requires decree n° 91-875 and the local deliberation to be checked.
