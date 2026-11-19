@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-EXPECTED_IDS = [f"Q{i:03d}" for i in range(1, 101)]
+EXPECTED_IDS = [f"FPT-{i:03d}" for i in range(1, 101)]
 REQUIRED_QUESTION_FIELDS = {
     "id", "category_id", "category", "action_type", "estimated_credits", "question", "expected_criteria"
 }
@@ -109,13 +109,13 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         responses = responses.get("responses")
     response_ids = {r.get("id") for r in responses if isinstance(r, dict)}
     if response_ids != set(EXPECTED_IDS) or len(responses) != 100:
-        raise ValueError("Le fichier de réponses doit contenir exactement une réponse pour chacun des Q001–Q100.")
+        raise ValueError("Le fichier de réponses doit contenir exactement une réponse pour chacun des FPT-001–FPT-100.")
     reviews = load_json(reviews_path)
     if not isinstance(reviews, list):
         raise ValueError("Le fichier de revue doit être une liste JSON.")
     review_by_id = {r.get("id"): r for r in reviews if isinstance(r, dict)}
     if len(review_by_id) != 100 or set(review_by_id) != set(EXPECTED_IDS):
-        raise ValueError("Le fichier de revue doit contenir exactement une évaluation par question Q001–Q100.")
+        raise ValueError("Le fichier de revue doit contenir exactement une évaluation par question FPT-001–FPT-100.")
 
     totals = {d: 0 for d in DIMENSIONS}
     dimension_counts = {d: 0 for d in DIMENSIONS}
@@ -177,7 +177,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    v = sub.add_parser("validate", help="Valide le JSON Q001–Q100")
+    v = sub.add_parser("validate", help="Valide le JSON FPT-001–FPT-100")
     v.add_argument("--dataset", required=True)
     p = sub.add_parser("prepare-review", help="Construit la grille d'évaluation à partir des 100 réponses")
     p.add_argument("--dataset", required=True)
@@ -192,7 +192,7 @@ def main() -> int:
     try:
         if args.command == "validate":
             questions = validate_dataset(args.dataset)
-            print(f"OK — {len(questions)} questions, Q001 à Q100, champs obligatoires présents.")
+            print(f"OK — {len(questions)} questions, FPT-001 à FPT-100, champs obligatoires présents.")
         elif args.command == "prepare-review":
             prepare_review(args.dataset, args.responses, args.out)
             print(f"Grille créée : {args.out}")
