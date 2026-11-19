@@ -31,6 +31,8 @@ def test_founder_entitlement_is_bound_to_verified_oidc_identity_not_email():
     assert "WHERE oidc_issuer=p_oidc_issuer AND oidc_subject=p_oidc_subject AND status='ACTIVE'" in migration
     assert "platform_admin_grant_founder_entitlement" in migration
     assert "platform_admin_revoke_founder_entitlement" in migration
+    assert "platform_admin_list_founder_entitlements" in migration
+    assert "REVOKE SELECT ON platform_founder_entitlements FROM cfdt_juris_platform_admin" in migration
     assert "platform_founder_self_read" in migration
     assert "/api/v1/platform/founder-entitlements" in main
     assert "settings.oidc_issuer, subject, note" in main
