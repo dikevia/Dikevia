@@ -1,5 +1,5 @@
 import pytest
-from app.ai_provider import analyze_question, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count, check_provider_availability
+from app.ai_provider import analyze_question, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count, check_provider_availability, AIAnalysisRefusedNoSources
 from app.config import settings
 
 @pytest.mark.asyncio
@@ -567,7 +567,8 @@ async def test_gemini_chat_completion_uses_compatible_route_and_bearer_auth(monk
 
 
 @pytest.mark.asyncio
-async def test_ai_provider_never_sends_inference_without_verified_sources(monkeypatch):
+@pytest.mark.parametrize("sources", [None, [], [{}], [{"excerpt": ""}], [{"excerpt": "  ", "text": ""}], [{"text": "   "}], ["not-a-document"]])
+async def test_ai_provider_refuses_missing_or_empty_source_text_without_http(monkeypatch, sources):
     import httpx
 
     monkeypatch.setattr(settings, "ai_api_key", "test-gemini-key")
@@ -576,16 +577,16 @@ async def test_ai_provider_never_sends_inference_without_verified_sources(monkey
 
     class ForbiddenClient:
         def __init__(self, *args, **kwargs):
-            raise AssertionError("Une inférence ne doit jamais être envoyée sans source.")
+            raise AssertionError("Aucune requête HTTP ne doit partir sans extrait non vide.")
 
     monkeypatch.setattr(httpx, "AsyncClient", ForbiddenClient)
-    result = await analyze_question(
-        question="Question de test suffisamment longue",
-        employer="NATIONAL",
-        facts_date="2026-01-01",
-        sources=[],
-    )
-    assert result is None
+    with pytest.raises(AIAnalysisRefusedNoSources):
+        await analyze_question(
+            question="Question de test suffisamment longue",
+            employer="NATIONAL",
+            facts_date="2026-01-01",
+            sources=sources,
+        )
 
 def test_runtime_configuration_accepts_gemini_openai_compatible_endpoint():
     from app.config import Settings, validate_runtime_configuration
