@@ -1,0 +1,67 @@
+:root,
+[data-theme="bleu"]   { --accent: #1d4ed8; --accent-contrast: #ffffff; }
+[data-theme="vert"]   { --accent: #15803d; --accent-contrast: #ffffff; }
+[data-theme="violet"] { --accent: #6d28d9; --accent-contrast: #ffffff; }
+[data-theme="orange"] { --accent: #c2410c; --accent-contrast: #ffffff; }
+[data-theme="rouge"]  { --accent: #b91c1c; --accent-contrast: #ffffff; }
+
+:root {
+  --status-verified: #166534;
+  --status-partial: #92400e;
+  --status-unverified: #991b1b;
+}
+
+/* Accent only: legal verification states remain independent from the selected theme. */
+.btn-primary { background: var(--accent); color: var(--accent-contrast); }
+a, .tab.active { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.top { background: var(--accent); color: var(--accent-contrast); }
+.top .brand, .top .brand small, .top .topright { color: var(--accent-contrast); }
+.nav.active, .nav:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, white);
+}
+.nav.active:before { background: var(--accent); }
+.metric, .pricing-price, .juris-brand-mark { color: var(--accent); }
+.juris-avatar, .juris-input-row button { background: var(--accent); color: var(--accent-contrast); }
+.home-hero { background: var(--accent); }
+button:not(.secondary):not(.danger):not(.home-primary):not(.home-secondary),
+.button {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+button:not(.secondary):not(.danger):not(.home-primary):not(.home-secondary):hover,
+.button:hover { background: color-mix(in srgb, var(--accent) 88%, black); }
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Verification badges are deliberately not themed. */
+.juris-status { color: var(--status-verified); }
+.juris-status.warn { color: var(--status-partial); }
+.juris-status.bad { color: var(--status-unverified); }
+
+.theme-settings { display: flex; flex-direction: column; gap: 5px; }
+.theme-picker { display: flex; gap: .5rem; }
+.theme-picker button {
+  width: 2.25rem; height: 2.25rem; min-width: 2.25rem;
+  padding: 0; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+}
+.theme-picker button[aria-pressed="true"] {
+  border-color: #1f2937;
+  box-shadow: 0 0 0 2px #fff inset;
+}
+.theme-picker [data-theme-choice="bleu"]   { background: #1d4ed8; }
+.theme-picker [data-theme-choice="vert"]   { background: #15803d; }
+.theme-picker [data-theme-choice="violet"] { background: #6d28d9; }
+.theme-picker [data-theme-choice="orange"] { background: #c2410c; }
+.theme-picker [data-theme-choice="rouge"]  { background: #b91c1c; }
+
+@media (max-width: 600px) {
+  .workspace-context { gap: 12px; }
+  .theme-settings { align-self: flex-start; }
+}
