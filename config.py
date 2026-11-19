@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     debug: bool = False
     database_url: str = ""
     legal_corpus_ingest_database_url: str = ""
+    platform_admin_database_url: str = ""
+    private_instance_mode: bool = False
     oidc_issuer: str = ""
     oidc_audience: str = ""
     oidc_jwks_url: str = ""
@@ -91,12 +93,19 @@ def validate_runtime_configuration(config: Settings) -> None:
                 raise RuntimeError("Chaque origine CORS de production doit être une origine HTTPS valide.")
         if not config.legal_corpus_ingest_database_url:
             raise RuntimeError("LEGAL_CORPUS_INGEST_DATABASE_URL est obligatoire en production pour les imports du corpus juridique.")
+        if not config.platform_admin_database_url:
+            raise RuntimeError("PLATFORM_ADMIN_DATABASE_URL est obligatoire en production pour les opérations plateforme.")
         ingest_db = urlparse(config.legal_corpus_ingest_database_url)
         app_db = urlparse(config.database_url)
         if ingest_db.scheme not in {"postgres", "postgresql"} or ingest_db.username != "cfdt_juris_ingest":
             raise RuntimeError("LEGAL_CORPUS_INGEST_DATABASE_URL doit utiliser le rôle PostgreSQL dédié cfdt_juris_ingest.")
         if config.legal_corpus_ingest_database_url == config.database_url or ingest_db.username == app_db.username:
             raise RuntimeError("Le compte d'ingestion doit être distinct du compte PostgreSQL runtime.")
+        platform_db = urlparse(config.platform_admin_database_url)
+        if platform_db.scheme not in {"postgres", "postgresql"} or platform_db.username != "cfdt_juris_platform_admin":
+            raise RuntimeError("PLATFORM_ADMIN_DATABASE_URL doit utiliser le rôle dédié cfdt_juris_platform_admin.")
+        if config.platform_admin_database_url in {config.database_url, config.legal_corpus_ingest_database_url} or platform_db.username in {app_db.username, ingest_db.username}:
+            raise RuntimeError("Le compte administrateur plateforme doit être distinct des comptes runtime et ingestion.")
     if config.legifrance_environment not in {"sandbox", "production"}:
         raise RuntimeError("LEGIFRANCE_ENVIRONMENT doit être sandbox ou production.")
     if bool(config.legifrance_client_id) != bool(config.legifrance_client_secret):
