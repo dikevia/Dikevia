@@ -17,6 +17,22 @@ from .jurisprudence import AdministrativeCaseLawConnector
 from .legal_corpus import search_legal_corpus
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
+
+
+def should_use_cgfp_snapshot_fallback(
+    live_issue: str | None,
+    found: dict | None,
+    question: str,
+) -> bool:
+    """Use the bundled dated CGFP snapshot only when live CGFP lookup failed."""
+    return bool(
+        live_issue and isinstance(found, dict) and found.get("results")
+        and any(
+            is_ihts_relevant_source(question, hit)
+            for hit in found["results"]
+        )
+    )
+
 from .article_lookup import missing_direct_article_reference
 from .legal_search_plan import build_official_search_query
 
@@ -389,12 +405,8 @@ class LegalOrchestrator:
         # It remains a dated snapshot (not proof of the version applicable to
         # the facts); it may accompany independently verified decrees/case law,
         # but must never replace those sources or authorize a standalone opinion.
-        cgfp_snapshot_fallback = bool(
-            live_issue and found and found.get("results")
-            and any(
-                is_ihts_relevant_source(request.question, hit)
-                for hit in found["results"]
-            )
+        cgfp_snapshot_fallback = should_use_cgfp_snapshot_fallback(
+            live_issue, found, request.question,
         )
 
         sources: list[dict] = []
