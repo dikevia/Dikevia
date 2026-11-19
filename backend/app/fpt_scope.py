@@ -85,7 +85,7 @@ def _fold(value: str) -> str:
 def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     """Return a conservative scope label and whether this hit may reach Gemini."""
     title = str(source.get("title") or "")
-    text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
+    # Classify the same relevant passage that can support a claim, not an entire\n    # instrument whose unrelated chapters may mention a different public-service\n    # branch. Fall back to full text only when no excerpt/text was supplied.\n    text = str(source.get("excerpt") or source.get("text") or source.get("full_text") or "")
     corpus = _fold((title + " " + text)[:500_000])
     # Dikévia is deliberately limited to French territorial public-service law.
     # Exclude EU instruments by structured metadata before looking at generic
