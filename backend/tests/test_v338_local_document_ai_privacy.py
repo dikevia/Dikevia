@@ -108,3 +108,34 @@ def test_chat_transfer_requires_both_server_and_request_opt_in():
     assert "payload.confirm_local_document_ai_transfer and settings.ai_local_documents_in_chat_enabled" in main_source
     assert '"confirm_local_document_ai_transfer": payload.confirm_local_document_ai_transfer' in main_source
     assert "allow_local_documents=allow_local_documents" in orchestrator_source
+
+def test_historical_assistant_turns_with_local_sources_are_excluded_from_ai_context():
+    from app.main import _ai_safe_conversation_history
+
+    rows = [
+        {"role": "assistant", "content": "Réponse avec extrait local", "metadata": {
+            "sources": [{"source_type": "LOCAL_COLLECTIVITY_DOCUMENT", "source_id": "local-1"}],
+        }},
+        {"role": "user", "content": "Ma question suivante", "metadata": {}},
+        {"role": "assistant", "content": "Réponse fondée sur le droit national", "metadata": {
+            "sources": [{"source_type": "LEGIFRANCE_API", "source_id": "LEGIARTI000012345678"}],
+        }},
+    ]
+
+    assert _ai_safe_conversation_history(rows) == [
+        {"role": "user", "content": "Ma question suivante"},
+        {"role": "assistant", "content": "Réponse fondée sur le droit national"},
+    ]
+
+
+def test_legacy_assistant_turn_without_source_provenance_is_excluded_from_ai_context():
+    from app.main import _ai_safe_conversation_history
+
+    rows = [
+        {"role": "assistant", "content": "Ancienne réponse dont les sources sont inconnues", "metadata": None},
+        {"role": "user", "content": "Question suivante", "metadata": {}},
+    ]
+
+    assert _ai_safe_conversation_history(rows) == [
+        {"role": "user", "content": "Question suivante"},
+    ]
