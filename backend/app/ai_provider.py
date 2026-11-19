@@ -104,6 +104,10 @@ def _provider_api_base() -> str:
 
 
 async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict], conversation_history: list[dict] | None = None, facts_period: dict | None = None) -> AIAnalysisResult | None:
+    # Defense in depth: no document, no inference. The orchestrator already
+    # enforces this rule, but the provider adapter must be safe on its own.
+    if not sources:
+        return None
     if not (settings.ai_api_key and settings.ai_model):
         return None
     base = _provider_api_base()
