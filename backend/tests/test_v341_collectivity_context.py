@@ -43,7 +43,7 @@ async def test_local_document_search_uses_selected_collectivity_and_tenant_scope
     )
 
     assert result == []
-    assert "d.organization_id=$1::uuid" in conn.query
+    assert "dt.organization_id=$1::uuid" in conn.query
     assert "c.id=$6::uuid" in conn.query
     assert conn.args[0] == organization_id
     assert conn.args[5] == collectivity_id
