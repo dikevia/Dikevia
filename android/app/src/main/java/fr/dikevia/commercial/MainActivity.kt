@@ -129,7 +129,10 @@ class MainActivity:ComponentActivity(){
         val cfg=serviceConfig
         if(hint.isNullOrBlank()||cfg?.endSessionEndpoint==null)return
         runCatching {
-            val request=EndSessionRequest.Builder(cfg,hint,Uri.parse(REDIRECT)).build()
+            val request=EndSessionRequest.Builder(cfg)
+                .setIdTokenHint(hint)
+                .setPostLogoutRedirectUri(Uri.parse(REDIRECT))
+                .build()
             startActivityForResult(authService!!.getEndSessionRequestIntent(request),LOGOUT_REQUEST)
         }.onFailure { authError="Session locale fermée. La fermeture de session du fournisseur n'a pas pu être lancée." }
     }
