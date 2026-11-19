@@ -26,3 +26,12 @@ def test_invitation_bearer_token_is_removed_from_the_url_immediately():
     cleanup = auth.index("cleanUrl.searchParams.delete('invitation_token');", store)
     assert store < cleanup
     assert "history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);" in auth
+
+def test_oidc_callback_credentials_are_removed_before_network_exchange():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    callback = auth.index("async function completeCallback()")
+    cleanup = auth.index("cleanAuthCallbackUrl();", callback)
+    exchange = auth.index("fetch(oidc.token_endpoint", callback)
+    assert cleanup < exchange
+    assert "for (const key of ['code', 'state', 'error', 'error_description', 'iss', 'session_state'])" in auth
+    assert "cleanUrl.searchParams.delete(key);" in auth
