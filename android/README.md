@@ -1,6 +1,6 @@
 # Dikévia Android beta
 
-This Android shell loads the commercial Dikévia web application over HTTPS and keeps the OIDC Authorization Code + PKCE flow inside the same WebView session.
+This is the installable Android shell for the Dikévia commercial beta. It loads the commercial application over HTTPS in a native Android WebView; the backend, identity provider and legal data are not bundled in the APK and require their configured services to be available.
 
 - Package: `fr.dikevia.commercial.beta`
 - Minimum Android: 7.0 (API 24)
@@ -8,18 +8,27 @@ This Android shell loads the commercial Dikévia web application over HTTPS and 
 - Allowed in-app origins: the commercial API and the dedicated Keycloak identity service
 - External HTTPS links open in the device browser
 - File selection is enabled for document attachments
+- OIDC Authorization Code + PKCE currently completes in the WebView session; the APK contains no client secret
 
-## Demonstration build
+## Build and retrieve the beta APK
 
-The GitHub Actions workflow **Android beta APK** builds and validates the APK on this development branch. A successful run publishes the file as the artifact `dikevia-commercial-beta-apk` (retained for 14 days).
+The GitHub Actions workflow **Android beta APK** is configured to build on pushes to `integration/beta-commercial-security`, `android/beta-apk-delivery` and the legacy commercial branch, when Android or frontend configuration files change. It can also be started manually with `workflow_dispatch`.
 
-The APK is a demonstration build, not a Play Store release. It uses the commercial beta environment and currently has a one-active-user limit. Do not distribute credentials in the APK or in demonstration materials.
+A successful run publishes the artifact `dikevia-commercial-beta-apk` for 14 days. It contains:
 
-## Before the CFDT demonstration
+- `app-debug.apk`: installable debug beta package
+- `app-debug.apk.sha256`: SHA-256 checksum for integrity verification
 
-- Verify the commercial API and identity service are healthy.
-- Install the APK on the demonstration Android device and complete sign-in before the meeting.
-- Test at least one FPT question with documentary sources and one question for which the assistant must ask for missing facts or abstain.
-- Keep a browser access as a fallback if the device blocks installation.
+The workflow checks that the APK exists, is a valid ZIP archive, exceeds the minimum size and declares the expected package identifier. **This is a build/archive check only**: it does not prove that the app has been installed on a physical device, that the hosted services are healthy, or that a live OIDC login succeeds.
 
-A production release requires a dedicated signing key, device testing, account provisioning and a separate release process.
+## Installation and device checks
+
+1. Download the artifact from the successful **Android beta APK** workflow run and extract it.
+2. On the Android device, open `app-debug.apk` and authorize installation from the file manager/browser if Android requests it.
+3. Launch **Dikévia**, sign in with an already provisioned beta account, and verify that the application returns to its authenticated screen.
+4. Check navigation, conversation history, file selection, dossier save/reopen and logout.
+5. If sign-in or loading fails, record the visible error and the device Android/WebView version; do not bypass certificate or HTTPS errors.
+
+The APK is a demonstration build, not a Play Store release. It uses the commercial beta environment and currently has a one-active-user limit. Do not distribute credentials in the APK or in demonstration materials. Hosted API and Keycloak services must already be configured and available; this Android build does not deploy or wake them.
+
+A production release requires a dedicated signing key stored outside the repository, device testing, account provisioning and a separate release process. Never commit a signing key or credentials to Git.
