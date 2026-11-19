@@ -86,7 +86,9 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
     # Exact legal-reference requests must remain exact; extra terms can turn
     # a direct lookup into an unrelated full-text search.
     folded = _fold(original)
-    if _ARTICLE_REFERENCE.search(original) and _DIRECT_ARTICLE_LOOKUP.search(folded):
+    current_turn = original.splitlines()[0]
+    current_turn_folded = _fold(current_turn)
+    if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(current_turn_folded):
         return original[:max_length]
 
     expansion = next(
