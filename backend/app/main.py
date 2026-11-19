@@ -810,7 +810,7 @@ def _ai_safe_conversation_history(rows):
     for row in reversed(rows):
         role = row["role"]
         if role == "assistant":
-            metadata = row.get("metadata")
+            metadata = row["metadata"]
             if isinstance(metadata, str):
                 try:
                     metadata = json.loads(metadata)
