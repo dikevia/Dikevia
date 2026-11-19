@@ -1,3 +1,5 @@
+import pytest
+
 from app.fpt_scope import classify_public_service_scope, is_ihts_relevant_source
 
 
@@ -73,9 +75,6 @@ def test_other_topics_are_not_filtered_by_ihts_guard():
         "Mon chef me menace",
         {"title": "CGFP L134-5", "full_text": "Protection fonctionnelle."},
     )
-
-import pytest
-
 
 @pytest.mark.asyncio
 async def test_nonexistent_article_abstains_before_any_gemini_call(monkeypatch):
