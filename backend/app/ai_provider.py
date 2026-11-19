@@ -100,9 +100,18 @@ def _usable_document_sources(sources):
     if not isinstance(sources, (list, tuple)):
         return []
     usable = []
-    date_fields = ("requested_effective_date", "valid_from", "effective_from", "publication_date", "signature_date")
+    date_fields = (
+        "requested_effective_date", "valid_from", "effective_from",
+        "publication_date", "signature_date", "decision_date",
+    )
     for source in sources:
         if not isinstance(source, dict):
+            continue
+        # Search hits are metadata, never evidence, even if they carry a date or snippet.
+        if (
+            source.get("source_type") == "LEGIFRANCE_CETAT_SEARCH"
+            or source.get("content_kind") == "METADATA"
+        ):
             continue
         source_id = source.get("source_id") or source.get("official_source_id") or source.get("source_version_id")
         has_date = False
