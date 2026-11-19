@@ -45,3 +45,6 @@ L'APK debug utilise le package `fr.dikevia.commercial.beta`. Il s'agit d'un buil
 - Les tests de compilation, de connexion OIDC et sur appareil physique doivent être observés avant de déclarer la bêta prête.
 
 Aucune migration de base, modification de configuration hébergée, dépense, fusion ou mise en production n'est effectuée par cette branche.
+
+
+Build trigger: cette branche native est incluse dans le workflow de génération de l'APK debug ; consulter l'onglet Actions du dépôt pour le résultat de compilation avant installation.
