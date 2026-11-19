@@ -32,6 +32,19 @@ CREDIT_PACKS: dict[str, dict[str, Any]] = {
 }
 
 
+
+def resolve_plan_price(plan_code: str, billing_interval: str = "month") -> tuple[int, str]:
+    """Return the server-authoritative amount and Stripe recurring interval."""
+    plan = PLANS.get(plan_code)
+    if not plan or not plan.get("public", False):
+        raise ValueError("Offre inconnue.")
+    if billing_interval == "month":
+        return int(plan["amount"]), "month"
+    if billing_interval == "year" and plan.get("annual_amount") is not None:
+        return int(plan["annual_amount"]), "year"
+    raise ValueError("Périodicité de facturation invalide pour cette offre.")
+
+
 def public_plans() -> list[dict[str, Any]]:
     return [
         {"code": code, "name": p["name"], "amount_cents": p["amount"],
