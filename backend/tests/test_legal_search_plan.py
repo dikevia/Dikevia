@@ -30,3 +30,11 @@ def test_exact_article_lookup_is_not_broadened():
 def test_query_respects_official_connector_length_limit():
     question = "heures supplémentaires " + ("situation détaillée " * 40)
     assert len(build_official_search_query(question)) <= 500
+
+
+def test_substantive_question_with_article_reference_still_searches_related_fpt_sources():
+    question = "L'article L123-4 n'est pas respecté : mes heures supplémentaires restent impayées."
+    query = build_official_search_query(question)
+    assert query.startswith(question)
+    assert "décret 2002-60" in query
+    assert "décret 91-875" in query
