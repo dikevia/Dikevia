@@ -163,7 +163,7 @@ class LegifranceConnector:
     def _date_epoch_ms(value: date) -> int:
         return int(datetime(value.year, value.month, value.day, tzinfo=timezone.utc).timestamp() * 1000)
 
-    def _search_payload(self, query: str, effective_date: date) -> dict:
+    def _search_payload(self, query: str, effective_date: date, code_name: str | None = None) -> dict:
         ref = re.search(r"\b([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b", query, re.I)
         if ref:
             field = {"typeChamp": "NUM_ARTICLE", "criteres": [{
@@ -174,7 +174,7 @@ class LegifranceConnector:
         return {"fond": "CODE_DATE", "recherche": {
             "champs": [field],
             "filtres": [
-                {"facette": "NOM_CODE", "valeurs": [settings.legifrance_code_name]},
+                {"facette": "NOM_CODE", "valeurs": [code_name or settings.legifrance_code_name]},
                 {"facette": "DATE_VERSION", "singleDate": effective_date.isoformat()},
             ],
             "pageNumber": 1, "pageSize": 10, "operateur": "ET", "sort": "PERTINENCE",
@@ -375,10 +375,10 @@ class LegifranceConnector:
                     "api_method": "/consult/legiPart"}})
         return output
 
-    async def search_code_articles(self, query: str, effective_date: date) -> list[dict]:
+    async def search_code_articles(self, query: str, effective_date: date, *, code_name: str | None = None) -> list[dict]:
         if not query or len(query.strip()) < 2 or len(query) > 500:
             raise ValueError("La recherche Légifrance doit contenir entre 2 et 500 caractères.")
-        payload = self._search_payload(query.strip(), effective_date)
+        payload = self._search_payload(query.strip(), effective_date, code_name)
         result = await self._request("POST", "/search", json_body=payload)
         # Temporary, bounded diagnostic: capture the actual PISTE search response,
         # including total counters and nested result shape, without OAuth credentials.
