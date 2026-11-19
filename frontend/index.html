@@ -20,14 +20,14 @@
   color:var(--ink);background:var(--canvas)
 }
 body{background:var(--canvas);letter-spacing:.005em}
-.top{background:linear-gradient(110deg,var(--brand-deep),var(--brand));padding-top:18px;padding-bottom:18px;box-shadow:0 3px 18px rgba(10,45,34,.12)}
+.top{background:var(--accent);color:var(--accent-contrast);padding-top:18px;padding-bottom:18px;box-shadow:0 3px 18px rgba(10,45,34,.12)}
 .brand{font-size:22px;letter-spacing:.1px}.brand small{font-size:11px;letter-spacing:.025em}
 .shell{max-width:1280px;margin:30px auto;padding:0 24px}
 .notice{border-color:#eadbb8;background:#fffaf0;color:#66552e;border-radius:12px;padding:14px 17px}
 .grid{grid-template-columns:248px minmax(0,1fr);gap:22px}
 .side{position:sticky;top:18px;padding:10px;border-radius:16px;border-color:var(--line);box-shadow:0 4px 18px rgba(20,55,42,.035)}
 .nav{padding:12px 13px;border-radius:10px;font-size:13px;transition:background .16s ease,color .16s ease}
-.nav.active,.nav:hover{background:var(--brand-soft);color:var(--brand);font-weight:750}
+.nav.active,.nav:hover{background:color-mix(in srgb,var(--accent) 10%,white);color:var(--accent);font-weight:750}
 .panel,.card{border-color:var(--line);border-radius:16px;box-shadow:0 3px 14px rgba(20,55,42,.035)}
 .panel{padding:22px;margin-bottom:18px}
 .panel h2{font-size:17px;letter-spacing:-.015em}
@@ -37,8 +37,8 @@ body{background:var(--canvas);letter-spacing:.005em}
 .cards{gap:14px;margin-bottom:18px}
 .card{padding:19px;transition:transform .16s ease,box-shadow .16s ease}
 .card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.metric{font-size:29px;letter-spacing:-.04em;color:var(--brand)}
-button,.button{background:var(--brand);border-radius:10px;padding:11px 16px;transition:background .16s ease,transform .16s ease,box-shadow .16s ease}
+.metric{font-size:29px;letter-spacing:-.04em;color:var(--accent)}
+button,.button{background:var(--accent);color:var(--accent-contrast);border-radius:10px;padding:11px 16px;transition:background .16s ease,transform .16s ease,box-shadow .16s ease}
 button:hover,.button:hover{background:var(--brand-deep);box-shadow:0 4px 12px rgba(16,56,47,.16)}
 button:active{transform:translateY(1px)}
 button.secondary{background:#edf2ee;color:#29483a}
@@ -54,7 +54,7 @@ th,td{padding:12px 11px}
 .auth h1{letter-spacing:-.035em;color:#172c23}
 .juris-chat{border-radius:18px;border-color:#dfe8e2;box-shadow:0 12px 36px rgba(18,59,50,.075)}
 .juris-chat-head{padding:18px 22px;background:linear-gradient(110deg,#fff,#f8fbf8)}
-.juris-brand-mark{width:44px;height:44px;border-radius:14px;background:var(--brand-soft);color:var(--brand)}
+.juris-brand-mark{width:44px;height:44px;border-radius:14px;background:var(--brand-soft);color:var(--accent)}
 .juris-chat-head strong{font-size:15px;color:#1d382b}
 .juris-chat-notice{border-radius:11px;margin:16px 22px 0}
 .juris-messages{min-height:360px;padding:28px 24px;gap:20px;background:linear-gradient(180deg,#fff 0%,#fcfdfc 100%)}
@@ -66,7 +66,7 @@ th,td{padding:12px 11px}
 .juris-suggestions button{background:#f2f6f3;color:#315341;border:1px solid #dfe9e2;border-radius:999px;padding:10px 14px;font-weight:600}
 .juris-suggestions button:hover{background:#e7f0e9;border-color:#cbdccf}
 .juris-message{max-width:88%;gap:11px}
-.juris-avatar{border-radius:11px;background:var(--brand)}
+.juris-avatar{border-radius:11px;background:var(--accent)}
 .juris-bubble{font-size:14px;line-height:1.75;padding:14px 16px;border-color:#e3eae5;background:#f8faf8;border-radius:5px 15px 15px 15px}
 .juris-message.user .juris-bubble{background:#eaf2ed;border-color:#dbe8df;border-radius:15px 5px 15px 15px}
 .juris-status{letter-spacing:.015em}
@@ -75,7 +75,7 @@ th,td{padding:12px 11px}
 .juris-input-row{border-radius:14px;border-color:#d5e0d8;padding:9px;box-shadow:0 2px 8px rgba(20,55,42,.025)}
 .juris-input-row:focus-within{border-color:#6a927a;box-shadow:0 0 0 3px rgba(45,112,78,.10)}
 .juris-input-row textarea{font-size:14px;line-height:1.5}
-.juris-input-row button{background:var(--brand);border-radius:11px}
+.juris-input-row button{background:var(--accent);border-radius:11px}
 .juris-history{background:#fbfcfb;padding:12px 20px}
 .juris-history-item{border-radius:9px}
 .dossier-panel{border-radius:14px;background:#fbfdfb}
@@ -171,7 +171,7 @@ footer{color:#849188}
 .juris-input-row{padding:8px 9px 8px 12px;border-color:#d6e0d8;border-radius:15px;box-shadow:0 2px 8px rgba(30,65,44,.035)}
 .juris-input-row textarea{font-size:14px;line-height:1.5;min-height:52px;padding:9px 5px}
 .juris-input-row textarea::placeholder{color:#98a49c}
-.juris-input-row button{width:42px;height:42px;flex-basis:42px;border-radius:12px;background:#174b3d}
+.juris-input-row button{width:42px;height:42px;flex-basis:42px;border-radius:12px;background:var(--accent)}
 .juris-composer-foot{font-size:10px}
 @media(max-width:600px){
  .juris-chat{border-radius:14px}
@@ -199,7 +199,7 @@ footer{color:#849188}
 .side{z-index:20}
 .nav{position:relative;min-height:43px}
 .nav:focus-visible{outline:3px solid rgba(45,112,78,.22);outline-offset:2px}
-.nav.active:before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:4px;background:#2b7250}
+.nav.active:before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:4px;background:var(--accent)}
 .tablewrap{border:1px solid #e7ede8;border-radius:11px;background:#fff;scrollbar-width:thin}
 .tablewrap table{min-width:620px}
 #view-documents>.panel:first-of-type .toolbar{align-items:center}
@@ -355,7 +355,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .pricing-kicker{font-size:10px;font-weight:850;letter-spacing:.13em;color:#698373}.pricing-intro h2{margin:6px 0;font-size:21px;letter-spacing:-.03em;color:#1d382b}.pricing-intro p{margin:0;font-size:12px}
 .pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.pricing-card{min-width:0;padding:19px;border:1px solid #e0e9e3;border-radius:15px;background:#fff;box-shadow:0 4px 15px rgba(20,55,42,.035)}
 .pricing-card.featured{border:1.5px solid #8eae98;background:linear-gradient(150deg,#f5faf6,#fff);box-shadow:0 8px 22px rgba(25,75,48,.08)}
-.pricing-label{font-size:11px;font-weight:750;color:#597465}.pricing-price{margin:12px 0 5px;font-size:32px;font-weight:850;letter-spacing:-.05em;color:#174b3d}.pricing-price small{font-size:11px;font-weight:650;letter-spacing:0;color:#68786f}
+.pricing-label{font-size:11px;font-weight:750;color:#597465}.pricing-price{margin:12px 0 5px;font-size:32px;font-weight:850;letter-spacing:-.05em;color:var(--accent)}.pricing-price small{font-size:11px;font-weight:650;letter-spacing:0;color:#68786f}
 .pricing-card p{margin:0 0 10px;font-size:13px;font-weight:700;color:#2b4436}.pricing-detail{font-size:11px;line-height:1.5;color:#78877e}
 .pricing-extras{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:13px}.pricing-extras>div{padding:13px 14px;border:1px solid #e5ece7;border-radius:11px;background:#f9fbf9}
 .pricing-extras strong,.pricing-extras span,.pricing-note strong,.pricing-note span{display:block}.pricing-extras strong{font-size:12px;color:#2c4938;margin-bottom:4px}.pricing-extras span{font-size:11px;line-height:1.5;color:#758279}
@@ -363,7 +363,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .pricing-status{margin:12px 2px 0;font-size:11px;line-height:1.6}
 @media(max-width:760px){.pricing-grid{grid-template-columns:1fr}.pricing-card{padding:16px}.pricing-price{font-size:29px}}
 @media(max-width:520px){.pricing-intro{align-items:flex-start}.pricing-intro .pill{white-space:nowrap}.pricing-intro h2{font-size:18px}.pricing-extras{grid-template-columns:1fr}.pricing-note{display:block}.pricing-note strong{margin-bottom:5px}}
-</style></head><body>
+</style><link rel="stylesheet" href="/static/theme.css"><script src="/static/theme.js"></script></head><body>
 <a class="skip-link" href="#mainContent">Aller au contenu principal</a>
 <header class="top"><div class="brand">Dikévia<small>Assistant d'information juridique · Fonction publique territoriale</small></div><div class="topright"><span id="userLabel">Session non connectée</span><button id="logout" class="secondary hidden">Déconnexion</button></div></header>
 <main class="shell" id="mainContent" tabindex="-1">
@@ -372,7 +372,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="notice"><b>Mode pilote — confidentialité :</b> utilisez uniquement des situations fictives ou anonymisées. Les questions et extraits juridiques retenus peuvent être transmis à Google Gemini pour produire une réponse. N'indiquez aucun nom, matricule, coordonnée, bulletin de paie, donnée médicale, disciplinaire ou syndicale nominative. Toute réponse automatisée doit être vérifiée par un référent compétent.</div>
 <div id="platformScreen" class="hidden"><div class="heading"><div><h1>Administration générale Dikévia</h1><div class="muted">Gestion transversale des syndicats, accès gratuits et suspensions</div></div><button id="refreshPlatform" class="secondary">Actualiser</button></div><div class="panel" id="commercialPanel"><div class="heading"><div><h2>Pilotage commercial</h2><p class="muted">Chiffre d’affaires encaissé, abonnements, impayés, licences et factures Stripe</p></div><div class="row"><input id="commercialMonth" type="month" aria-label="Mois du chiffre d'affaires"><button id="refreshCommercial" class="secondary">Actualiser</button></div></div><div class="cards" id="commercialMetrics"><div class="card"><div class="muted">CA encaissé du mois</div><div class="metric">—</div></div><div class="card"><div class="muted">Abonnements actifs</div><div class="metric">—</div></div><div class="card"><div class="muted">Abonnements en impayé</div><div class="metric">—</div></div><div class="card"><div class="muted">Organisations actives</div><div class="metric">—</div></div><div class="card"><div class="muted">Licences payantes utilisées</div><div class="metric">—</div></div><div class="card"><div class="muted">Capacité payante souscrite</div><div class="metric">—</div></div><div class="card"><div class="muted">Accès gratuits actifs</div><div class="metric">—</div></div><div class="card"><div class="muted">Factures émises ce mois</div><div class="metric">—</div></div></div><p id="commercialNote" class="muted">Le chiffre d’affaires correspond aux montants réellement enregistrés comme encaissés dans les événements de facturation Stripe reçus par le webhook.</p><h3>Suivi des syndicats et licences</h3><div class="tablewrap"><table><thead><tr><th>Syndicat</th><th>Offre</th><th>État</th><th>Licences payantes</th><th>Accès gratuits</th><th>Invitations en attente</th></tr></thead><tbody id="commercialOrganizations"><tr><td colspan="6">Chargement…</td></tr></tbody></table></div><h3>Factures, paiements et impayés</h3><div class="tablewrap"><table><thead><tr><th>Syndicat</th><th>Facture</th><th>Émise le</th><th>Montant</th><th>Encaissé</th><th>Reste dû</th><th>État</th><th>Document</th></tr></thead><tbody id="commercialInvoices"><tr><td colspan="8">Chargement…</td></tr></tbody></table></div></div><div class="panel" id="freeEmailPanel"><h2>Accès gratuits individuels par adresse e-mail</h2><p class="muted">Les adresses autorisées accèdent gratuitement à Dikévia et ne consomment aucune place dans les quotas payants. L'utilisateur doit toujours être invité dans un espace d'organisation pour accéder à ses données.</p><form id="freeEmailForm"><div class="row"><div class="field"><label>Adresse e-mail autorisée</label><input name="email" type="email" maxlength="254" required placeholder="militant@exemple.fr"></div><div class="field"><label>Motif / bénéficiaire</label><input name="note" maxlength="500" placeholder="Élu syndical, référent…"></div><div class="field"><label>Expiration facultative</label><input name="expires_at" type="date"></div></div><button>Ajouter un accès gratuit</button></form><div id="freeEmailMessage" class="message"></div><div class="tablewrap"><table><thead><tr><th>Adresse</th><th>Motif</th><th>Expiration</th><th>État</th><th>Action</th></tr></thead><tbody id="freeEmailBody"><tr><td colspan="5">Chargement…</td></tr></tbody></table></div></div><div class="panel"><h2>Corpus juridique national</h2><p class="muted">Imports réservés à l'administrateur plateforme. Les sources sans texte intégral ou sans dates de validité vérifiables ne sont pas utilisées pour produire des conclusions IA.</p><form id="legalCorpusForm"><div class="row"><div class="field"><label>Thème ou mots-clés</label><input name="q" minlength="2" maxlength="500" required placeholder="temps de travail fonction publique territoriale"></div><div class="field"><label>Date d'analyse</label><input type="date" name="effective_date"></div><div class="field"><label>Nombre maximum</label><select name="limit"><option>5</option><option selected>10</option><option>20</option></select></div></div><div class="row"><button type="button" id="ingestRegulatory">Importer textes / décrets / arrêtés</button><button type="button" id="ingestCaseLaw" class="secondary">Importer jurisprudence administrative</button></div></form><div id="legalCorpusMessage" class="message"></div><form id="circulairesUploadForm"><div class="field"><label>Importer le XML CIRCULAIRES de la DILA</label><input type="file" name="file" accept=".xml,application/xml,text/xml" required></div><button class="secondary">Importer les métadonnées des circulaires</button></form><p class="muted">Attention : le fichier XML importé est marqué « import non vérifié ». L'origine et l'exhaustivité doivent être contrôlées avant toute validation humaine.</p><h3>Historique des imports</h3><button id="refreshCorpusRuns" class="secondary">Actualiser les imports</button><div id="corpusRuns" class="muted">Chargement…</div></div><div class="panel" id="createOrganizationPanel"><h2>Créer un espace d'organisation</h2><form id="platformCreateForm"><div class="row"><div class="field"><label>Identifiant (slug)</label><input name="slug" required minlength="3" maxlength="80" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="syndicat-exemple"></div><div class="field"><label>Raison sociale</label><input name="legal_name" required minlength="2" maxlength="250"></div></div><div class="field"><label>Nom affiché</label><input name="display_name" required minlength="2" maxlength="160"></div><button>Créer l’espace</button></form><div id="platformCreateMessage"></div></div><div class="panel" id="privateMembersPanel"><h2>Comptes de l’instance privée</h2><p class="muted">Dix comptes Premium gratuits maximum. Les comptes invités restent sans accès tant que vous ne les avez pas approuvés. Une suspension conserve les données et libère une place.</p><button type="button" class="secondary" id="refreshPrivateMembers">Actualiser</button><div class="tablewrap"><table><thead><tr><th>Adresse</th><th>Rôle</th><th>État</th><th>Action</th></tr></thead><tbody id="privateMembersBody"><tr><td colspan="4">Chargement…</td></tr></tbody></table></div><div id="privateMembersMessage" class="message"></div></div><div class="panel"><h2>Organisations clientes</h2><div class="muted" id="platformCount">Chargement…</div><div class="tablewrap"><table><thead><tr><th>Syndicat</th><th>État</th><th>Offre</th><th>Utilisateurs</th><th>Invitations</th><th>Création</th><th>Actions</th></tr></thead><tbody id="platformOrganizationsBody"></tbody></table></div><div id="platformMessage"></div></div></div><div id="joinPanel" class="panel hidden"><h2>Rejoindre une organisation</h2><p class="muted">Collez le jeton reçu de votre administrateur. L’invitation doit correspondre à l’adresse e-mail vérifiée de votre compte.</p><form id="joinForm"><div class="field"><label>Jeton d’invitation</label><input name="token" required minlength="40" maxlength="200" autocomplete="off"></div><button>Accepter l’invitation</button></form><div id="joinMessage"></div></div>
 <div id="workspace">
-<section class="workspace-context" aria-label="Contexte de travail"><div class="workspace-context-copy"><span class="workspace-context-kicker">ESPACE DE TRAVAIL</span><label for="orgSelect">Organisation active</label><select id="orgSelect"></select></div><span id="roleLabel" class="pill" aria-label="Votre rôle dans cet espace"></span></section>
+<section class="workspace-context" aria-label="Contexte de travail"><div class="workspace-context-copy"><span class="workspace-context-kicker">ESPACE DE TRAVAIL</span><label for="orgSelect">Organisation active</label><select id="orgSelect"></select></div><div class="theme-settings"><span class="workspace-context-kicker">APPARENCE</span><div class="theme-picker" role="group" aria-label="Couleur de l’interface"><button type="button" data-theme-choice="bleu" aria-label="Bleu"></button><button type="button" data-theme-choice="vert" aria-label="Vert"></button><button type="button" data-theme-choice="violet" aria-label="Violet"></button><button type="button" data-theme-choice="orange" aria-label="Orange"></button><button type="button" data-theme-choice="rouge" aria-label="Rouge"></button></div></div><span id="roleLabel" class="pill" aria-label="Votre rôle dans cet espace"></span></section>
 <div class="grid"><aside class="side" aria-label="Navigation principale"><button class="nav" data-view="ask">⚖️ Assistant juridique</button><button class="nav active" data-view="overview" aria-current="page">⌂ Accueil</button><button class="nav" data-view="documents">▤ Documents</button><button class="nav" data-view="collectivities">▦ Collectivités</button><button class="nav" data-view="members">♙ Membres</button><button class="nav" data-view="billing">€ Abonnement</button></aside>
 <section class="content">
 <div id="view-overview" class="view">
