@@ -1107,7 +1107,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
                 structured_candidate = None
             candidate_validation = validate_claim_evidence(structured_candidate, usable_national)
             if candidate_validation["valid"] and candidate_validation["claims"]:
-                ai_review = "\\n".join(
+                ai_review = "\n".join(
                     f"{claim['text']} — {claim['source_title']} (citation exacte : « {claim['quote']} »)"
                     for claim in candidate_validation["claims"]
                 )

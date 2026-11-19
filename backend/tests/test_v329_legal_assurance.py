@@ -123,5 +123,6 @@ def test_local_compliance_review_uses_only_current_clean_document_version_text()
 
     source = inspect.getsource(review_local_rule_compliance)
     assert "JOIN document_versions v" in source
+    assert r'ai_review = "\n".join(' in source
     assert "v.version_number=x.version_number AND v.sha256=x.sha256 AND v.scan_status='CLEAN'" in source
     assert "x.sha256=d.sha256 AND x.extraction_status='EXTRACTED'" in source
