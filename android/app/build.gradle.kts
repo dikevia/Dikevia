@@ -17,6 +17,8 @@ android {
         applicationId = "fr.dikevia.commercial"
         minSdk = 24
         targetSdk = 35
+        // AppAuth substitutes this scheme in its RedirectUriReceiverActivity manifest entry.
+        manifestPlaceholders["appAuthRedirectScheme"] = "fr.dikevia.commercial"
         versionCode = 3
         versionName = "0.3.0-beta"
     }
