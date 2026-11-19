@@ -208,7 +208,8 @@ private data class Entry(val title:String,val detail:String)
     var org by remember{mutableStateOf<Org?>(null)};var tab by remember{mutableStateOf("Accueil")}
     var resumeConversationId by remember{mutableStateOf<String?>(null)}
     var loading by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)}
-    LaunchedEffect(token){
+    // Recharger le profil uniquement à l'ouverture/fermeture de session, pas à chaque renouvellement du jeton.
+    LaunchedEffect(token!=null){
         if(token!=null){loading=true;error=null
             try{
                 val me=withContext(Dispatchers.IO){JSONObject(api.call(token,null,"/api/v1/auth/me"))}
