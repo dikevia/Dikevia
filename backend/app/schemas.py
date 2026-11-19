@@ -14,6 +14,7 @@ class AskRequest(BaseModel):
     situation_ongoing: bool = False
     question: str = Field(min_length=8, max_length=5000)
     confirm_local_document_ai_transfer: bool = False
+    collectivity_id: UUID | None = None
     conversation_id: UUID | None = None
 
 class AskResponse(BaseModel):
