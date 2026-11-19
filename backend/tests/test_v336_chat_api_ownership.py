@@ -317,3 +317,133 @@ def test_local_document_ai_review_is_gated_by_explicit_opt_in():
     source = inspect.getsource(review_local_rule_compliance)
     assert "settings.ai_local_document_review_enabled" in source
     assert "if (usable_national and settings.ai_api_key and settings.ai_model" in source
+
+
+@pytest.mark.asyncio
+async def test_chat_tenant_dependency_releases_transaction_and_clears_session_context(monkeypatch):
+    from app import dependencies
+
+    class Transaction:
+        def __init__(self, connection):
+            self.connection = connection
+
+        async def __aenter__(self):
+            self.connection.transaction_depth += 1
+
+        async def __aexit__(self, exc_type, exc, tb):
+            self.connection.transaction_depth -= 1
+
+    class Connection:
+        def __init__(self):
+            self.transaction_depth = 0
+            self.execute_calls = []
+            self.terminated = False
+
+        def transaction(self):
+            return Transaction(self)
+
+        async def execute(self, query, *args):
+            self.execute_calls.append((query, args))
+
+        async def fetchrow(self, query, *args):
+            return {"user_id": uuid4(), "role": "MEMBER"}
+
+        def terminate(self):
+            self.terminated = True
+
+    class Acquire:
+        def __init__(self, connection):
+            self.connection = connection
+
+        async def __aenter__(self):
+            return self.connection
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class Pool:
+        def __init__(self, connection):
+            self.connection = connection
+
+        def acquire(self):
+            return Acquire(self.connection)
+
+    conn = Connection()
+    monkeypatch.setattr(dependencies, "get_pool", lambda: Pool(conn))
+    principal = SimpleNamespace(issuer="https://issuer.example", subject="subject-1")
+    generator = dependencies.get_tenant_context_for_chat(principal, str(uuid4()))
+
+    ctx = await generator.__anext__()
+    assert ctx.conn is conn
+    assert conn.transaction_depth == 0
+    assert any("set_config('app.current_org_id',$1,false)" in call[0]
+               for call in conn.execute_calls)
+
+    await generator.aclose()
+    assert conn.terminated is False
+    assert "set_config('app.current_org_id','',false)" in conn.execute_calls[-1][0]
+
+
+@pytest.mark.asyncio
+async def test_chat_endpoint_does_not_hold_transaction_during_orchestration(monkeypatch):
+    from app import main as main_module
+    from app.schemas import AskRequest, AskResponse
+
+    class Transaction:
+        def __init__(self, connection):
+            self.connection = connection
+
+        async def __aenter__(self):
+            assert self.connection.transaction_depth == 0
+            self.connection.transaction_depth += 1
+
+        async def __aexit__(self, exc_type, exc, tb):
+            self.connection.transaction_depth -= 1
+
+    class Connection:
+        def __init__(self):
+            self.transaction_depth = 0
+
+        def transaction(self):
+            return Transaction(self)
+
+        async def fetchrow(self, query, *args):
+            return {"id": uuid4()}
+
+        async def fetchval(self, query, *args):
+            return uuid4()
+
+        async def fetch(self, query, *args):
+            return []
+
+        async def execute(self, query, *args):
+            return "UPDATE 1"
+
+    conn = Connection()
+    ctx = context(conn)
+    monkeypatch.setattr(
+        main_module, "consume_chat_request",
+        lambda *args: _async_allowed_decision(),
+    )
+
+    async def fake_orchestrator_ask(*args, **kwargs):
+        assert conn.transaction_depth == 0
+        return AskResponse(
+            request_id=str(uuid4()), verification_status="NON_VERIFIE",
+            answer="Réponse documentaire de test.",
+        )
+
+    monkeypatch.setattr(main_module.orchestrator, "ask", fake_orchestrator_ask)
+    payload = AskRequest(
+        employer="NATIONAL",
+        question="Question juridique suffisamment longue pour le test.",
+    )
+
+    result = await main_module.ask(payload, ctx)
+
+    assert result.verification_status == "NON_VERIFIE"
+    assert conn.transaction_depth == 0
+
+
+async def _async_allowed_decision():
+    return SimpleNamespace(allowed=True, retry_after_seconds=0)
