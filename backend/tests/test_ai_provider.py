@@ -567,7 +567,7 @@ async def test_gemini_chat_completion_uses_compatible_route_and_bearer_auth(monk
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("sources", [None, [], [{}], [{"excerpt": ""}], [{"excerpt": "  ", "text": ""}], [{"text": "   "}], ["not-a-document"]])
+@pytest.mark.parametrize("sources", [None, [], [{}], [{"excerpt": ""}], [{"excerpt": "  ", "text": ""}], [{"text": "   "}], [{"text": "!!!"}], [{"text": "...", "source_id": "LEGI123", "requested_effective_date": "2026-01-01"}], [{"text": "Texte utile", "source_id": "LEGI123"}], [{"text": "Texte utile", "requested_effective_date": "2026-01-01"}], ["not-a-document"]])
 async def test_ai_provider_refuses_missing_or_empty_source_text_without_http(monkeypatch, sources):
     import httpx
 
@@ -587,6 +587,27 @@ async def test_ai_provider_refuses_missing_or_empty_source_text_without_http(mon
             facts_date="2026-01-01",
             sources=sources,
         )
+
+
+def test_usable_sources_accept_text_fallback_and_preserve_official_provenance():
+    from app.ai_provider import _usable_document_sources
+
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000044427983_V20261119",
+        "official_source_id": "LEGIARTI000044427983",
+        "article": "L111-1",
+        "reference": "CGFP, article L111-1",
+        "valid_from": "2022-03-01",
+        "valid_to": "2999-01-01",
+        "requested_effective_date": "2026-11-19",
+        "text": "Extrait officiel de l'article.",
+    }
+    accepted = _usable_document_sources([source])
+    assert accepted == [{**source, "excerpt": "Extrait officiel de l'article."}]
+    assert accepted[0]["source_id"] == source["source_id"]
+    assert accepted[0]["reference"] == source["reference"]
+    assert accepted[0]["requested_effective_date"] == source["requested_effective_date"]
 
 def test_runtime_configuration_accepts_gemini_openai_compatible_endpoint():
     from app.config import Settings, validate_runtime_configuration
