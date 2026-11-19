@@ -118,7 +118,6 @@ jobs:
     if: github.event_name == 'pull_request'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
-    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -243,6 +242,13 @@ jobs:
           grep -q "/static/auth-config.js" /tmp/app.html
           grep -q "/static/oidc-auth.js" /tmp/app.html
           grep -q "Dikévia" /tmp/app.html
+          grep -q "Administration générale Dikévia" /tmp/app.html
+          grep -q "accèdent gratuitement à Dikévia" /tmp/app.html
+          grep -q "échangez avec Dikévia" /tmp/app.html
+          if grep -Eiq "CFDT[ -]JURIS|Administration générale JURIS|accèdent gratuitement à JURIS|échangez avec JURIS" /tmp/app.html; then
+            echo "The commercial web shell still contains obsolete visible branding."
+            exit 1
+          fi
           if grep -Eiq "CFDT[ -]JURIS" /tmp/app.html; then
             echo "The commercial web shell still displays the obsolete application brand."
             exit 1
