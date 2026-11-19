@@ -39,15 +39,13 @@ L'APK debug utilise le package `fr.dikevia.commercial.beta`. Il s'agit d'un buil
 
 - La session n'est pas restaurée après fermeture complète de l'application ; il faut se reconnecter.
 - La déconnexion locale efface le jeton en mémoire ; la fermeture de session Keycloak reste à intégrer.
-- L'historique permet de rouvrir une conversation et d'afficher ses messages ; une nouvelle question peut démarrer depuis l'assistant avec un contexte de conversation conservé pendant l'écran actif.
-- L'assistant prend en charge les dates de situation, le caractère toujours en cours et le choix d'une collectivité ; les documents restent consultables en métadonnées uniquement, sans téléchargement avant validation antivirus.
+- L'historique permet de consulter les messages et de reprendre une conversation ; le contexte antérieur est rechargé par le serveur lors de la question suivante.
+- L'assistant affiche le statut de vérification, les informations manquantes, les sources et les extraits disponibles ; il prend en charge les dates de situation, le caractère toujours en cours et le choix d'une collectivité.
+- Les documents restent consultables en métadonnées uniquement, sans téléchargement avant validation antivirus.
 - L'écran Membres dépend du rôle ORG_ADMIN et affiche l'erreur 403 pour les autres rôles.
 - Les tests de compilation, de connexion OIDC et sur appareil physique doivent être observés avant de déclarer la bêta prête.
 
 Aucune migration de base, modification de configuration hébergée, dépense, fusion ou mise en production n'est effectuée par cette branche.
 
 
-Build trigger: cette branche native est incluse dans le workflow de génération de l'APK debug ; consulter l'onglet Actions du dépôt pour le résultat de compilation avant installation.
-
-
-La branche d'intégration native est construite par GitHub Actions lors des modifications Android. Le résultat doit être contrôlé dans Actions avant toute installation.
+Le workflow de génération APK se déclenche sur les modifications de cette branche et sur les mises à jour de la PR vers la branche d'intégration. Consulter l'onglet Actions du dépôt ; ne pas installer ni distribuer l'APK avant validation du build.
