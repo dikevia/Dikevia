@@ -14,7 +14,7 @@
 
 - Conserver OIDC comme mécanisme d'authentification principal : l'e-mail seul n'est pas une preuve d'identité.
 - Exiger `email_verified=true` du jeton OIDC avant de démarrer l'essai ou d'activer une clé.
-- Lier définitivement l'essai à l'identité stable `(issuer, subject)`, pas au seul e-mail modifiable.
+- Lier définitivement l'essai à l'identité stable `(issuer, subject)` et réserver atomiquement l'adresse e-mail vérifiée : une même adresse normalisée ne peut pas démarrer un second essai sur un autre compte OIDC.
 - Normaliser l'e-mail côté serveur pour les communications et contrôles, sans appliquer de règles spécifiques à Gmail (points ou suffixes +) qui pourraient fusionner des personnes différentes.
 - Une clé d'accès est un mécanisme d'invitation/activation facultatif, pas un substitut à l'authentification. Elle doit être aléatoire, à usage unique, stockée sous forme de hash, limitée dans le temps si nécessaire, et consommée atomiquement dans une transaction.
 - Une clé ne doit jamais permettre de réinitialiser l'essai d'une identité déjà utilisée. La détection d'abus doit utiliser des signaux proportionnés, avec limites de débit et revue manuelle plutôt qu'une empreinte invasive du terminal.
@@ -59,3 +59,19 @@ Ne pas activer cette politique en production avant :
 - inventaire de toutes les routes métier et des téléchargements pour éviter un contournement ;
 - période de transition définie pour les comptes déjà existants ;
 - validation explicite du propriétaire avant migration, activation du paiement ou déploiement.
+
+## État de l'implémentation sur la branche de travail
+
+La branche `feature/72h-trial-founder-access-design` contient désormais :
+- migration additive `020_account_trial_founder_entitlements.sql` et son rollback ;
+- démarrage idempotent de l'essai au premier appel d'identité OIDC avec e-mail vérifié ;
+- réservation atomique d'une adresse e-mail vérifiée pour un seul essai ;
+- contrôle serveur partagé dans le contexte locataire, avec réponse 402 après expiration ;
+- accès maintenu aux routes d'identité, d'état d'accès et de facturation ;
+- table des dix places fondateurs, historique conservé des attributions/révocations, verrou transactionnel et fonctions d'administration ;
+- routes d'administration des places 2 à 10 ; la place 1 reste réservée au propriétaire ;
+- tests contractuels offline ajoutés, mais non exécutés.
+
+Les clés d'activation ne remplacent pas l'identité OIDC et ne sont pas requises pour l'essai général. Le mécanisme anti-multicompte livré ici limite à un essai par adresse e-mail vérifiée exacte ; il ne peut pas garantir qu'une personne ne crée jamais plusieurs adresses e-mail distinctes. Les clés d'invitation ponctuelles peuvent être ajoutées pour des campagnes ou invitations privées ultérieures.
+
+La migration n'a pas été appliquée, aucun service n'a été déployé et aucun fournisseur payant n'a été appelé.
