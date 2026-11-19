@@ -18,6 +18,7 @@ from .legal_corpus import search_legal_corpus
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
 from .article_lookup import missing_direct_article_reference
+from .legal_search_plan import build_official_search_query
 
 
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
@@ -183,7 +184,7 @@ class LegalOrchestrator:
             contextual_question = current_question[:350] + "\n" + prior_user_questions[-1][:150]
         # PISTE search methods cap their query at 500 characters. The current
         # question must take precedence over older conversational context.
-        live_query = current_question[:500]
+        live_query = build_official_search_query(current_question)
         live_sources: list[dict] = []
         regulatory_sources: list[dict] = []
         case_law_sources: list[dict] = []
@@ -494,7 +495,7 @@ class LegalOrchestrator:
         # do not let lexical CGFP hits, unrelated decrees or CETAT metadata create
         # a misleading partially-verified answer.
         missing_article = missing_direct_article_reference(request.question, sources)
-        if missing_article and not live_issue:
+        if missing_article:
             return AskResponse(
                 request_id=request_id,
                 verification_status="NON_VERIFIE",
@@ -685,10 +686,7 @@ class LegalOrchestrator:
                         # explicitly identified FPE/FPH sources are excluded.
                         # The AI prompt receives this scope and must not infer
                         # territorial applicability from an unknown classification.
-                        and (
-                            s.get("analysis_eligible") is not False
-                            or s.get("public_service_scope") == "SCOPE_TO_VERIFY"
-                        )
+                        and s.get("analysis_eligible") is True
                         and s.get("ihts_relevant") is not False
                         and (
                             not period_version_comparison
