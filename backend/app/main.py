@@ -794,6 +794,36 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
 
 
+def _ai_safe_conversation_history(rows):
+    """Exclude assistant turns that may contain local-document text from prior answers.
+
+    Consent for local-document transfer is per request. Historical assistant
+    messages with local sources (or missing provenance metadata) are therefore
+    never re-sent to the external model as conversational context.
+    """
+    safe = []
+    for row in reversed(rows):
+        role = row["role"]
+        if role == "assistant":
+            metadata = row.get("metadata")
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except (TypeError, ValueError):
+                    metadata = None
+            sources = metadata.get("sources") if isinstance(metadata, dict) else None
+            if not isinstance(sources, list):
+                continue
+            if any(
+                isinstance(source, dict)
+                and source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                for source in sources
+            ):
+                continue
+        safe.append({"role": role, "content": row["content"]})
+    return safe
+
+
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
 async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_for_chat)):
     # Commit the rate-limit reservation and user turn before any network call.
@@ -824,12 +854,12 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context_
             str(conversation_id), ctx.user_id, payload.question,
             json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing,
                 "confirm_local_document_ai_transfer": payload.confirm_local_document_ai_transfer}, ensure_ascii=False))
-        history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
+        history_rows = await ctx.conn.fetch("""SELECT role,content,metadata FROM chat_messages
             WHERE conversation_id=$1::uuid AND organization_id=$3::uuid AND user_id=$4::uuid
               AND id<>$2::uuid AND role IN ('user','assistant')
             ORDER BY created_at DESC,id DESC LIMIT 12""", str(conversation_id), current_message_id,
             ctx.organization_id, ctx.user_id)
-        history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
+        history = _ai_safe_conversation_history(history_rows)
 
     # No database transaction remains open while PISTE or the AI provider is called.
     result = await orchestrator.ask(
