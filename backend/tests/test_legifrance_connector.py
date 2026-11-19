@@ -108,9 +108,11 @@ async def test_legifrance_second_code_civil_article_control(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
     monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
     long_text = (
-        "Les contrats légalement formés tiennent lieu de loi à ceux qui les ont faits. "
-        "Ils ne peuvent être révoqués que de leur consentement mutuel, ou pour les causes "
-        "que la loi autorise. Ils doivent être exécutés de bonne foi."
+        "La partie envers laquelle l'engagement n'a pas été exécuté, ou l'a été imparfaitement, peut : "
+        "refuser d'exécuter ou suspendre l'exécution de sa propre obligation ; poursuivre l'exécution "
+        "forcée en nature de l'obligation ; obtenir une réduction du prix ; provoquer la résolution "
+        "du contrat ; demander réparation des conséquences de l'inexécution. Les sanctions qui ne "
+        "sont pas incompatibles peuvent être cumulées ; des dommages et intérêts peuvent toujours s'y ajouter."
     )
 
     def handler(request):
