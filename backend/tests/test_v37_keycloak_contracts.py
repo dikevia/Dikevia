@@ -23,12 +23,14 @@ def test_keycloak_realm_has_public_pkce_client_and_api_audience():
     assert android["directAccessGrantsEnabled"] is False
     assert android["redirectUris"] == ["fr.dikevia.commercial:/oauth2redirect"]
     assert android["attributes"]["pkce.code.challenge.method"] == "S256"
+    assert android["attributes"]["post.logout.redirect.uris"] == "fr.dikevia.commercial:/oauth2redirect"
     assert "cfdt-juris-api-audience" in android["defaultClientScopes"]
 
     imported = json.loads((ROOT / "deploy/keycloak/import/realm-cfdt.json").read_text())
     imported_android = next(c for c in imported["clients"] if c["clientId"] == "dikevia-android")
     assert imported_android["redirectUris"] == android["redirectUris"]
     assert imported_android["attributes"]["pkce.code.challenge.method"] == "S256"
+    assert imported_android["attributes"]["post.logout.redirect.uris"] == "fr.dikevia.commercial:/oauth2redirect"
     assert "cfdt-juris-api-audience" in imported_android["defaultClientScopes"]
     scope = next(s for s in realm["clientScopes"] if s["name"] == "cfdt-juris-api-audience")
     mapper = scope["protocolMappers"][0]
