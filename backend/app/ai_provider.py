@@ -386,7 +386,7 @@ def validate_entailment_verdicts(payload, claims, sources):
         if not isinstance(support_quote, str) or len(support_quote.strip()) < 20:
             invalid.append(f"verdict_{index}:support_quote_missing")
             continue
-        source_text = str(matched[0].get("text") or matched[0].get("full_text") or matched[0].get("excerpt") or "")
+        source_text = str(matched[0].get("excerpt") or matched[0].get("text") or "")
         if _normalize_entailment_text(support_quote) not in _normalize_entailment_text(source_text):
             invalid.append(f"verdict_{index}:support_quote_not_in_source")
     return {"valid": not invalid, "invalid": invalid,
@@ -417,7 +417,7 @@ async def verify_claim_entailment(
         source = matches[0]
         if source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"} and not allow_local_documents:
             return {"valid": False, "invalid": [f"claim_{index}:local_document_ai_transfer_disabled"]}
-        evidence_text = str(source.get("text") or source.get("full_text") or source.get("excerpt") or "")[:12000]
+        evidence_text = str(source.get("excerpt") or source.get("text") or "")[:12000]
         evidence.append({
             "claim_index": index,
             "source_id": claim.get("source_id"),
