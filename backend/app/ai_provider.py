@@ -5,6 +5,7 @@ corpus validés par le backend et ne peut pas créer de citations exposées.
 """
 from __future__ import annotations
 import json
+from datetime import date
 import re
 import unicodedata
 from urllib.parse import urlparse, quote
@@ -104,7 +105,17 @@ def _usable_document_sources(sources):
         if not isinstance(source, dict):
             continue
         source_id = source.get("source_id") or source.get("official_source_id") or source.get("source_version_id")
-        has_date = any(str(source.get(key) or "").strip() for key in date_fields)
+        has_date = False
+        for key in date_fields:
+            raw_date = str(source.get(key) or "").strip()
+            if not raw_date:
+                continue
+            try:
+                date.fromisoformat(raw_date[:10])
+                has_date = True
+                break
+            except ValueError:
+                continue
         if not source_id or not has_date:
             continue
         excerpt = source.get("excerpt")
