@@ -132,7 +132,7 @@ private data class Entry(val title:String,val detail:String)
     Surface(Modifier.fillMaxSize(),color=Canvas){
         if(token==null)LoginPage(busy,authError,login)
         else Column(Modifier.fillMaxSize()){
-            Header(user,orgs,org){org=it}
+            Header(user,orgs,org){if(org?.id!=it.id)resumeConversationId=null;org=it}
             if(loading)LinearProgressIndicator(Modifier.fillMaxWidth(),color=Emerald)
             error?.let{ErrorBox(it)}
             org?.let{current->Box(Modifier.weight(1f).fillMaxWidth()){
@@ -191,13 +191,13 @@ private data class Entry(val title:String,val detail:String)
 }
 @Composable private fun Assistant(token:String,org:Org,api:Api,initialConversationId:String?,onNewConversation:()->Unit){
     val context=LocalContext.current
-    var q by remember{mutableStateOf("")};var employer by remember{mutableStateOf("NATIONAL")};var answer by remember{mutableStateOf<JSONObject?>(null)}
+    var q by remember(org.id){mutableStateOf("")};var employer by remember(org.id){mutableStateOf("NATIONAL")};var answer by remember(org.id,initialConversationId){mutableStateOf<JSONObject?>(null)}
     var previousMessages by remember(org.id,initialConversationId){mutableStateOf(emptyList<JSONObject>())}
     var conversationId by remember(org.id,initialConversationId){mutableStateOf(initialConversationId)}
-    var factsStart by remember{mutableStateOf("")};var factsEnd by remember{mutableStateOf("")};var ongoing by remember{mutableStateOf(false)}
-    var collectivityId by remember{mutableStateOf<String?>(null)};var collectivities by remember{mutableStateOf(emptyList<JSONObject>())}
-    var collectivityExpanded by remember{mutableStateOf(false)}
-    var waiting by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)};val scope=rememberCoroutineScope()
+    var factsStart by remember(org.id){mutableStateOf("")};var factsEnd by remember(org.id){mutableStateOf("")};var ongoing by remember(org.id){mutableStateOf(false)}
+    var collectivityId by remember(org.id){mutableStateOf<String?>(null)};var collectivities by remember(org.id){mutableStateOf(emptyList<JSONObject>())}
+    var collectivityExpanded by remember(org.id){mutableStateOf(false)}
+    var waiting by remember(org.id){mutableStateOf(false)};var error by remember(org.id){mutableStateOf<String?>(null)};val scope=rememberCoroutineScope()
     LaunchedEffect(org.id,initialConversationId){
         answer=null;error=null;previousMessages=emptyList();q=""
         if(initialConversationId!=null)try{
