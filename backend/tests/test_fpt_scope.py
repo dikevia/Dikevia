@@ -79,3 +79,37 @@ def test_european_treaty_source_family_is_out_of_scope():
     })
     assert result["scope"] == "OUT_OF_SCOPE_EUROPEAN_LAW"
     assert result["analysis_eligible"] is False
+
+
+def test_ihts_decree_2002_60_is_only_an_fpt_reference_when_its_subject_is_verified():
+    result = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_LODA",
+        "title": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+        "full_text": (
+            "Le décret fixe les modalités des indemnités horaires pour travaux supplémentaires "
+            "et constitue une référence à vérifier avec le décret 91-875 et la délibération locale."
+        ),
+    })
+    assert result["scope"] == "FPT_REFERENCE"
+    assert result["analysis_eligible"] is True
+
+    unrelated_fpe = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_LODA",
+        "title": "Décret n° 2002-60",
+        "full_text": "Les personnels civils de l'État et des administrations centrales.",
+    })
+    assert unrelated_fpe["scope"] == "FPE"
+    assert unrelated_fpe["analysis_eligible"] is False
+
+
+def test_decree_91_875_with_territorial_scope_is_eligible_for_fpt():
+    result = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_LODA",
+        "title": "Décret n° 91-875 relatif au régime indemnitaire des collectivités territoriales",
+        "full_text": (
+            "Les fonctionnaires territoriaux et les agents des collectivités territoriales "
+            "peuvent bénéficier des indemnités dans les conditions prévues par les textes."
+        ),
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True
