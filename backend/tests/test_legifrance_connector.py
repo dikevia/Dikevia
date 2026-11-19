@@ -507,3 +507,50 @@ async def test_loda_exact_lookup_supports_two_digit_year_decree_numbers(monkeypa
     assert await connector.search_regulatory_texts(
         "décret n° 91-875", date(2026, 11, 19)
     ) == []
+
+
+@pytest.mark.asyncio
+async def test_loda_exact_91_875_lookup_preserves_territorial_decree_number(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    full_text = (
+        "Décret pris pour l'application de l'article L. 714-4 du CGFP. "
+        "L'assemblée délibérante des collectivités territoriales fixe les conditions "
+        "d'attribution des indemnités horaires pour travaux supplémentaires. "
+    ) * 2
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            body = json.loads(request.content)
+            assert body["recherche"]["champs"][0]["typeChamp"] == "NUM"
+            assert body["recherche"]["champs"][0]["criteres"][0]["valeur"] == "91-875"
+            return httpx.Response(200, json={"results": [{
+                "titles": [{
+                    "id": "LEGITEXT000052196548_01-07-2026",
+                    "title": "Décret n°91-875 du 6 septembre 1991 pris pour l'application de l'article L. 714-4 du CGFP",
+                }],
+                "nature": "DECRET",
+                "nor": "INTB9100377D",
+                "date": "1991-09-06",
+                "datePublication": "1991-09-07",
+                "etat": "VIGUEUR",
+            }]})
+        if request.url.path.endswith("/consult/legiPart"):
+            body = json.loads(request.content)
+            assert body["textId"] == "LEGITEXT000052196548"
+            return httpx.Response(200, json={"text": {
+                "id": "LEGITEXT000052196548", "texte": full_text,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_regulatory_texts(
+        "décret n° 91-875", date(2026, 11, 19)
+    )
+    assert len(results) == 1
+    assert results[0]["official_number"] == "91-875"
+    assert results[0]["nor"] == "INTB9100377D"
+    assert results[0]["source_id"] == "LEGITEXT000052196548"
+    assert results[0]["full_text"] == full_text.strip()
