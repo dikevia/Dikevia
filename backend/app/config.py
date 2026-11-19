@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     ai_api_key: str = ""
     ai_model: str = ""
     ai_timeout_seconds: float = 25.0
+    enable_external_startup_diagnostics: bool = False
     chat_rate_limit_per_minute: int = 10
     legifrance_environment: str = "sandbox"
     legifrance_client_id: str = ""
