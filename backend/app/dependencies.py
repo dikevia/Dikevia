@@ -43,14 +43,12 @@ async def get_tenant_context(request: Request, principal: Principal = Depends(ge
                 raise HTTPException(403, "Accès à cette organisation refusé.")
             await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_id)
             await conn.execute("SELECT set_config('app.current_user_id',$1,true)", str(row["user_id"]))
-            # OIDC email verification is mandatory before any trial can start.
+            # A verified OIDC email is required for any customer access.
             if not principal.email_verified or not principal.email:
                 raise HTTPException(403, "Vérifiez votre adresse e-mail auprès de votre fournisseur de connexion pour activer l'accès.")
             account = await conn.fetchrow("""
                 UPDATE users SET email=lower(trim($3)),
-                  email_verified_at=COALESCE(email_verified_at,now()),
-                  trial_started_at=COALESCE(trial_started_at,now()),
-                  trial_expires_at=COALESCE(trial_expires_at,now()+interval '72 hours')
+                  email_verified_at=COALESCE(email_verified_at,now())
                 WHERE id=$1::uuid AND oidc_issuer=$2 AND status='ACTIVE'
                 RETURNING email,trial_started_at,trial_expires_at
             """, str(row["user_id"]), principal.issuer, principal.email)
@@ -64,8 +62,23 @@ async def get_tenant_context(request: Request, principal: Principal = Depends(ge
                 SELECT status,current_period_end FROM subscriptions
                 WHERE organization_id=$1::uuid
             """, org_id)
+            now = await conn.fetchval("SELECT now()")
             paid = bool(subscription and subscription["status"] in ("ACTIVE","TRIAL")
-                and (subscription["current_period_end"] is None or subscription["current_period_end"] > await conn.fetchval("SELECT now()")))
+                and (subscription["current_period_end"] is None or subscription["current_period_end"] > now))
+            trial_claim_conflict = False
+            if account["trial_started_at"] is None and not (founder or paid):
+                claimed = await conn.fetchval(
+                    "SELECT claim_trial_email($1::uuid,$2)", str(row["user_id"]), account["email"])
+                if claimed:
+                    account = await conn.fetchrow("""
+                        UPDATE users SET trial_started_at=now(),
+                          trial_expires_at=now()+interval '72 hours'
+                        WHERE id=$1::uuid
+                        RETURNING email,trial_started_at,trial_expires_at
+                    """, str(row["user_id"]))
+                else:
+                    trial_claim_conflict = True
+            trial_active = bool(account["trial_expires_at"] and account["trial_expires_at"] > now)
             # Billing and identity routes stay available after trial expiry so the
             # customer can subscribe, retrieve invoices, or inspect access status.
             billing_access_paths = {
@@ -74,13 +87,17 @@ async def get_tenant_context(request: Request, principal: Principal = Depends(ge
                 "/api/v1/billing/checkout", "/api/v1/billing/portal",
                 "/api/v1/access/status",
             }
-            if not (founder or paid or account["trial_expires_at"] > await conn.fetchval("SELECT now()")):
-                if request.url.path not in billing_access_paths:
-                    raise HTTPException(402, {
-                        "code": "TRIAL_EXPIRED",
-                        "message": "Votre période d'essai de 72 heures est terminée. Souscrivez une offre pour retrouver l'accès à Dikévia. Vos données sont conservées.",
-                        "trial_expires_at": account["trial_expires_at"].isoformat(),
+            if not (founder or paid or trial_active) and request.url.path not in billing_access_paths:
+                if trial_claim_conflict:
+                    raise HTTPException(409, {
+                        "code": "TRIAL_ALREADY_USED",
+                        "message": "Cette adresse e-mail vérifiée a déjà servi à activer une période d'essai. Connectez-vous au compte initial ou souscrivez une offre.",
                     })
+                raise HTTPException(402, {
+                    "code": "TRIAL_EXPIRED",
+                    "message": "Votre période d'essai de 72 heures est terminée. Souscrivez une offre pour retrouver l'accès à Dikévia. Vos données sont conservées.",
+                    "trial_expires_at": account["trial_expires_at"].isoformat() if account["trial_expires_at"] else None,
+                })
             yield TenantContext(principal, org_id, str(row["user_id"]), row["role"], conn)
 
 async def require_org_admin(ctx: TenantContext = Depends(get_tenant_context)):
