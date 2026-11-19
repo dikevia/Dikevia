@@ -190,8 +190,8 @@ private data class Entry(val title:String,val detail:String)
     var collectivityExpanded by remember{mutableStateOf(false)}
     var waiting by remember{mutableStateOf(false)};var error by remember{mutableStateOf<String?>(null)};val scope=rememberCoroutineScope()
     LaunchedEffect(org.id,initialConversationId){
-        if(initialConversationId==null){previousMessages=emptyList();answer=null}
-        else try{
+        answer=null;error=null;previousMessages=emptyList();q=""
+        if(initialConversationId!=null)try{
             val data=withContext(Dispatchers.IO){JSONArray(api.call(token,org.id,"/api/v1/chat/conversations/"+initialConversationId+"/messages"))}
             previousMessages=(0 until data.length()).map{data.getJSONObject(it)}
         }catch(e:Exception){error=e.message?:"Impossible de charger cette conversation."}
