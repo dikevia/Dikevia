@@ -436,3 +436,28 @@ def test_entailment_verifier_cannot_use_text_beyond_the_claim_validator_fallback
     sent = json.loads(captured["payload"]["messages"][1]["content"])["items_to_verify"][0]
     assert sent["official_text"] == text_value[:1800]
     assert "PASSAGE ULTRA TARDIF UNIQUE" not in sent["official_text"]
+
+
+
+def test_entailment_verdict_quote_must_be_inside_the_exact_12000_character_payload():
+    from app.ai_provider import validate_entailment_verdicts
+
+    excerpt = ("Passage juridique pertinent. " * 500) + "MARQUEUR TARDIF HORS PAYLOAD UNIQUE."
+    source = {
+        **_eligible_official_source(),
+        "excerpt": excerpt,
+    }
+    claim = {
+        "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+    }
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": "MARQUEUR TARDIF HORS PAYLOAD UNIQUE.",
+        }]
+    }, [claim], [source])
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_not_in_source" in result["invalid"]
