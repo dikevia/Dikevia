@@ -426,9 +426,17 @@ class LegifranceConnector:
                  if self._first_value(node, ("id", "idarticle", "id_article")) == article_id),
                 {},
             )
-            article_ref_match = re.search(r"\b(?:article\s+)?([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b", text, re.I)
-            article_ref = re.sub(r"[.\s]+", "", article_ref_match.group(1)).upper() if article_ref_match else None
-            if requested_ref and article_ref != requested_ref:
+            # Article number belongs to metadata; it may not appear in the body.
+            raw_num = self._first_value(article_metadata, ("num", "numero", "numArticle"))
+            article_ref = re.sub(r"[^A-Z0-9]", "", raw_num.upper()) if raw_num else None
+            code_name = self._first_value(
+                article_metadata, ("nomCode", "titreCode", "codeName", "nameCode")
+            )
+            logger.warning(
+                "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_METADATA id=%s num=%s normalized_num=%s code_name=%s",
+                article_id, raw_num, article_ref, code_name,
+            )
+            if requested_ref and article_ref and article_ref != requested_ref:
                 continue
             valid_from = self._iso_date(self._first_value(
                 article_metadata, ("dateDebut", "dateDebutVersion", "dateEffet", "dateDebutApplication")
