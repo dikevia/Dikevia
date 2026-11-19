@@ -270,3 +270,87 @@ def test_entailment_verifier_uses_the_same_excerpt_as_the_claim_validator():
     }, [claim], [source])
     assert wrong_span["valid"] is False
     assert "verdict_0:support_quote_not_in_source" in wrong_span["invalid"]
+
+
+
+def test_entailment_request_sends_the_same_excerpt_and_temporal_metadata(monkeypatch):
+    import asyncio
+    import json
+    import app.ai_provider as provider
+
+    excerpt = "L'agent bénéficie d'un congé annuel dans les conditions prévues par le présent code."
+    source = {
+        **_eligible_official_source(),
+        "text": "Passage différent qui ne doit pas être envoyé au vérificateur.",
+        "excerpt": excerpt,
+        "full_text": "Texte intégral non pertinent pour cette vérification ciblée.",
+        "requested_effective_date": "2024-01-01",
+        "version_endpoint": "START",
+        "valid_from": "2024-01-01",
+        "valid_to": None,
+    }
+    claim = {
+        "text": "Au 2024-01-01, l'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+        "quote": excerpt,
+    }
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({
+                            "verdicts": [{
+                                "claim_index": 0,
+                                "source_id": source["source_id"],
+                                "verdict": "SUPPORTED",
+                                "support_quote": excerpt,
+                            }]
+                        })
+                    }
+                }]
+            }
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, *, headers, json):
+            captured["url"] = url
+            captured["payload"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(provider.httpx, "AsyncClient", FakeClient)
+    monkeypatch.setattr(provider.settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(provider.settings, "ai_model", "test-model")
+    monkeypatch.setattr(provider.settings, "ai_api_base_url", "https://provider.invalid/v1")
+
+    result = asyncio.run(provider.verify_claim_entailment(
+        claims=[claim],
+        sources=[source],
+        facts_period={
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "ongoing": False,
+        },
+    ))
+
+    assert result["valid"] is True
+    sent = json.loads(captured["payload"]["messages"][1]["content"])["items_to_verify"][0]
+    assert sent["official_text"] == excerpt
+    assert sent["requested_effective_date"] == "2024-01-01"
+    assert sent["version_endpoint"] == "START"
+    assert sent["facts_period"]["period_end"] == "2024-12-31"
+    assert "Passage différent" not in sent["official_text"]
+    assert "Texte intégral non pertinent" not in sent["official_text"]
