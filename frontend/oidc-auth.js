@@ -34,6 +34,8 @@
     const localEndpoint = url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
     if (url.protocol !== 'https:' && !(localIssuer && localEndpoint))
       throw new Error('Le point de terminaison OIDC doit utiliser HTTPS : ' + label + '.');
+    if (url.username || url.password || url.hash)
+      throw new Error('Le point de terminaison OIDC contient des composants interdits : ' + label + '.');
     return url.toString();
   }
   async function metadata() {
@@ -61,8 +63,10 @@
     sessionStorage.setItem('cfdt_oidc_state',state);
     sessionStorage.setItem('cfdt_oidc_verifier',verifier);
     const url = new URL(oidc.authorization_endpoint);
-    url.search = new URLSearchParams({client_id:cfg.client_id,response_type:'code',redirect_uri:cfg.redirect_uri,
-      scope:cfg.scopes||'openid profile email',state,code_challenge:await challenge(verifier),code_challenge_method:'S256'});
+    const authorizationParams = {client_id:cfg.client_id,response_type:'code',redirect_uri:cfg.redirect_uri,
+      scope:cfg.scopes||'openid profile email',state,code_challenge:await challenge(verifier),code_challenge_method:'S256'};
+    // OIDC endpoint URIs may already carry query parameters; preserve them.
+    for (const [key, value] of Object.entries(authorizationParams)) url.searchParams.set(key, value);
     window.location.assign(url.toString());
   }
   function cleanAuthCallbackUrl() {
@@ -132,6 +136,6 @@
     // Une callback précédente peut avoir échoué (code refusé, CORS, réseau).
     // Cela ne doit pas empêcher l'utilisateur de relancer une authentification.
     async login() { await ready.catch(() => {}); return login(); },
-    async logout() { accessToken=null;expiresAt=0;sessionStorage.removeItem('cfdt_oidc_state');sessionStorage.removeItem('cfdt_oidc_verifier');sessionStorage.removeItem('cfdt_pending_invitation');const oidc=await metadata().catch(()=>null);if(oidc?.end_session_endpoint)window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({client_id:cfg.client_id,post_logout_redirect_uri:cfg.redirect_uri})); }
+    async logout() { accessToken=null;expiresAt=0;sessionStorage.removeItem('cfdt_oidc_state');sessionStorage.removeItem('cfdt_oidc_verifier');sessionStorage.removeItem('cfdt_pending_invitation');const oidc=await metadata().catch(()=>null);if(oidc?.end_session_endpoint){const url=new URL(oidc.end_session_endpoint);url.searchParams.set('client_id',cfg.client_id);url.searchParams.set('post_logout_redirect_uri',cfg.redirect_uri);window.location.assign(url.toString());} }
   };
 })();
