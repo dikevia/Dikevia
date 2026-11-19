@@ -115,3 +115,13 @@ def test_local_document_ai_review_requires_server_opt_in_and_per_request_confirm
     assert "answer_references_are_grounded" not in source
     assert '"confirm_external_ai_transfer": confirm_external_ai_transfer' in source
     assert '"external_ai_transfer_enabled": bool(' in source
+
+
+def test_local_compliance_review_uses_only_current_clean_document_version_text():
+    import inspect
+    from app.main import review_local_rule_compliance
+
+    source = inspect.getsource(review_local_rule_compliance)
+    assert "JOIN document_versions v" in source
+    assert "v.version_number=x.version_number AND v.sha256=x.sha256 AND v.scan_status='CLEAN'" in source
+    assert "x.sha256=d.sha256 AND x.extraction_status='EXTRACTED'" in source
