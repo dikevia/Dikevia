@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - integration/beta-commercial-security
+      - android/beta-apk-delivery
       - feature/dikevia-v3.38.5-cgfp-chat
     paths:
       - "android/**"
@@ -13,6 +15,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: android-beta-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-android-beta:
@@ -40,7 +46,7 @@ jobs:
         working-directory: android
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Validate generated APK
+      - name: Validate APK and create checksum
         shell: bash
         run: |
           set -euo pipefail
@@ -48,11 +54,19 @@ jobs:
           test -s "$apk"
           test "$(stat -c%s "$apk")" -gt 100000
           unzip -t "$apk" >/dev/null
-          echo "APK archive exists, is non-empty and passes ZIP integrity validation."
-      - name: Upload beta APK
+          aapt="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -n "$aapt"
+          package="$("$aapt" dump badging "$apk" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -n 1)"
+          test "$package" = "fr.dikevia.commercial.beta"
+          sha256sum "$apk" > "$apk.sha256"
+          echo "APK valide : package=$package ; taille=$(stat -c%s "$apk") octets"
+
+      - name: Upload beta APK and checksum
         uses: actions/upload-artifact@v4
         with:
           name: dikevia-commercial-beta-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/app-debug.apk.sha256
           if-no-files-found: error
           retention-days: 14
