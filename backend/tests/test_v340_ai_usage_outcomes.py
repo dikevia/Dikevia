@@ -11,6 +11,7 @@ def test_ai_usage_outcome_migration_accepts_security_orchestrator_statuses():
         "ANSWERED",
         "REJECTED_UNGROUNDED",
         "PROVIDER_ERROR",
+        "STRUCTURED_OUTPUT_RECEIVED",
         "REJECTED_UNSUPPORTED_CLAIMS",
         "ABSTAINED_NO_SUPPORTED_CLAIMS",
         "REJECTED_UNSUPPORTED_ENTAILMENT",
