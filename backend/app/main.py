@@ -57,28 +57,55 @@ async def _startup_external_diagnostics() -> None:
             ("CODE_CIVIL_1217", "article 1217", "Code civil"),
             ("CGFP_NONEXISTENT_L999_999", "article L999-999", None),
         )
+        expected = {
+            "CGFP_L111_1": {"id": "LEGIARTI000044427983", "num": "L111-1"},
+            "CODE_CIVIL_1217": {"num": "1217"},
+            "CGFP_NONEXISTENT_L999_999": {},
+        }
         for label, query, code_name in probes:
             try:
                 results = await legifrance.search_code_articles(
                     query, probe_date, code_name=code_name,
                 )
-                if not results:
+                if label == "CGFP_NONEXISTENT_L999_999":
+                    passed = len(results) == 0
                     logger.warning(
-                        "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s result_count=0 status=NO_OFFICIAL_RESULT",
-                        label,
+                        "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s verdict=%s result_count=%d get_article_calls=%d status=%s",
+                        label, "PASS" if passed else "FAIL", len(results),
+                        0 if not results else len(results),
+                        "NO_OFFICIAL_RESULT" if passed else "UNEXPECTED_ARTICLE",
                     )
                     continue
-                for item in results:
+
+                expected_probe = expected[label]
+                if len(results) != 1:
                     logger.warning(
-                        "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s result_count=%d id=%s num=%s valid_from=%s valid_to=%s version_status=%s",
-                        label, len(results), item.get("source_id"), item.get("article"),
-                        item.get("valid_from"), item.get("valid_to"), item.get("version_status"),
+                        "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s verdict=FAIL result_count=%d reason=EXPECTED_EXACTLY_ONE",
+                        label, len(results),
                     )
+                    continue
+                item = results[0]
+                actual_num = item.get("article") or ""
+                normalized_num = re.sub(r"[^A-Z0-9-]", "", actual_num.upper())
+                id_ok = not expected_probe.get("id") or item.get("source_id") == expected_probe["id"]
+                num_ok = normalized_num == expected_probe["num"]
+                text_length = len(item.get("text") or "")
+                text_ok = text_length > 0 if label == "CODE_CIVIL_1217" else True
+                status_ok = item.get("version_status") == "IN_FORCE_ON_REQUESTED_DATE"
+                passed = id_ok and num_ok and text_ok and status_ok
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s verdict=%s result_count=%d id=%s id_ok=%s num=%s normalized_num=%s num_ok=%s valid_from=%s valid_to=%s version_status=%s status_ok=%s text_length=%d text_ok=%s",
+                    label, "PASS" if passed else "FAIL", len(results),
+                    item.get("source_id"), id_ok, actual_num, normalized_num, num_ok,
+                    item.get("valid_from"), item.get("valid_to"),
+                    item.get("version_status"), status_ok, text_length, text_ok,
+                )
             except Exception as exc:
                 logger.warning(
-                    "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s status=FAILED error_type=%s",
+                    "DIKEVIA_DIAGNOSTIC PISTE_PROBE name=%s verdict=ERROR error_type=%s",
                     label, type(exc).__name__,
                 )
+
     else:
         logger.warning("DIKEVIA_DIAGNOSTIC PISTE=NOT_CONFIGURED")
 
