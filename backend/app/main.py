@@ -697,8 +697,8 @@ async def platform_grant_founder_entitlement(payload: dict, platform=Depends(req
 @app.delete("/api/v1/platform/founder-entitlements/{slot_number}")
 async def platform_revoke_founder_entitlement(slot_number: int, payload: dict,
         platform=Depends(require_platform_admin)):
-    if slot_number not in range(1, 11):
-        raise HTTPException(422, "Numéro de place invalide.")
+    if slot_number not in range(2, 11):
+        raise HTTPException(422, "La place 1 du propriétaire fondateur ne peut pas être révoquée depuis l'interface.")
     reason = str(payload.get("reason", "")).strip()[:500] if isinstance(payload, dict) else ""
     if len(reason) < 8:
         raise HTTPException(422, "Un motif d'au moins 8 caractères est requis.")
