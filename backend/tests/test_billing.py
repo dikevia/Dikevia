@@ -152,3 +152,13 @@ def test_stripe_webhook_route_is_blocked_before_body_or_database_access(monkeypa
         asyncio.run(webhook(RequestMustNotBeRead()))
 
     assert error.value.status_code == 404
+
+
+
+def test_stripe_billing_opt_in_requires_both_secrets():
+    import pytest
+    from app.config import Settings, validate_runtime_configuration
+
+    config = Settings(_env_file=None, stripe_billing_enabled=True)
+    with pytest.raises(RuntimeError, match="STRIPE_BILLING_ENABLED"):
+        validate_runtime_configuration(config)
