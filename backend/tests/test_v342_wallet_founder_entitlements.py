@@ -39,6 +39,12 @@ def test_founder_entitlement_is_bound_to_verified_oidc_identity_not_email():
     assert '/api/v1/account/identity' in main
     assert "founder_entitlement" in main
     assert "email_normalized" not in migration
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'id="founderEntitlementForm"' in html
+    assert 'id="founderEntitlementsBody"' in html
+    assert "loadFounderEntitlements()" in html
+    assert "Identifiant de compte vérifié" in html
+    assert "Accès fondateur permanent — fonctionnalités premium" in html
 
 
 def test_founder_entitlement_requires_the_target_identity_to_have_logged_in():
