@@ -370,8 +370,9 @@ async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypat
         return [{
             "source_type": "LEGIFRANCE_LODA",
             "source_id": "LEGITEXT000000000001",
-            "title": "Décret de test",
+            "title": "Décret relatif à la fonction publique territoriale",
             "document_kind": "DECREE",
+            "jurisdiction": "France",
             "official_number": "2024-100",
             "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
             "full_text": "Texte officiel suffisamment long pour être exploitable. " * 10,
@@ -560,8 +561,9 @@ async def test_unverified_permanent_corpus_source_is_excluded_from_ai_even_with_
         return [{
             "source_type": "LEGIFRANCE_LODA",
             "source_id": "LEGITEXT000000000001",
-            "title": "Décret daté",
+            "title": "Décret relatif aux collectivités territoriales",
             "document_kind": "DECREE",
+            "jurisdiction": "France",
             "official_number": "2024-100",
             "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
             "full_text": "Texte officiel complet du décret. " * 10,
