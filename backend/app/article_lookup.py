@@ -34,11 +34,14 @@ def missing_direct_article_reference(question: str, sources: list[dict]) -> str 
     itself has been retrieved and validated.
     """
     question_text = str(question or "").strip()
-    requested = _ARTICLE_REFERENCE.search(question_text)
-    if not requested or not _DIRECT_LOOKUP_INTENT.search(_fold(question_text)):
+    requested_refs = list(dict.fromkeys(
+        (match.group(1) + match.group(2)).upper()
+        for match in _ARTICLE_REFERENCE.finditer(question_text)
+    ))
+    if not requested_refs or not _DIRECT_LOOKUP_INTENT.search(_fold(question_text)):
         return None
 
-    reference = (requested.group(1) + requested.group(2)).upper()
+    verified_refs: set[str] = set()
     for source in sources or []:
         if not isinstance(source, dict):
             continue
@@ -56,6 +59,6 @@ def missing_direct_article_reference(question: str, sources: list[dict]) -> str 
             or _normalise_reference(source.get("requested_reference"))
             or _normalise_reference(source.get("official_number"))
         )
-        if candidate == reference:
-            return None
-    return reference
+        if candidate:
+            verified_refs.add(candidate)
+    return next((reference for reference in requested_refs if reference not in verified_refs), None)
