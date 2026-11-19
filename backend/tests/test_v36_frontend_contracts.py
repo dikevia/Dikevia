@@ -85,3 +85,15 @@ def test_pilot_chat_discloses_gemini_processing_and_requires_anonymized_cases():
     assert "situations fictives ou anonymisées" in html
     assert "donnée médicale" in html
     assert "syndicale nominative" in html
+
+
+def test_workspace_navigation_is_accessible_and_mobile_options_remain_visible():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'class="skip-link" href="#mainContent"' in html
+    assert 'id="mainContent" tabindex="-1"' in html
+    assert 'class="workspace-context"' in html
+    assert 'aria-label="Navigation principale"' in html
+    assert 'aria-current="page"' in html
+    assert "grid-template-columns:repeat(2,minmax(0,1fr))" in html
+    assert "@media(prefers-reduced-motion:reduce)" in html
+    assert "b.setAttribute('aria-current','page')" in html
