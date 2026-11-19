@@ -126,3 +126,29 @@ def test_local_compliance_review_uses_only_current_clean_document_version_text()
     assert r'ai_review = "\n".join(' in source
     assert "v.version_number=x.version_number AND v.sha256=x.sha256 AND v.scan_status='CLEAN'" in source
     assert "x.sha256=d.sha256 AND x.extraction_status='EXTRACTED'" in source
+
+
+def test_historically_validated_local_document_is_eligible_for_its_effective_period():
+    from app.legal_assurance import validate_claim_evidence
+
+    excerpt = "L'agent conserve ses droits pendant la période considérée."
+    source = {
+        "source_type": "LOCAL_DOCUMENT",
+        "source_id": "LOCAL-DOC:HISTORICAL-1",
+        "title": "Délibération historique",
+        "content_kind": "FULL_TEXT",
+        "temporal_status": "VERIFIED_APPLICABLE",
+        "validation_status": "VERIFIED_HISTORICAL",
+        "citation_integrity": {"valid": True},
+        "excerpt": excerpt,
+    }
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent conserve ses droits pendant la période.",
+            "source_id": source["source_id"],
+            "quote": excerpt,
+        }]
+    }, [source])
+
+    assert result["valid"] is True
+    assert len(result["claims"]) == 1
