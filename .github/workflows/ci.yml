@@ -1,7 +1,8 @@
 name: CI
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feature/dikevia-v3.38.5-cgfp-chat]
+    # Pull-request head branches are checked by pull_request; avoid duplicate CI runs.
+    branches: [main, develop]
   pull_request:
     branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
   workflow_dispatch:
