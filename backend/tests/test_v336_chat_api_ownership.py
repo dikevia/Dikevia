@@ -308,3 +308,12 @@ def test_chat_ask_and_dossier_update_sql_include_explicit_owner_scope():
     query, args = conn.fetchrow_calls[0]
     assert "organization_id=$2::uuid AND user_id=$3::uuid" in query
     assert args[1:] == (ctx.organization_id, ctx.user_id)
+
+
+def test_local_document_ai_review_is_gated_by_explicit_opt_in():
+    import inspect
+    from app.main import review_local_rule_compliance
+
+    source = inspect.getsource(review_local_rule_compliance)
+    assert "settings.ai_local_document_review_enabled" in source
+    assert "if (usable_national and settings.ai_api_key and settings.ai_model" in source
