@@ -212,13 +212,21 @@ async def _startup_external_diagnostics() -> None:
 async def lifespan(app: FastAPI):
     validate_runtime_configuration(settings)
     await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
-    diagnostic_task = asyncio.create_task(_startup_external_diagnostics())
+    diagnostic_task = None
+    if settings.app_env == "production" and settings.enable_external_startup_diagnostics:
+        diagnostic_task = asyncio.create_task(_startup_external_diagnostics())
+    else:
+        logger.info(
+            "DIKEVIA_DIAGNOSTIC startup_checks=DISABLED "
+            "reason=explicit_opt_in_required"
+        )
     try:
         yield
     finally:
-        if not diagnostic_task.done():
-            diagnostic_task.cancel()
-        await asyncio.gather(diagnostic_task, return_exceptions=True)
+        if diagnostic_task is not None:
+            if not diagnostic_task.done():
+                diagnostic_task.cancel()
+            await asyncio.gather(diagnostic_task, return_exceptions=True)
         await close_pool()
 
 app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifespan=lifespan,
