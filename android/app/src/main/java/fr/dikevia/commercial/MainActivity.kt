@@ -96,7 +96,11 @@ private class Api{
         else b.method(method,null)
         http.newCall(b.build()).execute().use{r->
             val body=r.body?.string().orEmpty()
-            if(!r.isSuccessful)throw IllegalStateException(runCatching{JSONObject(body).optString("detail")}.getOrNull()?.takeIf{it.isNotBlank()}?:"Erreur serveur HTTP "+r.code)
+            if(!r.isSuccessful){
+                val detail=runCatching{JSONObject(body).optString("detail")}.getOrNull()?.takeIf{it.isNotBlank()}
+                val message=when(r.code){401->"Session expirée. Déconnectez-vous puis reconnectez-vous.";403->detail?: "Accès refusé pour ce compte ou ce rôle.";else->detail?:"Erreur serveur HTTP "+r.code}
+                throw IllegalStateException(message)
+            }
             return body
         }
     }
