@@ -5,7 +5,7 @@ Le projet Android fournit actuellement une coque de démonstration qui ouvre l'a
 - Identifiant d'application de debug : `fr.dikevia.commercial.beta` (suffixe de debug)
 - SDK de compilation : Android 35
 - Android minimum : API 24
-- Version : `0.1.0-beta`
+- Version de base Gradle : `0.1.0-beta` ; le suffixe de build debug ajoute actuellement `-beta`.
 - Construction actuelle : APK `debug`, signé automatiquement avec la clé debug de l'environnement de compilation.
 
 ## Statut de l'APK
