@@ -619,3 +619,56 @@ def test_runtime_configuration_accepts_gemini_openai_compatible_endpoint():
         ai_model="gemini-3.8-flash",
     )
     validate_runtime_configuration(cfg)
+
+@pytest.mark.asyncio
+async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_source_provenance(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    captured = {}
+
+    def handler(request):
+        captured["url"] = str(request.url)
+        captured["payload"] = __import__("json").loads(request.content)
+        return httpx.Response(200, json={
+            "model": "gemini-test",
+            "choices": [{"message": {"content": '{"claims": []}'}}],
+            "usage": {"prompt_tokens": 11, "completion_tokens": 3, "total_tokens": 14},
+        }, request=request)
+
+    real_async_client = httpx.AsyncClient
+
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+
+    monkeypatch.setattr(ai_provider.httpx, "AsyncClient", fake_async_client)
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_api_key", "test-key-not-a-real-secret")
+    monkeypatch.setattr(settings, "ai_model", "gemini-test")
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000012345678",
+        "official_source_id": "LEGIARTI000012345678",
+        "article": "L123-4",
+        "requested_effective_date": "2026-11-19",
+        "excerpt": "Extrait officiel de test suffisamment explicite.",
+        "valid_from": "2020-01-01",
+        "valid_to": "2999-01-01",
+    }
+
+    result = await ai_provider.analyze_question(
+        question="Question de test sur le texte officiel",
+        employer="NATIONAL",
+        facts_date="2026-11-19",
+        sources=[source],
+    )
+
+    assert result.content == '{"claims": []}'
+    assert result.model == "gemini-test"
+    assert captured["url"].endswith("/v1beta/openai/chat/completions")
+    serialized = captured["payload"]["messages"][1]["content"]
+    assert "LEGIARTI000012345678" in serialized
+    assert "2026-11-19" in serialized
+    assert "Extrait officiel de test suffisamment explicite." in serialized
+
