@@ -7,11 +7,13 @@ import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
 import android.os.Bundle
+import android.print.PrintManager
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.Space
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.webkit.CookieManager
@@ -147,8 +149,34 @@ class MainActivity : Activity() {
             }
         }
 
-        val root = FrameLayout(this)
-        root.addView(webView, FrameLayout.LayoutParams(
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.rgb(243, 246, 244))
+        }
+        val toolbar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(14, 6, 10, 6)
+            setBackgroundColor(Color.rgb(18, 59, 50))
+            addView(TextView(this@MainActivity).apply {
+                text = "Dikévia"
+                setTextColor(Color.WHITE)
+                textSize = 18f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(Button(this@MainActivity).apply {
+                text = "Imprimer"
+                setTextColor(Color.rgb(18, 59, 50))
+                setOnClickListener { printCurrentPage() }
+            })
+        }
+        root.addView(toolbar, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ))
+
+        val pageContainer = FrameLayout(this)
+        pageContainer.addView(webView, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
         ))
@@ -165,7 +193,7 @@ class MainActivity : Activity() {
                 setPadding(0, 16, 0, 0)
             })
         }
-        root.addView(loadingView, FrameLayout.LayoutParams(
+        pageContainer.addView(loadingView, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
         ))
@@ -190,9 +218,14 @@ class MainActivity : Activity() {
                 }
             })
         }
-        root.addView(errorView, FrameLayout.LayoutParams(
+        pageContainer.addView(errorView, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+        root.addView(pageContainer, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            0,
+            1f
         ))
 
         setContentView(root)
@@ -206,6 +239,17 @@ class MainActivity : Activity() {
     private fun showLoadError() {
         loadingView.visibility = View.GONE
         errorView.visibility = View.VISIBLE
+    }
+
+    private fun printCurrentPage() {
+        if (!::webView.isInitialized || webView.url == null) return
+        val printManager = getSystemService(PRINT_SERVICE) as PrintManager
+        val adapter = webView.createPrintDocumentAdapter("Dikevia")
+        printManager.print(
+            "Dikévia — document",
+            adapter,
+            android.print.PrintAttributes.Builder().build()
+        )
     }
 
     @Deprecated("Deprecated by Android; retained for WebView file selection compatibility.")
