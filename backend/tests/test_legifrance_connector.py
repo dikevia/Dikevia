@@ -483,3 +483,27 @@ async def test_loda_search_rejects_mismatched_consulted_identifier(monkeypatch):
         "heures supplémentaires 2024-2025 agents territoriaux", date(2026, 11, 19)
     )
     assert results == []
+
+
+@pytest.mark.asyncio
+async def test_loda_exact_lookup_supports_two_digit_year_decree_numbers(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            body = json.loads(request.content)
+            criterion = body["recherche"]["champs"][0]["criteres"][0]
+            assert body["recherche"]["champs"][0]["typeChamp"] == "NUM"
+            assert criterion == {
+                "typeRecherche": "EXACTE", "valeur": "91-875", "operateur": "ET"
+            }
+            return httpx.Response(200, json={"results": []})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    assert await connector.search_regulatory_texts(
+        "décret n° 91-875", date(2026, 11, 19)
+    ) == []
