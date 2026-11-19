@@ -10,6 +10,116 @@
 .dossier-panel{margin:12px 18px;padding:16px;border:1px solid #cbd9cf;border-radius:12px;background:#fbfdfb}.dossier-panel h3{margin:0 0 6px;font-size:17px}.dossier-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dossier-grid .field{margin:6px 0}.dossier-panel textarea{min-height:76px;font-size:12px}.dossier-readonly{padding:10px;border:1px solid #e1e9e4;border-radius:8px;background:white;white-space:pre-wrap;font-size:12px;max-height:220px;overflow:auto}.dossier-warning{padding:10px;border-radius:8px;background:#fff8e5;border:1px solid #eee0b9;font-size:12px;color:#67521e;margin:10px 0}
 @media print{body.dossier-print-mode *{visibility:hidden!important}body.dossier-print-mode #dossierPanel,body.dossier-print-mode #dossierPanel *{visibility:visible!important}body.dossier-print-mode #dossierPanel{position:absolute;left:0;top:0;width:100%;border:0;margin:0;padding:20px;overflow:visible}body.dossier-print-mode #dossierPanel .no-print{display:none!important}body.dossier-print-mode #dossierPanel textarea{border:0;resize:none;min-height:0;overflow:visible}body.dossier-print-mode #dossierPanel .dossier-readonly{max-height:none;overflow:visible}}
 @media(max-width:600px){.dossier-grid{grid-template-columns:1fr}.dossier-panel{margin:10px;padding:12px}}@media(max-width:600px){.juris-messages{padding:14px 10px;max-height:55vh}.juris-message{max-width:100%}.juris-context{grid-template-columns:1fr}.juris-chat-head{padding:12px}.juris-chat-notice{margin:10px}.juris-composer{padding:11px}.juris-suggestions{flex-direction:column}.juris-suggestions button{width:100%}}
+
+/* Dikévia UI refresh — visual layer only */
+:root{
+  --brand:#174b3d;--brand-deep:#10382f;--brand-soft:#e8f1ec;
+  --ink:#182720;--muted:#68786f;--line:#e1e9e4;--canvas:#f5f7f5;
+  --surface:#fff;--surface-soft:#f8faf8;--accent:#c49a52;
+  --shadow:0 10px 30px rgba(19,55,42,.07);
+  color:var(--ink);background:var(--canvas)
+}
+body{background:var(--canvas);letter-spacing:.005em}
+.top{background:linear-gradient(110deg,var(--brand-deep),var(--brand));padding-top:18px;padding-bottom:18px;box-shadow:0 3px 18px rgba(10,45,34,.12)}
+.brand{font-size:22px;letter-spacing:.1px}.brand small{font-size:11px;letter-spacing:.025em}
+.shell{max-width:1280px;margin:30px auto;padding:0 24px}
+.notice{border-color:#eadbb8;background:#fffaf0;color:#66552e;border-radius:12px;padding:14px 17px}
+.grid{grid-template-columns:248px minmax(0,1fr);gap:22px}
+.side{position:sticky;top:18px;padding:10px;border-radius:16px;border-color:var(--line);box-shadow:0 4px 18px rgba(20,55,42,.035)}
+.nav{padding:12px 13px;border-radius:10px;font-size:13px;transition:background .16s ease,color .16s ease}
+.nav.active,.nav:hover{background:var(--brand-soft);color:var(--brand);font-weight:750}
+.panel,.card{border-color:var(--line);border-radius:16px;box-shadow:0 3px 14px rgba(20,55,42,.035)}
+.panel{padding:22px;margin-bottom:18px}
+.panel h2{font-size:17px;letter-spacing:-.015em}
+.heading{align-items:center;margin-bottom:20px}
+.heading h1{font-size:27px;letter-spacing:-.035em;color:#172c23}
+.muted{color:var(--muted);line-height:1.55}
+.cards{gap:14px;margin-bottom:18px}
+.card{padding:19px;transition:transform .16s ease,box-shadow .16s ease}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.metric{font-size:29px;letter-spacing:-.04em;color:var(--brand)}
+button,.button{background:var(--brand);border-radius:10px;padding:11px 16px;transition:background .16s ease,transform .16s ease,box-shadow .16s ease}
+button:hover,.button:hover{background:var(--brand-deep);box-shadow:0 4px 12px rgba(16,56,47,.16)}
+button:active{transform:translateY(1px)}
+button.secondary{background:#edf2ee;color:#29483a}
+button.secondary:hover{background:#e1ebe4;box-shadow:none}
+button.danger{background:#a43b3b}
+input,select,textarea{border-color:#d4ded7;border-radius:10px;padding:11px 12px;transition:border-color .15s ease,box-shadow .15s ease}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#54816b;box-shadow:0 0 0 3px rgba(45,112,78,.12)}
+label{color:#33483c;font-size:12px;letter-spacing:.01em}
+table{font-size:13px}th{background:#f8faf8;color:#65756b;font-weight:700}
+th,td{padding:12px 11px}
+.pill{background:#eaf1ec;color:#315341;padding:5px 9px}
+.auth{margin:64px auto;border-radius:20px;padding:34px;box-shadow:var(--shadow);border-color:var(--line)}
+.auth h1{letter-spacing:-.035em;color:#172c23}
+.juris-chat{border-radius:18px;border-color:#dfe8e2;box-shadow:0 12px 36px rgba(18,59,50,.075)}
+.juris-chat-head{padding:18px 22px;background:linear-gradient(110deg,#fff,#f8fbf8)}
+.juris-brand-mark{width:44px;height:44px;border-radius:14px;background:var(--brand-soft);color:var(--brand)}
+.juris-chat-head strong{font-size:15px;color:#1d382b}
+.juris-chat-notice{border-radius:11px;margin:16px 22px 0}
+.juris-messages{min-height:360px;padding:28px 24px;gap:20px;background:linear-gradient(180deg,#fff 0%,#fcfdfc 100%)}
+.juris-welcome{padding:34px 12px}
+.juris-welcome-icon{width:70px;height:70px;border-radius:21px;background:var(--brand-soft);color:var(--brand)}
+.juris-welcome h2{font-size:25px;letter-spacing:-.035em;color:#1a3328}
+.juris-welcome p{font-size:14px;max-width:470px;margin:0 auto;line-height:1.7}
+.juris-suggestions{gap:10px;margin-top:22px}
+.juris-suggestions button{background:#f2f6f3;color:#315341;border:1px solid #dfe9e2;border-radius:999px;padding:10px 14px;font-weight:600}
+.juris-suggestions button:hover{background:#e7f0e9;border-color:#cbdccf}
+.juris-message{max-width:88%;gap:11px}
+.juris-avatar{border-radius:11px;background:var(--brand)}
+.juris-bubble{font-size:14px;line-height:1.75;padding:14px 16px;border-color:#e3eae5;background:#f8faf8;border-radius:5px 15px 15px 15px}
+.juris-message.user .juris-bubble{background:#eaf2ed;border-color:#dbe8df;border-radius:15px 5px 15px 15px}
+.juris-status{letter-spacing:.015em}
+.juris-source{border-radius:10px;border-color:#e2eae4;padding:11px}
+.juris-composer{padding:17px 22px;background:#fafcfb}
+.juris-input-row{border-radius:14px;border-color:#d5e0d8;padding:9px;box-shadow:0 2px 8px rgba(20,55,42,.025)}
+.juris-input-row:focus-within{border-color:#6a927a;box-shadow:0 0 0 3px rgba(45,112,78,.10)}
+.juris-input-row textarea{font-size:14px;line-height:1.5}
+.juris-input-row button{background:var(--brand);border-radius:11px}
+.juris-history{background:#fbfcfb;padding:12px 20px}
+.juris-history-item{border-radius:9px}
+.dossier-panel{border-radius:14px;background:#fbfdfb}
+.message{border-radius:10px}
+footer{color:#849188}
+:focus-visible{outline:3px solid rgba(76,130,94,.35);outline-offset:2px}
+@media(max-width:900px){
+ .shell{padding:0 18px;margin:22px auto}
+ .grid{grid-template-columns:1fr;gap:14px}
+ .side{position:static;display:flex;overflow-x:auto;gap:5px;padding:8px;scrollbar-width:thin}
+ .nav{flex:0 0 auto;width:auto;white-space:nowrap}
+}
+@media(max-width:600px){
+ .top{padding:14px 16px;gap:10px}.brand{font-size:20px}.brand small{max-width:230px;line-height:1.35}
+ .topright{font-size:11px}
+ .shell{padding:0 12px;margin:14px auto}
+ .notice{font-size:12px;padding:11px 12px;margin-bottom:13px}
+ .heading{display:flex;align-items:flex-start;gap:8px}.heading h1{font-size:23px}
+ .panel{padding:15px;margin-bottom:13px}
+ .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .card{padding:14px}.metric{font-size:25px}
+ .juris-chat{border-radius:14px}
+ .juris-chat-head{padding:13px}
+ .juris-chat-head .pill{font-size:9px}
+ .juris-chat-notice{margin:10px;padding:10px;font-size:11px}
+ .juris-messages{padding:17px 11px;min-height:300px;max-height:57vh;gap:15px}
+ .juris-welcome{padding:23px 5px}
+ .juris-welcome h2{font-size:21px}
+ .juris-welcome p{font-size:13px}
+ .juris-message{max-width:100%;gap:7px}
+ .juris-avatar{width:29px;height:29px;flex-basis:29px}
+ .juris-bubble{font-size:13px;padding:11px 12px}
+ .juris-composer{padding:11px}
+ .juris-history{padding:10px}
+ .juris-history-head{align-items:flex-start}
+ .juris-history-head .row{gap:5px}
+ .juris-history-head button{font-size:11px;padding:8px}
+}
+@media(max-width:380px){
+ .cards{grid-template-columns:1fr}
+ .topright #userLabel{max-width:105px;overflow:hidden;text-overflow:ellipsis}
+ .juris-chat-head .pill{display:none}
+}
+
 </style></head><body>
 <header class="top"><div class="brand">Dikévia<small>Assistant d'information juridique · Fonction publique territoriale</small></div><div class="topright"><span id="userLabel">Session non connectée</span><button id="logout" class="secondary hidden">Déconnexion</button></div></header>
 <main class="shell">
