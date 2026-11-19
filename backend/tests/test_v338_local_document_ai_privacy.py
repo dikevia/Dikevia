@@ -154,3 +154,14 @@ def test_history_excludes_turn_when_local_source_was_beyond_persisted_source_pre
     assert _ai_safe_conversation_history(rows) == [
         {"role": "user", "content": "Question suivante"},
     ]
+
+def test_consented_undated_local_document_can_be_compared_without_becoming_temporally_applicable(monkeypatch):
+    from app import ai_provider
+
+    monkeypatch.setattr(ai_provider.settings, "ai_local_documents_in_chat_enabled", False)
+    undated = {key: value for key, value in _local_source().items() if key != "effective_from"}
+    assert _usable_document_sources([undated]) == []
+    result = _usable_document_sources([undated], allow_local_documents=True)
+    assert len(result) == 1
+    assert result[0]["source_id"] == "LOCAL-DOC:123"
+    assert "effective_from" not in result[0]
