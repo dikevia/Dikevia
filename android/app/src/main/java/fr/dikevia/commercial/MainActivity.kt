@@ -143,7 +143,7 @@ private data class Entry(val title:String,val detail:String)
                     "Documents"->Listing("Documents",token,current,api,"/api/v1/documents"){Entry(it.optString("title"),listOf(it.optString("document_type"),it.optString("validation_status"),it.optString("collectivity_name")).filter{s->s.isNotBlank()}.joinToString(" · "))}
                     "Collectivités"->Listing("Collectivités",token,current,api,"/api/v1/collectivities"){Entry(it.optString("name"),it.optString("code"))}
                     "Membres"->Listing("Membres",token,current,api,"/api/v1/organizations/me/members"){Entry(it.optString("display_name").ifBlank{it.optString("email")},it.optString("role")+" · "+it.optString("status"))}
-                    else->Profile(user,current,logout)
+                    else->Profile(user,current){logout();resumeConversationId=null;tab="Accueil"}
                 }
             }}
             Nav(tab){tab=it}
