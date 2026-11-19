@@ -27,6 +27,15 @@
   async function challenge(verifier) {
     return base64url(await crypto.subtle.digest('SHA-256', encoder.encode(verifier)));
   }
+  function validateEndpoint(endpoint, issuer, label) {
+    let url;
+    try { url = new URL(endpoint); } catch (_) { throw new Error('Point de terminaison OIDC invalide : ' + label + '.'); }
+    const localIssuer = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(issuer);
+    const localEndpoint = url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+    if (url.protocol !== 'https:' && !(localIssuer && localEndpoint))
+      throw new Error('Le point de terminaison OIDC doit utiliser HTTPS : ' + label + '.');
+    return url.toString();
+  }
   async function metadata() {
     if (discovery) return discovery;
     const issuer = cfg.issuer.replace(/\/$/,'');
@@ -37,6 +46,10 @@
     const data = await response.json();
     if (data.issuer !== issuer || !data.authorization_endpoint || !data.token_endpoint)
       throw new Error('Métadonnées OIDC incohérentes ou incomplètes.');
+    data.authorization_endpoint = validateEndpoint(data.authorization_endpoint, issuer, 'authorization');
+    data.token_endpoint = validateEndpoint(data.token_endpoint, issuer, 'token');
+    if (data.end_session_endpoint)
+      data.end_session_endpoint = validateEndpoint(data.end_session_endpoint, issuer, 'logout');
     discovery = data;
     return data;
   }
