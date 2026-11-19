@@ -86,6 +86,72 @@ def test_claim_evidence_rejects_unsupported_numeric_entitlement():
     assert "claim_0:unsupported_numeric_or_date_detail" in result["invalid_claims"]
 
 
+def test_period_endpoint_claim_must_be_scoped_to_its_exact_version_date():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = {
+        **_eligible_official_source(),
+        "source_id": "LEGIARTI000012345678_V20240101",
+        "version_endpoint": "START",
+        "requested_effective_date": "2024-01-01",
+    }
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period={
+        "period_start": "2024-01-01", "period_end": "2024-12-31",
+        "ongoing": False,
+    })
+    assert result["valid"] is False
+    assert "claim_0:period_endpoint_not_date_scoped" in result["invalid_claims"]
+
+
+def test_period_endpoint_claim_accepts_exact_date_but_not_whole_period_conclusion():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = {
+        **_eligible_official_source(),
+        "source_id": "LEGIARTI000012345678_V20240101",
+        "version_endpoint": "START",
+        "requested_effective_date": "2024-01-01",
+    }
+    facts_period = {
+        "period_start": "2024-01-01", "period_end": "2024-12-31",
+        "ongoing": False,
+    }
+    scoped = validate_claim_evidence({
+        "claims": [{
+            "text": "Au 2024-01-01, l'agent bénéficie d'un congé annuel dans les conditions prévues.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period=facts_period)
+    assert scoped["valid"] is True
+
+    broad = validate_claim_evidence({
+        "claims": [{
+            "text": "Au 2024-01-01, l'agent bénéficie de ce droit pendant toute la période.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period=facts_period)
+    assert broad["valid"] is False
+    assert "claim_0:period_wide_claim_from_endpoint_only" in broad["invalid_claims"]
+
+    year_wide = validate_claim_evidence({
+        "claims": [{
+            "text": "Au 2024-01-01, le droit reste applicable en 2024.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period=facts_period)
+    assert year_wide["valid"] is False
+    assert "claim_0:period_wide_claim_from_endpoint_only" in year_wide["invalid_claims"]
+
+
 def test_claim_evidence_rejects_wrong_source_identity_even_when_quote_exists():
     from app.legal_assurance import validate_claim_evidence
 
