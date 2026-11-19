@@ -5,7 +5,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_login_button_is_always_visible_when_oidc_is_unavailable():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert '<button id="login" type="button">Se connecter</button>' in html
+    assert '<button id="login" type="button">' in html
+    assert 'auth-security' in html
+    assert 'Aucun mot de passe n’est demandé ni stocké par Dikévia.' in html
     assert "$('#login').classList.remove('hidden')" in html
     assert "$('#login').classList.toggle('hidden'" not in html
 
