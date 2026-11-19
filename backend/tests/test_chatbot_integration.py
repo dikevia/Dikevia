@@ -119,3 +119,22 @@ async def test_nonexistent_article_abstains_before_any_gemini_call(monkeypatch):
     assert any("Aucune disposition législative ou réglementaire exploitable" in item
                for item in response.missing_information)
 
+
+
+def test_municipal_employment_case_law_is_in_scope():
+    result = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+        "title": "Décision concernant un agent de la commune de Valmont",
+        "full_text": "La commune de Valmont a pris une mesure disciplinaire concernant cet agent.",
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True
+
+
+def test_municipal_non_employment_case_law_is_not_admitted_by_locality_alone():
+    result = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+        "title": "Permis de construire délivré par la commune de Valmont",
+        "full_text": "Le maire a refusé le permis de construire.",
+    })
+    assert result["analysis_eligible"] is False
