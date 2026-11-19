@@ -275,13 +275,11 @@ private data class Entry(val title:String,val detail:String)
                 if(factsEnd.isNotBlank()&&!ongoing)payload.put("facts_end_date",factsEnd.trim())
                 collectivityId?.let{payload.put("collectivity_id",it)}
                 conversationId?.let{payload.put("conversation_id",it)}
+                val prior=answer
+                if(prior!=null)previousMessages=previousMessages+JSONObject().put("role","assistant").put("content",prior.optString("answer"))
+                previousMessages=previousMessages+JSONObject().put("role","user").put("content",question)
                 val response=withContext(Dispatchers.IO){JSONObject(api.call(token,org.id,"/api/v1/chat/ask","POST",payload))}
                 answer=response
-                val prior=answer
-                if(prior!=null && previousMessages.lastOrNull()?.optString("role")!="assistant"){
-                    previousMessages=previousMessages+JSONObject().put("role","assistant").put("content",prior.optString("answer"))
-                }
-                previousMessages=previousMessages+JSONObject().put("role","user").put("content",question)
                 conversationId=response.optString("conversation_id").takeIf{it.isNotBlank()&&it!="null"}
                 q=""
             }
