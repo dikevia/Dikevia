@@ -308,12 +308,20 @@ async def auth_me(principal: Principal = Depends(get_principal)):
             if principal.email_verified and principal.email:
                 row = await conn.fetchrow("""
                     UPDATE users SET email=lower(trim($3)),
-                      email_verified_at=COALESCE(email_verified_at,now()),
-                      trial_started_at=COALESCE(trial_started_at,now()),
-                      trial_expires_at=COALESCE(trial_expires_at,now()+interval '72 hours')
+                      email_verified_at=COALESCE(email_verified_at,now())
                     WHERE oidc_issuer=$1 AND oidc_subject=$2 AND status='ACTIVE'
                     RETURNING id,email,display_name,status,trial_started_at,trial_expires_at
                 """, principal.issuer, principal.subject, principal.email)
+                if row and row["trial_started_at"] is None:
+                    claimed = await conn.fetchval(
+                        "SELECT claim_trial_email($1::uuid,$2)", str(row["id"]), row["email"])
+                    if claimed:
+                        row = await conn.fetchrow("""
+                            UPDATE users SET trial_started_at=now(),
+                              trial_expires_at=now()+interval '72 hours'
+                            WHERE id=$1::uuid
+                            RETURNING id,email,display_name,status,trial_started_at,trial_expires_at
+                        """, str(row["id"]))
             else:
                 row = await conn.fetchrow("""
                     SELECT id,email,display_name,status,trial_started_at,trial_expires_at
