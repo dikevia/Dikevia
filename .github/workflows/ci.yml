@@ -35,8 +35,8 @@ jobs:
             backend/requirements-dev.txt
       - name: Install PostgreSQL client
         run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y postgresql-client
       - name: Install dependencies and quality tools
         run: |
           python -m pip install --upgrade pip
