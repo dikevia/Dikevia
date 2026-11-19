@@ -43,3 +43,21 @@ def test_visual_polish_does_not_change_oidc_or_chat_api_contracts():
     assert "window.CFDT_JURIS_OIDC" in auth
     assert "api('/api/v1/chat/ask'" in html
     assert "verification_status" in html
+
+
+def test_login_screen_has_professional_identity_and_preserves_oidc_button():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'class="auth-brand"' in html
+    assert 'class="auth-brand-mark"' in html
+    assert 'id="authMessage" class="message" role="status" aria-live="polite"' in html
+    assert '<button id="login" type="button">' in html
+    assert 'class="auth-security"' in html
+    assert "auth.login()" in html
+
+
+def test_business_forms_and_tables_are_mobile_readable():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "#collectivityCreate form .row,#invitePanel form .row" in html
+    assert "grid-template-columns:1fr" in html
+    assert ".view .tablewrap{margin-left:-2px" in html
+    assert "#view-documents .tablewrap table{min-width:690px}" in html
