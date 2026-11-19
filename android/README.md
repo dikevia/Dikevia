@@ -8,7 +8,7 @@ Cette branche remplace l'ancienne enveloppe WebView par une application Android 
 - Authentification : OpenID Connect Authorization Code + PKCE via AppAuth, dans le navigateur système.
 - API : HTTPS vers l'API commerciale, jeton Bearer et en-tête `X-Organization-ID`.
 - Le serveur reste l'autorité pour vérifier l'identité, l'appartenance à l'organisation et les permissions.
-- Le jeton d'accès est conservé en mémoire uniquement ; il n'est pas écrit dans les préférences ni dans les fichiers de l'application.
+- Les jetons d'accès, d'identité et de renouvellement restent en mémoire uniquement ; ils ne sont pas écrits dans les préférences ni dans les fichiers de l'application. Le renouvellement automatique est tenté avant expiration lorsque Keycloak fournit un refresh token.
 - Les documents sont affichés en métadonnées uniquement dans cette première étape ; aucun fichier non validé n'est téléchargé.
 - Palette Emerald & Gold définie dans la spécification de design du dépôt.
 
@@ -38,12 +38,12 @@ L'APK debug utilise le package `fr.dikevia.commercial.beta`. Il s'agit d'un buil
 ## Limites connues de cette première livraison native
 
 - La session n'est pas restaurée après fermeture complète de l'application ; il faut se reconnecter.
-- La déconnexion locale efface le jeton en mémoire ; la fermeture de session Keycloak reste à intégrer.
+- La déconnexion efface immédiatement les jetons locaux et tente de terminer la session OIDC via l'endpoint de fin de session du fournisseur. Le résultat réel dépend de la configuration Keycloak hébergée.
 - L'historique permet de consulter les messages et de reprendre une conversation ; le contexte antérieur est rechargé par le serveur lors de la question suivante.
 - L'assistant affiche le statut de vérification, les informations manquantes, les sources et les extraits disponibles ; il prend en charge les dates de situation, le caractère toujours en cours et le choix d'une collectivité.
 - Les documents restent consultables en métadonnées uniquement, sans téléchargement avant validation antivirus.
 - L'écran Membres dépend du rôle ORG_ADMIN et affiche l'erreur 403 pour les autres rôles.
-- Les tests de compilation, de connexion OIDC et sur appareil physique doivent être observés avant de déclarer la bêta prête.
+- La compilation APK et le test Compose sur émulateur sont exécutés par GitHub Actions. La connexion OIDC réelle, les appels API avec un compte autorisé et les essais sur appareil physique restent des validations manuelles indispensables avant diffusion.
 
 Aucune migration de base, modification de configuration hébergée, dépense, fusion ou mise en production n'est effectuée par cette branche.
 
