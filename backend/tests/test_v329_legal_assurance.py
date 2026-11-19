@@ -151,6 +151,16 @@ def test_period_endpoint_claim_accepts_exact_date_but_not_whole_period_conclusio
     assert year_wide["valid"] is False
     assert "claim_0:period_wide_claim_from_endpoint_only" in year_wide["invalid_claims"]
 
+    whole_year = validate_claim_evidence({
+        "claims": [{
+            "text": "Au 2024-01-01, le droit s'applique toute l'année 2024.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source], facts_period=facts_period)
+    assert whole_year["valid"] is False
+    assert "claim_0:period_wide_claim_from_endpoint_only" in whole_year["invalid_claims"]
+
 
 def test_claim_evidence_rejects_wrong_source_identity_even_when_quote_exists():
     from app.legal_assurance import validate_claim_evidence
