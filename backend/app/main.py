@@ -118,7 +118,8 @@ async def _startup_external_diagnostics() -> None:
     # Probe the regulatory-text pillar with several grounded FPT overtime query forms.
     if legifrance.configured:
         for label, query in (
-            ("IHTS_FPT_DECREE", "décret n° 2001-623"),
+            ("IHTS_FPT_FRAMEWORK", "décret n° 91-875"),
+            ("IHTS_FPT_WORKTIME", "décret n° 2001-623"),
             ("IHTS_NUMBER", "décret n° 2002-60"),
             ("IHTS_TITLE", "indemnités horaires"),
             ("IHTS_WORKS", "travaux supplémentaires"),
