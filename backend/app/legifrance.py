@@ -394,7 +394,7 @@ class LegifranceConnector:
             query, re.I,
         )
         requested_ref = (
-            re.sub(r"[.\s]+", "", requested_ref_match.group(1)).upper()
+            re.sub(r"[^A-Z0-9]", "", requested_ref_match.group(1).upper())
             if requested_ref_match else None
         )
         articles: list[dict] = []
