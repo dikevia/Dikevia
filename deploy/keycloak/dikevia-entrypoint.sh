@@ -21,7 +21,7 @@ sync_dikevia_realm_branding() {
 
   for ((attempt = 1; attempt <= 90; attempt++)); do
     status=""
-    if exec 3<>"/dev/tcp/127.0.0.1/${port}" 2>/dev/null; then
+    if { exec 3<>"/dev/tcp/127.0.0.1/${port}"; } 2>/dev/null; then
       printf 'GET /health/ready HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n' "$host_header" >&3
       IFS= read -r status <&3 || true
       exec 3>&- 3<&-
