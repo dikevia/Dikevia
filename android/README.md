@@ -39,7 +39,7 @@ L'APK debug utilise le package `fr.dikevia.commercial.beta`. Il s'agit d'un buil
 
 - La session n'est pas restaurée après fermeture complète de l'application ; il faut se reconnecter.
 - La déconnexion locale efface le jeton en mémoire ; la fermeture de session Keycloak reste à intégrer.
-- L'historique est consultable en liste ; la réouverture détaillée d'une conversation reste à finaliser.
+- L'historique permet de rouvrir une conversation et d'afficher ses messages ; la reprise de la conversation pour répondre depuis cet écran reste à finaliser.
 - Les documents sont consultables en liste ; l'ouverture/téléchargement après validation antivirus reste à intégrer.
 - L'écran Membres dépend du rôle ORG_ADMIN et affiche l'erreur 403 pour les autres rôles.
 - Les tests de compilation, de connexion OIDC et sur appareil physique doivent être observés avant de déclarer la bêta prête.
