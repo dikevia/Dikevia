@@ -392,7 +392,24 @@ class LegifranceConnector:
             detail = await self._request("POST", "/consult/getArticle", json_body={"id": article_id})
             returned_ids = self._find_article_ids(detail)
             text = self._extract_text(detail)
+            # Temporary shape-only diagnostics: never log article text or credentials.
+            text_fields = []
+            for node in self._walk_dicts(detail):
+                for key, value in node.items():
+                    if isinstance(value, str) and key.lower() in {
+                        "texte", "text", "contenu", "content", "textehtml", "contenuhtml"
+                    }:
+                        text_fields.append({"key": key, "length": len(value)})
+            logger.warning(
+                "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE id=%s top_keys=%s returned_ids=%s extracted_text_length=%d text_fields=%s",
+                article_id, sorted(detail.keys()), returned_ids, len(text),
+                json.dumps(text_fields[:20], ensure_ascii=False),
+            )
             if article_id not in returned_ids or not text:
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_REJECTED id=%s id_match=%s text_present=%s",
+                    article_id, article_id in returned_ids, bool(text),
+                )
                 continue
             article_metadata = next(
                 (node for node in self._walk_dicts(detail)
