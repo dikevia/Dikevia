@@ -43,7 +43,7 @@ def missing_direct_article_reference(question: str, sources: list[dict]) -> str 
         if not isinstance(source, dict):
             continue
         if source.get("source_type") not in {
-            "LEGIFRANCE_API", "LEGIFRANCE_LODA", "CGFP_SNAPSHOT",
+            "LEGIFRANCE_API", "CGFP_SNAPSHOT",
         }:
             continue
         integrity = source.get("citation_integrity") or {}
