@@ -213,7 +213,9 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
 
     assert len(seen) == 3
     assert all(len(query) <= 500 for query in seen)
-    assert all(query == current_question.strip()[:500] for query in seen)
+    assert all(query.startswith(current_question.strip()[:250]) for query in seen)
+    assert all("Ancienne question sans rapport" not in query for query in seen)
+    assert all("décret 2001-623" in query for query in seen)
 
 
 
