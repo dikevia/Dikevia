@@ -112,6 +112,8 @@ async def require_legal_editor(ctx: TenantContext = Depends(get_tenant_context))
 
 async def require_platform_admin(principal: Principal = Depends(get_principal)):
     """Platform authority is read from the dedicated global registry, never from a tenant role."""
+    if not principal.email_verified or not principal.email:
+        raise HTTPException(403, "Une adresse e-mail vérifiée est requise pour les opérations administrateur.")
     async with get_pool().acquire() as conn:
         async with conn.transaction():
             await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", principal.issuer)
