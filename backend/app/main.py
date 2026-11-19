@@ -1037,7 +1037,12 @@ async def review_local_rule_compliance(document_id: str, q: str,
       FROM documents d
       JOIN collectivities c ON c.id=d.collectivity_id AND c.organization_id=d.organization_id
       LEFT JOIN LATERAL (SELECT x.extracted_text,x.extraction_status,x.version_number,x.sha256
-        FROM document_text x WHERE x.organization_id=d.organization_id AND x.document_id=d.id
+        FROM document_text x
+        JOIN document_versions v
+          ON v.organization_id=x.organization_id AND v.document_id=x.document_id
+         AND v.version_number=x.version_number AND v.sha256=x.sha256 AND v.scan_status='CLEAN'
+        WHERE x.organization_id=d.organization_id AND x.document_id=d.id
+          AND x.sha256=d.sha256 AND x.extraction_status='EXTRACTED'
         ORDER BY x.version_number DESC LIMIT 1) dt ON true
       WHERE d.id=$1::uuid AND d.organization_id=$2::uuid
     """, document_id, ctx.organization_id)
