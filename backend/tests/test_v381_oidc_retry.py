@@ -61,7 +61,7 @@ def test_oidc_authorization_and_logout_preserve_endpoint_query_parameters():
     auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
     assert "for (const [key, value] of Object.entries(authorizationParams)) url.searchParams.set(key, value);" in auth
     assert "url.searchParams.set('client_id',cfg.client_id);" in auth
-    assert "url.searchParams.set('post_logout_redirect_uri',cfg.redirect_uri);" in auth
+    assert "url.searchParams.set('post_logout_redirect_uri',redirectUri);" in auth
 
 def test_local_keycloak_issuer_allows_realm_path_over_http():
     auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
