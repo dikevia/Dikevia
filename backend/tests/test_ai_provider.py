@@ -730,7 +730,7 @@ def test_system_prompt_explicitly_treats_uploaded_document_instructions_as_untru
 def test_local_document_ai_review_requires_explicit_privacy_opt_in():
     from app.config import Settings
 
-    assert Settings().ai_local_document_review_enabled is False
+    assert Settings(_env_file=None).ai_local_document_review_enabled is False
 
 
 def test_entailment_verifier_treats_official_text_as_untrusted_data():
