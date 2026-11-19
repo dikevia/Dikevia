@@ -12,6 +12,9 @@ def test_credit_wallet_is_tenant_scoped_append_only_and_idempotent():
     assert "FORCE ROW LEVEL SECURITY" in migration
     assert "FOR SELECT USING" in migration
     assert "wallet_apply_entry" in migration
+    assert "wallet_admin_grant_entry" in migration
+    assert "p_entry_type IS DISTINCT FROM 'USAGE_DEBIT'" in migration
+    assert "GRANT EXECUTE ON FUNCTION wallet_admin_grant_entry" in migration
     assert "FOR UPDATE" in migration
     assert "v_balance + p_delta < 0" in migration
     assert "ON CONFLICT(organization_id) DO NOTHING" in migration
