@@ -124,3 +124,22 @@ def test_billing_screen_uses_validated_four_tier_commercial_reference_prices():
     assert "Les crédits mensuels et les recharges sont affichés à titre informatif" in html
     assert "les paiements restent désactivés" in html
     assert 'data-checkout="SYNDICAT_10"' not in html
+
+
+def test_legal_research_workspace_exposes_temporal_national_and_case_law_search():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'data-view="research"' in html
+    assert 'id="view-research"' in html
+    assert 'id="legalSearchType"' in html
+    assert "/api/v1/legal/knowledge/search" in html
+    assert "/api/v1/legal/legifrance/search" in html
+    assert "/api/v1/legal/jurisprudence/administrative/search" in html
+    assert "Consulter le texte intégral contrôlé" in html
+    assert "Cela ne prouve pas l’absence de règle juridique." in html
+
+
+def test_chat_can_target_any_collectivity_in_the_active_organization():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'id="askCollectivity"' in html
+    assert "$('#askCollectivity').innerHTML" in html
+    assert "collectivity_id:collectivityId" in html
