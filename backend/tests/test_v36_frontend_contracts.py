@@ -123,6 +123,7 @@ def test_billing_screen_uses_validated_four_tier_commercial_reference_prices():
     assert "Recharge · 600 crédits" in html and "79 € TTC" in html
     assert "Les crédits mensuels et les recharges sont affichés à titre informatif" in html
     assert "les paiements restent désactivés" in html
+    assert 'id="openBillingPortal" disabled' in html
     assert 'data-checkout="SYNDICAT_10"' not in html
 
 
