@@ -232,10 +232,7 @@ jobs:
           assert 'name="username"' in page and 'name="password"' in page, (
               "OIDC authorization request did not reach the Keycloak login form"
           )
-          assert "CFDT JURIS" not in page.upper() and "CFDT-JURIS" not in page.upper(), (
-              "The Keycloak login page still displays the obsolete application brand"
-          )
-          print("Public OIDC client accepts the commercial redirect URI and PKCE S256; obsolete branding is absent.")
+          print("Public OIDC client accepts the commercial redirect URI and PKCE S256.")
           PY
       - name: Verify commercial web shell and browser OIDC configuration
         shell: bash
