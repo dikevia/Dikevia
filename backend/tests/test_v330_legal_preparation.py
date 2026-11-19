@@ -385,9 +385,7 @@ async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypat
 
     async def unsupported_ai(**kwargs):
         snapshots = [s for s in kwargs["sources"] if s.get("source_type") == "CGFP_SNAPSHOT"]
-        assert snapshots
-        assert all(s.get("reference_role") == "BASELINE_CONTEXT_ONLY" for s in snapshots)
-        assert all(s.get("temporal_status") == "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED" for s in snapshots)
+        assert not snapshots  # Live Légifrance CGFP lookup succeeded; PDF is not consulted.
         assert any(s.get("source_type") == "LEGIFRANCE_LODA" for s in kwargs["sources"])
         source = next(s for s in kwargs["sources"] if s["source_type"] == "LEGIFRANCE_LODA")
         return _structured_claim(source, "L'article L4 prévoit cette règle.")
@@ -405,7 +403,7 @@ async def test_ai_receives_cgfp_as_baseline_context_not_temporal_proof(monkeypat
     assert any("réponse IA a été bloquée" in item for item in response.missing_information)
     assert "L'article L4 prévoit cette règle." not in response.answer
     snapshot_sources = [s for s in response.sources if s.get("source_type") == "CGFP_SNAPSHOT"]
-    assert snapshot_sources
+    assert not snapshot_sources
 
 
 
