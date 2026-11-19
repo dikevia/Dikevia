@@ -23,3 +23,9 @@ def test_login_click_handles_a_missing_oidc_module_without_hiding_the_button():
     assert "if(!auth||typeof auth.login!=='function')" in html
     assert "Vérifiez le fichier /static/auth-config.js." in html
     assert "Vérifiez le fichier /static/oidc-auth.js." in html
+
+
+def test_api_unauthorized_response_returns_user_to_login_screen():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "if(response.status===401){token=null;showAuth(" in html
+    assert "Votre session a expiré ou n’est plus valide." in html
