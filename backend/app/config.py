@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     ai_api_key: str = ""
     ai_model: str = ""
     ai_timeout_seconds: float = 25.0
+    ai_local_document_review_enabled: bool = False
+    # Local employer documents stay out of external AI requests unless an operator explicitly opts in after privacy review.
+    ai_local_documents_in_chat_enabled: bool = False
+    # External probes may consume provider quotas; disabled unless explicitly approved.
+    startup_external_diagnostics_enabled: bool = False
     chat_rate_limit_per_minute: int = 10
     legifrance_environment: str = "sandbox"
     legifrance_client_id: str = ""
