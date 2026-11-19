@@ -240,9 +240,24 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
     """Return ranked CGFP leads, with domain-specific precision safeguards."""
     safe_limit = max(1, min(int(limit), 20))
     base = lexical_search(query, limit=20)
-    # An explicit article number is a direct lookup: do not rewrite or filter it.
-    if re.search(r"\b[LRD]\s*\d", query, re.IGNORECASE):
-        return {**base, "results": base.get("results", [])[:safe_limit], "search_mode": "reference_directe"}
+    # An explicit article number is a direct lookup, never a lexical search.
+    # The BM25 engine also scores ordinary words in the question; returning its
+    # top hits when the requested reference is absent creates convincing but
+    # unrelated articles (for example L999-999 -> R134-4, L822-8, ...).
+    reference_match = re.search(r"\\b([LRD])\\s*(\\d+(?:-\\d+)*)", query, re.IGNORECASE)
+    if reference_match:
+        requested_ref = (reference_match.group(1) + reference_match.group(2)).upper()
+        exact_results = [
+            item for item in base.get("results", [])
+            if re.sub(r"\\s+", "", str(item.get("article") or "")).upper() == requested_ref
+        ]
+        return {
+            **base,
+            "results": exact_results[:safe_limit],
+            "search_mode": "reference_directe",
+            "requested_reference": requested_ref,
+            "reference_found_in_snapshot": bool(exact_results),
+        }
 
     topics = _matching_topics(query)
     if not topics:
