@@ -930,13 +930,14 @@ async def search_legifrance(q: str, effective_date: date | None = None,
     if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
         raise HTTPException(422, "La recherche Légifrance doit contenir entre 2 et 500 caractères.")
     await enforce_legal_connector_rate_limit(ctx)
+    requested_date = effective_date or _france_today()
     try:
-        results = await legifrance.search_code_articles(q, effective_date or _france_today())
+        results = await legifrance.search_code_articles(q, requested_date)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     except LegifranceUnavailable:
         raise HTTPException(503, "Recherche Légifrance indisponible. Vérifier les identifiants, consentements et quotas.")
-    return {"requested_date": (effective_date or _france_today()).isoformat(),
+    return {"requested_date": requested_date.isoformat(),
             "results_count": len(results), "results": results,
             "warning": "Résultats API à vérifier ; l'absence de résultat ne prouve pas l'absence de règle."}
 
