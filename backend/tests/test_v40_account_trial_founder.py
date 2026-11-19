@@ -27,7 +27,8 @@ def test_founder_entitlements_are_individual_and_limited_to_ten_atomic_slots():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     assert "slot_number BETWEEN 1 AND 10" in migration
     assert "pg_advisory_xact_lock(33010340)" in migration
-    assert "UNIQUE REFERENCES users(id)" in migration
+    assert "founder_entitlements_one_active_per_slot_idx" in migration
+    assert "founder_entitlements_one_active_per_user_idx" in migration
     assert "platform_admin_grant_founder_entitlement" in migration
     assert "platform_admin_list_founder_entitlements" in migration
     assert "La place 1 est réservée au propriétaire fondateur" in main
