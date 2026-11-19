@@ -17,6 +17,8 @@ from .jurisprudence import AdministrativeCaseLawConnector
 from .legal_corpus import search_legal_corpus
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
+from .article_lookup import missing_direct_article_reference
+from .legal_search_plan import build_official_search_query
 
 
 def should_use_cgfp_snapshot_fallback(
@@ -32,9 +34,6 @@ def should_use_cgfp_snapshot_fallback(
             for hit in found["results"]
         )
     )
-
-from .article_lookup import missing_direct_article_reference
-from .legal_search_plan import build_official_search_query
 
 
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
