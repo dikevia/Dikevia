@@ -29,6 +29,7 @@ async def _run_isolation_scenario():
     doc_a, doc_b = uuid.uuid4(), uuid.uuid4()
     token_a, token_b = "hash-a-" + uuid.uuid4().hex, "hash-b-" + uuid.uuid4().hex
     usage_request_id = uuid.uuid4()
+    usage_long_outcome_id = uuid.uuid4()
     admin = await asyncpg.connect(ADMIN_URL)
     runtime = await asyncpg.connect(RUNTIME_URL)
     platform = await asyncpg.connect(PLATFORM_ADMIN_URL) if PLATFORM_ADMIN_URL else admin
@@ -140,6 +141,11 @@ async def _run_isolation_scenario():
                 completion_tokens,total_tokens,outcome)
                 VALUES($1,$2,$3,'openai_compatible','test-model',100,25,125,'ANSWERED')""",
                 usage_request_id, org_a, user_a)
+            await runtime.execute("""INSERT INTO ai_usage_events(
+                request_id,organization_id,user_id,provider,model,outcome)
+                VALUES($1,$2,$3,'openai_compatible','test-model',
+                  'ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK')""",
+                usage_long_outcome_id, org_a, user_a)
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 async with runtime.transaction():
                     await runtime.execute("""INSERT INTO ai_usage_events(
