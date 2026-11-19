@@ -76,3 +76,21 @@ def test_frontend_displays_trial_countdown_and_routes_expired_users_to_billing()
     assert "loadAccessStatus" in frontend
     assert "setView('billing')" in frontend
     assert "14,90" in frontend and "29 €" in frontend
+
+def test_stripe_is_disabled_by_default_and_checkout_requires_explicit_opt_in():
+    config = (ROOT / "backend/app/config.py").read_text(encoding="utf-8")
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    env = (ROOT / "deploy/.env.example").read_text(encoding="utf-8")
+    assert "stripe_billing_enabled: bool = False" in config
+    assert "STRIPE_BILLING_ENABLED" in config and "STRIPE_BILLING_ENABLED=false" in env
+    assert 'if not settings.stripe_billing_enabled:' in main
+    assert '"billing_enabled": settings.stripe_billing_enabled' in main
+    assert '"/api/v1/billing/checkout"' in (ROOT / "backend/app/dependencies.py").read_text(encoding="utf-8")
+
+
+def test_checkout_buttons_remain_disabled_until_backend_reports_billing_enabled():
+    frontend = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'data-checkout="ESSENTIEL"' in frontend
+    assert 'data-checkout="PRO"' in frontend
+    assert "b.disabled=role!=='ORG_ADMIN'||!catalogue.billing_enabled" in frontend
+    assert "window.location.assign(result.checkout_url)" in frontend
