@@ -29,6 +29,8 @@ RÈGLES DE SOURCES :
 - Distingue strictement loi, code, décret, arrêté, ordonnance, circulaire, décision juridictionnelle et document local.
 - Respecte la provenance, le champ d'application personnel et matériel, le statut juridique et la temporalité de chaque source.
 - Une source marquée SCOPE_TO_VERIFY est une piste seulement ; ne conclus pas qu'elle s'applique à la FPT.
+- Une source marquée FPT_REFERENCE est un texte de référence/comparaison, pas un fondement directement applicable à elle seule. Ne l'utilise que si un texte propre à la FPT fourni dans le même dossier établit explicitement le lien ; pour les IHTS, vérifie notamment le décret 91-875 et la délibération locale avant toute conclusion sur l'éligibilité ou le montant.
+- Si la délibération locale nécessaire n'est pas fournie, indique précisément qu'elle manque et ne conclus pas au droit individuel, au taux ou au montant.
 - Les sources explicitement FPE ou FPH sont hors périmètre FPT, sauf disposition commune démontrée par les documents fournis.
 - Un snapshot PDF du CGFP est un repère documentaire, pas une preuve de la version historique applicable.
 - Une pièce locale ne peut soutenir une conclusion que si elle est validée et applicable à la date des faits et à la collectivité concernée.
