@@ -206,19 +206,34 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
       ), ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
-          d.source_status,d.raw_metadata,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,c.anchor,c.content,c.content_kind,
+          d.source_status,d.raw_metadata,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
+          c.anchor,c.content content_chunk,c.content_kind,c.ordinal,
           (2.0 * ts_rank_cd(c.search_vector,st.original_query)
              + ts_rank_cd(c.search_vector,st.expansion_query)) rank,
           row_number() OVER(PARTITION BY v.id ORDER BY
             (2.0 * ts_rank_cd(c.search_vector,st.original_query)
-             + ts_rank_cd(c.search_vector,st.expansion_query)) DESC,c.ordinal) rn
+             + ts_rank_cd(c.search_vector,st.expansion_query)) DESC,c.ordinal) rn,
+          max(c.ordinal) OVER(PARTITION BY v.id) last_ordinal
         FROM legal_chunks c JOIN legal_document_versions v ON v.id=c.version_id
         JOIN legal_documents d ON d.id=v.document_id
         CROSS JOIN search_terms st
         WHERE c.content_kind='FULL_TEXT'
           AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
+      ), selected_chunks AS (
+        SELECT version_id, string_agg(content_chunk, E'\\n\\n' ORDER BY rn) AS content, max(rank) AS rank
+        FROM ranked
+        WHERE rn <= 2 OR (document_kind='ADMIN_CASELAW' AND ordinal=last_ordinal)
+        GROUP BY version_id
+      ), document_metadata AS (
+        SELECT DISTINCT ON (version_id) document_id,version_id,source_type,source_id,title,document_kind,
+          official_number,jurisdiction,official_url,signature_date,publication_date,document_status,
+          source_status,raw_metadata,valid_from,valid_to,version_status,raw_payload,full_text,text_sha256,
+          anchor,content_kind
+        FROM ranked ORDER BY version_id,rank DESC,ordinal
       )
-      SELECT * FROM ranked WHERE rn=1 ORDER BY rank DESC,publication_date DESC NULLS LAST LIMIT $3
+      SELECT metadata.*,selected_chunks.content,selected_chunks.rank
+      FROM document_metadata metadata JOIN selected_chunks USING(version_id)
+      ORDER BY selected_chunks.rank DESC,metadata.publication_date DESC NULLS LAST LIMIT $3
     """, query.strip(), expansion_expression, limit)
     results = []
     for row in rows:
@@ -235,7 +250,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         item["raw_metadata"] = metadata if isinstance(metadata, dict) else {}
         item["source_id"] = item.pop("source_id")
         item["source_type"] = item.pop("source_type")
-        item["excerpt"] = item.pop("content")[:2200]
+        item["excerpt"] = item.pop("content")[:6000]
         item["content_kind"] = item.get("content_kind")
         full_text = item.pop("full_text")
         expected_hash = item.pop("text_sha256")
