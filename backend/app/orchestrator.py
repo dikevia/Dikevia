@@ -58,6 +58,21 @@ def _case_law_reference_date(
     return period_end or period_start
 
 
+def _local_document_reference_dates(
+    period_start: date | None,
+    period_end: date | None,
+    today: date,
+) -> list[tuple[date, str]]:
+    """Check local acts at the facts-period endpoints and against today's rules."""
+    roles: dict[date, str] = {}
+    if period_start:
+        roles[period_start] = "START"
+    if period_end:
+        roles[period_end] = "END"
+    roles.setdefault(today, "CURRENT")
+    return sorted(roles.items())
+
+
 def _analysis_mode(question_intent: str, facts_date_provided: bool) -> str:
     if facts_date_provided:
         return "CASE_SPECIFIC"
@@ -561,12 +576,33 @@ class LegalOrchestrator:
                 local_issue = "Les documents propres à l'employeur ne sont pas accessibles dans ce contexte."
             else:
                 try:
-                    local_sources = await search_local_documents(
-                        conn, organization_id, request.employer,
-                        contextual_search_query[:500],
-                        effective_date if request.situation_ongoing else (facts_reference_date or effective_date),
-                        limit=5,
-                    )
+                    local_sources = []
+                    for local_date, local_endpoint in _local_document_reference_dates(
+                        period_start, period_end, effective_date,
+                    ):
+                        dated_hits = await search_local_documents(
+                            conn, organization_id, request.employer,
+                            contextual_search_query[:500], local_date, limit=5,
+                        )
+                        for hit in dated_hits:
+                            original_id = str(hit.get("source_id") or "")
+                            if not original_id:
+                                continue
+                            hit["source_id"] = f"{original_id}_V{local_date:%Y%m%d}"
+                            hit["requested_effective_date"] = local_date.isoformat()
+                            hit["version_endpoint"] = local_endpoint
+                            hit["version_matches_facts_date"] = bool(
+                                parsed_date and local_date == parsed_date
+                            )
+                            hit["version_role"] = (
+                                "FACTS_DATE_VERSION"
+                                if parsed_date and local_date == parsed_date
+                                else "CURRENT_OR_ADDITIONAL_REFERENCE_VERSION"
+                            )
+                            hit["title"] = (
+                                f"{hit.get('title') or 'Document local'} — situation au {local_date.isoformat()}"
+                            )
+                            local_sources.append(hit)
                 except Exception:
                     logger.exception("Échec de la recherche dans le corpus local tenant-scoped.")
                     local_issue = "La recherche dans les documents de l'employeur n'a pas pu être exécutée."
