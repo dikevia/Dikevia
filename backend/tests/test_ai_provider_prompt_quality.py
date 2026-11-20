@@ -16,3 +16,9 @@ def test_prompt_requires_a_direct_plain_language_answer_before_references():
 def test_prompt_requires_a_final_question_answer_coherence_check():
     assert "CONTRÔLE FINAL OBLIGATOIRE" in SYSTEM_PROMPT
     assert "Si les sources pertinentes ne permettent aucune réponse utile" in SYSTEM_PROMPT
+
+
+
+def test_prompt_requires_the_first_claim_to_be_the_direct_answer():
+    assert "ORDRE DES AFFIRMATIONS" in SYSTEM_PROMPT
+    assert "le premier élément de claims doit être la réponse directe" in SYSTEM_PROMPT
