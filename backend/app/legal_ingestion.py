@@ -146,8 +146,8 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             body_source = "\n".join(paragraph for paragraph in paragraphs if paragraph) or " ".join(
                 part.strip() for part in body_node.itertext() if part.strip()
             )
-            body = clean_text(body_source)[:100000]
-            if len(body) < 80:
+            body = clean_text(body_source)
+            if not 80 <= len(body) <= 100000:
                 continue
 
             title = f"Décision du {court_name} n° {case_number} du {decision_date.isoformat()}"
