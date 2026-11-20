@@ -282,7 +282,7 @@ def _matched_topic_families(value: str) -> set[str]:
     # CET is also the ordinary French demonstrative "cet". Recognize it as
     # an acronym only when explicitly written in uppercase; the full phrase
     # "compte épargne-temps" is recognized regardless of capitalization.
-    if re.search(r"\\bCET\\b", value):
+    if re.search(r"\bCET\b", value):
         matched.add("LEAVE")
     return matched
 
