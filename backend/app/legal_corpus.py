@@ -84,7 +84,7 @@ def safe_official_url(value: str | None) -> str | None:
     if not value:
         return None
     parsed = urlparse(value)
-    if parsed.scheme == "https" and parsed.hostname in {"www.legifrance.gouv.fr", "legifrance.gouv.fr"}:
+    if parsed.scheme == "https" and parsed.hostname in {"www.legifrance.gouv.fr", "legifrance.gouv.fr", "opendata.justice-administrative.fr"}:
         return value[:1500]
     return None
 
