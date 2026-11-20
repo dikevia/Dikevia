@@ -18,6 +18,8 @@ def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense
     assert "Une pièce locale ne peut soutenir une conclusion que si elle est validée" in SYSTEM_PROMPT
     assert "CITATIONS OBLIGATOIRES" in SYSTEM_PROMPT
     assert "FORMAT DE SORTIE OBLIGATOIRE" in SYSTEM_PROMPT
+    assert "MODE D'INFORMATION GÉNÉRALE" in SYSTEM_PROMPT
+    assert "Ne bloque pas toute réponse au seul motif que la date des faits manque" in SYSTEM_PROMPT
     assert "source_id" in SYSTEM_PROMPT and "quote" in SYSTEM_PROMPT
 
 def test_ai_generated_article_references_must_exist_in_sources():
@@ -206,6 +208,20 @@ def test_claim_evidence_rejects_quote_not_present_in_source():
     }, [source])
     assert result["valid"] is False
     assert "claim_0:quote_not_exactly_found_in_source" in result["invalid_claims"]
+
+
+def test_claim_evidence_accepts_current_date_sources_for_general_information_only():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source(temporal_status="TEMPORAL_SCOPE_INCOMPLETE", general_info_eligible=True)
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is True
 
 
 def test_claim_evidence_rejects_snapshot_and_temporally_incomplete_sources():
