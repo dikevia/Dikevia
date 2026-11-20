@@ -94,8 +94,8 @@ def test_union_rights_builds_distinct_bounded_research_axes():
     assert all(len(query) <= 500 for query in queries)
 
 
-def test_non_union_question_keeps_existing_single_query_behavior():
-    question = "Mon employeur ne renouvelle pas mon CDD"
+def test_unclassified_question_keeps_existing_single_query_behavior():
+    question = "Est-ce que mon employeur peut me convoquer demain ?"
     assert build_official_search_queries(question) == [
         build_official_search_query(question)
     ]
@@ -107,3 +107,30 @@ def test_research_axis_count_can_be_reduced_by_caller():
         max_queries=2,
     )
     assert len(queries) == 2
+
+
+
+def test_overtime_builds_fpt_ihts_and_local_implementation_axes():
+    queries = build_official_search_queries(
+        "Je suis contractuel et mes heures supplémentaires ne sont pas payées."
+    )
+    assert len(queries) == 3
+    assert "décret 2002-60" in queries[0]
+    assert "décret 2002-60" not in queries[1]
+    assert "décret 91-875" in queries[1]
+    assert "décret 2001-623" in queries[2]
+    assert all(len(query) <= 500 for query in queries)
+
+
+def test_contract_question_builds_specific_territorial_contract_axes():
+    queries = build_official_search_queries("Mon employeur ne renouvelle pas mon CDD")
+    assert len(queries) == 3
+    assert "décret 88-145" in queries[1]
+    assert "non renouvellement" in queries[2]
+
+
+def test_working_time_question_builds_fpt_framework_axes():
+    queries = build_official_search_queries("Comment fonctionne l annualisation du temps de travail ?")
+    assert len(queries) == 3
+    assert "décret 2001-623" in queries[1]
+    assert "décret 2000-815" in queries[2]
