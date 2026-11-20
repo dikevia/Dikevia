@@ -253,8 +253,7 @@ class LegalOrchestrator:
             contextual_question = current_question[:350] + "\n" + prior_user_questions[-1][:150]
         # PISTE search methods cap their query at 500 characters. The current
         # question must take precedence over older conversational context.
-        live_query = build_official_search_query(current_question)
-        research_queries = build_official_search_queries(current_question)
+        research_queries = build_official_search_queries(contextual_question)
         contextual_search_query = build_official_search_query(contextual_question)
         live_sources: list[dict] = []
         regulatory_sources: list[dict] = []
