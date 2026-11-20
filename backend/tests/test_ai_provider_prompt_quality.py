@@ -35,3 +35,10 @@ def test_prompt_enforces_the_territorial_public_service_legal_hierarchy():
 def test_prompt_requires_local_deliberation_when_national_text_refers_to_it():
     assert "acte local applicable et validé" in SYSTEM_PROMPT
     assert "ne conclus pas sur le droit individuel, le montant ou les modalités" in SYSTEM_PROMPT
+
+
+def test_prompt_prevents_current_application_of_repealed_fpt_union_decree():
+    assert "décret n° 85-397 du 3 avril 1985" in SYSTEM_PROMPT
+    assert "abrogé à compter du 1er février 2025" in SYSTEM_PROMPT
+    assert "article 29 du décret n° 2024-1038" in SYSTEM_PROMPT
+    assert "Ne présume pas que les anciennes dispositions ont toutes été reprises à l'identique" in SYSTEM_PROMPT
