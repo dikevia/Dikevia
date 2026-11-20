@@ -741,3 +741,55 @@ def test_system_prompt_requires_conversational_legal_explanations_and_practical_
     assert "prends une position juridique explicite et nuancée" in SYSTEM_PROMPT
     assert "Termine par des démarches concrètes" in SYSTEM_PROMPT
     assert "ne présente pas un conseil pratique comme une obligation légale" in SYSTEM_PROMPT
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_receives_current_question_for_relevance_check(monkeypatch):
+    import httpx
+    import json
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    source_text = "Les heures supplémentaires peuvent ouvrir droit à compensation selon les règles applicables."
+    source = {
+        "source_id": "SRC-IHTS-1",
+        "title": "Règles relatives aux heures supplémentaires",
+        "text": source_text,
+    }
+    claim = {
+        "source_id": "SRC-IHTS-1",
+        "text": "Les heures supplémentaires peuvent ouvrir droit à une compensation.",
+    }
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": json.dumps({
+                "verdicts": [{
+                    "claim_index": 0,
+                    "source_id": "SRC-IHTS-1",
+                    "verdict": "SUPPORTED",
+                    "support_quote": source_text,
+                }]
+            })}}]
+        })
+
+    real_async_client = httpx.AsyncClient
+
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+    result = await verify_claim_entailment(
+        question="Mon employeur peut-il refuser de compenser mes heures supplémentaires ?",
+        claims=[claim],
+        sources=[source],
+    )
+
+    verifier_question = json.loads(captured["payload"]["messages"][1]["content"])["question_actuelle"]
+    assert verifier_question == "Mon employeur peut-il refuser de compenser mes heures supplémentaires ?"
+    assert result["valid"] is True
