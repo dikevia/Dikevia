@@ -38,6 +38,11 @@ def test_intent_classifier_distinguishes_personal_events_from_general_rules():
     assert classify_question_intent("Mon congé maladie a été refusé par la collectivité.") == "PERSONAL_CASE"
 
 
+def test_union_representative_can_describe_a_member_case_in_third_person():
+    assert classify_question_intent("Un agent a eu un problème hier avec le refus de son congé.") == "PERSONAL_CASE"
+    assert classify_question_intent("Un agent a reçu une sanction disciplinaire.") == "PERSONAL_CASE"
+
+
 def test_general_first_person_rights_question_remains_general():
     assert question_needs_case_date("Ai-je droit aux congés annuels quand je suis contractuel ?") is False
     assert question_needs_case_date("Quels sont mes droits si mon employeur refuse le télétravail ?") is False
