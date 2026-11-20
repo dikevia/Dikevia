@@ -192,7 +192,7 @@ class AdministrativeCaseLawConnector:
                   .replace("&quot;", '"').replace("&#39;", "'"))
         cleaned = re.sub(r"[ \t]+", " ", raw)
         cleaned = re.sub(r"\n\s*\n+", "\n\n", cleaned).strip()
-        return cleaned[:100000] if len(cleaned) >= 80 else None
+        return cleaned if 80 <= len(cleaned) <= 100000 else None
 
     async def consult(self, decision_id: str) -> dict:
         """Fetch and validate the official full text for one decision identifier.
