@@ -287,6 +287,7 @@ def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
     assert item["official_number"] == "2400001"
     assert "agent contractuel territorial" in item["full_text"]
     assert item["raw_metadata"]["publication_code"] == "C"
+    assert item["raw_metadata"]["source_license"] == "Licence Ouverte version 2.0"
 
 
 def test_parse_administrative_open_data_zip_rejects_invalid_archive():
