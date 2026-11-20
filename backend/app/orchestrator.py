@@ -406,9 +406,10 @@ class LegalOrchestrator:
         else:
             found, cgfp_issue = None, None
         period_version_comparison = None
-        if period_start and period_start < effective_date:
+        comparison_end_date = period_end or effective_date
+        if period_start and period_start < comparison_end_date:
             period_version_comparison = _compare_official_period_versions(
-                live_sources, regulatory_sources, period_start, effective_date,
+                live_sources, regulatory_sources, period_start, comparison_end_date,
             )
             matched_version_ids = set(period_version_comparison["matched_source_ids"])
             for version_source in [*live_sources, *regulatory_sources]:
@@ -501,7 +502,9 @@ class LegalOrchestrator:
                 try:
                     local_sources = await search_local_documents(
                         conn, organization_id, request.employer,
-                        contextual_search_query[:500], facts_reference_date or effective_date, limit=5,
+                        contextual_search_query[:500],
+                        effective_date if request.situation_ongoing else (facts_reference_date or effective_date),
+                        limit=5,
                     )
                     if parsed_date is None:
                         for local_source in local_sources:
@@ -823,6 +826,12 @@ class LegalOrchestrator:
             missing.insert(0, case_law_issue)
         if case_law_fulltext_issue:
             missing.insert(0, case_law_fulltext_issue)
+        if any(item.get("temporal_status") == "DECISION_POSTERIOR_TO_FACTS"
+               for item in case_law_full_text_sources):
+            missing.insert(
+                0,
+                "Une décision postérieure aux faits a été conservée car elle peut éclairer l'interprétation du droit antérieur ; sa date et sa portée temporelle doivent être distinguées de la règle applicable au jour des faits.",
+            )
         if case_law_sources and not case_law_full_text_sources:
             missing.insert(0, "Les résultats CETAT restent des métadonnées : aucun texte intégral de décision n'est utilisé pour l'analyse IA.")
         if not case_law_sources and not case_law_issue:
