@@ -220,7 +220,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         WHERE c.content_kind='FULL_TEXT'
           AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
       ), selected_chunks AS (
-        SELECT version_id, string_agg(content_chunk, E'\\n\\n' ORDER BY rn) AS content, max(rank) AS rank
+        SELECT version_id, string_agg(content_chunk, E'\n\n' ORDER BY rn) AS content, max(rank) AS rank
         FROM ranked
         WHERE rn <= 2 OR (document_kind='ADMIN_CASELAW' AND ordinal=last_ordinal)
         GROUP BY version_id
