@@ -177,10 +177,12 @@ class LegifranceConnector:
             "champs": [field],
             "filtres": [
                 {"facette": "NOM_CODE", "valeurs": [code_name or settings.legifrance_code_name]},
-                {"facette": "DATE_VERSION", "singleDate": effective_date.isoformat()},
+                {"facette": "DATE_VERSION", "singleDate": self._date_epoch_ms(effective_date)},
             ],
             "pageNumber": 1, "pageSize": 10, "operateur": "ET", "sort": "PERTINENCE",
-            "typePagination": "DEFAUT",
+            # PISTE's official Légifrance FAQ uses ARTICLE pagination for CODE_DATE
+            # article searches; DEFAUT is intended for document-level pagination.
+            "typePagination": "ARTICLE",
         }}
 
     @staticmethod
