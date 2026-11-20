@@ -186,6 +186,8 @@ class LegalOrchestrator:
                 "period_start": period_start.isoformat() if period_start else None,
                 "period_end": period_end.isoformat() if period_end else None,
                 "ongoing": bool(request.situation_ongoing),
+                "facts_date_provided": parsed_date is not None,
+                "analysis_mode": "CASE_SPECIFIC" if parsed_date is not None else "GENERAL_CURRENT_LAW_ONLY",
                 "reference_date_for_retrieval": effective_date.isoformat(),
                 "legacy_exact_date": bool(legacy_date and not request.facts_start_date and not request.facts_end_date),
             }
@@ -432,7 +434,7 @@ class LegalOrchestrator:
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": (
                     "IN_FORCE_ON_REQUESTED_DATE" if parsed_date is not None
-                    else "TEMPORAL_SCOPE_INCOMPLETE"
+                    else "CURRENT_DATE_GENERAL_INFO_ONLY"
                 ),
                 "page_start": None, "page_end": None, "content_kind": "FULL_TEXT",
                 "citation_integrity": {
@@ -459,7 +461,7 @@ class LegalOrchestrator:
                 "content_kind": "FULL_TEXT",
                 "temporal_status": (
                     "IN_FORCE_ON_REQUESTED_DATE" if parsed_date is not None
-                    else "TEMPORAL_SCOPE_INCOMPLETE"
+                    else "CURRENT_DATE_GENERAL_INFO_ONLY"
                 ),
                 "citation_integrity": {
                     "valid": bool(item.get("source_id") and len(full_text) >= 80),
@@ -556,6 +558,8 @@ class LegalOrchestrator:
         # Classification is computed before the model call so the prompt receives
         # the legal-source family and the limitations attached to each document.
         sources = assess_source_set(sources)["sources"]
+        # Hide topic-mismatched hits before early returns and user-facing rendering.
+        sources = filter_irrelevant_sources_for_display(sources)
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
             s for s in sources
@@ -704,13 +708,7 @@ class LegalOrchestrator:
 
         ai_sources: list[dict] = []
         ai_usage = None
-        if parsed_date is None:
-            ai_answer = None
-            missing.insert(
-                0,
-                "Analyse juridique contextualisée suspendue : la date ou la période de la situation n'est pas renseignée. La recherche au jour présent sert uniquement au repérage documentaire ; elle ne permet pas de déterminer la règle applicable aux faits.",
-            )
-        elif cgfp_issue or (live_issue and not cgfp_snapshot_fallback) or regulatory_issue or case_law_issue or temporal_issue:
+        if cgfp_issue or (live_issue and not cgfp_snapshot_fallback) or regulatory_issue or case_law_issue or temporal_issue:
             ai_answer = None
             missing.insert(
                 0,
@@ -737,6 +735,7 @@ class LegalOrchestrator:
                         "IN_FORCE_ON_REQUESTED_DATE",
                         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
                         "VERIFIED_APPLICABLE",
+                        "CURRENT_DATE_GENERAL_INFO_ONLY",
                     }
                     # The CGFP snapshot is the national baseline for explanation, but
                     # it is not temporally authoritative. Pass it to the model only
@@ -907,6 +906,12 @@ class LegalOrchestrator:
                 0,
                 "La réponse IA a été bloquée : au moins une référence juridique n'est pas retrouvée à l'identique dans les sources injectées, ou une citation explicite manque.",
             )
+
+        if ai_answer and parsed_date is None:
+            missing = [
+                "La date ou la période des heures effectuées reste à préciser pour vérifier la version applicable aux faits.",
+                "La délibération de la collectivité et le dispositif local de compensation restent à vérifier.",
+            ]
 
         if ai_answer:
             # Append practical guidance only after the legal-claim citation validator.
