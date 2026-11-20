@@ -3,7 +3,7 @@ on:
   push:
     branches: [main, develop, cfdt-juris-v3-30-developer-ready]
   pull_request:
-    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, feature/dikevia-v3.38.5-cgfp-chat, 'fix/**']
   workflow_dispatch:
 permissions:
   contents: read
