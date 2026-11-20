@@ -273,10 +273,11 @@ _TOPIC_FAMILIES = {
 
 def _matched_topic_families(value: str) -> set[str]:
     folded = _fold(value)
+    padded_text = f" {folded} "
     return {
         family
         for family, markers in _TOPIC_FAMILIES.items()
-        if any(_fold(marker) in folded for marker in markers)
+        if any(f" {_fold(marker)} " in padded_text for marker in markers)
     }
 
 
