@@ -369,11 +369,11 @@ class LegalOrchestrator:
                 unique_cases[source.get("source_id") or str(id(source))] = source
             case_result = list(unique_cases.values())
             code_issue = (
-                "La recherche d'articles du CGFP sur Légifrance a échoué pour au moins une date de référence."
+                "La recherche d'articles du CGFP sur Légifrance a échoué pour au moins un axe de recherche ou une date de référence."
                 if code_failures else None
             )
             regulatory_search_issue = (
-                "La recherche des lois, décrets et arrêtés sur Légifrance a échoué pour au moins une date de référence."
+                "La recherche des lois, décrets et arrêtés sur Légifrance a échoué pour au moins un axe de recherche ou une date de référence."
                 if regulatory_failures else None
             )
             case_search_issue = (
