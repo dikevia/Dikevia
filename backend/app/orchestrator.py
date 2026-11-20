@@ -455,7 +455,7 @@ class LegalOrchestrator:
                         result["excerpt"] = decision_text
                         result["retrieval_scope"] = "FULL_TEXT"
                     else:
-                        result["excerpt"] = decision_text[:9000] + "\\n\\n[Passages intermédiaires non transmis]\\n\\n" + decision_text[-3000:]
+                        result["excerpt"] = decision_text[:9000] + "\n\n[Passages intermédiaires non transmis]\n\n" + decision_text[-3000:]
                         result["retrieval_scope"] = "BEGINNING_AND_FINAL_PASSAGES_FROM_VERIFIED_FULL_TEXT"
                     scope = classify_public_service_scope(result)
                     result["public_service_scope"] = scope["scope"]
