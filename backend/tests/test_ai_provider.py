@@ -210,6 +210,20 @@ def test_claim_evidence_rejects_quote_not_present_in_source():
     assert "claim_0:quote_not_exactly_found_in_source" in result["invalid_claims"]
 
 
+def test_claim_evidence_accepts_current_date_sources_for_general_information_only():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source(temporal_status="CURRENT_DATE_GENERAL_INFO_ONLY")
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is True
+
+
 def test_claim_evidence_rejects_snapshot_and_temporally_incomplete_sources():
     from app.legal_assurance import validate_claim_evidence
 
