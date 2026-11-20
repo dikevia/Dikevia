@@ -17,6 +17,17 @@ from .legifrance import LegifranceConnector, LegifranceUnavailable
 DECISION_ID_RE = re.compile(r"^CETATEXT\d{12}$")
 
 
+def decision_temporal_status(decision_date: str | None, requested_date: date) -> str:
+    """Require a verified decision date not later than the date of the facts."""
+    try:
+        parsed = date.fromisoformat(str(decision_date or "")[:10])
+    except (TypeError, ValueError):
+        return "TEMPORAL_SCOPE_INCOMPLETE"
+    if parsed > requested_date:
+        return "DECISION_POSTERIOR_TO_REQUESTED_DATE"
+    return "DECISION_AVAILABLE_BY_REQUESTED_DATE"
+
+
 class AdministrativeCaseLawConnector:
     def __init__(self, api: LegifranceConnector):
         self.api = api
