@@ -28,6 +28,28 @@ def decision_temporal_status(decision_date: str | None, requested_date: date) ->
     return "DECISION_AVAILABLE_BY_REQUESTED_DATE"
 
 
+def interleave_case_law_results(results_by_query: list[list[dict]], limit: int = 10) -> list[dict]:
+    """Preserve diversity across independent legal research axes before de-duplication."""
+    if not 1 <= limit <= 30:
+        raise ValueError("La limite de décisions doit être comprise entre 1 et 30.")
+    selected: list[dict] = []
+    seen: set[str] = set()
+    max_depth = max((len(items) for items in results_by_query), default=0)
+    for depth in range(max_depth):
+        for items in results_by_query:
+            if depth >= len(items):
+                continue
+            item = items[depth]
+            identifier = item.get("source_id")
+            if not isinstance(identifier, str) or not DECISION_ID_RE.fullmatch(identifier) or identifier in seen:
+                continue
+            seen.add(identifier)
+            selected.append(item)
+            if len(selected) >= limit:
+                return selected
+    return selected
+
+
 class AdministrativeCaseLawConnector:
     def __init__(self, api: LegifranceConnector):
         self.api = api
