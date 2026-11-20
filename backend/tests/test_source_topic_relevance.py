@@ -45,3 +45,22 @@ def test_display_filter_hides_explicitly_unrelated_topic_sources():
         {"source_id": "legacy_ihts_filter", "ihts_relevant": False},
     ]
     assert [s["source_id"] for s in filter_irrelevant_sources_for_display(sources)] == ["relevant"]
+
+
+
+def test_working_time_question_keeps_related_territorial_indemnity_source():
+    question = "Comment sont indemnisées les heures supplémentaires ?"
+    source = {
+        "title": "Décret relatif au régime indemnitaire des fonctionnaires territoriaux",
+        "text": "Dispositions relatives au régime indemnitaire applicable aux collectivités territoriales.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_sick_leave_question_keeps_related_remuneration_source():
+    question = "Comment est maintenue la rémunération pendant un congé maladie ?"
+    source = {
+        "title": "Règles de rémunération des agents publics",
+        "text": "Dispositions relatives au traitement indiciaire et à la rémunération.",
+    }
+    assert is_topic_relevant_source(question, source) is True
