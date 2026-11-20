@@ -1,21 +1,20 @@
-name: Android beta APK
+name: Dikévia — APK standard et administration
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - feature/dikevia-v3.38.5-cgfp-chat
+      - feat/dikevia-two-android-apps
     paths:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
       - "frontend/**"
-      - "render.yaml"
 
 permissions:
   contents: read
 
 jobs:
-  build-android-beta:
+  build-android-apks:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -36,23 +35,35 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Build beta APK
+      - name: Build les deux APK beta
         working-directory: android
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        run: gradle --no-daemon --stacktrace :app:assembleStandardDebug :app:assembleAdminDebug
 
-      - name: Validate generated APK
+      - name: Vérifier les deux APK
         shell: bash
         run: |
           set -euo pipefail
-          apk="android/app/build/outputs/apk/debug/app-debug.apk"
-          test -s "$apk"
-          test "$(stat -c%s "$apk")" -gt 100000
-          unzip -t "$apk" >/dev/null
-          echo "APK archive exists, is non-empty and passes ZIP integrity validation."
-      - name: Upload beta APK
+          standard="android/app/build/outputs/apk/standard/debug/app-standard-debug.apk"
+          admin="android/app/build/outputs/apk/admin/debug/app-admin-debug.apk"
+          for apk in "$standard" "$admin"; do
+            test -s "$apk"
+            test "$(stat -c%s "$apk")" -gt 100000
+            unzip -t "$apk" >/dev/null
+          done
+          echo "Les deux APK existent et leurs archives sont valides."
+
+      - name: Publier Dikévia standard
         uses: actions/upload-artifact@v4
         with:
-          name: dikevia-commercial-beta-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: dikevia-standard-beta-apk
+          path: android/app/build/outputs/apk/standard/debug/app-standard-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publier Dikévia Administration
+        uses: actions/upload-artifact@v4
+        with:
+          name: dikevia-administration-beta-apk
+          path: android/app/build/outputs/apk/admin/debug/app-admin-debug.apk
           if-no-files-found: error
           retention-days: 14
