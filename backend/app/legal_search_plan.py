@@ -18,6 +18,19 @@ _DIRECT_ARTICLE_LOOKUP = re.compile(
 # territorial public-service source families and their implementing texts.
 _TOPIC_EXPANSIONS = (
     (
+        ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
+         "representants du personnel", "local syndical", "decharge d activite",
+         "credit de temps syndical", "autorisation speciale d absence syndicale",
+         "formation syndicale", "reunion d information syndicale",
+         "comite social territorial"),
+        "droit syndical fonction publique territoriale CGFP livre II exercice du droit "
+        "syndical dialogue social representation des agents garanties exercice droit "
+        "syndical facilites organisations syndicales locaux syndicaux autorisations "
+        "speciales absence decharges activite service credit temps syndical formation "
+        "syndicale reunions information syndicale partie reglementaire CGFP "
+        "deliberation protocole accord local",
+    ),
+    (
         ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
          "indemnites horaires pour travaux supplementaires", "travaux supplementaires"),
         "indemnités horaires pour travaux supplémentaires IHTS décret 2002-60 "
