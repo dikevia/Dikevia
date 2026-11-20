@@ -36,7 +36,7 @@ from .billing import PLANS, public_plans, verify_stripe_signature, extract_subsc
 from .legal_corpus import upsert_legal_document, search_legal_corpus
 from .legal_assurance import assess_source_set
 from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
-from .legal_ingestion import parse_circulaires_xml
+from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip
 from .dossiers import build_dossier_content, validate_dossier_content
 from .rate_limit import consume_chat_request
 import httpx
@@ -1200,6 +1200,44 @@ async def ingest_circulaires_open_data(file: UploadFile = File(...), admin=Depen
     return {"run_id": str(run["id"]), "status": status, "records_seen": len(items),
         "records_imported": imported, "records_rejected": rejected,
         "warning": "Le flux CIRCULAIRES peut ne fournir que des métadonnées. Les circulaires sans texte intégral restent explicitement identifiées comme telles."}
+
+
+@app.post("/api/v1/platform/legal-corpus/ingest/administrative-open-data-zip")
+async def ingest_administrative_open_data_zip(file: UploadFile = File(...), admin=Depends(require_platform_admin)):
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        raise HTTPException(422, "Fournir une archive ZIP officielle de la justice administrative.")
+    raw = await file.read(100 * 1024 * 1024 + 1)
+    if len(raw) > 100 * 1024 * 1024:
+        raise HTTPException(413, "Archive ZIP limitée à 100 Mo.")
+    try:
+        items = parse_administrative_open_data_zip(raw, file.filename)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    if not items:
+        raise HTTPException(422, "Aucune décision intégrale pertinente pour la fonction publique territoriale n'a été trouvée dans cette archive.")
+    pool = get_corpus_ingest_pool()
+    async with pool.acquire() as conn:
+        run = await conn.fetchrow("""INSERT INTO legal_ingestion_runs(source_type,run_mode,status,query_text)
+            VALUES('OTHER_OFFICIAL','BULK_XML_IMPORT','RUNNING',$1) RETURNING id""", file.filename[:250])
+        imported = rejected = 0
+        try:
+            async with conn.transaction():
+                for item in items:
+                    try:
+                        await upsert_legal_document(conn, item)
+                        imported += 1
+                    except (ValueError, TypeError):
+                        rejected += 1
+            status = "SUCCEEDED" if imported and not rejected else "PARTIAL"
+            await conn.execute("UPDATE legal_ingestion_runs SET status=$2,records_seen=$3,records_imported=$4,records_rejected=$5,finished_at=now() WHERE id=$1",
+                run["id"], status, len(items), imported, rejected)
+            return {"run_id": str(run["id"]), "status": status, "records_seen": len(items),
+                "records_imported": imported, "records_rejected": rejected,
+                "warning": "Import des seules décisions XML officielles intégrales dont le lien avec la fonction publique territoriale est détecté. La sélection automatique peut manquer des décisions dont les faits sont insuffisamment explicites ; l'exhaustivité n'est pas garantie."}
+        except Exception as exc:
+            await conn.execute("UPDATE legal_ingestion_runs SET status='FAILED',error_summary=$2,finished_at=now() WHERE id=$1",
+                run["id"], type(exc).__name__)
+            raise
 
 
 @app.get("/api/v1/platform/legal-corpus/ingestion-runs")
