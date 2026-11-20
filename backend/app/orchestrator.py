@@ -15,7 +15,7 @@ from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
-from .legal_corpus import search_legal_corpus
+from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
 from .article_lookup import missing_direct_article_reference
@@ -508,7 +508,22 @@ class LegalOrchestrator:
         permanent_issue = None
         if conn is not None:
             try:
-                stored = await search_legal_corpus(conn, contextual_search_query, effective_date, limit=12)
+                stored_results = await asyncio.gather(*[
+                    search_legal_corpus(conn, query, effective_date, limit=6)
+                    for query in research_queries
+                ], return_exceptions=True)
+                stored_by_query = []
+                stored_search_failed = False
+                for query, result in zip(research_queries, stored_results):
+                    if isinstance(result, BaseException) or not isinstance(result, list):
+                        logger.warning("Recherche du corpus juridique en échec (%s) : %r", query[:100], result)
+                        stored_search_failed = True
+                        stored_by_query.append([])
+                    else:
+                        stored_by_query.append(result)
+                stored = interleave_legal_corpus_results(stored_by_query, limit=12)
+                if stored_search_failed:
+                    permanent_issue = "La recherche dans le corpus juridique permanent a échoué pour au moins un axe ; les résultats disponibles sont partiels."
                 for item in stored:
                     permanent_sources.append({
                         "source_type": item.get("source_type"), "source_id": item.get("source_id"),
