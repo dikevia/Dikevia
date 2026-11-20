@@ -21,6 +21,7 @@ Le code utilise actuellement les valeurs suivantes :
 - Redirect URI de connexion : `fr.dikevia.commercial:/oauth2redirect`
 - URI de retour après déconnexion à autoriser dans l'attribut client Keycloak `post.logout.redirect.uris` : `fr.dikevia.commercial:/oauth2redirect`
 - Flow : Authorization Code + PKCE S256 ; aucun secret client ne doit être créé ou embarqué.
+- Scopes demandés : `openid` uniquement, car les scopes `profile` et `email` ne sont pas provisionnés sur le realm actuel.
 
 **Le client `dikevia-android` et son audience API n'ont pas été confirmés comme configurés dans Keycloak.** Avant le test de connexion, un administrateur Keycloak doit créer/configurer un client public dédié avec PKCE S256, cette URI de redirection exacte, et un mapper/audience qui fait apparaître l'audience attendue par l'API dans le jeton d'accès. Ne pas réutiliser le client navigateur `cfdt-juris-web` et ne pas ajouter de secret dans l'APK.
 
