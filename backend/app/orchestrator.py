@@ -205,7 +205,6 @@ def _compare_official_period_versions(
 class LegalOrchestrator:
     async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None) -> AskResponse:
         request_id = str(uuid4())
-        needs_case_date = question_needs_case_date(request.question)
         try:
             legacy_date = parse_facts_date(request.facts_date)
             period_start = parse_facts_date(request.facts_start_date) or legacy_date
@@ -294,7 +293,7 @@ class LegalOrchestrator:
             if period_end:
                 date_roles[period_end] = "END"
             # Always add today's version, even when the user supplied a past date.
-            date_roles.setdefault(effective_date, "CURRENT")
+            date_roles.setdefault(effective_date, "END" if period_start and not period_end else "CURRENT")
             comparison_dates = sorted(date_roles)
             # Search a bounded set of independent legal axes. Each query is
             # evaluated at every required temporal endpoint; one failed axis
@@ -342,7 +341,7 @@ class LegalOrchestrator:
                         territorial_ihts = await legifrance.search_regulatory_texts(
                             "décret n° 91-875", requested_date, limit=3,
                         )
-                        endpoint = "START" if requested_date == comparison_dates[0] and len(comparison_dates) > 1 else "END"
+                        endpoint = date_roles[requested_date]
                         regulatory_result.extend(_tag_official_versions(territorial_ihts, requested_date, endpoint))
                     except Exception as exc:
                         logger.warning("Recherche ciblée du décret 91-875 indisponible à %s : %r", requested_date, exc)
