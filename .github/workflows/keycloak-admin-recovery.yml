@@ -1,0 +1,142 @@
+name: Keycloak admin recovery (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_outage:
+        description: "Confirm a short interruption of Dikévia sign-in while Keycloak is stopped"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dikevia-keycloak-admin-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: inputs.confirm_outage == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+      KC_DB_URL: ${{ secrets.KC_DB_URL_EXTERNAL }}
+      KC_DB_USERNAME: ${{ secrets.KC_DB_USERNAME }}
+      KC_DB_PASSWORD: ${{ secrets.KC_DB_PASSWORD }}
+      DIKEVIA_RECOVERY_ADMIN_USERNAME: ${{ secrets.DIKEVIA_RECOVERY_ADMIN_USERNAME }}
+      DIKEVIA_RECOVERY_ADMIN_PASSWORD: ${{ secrets.DIKEVIA_RECOVERY_ADMIN_PASSWORD }}
+
+    steps:
+      - name: Checkout recovery code
+        uses: actions/checkout@v4
+
+      - name: Validate protected configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for name in RENDER_API_KEY RENDER_SERVICE_ID KC_DB_URL KC_DB_USERNAME KC_DB_PASSWORD DIKEVIA_RECOVERY_ADMIN_USERNAME DIKEVIA_RECOVERY_ADMIN_PASSWORD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Required GitHub Actions secret is missing: $name"
+              exit 1
+            fi
+          done
+          case "$KC_DB_URL" in
+            jdbc:postgresql://*) ;;
+            *) echo "::error::KC_DB_URL_EXTERNAL must be a JDBC PostgreSQL URL reachable from GitHub Actions."; exit 1 ;;
+          esac
+          echo "Protected configuration is present. Secret values are not displayed."
+
+      - name: Build the exact Keycloak 26.8.2 optimized image before maintenance
+        run: docker build --file deploy/keycloak/Dockerfile --tag dikevia-keycloak-recovery:${GITHUB_SHA} .
+
+      - name: Stop Keycloak and verify it is fully suspended
+        id: suspend
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          api="https://api.render.com/v1/services/$RENDER_SERVICE_ID"
+          auth=(-H "Authorization: Bearer $RENDER_API_KEY" -H "Accept: application/json")
+          state="$(curl --fail --silent --show-error "${auth[@]}" "$api" | jq -r '.suspended')"
+          if [[ "$state" == "suspended" ]]; then
+            echo "did_suspend=false" >> "$GITHUB_OUTPUT"
+            echo "Keycloak was already suspended; its original state will be preserved."
+            exit 0
+          fi
+          if [[ "$state" != "not_suspended" ]]; then
+            echo "::error::Unexpected Render service state; refusing to continue."
+            exit 1
+          fi
+          curl --fail --silent --show-error --request POST "${auth[@]}" "$api/suspend" >/dev/null
+          for attempt in $(seq 1 60); do
+            state="$(curl --fail --silent --show-error "${auth[@]}" "$api" | jq -r '.suspended')"
+            if [[ "$state" == "suspended" ]]; then
+              echo "Render confirms Keycloak is suspended."
+              echo "did_suspend=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Render did not confirm suspension within five minutes; recovery will not run."
+          exit 1
+
+      - name: Create the temporary master-realm recovery administrator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --entrypoint /opt/keycloak/bin/kc.sh \
+            --env KC_DB=postgres \
+            --env KC_DB_URL \
+            --env KC_DB_SCHEMA=keycloak \
+            --env KC_DB_USERNAME \
+            --env KC_DB_PASSWORD \
+            --env KC_FEATURES=stateless \
+            --env KC_CACHE=local \
+            --env DIKEVIA_RECOVERY_ADMIN_USERNAME \
+            --env DIKEVIA_RECOVERY_ADMIN_PASSWORD \
+            "dikevia-keycloak-recovery:${GITHUB_SHA}" \
+            bootstrap-admin user --optimized \
+            --username:env DIKEVIA_RECOVERY_ADMIN_USERNAME \
+            --password:env DIKEVIA_RECOVERY_ADMIN_PASSWORD \
+            --no-prompt
+          echo "Keycloak recovery command completed. No credential values were printed."
+
+      - name: Resume Keycloak if this workflow suspended it
+        id: resume
+        if: ${{ always() && steps.suspend.outputs.did_suspend == 'true' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          api="https://api.render.com/v1/services/$RENDER_SERVICE_ID"
+          auth=(-H "Authorization: Bearer $RENDER_API_KEY" -H "Accept: application/json")
+          curl --fail --silent --show-error --request POST "${auth[@]}" "$api/resume" >/dev/null
+          for attempt in $(seq 1 60); do
+            state="$(curl --fail --silent --show-error "${auth[@]}" "$api" | jq -r '.suspended')"
+            if [[ "$state" == "not_suspended" ]]; then
+              echo "Render confirms Keycloak has resumed."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Render did not confirm that Keycloak resumed. Check the Render Dashboard immediately."
+          exit 1
+
+      - name: Verify Keycloak readiness after maintenance
+        if: ${{ success() && steps.suspend.outputs.did_suspend == 'true' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent --show-error https://dikevia-identity-l2r8.onrender.com/health/ready >/dev/null; then
+              curl --fail --silent --show-error https://dikevia-identity-l2r8.onrender.com/realms/cfdt/.well-known/openid-configuration >/dev/null
+              echo "Keycloak readiness and OIDC discovery endpoints responded successfully."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Keycloak did not become ready within three minutes. Inspect Render logs."
+          exit 1
