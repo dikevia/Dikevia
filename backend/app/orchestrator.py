@@ -14,7 +14,7 @@ from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, i
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
-from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status
+from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
 from .legal_corpus import search_legal_corpus
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
@@ -355,18 +355,19 @@ class LegalOrchestrator:
                 case_law_connector.search(query, effective_date)
                 for query in research_queries
             ], return_exceptions=True)
-            case_result = []
+            case_results_by_query = []
             case_search_failed = False
             for query, result in zip(research_queries, case_results):
                 if isinstance(result, BaseException) or not isinstance(result, list):
                     logger.warning("Recherche CETAT en échec (%s) : %r", query[:100], result)
                     case_search_failed = True
+                    case_results_by_query.append([])
                 else:
-                    case_result.extend(result)
-            unique_cases = {}
-            for source in case_result:
-                unique_cases[source.get("source_id") or str(id(source))] = source
-            case_result = list(unique_cases.values())
+                    case_results_by_query.append(result)
+            # Round-robin across the independent research axes: otherwise the
+            # first broad query can monopolize the consultation budget and hide
+            # decisions found only by a focused sub-question.
+            case_result = interleave_case_law_results(case_results_by_query, limit=30)
             code_issue = (
                 "La recherche d'articles du CGFP sur Légifrance a échoué pour au moins un axe de recherche ou une date de référence."
                 if code_failures else None
