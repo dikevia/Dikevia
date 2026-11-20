@@ -31,8 +31,9 @@ def test_temporal_status_is_conservative_when_dates_missing():
     assert temporal_status(None, None, requested, "DECREE", raw_payload='{"requested_date":"2025-01-01"}', version_status="IN_FORCE") == "IN_FORCE_ON_REQUESTED_DATE"
 
 
-def test_only_official_legifrance_urls_are_kept():
+def test_only_allowlisted_official_legal_source_urls_are_kept():
     assert safe_official_url("https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000000")
+    assert safe_official_url("https://opendata.justice-administrative.fr/")
     assert safe_official_url("https://evil.example/legifrance") is None
     assert safe_official_url("http://legifrance.gouv.fr") is None
 
