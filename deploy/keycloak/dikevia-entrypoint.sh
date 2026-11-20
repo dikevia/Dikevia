@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-echo "Starting Keycloak in single-instance local-cache mode; the permanent Dikévia administrator is already provisioned."
+echo "Starting Keycloak in single-instance local-cache mode."
 exec /opt/keycloak/bin/kc.sh "$@"
