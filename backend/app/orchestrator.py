@@ -73,6 +73,11 @@ def _permanent_source_temporal_metadata(
     explanation = None
     if item.get("document_kind") == "ADMIN_CASELAW":
         raw_date = item.get("signature_date")
+        if status == "DECISION_POSTERIOR_TO_REQUESTED_DATE":
+            return (
+                "DECISION_AFTER_RETRIEVAL_DATE",
+                "Date de décision postérieure à la date de recherche : source écartée en attendant une vérification.",
+            )
         status = decision_temporal_status(
             str(raw_date) if raw_date else None, facts_reference_date,
         )
