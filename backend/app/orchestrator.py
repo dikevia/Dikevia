@@ -553,11 +553,6 @@ class LegalOrchestrator:
 
         sources.extend(local_sources)
 
-        # Apply the same conservative topic guard to live, stored and tenant-local
-        # documents before source assessment, model input or user-facing rendering.
-        for source in sources:
-            source["topic_relevant"] = is_topic_relevant_source(request.question, source)
-
         if found:
             for hit in found["results"]:
                 if not is_ihts_relevant_source(request.question, hit):
@@ -596,6 +591,11 @@ class LegalOrchestrator:
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
             decision["ihts_relevant"] = is_ihts_relevant_source(request.question, decision)
             sources.append({**decision, "page_start": None, "page_end": None})
+
+        # Apply the topic guard only after every source family (including the
+        # CGFP snapshot and CETAT full text) has been collected.
+        for source in sources:
+            source["topic_relevant"] = is_topic_relevant_source(request.question, source)
 
         # A direct request for the text/content of a numbered CGFP article is an
         # exact-reference lookup. If that article was not independently retrieved,
