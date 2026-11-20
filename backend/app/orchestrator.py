@@ -221,19 +221,18 @@ class LegalOrchestrator:
                 raise ValueError("Indiquez également le début de la situation pour vérifier toute la période.")
             if period_start and period_end and period_end < period_start:
                 raise ValueError("La fin de la période ne peut pas précéder son début.")
-            effective_date = (
-                _france_today() if request.situation_ongoing or not (period_start or period_end)
-                else (period_end or period_start)
-            )
-            # Only an explicitly described situation period authorizes a case-specific
-            # temporal conclusion. Today's date without facts is retrieval-only.
-            parsed_date = effective_date if (period_start or period_end or request.situation_ongoing) else None
+            # Always retrieve current law and case law. The facts date is an
+            # additional applicability checkpoint, never a research cut-off.
+            effective_date = _france_today()
+            facts_reference_date = period_end or period_start
+            parsed_date = facts_reference_date
             temporal_context = {
                 "period_start": period_start.isoformat() if period_start else None,
                 "period_end": period_end.isoformat() if period_end else None,
+                "facts_reference_date": facts_reference_date.isoformat() if facts_reference_date else None,
                 "ongoing": bool(request.situation_ongoing),
-                "facts_date_provided": parsed_date is not None,
-                "analysis_mode": "CASE_SPECIFIC" if parsed_date is not None else "GENERAL_CURRENT_LAW_ONLY",
+                "facts_date_provided": facts_reference_date is not None,
+                "analysis_mode": "CASE_SPECIFIC" if facts_reference_date is not None else "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE",
                 "reference_date_for_retrieval": effective_date.isoformat(),
                 "legacy_exact_date": bool(legacy_date and not request.facts_start_date and not request.facts_end_date),
             }
@@ -289,10 +288,14 @@ class LegalOrchestrator:
                 issue = "Authentification PISTE impossible : les recherches officielles n'ont pas pu être exécutées."
                 return [], [], [], issue, issue, issue, issue
 
-            comparison_dates = (
-                [period_start, effective_date]
-                if period_start and period_start < effective_date else [effective_date]
-            )
+            date_roles: dict[date, str] = {}
+            if period_start:
+                date_roles[period_start] = "START"
+            if period_end:
+                date_roles[period_end] = "END"
+            # Always add today's version, even when the user supplied a past date.
+            date_roles.setdefault(effective_date, "CURRENT")
+            comparison_dates = sorted(date_roles)
             # Search a bounded set of independent legal axes. Each query is
             # evaluated at every required temporal endpoint; one failed axis
             # must not discard successful results from the others.
@@ -310,7 +313,7 @@ class LegalOrchestrator:
             code_result, regulatory_result = [], []
             code_failures, regulatory_failures = [], []
             for requested_date, query_results in zip(comparison_dates, endpoint_results):
-                endpoint = "START" if requested_date == comparison_dates[0] and len(comparison_dates) > 1 else "END"
+                endpoint = date_roles[requested_date]
                 for query, pair in zip(research_queries, query_results):
                     code_at_date, regulatory_at_date = pair
                     if isinstance(code_at_date, BaseException) or not isinstance(code_at_date, list):
@@ -438,17 +441,21 @@ class LegalOrchestrator:
                             "son résultat de recherche reste une métadonnée non probante."
                         )
                         continue
-                    temporal_status = decision_temporal_status(result.get("decision_date"), effective_date)
-                    if temporal_status != "DECISION_AVAILABLE_BY_REQUESTED_DATE":
-                        logger.warning(
-                            "Décision CETAT écartée : date absente, invalide ou postérieure aux faits (source=%s, statut=%s)",
-                            result.get("source_id"), temporal_status,
-                        )
-                        case_law_fulltext_issue = (
-                            "Une décision CETAT a été écartée car sa date ne permet pas de vérifier qu'elle était disponible à la date des faits."
-                        )
-                        continue
+                    # A decision rendered after the facts may still interpret
+                    # the law applicable to them. Keep it, but label its timing.
+                    temporal_status = decision_temporal_status(
+                        result.get("decision_date"), facts_reference_date
+                    )
                     result["temporal_status"] = temporal_status
+                    if temporal_status == "DECISION_POSTERIOR_TO_FACTS":
+                        result["temporal_explanation"] = (
+                            "Décision postérieure aux faits : elle peut éclairer l'interprétation du droit, "
+                            "mais ne prouve pas à elle seule la règle applicable à la date des faits."
+                        )
+                    elif temporal_status == "DECISION_DATE_UNKNOWN":
+                        result["temporal_explanation"] = (
+                            "Date de décision non vérifiée : ne pas lui attribuer de portée temporelle certaine."
+                        )
                     result["content_kind"] = "FULL_TEXT"
                     decision_text = str(result.get("text") or "")
                     if len(decision_text) <= 12000:
@@ -495,7 +502,7 @@ class LegalOrchestrator:
                 try:
                     local_sources = await search_local_documents(
                         conn, organization_id, request.employer,
-                        contextual_search_query[:500], effective_date, limit=5,
+                        contextual_search_query[:500], facts_reference_date or effective_date, limit=5,
                     )
                     if parsed_date is None:
                         for local_source in local_sources:
@@ -737,10 +744,9 @@ class LegalOrchestrator:
                 "Recherche officielle Légifrance/PISTE et vérification des textes réglementaires complémentaires.",
                 "Recherche de jurisprudence pertinente et vérification des sources locales applicables."]
             if parsed_date is not None:
-                missing.insert(0, f"Date des faits déclarée : {effective_date.isoformat()}.")
-            elif needs_case_date:
-                missing.insert(0, "Date des faits / période non précisée : une analyse contextualisée ne peut pas déterminer la règle applicable.")
-                missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
+                missing.insert(0, f"Date des faits déclarée : {parsed_date.isoformat()}.")
+            else:
+                missing.insert(0, "La date exacte des faits n'a pas été fournie ; la recherche du droit actuel reste effectuée. La version applicable à une date passée sera vérifiée si cela devient déterminant.")
             if permanent_issue:
                 missing.insert(0, permanent_issue)
             if cgfp_issue:
@@ -775,18 +781,10 @@ class LegalOrchestrator:
             return AskResponse(
                 request_id=request_id,
                 verification_status="NON_VERIFIE",
-                answer=(
-                    "La date ou la période des faits n'est pas renseignée. La recherche au jour présent sert uniquement au repérage documentaire ; "
-                    "les textes officiels récupérés ne permettent pas de répondre avec certitude et aucune conclusion juridique contextualisée n'est formulée."
-                    if parsed_date is None and needs_case_date else
-                    "Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. Aucune conclusion juridique n'est formulée."
-                ),
+                answer="Les textes officiels récupérés ne permettent pas de répondre avec certitude sur ce point précis. Aucune conclusion juridique n'est formulée.",
                 sources=sources,
                 missing_information=missing,
-                clarification_question=(
-                    "À quelle date les faits se sont-ils produits, ou sur quelle période s'étendent-ils ?"
-                    if parsed_date is None and needs_case_date else None
-                ),
+                clarification_question=None,
             )
 
         missing = ["Vérifier les dates d'effet et la rédaction exacte applicable à la date des faits.",
@@ -832,9 +830,8 @@ class LegalOrchestrator:
             missing.insert(0, "La recherche CETAT a été exécutée sans retrouver de décision pertinente pour cette requête.")
         if temporal_context["period_start"] or temporal_context["period_end"]:
             missing.insert(0, f"Période déclarée : du {temporal_context['period_start'] or 'début non précisé'} au {temporal_context['period_end'] or ('aujourd’hui' if temporal_context['ongoing'] else 'fin non précisée')}.")
-        elif not temporal_context["ongoing"] and needs_case_date:
-            missing.insert(0, f"Date des faits / période de la situation non précisée : Légifrance est interrogé au {effective_date.isoformat()} à titre de repérage documentaire uniquement.")
-            missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
+        elif not temporal_context["ongoing"] and not parsed_date:
+            missing.insert(0, "Date des faits non renseignée : la recherche du droit actuel est maintenue. La date ne sera demandée que si elle est nécessaire pour départager deux versions d'un texte ou vérifier un acte local.")
         if temporal_context["ongoing"]:
             missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
             if not temporal_context["period_start"]:
@@ -1071,16 +1068,8 @@ class LegalOrchestrator:
                 "La réponse IA a été bloquée : au moins une référence juridique n'est pas retrouvée à l'identique dans les sources injectées, ou une citation explicite manque.",
             )
 
-        if ai_answer and parsed_date is None and needs_case_date:
-            if is_ihts_question(request.question):
-                missing.extend([
-                    "La date ou la période des heures effectuées reste à préciser pour vérifier la version applicable aux faits.",
-                    "La délibération de la collectivité et le dispositif local de compensation restent à vérifier.",
-                ])
-            else:
-                missing.append(
-                    "La date ou la période des faits reste à préciser pour vérifier la version des règles applicable à votre situation personnelle."
-                )
+        if ai_answer and parsed_date is None and is_ihts_question(request.question):
+            missing.append("La délibération de la collectivité et le dispositif local de compensation restent à vérifier.")
 
         if ai_answer:
             # Append practical guidance only after the legal-claim citation validator.
@@ -1104,14 +1093,10 @@ class LegalOrchestrator:
                 "Je n'ai pas pu établir une réponse suffisamment fiable à la question précise à partir des éléments retrouvés.",
                 "Je préfère vous le signaler plutôt que de recopier des articles de loi ou de présenter une source simplement voisine comme une réponse.",
             ]
-            if parsed_date is None and needs_case_date:
+            if parsed_date is None:
                 lines.append(
-                    "Pour poursuivre l'analyse de votre situation, indiquez la date ou la période des faits."
-                )
-            elif parsed_date is None:
-                lines.append(
-                    "Il s'agit ici d'une question générale : une date personnelle n'est pas nécessaire. "
-                    "Le point à résoudre est l'identification d'une disposition qui répond directement à votre question."
+                    "La date des faits n'est pas indispensable pour poursuivre la recherche générale. "
+                    "Elle pourra être précisée si la version historique d'un texte ou un acte local doit être vérifié."
                 )
             if sources:
                 lines.append("\\nSources retrouvées, à examiner (elles ne constituent pas à elles seules une réponse) :")
@@ -1151,8 +1136,5 @@ class LegalOrchestrator:
             request_id=request_id,
             verification_status="PARTIELLEMENT_VERIFIE" if ai_answer else "NON_VERIFIE",
             answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage,
-            clarification_question=(
-                "Quand les faits se sont-ils produits ? Une date ou une période approximative suffit ; précisez aussi si la situation est toujours en cours."
-                if parsed_date is None and needs_case_date else None
-            ),
+            clarification_question=None,
         )
