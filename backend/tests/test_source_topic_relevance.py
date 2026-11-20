@@ -64,3 +64,13 @@ def test_sick_leave_question_keeps_related_remuneration_source():
         "text": "Dispositions relatives au traitement indiciaire et à la rémunération.",
     }
     assert is_topic_relevant_source(question, source) is True
+
+
+
+def test_short_topic_acronym_does_not_match_inside_an_unrelated_word():
+    question = "Quels sont mes droits pendant un congé maladie ?"
+    source = {
+        "title": "Organisation des services et recettes de la collectivité",
+        "text": "Les recettes de fonctionnement financent les services publics locaux.",
+    }
+    assert is_topic_relevant_source(question, source) is True
