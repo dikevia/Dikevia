@@ -45,24 +45,40 @@ def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
 
-def question_needs_case_date(question: str) -> bool:
-    """Return true only when the wording describes a concrete personal event or dispute."""
-    text = " ".join(str(question or "").lower().split())
-    case_specific_cues = (
-        r"\bon ne me (?:paie|paye|compense|donne)\b",
-        r"\bon m['’]a (?:refusé|sanctionné|notifié|imposé|retiré|placé)\b",
-        r"\bje (?:n['’]ai pas (?:été payé|reçu|touché)|ne suis pas payé|ne touche pas|travaille|fais|subis)\b",
-        r"\bj['’]ai (?:été|effectué|reçu|déposé|demandé|contesté)\b",
-        r"\b(?:mon employeur|ma collectivité) (?:refuse|ne me paie|ne me paye|m['’]a refusé)\b",
-        r"\b(?:dans mon cas|ma situation|mon dossier)\b",
-        r"\b(?:depuis|à compter du)\s+(?:le\s+)?\d{1,2}[ /-]\d{1,2}\b",
-        r"\b(?:mon employeur|ma collectivité) m['’]a\b",
-        r"\b(?:mon|ma|mes)\s+[\wÀ-ÿ'’-]{2,40}\s+(?:a été|ont été)\s+(?:refusé|refusée|refusés|refusées|retiré|retirée|supprimé|supprimée|notifié|notifiée)\b",
-        r"\b(?:ma demande|mon congé|mon arrêt|ma rémunération|mon dossier)\b.{0,80}\b(?:refusé|refusée|refusés|refusées|rejeté|rejetée|suspendu|suspendue)\b",
-        r"\b(?:j['’]ai reçu|on m['’]a notifié|on m['’]a adressé)\b.{0,80}\b(?:refus|décision|sanction|notification)\b",
-    )
-    return any(re.search(pattern, text) for pattern in case_specific_cues)
+def classify_question_intent(question: str) -> str:
+    """Classify whether the current turn describes an individual event or asks for general rules.
 
+    This is a conservative routing heuristic, not a legal or semantic judgement.
+    Only explicit first-person events, decisions or disputes trigger case-date
+    clarification; hypothetical employer powers remain general questions.
+    """
+    text = " ".join(str(question or "").casefold().split())
+    if not text:
+        return "GENERAL_INFORMATION"
+
+    personal_event_patterns = (
+        r"\bon ne me (?:paie|paye|compense|donne)\b",
+        r"\bon m['’]a (?:refusé|sanctionné|notifié|imposé|retiré|placé|licencié|convoqué)\b",
+        r"\bje (?:n['’]ai pas (?:été payé|reçu|touché|obtenu)|ne suis pas payé|ne touche pas|subis)\b",
+        r"\bj['’]ai (?:été sanctionné|été licencié|été convoqué|été refusé|reçu|déposé|contesté|effectué)\b",
+        r"\b(?:mon employeur|ma collectivité) (?:refuse|ne me paie|ne me paye|m['’]a refusé|m['’]a sanctionné)\b",
+        r"\b(?:mon|ma|mes)\s+[\wÀ-ÿ'’-]{2,40}\s+(?:a été|ont été)\s+(?:refusé|refusée|refusés|refusées|retiré|retirée|supprimé|supprimée|notifié|notifiée|rejeté|rejetée|suspendu|suspendue)\b",
+        r"\b(?:ma demande|mon congé|mon arrêt|ma rémunération|mon dossier)\b.{0,80}\b(?:refusé|refusée|refusés|refusées|rejeté|rejetée|suspendu|suspendue)\b",
+        r"\b(?:j['’]ai reçu|on m['’]a notifié|on m['’]a adressé)\b.{0,80}\b(?:refus|décision|sanction|notification|convocation)\b",
+        r"\b(?:dans mon cas|dans ma situation|concernant mon dossier)\b",
+        r"\b(?:depuis|à compter du)\s+(?:le\s+)?\d{1,2}[ /-]\d{1,2}\b",
+    )
+    if any(re.search(pattern, text) for pattern in personal_event_patterns):
+        return "PERSONAL_CASE"
+
+    # A question about what an employer may generally do is not evidence that
+    # the user has personally received a refusal or decision.
+    return "GENERAL_INFORMATION"
+
+
+def question_needs_case_date(question: str) -> bool:
+    """Compatibility wrapper: ask for dates only for explicitly personal cases."""
+    return classify_question_intent(question) == "PERSONAL_CASE"
 
 def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     """Exclude sources explicitly classified as unrelated from analysis and display."""
