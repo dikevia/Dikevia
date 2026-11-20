@@ -181,13 +181,29 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(_fold(current_turn)):
         return queries
     folded = _fold(original)
-    for triggers, axes in _TOPIC_RESEARCH_AXES:
-        if any(_fold(trigger) in folded for trigger in triggers):
-            for axis in axes:
-                candidate = axis[:500]
-                if candidate not in queries:
-                    queries.append(candidate)
-                if len(queries) >= max(1, min(max_queries, 3)):
-                    break
+    query_limit = max(1, min(max_queries, 3))
+    matched_axes = [
+        axes for triggers, axes in _TOPIC_RESEARCH_AXES
+        if any(_fold(trigger) in folded for trigger in triggers)
+    ]
+
+    # For compound questions, first allocate one focused query to each
+    # recognized topic. Only then spend remaining capacity on a second axis
+    # for the first topic. This avoids silently dropping a second legal issue.
+    for axes in matched_axes:
+        if len(queries) >= query_limit:
             break
-    return queries[:max(1, min(max_queries, 3))]
+        candidate = axes[0][:500]
+        if candidate not in queries:
+            queries.append(candidate)
+
+    for axes in matched_axes:
+        for axis in axes[1:]:
+            if len(queries) >= query_limit:
+                break
+            candidate = axis[:500]
+            if candidate not in queries:
+                queries.append(candidate)
+        if len(queries) >= query_limit:
+            break
+    return queries[:query_limit]
