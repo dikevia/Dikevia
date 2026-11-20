@@ -12,7 +12,7 @@ import unicodedata
 def _fold(value: str) -> str:
     value = unicodedata.normalize("NFKD", str(value or "").casefold())
     value = "".join(ch for ch in value if not unicodedata.combining(ch))
-    return re.sub(r"\\s+", " ", re.sub(r"[^a-z0-9]+", " ", value)).strip()
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", value)).strip()
 
 
 _TOPIC_MARKERS = (
@@ -47,13 +47,13 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
             topic = candidate
             break
 
-    if re.search(r"\\b(agent|agents|je suis)\\s+contractuel(le)?\\b|\\bcontractuel(le)?\\b|\\bcdd\\b|\\bcdi\\b", folded):
+    if re.search(r"\b(agent|agents|je suis)\s+contractuel(le)?\b|\bcontractuel(le)?\b|\bcdd\b|\bcdi\b", folded):
         status = "CONTRACTUEL_EXPLICIT"
-    elif re.search(r"\\b(stagiaire|fonctionnaire stagiaire)\\b", folded):
+    elif re.search(r"\b(stagiaire|fonctionnaire stagiaire)\b", folded):
         status = "STAGIAIRE_EXPLICIT"
-    elif re.search(r"\\b(titulaire|fonctionnaire titulaire)\\b", folded):
+    elif re.search(r"\b(titulaire|fonctionnaire titulaire)\b", folded):
         status = "TITULAIRE_EXPLICIT"
-    elif re.search(r"\\bfonctionnaire\\b", folded):
+    elif re.search(r"\bfonctionnaire\b", folded):
         status = "FONCTIONNAIRE_STATUS_UNSPECIFIED"
     else:
         status = "NOT_SPECIFIED"
