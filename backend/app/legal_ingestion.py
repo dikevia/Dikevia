@@ -196,11 +196,13 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                     "public_service_scope": scope.get("scope"),
                     "scope_evidence": scope.get("evidence", []),
                     "source_license": "Licence Ouverte version 2.0",
+                    "source_xml_sha256": hashlib.sha256(xml_bytes).hexdigest(),
                     "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
                 },
                 "raw_version_payload": {
                     "xml_filename": info.filename[:250],
                     "source_archive": archive_name[:250],
+                    "source_xml_sha256": hashlib.sha256(xml_bytes).hexdigest(),
                     "ecli": ecli,
                 },
             })
