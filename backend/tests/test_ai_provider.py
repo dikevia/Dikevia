@@ -735,6 +735,7 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
         employer="NATIONAL",
         facts_date="2026-11-19",
         sources=[source, decision],
+        legal_context={"topic": "UNION_RIGHTS", "agent_status": "NOT_SPECIFIED"},
     )
 
     assert result.content == '{"claims": []}'
@@ -746,6 +747,7 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
     assert "Extrait officiel de test suffisamment explicite." in serialized
     assert "CETATEXT000012345678" in serialized
     assert '"date_decision": "2024-05-10"' in serialized
+    assert '"qualification_juridique_pre_recherche": {"topic": "UNION_RIGHTS", "agent_status": "NOT_SPECIFIED"}' in serialized
 
 
 
