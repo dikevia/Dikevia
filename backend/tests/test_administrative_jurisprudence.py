@@ -257,6 +257,16 @@ def test_decision_temporal_status_classifies_timing_without_excluding_later_case
 
 
 
+def test_ongoing_situation_uses_today_as_case_law_reference_date():
+    from app.orchestrator import _case_law_reference_date
+
+    today = date(2026, 11, 21)
+    start = date(2024, 1, 1)
+    assert _case_law_reference_date(start, None, True, today) == today
+    assert _case_law_reference_date(start, date(2024, 6, 30), False, today) == date(2024, 6, 30)
+    assert _case_law_reference_date(None, None, False, today) is None
+
+
 def test_cetat_results_are_interleaved_across_research_axes_and_deduplicated():
     from app.jurisprudence import interleave_case_law_results
     first = [
