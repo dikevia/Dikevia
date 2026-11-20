@@ -875,7 +875,7 @@ async def test_ai_payload_preserves_official_administrative_publication_metadata
             "title": "Décision administrative", "signature_date": "2024-05-10",
             "jurisdiction": "Tribunal administratif de Grenoble", "official_number": "2400001",
             "source_status": "OFFICIAL_XML_IMPORTED", "content_kind": "FULL_TEXT",
-            "retrieval_scope": "TOP_TWO_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT",
+            "retrieval_scope": "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT",
             "excerpt": "Texte intégral officiel suffisamment long pour être transmis au modèle.",
             "raw_metadata": {"publication_code": "B", "ecli": "ECLI:FR:TA38:2024:2400001", "decision_type": "décision", "recourse_type": "Excès de pouvoir"},
         }],
@@ -883,4 +883,4 @@ async def test_ai_payload_preserves_official_administrative_publication_metadata
     payload_sources = json.loads(captured["payload"]["messages"][1]["content"])["extraits_documentaires_valides"]
     assert payload_sources[0]["code_publication_jurisprudentielle"] == "B"
     assert payload_sources[0]["numero_ecli"] == "ECLI:FR:TA38:2024:2400001"
-    assert payload_sources[0]["portee_extrait"] == "TOP_TWO_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+    assert payload_sources[0]["portee_extrait"] == "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
