@@ -863,6 +863,10 @@ async def test_ai_payload_preserves_official_administrative_publication_metadata
         captured["payload"] = json.loads(request.content)
         return httpx.Response(200, json={"choices": [{"message": {"content": "{\\"claims\\": []}"}}], "usage": {}})
 
+    real_async_client = httpx.AsyncClient
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr("app.ai_provider.httpx.AsyncClient", lambda **kwargs: real_async_client(transport=transport, **kwargs))
+
     await analyze_question(
         question="Question sur un agent territorial",
         employer="NATIONAL", facts_date="2025-01-01",
