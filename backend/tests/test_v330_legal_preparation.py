@@ -182,6 +182,8 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
         "00000000-0000-0000-0000-000000000001",
     )
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.answer.startswith("Le décret n° 2024-100")
+    assert "Voici ce que les textes permettent de comprendre" not in response.answer
     loda_response = next(s for s in response.sources if s["source_type"] == "LEGIFRANCE_LODA")
     assert len(loda_response["text"]) <= 1800
     assert "full_text" not in loda_response
