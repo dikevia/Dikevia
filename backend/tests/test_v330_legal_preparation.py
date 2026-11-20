@@ -45,7 +45,7 @@ def _enable_legifrance(monkeypatch, module):
 
 
 @pytest.mark.asyncio
-async def test_missing_facts_date_does_not_call_ai_for_case_specific_analysis(monkeypatch):
+async def test_general_sick_leave_question_does_not_request_personal_facts_date(monkeypatch):
     import app.orchestrator as module
 
     called = False
@@ -63,7 +63,8 @@ async def test_missing_facts_date_does_not_call_ai_for_case_specific_analysis(mo
     )
     assert called is False
     assert response.verification_status == "NON_VERIFIE"
-    assert any("date des faits" in item.lower() for item in response.missing_information)
+    assert not any("date des faits" in item.lower() for item in response.missing_information)
+    assert response.clarification_question is None
     assert "repérage documentaire" in response.answer.lower()
 
 
