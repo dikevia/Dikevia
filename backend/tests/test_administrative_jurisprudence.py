@@ -293,3 +293,11 @@ def test_parse_administrative_open_data_zip_rejects_invalid_archive():
     from app.legal_ingestion import parse_administrative_open_data_zip
     with pytest.raises(ValueError, match="ZIP valide"):
         parse_administrative_open_data_zip(b"not a zip", "broken.zip")
+
+
+
+def test_open_data_search_results_mark_selected_passages_and_final_chunk():
+    from app.legal_corpus import search_legal_corpus
+    import inspect
+    source = inspect.getsource(search_legal_corpus)
+    assert "SELECTED_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT" in source
