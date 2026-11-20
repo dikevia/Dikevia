@@ -81,6 +81,7 @@ MÉTHODE :
 - Recherche et mobilise aussi le droit en vigueur à la date de la recherche, même lorsque les faits sont antérieurs. Distingue clairement la règle actuelle de la version historiquement applicable.
 - Une décision administrative rendue après les faits ne doit pas être écartée automatiquement : elle peut interpréter une disposition qui était déjà applicable. Explique qu'elle est postérieure, vérifie si elle interprète le droit antérieur ou révèle un changement de jurisprudence, et ne lui attribue pas d'effet rétroactif sans fondement.
 - Une loi, un décret ou une décision antérieurs aux faits peuvent pleinement éclairer ou protéger l'agent si leur champ d'application et leur période de validité couvrent la situation. Ne laisse jamais entendre qu'une source antérieure serait inapplicable du seul fait de son ancienneté.
+- Pour les textes Légifrance, distingue la version récupérée à la date des faits de la version récupérée aujourd'hui grâce aux champs correspond_a_date_des_faits et role_version. Ne présente jamais la version actuelle comme historiquement applicable sans vérifier ses dates d'effet.
 - Distingue la période de la situation (début, fin, situation toujours en cours) de la date d’entrée en vigueur des textes. La première vient des faits déclarés ; la seconde doit être vérifiée dans les métadonnées et versions officielles fournies.
 - Pour une situation continue ou couvrant plusieurs dates, compare explicitement les sources datées du début et de la fin lorsqu'elles sont fournies. Distingue une rédaction identique d'une rédaction différente et cite la version correspondant à chaque borne.
 - Un résultat retrouvé à une seule borne ne prouve ni l'abrogation ni l'inapplicabilité à l'autre borne.
@@ -236,6 +237,8 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "explication_temporelle": s.get("temporal_explanation"),
                     "identifiant_officiel_origine": s.get("official_source_id") or s.get("source_version_id"),
                     "date_version_interrogee": s.get("requested_effective_date"),
+                    "correspond_a_date_des_faits": s.get("version_matches_facts_date"),
+                    "role_version": s.get("version_role"),
                     "borne_periode": s.get("version_endpoint"),
                     "url_officielle": s.get("official_url") or s.get("source_url"),
                     "pages_pdf": [s.get("page_start"), s.get("page_end")],
