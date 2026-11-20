@@ -101,7 +101,10 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
         raise ValueError("L'archive Open Data n'est pas un ZIP valide.") from exc
 
     with archive:
-        xml_entries = [info for info in archive.infolist() if not info.is_dir() and info.filename.lower().endswith(".xml")]
+        xml_entries = [
+            info for info in archive.infolist()
+            if not info.is_dir() and re.search(r"\\.xml(?:_[a-z0-9]+)?$", info.filename.lower())
+        ]
         if not xml_entries or len(xml_entries) > 5000:
             raise ValueError("L'archive doit contenir entre 1 et 5 000 fichiers XML.")
         total_size = sum(info.file_size for info in xml_entries)
