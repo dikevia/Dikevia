@@ -2,9 +2,18 @@ name: Dikévia — APK standard et administration
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - feature/dikevia-v3.38.5-cgfp-chat
+    paths:
+      - "android/**"
+      - ".github/workflows/android-beta-apk.yml"
+      - "frontend/**"
   push:
     branches:
       - feat/dikevia-two-android-apps
+      - fix/android-oidc-login-bootstrap
+      - feature/dikevia-v3.38.5-cgfp-chat
     paths:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
