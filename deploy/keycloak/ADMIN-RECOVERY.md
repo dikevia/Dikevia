@@ -48,3 +48,7 @@ The maintenance environment must also receive the service's database connection 
 - [ ] Confirm the permanent Dikévia administrator can sign in and has the intended permissions.
 - [ ] Remove the temporary administrator and recovery secrets.
 - [ ] Confirm Keycloak readiness and OIDC discovery/JWKS endpoints after restart.
+
+## Creating the founder's Dikévia account
+
+The currently versioned realm configuration sets `registrationAllowed` to `false`. Public self-registration is therefore intentionally disabled. Do not enable open registration merely to create the founder account. After administrator recovery, create the founder's user directly in the `cfdt` realm through the Keycloak Admin Console, using a Dikévia-neutral username, a verified email, and the required email-verification/password-update flow. Then verify a real OIDC login and bind founder entitlements to the verified immutable OIDC subject (`sub`), not to an unverified email address. Do not grant the founder account realm-administrator privileges unless separately required.
