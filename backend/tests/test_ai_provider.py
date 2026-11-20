@@ -392,38 +392,38 @@ def test_ask_request_distinguishes_situation_period_from_legacy_exact_date():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_asks_for_situation_period_instead_of_assuming_today():
+async def test_orchestrator_does_not_require_a_facts_date_before_research():
     from app.schemas import AskRequest
     from app.orchestrator import LegalOrchestrator
 
     request = AskRequest(employer="NATIONAL", question="Mon employeur m'a refusé un congé maladie, que puis-je faire ?")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
-    assert response.clarification_question
-    assert any("date d'entrée en vigueur" in item for item in response.missing_information)
+    assert response.clarification_question is None
+    assert not any("indiquez la date" in item.casefold() for item in response.missing_information)
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_requires_end_or_ongoing_for_new_start_date():
+async def test_orchestrator_does_not_require_a_complete_period_when_only_start_is_known():
     from app.schemas import AskRequest
     from app.orchestrator import LegalOrchestrator
 
     request = AskRequest(employer="NATIONAL", facts_start_date="2024-01-01",
                          question="Question juridique suffisamment longue")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
-    assert response.verification_status == "NON_VERIFIE"
-    assert "date de fin" in response.missing_information[0]
+    assert response.clarification_question is None
+    assert not any("date de fin" in item.casefold() for item in response.missing_information)
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_requires_start_when_only_end_date_is_given():
+async def test_orchestrator_accepts_an_end_date_without_a_start_date():
     from app.schemas import AskRequest
     from app.orchestrator import LegalOrchestrator
 
     request = AskRequest(employer="NATIONAL", facts_end_date="2024-06-30",
                          question="Question juridique suffisamment longue")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
-    assert response.verification_status == "NON_VERIFIE"
-    assert "début de la situation" in response.missing_information[0]
+    assert response.clarification_question is None
+    assert not any("début de la situation" in item.casefold() for item in response.missing_information)
 
 
 @pytest.mark.asyncio
@@ -442,6 +442,9 @@ async def test_orchestrator_rejects_inverted_situation_period():
 def test_ai_prompt_distinguishes_fact_period_from_text_effective_date():
     assert "Distingue la période de la situation" in SYSTEM_PROMPT
     assert "compare explicitement les sources datées du début et de la fin" in SYSTEM_PROMPT
+    assert "ne doit jamais servir de filtre général" in SYSTEM_PROMPT
+    assert "Une décision administrative rendue après les faits ne doit pas être écartée automatiquement" in SYSTEM_PROMPT
+    assert "La date des faits n'est pas un préalable à la recherche" in SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio
