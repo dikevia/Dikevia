@@ -51,8 +51,9 @@ def question_needs_case_date(question: str) -> bool:
     case_specific_cues = (
         r"\bon ne me (?:paie|paye|compense|donne)\b",
         r"\bon m['’]a (?:refusé|sanctionné|notifié|imposé|retiré|placé)\b",
-        r"\bje (?:n['’]ai pas reçu|ne suis pas payé|ne touche pas|travaille|fais|subis)\b",
+        r"\bje (?:n['’]ai pas (?:été payé|reçu|touché)|ne suis pas payé|ne touche pas|travaille|fais|subis)\b",
         r"\bj['’]ai (?:été|effectué|reçu|déposé|demandé|contesté)\b",
+        r"\b(?:mon employeur|ma collectivité) (?:refuse|ne me paie|ne me paye|m['’]a refusé)\b",
         r"\b(?:dans mon cas|ma situation|mon dossier)\b",
         r"\b(?:depuis|à compter du)\s+(?:le\s+)?\d{1,2}[ /-]\d{1,2}\b",
         r"\b(?:mon employeur|ma collectivité) m['’]a\b",
