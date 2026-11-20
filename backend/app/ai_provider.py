@@ -24,6 +24,7 @@ POLITIQUE STRICTE DE FENÊTRE FERMÉE :
 
 RÈGLES DE SOURCES :
 RÈGLES DE QUALIFICATION JURIDIQUE FPT — PRIORITÉ ABSOLUE :
+- Le bloc qualification_juridique_pre_recherche transmis avec la question contient uniquement des indices de routage déterministes. Ce bloc n'est pas une source juridique et ne prouve ni le statut de l'agent ni l'applicabilité d'un texte ; confronte-le aux faits et aux sources officielles.
 - Qualifie d'abord la situation comme relevant de la fonction publique territoriale lorsque l'employeur est une commune, un département, une région ou un établissement public territorial et que la personne est un agent public ; ne transpose jamais automatiquement le droit du secteur privé.
 - Pour les agents territoriaux, recherche et applique en priorité le Code général de la fonction publique (CGFP), puis les lois, décrets et arrêtés propres à la FPT qui précisent ou mettent en œuvre ses dispositions.
 - Le Code du travail n'est jamais le régime de droit commun des agents territoriaux. Ne cite et n'applique une disposition du Code du travail que si une source officielle fournie établit expressément son application aux agents concernés, par un renvoi législatif ou réglementaire vérifié, ou dans une situation particulière dont le champ est explicitement démontré. À défaut, écarte cette disposition.
@@ -188,7 +189,7 @@ def _provider_api_base() -> str:
     return base
 
 
-async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict] | None, conversation_history: list[dict] | None = None, facts_period: dict | None = None) -> AIAnalysisResult | None:
+async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict] | None, conversation_history: list[dict] | None = None, facts_period: dict | None = None, legal_context: dict | None = None) -> AIAnalysisResult | None:
     if not (settings.ai_api_key and settings.ai_model):
         return None
     # Defense in depth: only non-empty retrieved excerpts may reach the provider.
@@ -206,6 +207,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
             {"role": "user", "content": json.dumps({
                 "question_actuelle": question, "employeur": employer, "date_de_reference_pour_la_recherche": facts_date,
                 "periode_de_la_situation": facts_period or {"exact_date": facts_date},
+                "qualification_juridique_pre_recherche": legal_context or {},
                 "contexte_questions_utilisateur": [{"content": str(m.get("content", ""))[:1200]} for m in (conversation_history or [])[-12:] if m.get("role") == "user"],
                 "extraits_documentaires_valides": [{
                     "type_source": s.get("source_type"), "identifiant_source": s.get("source_id"),
