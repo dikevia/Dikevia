@@ -36,3 +36,10 @@ def test_code_du_travail_is_never_assumed_without_verified_legal_basis():
     )
     assert any("not a determination of legal applicability" in item
                for item in result["qualification_limits"])
+
+
+def test_union_rights_qualification_recognizes_common_short_forms():
+    asa = qualify_legal_question("Mon ASA syndicale est refusée.")
+    credit = qualify_legal_question("On me retire mon crédit d'heures syndical.")
+    assert asa["topic"] == "UNION_RIGHTS"
+    assert credit["topic"] == "UNION_RIGHTS"
