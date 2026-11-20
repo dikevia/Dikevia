@@ -4,6 +4,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from uuid import uuid4
 import logging
+import re
 
 from .schemas import AskRequest, AskResponse
 from .config import settings
@@ -42,6 +43,21 @@ logger = logging.getLogger(__name__)
 
 def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
+
+
+def question_needs_case_date(question: str) -> bool:
+    """Return true only when the wording describes a concrete personal event or dispute."""
+    text = " ".join(str(question or "").lower().split())
+    case_specific_cues = (
+        r"\bon ne me (?:paie|paye|compense|donne)\b",
+        r"\bon m['’]a (?:refusé|sanctionné|notifié|imposé|retiré|placé)\b",
+        r"\bje (?:n['’]ai pas reçu|ne suis pas payé|ne touche pas|travaille|fais|subis)\b",
+        r"\bj['’]ai (?:été|effectué|reçu|déposé|demandé|contesté)\b",
+        r"\b(?:dans mon cas|ma situation|mon dossier)\b",
+        r"\b(?:depuis|à compter du)\s+(?:le\s+)?\d{1,2}[ /-]\d{1,2}\b",
+        r"\b(?:mon employeur|ma collectivité) m['’]a\b",
+    )
+    return any(re.search(pattern, text) for pattern in case_specific_cues)
 
 
 def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
@@ -867,8 +883,13 @@ class LegalOrchestrator:
                                 )
                             else:
                                 claims = claim_validation["claims"]
+                                answer_scope = (
+                                    "pour votre situation"
+                                    if parsed_date is not None
+                                    else f"sur les règles générales consultées au {effective_date.isoformat()}"
+                                )
                                 rendered_claims = [
-                                    "Voici ce que les textes permettent de comprendre pour votre situation :",
+                                    f"Voici ce que les textes permettent de comprendre {answer_scope} :",
                                     "",
                                 ]
                                 unique_sources = {}
@@ -884,7 +905,10 @@ class LegalOrchestrator:
                                 rendered_claims.append("Textes et références à consulter :")
                                 for source_id, source_title in unique_sources.items():
                                     rendered_claims.append(f"• {source_title} [source:{source_id}]")
-                                rendered_claims.extend(["", "Pour apprécier complètement votre situation, il faut encore confronter ces règles aux faits précis et aux éventuels actes locaux applicables."])
+                                rendered_claims.extend([
+                                    "",
+                                    "Si votre question concerne une situation personnelle, il faudra confronter ces règles aux faits précis et aux éventuels actes locaux applicables.",
+                                ])
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
                                     if ai_usage is not None:
@@ -936,11 +960,17 @@ class LegalOrchestrator:
                 "La réponse IA a été bloquée : au moins une référence juridique n'est pas retrouvée à l'identique dans les sources injectées, ou une citation explicite manque.",
             )
 
-        if ai_answer and parsed_date is None:
-            missing = [
-                "La date ou la période des heures effectuées reste à préciser pour vérifier la version applicable aux faits.",
-                "La délibération de la collectivité et le dispositif local de compensation restent à vérifier.",
-            ]
+        needs_case_date = question_needs_case_date(request.question)
+        if ai_answer and parsed_date is None and needs_case_date:
+            if is_ihts_question(request.question):
+                missing.extend([
+                    "La date ou la période des heures effectuées reste à préciser pour vérifier la version applicable aux faits.",
+                    "La délibération de la collectivité et le dispositif local de compensation restent à vérifier.",
+                ])
+            else:
+                missing.append(
+                    "La date ou la période des faits reste à préciser pour vérifier la version des règles applicable à votre situation personnelle."
+                )
 
         if ai_answer:
             # Append practical guidance only after the legal-claim citation validator.
@@ -991,7 +1021,7 @@ class LegalOrchestrator:
             verification_status="PARTIELLEMENT_VERIFIE" if ai_answer else "NON_VERIFIE",
             answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage,
             clarification_question=(
-                "Quand le problème s'est-il produit ? Indiquez une date ou une période approximative, et précisez s'il est toujours en cours."
-                if parsed_date is None else None
+                "Quand les faits se sont-ils produits ? Une date ou une période approximative suffit ; précisez aussi si la situation est toujours en cours."
+                if parsed_date is None and needs_case_date else None
             ),
         )
