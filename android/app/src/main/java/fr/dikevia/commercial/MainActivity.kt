@@ -21,7 +21,7 @@ class MainActivity : Activity() {
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     companion object {
-        private const val APP_URL = "https://dikevia-commercial-api-l2r8.onrender.com/"
+        private val APP_URL = BuildConfig.APP_URL
         private const val FILE_CHOOSER_REQUEST = 4107
         private val TRUSTED_HOSTS = setOf(
             "dikevia-commercial-api-l2r8.onrender.com",
