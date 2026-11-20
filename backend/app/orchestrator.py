@@ -9,7 +9,7 @@ from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source
+from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -269,6 +269,20 @@ class LegalOrchestrator:
                     regulatory_failures.append(requested_date.isoformat())
                 else:
                     regulatory_result.extend(_tag_official_versions(regulatory_at_date, requested_date, endpoint))
+
+            # The broad LODA query can rank unrelated texts above the FPT
+            # implementing instrument. For IHTS questions, retrieve decree 91-875
+            # by its exact official number at every requested date as well.
+            if is_ihts_question(current_question):
+                for requested_date in comparison_dates:
+                    try:
+                        territorial_ihts = await legifrance.search_regulatory_texts(
+                            "décret n° 91-875", requested_date, limit=3,
+                        )
+                        endpoint = "START" if requested_date == comparison_dates[0] and len(comparison_dates) > 1 else "END"
+                        regulatory_result.extend(_tag_official_versions(territorial_ihts, requested_date, endpoint))
+                    except Exception as exc:
+                        logger.warning("Recherche ciblée du décret 91-875 indisponible à %s : %r", requested_date, exc)
 
             try:
                 case_result = await case_law_connector.search(live_query, effective_date)
