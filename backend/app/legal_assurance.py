@@ -51,7 +51,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
-        "VERIFIED_APPLICABLE",
+        "VERIFIED_APPLICABLE", "CURRENT_DATE_GENERAL_INFO_ONLY",
     }
     return {
         "source_family": kind,
