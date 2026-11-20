@@ -255,3 +255,41 @@ def test_cetat_results_are_interleaved_across_research_axes_and_deduplicated():
         "CETATEXT000000000001", "CETATEXT000000000004", "CETATEXT000000000002"
     ]
 
+
+
+
+def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
+    from io import BytesIO
+    import zipfile
+    from app.legal_ingestion import parse_administrative_open_data_zip
+
+    xml = b"""<Decision>
+      <Identification>DTA_2024001_20240510.xml</Identification>
+      <Code_Juridiction>TA38</Code_Juridiction>
+      <Nom_Juridiction>Tribunal administratif de Grenoble</Nom_Juridiction>
+      <Numero_Dossier>2400001</Numero_Dossier>
+      <Date_Lecture>2024-05-10</Date_Lecture>
+      <Numero_ECLI>ECLI:FR:TA38:2024:2400001</Numero_ECLI>
+      <Code_Publication>C</Code_Publication>
+      <Type_Decision>décision</Type_Decision>
+      <Texte_Integral><p>La commune a recruté un agent contractuel territorial et a pris une décision relative à sa rémunération. Le tribunal examine les règles applicables à cet agent public territorial et les garanties qui lui sont dues.</p></Texte_Integral>
+    </Decision>"""
+    archive_bytes = BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("DTA_2024001_20240510.xml", xml)
+    items = parse_administrative_open_data_zip(archive_bytes.getvalue(), "TA_202405.zip")
+    assert len(items) == 1
+    item = items[0]
+    assert item["source_type"] == "OTHER_OFFICIAL"
+    assert item["document_kind"] == "ADMIN_CASELAW"
+    assert item["source_status"] == "OFFICIAL_XML_IMPORTED"
+    assert item["signature_date"] == date(2024, 5, 10)
+    assert item["official_number"] == "2400001"
+    assert "agent contractuel territorial" in item["full_text"]
+    assert item["raw_metadata"]["publication_code"] == "C"
+
+
+def test_parse_administrative_open_data_zip_rejects_invalid_archive():
+    from app.legal_ingestion import parse_administrative_open_data_zip
+    with pytest.raises(ValueError, match="ZIP valide"):
+        parse_administrative_open_data_zip(b"not a zip", "broken.zip")
