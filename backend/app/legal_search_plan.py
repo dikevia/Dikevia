@@ -148,8 +148,7 @@ _TOPIC_RESEARCH_AXES = (
     ),
     (
         ("renouvellement de contrat", "non renouvellement", "fin de contrat",
-         "licenciement contractuel", "recrutement contractuel", "terme du contrat",
-         "agent contractuel", "contractuel", "CDD", "CDI"),
+         "licenciement contractuel", "recrutement contractuel", "terme du contrat"),
         (
             "agents contractuels fonction publique territoriale CGFP décret 88-145 recrutement renouvellement contrat",
             "décret 88-145 agents contractuels territoriaux procédure non renouvellement licenciement garanties délai prévenance",
@@ -186,6 +185,11 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
         axes for triggers, axes in _TOPIC_RESEARCH_AXES
         if any(_fold(trigger) in folded for trigger in triggers)
     ]
+    # "Et pour les contractuels ?" is a status comparison, not necessarily a
+    # contract-law issue. Use the contract axis only when no substantive topic
+    # is already present in the contextual question.
+    if not matched_axes and re.search(r"\b(?:et\s+)?pour\s+les?\s+contractuels?\b", folded):
+        matched_axes = [_TOPIC_RESEARCH_AXES[2][1]]
 
     # For compound questions, first allocate one focused query to each
     # recognized topic. Only then spend remaining capacity on a second axis
