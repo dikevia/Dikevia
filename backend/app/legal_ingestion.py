@@ -122,7 +122,8 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                 continue
 
             def value(*names: str, max_length: int = 1000) -> str | None:
-                return _descendant_text(root, {name.upper() for name in names})[:max_length] if _descendant_text(root, {name.upper() for name in names}) else None
+                found = _descendant_text(root, {name.upper() for name in names})
+                return found[:max_length] if found else None
 
             court_code = value("Code_Juridiction", "CodeJuridiction", max_length=80)
             court_name = value("Nom_Juridiction", "NomJuridiction", max_length=250)
@@ -135,7 +136,14 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             body_node = next((node for node in root.iter() if _local(node.tag) == "TEXTE_INTEGRAL"), None)
             if body_node is None:
                 continue
-            body = clean_text(" ".join(part.strip() for part in body_node.itertext() if part.strip()))[:100000]
+            paragraphs = [
+                clean_text(" ".join(part.strip() for part in node.itertext() if part.strip()))
+                for node in body_node.iter() if _local(node.tag) in {"P", "PARAGRAPHE"}
+            ]
+            body_source = "\\n".join(paragraph for paragraph in paragraphs if paragraph) or " ".join(
+                part.strip() for part in body_node.itertext() if part.strip()
+            )
+            body = clean_text(body_source)[:100000]
             if len(body) < 80:
                 continue
 
@@ -149,6 +157,9 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             publication_code = value("Code_Publication", "CodePublication", max_length=20)
             decision_type = value("Type_Decision", "TypeDecision", max_length=80)
             recourse_type = value("Type_Recours", "TypeRecours", max_length=160)
+            hearing_date = _date(value("Date_Audience", "DateAudience", max_length=40))
+            formation = value("Formation_Jugement", "FormationJugement", max_length=200)
+            role_number = value("Numero_Role", "NumeroRole", max_length=100)
             update_date = _date(value("Date_Mise_Jour", "DateMiseAJour", max_length=40))
             identity = "|".join((court_code or court_name, case_number, decision_date.isoformat(), identification))
             source_digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
@@ -176,6 +187,8 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                     "court_code": court_code, "ecli": ecli,
                     "publication_code": publication_code,
                     "decision_type": decision_type, "recourse_type": recourse_type,
+                    "hearing_date": hearing_date.isoformat() if hearing_date else None,
+                    "formation": formation, "role_number": role_number,
                     "xml_identification": identification,
                     "source_archive": archive_name[:250],
                     "public_service_scope": scope.get("scope"),
