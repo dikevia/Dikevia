@@ -58,6 +58,14 @@ def _case_law_reference_date(
     return period_end or period_start
 
 
+def _analysis_mode(question_intent: str, facts_date_provided: bool) -> str:
+    if facts_date_provided:
+        return "CASE_SPECIFIC"
+    if question_intent == "PERSONAL_CASE":
+        return "PERSONAL_CASE_WITHOUT_FACTS_DATE"
+    return "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE"
+
+
 def classify_question_intent(question: str) -> str:
     """Classify whether the current turn describes an individual event or asks for general rules.
 
@@ -246,12 +254,7 @@ class LegalOrchestrator:
                 "facts_reference_date": facts_reference_date.isoformat() if facts_reference_date else None,
                 "ongoing": bool(request.situation_ongoing),
                 "facts_date_provided": parsed_date is not None,
-                "analysis_mode": (
-                    "CASE_SPECIFIC" if parsed_date is not None
-                    else "PERSONAL_CASE_WITHOUT_FACTS_DATE"
-                    if question_intent == "PERSONAL_CASE"
-                    else "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE"
-                ),
+                "analysis_mode": _analysis_mode(question_intent, parsed_date is not None),
                 "question_intent": question_intent,
                 "reference_date_for_retrieval": effective_date.isoformat(),
                 "legacy_exact_date": bool(legacy_date and not request.facts_start_date and not request.facts_end_date),
