@@ -51,6 +51,10 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+        "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+        "DECISION_POSTERIOR_TO_FACTS",
+        "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
         "VERIFIED_APPLICABLE",
     }
     return {
@@ -272,6 +276,10 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
     eligible_statuses = {
         "IN_FORCE_ON_REQUESTED_DATE",
         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+        "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+        "DECISION_POSTERIOR_TO_FACTS",
+        "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
         "VERIFIED_APPLICABLE",
     }
     eligible_by_id: dict[str, list[dict[str, Any]]] = {}
