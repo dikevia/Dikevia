@@ -556,11 +556,6 @@ class LegalOrchestrator:
         # Classification is computed before the model call so the prompt receives
         # the legal-source family and the limitations attached to each document.
         sources = assess_source_set(sources)["sources"]
-        # Do not expose irrelevant lexical hits in the user-facing source list.
-        # In particular, generic CGFP provisions mentioning "crédit d'heures"
-        # must not be displayed for an IHTS / unpaid-overtime question.
-        sources = filter_irrelevant_sources_for_display(sources)
-
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
             s for s in sources
@@ -938,6 +933,11 @@ class LegalOrchestrator:
                 lines.append(f"\n{source.get('title', 'Source juridique')} ({location}) :\n{excerpt}")
             lines.append("\nAucune conclusion définitive n'est formulée. Vérifier les versions, les textes d'application, la jurisprudence et les règles locales avant toute utilisation syndicale ou administrative.")
             answer = "\n".join(lines)
+
+        # Apply display-only filtering after legal analysis and validation. Keeping
+        # every retrieved source available until this point prevents unrelated-topic
+        # heuristics from changing the evidence set or verification status.
+        sources = filter_irrelevant_sources_for_display(sources)
 
         # Keep full texts server-side for checks/analysis, but return only bounded
         # excerpts to the browser and conversation history.
