@@ -113,3 +113,37 @@ def test_decree_91_875_with_territorial_scope_is_eligible_for_fpt():
     })
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
+
+
+def test_ihts_filter_rejects_unrelated_article_mentioning_decree_2001_623():
+    from app.fpt_scope import is_ihts_relevant_source
+
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "article": "R431-3",
+        "title": "Code général de la fonction publique — article R431-3",
+        "text": (
+            "Les périodes d'astreintes mentionnées à l'article 5 du décret "
+            "n° 2001-623 du 12 juillet 2001 ne constituent pas du télétravail."
+        ),
+    }
+    assert is_ihts_relevant_source("On me paie pas mes heures supplémentaires.", source) is False
+
+
+def test_ihts_filter_keeps_the_ihts_decrees():
+    from app.fpt_scope import is_ihts_relevant_source
+
+    assert is_ihts_relevant_source(
+        "On me paie pas mes heures supplémentaires.",
+        {
+            "title": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+            "text": "Indemnités horaires pour travaux supplémentaires.",
+        },
+    ) is True
+    assert is_ihts_relevant_source(
+        "On me paie pas mes heures supplémentaires.",
+        {
+            "title": "Décret n° 91-875 relatif au régime indemnitaire des collectivités territoriales",
+            "text": "Fonctionnaires territoriaux et collectivités territoriales.",
+        },
+    ) is True
