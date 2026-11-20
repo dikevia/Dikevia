@@ -506,7 +506,10 @@ class LegalOrchestrator:
                     permanent_sources.append({
                         "source_type": item.get("source_type"), "source_id": item.get("source_id"),
                         "title": item.get("title"), "official_number": item.get("official_number"),
+                        "case_number": item.get("official_number"),
                         "document_kind": item.get("document_kind"), "jurisdiction": item.get("jurisdiction"),
+                        "raw_metadata": item.get("raw_metadata") or {},
+                        "jurisprudential_publication_code": (item.get("raw_metadata") or {}).get("publication_code"),
                         "signature_date": item.get("signature_date"), "publication_date": item.get("publication_date"),
                         "valid_from": item.get("valid_from"), "valid_to": item.get("valid_to"),
                         "temporal_status": item.get("temporal_status"), "source_status": item.get("source_status"),
