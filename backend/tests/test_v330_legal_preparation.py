@@ -653,3 +653,85 @@ async def test_current_date_repere_sources_are_not_labelled_applicable_without_f
         for source in response.sources
         if source.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}
     )
+
+
+@pytest.mark.asyncio
+async def test_ihts_query_retrieves_decree_91_875_and_filters_irrelevant_cgfp_hits(monkeypatch):
+    import app.orchestrator as module
+
+    _enable_legifrance(monkeypatch, module)
+
+    async def code_articles(*args, **kwargs):
+        return [{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000000000431",
+            "article": "R431-3",
+            "title": "Code général de la fonction publique — article R431-3",
+            "text": (
+                "Les périodes d'astreintes mentionnées à l'article 5 du décret "
+                "n° 2001-623 du 12 juillet 2001 ne constituent pas du télétravail."
+            ) * 2,
+        }]
+
+    calls = []
+
+    async def regulatory_texts(query, effective_date, limit=3):
+        calls.append(query)
+        if "91-875" in query:
+            text = (
+                "Le présent décret fixe les conditions du régime indemnitaire "
+                "applicable aux fonctionnaires territoriaux et aux collectivités territoriales."
+            )
+            return [{
+                "source_type": "LEGIFRANCE_LODA",
+                "source_id": "LEGITEXT000000000875",
+                "title": "Décret n° 91-875 relatif au régime indemnitaire des collectivités territoriales",
+                "document_kind": "DECREE",
+                "official_number": "91-875",
+                "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000875",
+                "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+                "full_text": text,
+                "excerpt": text,
+            }]
+        return [{
+            "source_type": "LEGIFRANCE_LODA",
+            "source_id": "LEGITEXT000000000260",
+            "title": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+            "document_kind": "DECREE",
+            "official_number": "2002-60",
+            "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000260",
+            "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+            "full_text": (
+                "Le décret concerne les indemnités horaires pour travaux supplémentaires. "
+                "Il doit être rapproché du régime indemnitaire territorial."
+            ) * 4,
+        }]
+
+    async def no_case_law(*args, **kwargs):
+        return []
+
+    captured = {}
+
+    async def fake_ai(**kwargs):
+        captured["sources"] = kwargs["sources"]
+        source = next(s for s in kwargs["sources"] if s.get("official_number") == "91-875")
+        return _structured_claim(
+            source,
+            "Le décret n° 91-875 concerne le régime indemnitaire des fonctionnaires territoriaux.",
+        )
+
+    monkeypatch.setattr(module.legifrance, "search_code_articles", code_articles)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
+    monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
+    monkeypatch.setattr(module, "analyze_question", fake_ai)
+    monkeypatch.setattr(module, "verify_claim_entailment", lambda **kwargs: _always_supported(kwargs))
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(employer="NATIONAL", question="On me paie pas mes heures supplémentaires."),
+        "00000000-0000-0000-0000-000000000001",
+    )
+
+    assert any(query == "décret n° 91-875" for query in calls)
+    assert all(source.get("article") != "R431-3" for source in response.sources)
+    assert any(source.get("official_number") == "91-875" for source in captured["sources"])
+    assert response.verification_status == "PARTIELLEMENT_VERIFIE"

@@ -9,7 +9,7 @@ from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source
+from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -269,6 +269,27 @@ class LegalOrchestrator:
                     regulatory_failures.append(requested_date.isoformat())
                 else:
                     regulatory_result.extend(_tag_official_versions(regulatory_at_date, requested_date, endpoint))
+
+            # The broad LODA query can rank unrelated texts above the FPT
+            # implementing instrument. For IHTS questions, retrieve decree 91-875
+            # by its exact official number at every requested date as well.
+            if is_ihts_question(current_question):
+                for requested_date in comparison_dates:
+                    try:
+                        territorial_ihts = await legifrance.search_regulatory_texts(
+                            "décret n° 91-875", requested_date, limit=3,
+                        )
+                        endpoint = "START" if requested_date == comparison_dates[0] and len(comparison_dates) > 1 else "END"
+                        regulatory_result.extend(_tag_official_versions(territorial_ihts, requested_date, endpoint))
+                    except Exception as exc:
+                        logger.warning("Recherche ciblée du décret 91-875 indisponible à %s : %r", requested_date, exc)
+
+            # Exact-number retrieval may overlap the broad search; keep one
+            # canonical source per dated source ID to avoid ambiguous citations.
+            unique_regulatory = {}
+            for source in regulatory_result:
+                unique_regulatory[source.get("source_id") or str(id(source))] = source
+            regulatory_result = list(unique_regulatory.values())
 
             try:
                 case_result = await case_law_connector.search(live_query, effective_date)
@@ -941,7 +962,11 @@ class LegalOrchestrator:
             lines = ["Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis."]
             lines.append("Recherche documentaire effectuée : les résultats ci-dessous sont des sources à examiner, pas une qualification juridique définitive.")
             if parsed_date is None:
-                lines.append("Date des faits non fournie : la date du jour sert uniquement au repérage documentaire. Aucune analyse juridique contextualisée n'est produite avant clarification de cette date.")
+                lines.append(
+                    "Je peux vous donner une information générale, mais les sources officielles récupérées "
+                    "ne suffisent pas encore à expliquer de façon fiable les règles applicables à votre question. "
+                    "Je préfère ne pas tirer de conclusion sans fondement documentaire pertinent."
+                )
             for source in sources[:8]:
                 excerpt = source.get("excerpt") or source.get("text", "")[:1800]
                 location = (f"pages PDF {source['page_start']}–{source['page_end']}" if source.get("page_start") else "réponse API Légifrance")

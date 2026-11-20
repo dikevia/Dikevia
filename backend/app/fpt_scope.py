@@ -192,16 +192,20 @@ _IHTS_SOURCE_MARKERS = (
     "ihts",
     "2002 60",
     "91 875",
-    "2001 623",
     "repos compensateur des heures supplementaires",
     "repos compensateur au titre des heures supplementaires",
 )
 
 
+def is_ihts_question(question: str) -> bool:
+    """Identify overtime/IHTS questions that need the territorial implementing decree."""
+    folded_question = _fold(str(question or ""))
+    return any(_fold(marker) in folded_question for marker in _IHTS_QUERY_MARKERS)
+
+
 def is_ihts_relevant_source(question: str, source: dict[str, Any]) -> bool:
     """Reject generic hour credits and unrelated CGFP hits for IHTS questions."""
-    folded_question = _fold(str(question or ""))
-    if not any(_fold(marker) in folded_question for marker in _IHTS_QUERY_MARKERS):
+    if not is_ihts_question(question):
         return True
 
     title = str(source.get("title") or "")
