@@ -57,6 +57,9 @@ def question_needs_case_date(question: str) -> bool:
         r"\b(?:dans mon cas|ma situation|mon dossier)\b",
         r"\b(?:depuis|à compter du)\s+(?:le\s+)?\d{1,2}[ /-]\d{1,2}\b",
         r"\b(?:mon employeur|ma collectivité) m['’]a\b",
+        r"\b(?:mon|ma|mes)\s+[\wÀ-ÿ'’-]{2,40}\s+(?:a été|ont été)\s+(?:refusé|refusée|refusés|refusées|retiré|retirée|supprimé|supprimée|notifié|notifiée)\b",
+        r"\b(?:ma demande|mon congé|mon arrêt|ma rémunération|mon dossier)\b.{0,80}\b(?:refusé|refusée|refusés|refusées|rejeté|rejetée|suspendu|suspendue)\b",
+        r"\b(?:j['’]ai reçu|on m['’]a notifié|on m['’]a adressé)\b.{0,80}\b(?:refus|décision|sanction|notification)\b",
     )
     return any(re.search(pattern, text) for pattern in case_specific_cues)
 
