@@ -257,6 +257,18 @@ def test_decision_temporal_status_classifies_timing_without_excluding_later_case
 
 
 
+def test_undated_personal_case_is_not_misclassified_as_general_information():
+    from app.orchestrator import _analysis_mode, classify_question_intent
+
+    personal = classify_question_intent("Mon employeur m'a refusé mon congé.")
+    general = classify_question_intent("Quels sont les droits à congé des agents territoriaux ?")
+    assert personal == "PERSONAL_CASE"
+    assert general == "GENERAL_INFORMATION"
+    assert _analysis_mode(personal, False) == "PERSONAL_CASE_WITHOUT_FACTS_DATE"
+    assert _analysis_mode(general, False) == "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE"
+    assert _analysis_mode(personal, True) == "CASE_SPECIFIC"
+
+
 def test_ongoing_situation_uses_today_as_case_law_reference_date():
     from app.orchestrator import _case_law_reference_date
 
