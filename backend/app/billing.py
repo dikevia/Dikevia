@@ -1,7 +1,7 @@
-"""Small, auditable Stripe Billing adapter for CFDT JURIS.
+"""Server-side subscription catalogue for Dikévia.
 
-Prices are server-side constants; the browser never supplies an amount.
-The webhook signature is verified before any database mutation.
+All prices are TTC integer cents. Legacy plans remain readable for existing
+subscriptions; new catalogue entries are not a credit wallet implementation.
 """
 from __future__ import annotations
 import hashlib
@@ -11,26 +11,59 @@ import time
 from typing import Any
 
 PLANS: dict[str, dict[str, Any]] = {
-    # Current public offers. Prices are TTC and generated server-side only.
-    "INDIVIDUAL_1": {"name": "Individuel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 1, "public": True, "tax_inclusive": True},
-    "SYNDICAT_10": {"name": "Syndicat 10", "amount": 8000, "currency": "eur", "interval": "month", "max_users": 10, "public": True, "tax_inclusive": True},
-    "SYNDICAT_50": {"name": "Syndicat 50", "amount": 30000, "currency": "eur", "interval": "month", "max_users": 50, "public": True, "tax_inclusive": True},
-    # Existing subscribers are grandfathered. These codes are not offered to new customers.
+    # New public catalogue. Credit allowances are descriptive until a
+    # transactional server-side credit ledger is implemented.
+    "ESSENTIEL": {"name": "Essentiel", "amount": 1490, "annual_amount": 14900, "currency": "eur", "interval": "month", "max_users": 1, "monthly_credits": 125, "public": True, "tax_inclusive": True},
+    "PRO": {"name": "Pro", "amount": 2900, "annual_amount": 29000, "currency": "eur", "interval": "month", "max_users": 1, "monthly_credits": 248, "public": True, "tax_inclusive": True},
+    "EQUIPE_INSTANCES": {"name": "Équipe & Instances", "amount": 11900, "annual_amount": 119000, "currency": "eur", "interval": "month", "max_users": 5, "monthly_credits": 1000, "public": True, "tax_inclusive": True},
+    "COLLECTIVITE_SYNDICATS": {"name": "Collectivité & Syndicats", "amount": 29900, "annual_amount": 299000, "currency": "eur", "interval": "month", "max_users": 15, "monthly_credits": 2450, "public": True, "tax_inclusive": True},
+    # Existing subscribers are grandfathered. Never delete or silently remap.
+    "INDIVIDUAL_1": {"name": "Ancienne offre Individuel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 1, "public": False, "tax_inclusive": True},
+    "SYNDICAT_10": {"name": "Ancienne offre Syndicat 10", "amount": 8000, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
+    "SYNDICAT_50": {"name": "Ancienne offre Syndicat 50", "amount": 30000, "currency": "eur", "interval": "month", "max_users": 50, "public": False, "tax_inclusive": True},
     "LEGACY_ESSENTIAL_3": {"name": "Ancienne offre Essentiel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 3, "public": False, "tax_inclusive": True},
     "LEGACY_SYNDICAT_10": {"name": "Ancienne offre Syndicat", "amount": 5000, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
     "FOUNDING_FREE": {"name": "Accès offert organisation", "amount": 0, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
 }
 
+CREDIT_PACKS: dict[str, dict[str, Any]] = {
+    "CREDITS_200": {"name": "Recharge 200 crédits", "amount": 2900, "credits": 200, "currency": "eur", "public": True, "tax_inclusive": True},
+    "CREDITS_600": {"name": "Recharge 600 crédits", "amount": 7900, "credits": 600, "currency": "eur", "public": True, "tax_inclusive": True},
+}
+
+
+
+def resolve_plan_price(plan_code: str, billing_interval: str = "month") -> tuple[int, str]:
+    """Return the server-authoritative amount and Stripe recurring interval."""
+    plan = PLANS.get(plan_code)
+    if not plan or not plan.get("public", False):
+        raise ValueError("Offre inconnue.")
+    if billing_interval == "month":
+        return int(plan["amount"]), "month"
+    if billing_interval == "year" and plan.get("annual_amount") is not None:
+        return int(plan["annual_amount"]), "year"
+    raise ValueError("Périodicité de facturation invalide pour cette offre.")
+
 
 def public_plans() -> list[dict[str, Any]]:
     return [
         {"code": code, "name": p["name"], "amount_cents": p["amount"],
+         "annual_amount_cents": p.get("annual_amount"),
+         "annual_billing_months": 10 if p.get("annual_amount") else None,
+         "monthly_credits": p.get("monthly_credits"),
          "currency": p["currency"], "interval": p["interval"], "max_users": p["max_users"],
          "tax_behavior": "inclusive" if p.get("tax_inclusive") else "unspecified",
          "price": f"{p['amount'] / 100:.2f} € TTC" if p["amount"] else "Sur attribution",
-         "description": f"Jusqu'à {p['max_users']} utilisateurs payants ; accès gratuits individuels hors quota"}
+         "description": f"Jusqu'à {p['max_users']} utilisateurs"}
         for code, p in PLANS.items() if p.get("public", False)
     ]
+
+
+def public_credit_packs() -> list[dict[str, Any]]:
+    return [{"code": code, "name": p["name"], "amount_cents": p["amount"],
+             "credits": p["credits"], "currency": p["currency"],
+             "tax_behavior": "inclusive" if p.get("tax_inclusive") else "unspecified"}
+            for code, p in CREDIT_PACKS.items() if p.get("public", False)]
 
 
 def verify_stripe_signature(payload: bytes, header: str | None, secret: str,

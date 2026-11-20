@@ -32,7 +32,7 @@ from .keycloak_admin import KeycloakAdmin, KeycloakAdminConfig, KeycloakAdminErr
 from .mailer import send_invitation_email
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, DECISION_ID_RE
-from .billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
+from .billing import PLANS, public_plans, resolve_plan_price, verify_stripe_signature, extract_subscription_state
 from .legal_corpus import upsert_legal_document, search_legal_corpus
 from .legal_assurance import assess_source_set
 from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
@@ -405,8 +405,11 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
     plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
-    if plan_code not in ("INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50"):
-        raise HTTPException(422, "Offre inconnue.")
+    billing_interval = payload.get("billing_interval", "month") if isinstance(payload, dict) else "month"
+    try:
+        amount, stripe_interval = resolve_plan_price(plan_code, billing_interval)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
     if not settings.stripe_secret_key:
         raise HTTPException(503, "Le paiement en ligne n'est pas encore configuré.")
     plan = PLANS[plan_code]
@@ -419,8 +422,8 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
         "cancel_url": settings.billing_cancel_url, "client_reference_id": ctx.organization_id,
         "line_items[0][quantity]": "1",
         "line_items[0][price_data][currency]": "eur",
-        "line_items[0][price_data][unit_amount]": str(plan["amount"]),
-        "line_items[0][price_data][recurring][interval]": "month",
+        "line_items[0][price_data][unit_amount]": str(amount),
+        "line_items[0][price_data][recurring][interval]": stripe_interval,
         "line_items[0][price_data][tax_behavior]": "inclusive",
         "line_items[0][price_data][product_data][name]": "JURIS — " + plan["name"],
         "automatic_tax[enabled]": str(settings.stripe_automatic_tax_enabled).lower(),
@@ -561,7 +564,7 @@ async def stripe_webhook(request: Request):
                         org_id, state.get("provider_customer_id"), state.get("provider_subscription_id"),
                         state.get("plan_code"), state["status"], state.get("current_period_end"),
                         state.get("cancel_at_period_end", False))
-                    if state.get("plan_code") in ("INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50", "LEGACY_ESSENTIAL_3", "LEGACY_SYNDICAT_10"):
+                    if state.get("plan_code") in ("ESSENTIEL", "PRO", "EQUIPE_INSTANCES", "COLLECTIVITE_SYNDICATS", "INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50", "LEGACY_ESSENTIAL_3", "LEGACY_SYNDICAT_10"):
                         await conn.execute("UPDATE organizations SET plan_code=$2 WHERE id=$1::uuid", org_id, state["plan_code"])
     return {"received": True, "duplicate": False}
 
