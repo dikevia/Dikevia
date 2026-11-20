@@ -336,6 +336,14 @@ def test_period_analysis_keeps_later_case_law_and_endpoint_valid_local_documents
     assert _source_allowed_for_period_analysis(later_decision, True, start, end)
     assert _source_allowed_for_period_analysis(imported_decision, True, start, end)
     assert _source_allowed_for_period_analysis(local_at_start, True, start, end)
+    one_endpoint_text = {
+        "source_type": "LEGIFRANCE_API",
+        "period_endpoint_match": True,
+        "version_endpoint": "START",
+    }
+    assert _source_allowed_for_period_analysis(one_endpoint_text, True, start, end)
+    one_endpoint_text["period_endpoint_match"] = False
+    assert not _source_allowed_for_period_analysis(one_endpoint_text, True, start, end)
     assert not _source_allowed_for_period_analysis(local_not_applicable, True, start, end)
     historical_decree = {
         "source_type": "OTHER_OFFICIAL",
