@@ -24,8 +24,10 @@ _TOPIC_MARKERS = (
                       "formation syndicale", "comite social territorial", "cst", "formation specialisee")),
     ("DISCIPLINE", ("sanction disciplinaire", "procedure disciplinaire", "conseil de discipline",
                     "avertissement", "blame", "exclusion temporaire", "revocation")),
-    ("CONTRACTUAL_EMPLOYMENT", ("agent contractuel", "agents contractuels", "cdd", "cdi",
-                                "renouvellement de contrat", "fin de contrat")),
+    # Status is classified independently below: the word "contractuel" must not mask the actual topic.
+    ("CONTRACTUAL_EMPLOYMENT", ("renouvellement de contrat", "fin de contrat",
+                                "licenciement contractuel", "recrutement contractuel",
+                                "terme du contrat", "non renouvellement")),
     ("WORKING_TIME", ("temps de travail", "duree du travail", "heures supplementaires",
                       "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
                       "travail de nuit", "travail le dimanche")),
