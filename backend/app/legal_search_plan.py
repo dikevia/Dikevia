@@ -61,7 +61,8 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("renouvellement de contrat", "non renouvellement", "fin de contrat",
-         "licenciement contractuel", "recrutement contractuel", "terme du contrat"),
+         "licenciement contractuel", "recrutement contractuel", "terme du contrat",
+         "agent contractuel", "contractuel", "contractuels", "CDD", "CDI"),
         "agents contractuels territoriaux décret 88-145 CGFP recrutement renouvellement "
         "licenciement garanties procédure jurisprudence administrative",
     ),
