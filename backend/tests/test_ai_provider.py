@@ -846,3 +846,35 @@ async def test_entailment_verifier_receives_current_question_for_relevance_check
     # whether the employer may refuse in this agent's specific question.
     assert result["valid"] is False
     assert "verdict_0:not_supported" in result["invalid"]
+
+
+@pytest.mark.asyncio
+async def test_ai_payload_preserves_official_administrative_publication_metadata(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import analyze_question
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "{\\"claims\\": []}"}}], "usage": {}})
+
+    await analyze_question(
+        question="Question sur un agent territorial",
+        employer="NATIONAL", facts_date="2025-01-01",
+        sources=[{
+            "source_type": "OTHER_OFFICIAL", "source_id": "OPEN_DATA_JA_1234567890123456",
+            "title": "Décision administrative", "signature_date": "2024-05-10",
+            "jurisdiction": "Tribunal administratif de Grenoble", "official_number": "2400001",
+            "source_status": "OFFICIAL_XML_IMPORTED", "content_kind": "FULL_TEXT",
+            "excerpt": "Texte intégral officiel suffisamment long pour être transmis au modèle.",
+            "raw_metadata": {"publication_code": "B", "ecli": "ECLI:FR:TA38:2024:2400001", "decision_type": "décision", "recourse_type": "Excès de pouvoir"},
+        }],
+    )
+    payload_sources = json.loads(captured["payload"]["messages"][1]["content"])["extraits_documentaires_valides"]
+    assert payload_sources[0]["code_publication_jurisprudentielle"] == "B"
+    assert payload_sources[0]["numero_ecli"] == "ECLI:FR:TA38:2024:2400001"
