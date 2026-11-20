@@ -222,3 +222,17 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
         source.get("source_type") == "LEGIFRANCE_CETAT_SEARCH"
         for source in ai_sources
     )
+
+
+@pytest.mark.parametrize(
+    ("decision_date", "requested_date", "expected"),
+    [
+        ("2024-05-10", date(2025, 1, 1), "DECISION_AVAILABLE_BY_REQUESTED_DATE"),
+        ("2025-02-01", date(2025, 1, 1), "DECISION_POSTERIOR_TO_REQUESTED_DATE"),
+        (None, date(2025, 1, 1), "TEMPORAL_SCOPE_INCOMPLETE"),
+        ("date inconnue", date(2025, 1, 1), "TEMPORAL_SCOPE_INCOMPLETE"),
+    ],
+)
+def test_decision_temporal_status_requires_a_verified_date(decision_date, requested_date, expected):
+    from app.jurisprudence import decision_temporal_status
+    assert decision_temporal_status(decision_date, requested_date) == expected
