@@ -23,7 +23,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
         if request.url.path.endswith("/search"):
             body = __import__("json").loads(request.content)
             assert body["fond"] == "CODE_DATE"
-            assert body["recherche"]["filtres"][1]["singleDate"] == "2025-11-16"
+            assert body["recherche"]["filtres"][1]["singleDate"] == int(__import__("datetime").datetime(2025, 11, 16, tzinfo=__import__("datetime").timezone.utc).timestamp() * 1000)
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
             return httpx.Response(200, json={"article": {"id": ARTICLE_ID, "num": "L. 123-4", "nomCode": "Code général de la fonction publique", "dateDebut": "2025-01-01", "texte": "Le texte réglementaire officiel est ici suffisamment long pour le test."}})
@@ -185,7 +185,8 @@ def test_legifrance_search_payload_uses_code_date_and_article_number(monkeypatch
     payload = LegifranceConnector()._search_payload("article L. 123-4", date(2025, 1, 1))
     assert payload["fond"] == "CODE_DATE"
     assert payload["recherche"]["champs"][0]["criteres"][0]["valeur"] == "L123-4"
-    assert payload["recherche"]["typePagination"] == "DEFAUT"
+    assert payload["recherche"]["typePagination"] == "ARTICLE"
+    assert payload["recherche"]["filtres"][1]["singleDate"] == LegifranceConnector._date_epoch_ms(date(2025, 1, 1))
 
 
 
