@@ -307,6 +307,55 @@ def test_entailment_verifier_fails_closed_on_unsupported_or_mismatched_verdicts(
     assert validate_entailment_verdicts(invented_quote, [claim], [source])["valid"] is False
 
 
+def test_entailment_verifier_rejects_exact_quote_from_unrelated_part_of_same_source():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claim = {
+        "source_id": "LEGIARTI000012345678",
+        "text": "La collectivité doit accorder un repos compensateur aux agents.",
+    }
+    unrelated_quote = "La procédure disciplinaire prévoit une exclusion temporaire de fonctions."
+    source = {
+        "source_id": claim["source_id"],
+        "text": (
+            unrelated_quote
+            + " Le temps de travail supplémentaire ouvre droit à un repos compensateur "
+              "dans les conditions prévues par le présent décret."
+        ),
+    }
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": claim["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": unrelated_quote,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_not_relevantly_aligned" in result["invalid"]
+
+
+def test_entailment_verifier_rejects_unsupported_numeric_claim_details():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claim = {
+        "source_id": "LEGIARTI000012345678",
+        "text": "L'agent bénéficie de 25 jours de congé annuel.",
+    }
+    quote = "Les agents bénéficient d'un congé annuel dans les conditions prévues."
+    source = {"source_id": claim["source_id"], "text": quote}
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": claim["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": quote,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_missing_claim_facts" in result["invalid"]
+
+
 def test_entailment_verifier_rejects_missing_extra_or_reordered_verdicts():
     from app.ai_provider import validate_entailment_verdicts
 
