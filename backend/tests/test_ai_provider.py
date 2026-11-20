@@ -213,10 +213,10 @@ def test_claim_evidence_rejects_quote_not_present_in_source():
 def test_claim_evidence_accepts_current_date_sources_for_general_information_only():
     from app.legal_assurance import validate_claim_evidence
 
-    source = _claim_source(temporal_status="CURRENT_DATE_GENERAL_INFO_ONLY")
+    source = _claim_source(temporal_status="TEMPORAL_SCOPE_INCOMPLETE", general_info_eligible=True)
     result = validate_claim_evidence({
         "claims": [{
-            "text": "L'agent peut bénéficier d'un repos compensateur.",
+            "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
             "source_id": source["source_id"],
             "quote": source["excerpt"],
         }]
