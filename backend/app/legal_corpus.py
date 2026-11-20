@@ -234,17 +234,32 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
              + ts_rank_cd(c.search_vector,st.expansion_query)) rank,
           row_number() OVER(PARTITION BY v.id ORDER BY
             (2.0 * ts_rank_cd(c.search_vector,st.original_query)
-             + ts_rank_cd(c.search_vector,st.expansion_query)) DESC,c.ordinal) rn,
-          max(c.ordinal) OVER(PARTITION BY v.id) last_ordinal
+             + ts_rank_cd(c.search_vector,st.expansion_query)) DESC,c.ordinal) rn
         FROM legal_chunks c JOIN legal_document_versions v ON v.id=c.version_id
         JOIN legal_documents d ON d.id=v.document_id
         CROSS JOIN search_terms st
         WHERE c.content_kind='FULL_TEXT'
           AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
       ), selected_chunks AS (
-        SELECT version_id, string_agg(content_chunk, E'\n\n' ORDER BY rn) AS content, max(rank) AS rank
-        FROM ranked
-        WHERE rn <= 2 OR (document_kind='ADMIN_CASELAW' AND ordinal=last_ordinal)
+        SELECT version_id, string_agg(content_chunk, E'\n\n' ORDER BY chunk_order) AS content, max(rank) AS rank
+        FROM (
+          SELECT version_id,content_chunk,rn AS chunk_order,rank
+          FROM ranked WHERE rn <= 2
+          UNION ALL
+          SELECT final_chunk.version_id,final_chunk.content_chunk,999999 AS chunk_order,0.0 AS rank
+          FROM (
+            SELECT c.version_id,c.content AS content_chunk,c.ordinal
+            FROM legal_chunks c
+            JOIN (SELECT DISTINCT version_id FROM ranked) matched USING(version_id)
+            WHERE c.content_kind='FULL_TEXT'
+              AND c.ordinal=(SELECT max(c2.ordinal) FROM legal_chunks c2
+                             WHERE c2.version_id=c.version_id AND c2.content_kind='FULL_TEXT')
+          ) final_chunk
+          WHERE NOT EXISTS (
+            SELECT 1 FROM ranked r
+            WHERE r.version_id=final_chunk.version_id AND r.ordinal=final_chunk.ordinal AND r.rn <= 2
+          )
+        ) selected_passages
         GROUP BY version_id
       ), document_metadata AS (
         SELECT DISTINCT ON (version_id) document_id,version_id,source_type,source_id,title,document_kind,
@@ -274,7 +289,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         item["source_type"] = item.pop("source_type")
         item["excerpt"] = item.pop("content")[:6000]
         item["retrieval_scope"] = (
-            "SELECTED_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            "TOP_TWO_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
             if item.get("document_kind") == "ADMIN_CASELAW"
             else "SELECTED_RELEVANT_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
