@@ -857,17 +857,6 @@ class LegalOrchestrator:
                                 for source_id, source_title in unique_sources.items():
                                     rendered_claims.append(f"• {source_title} [source:{source_id}]")
                                 rendered_claims.extend(["", "Pour apprécier complètement votre situation, il faut encore confronter ces règles aux faits précis et aux éventuels actes locaux applicables."])
-                                if any(source.get("ihts_relevant") is True for source in ai_sources):
-                                    rendered_claims.extend([
-                                        "Voici les démarches utiles dans votre situation :",
-                                        "• Conservez le relevé des heures réellement effectuées et les éléments montrant qu'elles ont été demandées ou validées.",
-                                        "• Demandez à votre service RH quel dispositif de compensation s'applique (indemnisation ou repos) et quelle délibération locale le prévoit.",
-                                        "• Si la réponse ne correspond pas aux textes ou aux pièces de votre situation, faites examiner le dossier par un référent juridique ou un représentant syndical.",
-                                    ])
-                                else:
-                                    rendered_claims.extend([
-                                        "Pour aller plus loin, rassemblez les documents utiles à votre situation et demandez à votre service RH ou à votre référent compétent de préciser la règle appliquée. Vous pouvez me donner les éléments manquants et je poursuivrai l'analyse avec vous.",
-                                    ])
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
                                     if ai_usage is not None:
@@ -920,6 +909,20 @@ class LegalOrchestrator:
             )
 
         if ai_answer:
+            # Append practical guidance only after the legal-claim citation validator.
+            # These are clearly framed as next steps, not legal claims requiring a
+            # documentary quotation; they must not cause supported claims to be rejected.
+            if any(source.get("ihts_relevant") is True for source in ai_sources):
+                ai_answer += (
+                    "\n\nDémarches utiles :"
+                    "\n• Conservez le relevé des heures réellement effectuées et les éléments montrant qu'elles ont été demandées ou validées."
+                    "\n• Demandez à votre service RH quel dispositif de compensation s'applique (indemnisation ou repos) et quelle délibération locale le prévoit."
+                    "\n• Si la réponse ne correspond pas aux textes ou aux pièces de votre situation, faites examiner le dossier par un référent juridique ou un représentant syndical."
+                )
+            else:
+                ai_answer += (
+                    "\n\nPour aller plus loin, rassemblez les documents utiles à votre situation et demandez à votre service RH ou à votre référent compétent de préciser la règle appliquée. Vous pouvez me donner les éléments manquants et je poursuivrai l'analyse avec vous."
+                )
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
                 "Les extraits du snapshot PDF ne certifient pas l'authenticité officielle. Les versions du corpus dont les dates d'effet sont incomplètes ne sont pas utilisées pour les conclusions IA. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
         else:
