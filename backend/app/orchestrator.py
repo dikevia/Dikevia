@@ -937,7 +937,11 @@ class LegalOrchestrator:
                                     rendered_claims.append(f"• {source_title} [source:{source_id}]")
                                 rendered_claims.extend([
                                     "",
-                                    "Si votre question concerne une situation personnelle, il faudra confronter ces règles aux faits précis et aux éventuels actes locaux applicables.",
+                                    (
+                                        f"Cette réponse porte sur les règles consultées au {effective_date.isoformat()} ; elle ne constitue pas une conclusion sur une situation individuelle."
+                                        if parsed_date is None
+                                        else f"Cette analyse prend pour date de référence le {effective_date.isoformat()} ; son application dépend aussi des faits établis et des éventuels actes locaux applicables."
+                                    ),
                                 ])
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
