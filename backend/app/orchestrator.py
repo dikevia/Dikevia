@@ -583,9 +583,14 @@ class LegalOrchestrator:
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["ihts_relevant"] = is_ihts_relevant_source(request.question, item)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
-                "temporal_status": (
-                    "IN_FORCE_ON_REQUESTED_DATE" if parsed_date is not None
-                    else "TEMPORAL_SCOPE_INCOMPLETE"
+                "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+                "version_matches_facts_date": bool(
+                    parsed_date and item.get("requested_effective_date") == parsed_date.isoformat()
+                ),
+                "version_role": (
+                    "FACTS_DATE_VERSION"
+                    if parsed_date and item.get("requested_effective_date") == parsed_date.isoformat()
+                    else "CURRENT_OR_ADDITIONAL_REFERENCE_VERSION"
                 ),
                 "page_start": None, "page_end": None, "content_kind": "FULL_TEXT",
                 "general_info_eligible": parsed_date is None,
@@ -611,9 +616,14 @@ class LegalOrchestrator:
                 "excerpt": item.get("excerpt") or full_text[:1800],
                 "text": full_text,
                 "content_kind": "FULL_TEXT",
-                "temporal_status": (
-                    "IN_FORCE_ON_REQUESTED_DATE" if parsed_date is not None
-                    else "TEMPORAL_SCOPE_INCOMPLETE"
+                "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+                "version_matches_facts_date": bool(
+                    parsed_date and item.get("requested_effective_date") == parsed_date.isoformat()
+                ),
+                "version_role": (
+                    "FACTS_DATE_VERSION"
+                    if parsed_date and item.get("requested_effective_date") == parsed_date.isoformat()
+                    else "CURRENT_OR_ADDITIONAL_REFERENCE_VERSION"
                 ),
                 "general_info_eligible": parsed_date is None,
                 "citation_integrity": {
