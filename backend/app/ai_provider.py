@@ -337,8 +337,8 @@ def answer_references_are_grounded(answer: str, allowed_refs: set[str | None],
 
 ENTAILMENT_SYSTEM_PROMPT = """Tu es un vérificateur contradictoire de l'appui documentaire d'une proposition juridique.
 Tu ne réponds pas à la question juridique et tu n'utilises aucune connaissance externe.
-Tu dois vérifier exclusivement si la proposition est entièrement et directement impliquée par le texte officiel fourni.
-Contrôle notamment : même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
+Tu dois vérifier deux conditions indépendantes : (1) la proposition est entièrement et directement impliquée par le texte officiel fourni ; (2) elle répond réellement à la question actuelle de l'agent. Une proposition peut être exacte au regard d'un texte mais hors sujet par rapport à la question : dans ce cas, réponds INSUFFICIENT.
+Contrôle notamment : correspondance entre la question actuelle et le sujet précis de la proposition, même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
 Une simple proximité de vocabulaire, un thème commun ou une citation exacte ne suffisent jamais.
 Si un élément de la proposition n'est pas expressément établi, si le texte est ambigu, incomplet, contradictoire, ou si une condition/exception empêche une conclusion certaine, réponds INSUFFICIENT.
 Si le texte contredit la proposition, réponds CONTRADICTED.
@@ -396,7 +396,7 @@ def validate_entailment_verdicts(payload, claims, sources):
             "verification_scope": "SECOND_STAGE_CONSERVATIVE_MODEL_ENTAILMENT_WITH_EXACT_SOURCE_SPAN"}
 
 
-async def verify_claim_entailment(*, claims: list[dict], sources: list[dict]) -> dict:
+async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict]) -> dict:
     """Ask the configured model for a conservative second-stage entailment check.
 
     This is an additional probabilistic safeguard, not a legal certification.
@@ -428,7 +428,7 @@ async def verify_claim_entailment(*, claims: list[dict], sources: list[dict]) ->
         "temperature": 0,
         "messages": [
             {"role": "system", "content": ENTAILMENT_SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps({"items_to_verify": evidence}, ensure_ascii=False)},
+            {"role": "user", "content": json.dumps({"question_actuelle": question, "items_to_verify": evidence}, ensure_ascii=False)},
         ],
     }
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
