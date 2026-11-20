@@ -353,3 +353,19 @@ def test_legal_corpus_results_are_interleaved_across_subquestions():
     assert [item["source_id"] for item in selected] == [
         "OPEN_DATA_JA_0001", "OPEN_DATA_JA_0004", "OPEN_DATA_JA_0002"
     ]
+
+
+@pytest.mark.asyncio
+async def test_consult_rejects_truncated_oversized_decision_text(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "secret")
+    oversized = "Texte intégral officiel. " * 6000
+    def handler(request):
+        if request.url.path.endswith("/api/oauth/token"):
+            return httpx.Response(200, json={"access_token": "token", "expires_in": 3600})
+        return httpx.Response(200, json={"text": {
+            "id": "CETATEXT000012345678", "texte": oversized,
+        }})
+    connector = AdministrativeCaseLawConnector(LegifranceConnector(transport=httpx.MockTransport(handler)))
+    with pytest.raises(Exception, match="texte intégral vérifiable"):
+        await connector.consult("CETATEXT000012345678")
