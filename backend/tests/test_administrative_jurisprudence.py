@@ -308,6 +308,37 @@ def test_imported_administrative_case_law_without_facts_date_is_not_excluded():
     assert explanation is None
 
 
+def test_period_analysis_keeps_later_case_law_and_endpoint_valid_local_documents():
+    from app.orchestrator import _source_allowed_for_period_analysis
+
+    start, end = date(2024, 1, 1), date(2024, 6, 30)
+    later_decision = {
+        "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+        "content_kind": "FULL_TEXT",
+        "temporal_status": "DECISION_POSTERIOR_TO_FACTS",
+    }
+    imported_decision = {
+        "source_type": "OTHER_OFFICIAL",
+        "document_kind": "ADMIN_CASELAW",
+        "content_kind": "FULL_TEXT",
+        "temporal_status": "DECISION_POSTERIOR_TO_FACTS",
+    }
+    local_at_start = {
+        "source_type": "LOCAL_DOCUMENT",
+        "validation_status": "VERIFIED_HISTORICAL",
+        "temporal_status": "VERIFIED_APPLICABLE",
+        "version_endpoint": "START",
+    }
+    local_not_applicable = {
+        **local_at_start,
+        "temporal_status": "NOT_APPLICABLE_ON_REQUESTED_DATE",
+    }
+    assert _source_allowed_for_period_analysis(later_decision, True, start, end)
+    assert _source_allowed_for_period_analysis(imported_decision, True, start, end)
+    assert _source_allowed_for_period_analysis(local_at_start, True, start, end)
+    assert not _source_allowed_for_period_analysis(local_not_applicable, True, start, end)
+
+
 def test_local_document_search_checks_historical_and_current_reference_dates():
     from app.orchestrator import _local_document_reference_dates
 
