@@ -302,6 +302,14 @@ class LegalOrchestrator:
         # but older exchanges must never displace the current request.
         if prior_user_questions and len(current_question) < 220:
             contextual_question = current_question[:350] + "\n" + prior_user_questions[-1][:150]
+            # A short follow-up such as "Et pour les contractuels ?" inherits
+            # the personal-case context of the immediately preceding question.
+            if question_intent != "PERSONAL_CASE" and classify_question_intent(prior_user_questions[-1]) == "PERSONAL_CASE":
+                question_intent = "PERSONAL_CASE"
+                temporal_context["question_intent"] = question_intent
+                temporal_context["analysis_mode"] = _analysis_mode(
+                    question_intent, parsed_date is not None,
+                )
         # PISTE search methods cap their query at 500 characters. The current
         # question must take precedence over older conversational context.
         research_queries = build_official_search_queries(contextual_question)
