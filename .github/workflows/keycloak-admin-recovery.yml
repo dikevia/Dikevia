@@ -74,7 +74,6 @@ jobs:
           for attempt in $(seq 1 60); do
             state="$(curl --fail --silent --show-error "${auth[@]}" "$api" | jq -r '.suspended')"
             if [[ "$state" == "suspended" ]]; then
-              echo "did_suspend=true" >> "$GITHUB_OUTPUT"
               echo "Render confirms Keycloak is suspended."
               exit 0
             fi
