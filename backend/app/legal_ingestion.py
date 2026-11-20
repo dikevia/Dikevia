@@ -140,7 +140,7 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                 clean_text(" ".join(part.strip() for part in node.itertext() if part.strip()))
                 for node in body_node.iter() if _local(node.tag) in {"P", "PARAGRAPHE"}
             ]
-            body_source = "\\n".join(paragraph for paragraph in paragraphs if paragraph) or " ".join(
+            body_source = "\n".join(paragraph for paragraph in paragraphs if paragraph) or " ".join(
                 part.strip() for part in body_node.itertext() if part.strip()
             )
             body = clean_text(body_source)[:100000]
