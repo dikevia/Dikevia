@@ -137,6 +137,31 @@ _TOPIC_RESEARCH_AXES = (
             "CGFP autorisations speciales absence syndicale decharges activite service credit temps syndical locaux syndicaux deliberation locale reunions information formation syndicale dialogue social organisations syndicales",
         ),
     ),
+    (
+        ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
+         "indemnites horaires pour travaux supplementaires", "travaux supplementaires"),
+        (
+            "IHTS fonction publique territoriale décret 2002-60 décret 91-875 indemnités horaires travaux supplémentaires",
+            "FPT décret 2001-623 temps de travail cycle décompte heures supplémentaires délibération assemblée délibérante repos compensateur",
+        ),
+    ),
+    (
+        ("renouvellement de contrat", "non renouvellement", "fin de contrat",
+         "licenciement contractuel", "recrutement contractuel", "terme du contrat",
+         "agent contractuel", "contractuel", "CDD", "CDI"),
+        (
+            "agents contractuels fonction publique territoriale CGFP décret 88-145 recrutement renouvellement contrat",
+            "décret 88-145 agents contractuels territoriaux procédure non renouvellement licenciement garanties délai prévenance",
+        ),
+    ),
+    (
+        ("temps de travail", "duree du travail", "annualisation", "astreinte",
+         "temps partiel", "cycle de travail", "rtt"),
+        (
+            "fonction publique territoriale décret 2001-623 durée annuelle temps de travail cycles délibération locale",
+            "décret 2001-623 décret 2000-815 FPT repos quotidien hebdomadaire astreintes annualisation",
+        ),
+    ),
 )
 
 
