@@ -65,3 +65,10 @@ def test_union_rights_search_expansion_is_applied_to_short_follow_up():
     query = build_official_search_query("Et pour les locaux syndicaux ?")
     assert query.startswith("Et pour les locaux syndicaux ?")
     assert "CGFP livre II" in query
+
+
+def test_union_rights_search_expansion_recognizes_asa_and_union_time_credit():
+    asa_query = build_official_search_query("Mon ASA syndicale est refusée.")
+    credit_query = build_official_search_query("On me retire mon crédit d'heures syndical.")
+    assert "CGFP livre II" in asa_query
+    assert "CGFP livre II" in credit_query
