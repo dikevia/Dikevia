@@ -1,7 +1,7 @@
 FROM quay.io/keycloak/keycloak:26.8.2
 
 # Beta deployment target: one Render instance, no distributed JGroups cache.
-# Credential bootstrap is idempotent: existing password credentials are inspected via Keycloak Admin API.
+# Administrator recovery is an explicit offline operation; see ADMIN-RECOVERY.md.
 
 # Realm and OIDC client are already provisioned in Neon; skip realm import on startup.
 COPY deploy/keycloak/realm-cfdt.render.json /opt/keycloak/data/import/realm-cfdt.json
