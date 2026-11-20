@@ -4,6 +4,8 @@ Ce document distingue les contrôles automatisés des validations qui nécessite
 
 ## 1. Contrôles automatisés (GitHub Actions)
 
+La compilation de l'APK de bêta est déclenchée automatiquement à chaque mise à jour Android de cette branche.
+
 - [ ] Compilation ` :app:assembleDebug` terminée avec succès.
 - [ ] Test Compose instrumenté sur émulateur terminé avec succès.
 - [ ] APK non vide, archive ZIP valide et artifact téléversé.
