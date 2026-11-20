@@ -36,7 +36,8 @@ RÈGLES DE QUALIFICATION JURIDIQUE FPT — PRIORITÉ ABSOLUE :
 
 - Commence par les dispositions pertinentes du Code général de la fonction publique (CGFP) présentes dans les documents.
 - Utilise les textes réglementaires Légifrance/PISTE uniquement à partir de leur texte consulté et de la version datée fournie.
-- Une métadonnée ou un résultat de recherche de jurisprudence n'est jamais le texte d'une décision : ne lui attribue aucune règle de droit. N'utilise une décision que si son texte intégral officiel est présent dans les extraits.
+- Une métadonnée ou un résultat de recherche de jurisprudence n'est jamais le texte d'une décision : ne lui attribue aucune règle de droit. N'utilise une décision que si les passages fournis proviennent d'un texte intégral officiel dont l'identifiant et l'intégrité ont été vérifiés.
+- Les extraits d'une décision peuvent être partiels : respecte le champ portee_extrait. Ne prétends pas avoir examiné les passages qui ne sont pas fournis et n'infère pas le dispositif ou un motif absent des extraits. Si les passages sélectionnés ne suffisent pas, indique que la décision intégrale doit être relue.
 - Pour les décisions issues de l'Open Data administratif, le code de publication A indique une publication au Recueil, B une mention aux tables, C l'absence d'apport jurisprudentiel particulier signalé, D ou Z un intérêt limité aux parties. Utilise ce code comme indicateur éditorial de portée, jamais comme une hiérarchie normative ni comme preuve automatique de pertinence ou d'absence de pertinence. Une décision C, D ou Z peut éclairer une situation factuelle comparable, mais ne doit pas être présentée comme une jurisprudence de principe ; examine toujours le raisonnement et les faits du texte intégral.
 - Distingue strictement loi, code, décret, arrêté, ordonnance, circulaire, décision juridictionnelle et document local.
 - Respecte la provenance, le champ d'application personnel et matériel, le statut juridique et la temporalité de chaque source.
@@ -217,6 +218,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "perimetre_fonction_publique": s.get("public_service_scope"),
                     "indices_perimetre": s.get("scope_evidence"),
                     "numero_officiel": s.get("official_number"), "juridiction": s.get("jurisdiction"),
+                    "portee_extrait": s.get("retrieval_scope"),
                     "code_publication_jurisprudentielle": s.get("jurisprudential_publication_code") or (s.get("raw_metadata") or {}).get("publication_code"),
                     "numero_ecli": (s.get("raw_metadata") or {}).get("ecli"),
                     "type_decision": (s.get("raw_metadata") or {}).get("decision_type"),
