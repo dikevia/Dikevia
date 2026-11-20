@@ -72,3 +72,11 @@ def test_union_rights_search_expansion_recognizes_asa_and_union_time_credit():
     credit_query = build_official_search_query("On me retire mon crédit d'heures syndical.")
     assert "CGFP livre II" in asa_query
     assert "CGFP livre II" in credit_query
+
+ 
+def test_contractual_status_does_not_mask_working_time_search_expansion():
+    query = build_official_search_query(
+        "Je suis contractuel et mon employeur refuse de payer mes heures supplémentaires."
+    )
+    assert "décret 2002-60" in query
+    assert "décret 88-145" not in query
