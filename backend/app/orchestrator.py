@@ -44,6 +44,11 @@ def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
 
+def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
+    """Hide sources explicitly classified as unrelated to the user's legal topic."""
+    return [source for source in sources if source.get("ihts_relevant") is not False]
+
+
 def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
     """Give each dated API result a unique citation key while retaining its official ID."""
     tagged = []
@@ -554,7 +559,7 @@ class LegalOrchestrator:
         # Do not expose irrelevant lexical hits in the user-facing source list.
         # In particular, generic CGFP provisions mentioning "crédit d'heures"
         # must not be displayed for an IHTS / unpaid-overtime question.
-        sources = [source for source in sources if source.get("ihts_relevant") is not False]
+        sources = filter_irrelevant_sources_for_display(sources)
 
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
