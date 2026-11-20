@@ -893,6 +893,10 @@ class LegalOrchestrator:
                     eligible_temporal_statuses = {
                         "IN_FORCE_ON_REQUESTED_DATE",
                         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+                        "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+                        "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+                        "DECISION_POSTERIOR_TO_FACTS",
+                        "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
                         "VERIFIED_APPLICABLE",
                     }
                     # The CGFP snapshot is the national baseline for explanation, but
