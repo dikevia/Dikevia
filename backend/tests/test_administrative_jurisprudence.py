@@ -269,6 +269,32 @@ def test_undated_personal_case_is_not_misclassified_as_general_information():
     assert _analysis_mode(personal, True) == "CASE_SPECIFIC"
 
 
+def test_imported_administrative_case_law_after_facts_is_kept_as_interpretative():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "ADMIN_CASELAW",
+        "signature_date": date(2025, 2, 10),
+        "temporal_status": "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+    }
+    status, explanation = _permanent_source_temporal_metadata(item, date(2025, 1, 1))
+    assert status == "DECISION_POSTERIOR_TO_FACTS"
+    assert explanation and "peut éclairer l'interprétation" in explanation
+
+
+def test_imported_administrative_case_law_without_facts_date_is_not_excluded():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "ADMIN_CASELAW",
+        "signature_date": date(2025, 2, 10),
+        "temporal_status": "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+    }
+    status, explanation = _permanent_source_temporal_metadata(item, None)
+    assert status == "DECISION_DATE_VERIFIED_NO_FACTS_DATE"
+    assert explanation is None
+
+
 def test_ongoing_situation_uses_today_as_case_law_reference_date():
     from app.orchestrator import _case_law_reference_date
 
