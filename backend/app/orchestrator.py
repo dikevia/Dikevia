@@ -508,19 +508,21 @@ class LegalOrchestrator:
         permanent_issue = None
         if conn is not None:
             try:
-                stored_results = await asyncio.gather(*[
-                    search_legal_corpus(conn, query, effective_date, limit=6)
-                    for query in research_queries
-                ], return_exceptions=True)
                 stored_by_query = []
                 stored_search_failed = False
-                for query, result in zip(research_queries, stored_results):
-                    if isinstance(result, BaseException) or not isinstance(result, list):
-                        logger.warning("Recherche du corpus juridique en échec (%s) : %r", query[:100], result)
+                # One asyncpg connection cannot run concurrent queries; keep the
+                # independent corpus searches sequential on this tenant-safe connection.
+                for query in research_queries:
+                    try:
+                        result = await search_legal_corpus(conn, query, effective_date, limit=6)
+                    except Exception as exc:
+                        logger.warning("Recherche du corpus juridique en échec (%s) : %r", query[:100], exc)
                         stored_search_failed = True
                         stored_by_query.append([])
                     else:
-                        stored_by_query.append(result)
+                        stored_by_query.append(result if isinstance(result, list) else [])
+                        if not isinstance(result, list):
+                            stored_search_failed = True
                 stored = interleave_legal_corpus_results(stored_by_query, limit=12)
                 if stored_search_failed:
                     permanent_issue = "La recherche dans le corpus juridique permanent a échoué pour au moins un axe ; les résultats disponibles sont partiels."
