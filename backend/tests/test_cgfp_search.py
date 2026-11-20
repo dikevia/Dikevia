@@ -1,0 +1,163 @@
+from app.cgfp import search_cgfp
+from app.orchestrator import LegalOrchestrator
+from app.schemas import AskRequest
+import pytest
+
+def test_cgfp_exact_article_reference_returns_article_and_page():
+    result = search_cgfp("Article L4", limit=5)
+    assert result["results"]
+    assert result["results"][0]["article"] == "L4"
+    assert result["results"][0]["page_start"] == 1
+    assert "fonctionnaires territoriaux" in result["results"][0]["excerpt"]
+
+def test_cgfp_keyword_search_returns_relevant_content():
+    result = search_cgfp("temps de travail durée annuelle", limit=8)
+    assert result["results"]
+    assert all(item["source_id"] == "FR-CGFP-2026-10-31" for item in result["results"])
+
+def test_cgfp_results_are_explicitly_unverified_snapshot():
+    result = search_cgfp("congé maladie", limit=3)
+    assert result["source"]["verification_status"] == "SNAPSHOT_NOT_LIVE_VERIFIED"
+
+@pytest.mark.asyncio
+async def test_orchestrator_never_claims_full_legal_verification_from_snapshot():
+    response = await LegalOrchestrator().ask(
+        AskRequest(employer="NATIONAL", question="Que prévoit le code sur les fonctionnaires territoriaux ?"),
+        "00000000-0000-0000-0000-000000000001")
+    assert response.verification_status == "NON_VERIFIE"
+    assert response.sources
+    assert any("Légifrance" in item for item in response.missing_information)
+
+def test_cgfp_article_endpoint_service_returns_full_article_text():
+    from app.cgfp import get_cgfp_article
+    article = get_cgfp_article(" l4 ")
+    assert article is not None
+    assert article["article"] == "L4"
+    assert "fonctionnaires territoriaux" in article["text"]
+    assert article["verification_status"] == "SNAPSHOT_NOT_LIVE_VERIFIED"
+
+def test_cgfp_article_lookup_rejects_invalid_reference():
+    from app.cgfp import get_cgfp_article
+    assert get_cgfp_article("L4/../secret") is None
+
+def test_cgfp_search_uses_relevance_ranking_and_returns_bounded_excerpt():
+    result = search_cgfp("congé maladie fonctionnaire", limit=5)
+    assert result["results"]
+    assert len(result["results"]) <= 5
+    assert all(len(item["excerpt"]) <= 1802 for item in result["results"])
+
+def test_cgfp_article_lookup_unknown_reference_returns_none():
+    from app.cgfp import get_cgfp_article
+    assert get_cgfp_article("L99999999") is None
+
+
+def test_snapshot_citation_integrity_accepts_exact_article_excerpt():
+    from app.cgfp import get_cgfp_article
+    from app.legal_validation import validate_snapshot_citation
+    article = get_cgfp_article("L4")
+    citation = {"source_id": article["source_id"], "article": "L4",
+                "page_start": article["page_start"], "page_end": article["page_end"],
+                "excerpt": article["text"][:300]}
+    report = validate_snapshot_citation(citation, article)
+    assert report["valid"] is True
+    assert report["verification_scope"] == "snapshot_document_integrity_only"
+
+
+def test_snapshot_citation_integrity_rejects_forged_page_or_excerpt():
+    from app.cgfp import get_cgfp_article
+    from app.legal_validation import validate_snapshot_citation
+    article = get_cgfp_article("L4")
+    citation = {"source_id": article["source_id"], "article": "L4",
+                "page_start": 999, "page_end": 999, "excerpt": "Texte inventé"}
+    report = validate_snapshot_citation(citation, article)
+    assert report["valid"] is False
+    assert report["checks"]["pdf_page_range"] is False
+    assert report["checks"]["excerpt_matches_full_text"] is False
+
+
+def test_facts_date_requires_strict_iso_format():
+    from app.legal_validation import parse_facts_date
+    assert str(parse_facts_date("2024-01-31")) == "2024-01-31"
+    import pytest
+    with pytest.raises(ValueError):
+        parse_facts_date("31/01/2024")
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_rejects_ambiguous_facts_date():
+    response = await LegalOrchestrator().ask(
+        AskRequest(employer="NATIONAL", facts_date="31/01/2024",
+                   question="Quels sont les droits à congé maladie ?"),
+        "00000000-0000-0000-0000-000000000001")
+    assert response.verification_status == "NON_VERIFIE"
+    assert "AAAA-MM-JJ" in response.missing_information[0]
+
+
+def test_cgfp_explicit_reference_never_falls_back_to_unrelated_articles():
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    result = search_ranked_cgfp(
+        "Que prévoit l'article L999-999 du Code général de la fonction publique ? "
+        "Donne-moi son contenu et ses conséquences juridiques.",
+        limit=8,
+    )
+    assert result["search_mode"] == "reference_directe"
+    assert result["requested_reference"] == "L999-999"
+    assert result["reference_found_in_snapshot"] is False
+    assert result["results"] == []
+
+
+def test_cgfp_explicit_existing_reference_returns_only_that_article():
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    result = search_ranked_cgfp(
+        "Que prévoit l'article L4 du Code général de la fonction publique "
+        "pour les fonctionnaires territoriaux ?",
+        limit=8,
+    )
+    assert result["search_mode"] == "reference_directe"
+    assert result["requested_reference"] == "L4"
+    assert result["reference_found_in_snapshot"] is True
+    assert [item["article"] for item in result["results"]] == ["L4"]
+
+
+
+def test_snapshot_fallback_is_used_when_live_cgfp_is_unavailable():
+    from app.orchestrator import should_use_cgfp_snapshot_fallback
+
+    found = {"results": [{
+        "article": "L134-5",
+        "source_id": "FR-CGFP-2026-10-31",
+        "excerpt": "Protection fonctionnelle",
+    }]}
+    assert should_use_cgfp_snapshot_fallback(
+        "La recherche officielle CGFP a échoué.", found,
+        "Mon employeur refuse ma protection fonctionnelle",
+    )
+
+
+def test_snapshot_fallback_is_not_used_when_live_cgfp_is_available():
+    from app.orchestrator import should_use_cgfp_snapshot_fallback
+
+    found = {"results": [{
+        "article": "L134-5",
+        "source_id": "FR-CGFP-2026-10-31",
+        "excerpt": "Protection fonctionnelle",
+    }]}
+    assert not should_use_cgfp_snapshot_fallback(
+        None, found, "Mon employeur refuse ma protection fonctionnelle",
+    )
+
+
+def test_snapshot_fallback_rejects_irrelevant_hits_for_overtime():
+    from app.orchestrator import should_use_cgfp_snapshot_fallback
+
+    found = {"results": [{
+        "article": "R422-96",
+        "source_id": "FR-CGFP-2026-10-31",
+        "excerpt": "Crédit d'heures supplémentaires pour prévenir une inaptitude.",
+    }]}
+    assert not should_use_cgfp_snapshot_fallback(
+        "Recherche CGFP indisponible.", found,
+        "On ne me paie pas mes heures supplémentaires",
+    )

@@ -1,0 +1,29 @@
+groups:
+  - name: juris-platform
+    rules:
+      - alert: JurisApiReadinessDown
+        expr: probe_success{job="api-readiness"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API CFDT JURIS indisponible"
+          description: "La sonde /ready de l'API échoue depuis plus de 2 minutes."
+
+      - alert: JurisKeycloakReadinessDown
+        expr: probe_success{job="keycloak-readiness"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Keycloak CFDT JURIS indisponible"
+          description: "La sonde /health/ready de Keycloak échoue depuis plus de 2 minutes."
+
+      - alert: JurisPostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL CFDT JURIS indisponible"
+          description: "postgres_exporter ne parvient plus à joindre PostgreSQL."

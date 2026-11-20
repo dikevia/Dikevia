@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: CFDT JURIS
+    orgId: 1
+    folder: Exploitation
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards
