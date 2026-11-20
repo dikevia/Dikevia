@@ -195,6 +195,25 @@ def test_claim_evidence_requires_exact_quote_from_the_exact_eligible_source():
     assert result["claim_count"] == 1
 
 
+def test_claim_evidence_accepts_later_administrative_case_law_as_interpretative_source():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source(
+        source_type="LEGIFRANCE_CETAT_FULL_TEXT",
+        source_id="CETATEXT000012345678",
+        decision_date="2025-02-10",
+        temporal_status="DECISION_POSTERIOR_TO_FACTS",
+    )
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "La décision postérieure peut éclairer l'interprétation de la règle.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is True
+
+
 def test_claim_evidence_rejects_quote_not_present_in_source():
     from app.legal_assurance import validate_claim_evidence
 
