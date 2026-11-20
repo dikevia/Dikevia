@@ -237,7 +237,7 @@ _TOPIC_FAMILIES = {
     "LEAVE": (
         "conges annuels", "conge annuel", "conges bonifies",
         "autorisation speciale d absence", "absence pour raison familiale",
-        "compte epargne temps", "cet",
+        "compte epargne temps",
     ),
     "REMUNERATION": (
         "remuneration", "traitement indiciaire", "regime indemnitaire",
@@ -274,11 +274,17 @@ _TOPIC_FAMILIES = {
 def _matched_topic_families(value: str) -> set[str]:
     folded = _fold(value)
     padded_text = f" {folded} "
-    return {
+    matched = {
         family
         for family, markers in _TOPIC_FAMILIES.items()
         if any(f" {_fold(marker)} " in padded_text for marker in markers)
     }
+    # CET is also the ordinary French demonstrative "cet". Recognize it as
+    # an acronym only when explicitly written in uppercase; the full phrase
+    # "compte épargne-temps" is recognized regardless of capitalization.
+    if re.search(r"\\bCET\\b", value):
+        matched.add("LEAVE")
+    return matched
 
 
 def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
