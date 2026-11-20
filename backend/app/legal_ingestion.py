@@ -103,7 +103,7 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
     with archive:
         xml_entries = [
             info for info in archive.infolist()
-            if not info.is_dir() and re.search(r"\\.xml(?:_[a-z0-9]+)?$", info.filename.lower())
+            if not info.is_dir() and re.search(r"\.xml(?:_[a-z0-9]+)?$", info.filename.lower())
         ]
         if not xml_entries or len(xml_entries) > 5000:
             raise ValueError("L'archive doit contenir entre 1 et 5 000 fichiers XML.")
