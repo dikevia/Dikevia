@@ -1,10 +1,14 @@
 from dataclasses import dataclass
 from uuid import UUID
+
 from fastapi import Depends, Header, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from .security import verify_access_token, Principal
+
+from .security import verify_access_token, Principal, auth_log
 from .db import get_pool
+
 bearer = HTTPBearer(auto_error=False)
+
 
 @dataclass
 class TenantContext:
@@ -14,13 +18,20 @@ class TenantContext:
     role: str
     conn: object
 
+
 async def get_principal(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
     if credentials is None or credentials.scheme.lower() != "bearer":
+        # HTTPBearer(auto_error=False) returns None for a missing or unsupported
+        # authorization scheme. Do not log the raw header or credentials.
+        auth_log.warning("auth_rejected reason=bearer_missing status=401")
         raise HTTPException(401, "Authentification requise.")
     return verify_access_token(credentials.credentials)
 
-async def get_tenant_context(principal: Principal = Depends(get_principal),
-        x_organization_id: str | None = Header(default=None, alias="X-Organization-ID")):
+
+async def get_tenant_context(
+    principal: Principal = Depends(get_principal),
+    x_organization_id: str | None = Header(default=None, alias="X-Organization-ID"),
+):
     if not x_organization_id:
         raise HTTPException(400, "Sélectionnez une organisation.")
     try:
@@ -45,12 +56,15 @@ async def get_tenant_context(principal: Principal = Depends(get_principal),
             await conn.execute("SELECT set_config('app.current_user_id',$1,true)", str(row["user_id"]))
             yield TenantContext(principal, org_id, str(row["user_id"]), row["role"], conn)
 
+
 async def require_org_admin(ctx: TenantContext = Depends(get_tenant_context)):
     if ctx.role != "ORG_ADMIN":
         raise HTTPException(403, "Permission insuffisante.")
     return ctx
+
+
 async def require_legal_editor(ctx: TenantContext = Depends(get_tenant_context)):
-    if ctx.role not in ("ORG_ADMIN","LEGAL_EDITOR"):
+    if ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR"):
         raise HTTPException(403, "Permission insuffisante.")
     return ctx
 
@@ -64,7 +78,9 @@ async def require_platform_admin(principal: Principal = Depends(get_principal)):
             row = await conn.fetchrow(
                 "SELECT u.id FROM users u JOIN platform_admins pa ON pa.user_id=u.id "
                 "WHERE u.oidc_issuer=$1 AND u.oidc_subject=$2 AND u.status='ACTIVE'",
-                principal.issuer, principal.subject)
+                principal.issuer,
+                principal.subject,
+            )
     if not row:
         raise HTTPException(403, "Droit administrateur plateforme requis.")
     return {"principal": principal, "user_id": str(row["id"])}
