@@ -63,8 +63,9 @@ def reject(token, expected_status=401, caplog=None):
     if caplog is not None:
         text = caplog.text
         for secret in (token, "user-secret-subject", "agent@example.test"):
-            assert secret not in text
-            assert secret not in str(ctx.value.detail)
+            if secret:
+                assert secret not in text
+                assert secret not in str(ctx.value.detail)
     return ctx.value
 
 
