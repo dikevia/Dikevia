@@ -85,7 +85,7 @@ class MainActivity:ComponentActivity(){
         authGeneration++
         authBusy=true;authError=null
         AuthorizationServiceConfiguration.fetchFromIssuer(Uri.parse(ISSUER)){cfg,ex->
-            if(cfg==null||ex!=null){runOnUiThread{authBusy=false;authError="Fournisseur de connexion indisponible."};return@fetchFromIssuer}
+            if(cfg==null||ex!=null){val detail=ex?.errorDescription?.takeIf{it.isNotBlank()}?:ex?.localizedMessage?.takeIf{it.isNotBlank()}?:"Aucune configuration OIDC reçue";val code=ex?.code?.toString()?:"inconnu";val type=ex?.type?.toString()?:"inconnu";runOnUiThread{authBusy=false;authError="Connexion OIDC impossible : $detail (type $type, code $code)."};return@fetchFromIssuer}
             serviceConfig=cfg
             val verifier=CodeVerifierUtil.generateRandomCodeVerifier()
             val req=AuthorizationRequest.Builder(cfg,CLIENT_ID,ResponseTypeValues.CODE,Uri.parse(REDIRECT))
