@@ -771,8 +771,8 @@ async def test_entailment_verifier_receives_current_question_for_relevance_check
                 "verdicts": [{
                     "claim_index": 0,
                     "source_id": "SRC-IHTS-1",
-                    "verdict": "SUPPORTED",
-                    "support_quote": source_text,
+                    "verdict": "INSUFFICIENT",
+                    "support_quote": "",
                 }]
             })}}]
         })
@@ -792,4 +792,7 @@ async def test_entailment_verifier_receives_current_question_for_relevance_check
 
     verifier_question = json.loads(captured["payload"]["messages"][1]["content"])["question_actuelle"]
     assert verifier_question == "Mon employeur peut-il refuser de compenser mes heures supplémentaires ?"
-    assert result["valid"] is True
+    # A source that only says compensation may be possible does not answer
+    # whether the employer may refuse in this agent's specific question.
+    assert result["valid"] is False
+    assert "verdict_0:not_supported" in result["invalid"]
