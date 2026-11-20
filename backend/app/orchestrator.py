@@ -521,9 +521,14 @@ class LegalOrchestrator:
             period_version_comparison = _compare_official_period_versions(
                 live_sources, regulatory_sources, period_start, comparison_end_date,
             )
-            matched_version_ids = set(period_version_comparison["matched_source_ids"])
+            # Keep every date-scoped version found at START, END or CURRENT.
+            # A source found at only one facts-period endpoint may still protect
+            # the agent for that part of the period; absence at the other endpoint
+            # is not proof of repeal or non-applicability.
             for version_source in [*live_sources, *regulatory_sources]:
-                version_source["period_endpoint_match"] = version_source.get("source_id") in matched_version_ids
+                version_source["period_endpoint_match"] = version_source.get("version_endpoint") in {
+                    "START", "END", "CURRENT",
+                }
             temporal_context["version_comparison"] = {
                 key: value for key, value in period_version_comparison.items()
                 if key != "matched_source_ids"
