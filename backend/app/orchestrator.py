@@ -856,13 +856,18 @@ class LegalOrchestrator:
                                 rendered_claims.append("Textes et références à consulter :")
                                 for source_id, source_title in unique_sources.items():
                                     rendered_claims.append(f"• {source_title} [source:{source_id}]")
-                                rendered_claims.extend([
-                                    "",
-                                    "Pour déterminer précisément si la décision de votre employeur est régulière, il faut confronter ces règles à vos faits et, si nécessaire, aux actes applicables dans votre collectivité. Voici les démarches utiles à engager ou les éléments à vérifier :",
-                                    "• Conservez le relevé des heures réellement effectuées et les éléments montrant qu'elles ont été demandées ou validées.",
-                                    "• Demandez à votre service RH quel dispositif de compensation s'applique (indemnisation ou repos) et quelle délibération locale le prévoit.",
-                                    "• Si la réponse ne correspond pas aux textes ou aux pièces de votre situation, faites examiner le dossier par un référent juridique ou un représentant syndical.",
-                                ])
+                                rendered_claims.extend(["", "Pour apprécier complètement votre situation, il faut encore confronter ces règles aux faits précis et aux éventuels actes locaux applicables."])
+                                if any(source.get("ihts_relevant") is True for source in ai_sources):
+                                    rendered_claims.extend([
+                                        "Voici les démarches utiles dans votre situation :",
+                                        "• Conservez le relevé des heures réellement effectuées et les éléments montrant qu'elles ont été demandées ou validées.",
+                                        "• Demandez à votre service RH quel dispositif de compensation s'applique (indemnisation ou repos) et quelle délibération locale le prévoit.",
+                                        "• Si la réponse ne correspond pas aux textes ou aux pièces de votre situation, faites examiner le dossier par un référent juridique ou un représentant syndical.",
+                                    ])
+                                else:
+                                    rendered_claims.extend([
+                                        "Pour aller plus loin, rassemblez les documents utiles à votre situation et demandez à votre service RH ou à votre référent compétent de préciser la règle appliquée. Vous pouvez me donner les éléments manquants et je poursuivrai l'analyse avec vous.",
+                                    ])
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
                                     if ai_usage is not None:
