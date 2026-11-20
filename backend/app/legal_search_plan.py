@@ -175,7 +175,11 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     if not primary:
         return []
     queries = [primary]
-    folded = _fold(str(question or ""))
+    original = str(question or "").strip()
+    current_turn = original.splitlines()[0] if original else ""
+    if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(_fold(current_turn)):
+        return queries
+    folded = _fold(original)
     for triggers, axes in _TOPIC_RESEARCH_AXES:
         if any(_fold(trigger) in folded for trigger in triggers):
             for axis in axes:
