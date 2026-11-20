@@ -231,6 +231,7 @@ class LegalOrchestrator:
             # Always retrieve current law and case law. The facts date is an
             # additional applicability checkpoint, never a research cut-off.
             effective_date = _france_today()
+            question_intent = classify_question_intent(request.question)
             # For an ongoing situation, case law is assessed through today:
             # decisions issued after its start may still govern its continuing
             # effects. Keep the declared start date separately for historical
@@ -245,7 +246,13 @@ class LegalOrchestrator:
                 "facts_reference_date": facts_reference_date.isoformat() if facts_reference_date else None,
                 "ongoing": bool(request.situation_ongoing),
                 "facts_date_provided": parsed_date is not None,
-                "analysis_mode": "CASE_SPECIFIC" if facts_reference_date is not None else "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE",
+                "analysis_mode": (
+                    "CASE_SPECIFIC" if parsed_date is not None
+                    else "PERSONAL_CASE_WITHOUT_FACTS_DATE"
+                    if question_intent == "PERSONAL_CASE"
+                    else "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE"
+                ),
+                "question_intent": question_intent,
                 "reference_date_for_retrieval": effective_date.isoformat(),
                 "legacy_exact_date": bool(legacy_date and not request.facts_start_date and not request.facts_end_date),
             }
