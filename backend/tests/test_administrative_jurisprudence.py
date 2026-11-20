@@ -308,6 +308,18 @@ def test_imported_administrative_case_law_without_facts_date_is_not_excluded():
     assert explanation is None
 
 
+def test_local_document_search_checks_historical_and_current_reference_dates():
+    from app.orchestrator import _local_document_reference_dates
+
+    start = date(2024, 1, 1)
+    end = date(2024, 6, 30)
+    today = date(2026, 11, 21)
+    assert _local_document_reference_dates(start, end, today) == [
+        (start, "START"), (end, "END"), (today, "CURRENT"),
+    ]
+    assert _local_document_reference_dates(None, None, today) == [(today, "CURRENT")]
+
+
 def test_ongoing_situation_uses_today_as_case_law_reference_date():
     from app.orchestrator import _case_law_reference_date
 
