@@ -120,3 +120,45 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
     prefix = original[: min(len(original), 250)]
     remaining = max(0, max_length - len(prefix) - 1)
     return (prefix + " " + expansion[:remaining]).strip()
+
+# Independent, bounded research axes. These are separate retrieval queries,
+# not claims about the applicable law. Keep the number small to control latency
+# and provider load while avoiding a single overloaded keyword string.
+_TOPIC_RESEARCH_AXES = (
+    (
+        ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
+         "representants du personnel", "representant syndical", "representants syndicaux",
+         "local syndical", "locaux syndicaux", "decharge d activite", "decharges d activite",
+         "decharge syndicale", "credit de temps syndical", "credit d heures syndical",
+         "asa syndicale", "autorisation speciale d absence syndicale",
+         "formation syndicale", "reunion d information syndicale", "comite social territorial"),
+        (
+            "CGFP livre II droit syndical fonction publique territoriale exercice droits syndicaux agents territoriaux",
+            "CGFP autorisations speciales absence syndicale decharges activite service credit temps syndical locaux syndicaux deliberation locale",
+            "CGFP reunions information syndicale formation syndicale dialogue social organisations syndicales collectivites territoriales",
+        ),
+    ),
+)
+
+
+def build_official_search_queries(question: str, max_queries: int = 3) -> list[str]:
+    """Build a small set of distinct, topic-focused legal retrieval queries.
+
+    The original expanded query remains first for backward-compatible recall.
+    Additional axes are only emitted for explicitly recognized topics.
+    """
+    primary = build_official_search_query(question)
+    if not primary:
+        return []
+    queries = [primary]
+    folded = _fold(str(question or ""))
+    for triggers, axes in _TOPIC_RESEARCH_AXES:
+        if any(_fold(trigger) in folded for trigger in triggers):
+            for axis in axes:
+                candidate = axis[:500]
+                if candidate not in queries:
+                    queries.append(candidate)
+                if len(queries) >= max(1, min(max_queries, 3)):
+                    break
+            break
+    return queries[:max(1, min(max_queries, 3))]
