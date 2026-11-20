@@ -195,6 +195,7 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                     "source_archive": archive_name[:250],
                     "public_service_scope": scope.get("scope"),
                     "scope_evidence": scope.get("evidence", []),
+                    "source_license": "Licence Ouverte version 2.0",
                     "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
                 },
                 "raw_version_payload": {
