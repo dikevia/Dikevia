@@ -27,7 +27,7 @@ def test_prompt_requires_the_first_claim_to_be_the_direct_answer():
 def test_prompt_enforces_the_territorial_public_service_legal_hierarchy():
     assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" in SYSTEM_PROMPT
     assert "Le Code du travail n'est jamais le régime de droit commun des agents territoriaux" in SYSTEM_PROMPT
-    assert "Ne transpose jamais automatiquement le droit du secteur privé" in SYSTEM_PROMPT
+    assert "ne transpose jamais automatiquement le droit du secteur privé" in SYSTEM_PROMPT
     assert "renvoi législatif ou réglementaire vérifié" in SYSTEM_PROMPT
     assert "fonctionnaire titulaire, stagiaire ou agent contractuel" in SYSTEM_PROMPT
 
