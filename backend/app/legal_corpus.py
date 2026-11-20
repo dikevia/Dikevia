@@ -190,6 +190,28 @@ def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
     return variants
 
 
+def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: int = 12) -> list[dict]:
+    """Keep results from each independent legal sub-question before de-duplication."""
+    if not 1 <= limit <= 30:
+        raise ValueError("La limite de résultats du corpus doit être comprise entre 1 et 30.")
+    selected: list[dict] = []
+    seen: set[str] = set()
+    max_depth = max((len(items) for items in results_by_query), default=0)
+    for depth in range(max_depth):
+        for items in results_by_query:
+            if depth >= len(items):
+                continue
+            item = items[depth]
+            identifier = item.get("source_id")
+            if not isinstance(identifier, str) or not identifier or identifier in seen:
+                continue
+            seen.add(identifier)
+            selected.append(item)
+            if len(selected) >= limit:
+                return selected
+    return selected
+
+
 async def search_legal_corpus(conn, query: str, requested_date: date, limit: int = 12) -> list[dict]:
     if not isinstance(query, str) or len(query.strip()) < 2 or len(query) > 500:
         raise ValueError("La recherche documentaire doit contenir entre 2 et 500 caractères.")
