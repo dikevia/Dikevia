@@ -45,7 +45,7 @@ def _france_today() -> date:
 
 
 def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
-    """Hide sources explicitly classified as unrelated to the user's legal topic."""
+    """Exclude sources explicitly classified as unrelated from analysis and display."""
     return [source for source in sources if source.get("ihts_relevant") is not False]
 
 
