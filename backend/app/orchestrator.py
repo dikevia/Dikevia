@@ -194,6 +194,40 @@ def _source_covers_period(source: dict, start_date: date, end_date: date) -> boo
     return valid_from <= start_date and valid_to >= end_date
 
 
+def _source_allowed_for_period_analysis(
+    source: dict,
+    period_comparison: bool,
+    period_start: date | None,
+    period_end: date,
+) -> bool:
+    """Keep dated legal evidence in period analyses without demanding case law cover the facts period."""
+    if not period_comparison:
+        return True
+    source_type = source.get("source_type")
+    if source_type in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}:
+        return source.get("period_endpoint_match") is True
+    temporal_status = source.get("temporal_status")
+    if (
+        source_type == "LEGIFRANCE_CETAT_FULL_TEXT"
+        or source.get("document_kind") == "ADMIN_CASELAW"
+    ):
+        return (
+            source.get("content_kind") == "FULL_TEXT"
+            and temporal_status in {
+                "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+                "DECISION_POSTERIOR_TO_FACTS",
+                "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
+            }
+        )
+    if source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
+        return (
+            source.get("validation_status") in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}
+            and temporal_status == "VERIFIED_APPLICABLE"
+            and source.get("version_endpoint") in {"START", "END", "CURRENT"}
+        )
+    return bool(period_start and _source_covers_period(source, period_start, period_end))
+
+
 def _compare_official_period_versions(
     code_sources: list[dict], regulatory_sources: list[dict],
     start_date: date, end_date: date,
@@ -1031,23 +1065,13 @@ class LegalOrchestrator:
                             s.get("analysis_eligible") is True
                             or (
                                 s.get("source_type") == "LOCAL_DOCUMENT"
-                                and s.get("validation_status") == "VERIFIED_APPLICABLE"
+                                and s.get("validation_status") in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}
                             )
                         )
                         and s.get("ihts_relevant") is not False
-                        and (
-                            not period_version_comparison
-                            or (
-                                s.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}
-                                and s.get("period_endpoint_match") is True
-                            )
-                            or (
-                                s.get("source_type") not in {
-                                    "LEGIFRANCE_API", "LEGIFRANCE_LODA",
-                                    "LEGIFRANCE_CETAT_FULL_TEXT", "LEGIFRANCE_CETAT_SEARCH",
-                                }
-                                and _source_covers_period(s, period_start, effective_date)
-                            )
+                        and _source_allowed_for_period_analysis(
+                            s, bool(period_version_comparison), period_start,
+                            comparison_end_date,
                         )
                     ]
                     cgfp_context_sources = [
