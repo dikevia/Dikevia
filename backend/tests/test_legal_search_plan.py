@@ -153,3 +153,17 @@ def test_short_follow_up_keeps_previous_legal_topic_for_official_research():
     assert "CGFP livre II" in queries[0]
     assert "droit syndical" in queries[1]
     assert "autorisations speciales absence syndicale" in queries[2]
+
+
+
+def test_compound_question_keeps_union_rights_and_overtime_as_separate_issues():
+    question = (
+        "Je suis contractuel, mes heures supplémentaires ne sont pas payées "
+        "et mon ASA syndicale est refusée."
+    )
+    queries = build_official_search_queries(question)
+    assert len(queries) == 3
+    assert "CGFP livre II" in queries[0]
+    assert "droit syndical" in queries[1]
+    assert "IHTS" in queries[2]
+    assert "décret 2002-60" in queries[2]
