@@ -50,8 +50,8 @@ def classify_question_intent(question: str) -> str:
     """Classify whether the current turn describes an individual event or asks for general rules.
 
     This is a conservative routing heuristic, not a legal or semantic judgement.
-    Only explicit first-person events, decisions or disputes trigger case-date
-    clarification; hypothetical employer powers remain general questions.
+    It distinguishes an individual situation from a general question; it does
+    not make the facts date mandatory. Hypothetical employer powers remain general.
     """
     text = " ".join(str(question or "").casefold().split())
     if not text:
@@ -86,7 +86,7 @@ def classify_question_intent(question: str) -> str:
 
 
 def question_needs_case_date(question: str) -> bool:
-    """Compatibility wrapper: ask for dates only for explicitly personal cases."""
+    """Compatibility wrapper: identify a personal case without requiring its date."""
     return classify_question_intent(question) == "PERSONAL_CASE"
 
 def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
