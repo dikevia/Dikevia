@@ -42,3 +42,10 @@ def test_prompt_prevents_current_application_of_repealed_fpt_union_decree():
     assert "abrogé à compter du 1er février 2025" in SYSTEM_PROMPT
     assert "article 29 du décret n° 2024-1038" in SYSTEM_PROMPT
     assert "Ne présume pas que les anciennes dispositions ont toutes été reprises à l'identique" in SYSTEM_PROMPT
+
+
+def test_prompt_explains_administrative_open_data_publication_codes():
+    from app.ai_provider import _SYSTEM_PROMPT
+    assert "code de publication A" in _SYSTEM_PROMPT
+    assert "jamais comme une hiérarchie normative" in _SYSTEM_PROMPT
+    assert "Une décision C, D ou Z peut éclairer" in _SYSTEM_PROMPT
