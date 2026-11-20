@@ -164,7 +164,7 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
             "source_type": "LEGIFRANCE_CETAT_SEARCH",
             "source_id": decision_id,
             "title": "Décision concernant un agent territorial",
-            "decision_date": "2024-05-10",
+            "decision_date": "2025-02-10",
             "text": "Extrait de recherche non probant.",
             "full_text_retrieved": False,
         }]
@@ -175,7 +175,7 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
             "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
             "source_id": decision_id,
             "title": "Décision concernant un agent territorial",
-            "decision_date": "2024-05-10",
+            "decision_date": "2025-02-10",
             "case_number": "123456",
             "jurisdiction": "Conseil d'État",
             "text": decision_text,
@@ -216,6 +216,7 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
         and source.get("source_id") == decision_id
         and source.get("content_kind") == "FULL_TEXT"
         and source.get("citation_integrity", {}).get("valid") is True
+        and source.get("temporal_status") == "DECISION_POSTERIOR_TO_FACTS"
         for source in ai_sources
     )
     assert not any(
@@ -227,13 +228,14 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
 @pytest.mark.parametrize(
     ("decision_date", "requested_date", "expected"),
     [
-        ("2024-05-10", date(2025, 1, 1), "DECISION_AVAILABLE_BY_REQUESTED_DATE"),
-        ("2025-02-01", date(2025, 1, 1), "DECISION_POSTERIOR_TO_REQUESTED_DATE"),
-        (None, date(2025, 1, 1), "TEMPORAL_SCOPE_INCOMPLETE"),
-        ("date inconnue", date(2025, 1, 1), "TEMPORAL_SCOPE_INCOMPLETE"),
+        ("2024-05-10", date(2025, 1, 1), "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS"),
+        ("2025-02-01", date(2025, 1, 1), "DECISION_POSTERIOR_TO_FACTS"),
+        (None, date(2025, 1, 1), "DECISION_DATE_UNKNOWN"),
+        ("date inconnue", date(2025, 1, 1), "DECISION_DATE_UNKNOWN"),
+        ("2025-02-01", None, "DECISION_DATE_VERIFIED_NO_FACTS_DATE"),
     ],
 )
-def test_decision_temporal_status_requires_a_verified_date(decision_date, requested_date, expected):
+def test_decision_temporal_status_classifies_timing_without_excluding_later_case_law(decision_date, requested_date, expected):
     from app.jurisprudence import decision_temporal_status
     assert decision_temporal_status(decision_date, requested_date) == expected
 
