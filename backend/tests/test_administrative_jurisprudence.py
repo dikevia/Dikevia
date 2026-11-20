@@ -301,3 +301,35 @@ def test_open_data_search_results_mark_selected_passages_and_final_chunk():
     import inspect
     source = inspect.getsource(search_legal_corpus)
     assert "SELECTED_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT" in source
+
+
+
+def test_administrative_open_data_import_excludes_explicit_state_public_service_decisions():
+    from io import BytesIO
+    import zipfile
+    from app.legal_ingestion import parse_administrative_open_data_zip
+
+    xml = b"""<Decision>
+      <Identification>CE_2024002_20240510.xml</Identification>
+      <Code_Juridiction>CE</Code_Juridiction>
+      <Nom_Juridiction>Conseil d'Etat</Nom_Juridiction>
+      <Numero_Dossier>2400002</Numero_Dossier>
+      <Date_Lecture>2024-05-10</Date_Lecture>
+      <Texte_Integral><p>Un agent de l'Etat affecté dans un ministère conteste une décision de rémunération prise par l'administration centrale au regard des règles propres à la fonction publique de l'Etat.</p></Texte_Integral>
+    </Decision>"""
+    archive_bytes = BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("CE_2024002_20240510.xml", xml)
+    assert parse_administrative_open_data_zip(archive_bytes.getvalue(), "CE_202405.zip") == []
+
+
+def test_administrative_open_data_import_rejects_xml_entity_declarations():
+    from io import BytesIO
+    import zipfile
+    from app.legal_ingestion import parse_administrative_open_data_zip
+
+    xml = b"<!DOCTYPE Decision [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]><Decision><Texte_Integral>&xxe;</Texte_Integral></Decision>"
+    archive_bytes = BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("malicious.xml", xml)
+    assert parse_administrative_open_data_zip(archive_bytes.getvalue(), "malicious.zip") == []
