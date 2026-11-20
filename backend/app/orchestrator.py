@@ -434,9 +434,10 @@ class LegalOrchestrator:
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": (
                     "IN_FORCE_ON_REQUESTED_DATE" if parsed_date is not None
-                    else "CURRENT_DATE_GENERAL_INFO_ONLY"
+                    else "TEMPORAL_SCOPE_INCOMPLETE"
                 ),
                 "page_start": None, "page_end": None, "content_kind": "FULL_TEXT",
+                "general_info_eligible": parsed_date is None,
                 "citation_integrity": {
                     "valid": bool(item.get("source_id") and len(item.get("text") or "") >= 80),
                     "verification_scope": "PISTE_CODE_DATE_ID_AND_FULL_TEXT",
@@ -461,8 +462,9 @@ class LegalOrchestrator:
                 "content_kind": "FULL_TEXT",
                 "temporal_status": (
                     "IN_FORCE_ON_REQUESTED_DATE" if parsed_date is not None
-                    else "CURRENT_DATE_GENERAL_INFO_ONLY"
+                    else "TEMPORAL_SCOPE_INCOMPLETE"
                 ),
+                "general_info_eligible": parsed_date is None,
                 "citation_integrity": {
                     "valid": bool(item.get("source_id") and len(full_text) >= 80),
                     "verification_scope": "PISTE_LODA_DATE_CONSULT_ID_AND_FULL_TEXT",
@@ -735,7 +737,6 @@ class LegalOrchestrator:
                         "IN_FORCE_ON_REQUESTED_DATE",
                         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
                         "VERIFIED_APPLICABLE",
-                        "CURRENT_DATE_GENERAL_INFO_ONLY",
                     }
                     # The CGFP snapshot is the national baseline for explanation, but
                     # it is not temporally authoritative. Pass it to the model only
@@ -746,7 +747,13 @@ class LegalOrchestrator:
                         if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
                         and s.get("content_kind") != "METADATA"
                         and (s.get("citation_integrity") or {}).get("valid") is True
-                        and s.get("temporal_status") in eligible_temporal_statuses
+                        and (
+                            s.get("temporal_status") in eligible_temporal_statuses
+                            or (
+                                s.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
+                                and s.get("general_info_eligible") is True
+                            )
+                        )
                         # Unknown scope is retained as a review lead; only
                         # explicitly identified FPE/FPH sources are excluded.
                         # The AI prompt receives this scope and must not infer
