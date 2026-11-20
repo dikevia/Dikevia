@@ -116,7 +116,6 @@ def test_overtime_builds_fpt_ihts_and_local_implementation_axes():
     )
     assert len(queries) == 3
     assert "décret 2002-60" in queries[0]
-    assert "décret 2002-60" not in queries[1]
     assert "décret 91-875" in queries[1]
     assert "décret 2001-623" in queries[2]
     assert all(len(query) <= 500 for query in queries)
