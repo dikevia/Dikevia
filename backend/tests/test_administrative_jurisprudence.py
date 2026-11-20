@@ -129,12 +129,16 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
     from app.schemas import AskRequest
 
     monkeypatch.setattr(settings, "legifrance_cetat_fulltext_enabled", True)
+    monkeypatch.setattr(module, "_france_today", lambda: date(2026, 11, 21))
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
 
     async def fake_token(self):
         return "test-token"
 
+    captured_dates = {"code": [], "regulatory": [], "case_law": []}
+
     async def no_code_articles(*args, **kwargs):
+        captured_dates["code"].append(args[1])
         return []
 
     regulatory_text = (
@@ -143,6 +147,7 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
     ) * 3
 
     async def regulatory_texts(*args, **kwargs):
+        captured_dates["regulatory"].append(args[1])
         return [{
             "source_type": "LEGIFRANCE_LODA",
             "source_id": "LEGITEXT000012345678",
@@ -160,6 +165,7 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
     ) * 4
 
     async def case_search(*args, **kwargs):
+        captured_dates["case_law"].append(args[1])
         return [{
             "source_type": "LEGIFRANCE_CETAT_SEARCH",
             "source_id": decision_id,
@@ -209,6 +215,16 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
         ),
         organization_id="00000000-0000-0000-0000-000000000001",
     )
+
+    # A past facts date triggers both the historical legal-text lookup and
+    # the current-law lookup. Case law is searched through today, not cut off
+    # at the date of the incident.
+    assert date(2025, 1, 1) in captured_dates["code"]
+    assert date(2026, 11, 21) in captured_dates["code"]
+    assert date(2025, 1, 1) in captured_dates["regulatory"]
+    assert date(2026, 11, 21) in captured_dates["regulatory"]
+    assert captured_dates["case_law"]
+    assert set(captured_dates["case_law"]) == {date(2026, 11, 21)}
 
     ai_sources = captured["sources"]
     assert any(
