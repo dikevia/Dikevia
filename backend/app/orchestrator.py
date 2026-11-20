@@ -551,6 +551,10 @@ class LegalOrchestrator:
         # Classification is computed before the model call so the prompt receives
         # the legal-source family and the limitations attached to each document.
         sources = assess_source_set(sources)["sources"]
+        # Do not expose irrelevant lexical hits in the user-facing source list.
+        # In particular, generic CGFP provisions mentioning "crédit d'heures"
+        # must not be displayed for an IHTS / unpaid-overtime question.
+        sources = [source for source in sources if source.get("ihts_relevant") is not False]
 
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
@@ -836,24 +840,29 @@ class LegalOrchestrator:
                             else:
                                 claims = claim_validation["claims"]
                                 rendered_claims = [
-                                    "Éléments juridiques étayés par les sources vérifiées :",
+                                    "Voici ce que les textes permettent de comprendre pour votre situation :",
                                     "",
                                 ]
                                 unique_sources = {}
-                                for index, claim in enumerate(claims, start=1):
+                                for claim in claims:
                                     source_id = claim["source_id"]
                                     source_title = " ".join(str(claim["source_title"]).split())[:300]
                                     unique_sources[source_id] = source_title
-                                    rendered_claims.append(
-                                        f"{index}. {claim['text']} [source:{source_id}]"
-                                    )
-                                    rendered_claims.append(
-                                        f"   Passage exact contrôlé : «{claim['quote']}» [source:{source_id}]"
-                                    )
+                                    # Lead with the plain-language explanation. The exact
+                                    # supporting quote remains available in the source panel,
+                                    # rather than overwhelming the agent's conversational answer.
+                                    rendered_claims.append(f"{claim['text']} [source:{source_id}]")
                                     rendered_claims.append("")
-                                rendered_claims.append("Références documentaires :")
+                                rendered_claims.append("Textes et références à consulter :")
                                 for source_id, source_title in unique_sources.items():
                                     rendered_claims.append(f"• {source_title} [source:{source_id}]")
+                                rendered_claims.extend([
+                                    "",
+                                    "Pour déterminer précisément si la décision de votre employeur est régulière, il faut confronter ces règles à vos faits et, si nécessaire, aux actes applicables dans votre collectivité. Voici les démarches utiles à engager ou les éléments à vérifier :",
+                                    "• Conservez le relevé des heures réellement effectuées et les éléments montrant qu'elles ont été demandées ou validées.",
+                                    "• Demandez à votre service RH quel dispositif de compensation s'applique (indemnisation ou repos) et quelle délibération locale le prévoit.",
+                                    "• Si la réponse ne correspond pas aux textes ou aux pièces de votre situation, faites examiner le dossier par un référent juridique ou un représentant syndical.",
+                                ])
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
                                     if ai_usage is not None:
