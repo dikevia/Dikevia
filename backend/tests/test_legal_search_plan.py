@@ -1,4 +1,4 @@
-from app.legal_search_plan import build_official_search_query
+from app.legal_search_plan import build_official_search_query, build_official_search_queries
 
 
 def test_overtime_query_targets_fpt_ihts_decrees_and_local_deliberation():
@@ -80,3 +80,30 @@ def test_contractual_status_does_not_mask_working_time_search_expansion():
     )
     assert "décret 2002-60" in query
     assert "décret 88-145" not in query
+
+
+
+def test_union_rights_builds_distinct_bounded_research_axes():
+    queries = build_official_search_queries(
+        "Quels sont les droits syndicaux des représentants du personnel ?"
+    )
+    assert 2 <= len(queries) <= 3
+    assert len(queries) == len(set(queries))
+    assert "CGFP livre II" in queries[1]
+    assert "autorisations speciales absence syndicale" in queries[2]
+    assert all(len(query) <= 500 for query in queries)
+
+
+def test_non_union_question_keeps_existing_single_query_behavior():
+    question = "Mon employeur ne renouvelle pas mon CDD"
+    assert build_official_search_queries(question) == [
+        build_official_search_query(question)
+    ]
+
+
+def test_research_axis_count_can_be_reduced_by_caller():
+    queries = build_official_search_queries(
+        "Quels sont les droits syndicaux des représentants du personnel ?",
+        max_queries=2,
+    )
+    assert len(queries) == 2
