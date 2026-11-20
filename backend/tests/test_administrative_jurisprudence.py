@@ -298,11 +298,11 @@ def test_parse_administrative_open_data_zip_rejects_invalid_archive():
 
 
 
-def test_open_data_search_results_mark_selected_passages_and_final_chunk():
+def test_open_data_search_results_mark_top_passages_and_final_chunk():
     from app.legal_corpus import search_legal_corpus
     import inspect
     source = inspect.getsource(search_legal_corpus)
-    assert "SELECTED_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT" in source
+    assert "TOP_TWO_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT" in source
 
 
 
