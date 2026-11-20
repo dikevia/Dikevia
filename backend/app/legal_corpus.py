@@ -251,6 +251,11 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         item["source_id"] = item.pop("source_id")
         item["source_type"] = item.pop("source_type")
         item["excerpt"] = item.pop("content")[:6000]
+        item["retrieval_scope"] = (
+            "SELECTED_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            if item.get("document_kind") == "ADMIN_CASELAW"
+            else "SELECTED_RELEVANT_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
+        )
         item["content_kind"] = item.get("content_kind")
         full_text = item.pop("full_text")
         expected_hash = item.pop("text_sha256")
