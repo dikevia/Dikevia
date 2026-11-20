@@ -133,3 +133,9 @@ def test_working_time_question_builds_fpt_framework_axes():
     assert len(queries) == 3
     assert "décret 2001-623" in queries[1]
     assert "décret 2000-815" in queries[2]
+
+
+
+def test_exact_article_request_does_not_trigger_additional_research_axes():
+    question = "Que prévoit l'article L123-4 du CGFP sur les droits syndicaux ?"
+    assert build_official_search_queries(question) == [question]
