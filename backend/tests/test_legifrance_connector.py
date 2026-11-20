@@ -361,6 +361,29 @@ async def test_legifrance_ping_falls_back_to_consult_route_only_when_list_route_
 
 
 @pytest.mark.asyncio
+async def test_legifrance_ping_falls_back_when_list_route_returns_upstream_500(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_environment", "production")
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/list/ping"):
+            return httpx.Response(500, json={"error": "upstream"})
+        if request.url.path.endswith("/consult/ping"):
+            return httpx.Response(200, text="pong")
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    assert await connector.ping() is True
+    assert any(path.endswith("/list/ping") for path in seen)
+    assert any(path.endswith("/consult/ping") for path in seen)
+
+
+@pytest.mark.asyncio
 async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_environment", "production")
     monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
