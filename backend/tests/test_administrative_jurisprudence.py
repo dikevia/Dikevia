@@ -276,7 +276,7 @@ def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
     </Decision>"""
     archive_bytes = BytesIO()
     with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("DTA_2024001_20240510.xml", xml)
+        archive.writestr("DTA_2024001_20240510.xml_TA38", xml)
     items = parse_administrative_open_data_zip(archive_bytes.getvalue(), "TA_202405.zip")
     assert len(items) == 1
     item = items[0]
