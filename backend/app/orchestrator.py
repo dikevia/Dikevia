@@ -1133,10 +1133,16 @@ class LegalOrchestrator:
                 "Je préfère vous le signaler plutôt que de recopier des articles de loi ou de présenter une source simplement voisine comme une réponse.",
             ]
             if parsed_date is None:
-                lines.append(
-                    "La date des faits n'est pas indispensable pour poursuivre la recherche générale. "
-                    "Elle pourra être précisée si la version historique d'un texte ou un acte local doit être vérifié."
-                )
+                if question_intent == "PERSONAL_CASE":
+                    lines.append(
+                        "La date des faits n'est pas un préalable à une première analyse de votre situation. "
+                        "La recherche peut se poursuivre à partir du droit actuel et des faits connus ; une vérification historique ne sera nécessaire que si une évolution du texte ou un acte local peut modifier la solution."
+                    )
+                else:
+                    lines.append(
+                        "Une date personnelle n'est pas nécessaire pour cette question générale. "
+                        "La recherche porte sur les règles actuelles ; une version historique ne sera vérifiée que si elle devient déterminante."
+                    )
             if sources:
                 lines.append("\\nSources retrouvées, à examiner (elles ne constituent pas à elles seules une réponse) :")
                 seen_source_ids = set()
