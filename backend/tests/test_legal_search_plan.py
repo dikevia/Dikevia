@@ -139,3 +139,17 @@ def test_working_time_question_builds_fpt_framework_axes():
 def test_exact_article_request_does_not_trigger_additional_research_axes():
     question = "Que prévoit l'article L123-4 du CGFP sur les droits syndicaux ?"
     assert build_official_search_queries(question) == [question]
+
+
+
+def test_short_follow_up_keeps_previous_legal_topic_for_official_research():
+    contextual_question = (
+        "Et pour les contractuels ?\n"
+        "Quels sont les droits syndicaux des représentants du personnel ?"
+    )
+    queries = build_official_search_queries(contextual_question)
+    assert len(queries) == 3
+    assert "Et pour les contractuels ?" in queries[0]
+    assert "CGFP livre II" in queries[0]
+    assert "droit syndical" in queries[1]
+    assert "autorisations speciales absence syndicale" in queries[2]
