@@ -14,3 +14,7 @@ def test_concrete_personal_dispute_requests_facts_date():
 
 def test_general_question_about_employer_powers_is_not_automatically_case_specific():
     assert question_needs_case_date("Mon employeur peut-il refuser le télétravail ?") is False
+
+def test_personal_nonpayment_dispute_requests_facts_date():
+    assert question_needs_case_date("Mon employeur refuse de me payer mes heures supplémentaires.") is True
+    assert question_needs_case_date("Je n'ai pas été payé depuis le mois dernier.") is True
