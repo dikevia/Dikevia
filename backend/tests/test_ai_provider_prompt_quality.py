@@ -22,3 +22,16 @@ def test_prompt_requires_a_final_question_answer_coherence_check():
 def test_prompt_requires_the_first_claim_to_be_the_direct_answer():
     assert "ORDRE DES AFFIRMATIONS" in SYSTEM_PROMPT
     assert "le premier élément de claims doit être la réponse directe" in SYSTEM_PROMPT
+
+
+def test_prompt_enforces_the_territorial_public_service_legal_hierarchy():
+    assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" in SYSTEM_PROMPT
+    assert "Le Code du travail n'est jamais le régime de droit commun des agents territoriaux" in SYSTEM_PROMPT
+    assert "Ne transpose jamais automatiquement le droit du secteur privé" in SYSTEM_PROMPT
+    assert "renvoi législatif ou réglementaire vérifié" in SYSTEM_PROMPT
+    assert "fonctionnaire titulaire, stagiaire ou agent contractuel" in SYSTEM_PROMPT
+
+
+def test_prompt_requires_local_deliberation_when_national_text_refers_to_it():
+    assert "acte local applicable et validé" in SYSTEM_PROMPT
+    assert "ne conclus pas sur le droit individuel, le montant ou les modalités" in SYSTEM_PROMPT
