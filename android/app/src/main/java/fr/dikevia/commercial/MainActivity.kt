@@ -61,7 +61,7 @@ class MainActivity:ComponentActivity(){
         const val API="https://dikevia-commercial-api-l2r8.onrender.com"
         const val ISSUER="https://dikevia-identity-l2r8.onrender.com/realms/cfdt"
         const val CLIENT_ID="dikevia-android"
-        const val SCOPES="openid profile email"
+        const val SCOPES="openid"
         const val REDIRECT="fr.dikevia.commercial:/oauth2redirect"
         const val LOGIN_REQUEST=7301
         const val LOGOUT_REQUEST=7302
