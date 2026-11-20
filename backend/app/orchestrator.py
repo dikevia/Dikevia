@@ -122,6 +122,8 @@ def classify_question_intent(question: str) -> str:
         r"\b(?:ma demande|mon congé|mon arrêt|ma rémunération|mon dossier)\b.{0,80}\b(?:refusé|refusée|refusés|refusées|rejeté|rejetée|suspendu|suspendue)\b",
         r"\b(?:j['’]ai reçu|on m['’]a notifié|on m['’]a adressé)\b.{0,80}\b(?:refus|décision|sanction|notification|convocation)\b",
         r"\b(?:dans mon cas|dans ma situation|concernant mon dossier)\b",
+        # Union representatives often describe a member's case in the third person.
+        r"\b(?:un|une|l['’])\s*agent(?:e)?\b.{0,100}\b(?:a eu|a reçu|a subi|a été|fait l['’]objet|s['’]est vu|subit|rencontre)\b",
         r"\b(?:depuis|à compter du)\s+(?:le\s+)?\d{1,2}[ /-]\d{1,2}\b",
     )
     if any(re.search(pattern, text) for pattern in personal_event_patterns):
