@@ -816,6 +816,7 @@ class LegalOrchestrator:
                     verified_sources = [
                         s for s in sources
                         if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
+                        and s.get("topic_relevant") is not False
                         and s.get("content_kind") != "METADATA"
                         and (s.get("citation_integrity") or {}).get("valid") is True
                         and (
@@ -857,6 +858,7 @@ class LegalOrchestrator:
                          "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED"}
                         for s in sources
                         if s.get("source_type") == "CGFP_SNAPSHOT"
+                        and s.get("topic_relevant") is not False
                         and (s.get("citation_integrity") or {}).get("valid") is True
                     ]
                     ai_sources = cgfp_context_sources + verified_sources if verified_sources else []
