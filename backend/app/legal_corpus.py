@@ -244,7 +244,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         SELECT version_id, string_agg(content_chunk, E'\n\n' ORDER BY chunk_order) AS content, max(rank) AS rank
         FROM (
           SELECT version_id,content_chunk,rn AS chunk_order,rank
-          FROM ranked WHERE rn <= 2
+          FROM ranked WHERE rn <= CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
           UNION ALL
           SELECT final_chunk.version_id,final_chunk.content_chunk,999999 AS chunk_order,0.0 AS rank
           FROM (
@@ -257,7 +257,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
           ) final_chunk
           WHERE NOT EXISTS (
             SELECT 1 FROM ranked r
-            WHERE r.version_id=final_chunk.version_id AND r.ordinal=final_chunk.ordinal AND r.rn <= 2
+            WHERE r.version_id=final_chunk.version_id AND r.ordinal=final_chunk.ordinal AND r.rn <= CASE WHEN r.document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
           )
         ) selected_passages
         GROUP BY version_id
@@ -287,9 +287,9 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         item["raw_metadata"] = metadata if isinstance(metadata, dict) else {}
         item["source_id"] = item.pop("source_id")
         item["source_type"] = item.pop("source_type")
-        item["excerpt"] = item.pop("content")[:6000]
+        item["excerpt"] = item.pop("content")[:8500]
         item["retrieval_scope"] = (
-            "TOP_TWO_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
             if item.get("document_kind") == "ADMIN_CASELAW"
             else "SELECTED_RELEVANT_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
