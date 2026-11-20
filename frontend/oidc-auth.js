@@ -110,8 +110,10 @@
     return true;
   }
   async function restoreSsoSession() {
+    const hadCallback = new URLSearchParams(window.location.search).has('code') ||
+      new URLSearchParams(window.location.search).has('error');
     const completed = await completeCallback();
-    if (completed || accessToken) return;
+    if (hadCallback || completed || accessToken) return;
     // Une seule tentative silencieuse par navigation de retour : jamais de boucle.
     if (sessionStorage.getItem('cfdt_oidc_silent_attempt') === '1') {
       sessionStorage.removeItem('cfdt_oidc_silent_attempt');
