@@ -223,3 +223,74 @@ def is_ihts_relevant_source(question: str, source: dict[str, Any]) -> bool:
     # terminology or one of the implementing/reference decrees.
     return any(_fold(marker) in corpus for marker in _IHTS_SOURCE_MARKERS)
 
+
+
+# Narrow topic families used only to reject an obviously unrelated retrieval hit.
+# They are not legal taxonomies: broad or unclassified sources remain eligible
+# for review so that cross-cutting provisions are not accidentally discarded.
+_TOPIC_FAMILIES = {
+    "SICK_LEAVE": (
+        "conge maladie", "conge de maladie", "conge longue maladie",
+        "conge longue duree", "citis", "accident de service",
+        "maladie professionnelle", "arret maladie",
+    ),
+    "LEAVE": (
+        "conges annuels", "conge annuel", "conges bonifies",
+        "autorisation speciale d absence", "absence pour raison familiale",
+        "compte epargne temps", "cet",
+    ),
+    "REMUNERATION": (
+        "remuneration", "traitement indiciaire", "regime indemnitaire",
+        "rifseep", "ifse", "nbi", "indemnite", "prime", "paie",
+    ),
+    "WORKING_TIME": (
+        "temps de travail", "duree du travail", "heures supplementaires",
+        "travaux supplementaires", "ihts", "astreinte", "annualisation",
+        "repos compensateur", "cycle de travail",
+    ),
+    "DISCIPLINE": (
+        "discipline", "sanction disciplinaire", "conseil de discipline",
+        "exclusion temporaire", "blame", "revocation",
+    ),
+    "TELEWORK": (
+        "teletravail", "travail a distance",
+    ),
+    "FUNCTIONAL_PROTECTION": (
+        "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
+        "agissement sexiste",
+    ),
+    "UNION_RIGHTS": (
+        "droit syndical", "autorisation speciale d absence syndicale",
+        "decharge d activite de service", "heures de delegation",
+        "local syndical",
+    ),
+    "CST": (
+        "comite social territorial", "formation specialisee",
+        "comite technique", "instance de dialogue social",
+    ),
+}
+
+
+def _matched_topic_families(value: str) -> set[str]:
+    folded = _fold(value)
+    return {
+        family
+        for family, markers in _TOPIC_FAMILIES.items()
+        if any(_fold(marker) in folded for marker in markers)
+    }
+
+
+def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
+    """Reject only a source clearly belonging to another recognized topic family.
+
+    Sources with no recognized family are retained as potentially cross-cutting
+    legal provisions. This deliberately favors recall over aggressive filtering.
+    """
+    question_topics = _matched_topic_families(question)
+    if not question_topics:
+        return True
+    source_text = " ".join(str(source.get(key) or "") for key in (
+        "title", "article", "official_number", "excerpt", "text", "full_text"
+    ))
+    source_topics = _matched_topic_families(source_text[:500_000])
+    return not source_topics or bool(question_topics & source_topics)
