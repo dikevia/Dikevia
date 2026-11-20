@@ -60,8 +60,8 @@ _TOPIC_EXPANSIONS = (
         "droits défense conseil de discipline jurisprudence administrative",
     ),
     (
-        ("agent contractuel", "agents contractuels", "contractuel", "cdd", "cdi",
-         "renouvellement de contrat", "fin de contrat", "licenciement contractuel"),
+        ("renouvellement de contrat", "non renouvellement", "fin de contrat",
+         "licenciement contractuel", "recrutement contractuel", "terme du contrat"),
         "agents contractuels territoriaux décret 88-145 CGFP recrutement renouvellement "
         "licenciement garanties procédure jurisprudence administrative",
     ),
