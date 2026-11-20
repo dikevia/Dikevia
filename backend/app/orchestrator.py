@@ -66,6 +66,28 @@ def _analysis_mode(question_intent: str, facts_date_provided: bool) -> str:
     return "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE"
 
 
+def _permanent_source_temporal_metadata(
+    item: dict, facts_reference_date: date | None,
+) -> tuple[str | None, str | None]:
+    status = item.get("temporal_status")
+    explanation = None
+    if item.get("document_kind") == "ADMIN_CASELAW":
+        raw_date = item.get("signature_date")
+        status = decision_temporal_status(
+            str(raw_date) if raw_date else None, facts_reference_date,
+        )
+        if status == "DECISION_POSTERIOR_TO_FACTS":
+            explanation = (
+                "Décision postérieure aux faits : elle peut éclairer l'interprétation du droit antérieur, "
+                "mais ne prouve pas à elle seule la règle applicable à la date des faits."
+            )
+        elif status == "DECISION_DATE_UNKNOWN":
+            explanation = (
+                "Date de décision non vérifiée : ne pas lui attribuer de portée temporelle certaine."
+            )
+    return status, explanation
+
+
 def classify_question_intent(question: str) -> str:
     """Classify whether the current turn describes an individual event or asks for general rules.
 
@@ -559,26 +581,13 @@ class LegalOrchestrator:
                 for item in stored:
                     source_document_kind = item.get("document_kind")
                     source_decision_date = item.get("signature_date")
-                    source_temporal_status = item.get("temporal_status")
-                    source_temporal_explanation = None
-                    if source_document_kind == "ADMIN_CASELAW":
-                        # Imported administrative decisions are searched in the
-                        # permanent corpus through today. Reclassify their date
-                        # against the facts period so later judgments remain
-                        # available but are explicitly marked as interpretative.
-                        source_temporal_status = decision_temporal_status(
-                            str(source_decision_date) if source_decision_date else None,
-                            facts_reference_date,
-                        )
-                        if source_temporal_status == "DECISION_POSTERIOR_TO_FACTS":
-                            source_temporal_explanation = (
-                                "Décision postérieure aux faits : elle peut éclairer l'interprétation du droit antérieur, "
-                                "mais ne prouve pas à elle seule la règle applicable à la date des faits."
-                            )
-                        elif source_temporal_status == "DECISION_DATE_UNKNOWN":
-                            source_temporal_explanation = (
-                                "Date de décision non vérifiée : ne pas lui attribuer de portée temporelle certaine."
-                            )
+                    # Imported administrative decisions are searched in the
+                    # permanent corpus through today. Reclassify their date
+                    # against the facts period so later judgments remain
+                    # available but are explicitly marked as interpretative.
+                    source_temporal_status, source_temporal_explanation = (
+                        _permanent_source_temporal_metadata(item, facts_reference_date)
+                    )
                     permanent_sources.append({
                         "source_type": item.get("source_type"), "source_id": item.get("source_id"),
                         "title": item.get("title"), "official_number": item.get("official_number"),
