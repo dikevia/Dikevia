@@ -1023,19 +1023,40 @@ class LegalOrchestrator:
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
                 "Les extraits du snapshot PDF ne certifient pas l'authenticité officielle. Les versions du corpus dont les dates d'effet sont incomplètes ne sont pas utilisées pour les conclusions IA. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
         else:
-            lines = ["Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis."]
-            lines.append("Recherche documentaire effectuée : les résultats ci-dessous sont des sources à examiner, pas une qualification juridique définitive.")
-            if parsed_date is None:
+            lines = [
+                "Je n'ai pas pu établir une réponse suffisamment fiable à la question précise à partir des éléments retrouvés.",
+                "Je préfère vous le signaler plutôt que de recopier des articles de loi ou de présenter une source simplement voisine comme une réponse.",
+            ]
+            if parsed_date is None and needs_case_date:
                 lines.append(
-                    "Je peux vous donner une information générale, mais les sources officielles récupérées "
-                    "ne suffisent pas encore à expliquer de façon fiable les règles applicables à votre question. "
-                    "Je préfère ne pas tirer de conclusion sans fondement documentaire pertinent."
+                    "Pour poursuivre l'analyse de votre situation, indiquez la date ou la période des faits."
                 )
-            for source in sources[:8]:
-                excerpt = source.get("excerpt") or source.get("text", "")[:1800]
-                location = (f"pages PDF {source['page_start']}–{source['page_end']}" if source.get("page_start") else "réponse API Légifrance")
-                lines.append(f"\n{source.get('title', 'Source juridique')} ({location}) :\n{excerpt}")
-            lines.append("\nAucune conclusion définitive n'est formulée. Vérifier les versions, les textes d'application, la jurisprudence et les règles locales avant toute utilisation syndicale ou administrative.")
+            elif parsed_date is None:
+                lines.append(
+                    "Il s'agit ici d'une question générale : une date personnelle n'est pas nécessaire. "
+                    "Le point à résoudre est l'identification d'une disposition qui répond directement à votre question."
+                )
+            if sources:
+                lines.append("\\nSources retrouvées, à examiner (elles ne constituent pas à elles seules une réponse) :")
+                seen_source_ids = set()
+                for source in sources[:8]:
+                    source_id = str(source.get("source_id") or "")
+                    if source_id and source_id in seen_source_ids:
+                        continue
+                    if source_id:
+                        seen_source_ids.add(source_id)
+                    title = " ".join(str(source.get("title") or "Source juridique").split())[:250]
+                    reference = source.get("article") or source.get("official_number")
+                    if reference and str(reference) not in title:
+                        title += f" — réf. {reference}"
+                    lines.append(f"• {title}")
+            else:
+                lines.append("Aucune source exploitable n'a été retrouvée pour cette recherche.")
+            lines.append(
+                "\\nAucune conclusion juridique n'est formulée. Vous pouvez préciser le mécanisme ou le point exact "
+                "qui vous intéresse ; les sources doivent ensuite être vérifiées au regard de leur version, "
+                "de leur champ d'application et, si nécessaire, des règles locales."
+            )
             answer = "\n".join(lines)
 
         # Apply display-only filtering after legal analysis and validation. Keeping
