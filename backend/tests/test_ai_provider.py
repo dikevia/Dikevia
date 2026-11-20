@@ -18,6 +18,8 @@ def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense
     assert "Une pièce locale ne peut soutenir une conclusion que si elle est validée" in SYSTEM_PROMPT
     assert "CITATIONS OBLIGATOIRES" in SYSTEM_PROMPT
     assert "FORMAT DE SORTIE OBLIGATOIRE" in SYSTEM_PROMPT
+    assert "MODE D'INFORMATION GÉNÉRALE" in SYSTEM_PROMPT
+    assert "Ne bloque pas toute réponse au seul motif que la date des faits manque" in SYSTEM_PROMPT
     assert "source_id" in SYSTEM_PROMPT and "quote" in SYSTEM_PROMPT
 
 def test_ai_generated_article_references_must_exist_in_sources():
