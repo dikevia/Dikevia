@@ -19,16 +19,16 @@ _DIRECT_ARTICLE_LOOKUP = re.compile(
 _TOPIC_EXPANSIONS = (
     (
         ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
-         "representants du personnel", "local syndical", "decharge d activite",
+         "representants du personnel", "representant syndical", "representants syndicaux", "local syndical", "locaux syndicaux", "decharge d activite", "decharges d activite",
          "credit de temps syndical", "autorisation speciale d absence syndicale",
          "formation syndicale", "reunion d information syndicale",
          "comite social territorial"),
         "droit syndical fonction publique territoriale CGFP livre II exercice du droit "
-        "syndical dialogue social representation des agents garanties exercice droit "
-        "syndical facilites organisations syndicales locaux syndicaux autorisations "
-        "speciales absence decharges activite service credit temps syndical formation "
-        "syndicale reunions information syndicale partie reglementaire CGFP "
-        "deliberation protocole accord local",
+        "syndical dialogue social représentation des agents garanties exercice droit "
+        "syndical facilités organisations syndicales locaux syndicaux autorisations "
+        "spéciales absence décharges activité service crédit temps syndical formation "
+        "syndicale réunions information syndicale partie réglementaire CGFP "
+        "délibération protocole accord local",
     ),
     (
         ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
