@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 from functools import lru_cache
+import logging
 import jwt
 from jwt import PyJWKClient
 from fastapi import HTTPException
 from .config import settings
+
+logger = logging.getLogger(__name__)
 
 MAX_BEARER_TOKEN_LENGTH = 16_384
 MAX_ACCESS_TOKEN_LIFETIME_SECONDS = 900
@@ -51,6 +54,8 @@ def verify_access_token(token: str) -> Principal:
         return Principal(subject=subject, issuer=issuer, email=email, email_verified=verified)
     except HTTPException:
         raise
-    except Exception:
-        # Do not expose whether signature, issuer, audience, expiry or JWKS failed.
+    except Exception as exc:
+        # Log only the exception class: never log a bearer token, claims or
+        # provider response body. Keep the public 401 deliberately generic.
+        logger.warning("OIDC access-token validation failed (%s)", type(exc).__name__)
         raise HTTPException(401, "Jeton invalide ou expiré.")
