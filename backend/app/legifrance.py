@@ -150,7 +150,19 @@ class LegifranceConnector:
                     response.raise_for_status()
                     return True
                 except httpx.HTTPStatusError as exc:
-                    if exc.response.status_code in {404, 405} and path == "list/ping":
+                    # Some production PISTE deployments return 5xx on /list/ping
+                    # while the documented /consult/ping route remains healthy.
+                    # Try the independent fallback for missing/unsupported routes
+                    # and upstream failures, but never hide authentication/permission
+                    # failures (401/403).
+                    if path == "list/ping" and (
+                        exc.response.status_code in {404, 405}
+                        or exc.response.status_code >= 500
+                    ):
+                        logger.warning(
+                            "DIKEVIA_DIAGNOSTIC PISTE_PING_FALLBACK primary=%s status=%d",
+                            path, exc.response.status_code,
+                        )
                         continue
                     raise LegifranceUnavailable(
                         f"Refus du point de contrôle PISTE {path} (HTTP {exc.response.status_code})."
