@@ -47,5 +47,11 @@ def test_prompt_prevents_current_application_of_repealed_fpt_union_decree():
 def test_prompt_explains_administrative_open_data_publication_codes():
     from app.ai_provider import SYSTEM_PROMPT
     assert "code de publication A" in SYSTEM_PROMPT
-    assert "jamais comme une hiérarchie normative" in _SYSTEM_PROMPT
-    assert "Une décision C, D ou Z peut éclairer" in _SYSTEM_PROMPT
+    assert "jamais comme une hiérarchie normative" in SYSTEM_PROMPT
+    assert "Une décision C, D ou Z peut éclairer" in SYSTEM_PROMPT
+
+
+def test_prompt_warns_that_case_law_excerpts_may_be_partial():
+    from app.ai_provider import SYSTEM_PROMPT
+    assert "Les extraits d'une décision peuvent être partiels" in SYSTEM_PROMPT
+    assert "n'infère pas le dispositif" in SYSTEM_PROMPT
