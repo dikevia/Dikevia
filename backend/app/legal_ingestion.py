@@ -118,7 +118,7 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                 if b"<!DOCTYPE" in xml_bytes.upper() or b"<!ENTITY" in xml_bytes.upper():
                     continue
                 root = ET.fromstring(xml_bytes)
-            except (KeyError, OSError, ET.ParseError, DefusedXmlException):
+            except (KeyError, OSError, EOFError, RuntimeError, NotImplementedError, zipfile.BadZipFile, ET.ParseError, DefusedXmlException):
                 continue
 
             def value(*names: str, max_length: int = 1000) -> str | None:
@@ -164,6 +164,8 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             identity = "|".join((court_code or court_name, case_number, decision_date.isoformat(), identification))
             source_digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
             body_digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+            if len(records) >= 1000:
+                raise ValueError("L'archive contient plus de 1 000 décisions FPT pertinentes ; découpez l'import en archives mensuelles plus petites.")
             records.append({
                 "source_type": "OTHER_OFFICIAL",
                 "source_id": "OPEN_DATA_JA_" + source_digest,
