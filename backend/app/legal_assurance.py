@@ -51,7 +51,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
-        "VERIFIED_APPLICABLE", "CURRENT_DATE_GENERAL_INFO_ONLY",
+        "VERIFIED_APPLICABLE",
     }
     return {
         "source_family": kind,
@@ -292,7 +292,11 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
             continue
         if source.get("analysis_eligible") is False or source.get("public_service_scope") == "SCOPE_TO_VERIFY":
             continue
-        if temporal_status not in eligible_statuses:
+        general_information_only = (
+            temporal_status == "TEMPORAL_SCOPE_INCOMPLETE"
+            and source.get("general_info_eligible") is True
+        )
+        if temporal_status not in eligible_statuses and not general_information_only:
             continue
         if source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
             if source.get("validation_status") != "VERIFIED_APPLICABLE":
