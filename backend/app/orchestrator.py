@@ -46,6 +46,18 @@ def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
 
+def _case_law_reference_date(
+    period_start: date | None,
+    period_end: date | None,
+    situation_ongoing: bool,
+    today: date,
+) -> date | None:
+    """Use today for continuing situations; otherwise use the known facts date."""
+    if situation_ongoing and period_start:
+        return today
+    return period_end or period_start
+
+
 def classify_question_intent(question: str) -> str:
     """Classify whether the current turn describes an individual event or asks for general rules.
 
@@ -224,9 +236,8 @@ class LegalOrchestrator:
             # effects. Keep the declared start date separately for historical
             # statutory-version lookup and provenance.
             parsed_date = period_end or period_start
-            facts_reference_date = (
-                effective_date if request.situation_ongoing and period_start
-                else parsed_date
+            facts_reference_date = _case_law_reference_date(
+                period_start, period_end, bool(request.situation_ongoing), effective_date,
             )
             temporal_context = {
                 "period_start": period_start.isoformat() if period_start else None,
