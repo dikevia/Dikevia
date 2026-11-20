@@ -45,7 +45,7 @@ def test_prompt_prevents_current_application_of_repealed_fpt_union_decree():
 
 
 def test_prompt_explains_administrative_open_data_publication_codes():
-    from app.ai_provider import _SYSTEM_PROMPT
-    assert "code de publication A" in _SYSTEM_PROMPT
+    from app.ai_provider import SYSTEM_PROMPT
+    assert "code de publication A" in SYSTEM_PROMPT
     assert "jamais comme une hiérarchie normative" in _SYSTEM_PROMPT
     assert "Une décision C, D ou Z peut éclairer" in _SYSTEM_PROMPT
