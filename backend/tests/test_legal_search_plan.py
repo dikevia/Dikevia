@@ -46,3 +46,22 @@ def test_short_follow_up_keeps_prior_context_but_expands_current_topic():
     )
     assert query.startswith("Et pour les contractuels ?")
     assert "décret 88-145" in query
+
+
+def test_union_rights_query_targets_current_cgfp_book_ii_and_local_rules():
+    query = build_official_search_query(
+        "Quels sont les droits syndicaux des représentants du personnel ?"
+    )
+    assert "CGFP livre II" in query
+    assert "exercice du droit syndical" in query
+    assert "crédit de temps syndical" in query
+    assert "délibération" in query
+    # The 1985 implementing decree was repealed from 1 February 2025;
+    # it must not be promoted as the current legal framework.
+    assert "décret 85-397" not in query
+
+
+def test_union_rights_search_expansion_is_applied_to_short_follow_up():
+    query = build_official_search_query("Et pour les locaux syndicaux ?")
+    assert query.startswith("Et pour les locaux syndicaux ?")
+    assert "CGFP livre II" in query
