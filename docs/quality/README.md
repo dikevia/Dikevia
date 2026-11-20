@@ -10,6 +10,10 @@ Le fichier `fpt_chatbot_eval_v1.json` contient les questions, l'intention à rec
 
 Ne pas transformer les critères d'intention en conclusions juridiques. Plusieurs questions nécessitent des précisions (statut, délibération locale, date, faits, règlement intérieur).
 
+## Questions générales et situations individuelles
+
+Une question générale sur les droits ou les règles de la FPT ne doit pas déclencher automatiquement une demande de date des faits. Le chatbot peut expliquer le droit actuellement consulté en précisant qu'il s'agit d'une information générale. Une date ou une période est demandée lorsque la formulation décrit une situation personnelle concrète ou un différend dont l'analyse dépend de la temporalité. Cette distinction fait l'objet de tests automatisés dans `backend/tests/test_case_date_clarification.py`.
+
 ## Protocole de recette
 
 1. Fixer une version du backend, du prompt, du modèle et du corpus juridique.
