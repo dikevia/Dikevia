@@ -401,7 +401,7 @@ html.dikevia-admin-mode .notice { display:none!important; }
   if (requested === 'admin' || requested === 'standard') {
     try { sessionStorage.setItem('dikevia_app_mode', requested); } catch (_) {}
   }
-  let mode = 'web';
+  let mode = requested === 'admin' || requested === 'standard' ? requested : 'web';
   try {
     const saved = sessionStorage.getItem('dikevia_app_mode');
     if (saved === 'admin' || saved === 'standard') mode = saved;
