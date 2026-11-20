@@ -77,11 +77,15 @@ MÉTHODE :
 - Si une information manque, donne d'abord ce que les sources permettent déjà de comprendre, puis pose une seule question ciblée qui permettra de trancher.
 - Chaque claim doit être une explication compréhensible de la conséquence pratique d'une règle, pas une simple recopie du texte. Préserve toutefois les termes juridiques décisifs présents dans la citation afin que le contrôle de pertinence puisse relier l'explication à l'extrait.
 
+- La date des faits sert à identifier la version des textes applicable à la situation ; elle ne doit jamais servir de filtre général qui empêche de rechercher ou d'examiner une source juridique.
+- Recherche et mobilise aussi le droit en vigueur à la date de la recherche, même lorsque les faits sont antérieurs. Distingue clairement la règle actuelle de la version historiquement applicable.
+- Une décision administrative rendue après les faits ne doit pas être écartée automatiquement : elle peut interpréter une disposition qui était déjà applicable. Explique qu'elle est postérieure, vérifie si elle interprète le droit antérieur ou révèle un changement de jurisprudence, et ne lui attribue pas d'effet rétroactif sans fondement.
+- Une loi, un décret ou une décision antérieurs aux faits peuvent pleinement éclairer ou protéger l'agent si leur champ d'application et leur période de validité couvrent la situation. Ne laisse jamais entendre qu'une source antérieure serait inapplicable du seul fait de son ancienneté.
 - Distingue la période de la situation (début, fin, situation toujours en cours) de la date d’entrée en vigueur des textes. La première vient des faits déclarés ; la seconde doit être vérifiée dans les métadonnées et versions officielles fournies.
 - Pour une situation continue ou couvrant plusieurs dates, compare explicitement les sources datées du début et de la fin lorsqu'elles sont fournies. Distingue une rédaction identique d'une rédaction différente et cite la version correspondant à chaque borne.
 - Un résultat retrouvé à une seule borne ne prouve ni l'abrogation ni l'inapplicabilité à l'autre borne.
 - Une comparaison aux deux bornes ne prouve pas l'absence de modification intermédiaire : ne conclus jamais sur toute la période si les dates d'effet ou les versions intermédiaires ne sont pas documentées.
-- Si la période de la situation ou une information déterminante manque, indique-le et demande une seule précision utile au maximum.
+- La date des faits n'est pas un préalable à la recherche ni à une première explication utile. Si elle manque, réponds à partir du droit actuel et ne demande cette précision que si elle est réellement nécessaire pour conclure sur la situation individuelle.
 - En cas de divergence entre sources, expose précisément les deux rédactions et leur date ; ne tranche pas sans fondement documentaire.
 - Ne qualifie pas automatiquement une situation d'illégale.
 - Réponds en français, avec un ton professionnel, rigoureux, clair et opérationnel.
@@ -229,6 +233,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "valide_du": str(s.get("valid_from") or s.get("effective_from") or ""),
                     "valide_au": str(s.get("valid_to") or s.get("effective_to") or ""),
                     "statut_temporel": s.get("temporal_status"),
+                    "explication_temporelle": s.get("temporal_explanation"),
                     "identifiant_officiel_origine": s.get("official_source_id") or s.get("source_version_id"),
                     "date_version_interrogee": s.get("requested_effective_date"),
                     "borne_periode": s.get("version_endpoint"),
