@@ -226,6 +226,13 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         item["temporal_status"] = temporal_status(item.get("valid_from"), item.get("valid_to"), requested_date,
             item.get("document_kind"), item.get("signature_date"), item.get("raw_payload"), item.get("version_status"))
         item["requested_date"] = requested_date.isoformat()
+        metadata = item.get("raw_metadata")
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except (ValueError, TypeError):
+                metadata = {}
+        item["raw_metadata"] = metadata if isinstance(metadata, dict) else {}
         item["source_id"] = item.pop("source_id")
         item["source_type"] = item.pop("source_type")
         item["excerpt"] = item.pop("content")[:2200]
