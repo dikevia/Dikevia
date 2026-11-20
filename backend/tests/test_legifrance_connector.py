@@ -383,6 +383,33 @@ async def test_legifrance_ping_falls_back_when_list_route_returns_upstream_500(m
     assert any(path.endswith("/consult/ping") for path in seen)
 
 
+@pytest.mark.parametrize("status_code", [401, 403])
+@pytest.mark.asyncio
+async def test_legifrance_ping_does_not_hide_auth_or_permission_failures(
+    monkeypatch, status_code
+):
+    monkeypatch.setattr(settings, "legifrance_environment", "production")
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/list/ping"):
+            return httpx.Response(status_code)
+        if request.url.path.endswith("/consult/ping"):
+            return httpx.Response(200, text="pong")
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    with pytest.raises(LegifranceUnavailable):
+        await connector.ping()
+    assert any(path.endswith("/list/ping") for path in seen)
+    assert not any(path.endswith("/consult/ping") for path in seen)
+
+
 @pytest.mark.asyncio
 async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_environment", "production")
