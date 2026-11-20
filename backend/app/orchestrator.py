@@ -284,6 +284,13 @@ class LegalOrchestrator:
                     except Exception as exc:
                         logger.warning("Recherche ciblée du décret 91-875 indisponible à %s : %r", requested_date, exc)
 
+            # Exact-number retrieval may overlap the broad search; keep one
+            # canonical source per dated source ID to avoid ambiguous citations.
+            unique_regulatory = {}
+            for source in regulatory_result:
+                unique_regulatory[source.get("source_id") or str(id(source))] = source
+            regulatory_result = list(unique_regulatory.values())
+
             try:
                 case_result = await case_law_connector.search(live_query, effective_date)
             except Exception as exc:
@@ -955,7 +962,11 @@ class LegalOrchestrator:
             lines = ["Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis."]
             lines.append("Recherche documentaire effectuée : les résultats ci-dessous sont des sources à examiner, pas une qualification juridique définitive.")
             if parsed_date is None:
-                lines.append("Date des faits non fournie : la date du jour sert uniquement au repérage documentaire. Aucune analyse juridique contextualisée n'est produite avant clarification de cette date.")
+                lines.append(
+                    "Je peux vous donner une information générale, mais les sources officielles récupérées "
+                    "ne suffisent pas encore à expliquer de façon fiable les règles applicables à votre question. "
+                    "Je préfère ne pas tirer de conclusion sans fondement documentaire pertinent."
+                )
             for source in sources[:8]:
                 excerpt = source.get("excerpt") or source.get("text", "")[:1800]
                 location = (f"pages PDF {source['page_start']}–{source['page_end']}" if source.get("page_start") else "réponse API Légifrance")
