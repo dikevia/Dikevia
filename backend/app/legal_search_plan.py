@@ -148,7 +148,8 @@ _TOPIC_RESEARCH_AXES = (
     ),
     (
         ("renouvellement de contrat", "non renouvellement", "fin de contrat",
-         "licenciement contractuel", "recrutement contractuel", "terme du contrat"),
+         "licenciement contractuel", "recrutement contractuel", "terme du contrat",
+         "agent contractuel", "contractuel", "CDD", "CDI"),
         (
             "agents contractuels fonction publique territoriale CGFP décret 88-145 recrutement renouvellement contrat",
             "décret 88-145 agents contractuels territoriaux procédure non renouvellement licenciement garanties délai prévenance",
@@ -181,15 +182,30 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
         return queries
     folded = _fold(original)
     query_limit = max(1, min(max_queries, 3))
-    matched_axes = [
-        axes for triggers, axes in _TOPIC_RESEARCH_AXES
-        if any(_fold(trigger) in folded for trigger in triggers)
-    ]
+    matched_axes = []
+    other_topic_present = any(
+        any(_fold(trigger) in folded for trigger in triggers)
+        for index, (triggers, _axes) in enumerate(_TOPIC_RESEARCH_AXES)
+        if index != 2
+    )
+    contract_triggers, contract_axes = _TOPIC_RESEARCH_AXES[2]
+    contract_subject_present = any(
+        _fold(trigger) in folded for trigger in contract_triggers[:6]
+    )
+    for index, (triggers, axes) in enumerate(_TOPIC_RESEARCH_AXES):
+        if not any(_fold(trigger) in folded for trigger in triggers):
+            continue
+        # "Je suis contractuel" identifies status, not the legal topic. Do not
+        # let it displace a substantive topic such as IHTS or union rights.
+        if index == 2 and other_topic_present and not contract_subject_present:
+            continue
+        matched_axes.append(axes)
+
     # "Et pour les contractuels ?" is a status comparison, not necessarily a
     # contract-law issue. Use the contract axis only when no substantive topic
     # is already present in the contextual question.
     if not matched_axes and re.search(r"\b(?:et\s+)?pour\s+les?\s+contractuels?\b", folded):
-        matched_axes = [_TOPIC_RESEARCH_AXES[2][1]]
+        matched_axes = [contract_axes]
 
     # For compound questions, first allocate one focused query to each
     # recognized topic. Only then spend remaining capacity on a second axis
