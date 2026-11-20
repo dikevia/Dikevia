@@ -465,6 +465,8 @@ def test_ai_prompt_distinguishes_fact_period_from_text_effective_date():
     assert "peuvent pleinement éclairer ou protéger l'agent" in SYSTEM_PROMPT
     assert "Une décision administrative rendue après les faits ne doit pas être écartée automatiquement" in SYSTEM_PROMPT
     assert "La date des faits n'est pas un préalable à la recherche" in SYSTEM_PROMPT
+    assert "Ne demande pas automatiquement la date des faits" in SYSTEM_PROMPT
+    assert "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio
