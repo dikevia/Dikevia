@@ -347,11 +347,10 @@ async def test_orchestrator_asks_for_situation_period_instead_of_assuming_today(
     from app.schemas import AskRequest
     from app.orchestrator import LegalOrchestrator
 
-    request = AskRequest(employer="NATIONAL", question="Question juridique suffisamment longue")
+    request = AskRequest(employer="NATIONAL", question="Mon employeur m'a refusé un congé maladie, que puis-je faire ?")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
     assert response.clarification_question
     assert any("date d'entrée en vigueur" in item for item in response.missing_information)
-    assert response.clarification_question
 
 
 @pytest.mark.asyncio
