@@ -649,7 +649,7 @@ async def test_current_date_repere_sources_are_not_labelled_applicable_without_f
         "00000000-0000-0000-0000-000000000001",
     )
     assert all(
-        source.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
+        source.get("temporal_status") == "CURRENT_DATE_GENERAL_INFO_ONLY"
         for source in response.sources
         if source.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}
     )
