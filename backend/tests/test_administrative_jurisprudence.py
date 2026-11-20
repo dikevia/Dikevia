@@ -337,6 +337,13 @@ def test_period_analysis_keeps_later_case_law_and_endpoint_valid_local_documents
     assert _source_allowed_for_period_analysis(imported_decision, True, start, end)
     assert _source_allowed_for_period_analysis(local_at_start, True, start, end)
     assert not _source_allowed_for_period_analysis(local_not_applicable, True, start, end)
+    historical_decree = {
+        "source_type": "OTHER_OFFICIAL",
+        "document_kind": "DECREE",
+        "valid_from": "2024-01-01",
+        "valid_to": "2024-12-31",
+    }
+    assert _source_allowed_for_period_analysis(historical_decree, True, start, end)
 
 
 def test_local_document_search_checks_historical_and_current_reference_dates():
