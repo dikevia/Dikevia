@@ -282,6 +282,19 @@ def test_imported_administrative_case_law_after_facts_is_kept_as_interpretative(
     assert explanation and "peut éclairer l'interprétation" in explanation
 
 
+def test_future_dated_imported_administrative_decision_is_rejected():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "ADMIN_CASELAW",
+        "signature_date": date(2027, 2, 10),
+        "temporal_status": "DECISION_POSTERIOR_TO_REQUESTED_DATE",
+    }
+    status, explanation = _permanent_source_temporal_metadata(item, date(2025, 1, 1))
+    assert status == "DECISION_AFTER_RETRIEVAL_DATE"
+    assert explanation and "postérieure à la date de recherche" in explanation
+
+
 def test_imported_administrative_case_law_without_facts_date_is_not_excluded():
     from app.orchestrator import _permanent_source_temporal_metadata
 
