@@ -47,7 +47,8 @@ class MainActivity : Activity() {
             javaScriptCanOpenWindowsAutomatically = false
             setSupportMultipleWindows(false)
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            cacheMode = WebSettings.LOAD_DEFAULT
+            // Toujours récupérer la configuration OIDC la plus récente depuis Render.
+            cacheMode = WebSettings.LOAD_NO_CACHE
             safeBrowsingEnabled = true
         }
 
@@ -96,6 +97,8 @@ class MainActivity : Activity() {
             }
         }
 
+        // Évite qu'une ancienne configuration OIDC reste utilisée par la WebView.
+        webView.clearCache(true)
         setContentView(webView)
         if (savedInstanceState == null) {
             webView.loadUrl(APP_URL)
