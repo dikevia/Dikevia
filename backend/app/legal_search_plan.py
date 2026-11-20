@@ -101,8 +101,7 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
     # a direct lookup into an unrelated full-text search.
     folded = _fold(original)
     current_turn = original.splitlines()[0]
-    current_turn_folded = _fold(current_turn)
-    if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(current_turn_folded):
+    if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(current_turn):
         return original[:max_length]
 
     expansion = next(
@@ -177,7 +176,7 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     queries = [primary]
     original = str(question or "").strip()
     current_turn = original.splitlines()[0] if original else ""
-    if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(_fold(current_turn)):
+    if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(current_turn):
         return queries
     folded = _fold(original)
     for triggers, axes in _TOPIC_RESEARCH_AXES:
