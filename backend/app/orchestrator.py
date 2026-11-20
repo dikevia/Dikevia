@@ -522,7 +522,8 @@ class LegalOrchestrator:
                         "temporal_status": item.get("temporal_status"), "source_status": item.get("source_status"),
                         "content_kind": item.get("content_kind"), "excerpt": item.get("excerpt"),
                         "retrieval_scope": item.get("retrieval_scope"),
-                        "text": item.get("excerpt") or "", "official_url": item.get("official_url"),
+                        "text": item.get("excerpt") or "", "full_text": item.get("full_text") or "",
+                        "official_url": item.get("official_url"),
                         "official_source": item.get("official_source"),
                         "citation_integrity": item.get("citation_integrity"),
                     })
