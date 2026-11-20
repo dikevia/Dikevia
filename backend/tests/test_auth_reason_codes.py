@@ -3,7 +3,6 @@ import asyncio
 import logging
 import time
 from types import SimpleNamespace
-from unittest import mock
 
 import jwt
 import pytest
