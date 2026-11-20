@@ -557,16 +557,41 @@ class LegalOrchestrator:
                 if stored_search_failed:
                     permanent_issue = "La recherche dans le corpus juridique permanent a échoué pour au moins un axe ; les résultats disponibles sont partiels."
                 for item in stored:
+                    source_document_kind = item.get("document_kind")
+                    source_decision_date = item.get("signature_date")
+                    source_temporal_status = item.get("temporal_status")
+                    source_temporal_explanation = None
+                    if source_document_kind == "ADMIN_CASELAW":
+                        # Imported administrative decisions are searched in the
+                        # permanent corpus through today. Reclassify their date
+                        # against the facts period so later judgments remain
+                        # available but are explicitly marked as interpretative.
+                        source_temporal_status = decision_temporal_status(
+                            str(source_decision_date) if source_decision_date else None,
+                            facts_reference_date,
+                        )
+                        if source_temporal_status == "DECISION_POSTERIOR_TO_FACTS":
+                            source_temporal_explanation = (
+                                "Décision postérieure aux faits : elle peut éclairer l'interprétation du droit antérieur, "
+                                "mais ne prouve pas à elle seule la règle applicable à la date des faits."
+                            )
+                        elif source_temporal_status == "DECISION_DATE_UNKNOWN":
+                            source_temporal_explanation = (
+                                "Date de décision non vérifiée : ne pas lui attribuer de portée temporelle certaine."
+                            )
                     permanent_sources.append({
                         "source_type": item.get("source_type"), "source_id": item.get("source_id"),
                         "title": item.get("title"), "official_number": item.get("official_number"),
                         "case_number": item.get("official_number"),
-                        "document_kind": item.get("document_kind"), "jurisdiction": item.get("jurisdiction"),
+                        "document_kind": source_document_kind, "jurisdiction": item.get("jurisdiction"),
                         "raw_metadata": item.get("raw_metadata") or {},
                         "jurisprudential_publication_code": (item.get("raw_metadata") or {}).get("publication_code"),
-                        "signature_date": item.get("signature_date"), "publication_date": item.get("publication_date"),
+                        "signature_date": source_decision_date, "decision_date": source_decision_date,
+                        "publication_date": item.get("publication_date"),
                         "valid_from": item.get("valid_from"), "valid_to": item.get("valid_to"),
-                        "temporal_status": item.get("temporal_status"), "source_status": item.get("source_status"),
+                        "temporal_status": source_temporal_status,
+                        "temporal_explanation": source_temporal_explanation,
+                        "source_status": item.get("source_status"),
                         "content_kind": item.get("content_kind"), "excerpt": item.get("excerpt"),
                         "retrieval_scope": item.get("retrieval_scope"),
                         "text": item.get("excerpt") or "", "full_text": item.get("full_text") or "",
@@ -856,7 +881,7 @@ class LegalOrchestrator:
         if case_law_fulltext_issue:
             missing.insert(0, case_law_fulltext_issue)
         if any(item.get("temporal_status") == "DECISION_POSTERIOR_TO_FACTS"
-               for item in case_law_full_text_sources):
+               for item in [*case_law_full_text_sources, *permanent_sources]):
             missing.insert(
                 0,
                 "Une décision postérieure aux faits a été conservée car elle peut éclairer l'interprétation du droit antérieur ; sa date et sa portée temporelle doivent être distinguées de la règle applicable au jour des faits.",
