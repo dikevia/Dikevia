@@ -356,6 +356,45 @@ def _normalize_entailment_text(value):
     return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
 
 
+_ENTAILMENT_STOPWORDS = {
+    "article", "articles", "code", "general", "fonction", "publique",
+    "territoriale", "territorial", "agent", "agents", "doit", "doivent",
+    "peut", "peuvent", "etre", "avoir", "dans", "pour", "avec", "selon",
+    "une", "des", "les", "du", "de", "la", "le", "aux", "au", "sur",
+    "par", "sous", "qui", "que", "dont", "ainsi", "toute", "toutes",
+    "tous", "leur", "leurs", "son", "sa", "ses", "cette", "celui",
+    "celle", "ceux", "notamment", "relatif", "relative", "relatifs",
+    "relatives", "entre", "lorsque", "lorsqu",
+}
+_ENTAILMENT_NUMBER_RE = re.compile(
+    r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)\b",
+    re.IGNORECASE,
+)
+_ENTAILMENT_DATE_RE = re.compile(
+    r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b"
+)
+
+
+def _entailment_tokens(value):
+    decomposed = unicodedata.normalize("NFKD", str(value or "").casefold())
+    plain = "".join(char for char in decomposed if not unicodedata.combining(char))
+    tokens = set(re.findall(r"[a-z]{4,}", plain))
+    return tokens - _ENTAILMENT_STOPWORDS
+
+
+def _claim_facts_missing_from_quote(claim_text, quote):
+    quote_folded = _normalize_entailment_text(quote).casefold()
+    missing_numbers = [
+        item for item in _ENTAILMENT_NUMBER_RE.findall(claim_text)
+        if _normalize_entailment_text(item).casefold() not in quote_folded
+    ]
+    missing_dates = [
+        item for item in _ENTAILMENT_DATE_RE.findall(claim_text)
+        if _normalize_entailment_text(item).casefold() not in quote_folded
+    ]
+    return missing_numbers, missing_dates
+
+
 def validate_entailment_verdicts(payload, claims, sources):
     """Strictly validate a second-stage, source-bound entailment decision."""
     if not isinstance(payload, dict) or not isinstance(payload.get("verdicts"), list):
@@ -390,8 +429,22 @@ def validate_entailment_verdicts(payload, claims, sources):
             invalid.append(f"verdict_{index}:support_quote_missing")
             continue
         source_text = str(matched[0].get("text") or matched[0].get("full_text") or matched[0].get("excerpt") or "")
-        if _normalize_entailment_text(support_quote) not in _normalize_entailment_text(source_text):
+        normalized_quote = _normalize_entailment_text(support_quote)
+        if normalized_quote not in _normalize_entailment_text(source_text):
             invalid.append(f"verdict_{index}:support_quote_not_in_source")
+            continue
+        # Reject an exact quote from an unrelated part of the same document.
+        claim_tokens = _entailment_tokens(claim.get("text"))
+        quote_tokens = _entailment_tokens(normalized_quote)
+        overlap = len(claim_tokens & quote_tokens) / max(1, len(claim_tokens))
+        if len(claim_tokens) < 2 or overlap < 0.25:
+            invalid.append(f"verdict_{index}:support_quote_not_relevantly_aligned")
+            continue
+        missing_numbers, missing_dates = _claim_facts_missing_from_quote(
+            str(claim.get("text") or ""), normalized_quote
+        )
+        if missing_numbers or missing_dates:
+            invalid.append(f"verdict_{index}:support_quote_missing_claim_facts")
     return {"valid": not invalid, "invalid": invalid,
             "verification_scope": "SECOND_STAGE_CONSERVATIVE_MODEL_ENTAILMENT_WITH_EXACT_SOURCE_SPAN"}
 
