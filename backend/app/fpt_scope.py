@@ -293,4 +293,19 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         "title", "article", "official_number", "excerpt", "text", "full_text"
     ))
     source_topics = _matched_topic_families(source_text[:500_000])
-    return not source_topics or bool(question_topics & source_topics)
+    if not source_topics or question_topics & source_topics:
+        return True
+
+    # Some legal mechanisms are structurally connected even when a text is
+    # indexed under a neighboring family (e.g. IHTS within the territorial
+    # compensation/indemnity framework). Keep these narrowly defined bridges.
+    related_families = {
+        "WORKING_TIME": {"REMUNERATION"},
+        "REMUNERATION": {"WORKING_TIME", "SICK_LEAVE"},
+        "SICK_LEAVE": {"REMUNERATION"},
+    }
+    return any(
+        source_family in related_families.get(question_family, set())
+        for question_family in question_topics
+        for source_family in source_topics
+    )
