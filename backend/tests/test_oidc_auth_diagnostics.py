@@ -20,12 +20,12 @@ def test_oidc_validation_logs_exception_type_without_token_or_claims(monkeypatch
     monkeypatch.setattr(security, "jwks_client", lambda _url: BrokenJWKSClient())
 
     bearer = "test-bearer-token-must-never-appear-in-logs"
-    with caplog.at_level(logging.WARNING, logger="app.security"):
+    with caplog.at_level(logging.WARNING, logger="dikevia.auth"):
         with pytest.raises(HTTPException) as exc:
             security.verify_access_token(bearer)
 
     assert exc.value.status_code == 401
     assert exc.value.detail == "Jeton invalide ou expiré."
-    assert "InvalidAudienceError" in caplog.text
+    assert "reason=aud_mismatch" in caplog.text
     assert "sensitive provider detail" not in caplog.text
     assert bearer not in caplog.text
