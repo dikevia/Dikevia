@@ -206,7 +206,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
       ), ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
-          d.source_status,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,c.anchor,c.content,c.content_kind,
+          d.source_status,d.raw_metadata,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,c.anchor,c.content,c.content_kind,
           (2.0 * ts_rank_cd(c.search_vector,st.original_query)
              + ts_rank_cd(c.search_vector,st.expansion_query)) rank,
           row_number() OVER(PARTITION BY v.id ORDER BY
