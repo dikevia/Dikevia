@@ -26,8 +26,23 @@
     const issuer = cfg.issuer.replace(/\/$/,'');
     if (!issuer.startsWith('https://') && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(issuer))
       throw new Error('L’émetteur OIDC doit utiliser HTTPS.');
-    const response = await fetch(issuer+'/.well-known/openid-configuration',{cache:'no-store'});
-    if (!response.ok) throw new Error('Découverte OIDC indisponible.');
+    // Évite de laisser le bouton de connexion bloqué si Keycloak/Render
+    // met trop longtemps à répondre (démarrage à froid ou réseau indisponible).
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    let response;
+    try {
+      response = await fetch(issuer+'/.well-known/openid-configuration',{
+        cache:'no-store', signal:controller.signal
+      });
+    } catch (error) {
+      if (error && error.name === 'AbortError')
+        throw new Error('Le serveur de connexion met trop de temps à répondre. Réessayez dans quelques instants.');
+      throw new Error('Impossible de joindre le serveur de connexion. Vérifiez votre réseau puis réessayez.');
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    if (!response.ok) throw new Error('Le serveur de connexion a répondu avec une erreur (HTTP '+response.status+'). Réessayez dans quelques instants.');
     const data = await response.json();
     if (data.issuer !== issuer || !data.authorization_endpoint || !data.token_endpoint)
       throw new Error('Métadonnées OIDC incohérentes ou incomplètes.');
