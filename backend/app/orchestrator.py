@@ -176,6 +176,7 @@ def _compare_official_period_versions(
 class LegalOrchestrator:
     async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None) -> AskResponse:
         request_id = str(uuid4())
+        needs_case_date = question_needs_case_date(request.question)
         try:
             legacy_date = parse_facts_date(request.facts_date)
             period_start = parse_facts_date(request.facts_start_date) or legacy_date
@@ -628,7 +629,7 @@ class LegalOrchestrator:
                 "Recherche de jurisprudence pertinente et vérification des sources locales applicables."]
             if parsed_date is not None:
                 missing.insert(0, f"Date des faits déclarée : {effective_date.isoformat()}.")
-            else:
+            elif needs_case_date:
                 missing.insert(0, "Date des faits / période non précisée : une analyse contextualisée ne peut pas déterminer la règle applicable.")
                 missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
             if permanent_issue:
@@ -668,14 +669,14 @@ class LegalOrchestrator:
                 answer=(
                     "La date ou la période des faits n'est pas renseignée. La recherche au jour présent sert uniquement au repérage documentaire ; "
                     "les textes officiels récupérés ne permettent pas de répondre avec certitude et aucune conclusion juridique contextualisée n'est formulée."
-                    if parsed_date is None else
+                    if parsed_date is None and needs_case_date else
                     "Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. Aucune conclusion juridique n'est formulée."
                 ),
                 sources=sources,
                 missing_information=missing,
                 clarification_question=(
                     "À quelle date les faits se sont-ils produits, ou sur quelle période s'étendent-ils ?"
-                    if parsed_date is None else None
+                    if parsed_date is None and needs_case_date else None
                 ),
             )
 
@@ -722,7 +723,7 @@ class LegalOrchestrator:
             missing.insert(0, "La recherche CETAT a été exécutée sans retrouver de décision pertinente pour cette requête.")
         if temporal_context["period_start"] or temporal_context["period_end"]:
             missing.insert(0, f"Période déclarée : du {temporal_context['period_start'] or 'début non précisé'} au {temporal_context['period_end'] or ('aujourd’hui' if temporal_context['ongoing'] else 'fin non précisée')}.")
-        elif not temporal_context["ongoing"]:
+        elif not temporal_context["ongoing"] and needs_case_date:
             missing.insert(0, f"Date des faits / période de la situation non précisée : Légifrance est interrogé au {effective_date.isoformat()} à titre de repérage documentaire uniquement.")
             missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
         if temporal_context["ongoing"]:
@@ -960,7 +961,6 @@ class LegalOrchestrator:
                 "La réponse IA a été bloquée : au moins une référence juridique n'est pas retrouvée à l'identique dans les sources injectées, ou une citation explicite manque.",
             )
 
-        needs_case_date = question_needs_case_date(request.question)
         if ai_answer and parsed_date is None and needs_case_date:
             if is_ihts_question(request.question):
                 missing.extend([
