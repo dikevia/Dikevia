@@ -44,6 +44,11 @@ def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
 
+def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
+    """Hide sources explicitly classified as unrelated to the user's legal topic."""
+    return [source for source in sources if source.get("ihts_relevant") is not False]
+
+
 def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
     """Give each dated API result a unique citation key while retaining its official ID."""
     tagged = []
@@ -551,7 +556,6 @@ class LegalOrchestrator:
         # Classification is computed before the model call so the prompt receives
         # the legal-source family and the limitations attached to each document.
         sources = assess_source_set(sources)["sources"]
-
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
             s for s in sources
@@ -836,24 +840,23 @@ class LegalOrchestrator:
                             else:
                                 claims = claim_validation["claims"]
                                 rendered_claims = [
-                                    "Éléments juridiques étayés par les sources vérifiées :",
+                                    "Voici ce que les textes permettent de comprendre pour votre situation :",
                                     "",
                                 ]
                                 unique_sources = {}
-                                for index, claim in enumerate(claims, start=1):
+                                for claim in claims:
                                     source_id = claim["source_id"]
                                     source_title = " ".join(str(claim["source_title"]).split())[:300]
                                     unique_sources[source_id] = source_title
-                                    rendered_claims.append(
-                                        f"{index}. {claim['text']} [source:{source_id}]"
-                                    )
-                                    rendered_claims.append(
-                                        f"   Passage exact contrôlé : «{claim['quote']}» [source:{source_id}]"
-                                    )
+                                    # Lead with the plain-language explanation. The exact
+                                    # supporting quote remains available in the source panel,
+                                    # rather than overwhelming the agent's conversational answer.
+                                    rendered_claims.append(f"{claim['text']} [source:{source_id}]")
                                     rendered_claims.append("")
-                                rendered_claims.append("Références documentaires :")
+                                rendered_claims.append("Textes et références à consulter :")
                                 for source_id, source_title in unique_sources.items():
                                     rendered_claims.append(f"• {source_title} [source:{source_id}]")
+                                rendered_claims.extend(["", "Pour apprécier complètement votre situation, il faut encore confronter ces règles aux faits précis et aux éventuels actes locaux applicables."])
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
                                     if ai_usage is not None:
@@ -906,6 +909,20 @@ class LegalOrchestrator:
             )
 
         if ai_answer:
+            # Append practical guidance only after the legal-claim citation validator.
+            # These are clearly framed as next steps, not legal claims requiring a
+            # documentary quotation; they must not cause supported claims to be rejected.
+            if any(source.get("ihts_relevant") is True for source in ai_sources):
+                ai_answer += (
+                    "\n\nDémarches utiles :"
+                    "\n• Conservez le relevé des heures réellement effectuées et les éléments montrant qu'elles ont été demandées ou validées."
+                    "\n• Demandez à votre service RH quel dispositif de compensation s'applique (indemnisation ou repos) et quelle délibération locale le prévoit."
+                    "\n• Si la réponse ne correspond pas aux textes ou aux pièces de votre situation, faites examiner le dossier par un référent juridique ou un représentant syndical."
+                )
+            else:
+                ai_answer += (
+                    "\n\nPour aller plus loin, rassemblez les documents utiles à votre situation et demandez à votre service RH ou à votre référent compétent de préciser la règle appliquée. Vous pouvez me donner les éléments manquants et je poursuivrai l'analyse avec vous."
+                )
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
                 "Les extraits du snapshot PDF ne certifient pas l'authenticité officielle. Les versions du corpus dont les dates d'effet sont incomplètes ne sont pas utilisées pour les conclusions IA. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
         else:
@@ -919,6 +936,11 @@ class LegalOrchestrator:
                 lines.append(f"\n{source.get('title', 'Source juridique')} ({location}) :\n{excerpt}")
             lines.append("\nAucune conclusion définitive n'est formulée. Vérifier les versions, les textes d'application, la jurisprudence et les règles locales avant toute utilisation syndicale ou administrative.")
             answer = "\n".join(lines)
+
+        # Apply display-only filtering after legal analysis and validation. Keeping
+        # every retrieved source available until this point prevents unrelated-topic
+        # heuristics from changing the evidence set or verification status.
+        sources = filter_irrelevant_sources_for_display(sources)
 
         # Keep full texts server-side for checks/analysis, but return only bounded
         # excerpts to the browser and conversation history.

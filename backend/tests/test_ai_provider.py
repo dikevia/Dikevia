@@ -717,3 +717,11 @@ def test_system_prompt_treats_fpt_reference_sources_as_non_applicable_without_lo
     assert "décret 91-875" in SYSTEM_PROMPT
     assert "délibération locale" in SYSTEM_PROMPT
     assert "ne conclus pas au droit individuel" in SYSTEM_PROMPT
+
+
+def test_system_prompt_requires_conversational_legal_explanations_and_practical_conclusions():
+    assert "Tu t'adresses directement à l'agent" in SYSTEM_PROMPT
+    assert "explique immédiatement, en langage courant" in SYSTEM_PROMPT
+    assert "prends une position juridique explicite et nuancée" in SYSTEM_PROMPT
+    assert "Termine par des démarches concrètes" in SYSTEM_PROMPT
+    assert "ne présente pas un conseil pratique comme une obligation légale" in SYSTEM_PROMPT
