@@ -214,6 +214,26 @@ def test_claim_evidence_accepts_later_administrative_case_law_as_interpretative_
     assert result["valid"] is True
 
 
+def test_claim_evidence_accepts_verified_historical_local_document():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source(
+        source_type="LOCAL_DOCUMENT",
+        source_id="LOCAL-DOC:123_V20240101",
+        validation_status="VERIFIED_HISTORICAL",
+        temporal_status="VERIFIED_APPLICABLE",
+        official_source=False,
+    )
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is True
+
+
 def test_claim_evidence_rejects_quote_not_present_in_source():
     from app.legal_assurance import validate_claim_evidence
 
