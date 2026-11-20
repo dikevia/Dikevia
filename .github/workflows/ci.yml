@@ -1,15 +1,17 @@
 name: CI
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready]
+    # Pull-request head branches are checked by pull_request; avoid duplicate CI runs.
+    branches: [main, develop, integration/beta-commercial-security]
   pull_request:
-    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, develop, integration/beta-commercial-security, feature/dikevia-v3.38.5-cgfp-chat, security/chat-explicit-ownership, security/chat-local-documents-opt-in]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   test-and-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:16-alpine
@@ -74,14 +76,32 @@ jobs:
           chmod +x "$RUNNER_TEMP/pg-client/psql"
           echo "$RUNNER_TEMP/pg-client" >> "$GITHUB_PATH"
       - name: Install dependencies and quality tools
+        timeout-minutes: 15
+        env:
+          PIP_DEFAULT_TIMEOUT: 30
+          PIP_RETRIES: 2
         run: |
-          python -m pip install --upgrade pip
-          pip install -r backend/requirements-dev.txt
-          python -m pip check
+          timeout --signal=TERM --kill-after=30s 3m python -m pip install --upgrade pip
+          timeout --signal=TERM --kill-after=30s 10m pip install -r backend/requirements-dev.txt
+          timeout --signal=TERM --kill-after=30s 1m python -m pip check
       - name: Compile Python and audit environment template
         run: |
           python -m compileall -q backend/app scripts
           python scripts/audit_env_example.py
+      - name: Validate browser JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("frontend/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script\b[^>]*>(.*?)</script\s*>", html, flags=re.I | re.S)
+          inline_scripts = [script for script in scripts if script.strip()]
+          if not inline_scripts:
+              raise SystemExit("No inline browser JavaScript found.")
+          Path("/tmp/dikevia-frontend.js").write_text("\n;\n".join(inline_scripts), encoding="utf-8")
+          print(f"Extracted {len(inline_scripts)} inline script block(s).")
+          PY
+          node --check /tmp/dikevia-frontend.js
       - name: Audit visible application branding
         run: |
           python - <<'PY'
@@ -131,6 +151,9 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f database/migrations/017_chat_rate_limits.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/018_ai_usage_metering.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/019_temporary_beta_user_cap.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/020_ai_usage_outcome_compatibility.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/021_credit_wallet_foundation.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/022_platform_founder_entitlements.sql
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend

@@ -91,3 +91,75 @@ def test_founder_access_remains_zero_cost_private_and_outside_checkout():
     assert founder["max_users"] == 10
     assert "annual_amount" not in founder
     assert "FOUNDING_FREE" not in {plan["code"] for plan in public_plans()}
+
+
+
+
+def test_stripe_billing_is_disabled_by_default_even_when_secrets_exist():
+    from app.config import Settings
+
+    assert Settings(_env_file=None).stripe_billing_enabled is False
+    configured = Settings(_env_file=None, stripe_secret_key="sk_test_example",
+                          stripe_webhook_secret="whsec_example")
+    assert configured.stripe_billing_enabled is False
+
+
+
+def test_stripe_checkout_and_portal_routes_are_blocked_before_network_calls(monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+    import pytest
+    from fastapi import HTTPException
+    from app.main import app, settings
+
+    monkeypatch.setattr(settings, "private_instance_mode", False)
+    monkeypatch.setattr(settings, "stripe_billing_enabled", False)
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_present")
+    ctx = SimpleNamespace(organization_id="00000000-0000-0000-0000-000000000001",
+                          user_id="00000000-0000-0000-0000-000000000002")
+
+    checkout = next(route.endpoint for route in app.routes
+                    if getattr(route, "path", None) == "/api/v1/billing/checkout")
+    portal = next(route.endpoint for route in app.routes
+                  if getattr(route, "path", None) == "/api/v1/billing/portal")
+
+    with pytest.raises(HTTPException) as checkout_error:
+        asyncio.run(checkout({"plan_code": "ESSENTIEL"}, ctx))
+    with pytest.raises(HTTPException) as portal_error:
+        asyncio.run(portal(ctx))
+
+    assert checkout_error.value.status_code == 404
+    assert portal_error.value.status_code == 404
+
+
+def test_stripe_webhook_route_is_blocked_before_body_or_database_access(monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+    import pytest
+    from fastapi import HTTPException
+    from app.main import app, settings
+
+    class RequestMustNotBeRead:
+        headers = {}
+        async def body(self):
+            raise AssertionError("Le webhook désactivé ne doit même pas lire le corps.")
+
+    monkeypatch.setattr(settings, "private_instance_mode", False)
+    monkeypatch.setattr(settings, "stripe_billing_enabled", False)
+    webhook = next(route.endpoint for route in app.routes
+                   if getattr(route, "path", None) == "/api/v1/billing/stripe/webhook")
+
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(webhook(RequestMustNotBeRead()))
+
+    assert error.value.status_code == 404
+
+
+
+def test_stripe_billing_opt_in_requires_both_secrets():
+    import pytest
+    from app.config import Settings, validate_runtime_configuration
+
+    config = Settings(_env_file=None, stripe_billing_enabled=True)
+    with pytest.raises(RuntimeError, match="STRIPE_BILLING_ENABLED"):
+        validate_runtime_configuration(config)

@@ -53,6 +53,38 @@
         "address",
         "phone"
       ]
+    },
+    {
+      "clientId": "dikevia-android",
+      "name": "Dikévia — application Android native",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": [
+        "fr.dikevia.commercial:/oauth2redirect"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "post.logout.redirect.uris": "fr.dikevia.commercial:/oauth2redirect"
+      },
+      "defaultClientScopes": [
+        "acr",
+        "profile",
+        "email",
+        "cfdt-juris-api-audience"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone"
+      ]
     }
   ],
   "clientScopes": [

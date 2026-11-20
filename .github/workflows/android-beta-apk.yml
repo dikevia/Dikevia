@@ -2,8 +2,15 @@ name: Android beta APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - integration/beta-commercial-security
+    paths:
+      - "android/**"
+      - ".github/workflows/android-beta-apk.yml"
   push:
     branches:
+      - integration/beta-commercial-security
       - feature/dikevia-v3.38.5-cgfp-chat
     paths:
       - "android/**"

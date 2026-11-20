@@ -153,7 +153,7 @@ def _compare_official_period_versions(
 
 
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False) -> AskResponse:
         request_id = str(uuid4())
         try:
             legacy_date = parse_facts_date(request.facts_date)
@@ -164,6 +164,8 @@ class LegalOrchestrator:
                 period_end = legacy_date
             if request.situation_ongoing and period_end:
                 raise ValueError("Une situation déclarée toujours en cours ne peut pas avoir de date de fin.")
+            if request.situation_ongoing and not period_start:
+                raise ValueError("Indiquez la date de début de la situation, même si elle est toujours en cours.")
             if request.facts_start_date and not request.situation_ongoing and not request.facts_end_date:
                 raise ValueError("Indiquez la date de fin de la situation ou cochez « Situation toujours en cours ».")
             if request.facts_end_date and not request.facts_start_date:
@@ -361,7 +363,7 @@ class LegalOrchestrator:
                         )
         local_sources: list[dict] = []
         local_issue = None
-        if request.employer != "NATIONAL":
+        if request.employer != "NATIONAL" or request.collectivity_id is not None:
             if conn is None:
                 local_issue = "Les documents propres à l'employeur ne sont pas accessibles dans ce contexte."
             else:
@@ -369,6 +371,7 @@ class LegalOrchestrator:
                     local_sources = await search_local_documents(
                         conn, organization_id, request.employer,
                         contextual_search_query[:500], effective_date, limit=5,
+                        collectivity_id=str(request.collectivity_id) if request.collectivity_id else None,
                     )
                     if parsed_date is None:
                         for local_source in local_sources:
@@ -595,7 +598,7 @@ class LegalOrchestrator:
                 missing.insert(0, "Aucun document local correspondant n'a été trouvé pour cet employeur ; vérifier le code de collectivité et les pièces déposées.")
             if any(
                 s.get("source_type") == "LOCAL_DOCUMENT"
-                and (s.get("validation_status") != "VERIFIED_APPLICABLE"
+                and (s.get("validation_status") not in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}
                      or s.get("temporal_status") != "VERIFIED_APPLICABLE")
                 for s in local_sources
             ):
@@ -752,7 +755,7 @@ class LegalOrchestrator:
                             s.get("analysis_eligible") is True
                             or (
                                 s.get("source_type") == "LOCAL_DOCUMENT"
-                                and s.get("validation_status") == "VERIFIED_APPLICABLE"
+                                and s.get("validation_status") in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}
                             )
                         )
                         and s.get("ihts_relevant") is not False
@@ -787,6 +790,7 @@ class LegalOrchestrator:
                             facts_period=temporal_context,
                             sources=ai_sources,
                             conversation_history=history,
+                            allow_local_documents=allow_local_documents,
                         )
                         if isinstance(ai_result, AIAnalysisResult):
                             raw_ai_content = ai_result.content
@@ -824,6 +828,7 @@ class LegalOrchestrator:
                         else:
                             entailment_validation = await verify_claim_entailment(
                                 claims=claim_validation["claims"], sources=ai_sources,
+                                allow_local_documents=allow_local_documents,
                             )
                             if not entailment_validation.get("valid"):
                                 ai_answer = None

@@ -16,6 +16,7 @@ import pytest
 
 ADMIN_URL = os.getenv("TEST_DATABASE_ADMIN_URL")
 RUNTIME_URL = os.getenv("TEST_DATABASE_URL")
+PLATFORM_ADMIN_URL = os.getenv("TEST_PLATFORM_ADMIN_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not (ADMIN_URL and RUNTIME_URL), reason="PostgreSQL test URLs not configured")
 
 
@@ -28,8 +29,10 @@ async def _run_isolation_scenario():
     doc_a, doc_b = uuid.uuid4(), uuid.uuid4()
     token_a, token_b = "hash-a-" + uuid.uuid4().hex, "hash-b-" + uuid.uuid4().hex
     usage_request_id = uuid.uuid4()
+    usage_long_outcome_id = uuid.uuid4()
     admin = await asyncpg.connect(ADMIN_URL)
     runtime = await asyncpg.connect(RUNTIME_URL)
+    platform = await asyncpg.connect(PLATFORM_ADMIN_URL) if PLATFORM_ADMIN_URL else admin
     try:
         runtime_role = await runtime.fetchrow(
             "SELECT r.rolsuper, r.rolbypassrls FROM pg_roles r WHERE r.rolname=current_user"
@@ -47,6 +50,7 @@ async def _run_isolation_scenario():
                 org_a, "rls-a-"+org_a.hex[:10], "Org A", "Org A", org_b, "rls-b-"+org_b.hex[:10], "Org B", "Org B")
             await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE'),($4,'https://issuer.test',$5,$6,'ACTIVE')",
                 user_a, "sub-a-"+user_a.hex, "a@example.test", user_b, "sub-b-"+user_b.hex, "b@example.test")
+            await admin.execute("INSERT INTO platform_admins(user_id) VALUES($1)", user_a)
             await admin.execute("INSERT INTO users(id,oidc_issuer,oidc_subject,email,status) VALUES($1,'https://issuer.test',$2,$3,'ACTIVE')", user_a2, "sub-a2-"+user_a2.hex, "a2@example.test")
             await admin.execute("INSERT INTO memberships(organization_id,user_id,role,status) VALUES($1,$2,'ORG_ADMIN','ACTIVE'),($3,$4,'ORG_ADMIN','ACTIVE'),($1,$5,'MEMBER','ACTIVE')", org_a,user_a,org_b,user_b,user_a2)
             conversation_a, conversation_a2 = uuid.uuid4(), uuid.uuid4()
@@ -64,21 +68,84 @@ async def _run_isolation_scenario():
                 VALUES($1,$2,'INV-A','paid','eur',1500,1500),($3,$4,'INV-B','paid','eur',8000,8000)""",
                 "in_test_"+uuid.uuid4().hex, org_a, "in_test_"+uuid.uuid4().hex, org_b)
 
+        # Use the dedicated platform DB role only after the seed transaction commits.
+        founder_user_id = await platform.fetchval(
+            "SELECT platform_admin_grant_founder_entitlement($1,$2,$3)",
+            user_a, user_a, "Permanent founder entitlement for verified test identity",
+        )
+        assert founder_user_id == user_a
+        founder_rows = await platform.fetch(
+            "SELECT user_id,note FROM platform_admin_list_founder_entitlements($1)", user_a
+        )
+        assert len(founder_rows) == 1 and founder_rows[0]["user_id"] == user_a
+        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+            await platform.fetch("SELECT user_id FROM platform_founder_entitlements")
+
         # Tenant A sees only its own documents and cannot update tenant B's row.
         async with runtime.transaction():
             await runtime.execute("SELECT set_config('app.current_org_id',$1,true)", str(org_a))
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
+            await runtime.execute("SELECT set_config('app.oidc_issuer',$1,true)", "https://issuer.test")
+            await runtime.execute("SELECT set_config('app.oidc_subject',$1,true)", "sub-a-"+user_a.hex)
+            assert await runtime.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements WHERE user_id=$1)", user_a
+            ) is True
             from app.rate_limit import consume_chat_request
             first = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
             second = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
             third = await consume_chat_request(runtime, str(org_a), str(user_a), 2)
             assert first.allowed and second.allowed and not third.allowed
             assert third.request_count == 3
+            wallet_key = "rls-wallet-" + uuid.uuid4().hex
+            first_credit = await platform.fetchrow(
+                "SELECT * FROM wallet_admin_grant_entry($1,$2,100,'MONTHLY_ALLOCATION',$3,'CI allocation')",
+                user_a, org_a, wallet_key,
+            )
+            assert first_credit["applied"] is True and first_credit["current_balance"] == 100
+            replay_credit = await platform.fetchrow(
+                "SELECT * FROM wallet_admin_grant_entry($1,$2,100,'MONTHLY_ALLOCATION',$3,'CI allocation')",
+                user_a, org_a, wallet_key,
+            )
+            assert replay_credit["applied"] is False and replay_credit["ledger_entry_id"] == first_credit["ledger_entry_id"]
+            with pytest.raises(asyncpg.InvalidParameterValueError):
+                await platform.fetchrow(
+                    "SELECT * FROM wallet_admin_grant_entry($1,$2,99,'MONTHLY_ALLOCATION',$3,'Changed payload')",
+                    user_a, org_a, wallet_key,
+                )
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with runtime.transaction():
+                    await runtime.fetchrow(
+                        "SELECT * FROM wallet_admin_grant_entry($1,$2,50,'MONTHLY_ALLOCATION',$3,'forged grant')",
+                        user_a, org_a, "rls-forged-" + uuid.uuid4().hex,
+                    )
+            with pytest.raises(asyncpg.InvalidParameterValueError):
+                async with runtime.transaction():
+                    await runtime.fetchrow(
+                        "SELECT * FROM wallet_apply_entry($1,50,'USAGE_DEBIT',$2,'positive debit forgery')",
+                        org_a, "rls-positive-" + uuid.uuid4().hex,
+                    )
+            debit_credit = await runtime.fetchrow(
+                "SELECT * FROM wallet_apply_entry($1,-30,'USAGE_DEBIT',$2,'CI usage')",
+                org_a, "rls-debit-" + uuid.uuid4().hex,
+            )
+            assert debit_credit["applied"] is True and debit_credit["current_balance"] == 70
+            rejected_debit = await runtime.fetchrow(
+                "SELECT * FROM wallet_apply_entry($1,-100,'USAGE_DEBIT',$2,'Insufficient funds test')",
+                org_a, "rls-reject-" + uuid.uuid4().hex,
+            )
+            assert rejected_debit["applied"] is False and rejected_debit["current_balance"] == 70
+            assert await runtime.fetchval("SELECT balance FROM credit_accounts WHERE organization_id=$1", org_a) == 70
+            assert await runtime.fetchval("SELECT count(*) FROM credit_ledger_entries") == 2
             await runtime.execute("""INSERT INTO ai_usage_events(
                 request_id,organization_id,user_id,provider,model,prompt_tokens,
                 completion_tokens,total_tokens,outcome)
                 VALUES($1,$2,$3,'openai_compatible','test-model',100,25,125,'ANSWERED')""",
                 usage_request_id, org_a, user_a)
+            await runtime.execute("""INSERT INTO ai_usage_events(
+                request_id,organization_id,user_id,provider,model,outcome)
+                VALUES($1,$2,$3,'openai_compatible','test-model',
+                  'ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK')""",
+                usage_long_outcome_id, org_a, user_a)
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 async with runtime.transaction():
                     await runtime.execute("""INSERT INTO ai_usage_events(
@@ -107,6 +174,11 @@ async def _run_isolation_scenario():
                 async with runtime.transaction():
                     await runtime.execute("INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content) VALUES($1,$2,$3,'user','tentative de falsification')", org_a,conversation_a2,user_a)
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a2))
+            await runtime.execute("SELECT set_config('app.oidc_subject',$1,true)", "sub-a2-"+user_a2.hex)
+            assert await runtime.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements WHERE user_id=$1)", user_a2
+            ) is False
+            assert await runtime.fetchval("SELECT count(*) FROM platform_founder_entitlements") == 0
             second_user_conversations = await runtime.fetch("SELECT id FROM chat_conversations")
             assert {r["id"] for r in second_user_conversations} == {conversation_a2}
             second_user_dossiers = await runtime.fetch("SELECT content->>'title' AS title FROM legal_dossiers")
@@ -116,6 +188,7 @@ async def _run_isolation_scenario():
             assert await runtime.fetchval("SELECT count(*) FROM chat_messages WHERE conversation_id=$1", conversation_a) == 0
             assert await runtime.fetchval("SELECT count(*) FROM legal_dossiers WHERE conversation_id=$1", conversation_a) == 0
             await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(user_a))
+            await runtime.execute("SELECT set_config('app.oidc_subject',$1,true)", "sub-a-"+user_a.hex)
             rows = await runtime.fetch("SELECT id,title FROM documents ORDER BY title")
             assert {r['id'] for r in rows} == {doc_a}
             hidden = await runtime.fetchval("SELECT count(*) FROM documents WHERE id=$1", doc_b)
@@ -195,18 +268,29 @@ async def _run_isolation_scenario():
             users = await runtime.fetch("SELECT id FROM users")
             assert {r['id'] for r in users} == {user_a}
             admins = await runtime.fetch("SELECT user_id FROM platform_admins")
-            assert admins == []
+            assert {r["user_id"] for r in admins} == {user_a}
 
         # The invitation lookup exception is bound to one exact hash only.
         async with runtime.transaction():
             await runtime.execute("SELECT set_config('app.invitation_token_hash',$1,true)", token_a)
             invitations = await runtime.fetch("SELECT token_hash FROM invitations")
             assert {r['token_hash'] for r in invitations} == {token_a}
+
+        assert await platform.fetchval(
+            "SELECT platform_admin_revoke_founder_entitlement($1,$2)", user_a, user_a
+        ) is True
+        assert await platform.fetchval(
+            "SELECT platform_admin_revoke_founder_entitlement($1,$2)", user_a, user_a
+        ) is False
     finally:
         await runtime.close()
+        if platform is not admin:
+            await platform.close()
         # Admin URL should be a disposable test DB owner/superuser so it can
         # remove fixture rows even when FORCE ROW LEVEL SECURITY is enabled.
         async with admin.transaction():
+            await admin.execute("DELETE FROM platform_audit_events WHERE actor_user_id=$1", user_a)
+            await admin.execute("DELETE FROM platform_admins WHERE user_id=$1", user_a)
             await admin.execute("DELETE FROM organizations WHERE id IN ($1,$2)", org_a, org_b)
             await admin.execute("DELETE FROM users WHERE id IN ($1,$2,$3)", user_a, user_b, user_a2)
         await admin.close()

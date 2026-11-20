@@ -295,7 +295,7 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         if temporal_status not in eligible_statuses:
             continue
         if source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
-            if source.get("validation_status") != "VERIFIED_APPLICABLE":
+            if source.get("validation_status") not in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}:
                 continue
         elif source_type not in {
             "LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT",

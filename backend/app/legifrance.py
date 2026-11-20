@@ -441,6 +441,15 @@ class LegifranceConnector:
             publication = self._iso_date(nested_value(record, ("datePublication", "datePubli")))
             valid_from = self._iso_date(nested_value(record, ("dateDebut", "dateDebutVersion", "dateEffet")))
             valid_to = self._iso_date(nested_value(record, ("dateFin", "dateFinVersion")))
+            if ((valid_from is not None and effective_date < valid_from)
+                    or (valid_to is not None and effective_date > valid_to)):
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_LODA_REJECTED_TEMPORAL id=%s requested_date=%s valid_from=%s valid_to=%s",
+                    identifier, effective_date.isoformat(),
+                    valid_from.isoformat() if valid_from else None,
+                    valid_to.isoformat() if valid_to else None,
+                )
+                continue
             kind_raw = (title + " " + (number or "")).lower()
             kind = "DECREE" if "décret" in kind_raw or "decret" in kind_raw else (
                 "ORDER" if "arrêté" in kind_raw or "arrete" in kind_raw else (
@@ -558,6 +567,15 @@ class LegifranceConnector:
             valid_to = self._iso_date(self._first_value(
                 article_metadata, ("dateFin", "dateFinVersion", "dateFinApplication")
             ))
+            if ((valid_from is not None and effective_date < valid_from)
+                    or (valid_to is not None and effective_date > valid_to)):
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_REJECTED_TEMPORAL id=%s requested_date=%s valid_from=%s valid_to=%s",
+                    article_id, effective_date.isoformat(),
+                    valid_from.isoformat() if valid_from else None,
+                    valid_to.isoformat() if valid_to else None,
+                )
+                continue
             articles.append({
                 "source_type": "LEGIFRANCE_API", "source_id": article_id, "article": article_label,
                 "article_id": article_id, "source_version_id": article_id,

@@ -79,9 +79,9 @@ def test_dossier_status_controls_reflect_privileged_roles():
     assert "Validation et clôture réservées aux responsables habilités." in html
 
 
-def test_pilot_chat_discloses_gemini_processing_and_requires_anonymized_cases():
+def test_pilot_chat_discloses_configured_ai_processing_and_requires_anonymized_cases():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "Google Gemini" in html
+    assert "fournisseur IA configuré" in html
     assert "situations fictives ou anonymisées" in html
     assert "donnée médicale" in html
     assert "syndicale nominative" in html
@@ -109,14 +109,52 @@ def test_commercial_workspace_has_polished_responsive_tables_and_forms():
     assert "@media(hover:none)" in html
 
 
-def test_billing_screen_uses_validated_commercial_reference_prices():
+def test_billing_screen_uses_validated_four_tier_commercial_reference_prices():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "15 €" in html and "HT / mois" in html
-    assert "170 €" in html and "HT / an" in html
-    assert "790 €" in html and "5 accès" in html
-    assert "19 € HT / mois" in html
-    assert "9 à 15 € HT / mois / section" in html
-    assert "20 questions par accès et par jour" in html
-    assert "100 questions par section et par jour" in html
-    assert "souscription en ligne sera activée après alignement" in html
+    assert "14,90 €" in html and "149 € TTC / an" in html
+    assert "29 €" in html and "290 € TTC / an" in html
+    assert "119 €" in html and "1 190 € TTC / an" in html
+    assert "299 €" in html and "2 990 € TTC / an" in html
+    assert "125 crédits par mois" in html
+    assert "248 crédits par mois" in html
+    assert "1 000 crédits par mois" in html
+    assert "2 450 crédits par mois" in html
+    assert "Recharge · 200 crédits" in html and "29 € TTC" in html
+    assert "Recharge · 600 crédits" in html and "79 € TTC" in html
+    assert "Les crédits mensuels et les recharges sont affichés à titre informatif" in html
+    assert "les paiements restent désactivés" in html
+    assert 'id="openBillingPortal" disabled' in html
     assert 'data-checkout="SYNDICAT_10"' not in html
+
+
+def test_legal_research_workspace_exposes_temporal_national_and_case_law_search():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'data-view="research"' in html
+    assert 'id="view-research"' in html
+    assert 'id="legalSearchType"' in html
+    assert "/api/v1/legal/knowledge/search" in html
+    assert "/api/v1/legal/legifrance/search" in html
+    assert "/api/v1/legal/jurisprudence/administrative/search" in html
+    assert "Consulter le texte intégral contrôlé" in html
+    assert "Cela ne prouve pas l’absence de règle juridique." in html
+
+
+def test_chat_can_target_any_collectivity_in_the_active_organization():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'id="askCollectivity"' in html
+    assert "$('#askCollectivity').innerHTML" in html
+    assert "collectivity_id:collectivityId" in html
+    assert "applyPermissions();await loadCollectivities();await loadOverview();" in html
+
+
+def test_workspace_navigation_uses_all_matching_views_and_navigation_items():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "function setView(name){$$('.view').forEach" in html
+    assert "$$('.nav').forEach" in html
+    assert "function setView(name){$('.view').forEach" not in html
+    assert "function setView(name){$('.view').forEach(v=>v.classList.toggle('hidden',v.id!=='view-'+name));$('.nav').forEach" not in html
+
+
+def test_billing_portal_stays_disabled_even_for_organization_admins():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "$('#openBillingPortal').disabled=true;" in html
