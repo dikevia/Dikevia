@@ -16,7 +16,7 @@ def _fold(value: str) -> str:
 
 
 _TOPIC_MARKERS = (
-    ("UNION_RIGHTS", ("droit syndical", "syndicat", "representant du personnel",
+    ("UNION_RIGHTS", ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel", "representants du personnel",
                       "decharge d activite", "autorisation speciale d absence syndicale",
                       "local syndical", "comite social territorial", "cst", "formation specialisee")),
     ("DISCIPLINE", ("sanction disciplinaire", "procedure disciplinaire", "conseil de discipline",
