@@ -861,7 +861,7 @@ async def test_ai_payload_preserves_official_administrative_publication_metadata
 
     def handler(request):
         captured["payload"] = json.loads(request.content)
-        return httpx.Response(200, json={"choices": [{"message": {"content": "{\\"claims\\": []}"}}], "usage": {}})
+        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps({"claims": []})}}], "usage": {}})
 
     real_async_client = httpx.AsyncClient
     transport = httpx.MockTransport(handler)
