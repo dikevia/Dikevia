@@ -867,8 +867,6 @@ class LegalOrchestrator:
             missing.insert(0, "La recherche CETAT a été exécutée sans retrouver de décision pertinente pour cette requête.")
         if temporal_context["period_start"] or temporal_context["period_end"]:
             missing.insert(0, f"Période déclarée : du {temporal_context['period_start'] or 'début non précisé'} au {temporal_context['period_end'] or ('aujourd’hui' if temporal_context['ongoing'] else 'fin non précisée')}.")
-        elif not temporal_context["ongoing"] and not parsed_date:
-            missing.insert(0, "Date des faits non renseignée : la recherche du droit actuel est maintenue. La date ne sera demandée que si elle est nécessaire pour départager deux versions d'un texte ou vérifier un acte local.")
         if temporal_context["ongoing"]:
             missing.insert(0, "Situation déclarée toujours en cours : les sources sont interrogées à la date actuelle. Si les règles ont changé pendant la période, une comparaison des versions successives reste nécessaire.")
             if not temporal_context["period_start"]:
