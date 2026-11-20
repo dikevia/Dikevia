@@ -134,8 +134,7 @@ _TOPIC_RESEARCH_AXES = (
          "formation syndicale", "reunion d information syndicale", "comite social territorial"),
         (
             "CGFP livre II droit syndical fonction publique territoriale exercice droits syndicaux agents territoriaux",
-            "CGFP autorisations speciales absence syndicale decharges activite service credit temps syndical locaux syndicaux deliberation locale",
-            "CGFP reunions information syndicale formation syndicale dialogue social organisations syndicales collectivites territoriales",
+            "CGFP autorisations speciales absence syndicale decharges activite service credit temps syndical locaux syndicaux deliberation locale reunions information formation syndicale dialogue social organisations syndicales",
         ),
     ),
 )
