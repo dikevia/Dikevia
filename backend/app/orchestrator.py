@@ -919,15 +919,9 @@ class LegalOrchestrator:
                                 )
                             else:
                                 claims = claim_validation["claims"]
-                                answer_scope = (
-                                    "pour votre situation"
-                                    if parsed_date is not None
-                                    else f"sur les règles générales consultées au {effective_date.isoformat()}"
-                                )
-                                rendered_claims = [
-                                    f"Voici ce que les textes permettent de comprendre {answer_scope} :",
-                                    "",
-                                ]
+                                # The model is instructed to put the direct answer first.
+                                # Render it immediately instead of prefacing it with legal boilerplate.
+                                rendered_claims = []
                                 unique_sources = {}
                                 for claim in claims:
                                     source_id = claim["source_id"]
