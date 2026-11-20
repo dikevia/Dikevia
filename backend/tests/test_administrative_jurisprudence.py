@@ -236,3 +236,22 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
 def test_decision_temporal_status_requires_a_verified_date(decision_date, requested_date, expected):
     from app.jurisprudence import decision_temporal_status
     assert decision_temporal_status(decision_date, requested_date) == expected
+
+
+
+def test_cetat_results_are_interleaved_across_research_axes_and_deduplicated():
+    from app.jurisprudence import interleave_case_law_results
+    first = [
+        {"source_id": "CETATEXT000000000001", "title": "A1"},
+        {"source_id": "CETATEXT000000000002", "title": "A2"},
+    ]
+    second = [
+        {"source_id": "CETATEXT000000000001", "title": "duplicate"},
+        {"source_id": "CETATEXT000000000003", "title": "B2"},
+    ]
+    third = [{"source_id": "CETATEXT000000000004", "title": "C1"}]
+    selected = interleave_case_law_results([first, second, third], limit=3)
+    assert [item["source_id"] for item in selected] == [
+        "CETATEXT000000000001", "CETATEXT000000000004", "CETATEXT000000000002"
+    ]
+
