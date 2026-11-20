@@ -506,9 +506,6 @@ class LegalOrchestrator:
                         effective_date if request.situation_ongoing else (facts_reference_date or effective_date),
                         limit=5,
                     )
-                    if parsed_date is None:
-                        for local_source in local_sources:
-                            local_source["temporal_status"] = "TEMPORAL_SCOPE_INCOMPLETE"
                 except Exception:
                     logger.exception("Échec de la recherche dans le corpus local tenant-scoped.")
                     local_issue = "La recherche dans les documents de l'employeur n'a pas pu être exécutée."
@@ -634,8 +631,6 @@ class LegalOrchestrator:
 
         for item in permanent_sources:
             response_source = {**item, "source_url": item.get("official_url")}
-            if parsed_date is None:
-                response_source["temporal_status"] = "TEMPORAL_SCOPE_INCOMPLETE"
             # Apply the same French FPT perimeter to the permanent corpus as
             # to live Légifrance and CETAT results. Otherwise a stored EU or
             # FPE/FPH document could bypass the live-source scope guard.
