@@ -450,6 +450,13 @@ class LegalOrchestrator:
                         continue
                     result["temporal_status"] = temporal_status
                     result["content_kind"] = "FULL_TEXT"
+                    decision_text = str(result.get("text") or "")
+                    if len(decision_text) <= 12000:
+                        result["excerpt"] = decision_text
+                        result["retrieval_scope"] = "FULL_TEXT"
+                    else:
+                        result["excerpt"] = decision_text[:9000] + "\\n\\n[Passages intermédiaires non transmis]\\n\\n" + decision_text[-3000:]
+                        result["retrieval_scope"] = "BEGINNING_AND_FINAL_PASSAGES_FROM_VERIFIED_FULL_TEXT"
                     scope = classify_public_service_scope(result)
                     result["public_service_scope"] = scope["scope"]
                     result["scope_evidence"] = scope["evidence"]
@@ -514,6 +521,7 @@ class LegalOrchestrator:
                         "valid_from": item.get("valid_from"), "valid_to": item.get("valid_to"),
                         "temporal_status": item.get("temporal_status"), "source_status": item.get("source_status"),
                         "content_kind": item.get("content_kind"), "excerpt": item.get("excerpt"),
+                        "retrieval_scope": item.get("retrieval_scope"),
                         "text": item.get("excerpt") or "", "official_url": item.get("official_url"),
                         "official_source": item.get("official_source"),
                         "citation_integrity": item.get("citation_integrity"),
