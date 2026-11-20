@@ -462,6 +462,7 @@ def test_ai_prompt_distinguishes_fact_period_from_text_effective_date():
     assert "Distingue la période de la situation" in SYSTEM_PROMPT
     assert "compare explicitement les sources datées du début et de la fin" in SYSTEM_PROMPT
     assert "ne doit jamais servir de filtre général" in SYSTEM_PROMPT
+    assert "peuvent pleinement éclairer ou protéger l'agent" in SYSTEM_PROMPT
     assert "Une décision administrative rendue après les faits ne doit pas être écartée automatiquement" in SYSTEM_PROMPT
     assert "La date des faits n'est pas un préalable à la recherche" in SYSTEM_PROMPT
 
