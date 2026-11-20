@@ -10,7 +10,7 @@ from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question
+from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -90,7 +90,7 @@ def question_needs_case_date(question: str) -> bool:
 
 def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     """Exclude sources explicitly classified as unrelated from analysis and display."""
-    return [source for source in sources if source.get("ihts_relevant") is not False]
+    return [source for source in sources if source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False]
 
 
 def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
@@ -552,6 +552,11 @@ class LegalOrchestrator:
             sources.append(response_source)
 
         sources.extend(local_sources)
+
+        # Apply the same conservative topic guard to live, stored and tenant-local
+        # documents before source assessment, model input or user-facing rendering.
+        for source in sources:
+            source["topic_relevant"] = is_topic_relevant_source(request.question, source)
 
         if found:
             for hit in found["results"]:
