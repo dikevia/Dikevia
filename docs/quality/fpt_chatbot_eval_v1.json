@@ -1,0 +1,2126 @@
+{
+  "schema_version": "1.0",
+  "title": "Dikévia — Jeu d'évaluation métier FPT",
+  "purpose": "Évaluer la compréhension de la question, la pertinence des sources, la qualité de l'analyse, la prudence et l'utilité pratique des réponses du chatbot.",
+  "case_count": 100,
+  "important_limit": "Ce jeu contient des questions et des critères d'évaluation, pas des réponses juridiques certifiées. Les réponses de référence et les sources officielles exactes doivent être établies puis validées par un référent juridique avant toute utilisation comme vérité terrain.",
+  "scoring": {
+    "question_relevance": "0-2 : la réponse traite exactement la demande et ne dérive pas vers un sujet voisin.",
+    "source_relevance": "0-2 : chaque source citée soutient la proposition correspondante et s'applique au périmètre.",
+    "legal_accuracy": "0-2 : règle, conditions, exceptions, temporalité et statut sont correctement traités.",
+    "practical_usefulness": "0-2 : l'agent comprend les conséquences et les prochaines démarches utiles.",
+    "calibration": "0-2 : incertitudes, informations manquantes et abstention sont correctement gérées.",
+    "critical_failure": "Toute source inventée, citation fausse, règle manifestement hors sujet présentée comme réponse ou donnée personnelle sensible exposée entraîne un échec critique indépendamment du score."
+  },
+  "release_gate": {
+    "no_critical_failures": true,
+    "minimum_human_reviewed_cases": 100,
+    "minimum_average_score": 8.5,
+    "minimum_question_relevance_rate": 0.95,
+    "minimum_source_support_rate": 0.98,
+    "all_high_risk_cases_human_reviewed": true,
+    "note": "Seuils de recette proposés, non performances actuellement mesurées. Les pourcentages doivent être calculés sur des évaluations documentées en double lecture sur un échantillon."
+  },
+  "cases": [
+    {
+      "id": "FPT-001",
+      "category": "Rémunération et temps de travail",
+      "question": "Mon employeur peut-il refuser de payer mes heures supplémentaires alors que mon responsable me les a demandées ?",
+      "expected_intent": "Distinguer autorisation, preuve, régime indemnitaire et règles locales.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-002",
+      "category": "Rémunération et temps de travail",
+      "question": "Je suis à temps partiel : comment sont décomptées les heures effectuées au-delà de mon horaire ?",
+      "expected_intent": "Ne pas assimiler automatiquement heures complémentaires et supplémentaires.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-003",
+      "category": "Rémunération et temps de travail",
+      "question": "Puis-je récupérer mes heures supplémentaires plutôt que demander leur indemnisation ?",
+      "expected_intent": "Expliquer les modalités possibles sans inventer un choix absolu.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-004",
+      "category": "Rémunération et temps de travail",
+      "question": "Les heures supplémentaires effectuées un dimanche sont-elles compensées différemment ?",
+      "expected_intent": "Vérifier le régime applicable, les délibérations et les majorations autorisées.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-005",
+      "category": "Rémunération et temps de travail",
+      "question": "Mon chef me demande de rester après mon horaire sans validation écrite : que dois-je conserver comme preuve ?",
+      "expected_intent": "Répondre sur les preuves et procédures, ne pas conclure automatiquement au droit au paiement.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-006",
+      "category": "Rémunération et temps de travail",
+      "question": "Un agent de catégorie A peut-il bénéficier d'IHTS ?",
+      "expected_intent": "Vérifier les catégories et fonctions éligibles, ne pas généraliser.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-007",
+      "category": "Rémunération et temps de travail",
+      "question": "Une collectivité peut-elle instaurer des heures supplémentaires sans délibération ?",
+      "expected_intent": "Distinguer cadre national et décision locale requise.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-008",
+      "category": "Rémunération et temps de travail",
+      "question": "Comment sont traitées les heures supplémentaires d'un agent à temps non complet ?",
+      "expected_intent": "Distinguer temps non complet, temps partiel et seuils applicables.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-009",
+      "category": "Rémunération et temps de travail",
+      "question": "Mon compteur d'heures a été remis à zéro en fin d'année : est-ce légal ?",
+      "expected_intent": "Identifier dispositif local, CET/repos et règles de conservation.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-010",
+      "category": "Rémunération et temps de travail",
+      "question": "Puis-je réclamer des heures supplémentaires réalisées il y a deux ans ?",
+      "expected_intent": "Traiter prescription avec prudence et identifier nature exacte de la créance.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-011",
+      "category": "Congés et absences",
+      "question": "Mon supérieur peut-il refuser mes congés annuels alors que j'ai déjà réservé un voyage ?",
+      "expected_intent": "Expliquer nécessité de service, calendrier et absence de droit automatique aux dates.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-012",
+      "category": "Congés et absences",
+      "question": "Puis-je reporter mes congés non pris après un arrêt maladie ?",
+      "expected_intent": "Distinguer congés annuels, report, délais et statut de l'agent.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-013",
+      "category": "Congés et absences",
+      "question": "Que devient mon solde de congés si je quitte la collectivité ?",
+      "expected_intent": "Distinguer départ, mutation, fin de fonctions et indemnisation éventuelle.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-014",
+      "category": "Congés et absences",
+      "question": "Un jour férié pendant mes congés est-il décompté ?",
+      "expected_intent": "Vérifier calendrier et règles locales de décompte.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-015",
+      "category": "Congés et absences",
+      "question": "Mon employeur peut-il m'imposer des dates de congés ?",
+      "expected_intent": "Distinguer pouvoir d'organisation, consultation et priorités légales.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-016",
+      "category": "Congés et absences",
+      "question": "Puis-je prendre un congé sans solde pour convenance personnelle ?",
+      "expected_intent": "Identifier statut, type de congé et conditions d'autorisation.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-017",
+      "category": "Congés et absences",
+      "question": "Comment fonctionne le compte épargne-temps dans ma collectivité ?",
+      "expected_intent": "Demander ou signaler nécessité de la délibération locale et du régime applicable.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-018",
+      "category": "Congés et absences",
+      "question": "Un agent contractuel a-t-il les mêmes règles de congés qu'un fonctionnaire ?",
+      "expected_intent": "Comparer statut et textes applicables sans les confondre.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-019",
+      "category": "Congés et absences",
+      "question": "Puis-je être rappelé pendant mes congés annuels ?",
+      "expected_intent": "Distinguer urgence, rappel exceptionnel et conséquences sur les congés.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-020",
+      "category": "Congés et absences",
+      "question": "Mon employeur refuse de reporter mes congés après un congé maternité : quels recours ?",
+      "expected_intent": "Vérifier protections et règles spécifiques, proposer démarches.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-021",
+      "category": "Maladie et protection sociale",
+      "question": "Qui me rémunère pendant un congé de maladie ordinaire ?",
+      "expected_intent": "Identifier fonctionnaire/contractuel, ancienneté, régime et période.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-022",
+      "category": "Maladie et protection sociale",
+      "question": "Puis-je être placé en congé de longue maladie pour cette pathologie ?",
+      "expected_intent": "Ne pas diagnostiquer ; expliquer procédure et compétence médicale/statutaire.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-023",
+      "category": "Maladie et protection sociale",
+      "question": "Mon administration peut-elle demander le motif médical détaillé de mon arrêt ?",
+      "expected_intent": "Protéger secret médical et distinguer pièces administratives autorisées.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-024",
+      "category": "Maladie et protection sociale",
+      "question": "Que faire si mon arrêt maladie n'a pas été transmis dans les délais ?",
+      "expected_intent": "Distinguer obligations, justificatifs, circonstances et procédure.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-025",
+      "category": "Maladie et protection sociale",
+      "question": "Puis-je contester un avis du conseil médical ?",
+      "expected_intent": "Identifier décision contestée, voies et délais exacts à vérifier.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-026",
+      "category": "Maladie et protection sociale",
+      "question": "Un accident survenu pendant le télétravail peut-il être reconnu comme accident de service ?",
+      "expected_intent": "Vérifier circonstances, présomptions, déclaration et preuve.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-027",
+      "category": "Maladie et protection sociale",
+      "question": "Mon employeur peut-il me faire travailler pendant un arrêt maladie ?",
+      "expected_intent": "Répondre prudemment sur incompatibilité et reprise autorisée.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-028",
+      "category": "Maladie et protection sociale",
+      "question": "Quelle différence entre congé de maladie ordinaire et CITIS ?",
+      "expected_intent": "Expliquer objets, conditions et effets sans extrapoler au cas individuel.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-029",
+      "category": "Maladie et protection sociale",
+      "question": "Un contractuel territorial bénéficie-t-il du maintien de traitement pendant un arrêt ?",
+      "expected_intent": "Identifier ancienneté, durée, régime général et complément employeur.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-030",
+      "category": "Maladie et protection sociale",
+      "question": "Puis-je reprendre à temps partiel thérapeutique après un arrêt ?",
+      "expected_intent": "Distinguer fonctionnaire/contractuel, prescription, autorisation et procédure.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-031",
+      "category": "Carrière et rémunération",
+      "question": "Mon avancement d'échelon peut-il être retardé par mon employeur ?",
+      "expected_intent": "Expliquer avancement automatique selon règles et distinguer échelon/grade.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-032",
+      "category": "Carrière et rémunération",
+      "question": "Puis-je contester mon compte rendu d'entretien professionnel ?",
+      "expected_intent": "Présenter procédure, autorités et délais à vérifier selon statut.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-033",
+      "category": "Carrière et rémunération",
+      "question": "Ma collectivité peut-elle supprimer mon régime indemnitaire ?",
+      "expected_intent": "Distinguer cadre de la délibération, garanties et situation individuelle.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-034",
+      "category": "Carrière et rémunération",
+      "question": "Ai-je droit à la NBI si j'exerce les fonctions correspondantes ?",
+      "expected_intent": "Vérifier fonctions listées et conditions, pas seulement intitulé du poste.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-035",
+      "category": "Carrière et rémunération",
+      "question": "Mon ancienneté dans le privé est-elle reprise lors de mon recrutement ?",
+      "expected_intent": "Distinguer recrutement, classement, statut et règles de reprise.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-036",
+      "category": "Carrière et rémunération",
+      "question": "Puis-je demander une promotion interne sans être proposé par ma collectivité ?",
+      "expected_intent": "Distinguer conditions statutaires, proposition et inscription sur liste.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-037",
+      "category": "Carrière et rémunération",
+      "question": "Une baisse de primes peut-elle accompagner un changement d'affectation ?",
+      "expected_intent": "Examiner délibération, fonctions, garanties et décision individuelle.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-038",
+      "category": "Carrière et rémunération",
+      "question": "Comment contester un refus de titularisation en fin de stage ?",
+      "expected_intent": "Identifier statut, motivation, procédure, délais et recours.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-039",
+      "category": "Carrière et rémunération",
+      "question": "Mon employeur peut-il modifier mes missions sans changer mon grade ?",
+      "expected_intent": "Distinguer conditions d'emploi, fiche de poste et modification substantielle.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-040",
+      "category": "Carrière et rémunération",
+      "question": "Puis-je cumuler deux emplois publics à temps non complet ?",
+      "expected_intent": "Vérifier règles de cumul, quotité, autorisations et exceptions.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-041",
+      "category": "Discipline et droits de la défense",
+      "question": "Je suis convoqué à un entretien disciplinaire : quels documents puis-je consulter ?",
+      "expected_intent": "Expliquer accès au dossier et garanties procédurales selon procédure.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-042",
+      "category": "Discipline et droits de la défense",
+      "question": "Une sanction peut-elle être prise sans que j'aie été entendu ?",
+      "expected_intent": "Identifier nature de sanction et garanties applicables.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-043",
+      "category": "Discipline et droits de la défense",
+      "question": "Puis-je être assisté par un représentant syndical lors d'une procédure disciplinaire ?",
+      "expected_intent": "Vérifier droits d'assistance et stade de la procédure.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-044",
+      "category": "Discipline et droits de la défense",
+      "question": "Combien de temps l'administration peut-elle conserver une sanction dans mon dossier ?",
+      "expected_intent": "Distinguer dossier individuel, effacement et type de sanction.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-045",
+      "category": "Discipline et droits de la défense",
+      "question": "Puis-je contester une exclusion temporaire de fonctions ?",
+      "expected_intent": "Identifier recours gracieux/contentieux, délais et effets sans inventer.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-046",
+      "category": "Discipline et droits de la défense",
+      "question": "Mon supérieur peut-il me sanctionner pour avoir refusé un ordre illégal ?",
+      "expected_intent": "Distinguer ordre manifestement illégal et compromettant gravement intérêt public.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-047",
+      "category": "Discipline et droits de la défense",
+      "question": "Une suspension de fonctions signifie-t-elle que je suis déjà sanctionné ?",
+      "expected_intent": "Expliquer mesure conservatoire et distinction avec sanction.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-048",
+      "category": "Discipline et droits de la défense",
+      "question": "Puis-je consulter les témoignages utilisés contre moi ?",
+      "expected_intent": "Traiter accès dossier, contradictoire et éventuelles occultations.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-049",
+      "category": "Discipline et droits de la défense",
+      "question": "Une sanction peut-elle être prononcée pour des faits commis hors service ?",
+      "expected_intent": "Examiner lien avec fonctions, gravité et jurisprudence pertinente.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-050",
+      "category": "Discipline et droits de la défense",
+      "question": "Que faire si la procédure disciplinaire ne respecte pas mes droits ?",
+      "expected_intent": "Proposer conservation pièces, demandes écrites et recours compétent.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-051",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "Un usager m'a menacé pendant mon service : puis-je demander la protection fonctionnelle ?",
+      "expected_intent": "Identifier lien avec fonctions, demande et mesures de protection.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-052",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "La protection fonctionnelle couvre-t-elle les frais d'avocat ?",
+      "expected_intent": "Expliquer conditions et décision préalable, ne pas promettre prise en charge totale.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-053",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "Mon employeur peut-il refuser ma demande de protection fonctionnelle ?",
+      "expected_intent": "Présenter motifs légalement pertinents, décision motivée et recours.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-054",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "Je suis poursuivi pénalement pour des faits liés au service : qui me défend ?",
+      "expected_intent": "Distinguer faute personnelle détachable, faute de service et garanties.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-055",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "La collectivité doit-elle protéger un agent victime de harcèlement ?",
+      "expected_intent": "Distinguer prévention, protection, enquête et obligations de l'employeur.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-056",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "Puis-je obtenir réparation après une agression au travail ?",
+      "expected_intent": "Distinguer protection fonctionnelle, accident de service et responsabilité.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-057",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "Un élu m'a publiquement mis en cause : puis-je demander la protection fonctionnelle ?",
+      "expected_intent": "Vérifier qualité de l'auteur, lien aux fonctions et nature des attaques.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-058",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "La protection fonctionnelle peut-elle être retirée après avoir été accordée ?",
+      "expected_intent": "Vérifier conditions et procédure, ne pas affirmer retrait libre.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-059",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "Mon employeur doit-il engager une enquête après un signalement de harcèlement ?",
+      "expected_intent": "Examiner obligations de prévention et traitement du signalement.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-060",
+      "category": "Protection fonctionnelle et responsabilité",
+      "question": "Puis-je demander la protection fonctionnelle pour des faits sur les réseaux sociaux ?",
+      "expected_intent": "Évaluer lien au service, ciblage, gravité et preuves.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-061",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Puis-je distribuer un tract syndical dans les locaux pendant mon temps de travail ?",
+      "expected_intent": "Vérifier règles de distribution, lieux, horaires et textes locaux.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-062",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Combien d'heures de décharge d'activité de service puis-je obtenir ?",
+      "expected_intent": "Identifier effectif, représentativité, mandat et règles applicables.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-063",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Mon autorité territoriale peut-elle refuser une autorisation spéciale d'absence syndicale ?",
+      "expected_intent": "Distinguer catégories d'ASA, nécessité de service et justification.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-064",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Puis-je participer à une réunion syndicale pendant mes heures de service ?",
+      "expected_intent": "Identifier type de réunion, convocation et autorisation requise.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-065",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Un agent contractuel peut-il exercer un mandat syndical ?",
+      "expected_intent": "Confirmer droits syndicaux sans distinction injustifiée.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-066",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "La collectivité doit-elle fournir un local au syndicat ?",
+      "expected_intent": "Vérifier seuils, conditions, locaux et règles de mise à disposition.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-067",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Puis-je utiliser ma messagerie professionnelle pour une communication syndicale ?",
+      "expected_intent": "Vérifier accord/protocole local et règles d'utilisation.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-068",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Mon employeur peut-il connaître mon appartenance syndicale ?",
+      "expected_intent": "Protéger donnée sensible et distinguer exercice d'un mandat/communication volontaire.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-069",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Comment contester une entrave à l'exercice du droit syndical ?",
+      "expected_intent": "Identifier faits, preuves, interlocuteurs et voies de recours.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-070",
+      "category": "Droits syndicaux et dialogue social",
+      "question": "Une ASA syndicale peut-elle être refusée pour nécessité de service ?",
+      "expected_intent": "Distinguer catégories et régimes, ne pas donner de règle uniforme.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-071",
+      "category": "CST et formation spécialisée",
+      "question": "Dans quels cas un projet doit-il être présenté au comité social territorial ?",
+      "expected_intent": "Identifier objet du projet, compétences consultatives et seuils.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-072",
+      "category": "CST et formation spécialisée",
+      "question": "Le CST doit-il être consulté avant une réorganisation des services ?",
+      "expected_intent": "Vérifier nature du projet et compétence de l'instance.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-073",
+      "category": "CST et formation spécialisée",
+      "question": "Que peut faire un représentant si les documents sont transmis trop tard avant le CST ?",
+      "expected_intent": "Identifier règlement intérieur, délais et moyens d'alerte.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-074",
+      "category": "CST et formation spécialisée",
+      "question": "La formation spécialisée peut-elle demander une enquête après un accident grave ?",
+      "expected_intent": "Vérifier compétences, procédure et articulation avec autorité territoriale.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-075",
+      "category": "CST et formation spécialisée",
+      "question": "Un avis défavorable du CST bloque-t-il une décision de la collectivité ?",
+      "expected_intent": "Expliquer portée consultative et exceptions éventuelles.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-076",
+      "category": "CST et formation spécialisée",
+      "question": "Qui fixe l'ordre du jour du CST ?",
+      "expected_intent": "Vérifier règles de présidence, consultation et règlement intérieur.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-077",
+      "category": "CST et formation spécialisée",
+      "question": "Les suppléants peuvent-ils assister aux séances du CST ?",
+      "expected_intent": "Distinguer présence, voix délibérative et règles de remplacement.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-078",
+      "category": "CST et formation spécialisée",
+      "question": "Comment inscrire une question à l'ordre du jour du CST ?",
+      "expected_intent": "Vérifier règlement intérieur, présidence et demandes des représentants.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-079",
+      "category": "CST et formation spécialisée",
+      "question": "Que faire si l'administration ne met pas en œuvre un avis ou engagement du CST ?",
+      "expected_intent": "Distinguer avis, engagement, décision et mécanismes de suivi.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-080",
+      "category": "CST et formation spécialisée",
+      "question": "Une formation spécialisée est-elle obligatoire dans toutes les collectivités ?",
+      "expected_intent": "Vérifier seuils et cas de création, éviter réponse universelle.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-081",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Mon employeur peut-il supprimer mon télétravail du jour au lendemain ?",
+      "expected_intent": "Examiner cadre local, autorisation individuelle, motivation et préavis.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-082",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Puis-je demander le télétravail pour raison médicale ?",
+      "expected_intent": "Distinguer aménagement, avis médical et décision employeur.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-083",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Qui fournit le matériel nécessaire au télétravail ?",
+      "expected_intent": "Vérifier cadre applicable, délibération et équipements concernés.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-084",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Un accident à domicile pendant le télétravail est-il présumé imputable au service ?",
+      "expected_intent": "Vérifier horaires, lieu, activité et régime de preuve.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-085",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Puis-je refuser un poste si les conditions de sécurité sont dangereuses ?",
+      "expected_intent": "Expliquer droit de retrait avec seuil de danger grave et imminent et procédure.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-086",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Comment signaler un danger grave et imminent dans ma collectivité ?",
+      "expected_intent": "Décrire alerte, registre et rôle des acteurs compétents.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-087",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Mon employeur doit-il adapter mon poste après une préconisation médicale ?",
+      "expected_intent": "Distinguer avis du médecin du travail, aménagement raisonnable et décision.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-088",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Puis-je être sanctionné après avoir signalé des risques psychosociaux ?",
+      "expected_intent": "Expliquer protections contre représailles et nécessité de faits vérifiables.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-089",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "La collectivité doit-elle établir un document unique d'évaluation des risques ?",
+      "expected_intent": "Expliquer obligation de prévention et actualisation, citer source en vigueur.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-090",
+      "category": "Télétravail, santé et conditions de travail",
+      "question": "Qui peut consulter le document unique dans la collectivité ?",
+      "expected_intent": "Vérifier accès des agents, représentants et autorités compétentes.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-091",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Puis-je refuser une mutation dans l'intérêt du service ?",
+      "expected_intent": "Distinguer mutation interne, changement d'affectation et garanties.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-092",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Que se passe-t-il si je refuse un changement d'affectation ?",
+      "expected_intent": "Identifier portée de la décision, conséquences et voies de contestation.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-093",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Puis-je demander une disponibilité pour suivre mon conjoint ?",
+      "expected_intent": "Vérifier motif, conditions, durée et situation statutaire.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-094",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Quels sont mes droits si mon poste est supprimé ?",
+      "expected_intent": "Distinguer fonctionnaire titulaire, contractuel, réorganisation et reclassement.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-095",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Un contractuel peut-il bénéficier d'un CDI dans la fonction publique territoriale ?",
+      "expected_intent": "Vérifier durée de services, employeur et conditions légales.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-096",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Puis-je cumuler une activité indépendante avec mon emploi territorial ?",
+      "expected_intent": "Identifier activité, autorisation, déclaration et exceptions.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-097",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Que devient mon statut si je réussis un concours dans une autre collectivité ?",
+      "expected_intent": "Distinguer lauréat, nomination, stage et détachement éventuel.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-098",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Puis-je démissionner et revenir ensuite dans la fonction publique ?",
+      "expected_intent": "Expliquer effets de la démission et modalités d'un nouveau recrutement.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-099",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Un agent peut-il demander une rupture conventionnelle dans la FPT ?",
+      "expected_intent": "Vérifier régime en vigueur à la date de la question et catégories concernées.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    },
+    {
+      "id": "FPT-100",
+      "category": "Mobilité, fin de fonctions et situations particulières",
+      "question": "Quels recours si ma collectivité ne répond pas à ma demande administrative ?",
+      "expected_intent": "Distinguer silence valant rejet/acceptation, délais, matière et recours.",
+      "required_checks": [
+        "Répondre d'abord à la question précise, en langage courant.",
+        "Identifier le statut, la date et les faits manquants qui changent la règle.",
+        "Ne citer que des sources dont le contenu soutient directement la réponse.",
+        "Distinguer règle nationale, délibération ou document local et jurisprudence.",
+        "Signaler clairement l'incertitude et s'abstenir si les sources ne suffisent pas."
+      ],
+      "failure_modes": [
+        "Réciter des articles sans répondre à la question.",
+        "Utiliser une source lexicalement proche mais juridiquement hors sujet.",
+        "Inventer une règle, un délai, une condition ou une démarche.",
+        "Présenter une règle locale comme une règle nationale ou inversement.",
+        "Donner une conclusion catégorique alors qu'un fait déterminant manque."
+      ],
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+    }
+  ]
+}

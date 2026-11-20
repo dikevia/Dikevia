@@ -52,6 +52,12 @@ MÉTHODE :
 - Sépare les faits déclarés, les hypothèses, les règles documentées et les informations manquantes.
 - Tu t'adresses directement à l'agent avec un ton humain, naturel et pédagogique, comme dans une conversation professionnelle. Évite le style de rapport d'expertise ou de catalogue de textes.
 - Ne te contente jamais de recopier ou résumer les articles : explique immédiatement, en langage courant, ce que chaque règle change concrètement pour la situation décrite.
+- PRIORITÉ ABSOLUE À LA QUESTION : avant de rédiger, reformule mentalement le besoin exact de l'agent (ce qu'il demande, le problème à résoudre et le résultat attendu). Pour chaque source candidate, vérifie qu'elle traite bien ce sujet précis ; un mot commun, une référence à un décret voisin ou une simple proximité lexicale ne suffit jamais. Écarte toute source qui ne contribue pas directement à répondre à la question, même si elle concerne la fonction publique.
+- RÉPONSE AVANT RÉFÉRENCES : ne commence jamais par le numéro d'un article, le titre d'un décret ou une liste de textes. Commence par une réponse courte et compréhensible à la question posée, dans la limite exacte de ce que les sources démontrent. Ensuite seulement, explique la règle et ses conditions. Si la question demande si l'employeur peut/refuse/oblige/interdit quelque chose, réponds explicitement à cette interrogation lorsque les sources le permettent ; sinon explique précisément pourquoi la réponse reste conditionnelle.
+- ORDRE DES AFFIRMATIONS : le premier élément de claims doit être la réponse directe la plus utile à la question actuelle, en une phrase compréhensible. Les affirmations suivantes servent uniquement à expliquer les conditions, exceptions ou démarches qui complètent cette réponse ; ne commence pas par un rappel général du cadre juridique.
+- EXPLICATION MÉTIER : chaque claim doit faire comprendre (1) la règle en langage courant, (2) sa conséquence pratique pour l'agent et (3) la condition ou limite qui empêche une conclusion plus ferme. N'écris jamais un claim qui se limite à « l'article X prévoit que… », à un intitulé de texte ou à une citation reformulée sans conséquence concrète.
+- COHÉRENCE QUESTION-RÉPONSE : n'introduis aucun sujet secondaire qui n'aide pas à répondre à la question. N'utilise pas les anciennes questions de la conversation pour remplacer ou élargir la question actuelle. Si la demande contient plusieurs questions, traite chacune séparément ; si elle est ambiguë, demande une seule précision ciblée au lieu de deviner.
+- CONTRÔLE FINAL OBLIGATOIRE : juste avant de produire le JSON, vérifie que chaque claim répond à la question actuelle, que sa citation soutient réellement son explication et que les références ne portent pas sur un autre mécanisme juridique. Si un claim échoue, supprime-le. Si les sources pertinentes ne permettent aucune réponse utile, retourne claims vide plutôt que de remplir avec des textes seulement voisins.
 - Lorsque les sources le permettent, prends une position juridique explicite et nuancée : indique ce que l'employeur doit faire, peut faire ou ne peut pas faire, et si la situation paraît régulière, irrégulière ou contestable. N'affirme jamais qu'un employeur est en tort si une condition déterminante ou une règle locale manque.
 - Explique les conditions qui font basculer la conclusion. Pour les heures supplémentaires territoriales, distingue notamment heures effectivement demandées et réalisées, indemnisation et repos compensateur, éligibilité au régime IHTS, textes de transposition applicables et délibération de la collectivité. Le décret de la fonction publique de l'État ne suffit jamais, à lui seul, à conclure sur le droit individuel d'un agent territorial.
 - Termine par des démarches concrètes, simples et proportionnées que l'agent peut entreprendre. Distingue les vérifications utiles des obligations juridiques certaines ; ne présente pas un conseil pratique comme une obligation légale.
@@ -332,8 +338,8 @@ def answer_references_are_grounded(answer: str, allowed_refs: set[str | None],
 
 ENTAILMENT_SYSTEM_PROMPT = """Tu es un vérificateur contradictoire de l'appui documentaire d'une proposition juridique.
 Tu ne réponds pas à la question juridique et tu n'utilises aucune connaissance externe.
-Tu dois vérifier exclusivement si la proposition est entièrement et directement impliquée par le texte officiel fourni.
-Contrôle notamment : même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
+Tu dois vérifier deux conditions indépendantes : (1) la proposition est entièrement et directement impliquée par le texte officiel fourni ; (2) elle répond réellement à la question actuelle de l'agent. Une proposition peut être exacte au regard d'un texte mais hors sujet par rapport à la question : dans ce cas, réponds INSUFFICIENT.
+Contrôle notamment : correspondance entre la question actuelle et le sujet précis de la proposition, même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
 Une simple proximité de vocabulaire, un thème commun ou une citation exacte ne suffisent jamais.
 Si un élément de la proposition n'est pas expressément établi, si le texte est ambigu, incomplet, contradictoire, ou si une condition/exception empêche une conclusion certaine, réponds INSUFFICIENT.
 Si le texte contredit la proposition, réponds CONTRADICTED.
@@ -349,6 +355,45 @@ Aucun texte hors JSON.
 
 def _normalize_entailment_text(value):
     return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
+
+
+_ENTAILMENT_STOPWORDS = {
+    "article", "articles", "code", "general", "fonction", "publique",
+    "territoriale", "territorial", "agent", "agents", "doit", "doivent",
+    "peut", "peuvent", "etre", "avoir", "dans", "pour", "avec", "selon",
+    "une", "des", "les", "du", "de", "la", "le", "aux", "au", "sur",
+    "par", "sous", "qui", "que", "dont", "ainsi", "toute", "toutes",
+    "tous", "leur", "leurs", "son", "sa", "ses", "cette", "celui",
+    "celle", "ceux", "notamment", "relatif", "relative", "relatifs",
+    "relatives", "entre", "lorsque", "lorsqu",
+}
+_ENTAILMENT_NUMBER_RE = re.compile(
+    r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)\b",
+    re.IGNORECASE,
+)
+_ENTAILMENT_DATE_RE = re.compile(
+    r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b"
+)
+
+
+def _entailment_tokens(value):
+    decomposed = unicodedata.normalize("NFKD", str(value or "").casefold())
+    plain = "".join(char for char in decomposed if not unicodedata.combining(char))
+    tokens = set(re.findall(r"[a-z]{4,}", plain))
+    return tokens - _ENTAILMENT_STOPWORDS
+
+
+def _claim_facts_missing_from_quote(claim_text, quote):
+    quote_folded = _normalize_entailment_text(quote).casefold()
+    missing_numbers = [
+        item for item in _ENTAILMENT_NUMBER_RE.findall(claim_text)
+        if _normalize_entailment_text(item).casefold() not in quote_folded
+    ]
+    missing_dates = [
+        item for item in _ENTAILMENT_DATE_RE.findall(claim_text)
+        if _normalize_entailment_text(item).casefold() not in quote_folded
+    ]
+    return missing_numbers, missing_dates
 
 
 def validate_entailment_verdicts(payload, claims, sources):
@@ -385,13 +430,27 @@ def validate_entailment_verdicts(payload, claims, sources):
             invalid.append(f"verdict_{index}:support_quote_missing")
             continue
         source_text = str(matched[0].get("text") or matched[0].get("full_text") or matched[0].get("excerpt") or "")
-        if _normalize_entailment_text(support_quote) not in _normalize_entailment_text(source_text):
+        normalized_quote = _normalize_entailment_text(support_quote)
+        if normalized_quote not in _normalize_entailment_text(source_text):
             invalid.append(f"verdict_{index}:support_quote_not_in_source")
+            continue
+        # Reject an exact quote from an unrelated part of the same document.
+        claim_tokens = _entailment_tokens(claim.get("text"))
+        quote_tokens = _entailment_tokens(normalized_quote)
+        overlap = len(claim_tokens & quote_tokens) / max(1, len(claim_tokens))
+        if len(claim_tokens) < 2 or overlap < 0.25:
+            invalid.append(f"verdict_{index}:support_quote_not_relevantly_aligned")
+            continue
+        missing_numbers, missing_dates = _claim_facts_missing_from_quote(
+            str(claim.get("text") or ""), normalized_quote
+        )
+        if missing_numbers or missing_dates:
+            invalid.append(f"verdict_{index}:support_quote_missing_claim_facts")
     return {"valid": not invalid, "invalid": invalid,
             "verification_scope": "SECOND_STAGE_CONSERVATIVE_MODEL_ENTAILMENT_WITH_EXACT_SOURCE_SPAN"}
 
 
-async def verify_claim_entailment(*, claims: list[dict], sources: list[dict]) -> dict:
+async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict]) -> dict:
     """Ask the configured model for a conservative second-stage entailment check.
 
     This is an additional probabilistic safeguard, not a legal certification.
@@ -423,7 +482,7 @@ async def verify_claim_entailment(*, claims: list[dict], sources: list[dict]) ->
         "temperature": 0,
         "messages": [
             {"role": "system", "content": ENTAILMENT_SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps({"items_to_verify": evidence}, ensure_ascii=False)},
+            {"role": "user", "content": json.dumps({"question_actuelle": question, "items_to_verify": evidence}, ensure_ascii=False)},
         ],
     }
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}

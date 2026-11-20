@@ -223,3 +223,96 @@ def is_ihts_relevant_source(question: str, source: dict[str, Any]) -> bool:
     # terminology or one of the implementing/reference decrees.
     return any(_fold(marker) in corpus for marker in _IHTS_SOURCE_MARKERS)
 
+
+
+# Narrow topic families used only to reject an obviously unrelated retrieval hit.
+# They are not legal taxonomies: broad or unclassified sources remain eligible
+# for review so that cross-cutting provisions are not accidentally discarded.
+_TOPIC_FAMILIES = {
+    "SICK_LEAVE": (
+        "conge maladie", "conge de maladie", "conge longue maladie",
+        "conge longue duree", "citis", "accident de service",
+        "maladie professionnelle", "arret maladie",
+    ),
+    "LEAVE": (
+        "conges annuels", "conge annuel", "conges bonifies",
+        "autorisation speciale d absence", "absence pour raison familiale",
+        "compte epargne temps",
+    ),
+    "REMUNERATION": (
+        "remuneration", "traitement indiciaire", "regime indemnitaire",
+        "rifseep", "ifse", "nbi", "indemnite", "prime", "paie",
+    ),
+    "WORKING_TIME": (
+        "temps de travail", "duree du travail", "heures supplementaires",
+        "travaux supplementaires", "ihts", "astreinte", "annualisation",
+        "repos compensateur", "cycle de travail",
+    ),
+    "DISCIPLINE": (
+        "discipline", "sanction disciplinaire", "conseil de discipline",
+        "exclusion temporaire", "blame", "revocation",
+    ),
+    "TELEWORK": (
+        "teletravail", "travail a distance",
+    ),
+    "FUNCTIONAL_PROTECTION": (
+        "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
+        "agissement sexiste",
+    ),
+    "UNION_RIGHTS": (
+        "droit syndical", "autorisation speciale d absence syndicale",
+        "decharge d activite de service", "heures de delegation",
+        "local syndical",
+    ),
+    "CST": (
+        "comite social territorial", "formation specialisee",
+        "comite technique", "instance de dialogue social",
+    ),
+}
+
+
+def _matched_topic_families(value: str) -> set[str]:
+    folded = _fold(value)
+    padded_text = f" {folded} "
+    matched = {
+        family
+        for family, markers in _TOPIC_FAMILIES.items()
+        if any(f" {_fold(marker)} " in padded_text for marker in markers)
+    }
+    # CET is also the ordinary French demonstrative "cet". Recognize it as
+    # an acronym only when explicitly written in uppercase; the full phrase
+    # "compte épargne-temps" is recognized regardless of capitalization.
+    if re.search(r"\bCET\b", value):
+        matched.add("LEAVE")
+    return matched
+
+
+def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
+    """Reject only a source clearly belonging to another recognized topic family.
+
+    Sources with no recognized family are retained as potentially cross-cutting
+    legal provisions. This deliberately favors recall over aggressive filtering.
+    """
+    question_topics = _matched_topic_families(question)
+    if not question_topics:
+        return True
+    source_text = " ".join(str(source.get(key) or "") for key in (
+        "title", "article", "official_number", "excerpt", "text", "full_text"
+    ))
+    source_topics = _matched_topic_families(source_text[:500_000])
+    if not source_topics or question_topics & source_topics:
+        return True
+
+    # Some legal mechanisms are structurally connected even when a text is
+    # indexed under a neighboring family (e.g. IHTS within the territorial
+    # compensation/indemnity framework). Keep these narrowly defined bridges.
+    related_families = {
+        "WORKING_TIME": {"REMUNERATION"},
+        "REMUNERATION": {"WORKING_TIME", "SICK_LEAVE"},
+        "SICK_LEAVE": {"REMUNERATION"},
+    }
+    return any(
+        source_family in related_families.get(question_family, set())
+        for question_family in question_topics
+        for source_family in source_topics
+    )

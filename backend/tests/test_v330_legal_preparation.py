@@ -45,7 +45,7 @@ def _enable_legifrance(monkeypatch, module):
 
 
 @pytest.mark.asyncio
-async def test_missing_facts_date_does_not_call_ai_for_case_specific_analysis(monkeypatch):
+async def test_general_sick_leave_question_does_not_request_personal_facts_date(monkeypatch):
     import app.orchestrator as module
 
     called = False
@@ -63,8 +63,9 @@ async def test_missing_facts_date_does_not_call_ai_for_case_specific_analysis(mo
     )
     assert called is False
     assert response.verification_status == "NON_VERIFIE"
-    assert any("date des faits" in item.lower() for item in response.missing_information)
-    assert "repérage documentaire" in response.answer.lower()
+    assert not any("date des faits" in item.lower() for item in response.missing_information)
+    assert response.clarification_question is None
+    assert "aucune conclusion juridique" in response.answer.lower()
 
 
 def test_cgfp_import_script_validates_full_snapshot_and_article_count():
@@ -181,6 +182,9 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
         "00000000-0000-0000-0000-000000000001",
     )
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.answer.startswith("Le décret n° 2024-100")
+    assert "Voici ce que les textes permettent de comprendre" not in response.answer
+    assert "Cette analyse prend pour date de référence le 2024-06-01" in response.answer
     loda_response = next(s for s in response.sources if s["source_type"] == "LEGIFRANCE_LODA")
     assert len(loda_response["text"]) <= 1800
     assert "full_text" not in loda_response
@@ -734,4 +738,56 @@ async def test_ihts_query_retrieves_decree_91_875_and_filters_irrelevant_cgfp_hi
     assert any(query == "décret n° 91-875" for query in calls)
     assert all(source.get("article") != "R431-3" for source in response.sources)
     assert any(source.get("official_number") == "91-875" for source in captured["sources"])
+    assert all(source.get("article") != "R431-3" for source in captured["sources"])
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+
+
+
+@pytest.mark.asyncio
+async def test_unanswerable_question_does_not_dump_legal_excerpts_into_answer(monkeypatch):
+    import app.orchestrator as module
+
+    _enable_legifrance(monkeypatch, module)
+
+    async def no_code_articles(*args, **kwargs):
+        return []
+
+    exact_excerpt = (
+        "Les agents territoriaux bénéficient des dispositions réglementaires "
+        "relatives à l'organisation du service et aux conditions de travail. "
+    ) * 8
+
+    async def regulatory_texts(*args, **kwargs):
+        return [{
+            "source_type": "LEGIFRANCE_LODA",
+            "source_id": "LEGITEXT000000000099",
+            "title": "Décret relatif à l'organisation des services territoriaux",
+            "document_kind": "DECREE",
+            "official_number": "2024-999",
+            "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000099",
+            "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+            "full_text": exact_excerpt,
+        }]
+
+    async def no_case_law(*args, **kwargs):
+        return []
+
+    async def no_supported_claims(**kwargs):
+        return '{"claims": []}'
+
+    monkeypatch.setattr(module.legifrance, "search_code_articles", no_code_articles)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
+    monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
+    monkeypatch.setattr(module, "analyze_question", no_supported_claims)
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            facts_date="2024-06-01",
+            question="Mon employeur a refusé ma demande de mobilité : quels recours ?",
+        ),
+        "00000000-0000-0000-0000-000000000001",
+    )
+    assert exact_excerpt[:100] not in response.answer
+    assert "plutôt que de recopier des articles" in response.answer
+    assert "Sources retrouvées" in response.answer

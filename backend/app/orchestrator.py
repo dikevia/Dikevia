@@ -4,12 +4,13 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from uuid import uuid4
 import logging
+import re
 
 from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question
+from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -44,9 +45,52 @@ def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
 
+def classify_question_intent(question: str) -> str:
+    """Classify whether the current turn describes an individual event or asks for general rules.
+
+    This is a conservative routing heuristic, not a legal or semantic judgement.
+    Only explicit first-person events, decisions or disputes trigger case-date
+    clarification; hypothetical employer powers remain general questions.
+    """
+    text = " ".join(str(question or "").casefold().split())
+    if not text:
+        return "GENERAL_INFORMATION"
+
+    general_hypothetical_patterns = (
+        r"^(?:quels sont|quels seraient|comment connaitre|comment connaître)\s+mes droits\b",
+        r"\bsi\s+(?:mon employeur|ma collectivité|un employeur)\s+(?:refuse|rejette|sanctionne|impose)\b",
+        r"\b(?:peut-il|peut-elle|est-il possible|dans quels cas)\b",
+    )
+    if any(re.search(pattern, text) for pattern in general_hypothetical_patterns):
+        return "GENERAL_INFORMATION"
+
+    personal_event_patterns = (
+        r"\bon ne me (?:paie|paye|compense|donne)\b",
+        r"\bon m['’]a (?:refusé|sanctionné|notifié|imposé|retiré|placé|licencié|convoqué)\b",
+        r"\bje (?:n['’]ai pas (?:été payé|reçu|touché|obtenu)|ne suis pas payé|ne touche pas|subis)\b",
+        r"\bj['’]ai (?:été sanctionné|été licencié|été convoqué|été refusé|reçu|déposé|contesté|effectué)\b",
+        r"\b(?:mon employeur|ma collectivité) (?:refuse|ne me paie|ne me paye|m['’]a refusé|m['’]a sanctionné)\b",
+        r"\b(?:mon|ma|mes)\s+[\wÀ-ÿ'’-]{2,40}\s+(?:a été|ont été)\s+(?:refusé|refusée|refusés|refusées|retiré|retirée|supprimé|supprimée|notifié|notifiée|rejeté|rejetée|suspendu|suspendue)\b",
+        r"\b(?:ma demande|mon congé|mon arrêt|ma rémunération|mon dossier)\b.{0,80}\b(?:refusé|refusée|refusés|refusées|rejeté|rejetée|suspendu|suspendue)\b",
+        r"\b(?:j['’]ai reçu|on m['’]a notifié|on m['’]a adressé)\b.{0,80}\b(?:refus|décision|sanction|notification|convocation)\b",
+        r"\b(?:dans mon cas|dans ma situation|concernant mon dossier)\b",
+        r"\b(?:depuis|à compter du)\s+(?:le\s+)?\d{1,2}[ /-]\d{1,2}\b",
+    )
+    if any(re.search(pattern, text) for pattern in personal_event_patterns):
+        return "PERSONAL_CASE"
+
+    # A question about what an employer may generally do is not evidence that
+    # the user has personally received a refusal or decision.
+    return "GENERAL_INFORMATION"
+
+
+def question_needs_case_date(question: str) -> bool:
+    """Compatibility wrapper: ask for dates only for explicitly personal cases."""
+    return classify_question_intent(question) == "PERSONAL_CASE"
+
 def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     """Exclude sources explicitly classified as unrelated from analysis and display."""
-    return [source for source in sources if source.get("ihts_relevant") is not False]
+    return [source for source in sources if source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False]
 
 
 def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
@@ -160,6 +204,7 @@ def _compare_official_period_versions(
 class LegalOrchestrator:
     async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None) -> AskResponse:
         request_id = str(uuid4())
+        needs_case_date = question_needs_case_date(request.question)
         try:
             legacy_date = parse_facts_date(request.facts_date)
             period_start = parse_facts_date(request.facts_start_date) or legacy_date
@@ -547,6 +592,11 @@ class LegalOrchestrator:
             decision["ihts_relevant"] = is_ihts_relevant_source(request.question, decision)
             sources.append({**decision, "page_start": None, "page_end": None})
 
+        # Apply the topic guard only after every source family (including the
+        # CGFP snapshot and CETAT full text) has been collected.
+        for source in sources:
+            source["topic_relevant"] = is_topic_relevant_source(request.question, source)
+
         # A direct request for the text/content of a numbered CGFP article is an
         # exact-reference lookup. If that article was not independently retrieved,
         # do not let lexical CGFP hits, unrelated decrees or CETAT metadata create
@@ -612,7 +662,7 @@ class LegalOrchestrator:
                 "Recherche de jurisprudence pertinente et vérification des sources locales applicables."]
             if parsed_date is not None:
                 missing.insert(0, f"Date des faits déclarée : {effective_date.isoformat()}.")
-            else:
+            elif needs_case_date:
                 missing.insert(0, "Date des faits / période non précisée : une analyse contextualisée ne peut pas déterminer la règle applicable.")
                 missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
             if permanent_issue:
@@ -652,14 +702,14 @@ class LegalOrchestrator:
                 answer=(
                     "La date ou la période des faits n'est pas renseignée. La recherche au jour présent sert uniquement au repérage documentaire ; "
                     "les textes officiels récupérés ne permettent pas de répondre avec certitude et aucune conclusion juridique contextualisée n'est formulée."
-                    if parsed_date is None else
+                    if parsed_date is None and needs_case_date else
                     "Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. Aucune conclusion juridique n'est formulée."
                 ),
                 sources=sources,
                 missing_information=missing,
                 clarification_question=(
                     "À quelle date les faits se sont-ils produits, ou sur quelle période s'étendent-ils ?"
-                    if parsed_date is None else None
+                    if parsed_date is None and needs_case_date else None
                 ),
             )
 
@@ -706,7 +756,7 @@ class LegalOrchestrator:
             missing.insert(0, "La recherche CETAT a été exécutée sans retrouver de décision pertinente pour cette requête.")
         if temporal_context["period_start"] or temporal_context["period_end"]:
             missing.insert(0, f"Période déclarée : du {temporal_context['period_start'] or 'début non précisé'} au {temporal_context['period_end'] or ('aujourd’hui' if temporal_context['ongoing'] else 'fin non précisée')}.")
-        elif not temporal_context["ongoing"]:
+        elif not temporal_context["ongoing"] and needs_case_date:
             missing.insert(0, f"Date des faits / période de la situation non précisée : Légifrance est interrogé au {effective_date.isoformat()} à titre de repérage documentaire uniquement.")
             missing.insert(1, "La date d'entrée en vigueur des dispositions applicables sera recherchée séparément dans les versions officielles de Légifrance ; elle n'est pas demandée à l'utilisateur.")
         if temporal_context["ongoing"]:
@@ -766,6 +816,7 @@ class LegalOrchestrator:
                     verified_sources = [
                         s for s in sources
                         if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
+                        and s.get("topic_relevant") is not False
                         and s.get("content_kind") != "METADATA"
                         and (s.get("citation_integrity") or {}).get("valid") is True
                         and (
@@ -807,6 +858,7 @@ class LegalOrchestrator:
                          "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED"}
                         for s in sources
                         if s.get("source_type") == "CGFP_SNAPSHOT"
+                        and s.get("topic_relevant") is not False
                         and (s.get("citation_integrity") or {}).get("valid") is True
                     ]
                     ai_sources = cgfp_context_sources + verified_sources if verified_sources else []
@@ -854,6 +906,7 @@ class LegalOrchestrator:
                             )
                         else:
                             entailment_validation = await verify_claim_entailment(
+                                question=request.question,
                                 claims=claim_validation["claims"], sources=ai_sources,
                             )
                             if not entailment_validation.get("valid"):
@@ -866,10 +919,9 @@ class LegalOrchestrator:
                                 )
                             else:
                                 claims = claim_validation["claims"]
-                                rendered_claims = [
-                                    "Voici ce que les textes permettent de comprendre pour votre situation :",
-                                    "",
-                                ]
+                                # The model is instructed to put the direct answer first.
+                                # Render it immediately instead of prefacing it with legal boilerplate.
+                                rendered_claims = []
                                 unique_sources = {}
                                 for claim in claims:
                                     source_id = claim["source_id"]
@@ -883,7 +935,14 @@ class LegalOrchestrator:
                                 rendered_claims.append("Textes et références à consulter :")
                                 for source_id, source_title in unique_sources.items():
                                     rendered_claims.append(f"• {source_title} [source:{source_id}]")
-                                rendered_claims.extend(["", "Pour apprécier complètement votre situation, il faut encore confronter ces règles aux faits précis et aux éventuels actes locaux applicables."])
+                                rendered_claims.extend([
+                                    "",
+                                    (
+                                        f"Cette réponse porte sur les règles consultées au {effective_date.isoformat()} ; elle ne constitue pas une conclusion sur une situation individuelle."
+                                        if parsed_date is None
+                                        else f"Cette analyse prend pour date de référence le {effective_date.isoformat()} ; son application dépend aussi des faits établis et des éventuels actes locaux applicables."
+                                    ),
+                                ])
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
                                     if ai_usage is not None:
@@ -935,11 +994,16 @@ class LegalOrchestrator:
                 "La réponse IA a été bloquée : au moins une référence juridique n'est pas retrouvée à l'identique dans les sources injectées, ou une citation explicite manque.",
             )
 
-        if ai_answer and parsed_date is None:
-            missing = [
-                "La date ou la période des heures effectuées reste à préciser pour vérifier la version applicable aux faits.",
-                "La délibération de la collectivité et le dispositif local de compensation restent à vérifier.",
-            ]
+        if ai_answer and parsed_date is None and needs_case_date:
+            if is_ihts_question(request.question):
+                missing.extend([
+                    "La date ou la période des heures effectuées reste à préciser pour vérifier la version applicable aux faits.",
+                    "La délibération de la collectivité et le dispositif local de compensation restent à vérifier.",
+                ])
+            else:
+                missing.append(
+                    "La date ou la période des faits reste à préciser pour vérifier la version des règles applicable à votre situation personnelle."
+                )
 
         if ai_answer:
             # Append practical guidance only after the legal-claim citation validator.
@@ -959,19 +1023,40 @@ class LegalOrchestrator:
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
                 "Les extraits du snapshot PDF ne certifient pas l'authenticité officielle. Les versions du corpus dont les dates d'effet sont incomplètes ne sont pas utilisées pour les conclusions IA. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
         else:
-            lines = ["Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis."]
-            lines.append("Recherche documentaire effectuée : les résultats ci-dessous sont des sources à examiner, pas une qualification juridique définitive.")
-            if parsed_date is None:
+            lines = [
+                "Je n'ai pas pu établir une réponse suffisamment fiable à la question précise à partir des éléments retrouvés.",
+                "Je préfère vous le signaler plutôt que de recopier des articles de loi ou de présenter une source simplement voisine comme une réponse.",
+            ]
+            if parsed_date is None and needs_case_date:
                 lines.append(
-                    "Je peux vous donner une information générale, mais les sources officielles récupérées "
-                    "ne suffisent pas encore à expliquer de façon fiable les règles applicables à votre question. "
-                    "Je préfère ne pas tirer de conclusion sans fondement documentaire pertinent."
+                    "Pour poursuivre l'analyse de votre situation, indiquez la date ou la période des faits."
                 )
-            for source in sources[:8]:
-                excerpt = source.get("excerpt") or source.get("text", "")[:1800]
-                location = (f"pages PDF {source['page_start']}–{source['page_end']}" if source.get("page_start") else "réponse API Légifrance")
-                lines.append(f"\n{source.get('title', 'Source juridique')} ({location}) :\n{excerpt}")
-            lines.append("\nAucune conclusion définitive n'est formulée. Vérifier les versions, les textes d'application, la jurisprudence et les règles locales avant toute utilisation syndicale ou administrative.")
+            elif parsed_date is None:
+                lines.append(
+                    "Il s'agit ici d'une question générale : une date personnelle n'est pas nécessaire. "
+                    "Le point à résoudre est l'identification d'une disposition qui répond directement à votre question."
+                )
+            if sources:
+                lines.append("\\nSources retrouvées, à examiner (elles ne constituent pas à elles seules une réponse) :")
+                seen_source_ids = set()
+                for source in sources[:8]:
+                    source_id = str(source.get("source_id") or "")
+                    if source_id and source_id in seen_source_ids:
+                        continue
+                    if source_id:
+                        seen_source_ids.add(source_id)
+                    title = " ".join(str(source.get("title") or "Source juridique").split())[:250]
+                    reference = source.get("article") or source.get("official_number")
+                    if reference and str(reference) not in title:
+                        title += f" — réf. {reference}"
+                    lines.append(f"• {title}")
+            else:
+                lines.append("Aucune source exploitable n'a été retrouvée pour cette recherche.")
+            lines.append(
+                "\\nAucune conclusion juridique n'est formulée. Vous pouvez préciser le mécanisme ou le point exact "
+                "qui vous intéresse ; les sources doivent ensuite être vérifiées au regard de leur version, "
+                "de leur champ d'application et, si nécessaire, des règles locales."
+            )
             answer = "\n".join(lines)
 
         # Apply display-only filtering after legal analysis and validation. Keeping
@@ -990,7 +1075,7 @@ class LegalOrchestrator:
             verification_status="PARTIELLEMENT_VERIFIE" if ai_answer else "NON_VERIFIE",
             answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage,
             clarification_question=(
-                "Quand le problème s'est-il produit ? Indiquez une date ou une période approximative, et précisez s'il est toujours en cours."
-                if parsed_date is None else None
+                "Quand les faits se sont-ils produits ? Une date ou une période approximative suffit ; précisez aussi si la situation est toujours en cours."
+                if parsed_date is None and needs_case_date else None
             ),
         )

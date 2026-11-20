@@ -307,6 +307,55 @@ def test_entailment_verifier_fails_closed_on_unsupported_or_mismatched_verdicts(
     assert validate_entailment_verdicts(invented_quote, [claim], [source])["valid"] is False
 
 
+def test_entailment_verifier_rejects_exact_quote_from_unrelated_part_of_same_source():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claim = {
+        "source_id": "LEGIARTI000012345678",
+        "text": "La collectivité doit accorder un repos compensateur aux agents.",
+    }
+    unrelated_quote = "La procédure disciplinaire prévoit une exclusion temporaire de fonctions."
+    source = {
+        "source_id": claim["source_id"],
+        "text": (
+            unrelated_quote
+            + " Le temps de travail supplémentaire ouvre droit à un repos compensateur "
+              "dans les conditions prévues par le présent décret."
+        ),
+    }
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": claim["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": unrelated_quote,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_not_relevantly_aligned" in result["invalid"]
+
+
+def test_entailment_verifier_rejects_unsupported_numeric_claim_details():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claim = {
+        "source_id": "LEGIARTI000012345678",
+        "text": "L'agent bénéficie de 25 jours de congé annuel.",
+    }
+    quote = "Les agents bénéficient d'un congé annuel dans les conditions prévues."
+    source = {"source_id": claim["source_id"], "text": quote}
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": claim["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": quote,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_missing_claim_facts" in result["invalid"]
+
+
 def test_entailment_verifier_rejects_missing_extra_or_reordered_verdicts():
     from app.ai_provider import validate_entailment_verdicts
 
@@ -347,11 +396,10 @@ async def test_orchestrator_asks_for_situation_period_instead_of_assuming_today(
     from app.schemas import AskRequest
     from app.orchestrator import LegalOrchestrator
 
-    request = AskRequest(employer="NATIONAL", question="Question juridique suffisamment longue")
+    request = AskRequest(employer="NATIONAL", question="Mon employeur m'a refusé un congé maladie, que puis-je faire ?")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
     assert response.clarification_question
     assert any("date d'entrée en vigueur" in item for item in response.missing_information)
-    assert response.clarification_question
 
 
 @pytest.mark.asyncio
@@ -741,3 +789,58 @@ def test_system_prompt_requires_conversational_legal_explanations_and_practical_
     assert "prends une position juridique explicite et nuancée" in SYSTEM_PROMPT
     assert "Termine par des démarches concrètes" in SYSTEM_PROMPT
     assert "ne présente pas un conseil pratique comme une obligation légale" in SYSTEM_PROMPT
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_receives_current_question_for_relevance_check(monkeypatch):
+    import httpx
+    import json
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    source_text = "Les heures supplémentaires peuvent ouvrir droit à compensation selon les règles applicables."
+    source = {
+        "source_id": "SRC-IHTS-1",
+        "title": "Règles relatives aux heures supplémentaires",
+        "text": source_text,
+    }
+    claim = {
+        "source_id": "SRC-IHTS-1",
+        "text": "Les heures supplémentaires peuvent ouvrir droit à une compensation.",
+    }
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": json.dumps({
+                "verdicts": [{
+                    "claim_index": 0,
+                    "source_id": "SRC-IHTS-1",
+                    "verdict": "INSUFFICIENT",
+                    "support_quote": "",
+                }]
+            })}}]
+        })
+
+    real_async_client = httpx.AsyncClient
+
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+    result = await verify_claim_entailment(
+        question="Mon employeur peut-il refuser de compenser mes heures supplémentaires ?",
+        claims=[claim],
+        sources=[source],
+    )
+
+    verifier_question = json.loads(captured["payload"]["messages"][1]["content"])["question_actuelle"]
+    assert verifier_question == "Mon employeur peut-il refuser de compenser mes heures supplémentaires ?"
+    # A source that only says compensation may be possible does not answer
+    # whether the employer may refuse in this agent's specific question.
+    assert result["valid"] is False
+    assert "verdict_0:not_supported" in result["invalid"]
