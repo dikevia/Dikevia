@@ -854,6 +854,7 @@ class LegalOrchestrator:
                             )
                         else:
                             entailment_validation = await verify_claim_entailment(
+                                question=request.question,
                                 claims=claim_validation["claims"], sources=ai_sources,
                             )
                             if not entailment_validation.get("valid"):
