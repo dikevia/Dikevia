@@ -20,6 +20,7 @@ from .legal_assurance import assess_source_set, validate_answer_citations, valid
 from .local_corpus import search_local_documents
 from .article_lookup import missing_direct_article_reference
 from .legal_search_plan import build_official_search_query
+from .legal_qualification import qualify_legal_question
 
 
 def should_use_cgfp_snapshot_fallback(
@@ -244,6 +245,7 @@ class LegalOrchestrator:
         history = (conversation_history or [])[-12:]
         prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"][-3:]
         current_question = request.question.strip()
+        legal_context = qualify_legal_question(current_question, request.employer)
         contextual_question = current_question[:500]
         # A short follow-up may depend on the immediately preceding question,
         # but older exchanges must never displace the current request.
@@ -870,6 +872,7 @@ class LegalOrchestrator:
                             facts_period=temporal_context,
                             sources=ai_sources,
                             conversation_history=history,
+                            legal_context=legal_context,
                         )
                         if isinstance(ai_result, AIAnalysisResult):
                             raw_ai_content = ai_result.content
