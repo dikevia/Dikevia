@@ -333,3 +333,21 @@ def test_administrative_open_data_import_rejects_xml_entity_declarations():
     with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("malicious.xml", xml)
     assert parse_administrative_open_data_zip(archive_bytes.getvalue(), "malicious.zip") == []
+
+
+
+def test_legal_corpus_results_are_interleaved_across_subquestions():
+    from app.legal_corpus import interleave_legal_corpus_results
+    first = [
+        {"source_id": "OPEN_DATA_JA_0001", "title": "A1"},
+        {"source_id": "OPEN_DATA_JA_0002", "title": "A2"},
+    ]
+    second = [
+        {"source_id": "OPEN_DATA_JA_0001", "title": "duplicate"},
+        {"source_id": "OPEN_DATA_JA_0003", "title": "B2"},
+    ]
+    third = [{"source_id": "OPEN_DATA_JA_0004", "title": "C1"}]
+    selected = interleave_legal_corpus_results([first, second, third], limit=3)
+    assert [item["source_id"] for item in selected] == [
+        "OPEN_DATA_JA_0001", "OPEN_DATA_JA_0004", "OPEN_DATA_JA_0002"
+    ]
