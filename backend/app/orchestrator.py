@@ -14,7 +14,7 @@ from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, i
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
-from .jurisprudence import AdministrativeCaseLawConnector
+from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status
 from .legal_corpus import search_legal_corpus
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
@@ -437,25 +437,46 @@ class LegalOrchestrator:
                             "son résultat de recherche reste une métadonnée non probante."
                         )
                         continue
-                    try:
-                        decision_date = date.fromisoformat(str(result.get("decision_date") or "")[:10])
-                    except ValueError:
-                        decision_date = None
-                    result["temporal_status"] = (
-                        "DECISION_AVAILABLE_BY_REQUESTED_DATE"
-                        if decision_date is not None and decision_date <= effective_date
-                        else "TEMPORAL_SCOPE_INCOMPLETE"
-                    )
+                    temporal_status = decision_temporal_status(result.get("decision_date"), effective_date)
+                    if temporal_status != "DECISION_AVAILABLE_BY_REQUESTED_DATE":
+                        logger.warning(
+                            "Décision CETAT écartée : date absente, invalide ou postérieure aux faits (source=%s, statut=%s)",
+                            result.get("source_id"), temporal_status,
+                        )
+                        case_law_fulltext_issue = (
+                            "Une décision CETAT a été écartée car sa date ne permet pas de vérifier qu'elle était disponible à la date des faits."
+                        )
+                        continue
+                    result["temporal_status"] = temporal_status
                     result["content_kind"] = "FULL_TEXT"
+                    scope = classify_public_service_scope(result)
+                    result["public_service_scope"] = scope["scope"]
+                    result["scope_evidence"] = scope["evidence"]
+                    result["analysis_eligible"] = scope["analysis_eligible"]
+                    if not scope["analysis_eligible"] or not is_topic_relevant_source(current_question, result):
+                        logger.info(
+                            "Décision CETAT écartée du dossier IA : périmètre ou thème non confirmé (source=%s, scope=%s)",
+                            result.get("source_id"), scope["scope"],
+                        )
+                        case_law_fulltext_issue = (
+                            "Une décision CETAT consultée a été écartée car son lien avec la fonction publique territoriale ou le sujet posé n'est pas suffisamment établi."
+                        )
+                        continue
                     result["citation_integrity"] = {
-                        "valid": bool(result.get("source_id") and len(result.get("text") or "") >= 80),
-                        "verification_scope": "PISTE_CETAT_CONSULT_ID_AND_FULL_TEXT",
+                        "valid": bool(
+                            result.get("source_id")
+                            and result.get("source_status") == "OFFICIAL_FULL_TEXT_ID_MATCHED"
+                            and result.get("full_text_retrieved") is True
+                            and result.get("official_source") is True
+                            and len(result.get("text") or "") >= 80
+                        ),
+                        "verification_scope": "PISTE_CETAT_CONSULT_ID_AND_FULL_TEXT_AND_DATE_AND_SCOPE",
                     }
                     if result["citation_integrity"]["valid"]:
                         case_law_full_text_sources.append(result)
                     else:
                         case_law_fulltext_issue = (
-                            "Une décision CETAT consultée n'a pas satisfait le contrôle d'identifiant et de texte intégral."
+                            "Une décision CETAT consultée n'a pas satisfait tous les contrôles d'identifiant, de provenance et de texte intégral."
                         )
         local_sources: list[dict] = []
         local_issue = None
