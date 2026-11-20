@@ -419,6 +419,7 @@ async def test_orchestrator_does_not_require_a_facts_date_before_research():
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
     assert response.clarification_question is None
     assert not any("indiquez la date" in item.casefold() for item in response.missing_information)
+    assert not any("date des faits non renseignée" in item.casefold() for item in response.missing_information)
 
 
 @pytest.mark.asyncio
