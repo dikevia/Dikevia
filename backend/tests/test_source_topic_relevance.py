@@ -1,4 +1,4 @@
-from app.fpt_scope import is_topic_relevant_source
+from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
 from app.orchestrator import filter_irrelevant_sources_for_display
 
 
@@ -74,3 +74,9 @@ def test_short_topic_acronym_does_not_match_inside_an_unrelated_word():
         "text": "Les recettes de fonctionnement financent les services publics locaux.",
     }
     assert is_topic_relevant_source(question, source) is True
+
+
+
+def test_french_demonstrative_cet_is_not_mistaken_for_leave_acronym():
+    assert "LEAVE" not in _matched_topic_families("Cet arrêté fixe les règles applicables.")
+    assert "LEAVE" in _matched_topic_families("Le CET permet de conserver des jours de congé.")
