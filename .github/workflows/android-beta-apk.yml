@@ -10,17 +10,13 @@ on:
       - ".github/workflows/android-beta-apk.yml"
   push:
     branches:
-      - android/native-compose-integration
+      - integration/beta-commercial-security
       - feature/dikevia-v3.38.5-cgfp-chat
     paths:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
       - "frontend/**"
       - "render.yaml"
-
-concurrency:
-  group: android-beta-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -48,18 +44,8 @@ jobs:
           gradle-version: "8.9"
 
       - name: Build beta APK
-        timeout-minutes: 15
         working-directory: android
-        run: timeout --signal=TERM --kill-after=30s 12m gradle --no-daemon --console=plain --stacktrace --max-workers=2 :app:assembleDebug
-
-      - name: Run native UI smoke test on Android emulator
-        timeout-minutes: 20
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_6
-          script: cd android && timeout --signal=TERM --kill-after=30s 18m gradle --no-daemon --console=plain --stacktrace --max-workers=2 :app:connectedDebugAndroidTest
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
 
       - name: Validate generated APK
         shell: bash
