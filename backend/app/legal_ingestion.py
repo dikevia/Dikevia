@@ -80,3 +80,112 @@ def parse_circulaires_xml(xml_bytes: bytes) -> list[dict[str, Any]]:
             "full_text": text, "raw_metadata": {"xml_element": _local(node.tag),
                 "identifier": identifier, "import_method": "DILA_CIRCULAIRES_XML"}})
     return records
+
+
+def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> list[dict[str, Any]]:
+    """Import only dated, full-text decisions whose content is relevant to FPT.
+
+    The official portal publishes monthly ZIP archives, not an API. XML files are
+    parsed in-place (never extracted), with strict archive and XML resource limits.
+    """
+    import hashlib
+    import zipfile
+
+    from .fpt_scope import classify_public_service_scope
+
+    if not zip_bytes or len(zip_bytes) > 100 * 1024 * 1024:
+        raise ValueError("L'archive Open Data est vide ou dépasse 100 Mo.")
+    try:
+        archive = zipfile.ZipFile(__import__("io").BytesIO(zip_bytes))
+    except (zipfile.BadZipFile, OSError) as exc:
+        raise ValueError("L'archive Open Data n'est pas un ZIP valide.") from exc
+
+    with archive:
+        xml_entries = [info for info in archive.infolist() if not info.is_dir() and info.filename.lower().endswith(".xml")]
+        if not xml_entries or len(xml_entries) > 5000:
+            raise ValueError("L'archive doit contenir entre 1 et 5 000 fichiers XML.")
+        total_size = sum(info.file_size for info in xml_entries)
+        if total_size > 500 * 1024 * 1024:
+            raise ValueError("Le volume XML décompressé dépasse 500 Mo.")
+        records: list[dict[str, Any]] = []
+        for info in xml_entries:
+            if info.flag_bits & 0x1 or info.file_size <= 0 or info.file_size > 15 * 1024 * 1024:
+                continue
+            if info.compress_size and info.file_size / info.compress_size > 200:
+                continue
+            try:
+                xml_bytes = archive.read(info)
+                if b"<!DOCTYPE" in xml_bytes.upper() or b"<!ENTITY" in xml_bytes.upper():
+                    continue
+                root = ET.fromstring(xml_bytes)
+            except (KeyError, OSError, ET.ParseError, DefusedXmlException):
+                continue
+
+            def value(*names: str, max_length: int = 1000) -> str | None:
+                return _descendant_text(root, {name.upper() for name in names})[:max_length] if _descendant_text(root, {name.upper() for name in names}) else None
+
+            court_code = value("Code_Juridiction", "CodeJuridiction", max_length=80)
+            court_name = value("Nom_Juridiction", "NomJuridiction", max_length=250)
+            case_number = value("Numero_Dossier", "NumeroDossier", max_length=120)
+            decision_date_raw = value("Date_Lecture", "DateLecture", max_length=40)
+            decision_date = _date(decision_date_raw)
+            if not case_number or not decision_date or not court_name:
+                continue
+
+            body_node = next((node for node in root.iter() if _local(node.tag) == "TEXTE_INTEGRAL"), None)
+            if body_node is None:
+                continue
+            body = clean_text(" ".join(part.strip() for part in body_node.itertext() if part.strip()))[:100000]
+            if len(body) < 80:
+                continue
+
+            title = f"Décision du {court_name} n° {case_number} du {decision_date.isoformat()}"
+            scope = classify_public_service_scope({"title": title, "text": body, "document_kind": "ADMIN_CASELAW"})
+            if not scope.get("analysis_eligible"):
+                continue
+
+            ecli = value("Numero_ECLI", "NumeroECLI", max_length=160)
+            identification = value("Identification", max_length=250) or info.filename
+            publication_code = value("Code_Publication", "CodePublication", max_length=20)
+            decision_type = value("Type_Decision", "TypeDecision", max_length=80)
+            recourse_type = value("Type_Recours", "TypeRecours", max_length=160)
+            update_date = _date(value("Date_Mise_Jour", "DateMiseAJour", max_length=40))
+            identity = "|".join((court_code or court_name, case_number, decision_date.isoformat(), identification))
+            source_digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
+            body_digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+            records.append({
+                "source_type": "OTHER_OFFICIAL",
+                "source_id": "OPEN_DATA_JA_" + source_digest,
+                "title": title,
+                "document_kind": "ADMIN_CASELAW",
+                "official_number": case_number,
+                "jurisdiction": court_name,
+                "publisher": "Conseil d'État — Open Data de la justice administrative",
+                "official_url": "https://opendata.justice-administrative.fr/",
+                "signature_date": decision_date,
+                "publication_date": update_date,
+                "status": "UNKNOWN",
+                "source_status": "OFFICIAL_XML_IMPORTED",
+                "valid_from": None,
+                "valid_to": None,
+                "version_status": "UNKNOWN",
+                "version_key": "open-data-xml-" + body_digest[:32],
+                "source_version_id": ecli or identification,
+                "full_text": body,
+                "raw_metadata": {
+                    "court_code": court_code, "ecli": ecli,
+                    "publication_code": publication_code,
+                    "decision_type": decision_type, "recourse_type": recourse_type,
+                    "xml_identification": identification,
+                    "source_archive": archive_name[:250],
+                    "public_service_scope": scope.get("scope"),
+                    "scope_evidence": scope.get("evidence", []),
+                    "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
+                },
+                "raw_version_payload": {
+                    "xml_filename": info.filename[:250],
+                    "source_archive": archive_name[:250],
+                    "ecli": ecli,
+                },
+            })
+        return records
