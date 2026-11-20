@@ -54,7 +54,7 @@ def test_union_rights_query_targets_current_cgfp_book_ii_and_local_rules():
     )
     assert "CGFP livre II" in query
     assert "exercice du droit syndical" in query
-    assert "crédit de temps syndical" in query
+    assert "crédit temps syndical" in query
     assert "délibération" in query
     # The 1985 implementing decree was repealed from 1 February 2025;
     # it must not be promoted as the current legal framework.
