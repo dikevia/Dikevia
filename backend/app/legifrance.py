@@ -137,8 +137,9 @@ class LegifranceConnector:
         """Check the documented Légifrance ping endpoint, with guide-compatible fallback.
 
         The DILA FAQ documents /list/ping; the PISTE user guide also exposes
-        /consult/ping. Only a missing-route response triggers the fallback:
-        authentication and server errors remain visible as connection failures.
+        /consult/ping. Missing routes and upstream 5xx responses trigger the
+        independent fallback. Authentication and permission failures remain
+        visible as connection failures.
         """
         token = await self._get_token()
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
