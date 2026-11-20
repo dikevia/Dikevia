@@ -17,15 +17,21 @@ from .legifrance import LegifranceConnector, LegifranceUnavailable
 DECISION_ID_RE = re.compile(r"^CETATEXT\d{12}$")
 
 
-def decision_temporal_status(decision_date: str | None, requested_date: date) -> str:
-    """Require a verified decision date not later than the date of the facts."""
+def decision_temporal_status(decision_date: str | None, facts_date: date | None) -> str:
+    """Classify a decision's timing without excluding later interpretative case law.
+
+    A judgment after the facts may still interpret the law applicable to them.
+    Its date is therefore contextual metadata, not a hard retrieval boundary.
+    """
     try:
         parsed = date.fromisoformat(str(decision_date or "")[:10])
     except (TypeError, ValueError):
-        return "TEMPORAL_SCOPE_INCOMPLETE"
-    if parsed > requested_date:
-        return "DECISION_POSTERIOR_TO_REQUESTED_DATE"
-    return "DECISION_AVAILABLE_BY_REQUESTED_DATE"
+        return "DECISION_DATE_UNKNOWN"
+    if facts_date is None:
+        return "DECISION_DATE_VERIFIED_NO_FACTS_DATE"
+    if parsed > facts_date:
+        return "DECISION_POSTERIOR_TO_FACTS"
+    return "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS"
 
 
 def interleave_case_law_results(results_by_query: list[list[dict]], limit: int = 10) -> list[dict]:
