@@ -420,6 +420,7 @@ async def test_orchestrator_does_not_require_a_facts_date_before_research():
     assert response.clarification_question is None
     assert not any("indiquez la date" in item.casefold() for item in response.missing_information)
     assert not any("date des faits non renseignée" in item.casefold() for item in response.missing_information)
+    assert "recherche générale" not in response.answer.casefold()
 
 
 @pytest.mark.asyncio
