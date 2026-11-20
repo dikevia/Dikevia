@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 import httpx
 import pytest
 from app.config import settings
@@ -23,7 +23,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
         if request.url.path.endswith("/search"):
             body = __import__("json").loads(request.content)
             assert body["fond"] == "CODE_DATE"
-            assert body["recherche"]["filtres"][1]["singleDate"] == int(__import__("datetime").datetime(2025, 11, 16, tzinfo=__import__("datetime").timezone.utc).timestamp() * 1000)
+            assert body["recherche"]["filtres"][1]["singleDate"] == int(datetime(2025, 11, 16, tzinfo=timezone.utc).timestamp() * 1000)
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
             return httpx.Response(200, json={"article": {"id": ARTICLE_ID, "num": "L. 123-4", "nomCode": "Code général de la fonction publique", "dateDebut": "2025-01-01", "texte": "Le texte réglementaire officiel est ici suffisamment long pour le test."}})
