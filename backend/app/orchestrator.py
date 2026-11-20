@@ -19,7 +19,7 @@ from .legal_corpus import search_legal_corpus
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents
 from .article_lookup import missing_direct_article_reference
-from .legal_search_plan import build_official_search_query
+from .legal_search_plan import build_official_search_query, build_official_search_queries
 from .legal_qualification import qualify_legal_question
 
 
@@ -254,6 +254,7 @@ class LegalOrchestrator:
         # PISTE search methods cap their query at 500 characters. The current
         # question must take precedence over older conversational context.
         live_query = build_official_search_query(current_question)
+        research_queries = build_official_search_queries(current_question)
         contextual_search_query = build_official_search_query(contextual_question)
         live_sources: list[dict] = []
         regulatory_sources: list[dict] = []
@@ -293,29 +294,42 @@ class LegalOrchestrator:
                 [period_start, effective_date]
                 if period_start and period_start < effective_date else [effective_date]
             )
+            # Search a bounded set of independent legal axes. Each query is
+            # evaluated at every required temporal endpoint; one failed axis
+            # must not discard successful results from the others.
             endpoint_results = await asyncio.gather(*[
-                asyncio.gather(
-                    legifrance.search_code_articles(live_query, requested_date),
-                    legifrance.search_regulatory_texts(live_query, requested_date, limit=3),
-                    return_exceptions=True,
-                )
+                asyncio.gather(*[
+                    asyncio.gather(
+                        legifrance.search_code_articles(query, requested_date),
+                        legifrance.search_regulatory_texts(query, requested_date, limit=3),
+                        return_exceptions=True,
+                    )
+                    for query in research_queries
+                ])
                 for requested_date in comparison_dates
             ])
             code_result, regulatory_result = [], []
             code_failures, regulatory_failures = [], []
-            for requested_date, pair in zip(comparison_dates, endpoint_results):
-                code_at_date, regulatory_at_date = pair
+            for requested_date, query_results in zip(comparison_dates, endpoint_results):
                 endpoint = "START" if requested_date == comparison_dates[0] and len(comparison_dates) > 1 else "END"
-                if isinstance(code_at_date, BaseException) or not isinstance(code_at_date, list):
-                    logger.error("Recherche code Légifrance en échec à %s : %r", requested_date, code_at_date)
-                    code_failures.append(requested_date.isoformat())
-                else:
-                    code_result.extend(_tag_official_versions(code_at_date, requested_date, endpoint))
-                if isinstance(regulatory_at_date, BaseException) or not isinstance(regulatory_at_date, list):
-                    logger.error("Recherche réglementaire Légifrance en échec à %s : %r", requested_date, regulatory_at_date)
-                    regulatory_failures.append(requested_date.isoformat())
-                else:
-                    regulatory_result.extend(_tag_official_versions(regulatory_at_date, requested_date, endpoint))
+                for query, pair in zip(research_queries, query_results):
+                    code_at_date, regulatory_at_date = pair
+                    if isinstance(code_at_date, BaseException) or not isinstance(code_at_date, list):
+                        logger.warning("Recherche code Légifrance en échec (%s) à %s : %r", query[:100], requested_date, code_at_date)
+                        code_failures.append((requested_date.isoformat(), query))
+                    else:
+                        code_result.extend(_tag_official_versions(code_at_date, requested_date, endpoint))
+                    if isinstance(regulatory_at_date, BaseException) or not isinstance(regulatory_at_date, list):
+                        logger.warning("Recherche réglementaire Légifrance en échec (%s) à %s : %r", query[:100], requested_date, regulatory_at_date)
+                        regulatory_failures.append((requested_date.isoformat(), query))
+                    else:
+                        regulatory_result.extend(_tag_official_versions(regulatory_at_date, requested_date, endpoint))
+
+            # De-duplicate repeated hits returned by overlapping research axes.
+            unique_code = {}
+            for source in code_result:
+                unique_code[source.get("source_id") or str(id(source))] = source
+            code_result = list(unique_code.values())
 
             # The broad LODA query can rank unrelated texts above the FPT
             # implementing instrument. For IHTS questions, retrieve decree 91-875
@@ -338,11 +352,22 @@ class LegalOrchestrator:
                 unique_regulatory[source.get("source_id") or str(id(source))] = source
             regulatory_result = list(unique_regulatory.values())
 
-            try:
-                case_result = await case_law_connector.search(live_query, effective_date)
-            except Exception as exc:
-                logger.error("Recherche de jurisprudence CETAT en échec : %r", exc)
-                case_result = None
+            case_results = await asyncio.gather(*[
+                case_law_connector.search(query, effective_date)
+                for query in research_queries
+            ], return_exceptions=True)
+            case_result = []
+            case_search_failed = False
+            for query, result in zip(research_queries, case_results):
+                if isinstance(result, BaseException) or not isinstance(result, list):
+                    logger.warning("Recherche CETAT en échec (%s) : %r", query[:100], result)
+                    case_search_failed = True
+                else:
+                    case_result.extend(result)
+            unique_cases = {}
+            for source in case_result:
+                unique_cases[source.get("source_id") or str(id(source))] = source
+            case_result = list(unique_cases.values())
             code_issue = (
                 "La recherche d'articles du CGFP sur Légifrance a échoué pour au moins une date de référence."
                 if code_failures else None
@@ -351,11 +376,10 @@ class LegalOrchestrator:
                 "La recherche des lois, décrets et arrêtés sur Légifrance a échoué pour au moins une date de référence."
                 if regulatory_failures else None
             )
-            case_search_issue = None
-            if not isinstance(case_result, list):
-                logger.error("Recherche de jurisprudence CETAT non conforme : %r", case_result)
-                case_search_issue = "La recherche de jurisprudence administrative (fonds CETAT) n'a pas abouti."
-                case_result = []
+            case_search_issue = (
+                "La recherche de jurisprudence administrative (fonds CETAT) n'a pas abouti pour au moins un axe."
+                if case_search_failed else None
+            )
             temporal_issue = None
             if len(comparison_dates) > 1 and (code_failures or regulatory_failures):
                 temporal_issue = (
