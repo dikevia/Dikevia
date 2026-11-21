@@ -165,6 +165,7 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
             "scope": "COMMON_PUBLIC_SERVICE",
             "evidence": common_scope_hits[:3],
             "analysis_eligible": True,
+            "claim_eligible": True,
         }
 
     # If the body contains competing versant markers and the title does not
