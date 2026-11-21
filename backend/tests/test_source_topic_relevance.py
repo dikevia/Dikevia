@@ -80,3 +80,28 @@ def test_short_topic_acronym_does_not_match_inside_an_unrelated_word():
 def test_french_demonstrative_cet_is_not_mistaken_for_leave_acronym():
     assert "LEAVE" not in _matched_topic_families("Cet arrêté fixe les règles applicables.")
     assert "LEAVE" in _matched_topic_families("Le CET permet de conserver des jours de congé.")
+
+
+def test_titular_status_alone_does_not_trigger_termination_topic_filter():
+    question = "Je suis fonctionnaire titulaire : quels sont mes droits pendant un congé maladie ?"
+    source = {
+        "title": "Congé de maladie des fonctionnaires territoriaux",
+        "text": "Dispositions relatives au congé de maladie et aux agents territoriaux. " * 4,
+    }
+    assert "TERMINATION_OF_TITULAR" not in _matched_topic_families(question)
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_titular_status_alone_does_not_hide_working_time_sources():
+    question = "Je suis fonctionnaire titulaire : comment sont calculées mes heures supplémentaires ?"
+    source = {
+        "title": "Indemnités horaires pour travaux supplémentaires",
+        "text": "Règles relatives aux IHTS et aux agents territoriaux. " * 4,
+    }
+    assert "TERMINATION_OF_TITULAR" not in _matched_topic_families(question)
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_actual_termination_question_still_triggers_termination_filter():
+    question = "Je suis fonctionnaire titulaire, ma collectivité peut-elle me licencier ?"
+    assert "TERMINATION_OF_TITULAR" in _matched_topic_families(question)
