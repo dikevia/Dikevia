@@ -402,7 +402,7 @@ class LegalOrchestrator:
                 missing_information=[str(exc)])
 
         history = (conversation_history or [])[-12:]
-        prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"][-3:]
+        prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"]
         current_question = request.question.strip()
         contextual_question = build_contextual_research_question(
             current_question, prior_user_questions,
