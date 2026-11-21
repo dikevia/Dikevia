@@ -230,7 +230,6 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
     if not (settings.ai_api_key and settings.ai_model):
         return None
     # Defense in depth: only non-empty retrieved excerpts may reach the provider.
-    allow_local_documents = bool(allow_local_documents and settings.ai_local_documents_in_chat_enabled)
     sources = _usable_document_sources(sources, allow_local_documents=allow_local_documents)
     if not sources:
         raise AIAnalysisRefusedNoSources("Analyse refusée : aucun extrait documentaire non vide n'est disponible.")
