@@ -1028,8 +1028,8 @@ class LegalOrchestrator:
                 "les dates d'effet et éventuelles versions entre ces bornes restent à contrôler."
             ))
             missing.insert(1, (
-                "La jurisprudence CETAT a été recherchée à la date de référence de fin de période ; "
-                "son évolution historique sur toute la période n'est pas établie par cette seule recherche."
+                "La jurisprudence CETAT a été recherchée jusqu'à la date actuelle, y compris les décisions postérieures à la période des faits. "
+                "Ces décisions peuvent éclairer l'interprétation du droit antérieur, mais ne prouvent pas à elles seules la règle applicable à chaque date de la période."
             ))
 
         ai_sources: list[dict] = []
