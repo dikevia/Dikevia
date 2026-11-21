@@ -1,4 +1,4 @@
-from app.orchestrator import classify_question_intent, question_needs_case_date
+from app.orchestrator import _analysis_mode, classify_question_intent, question_needs_case_date
 
 
 def test_general_information_is_classified_without_a_personal_case():
@@ -84,6 +84,7 @@ def test_explicit_personal_refusal_remains_personal_without_a_date():
     question = "Ma collectivité a refusé ma demande de protection fonctionnelle."
     assert classify_question_intent(question) == "PERSONAL_CASE"
     assert question_needs_case_date(question) is True
+    assert _analysis_mode(classify_question_intent(question), False) == "PERSONAL_CASE_WITHOUT_FACTS_DATE"
 
 
 def test_employer_refusal_of_the_users_own_request_is_personal():
