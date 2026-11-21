@@ -139,7 +139,17 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
 
     async def no_code_articles(*args, **kwargs):
         captured_dates["code"].append(args[1])
-        return []
+        text = (
+            "Le Code général de la fonction publique encadre les droits des agents publics "
+            "territoriaux et les indemnités horaires pour travaux supplémentaires. "
+        ) * 3
+        return [{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345679",
+            "article": "L123-4",
+            "title": "Code général de la fonction publique — heures supplémentaires",
+            "text": text,
+        }]
 
     regulatory_text = (
         "Le décret relatif aux indemnités horaires pour travaux supplémentaires "
@@ -449,7 +459,7 @@ def test_open_data_search_results_mark_top_passages_and_final_chunk():
     from app.legal_corpus import search_legal_corpus
     import inspect
     source = inspect.getsource(search_legal_corpus)
-    assert "TOP_TWO_RELEVANT_PASSAGES_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT" in source
+    assert "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT" in source
 
 
 
