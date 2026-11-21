@@ -138,3 +138,31 @@ def test_fpe_scope_detection_does_not_trigger_on_a_generic_ministry_mention():
 def test_fpe_scope_detects_state_agent_wording_without_accents():
     result = qualify_legal_question("Je suis fonctionnaire de l'Etat.")
     assert result["scope_status"] == "OUT_OF_SCOPE_FPE"
+
+
+
+def test_short_followup_inherits_only_the_immediately_relevant_prior_question():
+    from app.legal_qualification import build_contextual_research_question
+
+    resolved = build_contextual_research_question(
+        "Et pour les contractuels ?",
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    )
+    assert resolved.startswith("Et pour les contractuels ?")
+    assert "heures supplémentaires" in resolved
+
+
+def test_new_independent_question_does_not_inherit_unrelated_history():
+    from app.legal_qualification import build_contextual_research_question
+
+    resolved = build_contextual_research_question(
+        "Quels sont les droits à congés annuels ?",
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    )
+    assert resolved == "Quels sont les droits à congés annuels ?"
+
+
+def test_short_followup_without_prior_question_stays_unchanged():
+    from app.legal_qualification import build_contextual_research_question
+
+    assert build_contextual_research_question("Et pour les contractuels ?") == "Et pour les contractuels ?"
