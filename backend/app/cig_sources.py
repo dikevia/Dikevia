@@ -144,7 +144,7 @@ def can_ingest_cig_content(
     so this helper deliberately never authorizes ingestion.
     """
     # Validate the source identifier, but never infer authorization from input.
-    return get_cig_source(source_id) is not None and False
+    return False
 
 
 def cig_source_metadata(source_id: str) -> dict[str, str] | None:
