@@ -1365,6 +1365,8 @@ class LegalOrchestrator:
                             structured_answer, ai_sources,
                             required_axes=legal_context.get("axes_recherche_documentaire") or None,
                         )
+                        for uncovered_axis in claim_validation.get("uncovered_axes", []):
+                            missing.append(f"Aucune source suffisamment pertinente n'a permis de répondre à cette sous-question : {uncovered_axis}")
                         if not claim_validation["valid"]:
                             ai_answer = None
                             if ai_usage is not None:
@@ -1396,8 +1398,6 @@ class LegalOrchestrator:
                                 )
                             else:
                                 claims = claim_validation["claims"]
-                                for uncovered_axis in claim_validation.get("uncovered_axes", []):
-                                    missing.append(f"Aucune source suffisamment pertinente n'a permis de répondre à cette sous-question : {uncovered_axis}")
                                 # The model is instructed to put the direct answer first.
                                 # Render it immediately instead of prefacing it with legal boilerplate.
                                 rendered_claims = []
