@@ -265,20 +265,23 @@ _TOPICS: tuple[dict[str, Any], ...] = (
         "triggers": (
             "avancement", "avancement d echelon", "avancement de grade",
             "promotion interne", "carriere", "entretien professionnel",
-            "evaluation professionnelle", "compte rendu d entretien",
-            "tableau d avancement", "ligne directrice de gestion",
+            "evaluation professionnelle", "evaluation annuelle", "evaluation a charge",
+            "contester evaluation", "contestation evaluation", "compte rendu d evaluation",
+            "compte rendu d entretien", "tableau d avancement", "ligne directrice de gestion",
         ),
         "expansion": (
-            "carrière fonctionnaire territorial avancement échelon grade promotion interne "
-            "tableau avancement lignes directrices gestion entretien professionnel évaluation "
-            "valeur professionnelle appréciation autorité territoriale"
+            "CGFP L521-1 L521-3 L521-5 appréciation valeur professionnelle fonctionnaire territorial "
+            "entretien professionnel annuel compte rendu révision contestation décret 2014-1526 "
+            "articles 2 3 4 5 6 7 autorité territoriale commission administrative paritaire"
         ),
         "anchors": (
             "avancement", "avancement d echelon", "avancement de grade",
-            "promotion interne", "entretien professionnel", "valeur professionnelle",
-            "tableau d avancement", "ligne directrice de gestion",
+            "promotion interne", "entretien professionnel", "evaluation annuelle",
+            "evaluation a charge", "contester evaluation", "compte rendu d evaluation",
+            "valeur professionnelle", "tableau d avancement", "ligne directrice de gestion",
         ),
-        "boosts": {"avancement": 10.0, "promotion interne": 12.0, "entretien professionnel": 9.0},
+        "boosts": {"avancement": 10.0, "promotion interne": 12.0, "entretien professionnel": 9.0,
+                   "evaluation annuelle": 14.0, "contester evaluation": 16.0},
         "exclude_unless_anchor": (),
     },
     {
