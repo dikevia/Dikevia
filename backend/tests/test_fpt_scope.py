@@ -16,7 +16,8 @@ def test_generic_public_service_wording_is_context_only_without_fpt_proof():
         "text": "Le présent texte concerne les agents publics et les fonctionnaires.",
     })
     assert result["scope"] == "GENERAL_PUBLIC_SERVICE"
-    assert result["analysis_eligible"] is False
+    assert result["analysis_eligible"] is True
+    assert result["claim_eligible"] is False
 
 
 def test_explicit_three_branch_scope_is_eligible_for_fpt_analysis():
