@@ -209,6 +209,13 @@ def _fold(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", ascii_text)).strip()
 
 
+def _contains_trigger(text: str, trigger: str) -> bool:
+    """Match a normalized trigger as complete words, never as an arbitrary substring."""
+    normalized_text = f" {_fold(text)} "
+    normalized_trigger = f" {_fold(trigger)} "
+    return normalized_trigger in normalized_text
+
+
 def build_official_search_query(question: str, max_length: int = 500) -> str:
     """Keep the user's wording first, then append one narrowly matched FPT expansion."""
     original = str(question or "").strip()
@@ -225,7 +232,7 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
     expansion = next(
         (
             terms for triggers, terms in _TOPIC_EXPANSIONS
-            if any(_fold(trigger) in folded for trigger in triggers)
+            if any(_contains_trigger(folded, trigger) for trigger in triggers)
         ),
         "",
     )
@@ -480,7 +487,7 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     query_limit = max(1, min(max_queries, 3))
     matched_axes = []
     other_topic_present = any(
-        any(_fold(trigger) in folded for trigger in triggers)
+        any(_contains_trigger(folded, trigger) for trigger in triggers)
         for index, (triggers, _axes) in enumerate(_TOPIC_RESEARCH_AXES)
         if index != 2
     )
@@ -489,7 +496,7 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
         _fold(trigger) in folded for trigger in contract_triggers[:6]
     )
     for index, (triggers, axes) in enumerate(_TOPIC_RESEARCH_AXES):
-        if not any(_fold(trigger) in folded for trigger in triggers):
+        if not any(_contains_trigger(folded, trigger) for trigger in triggers):
             continue
         # "Je suis contractuel" identifies status, not the legal topic. Do not
         # let it displace a substantive topic such as IHTS or union rights.
