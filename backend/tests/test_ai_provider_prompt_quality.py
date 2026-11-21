@@ -55,3 +55,7 @@ def test_prompt_warns_that_case_law_excerpts_may_be_partial():
     from app.ai_provider import SYSTEM_PROMPT
     assert "Les extraits d'une décision peuvent être partiels" in SYSTEM_PROMPT
     assert "n'infère pas le dispositif" in SYSTEM_PROMPT
+
+def test_prompt_distinguishes_titular_dismissal_from_abolition_of_post():
+    assert "Ne présente jamais la suppression d'un emploi comme entraînant automatiquement la perte de la qualité de fonctionnaire" in SYSTEM_PROMPT
+    assert "révocation disciplinaire et licenciement pour insuffisance professionnelle" in SYSTEM_PROMPT
