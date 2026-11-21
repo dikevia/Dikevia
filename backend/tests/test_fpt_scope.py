@@ -30,6 +30,7 @@ def test_explicit_three_branch_scope_is_eligible_for_fpt_analysis():
     })
     assert result["scope"] == "COMMON_PUBLIC_SERVICE"
     assert result["analysis_eligible"] is True
+    assert result["claim_eligible"] is True
 
 
 def test_unclassified_source_is_not_eligible_for_fpt_analysis():
@@ -282,3 +283,13 @@ def test_explicit_fpt_title_can_contain_cross_versant_reference():
     })
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
+
+def test_single_generic_public_service_marker_is_not_enough_even_for_context():
+    result = classify_public_service_scope({
+        "title": "Document administratif",
+        "text": "Le texte concerne les agents publics.",
+    })
+    assert result["scope"] == "GENERAL_PUBLIC_SERVICE"
+    assert result["analysis_eligible"] is False
+    assert result["claim_eligible"] is False
+
