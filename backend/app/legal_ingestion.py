@@ -82,6 +82,67 @@ def parse_circulaires_xml(xml_bytes: bytes) -> list[dict[str, Any]]:
     return records
 
 
+def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) -> bool:
+    """Keep only administrative decisions genuinely connected to FPT employment.
+
+    A local authority being a party, or the generic phrase "collectivités
+    territoriales", is not enough: those terms also occur in urban-planning,
+    tax and public-procurement litigation.
+    """
+    import unicodedata
+
+    corpus = unicodedata.normalize("NFKD", f"{title} {body}".casefold())
+    corpus = "".join(char for char in corpus if not unicodedata.combining(char))
+    corpus = re.sub(r"[^a-z0-9]+", " ", corpus)
+    corpus = re.sub(r"\\s+", " ", corpus).strip()
+
+    if scope.get("scope") in {
+        "FPE", "FPH", "OUT_OF_SCOPE_EUROPEAN_LAW",
+    }:
+        return False
+
+    local_employers = (
+        "commune", "mairie", "centre communal d action sociale",
+        "etablissement public de cooperation intercommunale", "epci",
+        "metropole", "departement", "region",
+    )
+    public_employment = (
+        "agent public", "agents publics", "agent territorial", "agents territoriaux",
+        "fonctionnaire territorial", "fonctionnaires territoriaux",
+        "fonction publique territoriale", "personnel communal", "personnels communaux",
+        "personnel territorial", "personnels territoriaux", "agent communal",
+        "agents communaux", "agent contractuel territorial",
+        "agents contractuels territoriaux", "agent contractuel de la commune",
+        "agent contractuel de la mairie", "agent de la commune",
+        "agent de la mairie", "fonctionnaire", "fonctionnaires",
+    )
+    hr_subjects = (
+        "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
+        "agissement sexiste", "agissements sexistes", "sanction disciplinaire",
+        "conseil de discipline", "temps de travail", "duree du travail",
+        "conge de maladie", "conge maladie", "accident de service",
+        "maladie professionnelle", "droit syndical", "droits syndicaux",
+        "decharge d activite de service", "autorisation speciale d absence",
+        "traitement indiciaire", "regime indemnitaire", "indemnite de fonctions",
+        "avancement", "mutation", "detachement", "disponibilite", "reclassement",
+        "retraite d office", "carriere d un agent", "remuneration d un agent",
+    )
+    fpt_specific = (
+        "fonction publique territoriale", "agent territorial", "agents territoriaux",
+        "fonctionnaire territorial", "fonctionnaires territoriaux",
+        "decret 88 145", "decret 87 602", "decret 89 677", "decret 91 298",
+    )
+    has_local_employer = any(re.search(rf"\\b{re.escape(marker)}\\b", corpus) for marker in local_employers)
+    has_public_employment = any(marker in corpus for marker in public_employment)
+    has_hr_subject = any(marker in corpus for marker in hr_subjects)
+    has_fpt_specific = any(marker in corpus for marker in fpt_specific)
+
+    if has_local_employer and (has_public_employment or has_hr_subject):
+        return True
+    return bool(scope.get("analysis_eligible") and has_fpt_specific
+                and has_public_employment and has_hr_subject)
+
+
 def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> list[dict[str, Any]]:
     """Import only dated, full-text decisions whose content is relevant to FPT.
 
@@ -152,8 +213,16 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
 
             title = f"Décision du {court_name} n° {case_number} du {decision_date.isoformat()}"
             scope = classify_public_service_scope({"title": title, "text": body, "document_kind": "ADMIN_CASELAW"})
-            if not scope.get("analysis_eligible"):
+            if not _is_fpt_employment_case_law(title, body, scope):
                 continue
+            # A local-employer HR decision can be relevant even when the broad
+            # corpus classifier cannot confidently label it from generic terms.
+            if scope.get("scope") == "OUT_OF_SCOPE_OR_UNCONFIRMED":
+                scope = {
+                    "scope": "FPT",
+                    "evidence": ["Décision locale portant sur un sujet de gestion des agents publics"],
+                    "analysis_eligible": True,
+                }
 
             ecli = value("Numero_ECLI", "NumeroECLI", max_length=160)
             identification = value("Identification", max_length=250) or info.filename
