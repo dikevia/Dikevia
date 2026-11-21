@@ -1,10 +1,11 @@
 from app.ai_provider import SYSTEM_PROMPT
 
 
-def test_prompt_prioritizes_the_current_question_over_lexical_source_matches():
-    assert "PRIORITÉ ABSOLUE À LA QUESTION" in SYSTEM_PROMPT
-    assert "un mot commun" in SYSTEM_PROMPT
-    assert "N'utilise pas les anciennes questions" in SYSTEM_PROMPT
+def test_prompt_prioritizes_understanding_the_current_request_over_lexical_matches():
+    assert "MÉTHODE DE COMPRÉHENSION ET DE RESTITUTION DES SOURCES" in SYSTEM_PROMPT
+    assert "comprendre exactement la demande actuelle" in SYSTEM_PROMPT
+    assert "Écarte les sources qui ne répondent pas au sujet précis" in SYSTEM_PROMPT
+    assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
 
 
 def test_prompt_requires_understanding_the_request_and_presenting_relevant_texts():
@@ -58,9 +59,10 @@ def test_prompt_warns_that_case_law_excerpts_may_be_partial():
     assert "Les extraits d'une décision peuvent être partiels" in SYSTEM_PROMPT
     assert "n'infère pas le dispositif" in SYSTEM_PROMPT
 
-def test_prompt_distinguishes_titular_dismissal_from_abolition_of_post():
-    assert "Ne présente jamais la suppression d'un emploi comme entraînant automatiquement la perte de la qualité de fonctionnaire" in SYSTEM_PROMPT
-    assert "révocation disciplinaire et licenciement pour insuffisance professionnelle" in SYSTEM_PROMPT
+def test_prompt_documents_titular_termination_mechanisms_without_judging_individual_cases():
+    assert "Pour une question demandant si une collectivité peut mettre fin aux fonctions d'un titulaire" in SYSTEM_PROMPT
+    assert "Présente leurs motifs, conditions et procédures tels qu'ils figurent dans les sources" in SYSTEM_PROMPT
+    assert "sans apprécier le cas individuel" in SYSTEM_PROMPT
 
 
 
