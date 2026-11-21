@@ -1,4 +1,8 @@
-from app.legal_search_plan import build_official_search_query, build_official_search_queries
+from app.legal_search_plan import (
+    build_official_research_axes,
+    build_official_search_query,
+    build_official_search_queries,
+)
 
 
 def test_annual_evaluation_contestation_targets_cgfp_and_territorial_implementing_decree():
@@ -287,7 +291,14 @@ def test_trainee_evaluation_question_searches_its_specific_fpt_status_regime():
 
 def test_contractual_evaluation_question_uses_contractual_regime_not_civil_servant_decree():
     question = "Je suis contractuel et je veux contester mon évaluation annuelle."
+    query = build_official_search_query(question)
     queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+    assert "décret 88-145" in query
+    assert "décret 2014-1526" not in query
     assert any("décret 88-145" in item for item in queries)
     assert all("décret 2014-1526" not in item for item in queries)
+    assert len(axes) == 1
+    assert "décret 88-145" in axes[0]
+    assert "décret 2014-1526" not in axes[0]
 
