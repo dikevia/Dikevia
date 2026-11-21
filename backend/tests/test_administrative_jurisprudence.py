@@ -526,3 +526,41 @@ async def test_consult_rejects_truncated_oversized_decision_text(monkeypatch):
     connector = AdministrativeCaseLawConnector(LegifranceConnector(transport=httpx.MockTransport(handler)))
     with pytest.raises(Exception, match="texte intégral vérifiable"):
         await connector.consult("CETATEXT000012345678")
+
+def test_open_data_case_law_filter_excludes_local_authority_cases_unrelated_to_staff():
+    from app.legal_ingestion import _is_fpt_employment_case_law
+
+    urban_planning = (
+        "La commune a approuvé le plan local d'urbanisme au regard du code "
+        "général des collectivités territoriales."
+    )
+    procurement = (
+        "La commune demande le paiement du solde d'un marché public. "
+        "Le litige porte sur les obligations contractuelles et la rémunération "
+        "du titulaire du marché."
+    )
+    assert not _is_fpt_employment_case_law(
+        "Décision concernant une commune", urban_planning,
+        {"scope": "FPT", "analysis_eligible": True},
+    )
+    # "Contractuel" and "rémunération" in a public contract do not mean
+    # contractual employment in the territorial civil service.
+    assert not _is_fpt_employment_case_law(
+        "Marché public conclu par une commune", procurement,
+        {"scope": "FPT", "analysis_eligible": True},
+    )
+
+
+def test_open_data_case_law_filter_keeps_local_authority_hr_disputes():
+    from app.legal_ingestion import _is_fpt_employment_case_law
+
+    harassment_case = (
+        "Mme B sollicite le tribunal après des faits de harcèlement et une "
+        "demande de protection fonctionnelle auprès du service des ressources "
+        "humaines de la commune de Sarcelles."
+    )
+    assert _is_fpt_employment_case_law(
+        "Décision concernant la commune de Sarcelles", harassment_case,
+        {"scope": "OUT_OF_SCOPE_OR_UNCONFIRMED", "analysis_eligible": False},
+    )
+
