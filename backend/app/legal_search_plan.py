@@ -571,11 +571,18 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
     The original expanded query remains first for backward-compatible recall.
     Additional axes are only emitted for explicitly recognized topics.
     """
-    primary = build_official_search_query(question)
+    original = str(question or "").strip()
+    contractual_evaluation = _is_contractual_evaluation_question(original)
+    primary = (
+        "agent contractuel territorial évaluation professionnelle entretien annuel "
+        "décret 88-145 article 1-3 compte rendu appréciation professionnelle "
+        "procédure observations garanties"
+        if contractual_evaluation
+        else build_official_search_query(question)
+    )
     if not primary:
         return []
     queries = [primary]
-    original = str(question or "").strip()
     current_turn = original.splitlines()[0] if original else ""
     if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(_fold(current_turn)):
         return queries
@@ -623,7 +630,7 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             continue
         # "Je suis contractuel" identifies status, not the legal topic. Do not
         # let it displace a substantive topic such as IHTS or union rights.
-        if triggers == contract_triggers and other_topic_present and not contract_subject_present:
+        if triggers == contract_triggers and other_topic_present:
             continue
         matched_axes.append(axes)
 
@@ -635,15 +642,17 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
 
     # Contract agents' annual assessments must be researched under the
     # territorial contractual regime, not the civil-servant evaluation decree.
-    if _is_contractual_evaluation_question(original):
+    if contractual_evaluation:
         matched_axes = [
             axes for axes in matched_axes
-            if "CGFP L521-1" not in axes[0]
-            and (
-                "CGFP livre V" not in axes[0]
-                or _has_independent_career_issue(original)
-            )
+            if "CGFP L521-1" not in " ".join(axes)
+            and "décret 2014-1526" not in " ".join(axes)
+            and "CGFP livre V" not in " ".join(axes)
         ]
+        matched_axes.insert(0, (
+            "décret 88-145 article 1-3 agent contractuel territorial entretien professionnel évaluation compte rendu observations",
+            "jurisprudence administrative évaluation professionnelle agent contractuel territorial impartialité erreur manifeste procédure",
+        ))
 
     # Unclassified everyday questions still receive independent FPT retrieval
     # axes: one for the applicable statutory framework and one for territorial
