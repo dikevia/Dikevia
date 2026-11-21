@@ -116,7 +116,7 @@ _TOPIC_EXPANSIONS = (
         ("conge maladie ordinaire", "congé de maladie ordinaire", "arret maladie",
          "arrêt maladie", "conge longue maladie", "congé longue maladie",
          "conge longue duree", "congé longue durée", "temps partiel therapeutique",
-         "temps partiel thérapeutique", "conseil medical", "conseil médical",
+         "temps partiel thérapeutique", "maintien de traitement", "maintien de rémunération", "conseil medical", "conseil médical",
          "secret medical", "secret médical"),
         "congé maladie fonction publique territoriale CGFP fonctionnaire contractuel "
         "décret 87-602 décret 88-145 conseil médical temps partiel thérapeutique secret médical",
@@ -138,7 +138,7 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("teletravail", "télétravail", "travail a distance", "travail à distance",
-         "materiel de teletravail", "matériel de télétravail"),
+         "materiel de teletravail", "matériel de télétravail", "accident en teletravail", "accident pendant le teletravail", "accident a domicile pendant le teletravail"),
         "fonction publique territoriale télétravail décret 2016-151 décret 2020-524 "
         "autorisation individuelle délibération locale équipement",
     ),
@@ -161,19 +161,26 @@ _TOPIC_EXPANSIONS = (
     (
         ("suppression de poste", "poste supprime", "poste supprimé", "demission",
          "démission", "rupture conventionnelle", "revenir dans la fonction publique",
-         "refus de titularisation"),
+         "revenir dans la fonction publique"),
         "CGFP fin de fonctions fonction publique territoriale suppression emploi "
         "reclassement démission rupture conventionnelle réintégration",
     ),
     (
         ("cumul d activites", "cumul d'activités", "activite independante",
          "activité indépendante", "cumuler deux emplois", "deux emplois publics",
-         "activite accessoire", "activité accessoire"),
+         "activite accessoire", "activité accessoire", "temps non complet"),
         "CGFP cumul activités fonctionnaires territoriaux décret 2020-69 "
         "activité accessoire création entreprise autorisation déclaration",
     ),
+    (
+        ("silence de l administration", "silence de l'administration",
+         "ne repond pas a ma demande", "ne répond pas à ma demande",
+         "decision implicite", "décision implicite", "refus implicite",
+         "absence de reponse", "absence de réponse"),
+        "code des relations entre le public et l administration CRPA silence "
+        "décision implicite délai recours agent public territorial",
+    ),
 )
-
 
 def _fold(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value.casefold())
@@ -409,8 +416,17 @@ _TOPIC_RESEARCH_AXES = (
             "FPT activité accessoire création entreprise cumul emplois publics exceptions",
         ),
     ),
+    (
+        ("silence de l administration", "silence de l'administration",
+         "ne repond pas a ma demande", "ne répond pas à ma demande",
+         "decision implicite", "décision implicite", "refus implicite",
+         "absence de reponse", "absence de réponse"),
+        (
+            "CRPA silence administration décision implicite délai recours agent territorial",
+            "code relations public administration refus implicite voies délais recours",
+        ),
+    ),
 )
-
 
 def build_official_search_queries(question: str, max_queries: int = 3) -> list[str]:
     """Build a small set of distinct, topic-focused legal retrieval queries.
