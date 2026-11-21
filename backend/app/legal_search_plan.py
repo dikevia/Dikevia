@@ -162,6 +162,7 @@ _TOPIC_EXPANSIONS = (
         ("avancement d echelon", "avancement d'échelon", "avancement de grade",
          "promotion interne", "entretien professionnel", "compte rendu d entretien",
          "compte rendu d'entretien", "refus de titularisation", "titularisation",
+         "fonctionnaire stagiaire", "agent stagiaire", "stagiaire",
          "reprise anciennete", "reprise d ancienneté", "anciennete dans le prive",
          "ancienneté dans le privé", "modifier mes missions", "changement de missions",
          "missions sans changer mon grade"),
@@ -451,7 +452,7 @@ _TOPIC_RESEARCH_AXES = (
          "missions sans changer mon grade"),
         (
             "CGFP livre V fonctionnaires territoriaux avancement échelon grade promotion interne",
-            "FPT entretien professionnel titularisation stage reprise ancienneté décret statutaire",
+            "FPT entretien professionnel titularisation fonctionnaire stagiaire stage évaluation décret 92-1194 reprise ancienneté",
         ),
     ),
     (
