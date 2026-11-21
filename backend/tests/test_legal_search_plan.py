@@ -1,6 +1,17 @@
 from app.legal_search_plan import build_official_search_query, build_official_search_queries
 
 
+def test_annual_evaluation_contestation_targets_cgfp_and_territorial_implementing_decree():
+    question = "Mon agent de maîtrise m'a fait une évaluation annuelle à charge, puis-je la contester ?"
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+    assert "L521-1" in query
+    assert "L521-5" in query
+    assert "décret 2014-1526" in query
+    assert any("articles 2 3 4 5 6 7" in item for item in queries)
+    assert any("révision" in item or "revision" in item for item in queries)
+
+
 def test_overtime_query_targets_fpt_ihts_decrees_and_local_deliberation():
     query = build_official_search_query("On ne me paie pas mes heures supplémentaires")
     assert "heures supplémentaires" in query
