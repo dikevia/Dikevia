@@ -57,12 +57,23 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
         "VERIFIED_APPLICABLE",
     }
+    # A decision issued after the facts may help interpret the law, but it
+    # cannot by itself establish which rule was applicable on the facts date.
+    # Keep these two uses separate instead of exposing one ambiguous boolean.
+    post_facts_decision = status == "DECISION_POSTERIOR_TO_FACTS" and kind == "ADMIN_CASELAW"
     return {
         "source_family": kind,
         "source_family_label": label,
         "review_priority": rank,
         "temporal_or_validation_status": status,
-        "usable_for_conclusion": usable,
+        "usable_for_conclusion": usable and not post_facts_decision,
+        "usable_for_interpretation": usable and kind == "ADMIN_CASELAW",
+        "usable_for_facts_date_conclusion": usable and not post_facts_decision,
+        "temporal_limit": (
+            "Décision postérieure aux faits : utilisable comme éclairage interprétatif, "
+            "mais pas comme preuve autonome de la règle applicable à la date des faits."
+            if post_facts_decision else None
+        ),
         "limitation": "Classement indicatif pour organiser la vérification ; ne tranche ni la hiérarchie complète ni la légalité du document.",
     }
 
