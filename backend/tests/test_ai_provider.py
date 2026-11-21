@@ -19,7 +19,7 @@ def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense
     assert "CITATIONS OBLIGATOIRES" in SYSTEM_PROMPT
     assert "FORMAT DE SORTIE OBLIGATOIRE" in SYSTEM_PROMPT
     assert "MODE D'INFORMATION GÉNÉRALE" in SYSTEM_PROMPT
-    assert "Ne bloque pas toute réponse au seul motif que la date des faits manque" in SYSTEM_PROMPT
+    assert "Ne bloque pas la recherche au seul motif que la date des faits manque" in SYSTEM_PROMPT
     assert "source_id" in SYSTEM_PROMPT and "quote" in SYSTEM_PROMPT
 
 def test_ai_generated_article_references_must_exist_in_sources():
@@ -840,12 +840,12 @@ def test_system_prompt_treats_fpt_reference_sources_as_non_applicable_without_lo
     assert "ne conclus pas au droit individuel" in SYSTEM_PROMPT
 
 
-def test_system_prompt_requires_conversational_legal_explanations_and_practical_conclusions():
-    assert "Tu t'adresses directement à l'agent" in SYSTEM_PROMPT
-    assert "explique immédiatement, en langage courant" in SYSTEM_PROMPT
-    assert "prends une position juridique explicite et nuancée" in SYSTEM_PROMPT
-    assert "Termine par des démarches concrètes" in SYSTEM_PROMPT
-    assert "ne présente pas un conseil pratique comme une obligation légale" in SYSTEM_PROMPT
+def test_system_prompt_requires_neutral_documentary_explanations_without_case_advice():
+    assert "Tu peux reformuler un passage en langage clair" in SYSTEM_PROMPT
+    assert "strictement fidèle au texte ou à la décision citée" in SYSTEM_PROMPT
+    assert "Ne donne aucun avis personnel" in SYSTEM_PROMPT
+    assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
+    assert "N'ajoute pas de démarches à entreprendre, de recommandations ou de conseils pratiques" in SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio
