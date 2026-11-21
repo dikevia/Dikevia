@@ -493,7 +493,7 @@ class LegalOrchestrator:
                 if case_search_failed else None
             )
             temporal_issue = None
-            if len(comparison_dates) > 1 and (code_failures or regulatory_failures):
+            if period_start and period_start < (period_end or effective_date) and len(comparison_dates) > 1 and (code_failures or regulatory_failures):
                 temporal_issue = (
                     "Comparaison temporelle incomplète : Légifrance n'a pas répondu pour les deux bornes "
                     "de la période. Aucune conclusion couvrant toute la période n'est autorisée."
