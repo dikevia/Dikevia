@@ -410,7 +410,7 @@ def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
     import zipfile
     from app.legal_ingestion import parse_administrative_open_data_zip
 
-    xml = b"""<Decision>
+    xml = """<Decision>
       <Identification>DTA_2024001_20240510.xml</Identification>
       <Code_Juridiction>TA38</Code_Juridiction>
       <Nom_Juridiction>Tribunal administratif de Grenoble</Nom_Juridiction>
@@ -420,7 +420,7 @@ def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
       <Code_Publication>C</Code_Publication>
       <Type_Decision>décision</Type_Decision>
       <Texte_Integral><p>La commune a recruté un agent contractuel territorial et a pris une décision relative à sa rémunération. Le tribunal examine les règles applicables à cet agent public territorial et les garanties qui lui sont dues.</p></Texte_Integral>
-    </Decision>"""
+    </Decision>""".encode("utf-8")
     archive_bytes = BytesIO()
     with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("DTA_2024001_20240510.xml_TA38", xml)
@@ -458,14 +458,14 @@ def test_administrative_open_data_import_excludes_explicit_state_public_service_
     import zipfile
     from app.legal_ingestion import parse_administrative_open_data_zip
 
-    xml = b"""<Decision>
+    xml = """<Decision>
       <Identification>CE_2024002_20240510.xml</Identification>
       <Code_Juridiction>CE</Code_Juridiction>
       <Nom_Juridiction>Conseil d'Etat</Nom_Juridiction>
       <Numero_Dossier>2400002</Numero_Dossier>
       <Date_Lecture>2024-05-10</Date_Lecture>
       <Texte_Integral><p>Un agent de l'Etat affecté dans un ministère conteste une décision de rémunération prise par l'administration centrale au regard des règles propres à la fonction publique de l'Etat.</p></Texte_Integral>
-    </Decision>"""
+    </Decision>""".encode("utf-8")
     archive_bytes = BytesIO()
     with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("CE_2024002_20240510.xml", xml)
