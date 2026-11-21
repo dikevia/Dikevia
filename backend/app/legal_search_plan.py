@@ -254,13 +254,20 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
     if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(current_turn_folded):
         return original[:max_length]
 
-    expansion = next(
-        (
-            terms for triggers, terms in _TOPIC_EXPANSIONS
-            if any(_contains_trigger(folded, trigger) for trigger in triggers)
-        ),
-        "",
-    )
+    if _is_contractual_evaluation_question(original):
+        expansion = (
+            "agent contractuel territorial évaluation professionnelle entretien annuel "
+            "décret 88-145 article 1-3 compte rendu appréciation professionnelle "
+            "procédure observations garanties"
+        )
+    else:
+        expansion = next(
+            (
+                terms for triggers, terms in _TOPIC_EXPANSIONS
+                if any(_contains_trigger(folded, trigger) for trigger in triggers)
+            ),
+            "",
+        )
     if isinstance(expansion, tuple):
         # Some topics intentionally fan out into several complementary search
         # phrases. Keep the official connector contract as one bounded string.
@@ -573,13 +580,7 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
     """
     original = str(question or "").strip()
     contractual_evaluation = _is_contractual_evaluation_question(original)
-    primary = (
-        "agent contractuel territorial évaluation professionnelle entretien annuel "
-        "décret 88-145 article 1-3 compte rendu appréciation professionnelle "
-        "procédure observations garanties"
-        if contractual_evaluation
-        else build_official_search_query(question)
-    )
+    primary = build_official_search_query(question)
     if not primary:
         return []
     queries = [primary]
