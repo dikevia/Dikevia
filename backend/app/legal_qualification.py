@@ -27,7 +27,8 @@ _TOPIC_MARKERS = (
     # Status is classified independently below: the word "contractuel" must not mask the actual topic.
     ("CONTRACTUAL_EMPLOYMENT", ("renouvellement de contrat", "fin de contrat",
                                 "licenciement contractuel", "recrutement contractuel",
-                                "terme du contrat", "non renouvellement")),
+                                "terme du contrat", "non renouvellement", "refuse le renouvellement",
+                                "refus de renouvellement", "refus du renouvellement")),
     ("WORKING_TIME", ("temps de travail", "duree du travail", "heures supplementaires",
                       "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
                       "travail de nuit", "travail le dimanche")),
