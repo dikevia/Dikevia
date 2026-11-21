@@ -432,10 +432,14 @@ class LegalOrchestrator:
             # Search the national CGFP discovery index once per recognized
             # sub-question. A single broad query can otherwise let its strongest
             # topic hide articles relevant to the other parts of a compound request.
-            results_by_query = await asyncio.gather(*[
-                asyncio.to_thread(search_cgfp, query, limit=8)
-                for query in research_queries
-            ], return_exceptions=True)
+            results_by_query = []
+            for query in research_queries:
+                try:
+                    results_by_query.append(
+                        await asyncio.to_thread(search_cgfp, query, limit=8)
+                    )
+                except Exception as exc:
+                    results_by_query.append(exc)
             merged: dict[str, dict] = {}
             detected_topics: list[str] = []
             failed_queries = []
