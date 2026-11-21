@@ -17,7 +17,7 @@ from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
 from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
-from .local_corpus import search_local_documents
+from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
 from .legal_search_plan import build_official_search_query, build_official_search_queries
 from .legal_qualification import qualify_legal_question
@@ -616,18 +616,27 @@ class LegalOrchestrator:
             else:
                 try:
                     local_sources = []
+                    # The tenant-scoped search query is date-independent; fetch
+                    # the top matching documents once, then evaluate each document
+                    # against the facts-period endpoints and today's rules.
+                    base_local_hits = await search_local_documents(
+                        conn, organization_id, request.employer,
+                        contextual_search_query[:500], effective_date, limit=5,
+                    )
                     for local_date, local_endpoint in _local_document_reference_dates(
                         period_start, period_end, effective_date,
                     ):
-                        dated_hits = await search_local_documents(
-                            conn, organization_id, request.employer,
-                            contextual_search_query[:500], local_date, limit=5,
-                        )
-                        for hit in dated_hits:
+                        for base_hit in base_local_hits:
+                            hit = dict(base_hit)
                             original_id = str(hit.get("source_id") or "")
                             if not original_id:
                                 continue
                             hit["source_id"] = f"{original_id}_V{local_date:%Y%m%d}"
+                            hit["temporal_status"] = local_document_temporal_status(
+                                hit.get("effective_from"), hit.get("effective_to"),
+                                str(hit.get("validation_status") or "COLLECTED_UNVERIFIED"),
+                                local_date,
+                            )
                             hit["requested_effective_date"] = local_date.isoformat()
                             hit["version_endpoint"] = local_endpoint
                             hit["version_matches_facts_date"] = bool(
