@@ -429,6 +429,7 @@ def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
       <Numero_ECLI>ECLI:FR:TA38:2024:2400001</Numero_ECLI>
       <Code_Publication>C</Code_Publication>
       <Type_Decision>décision</Type_Decision>
+      <Solution>Rejet pour irrecevabilité</Solution>
       <Texte_Integral><p>La commune a recruté un agent contractuel territorial et a pris une décision relative à sa rémunération. Le tribunal examine les règles applicables à cet agent public territorial et les garanties qui lui sont dues.</p></Texte_Integral>
     </Decision>""".encode("utf-8")
     archive_bytes = BytesIO()
@@ -444,6 +445,7 @@ def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
     assert item["official_number"] == "2400001"
     assert "agent contractuel territorial" in item["full_text"]
     assert item["raw_metadata"]["publication_code"] == "C"
+    assert item["raw_metadata"]["solution"] == "Rejet pour irrecevabilité"
     assert item["raw_metadata"]["source_license"] == "Licence Ouverte version 2.0"
     assert len(item["raw_metadata"]["source_xml_sha256"]) == 64
 
