@@ -502,7 +502,7 @@ class LegalOrchestrator:
             # lookups; the snapshot itself never upgrades to verified evidence.
             code_research_queries = list(dict.fromkeys([
                 *research_queries, *(cgfp_article_queries or []),
-            ]))
+            ]))[:5]
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
             endpoint_results = await asyncio.gather(*[
