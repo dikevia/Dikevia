@@ -32,3 +32,12 @@ def test_metadata_never_claims_cig_editorial_resource_is_binding_law():
 
 def test_unknown_resource_has_no_metadata():
     assert public_resource_metadata("NOT_A_RESOURCE") is None
+
+
+
+def test_union_rights_resource_is_directly_catalogued_with_publication_date():
+    item = public_resource_metadata("CIG_SVP_RIGHTS_UNION_ORGANIZATION")
+    assert item is not None
+    assert item["publication_date"] == "2026-10-16"
+    assert "droits_syndicaux" in item["themes"]
+    assert item["content_status"] == "METADATA_ONLY"
