@@ -46,3 +46,11 @@ def test_union_representative_can_describe_a_member_case_in_third_person():
 def test_general_first_person_rights_question_remains_general():
     assert question_needs_case_date("Ai-je droit aux congés annuels quand je suis contractuel ?") is False
     assert question_needs_case_date("Quels sont mes droits si mon employeur refuse le télétravail ?") is False
+
+def test_staffing_and_titular_protection_general_questions_do_not_require_a_facts_date():
+    staffing = "Ma direction ne renforce pas des équipes en manque de personnel."
+    titular = "Je suis titulaire, ma collectivité peut-elle me virer ?"
+    assert classify_question_intent(staffing) == "GENERAL_INFORMATION"
+    assert classify_question_intent(titular) == "GENERAL_INFORMATION"
+    assert question_needs_case_date(staffing) is False
+    assert question_needs_case_date(titular) is False
