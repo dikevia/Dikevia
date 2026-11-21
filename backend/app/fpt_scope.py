@@ -416,7 +416,14 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
     # For these two question families, a source with no identifiable subject
     # is not useful evidence: generic CGFP keyword hits must not masquerade
     # as a relevant answer.
-    strict_topics = {"TERMINATION_OF_TITULAR", "STAFFING_AND_WORK_CONDITIONS"}
+    strict_topics = {
+        "TERMINATION_OF_TITULAR",
+        "STAFFING_AND_WORK_CONDITIONS",
+        # Evaluation searches are especially prone to lexical false positives:
+        # generic references to evaluating risks, health, senior civil-service
+        # jobs or skills are not evidence about the annual FPT appraisal report.
+        "PROFESSIONAL_EVALUATION",
+    }
     if question_topics & strict_topics:
         return False
     if not source_topics:
