@@ -76,3 +76,9 @@ def test_prompt_uses_the_whole_cgfp_index_as_discovery_and_requires_live_article
     assert "vérifie ensuite sa rédaction intégrale sur Légifrance" in SYSTEM_PROMPT
     assert "Le classement lexical ou conceptuel" in SYSTEM_PROMPT
     assert "ne suffit pas toujours à résoudre seul la question" in SYSTEM_PROMPT
+
+
+def test_prompt_obeys_structured_scope_and_ambiguous_contract_status():
+    assert "scope_status vaut OUT_OF_SCOPE_FPE" in SYSTEM_PROMPT
+    assert "EMPLOYMENT_STATUS_AMBIGUOUS" in SYSTEM_PROMPT
+    assert "un CDD ou un CDI mentionné seul ne suffit pas" in SYSTEM_PROMPT
