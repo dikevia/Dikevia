@@ -128,6 +128,28 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
             "analysis_eligible": True,
         }
 
+    # A territorial reference buried in the body must not override a source
+    # whose title identifies it as an FPE/FPH instrument. Titles are a stronger
+    # signal of the document's primary scope than incidental cross-references.
+    title_fpt_hits = [marker for marker in _FPT_MARKERS if _fold(marker) in title_folded]
+    title_fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in title_folded]
+    title_fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in title_folded]
+    if (title_fpe_hits or title_fph_hits) and not title_fpt_hits:
+        return {
+            "scope": "FPH" if title_fph_hits else "FPE",
+            "evidence": (title_fph_hits or title_fpe_hits)[:3],
+            "analysis_eligible": False,
+        }
+
+    # If the body contains competing versant markers and the title does not
+    # identify a territorial instrument, its primary scope is unresolved.
+    if fpt_hits and (fpe_hits or fph_hits) and not title_fpt_hits:
+        return {
+            "scope": "OUT_OF_SCOPE_OR_UNCONFIRMED",
+            "evidence": (fpt_hits[:2] + fpe_hits[:1] + fph_hits[:1]),
+            "analysis_eligible": False,
+        }
+
     if fpt_hits:
         return {
             "scope": "FPT",
