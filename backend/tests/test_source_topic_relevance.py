@@ -141,7 +141,7 @@ def test_required_answer_axes_include_only_distinct_recognized_legal_topics():
         build_official_search_queries,
     )
 
-    compound = "Mon employeur refuse mes heures supplémentaires et mon congé maladie."
+    compound = "Mon employeur refuse mes heures supplémentaires et mon arrêt maladie."
     axes = build_official_research_axes(compound)
     queries = build_official_search_queries(compound)
     assert len(axes) >= 2
