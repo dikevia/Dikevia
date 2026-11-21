@@ -167,3 +167,22 @@ def test_all_100_business_evaluation_questions_have_bounded_fpt_retrieval_querie
         assert len(queries) == len(set(queries)), case["id"]
         assert all(len(query) <= 500 for query in queries), case["id"]
         assert "code du travail" not in " ".join(queries).casefold(), case["id"]
+
+
+@pytest.mark.parametrize(
+    "question, expected_marker",
+    [
+        ("Mon chef me demande de rester après mon horaire sans validation écrite.", "IHTS"),
+        ("Puis-je être rappelé pendant mes congés annuels ?", "décret 85-1250"),
+        ("Un usager m'a menacé pendant mon service.", "protection fonctionnelle"),
+        ("La collectivité doit-elle protéger un agent victime de harcèlement ?", "protection fonctionnelle"),
+        ("Mon employeur doit-il enquêter après un signalement de harcèlement ?", "protection fonctionnelle"),
+        ("Puis-je obtenir réparation après une agression au travail ?", "protection fonctionnelle"),
+        ("Je suis poursuivi pénalement pour des faits liés au service.", "protection fonctionnelle"),
+    ],
+)
+def test_additional_everyday_fpt_formulations_reach_relevant_sources(
+    question, expected_marker
+):
+    queries = build_official_search_queries(question)
+    assert expected_marker.casefold() in " ".join(queries).casefold()
