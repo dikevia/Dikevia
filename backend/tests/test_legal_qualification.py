@@ -190,3 +190,9 @@ def test_independent_question_starting_with_et_does_not_inherit_previous_topic()
         question,
         ["Mon chef refuse de payer mes heures supplémentaires."],
     ) == question
+
+
+
+def test_plural_contractual_status_is_recognized_in_followup_wording():
+    assert qualify_legal_question("Et pour les contractuels ?")["agent_status"] == "CONTRACTUEL_EXPLICIT"
+    assert qualify_legal_question("Et pour les agentes contractuelles ?")["agent_status"] == "CONTRACTUEL_EXPLICIT"
