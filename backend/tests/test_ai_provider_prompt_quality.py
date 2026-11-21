@@ -7,21 +7,23 @@ def test_prompt_prioritizes_the_current_question_over_lexical_source_matches():
     assert "N'utilise pas les anciennes questions" in SYSTEM_PROMPT
 
 
-def test_prompt_requires_a_direct_plain_language_answer_before_references():
-    assert "RÉPONSE AVANT RÉFÉRENCES" in SYSTEM_PROMPT
-    assert "ne commence jamais par le numéro d'un article" in SYSTEM_PROMPT
-    assert "conséquence pratique pour l'agent" in SYSTEM_PROMPT
+def test_prompt_requires_understanding_the_request_and_presenting_relevant_texts():
+    assert "MÉTHODE DE COMPRÉHENSION ET DE RESTITUTION DES SOURCES" in SYSTEM_PROMPT
+    assert "comprendre exactement la demande actuelle" in SYSTEM_PROMPT
+    assert "Présente d'abord les références et les dispositions" in SYSTEM_PROMPT
+    assert "strictement fidèle au texte ou à la décision citée" in SYSTEM_PROMPT
 
 
-def test_prompt_requires_a_final_question_answer_coherence_check():
-    assert "CONTRÔLE FINAL OBLIGATOIRE" in SYSTEM_PROMPT
-    assert "Si les sources pertinentes ne permettent aucune réponse utile" in SYSTEM_PROMPT
+def test_prompt_forbids_personal_legal_opinions_and_individual_case_judgments():
+    assert "Ne donne aucun avis personnel" in SYSTEM_PROMPT
+    assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
+    assert "aucune appréciation sur le comportement de l'employeur" in SYSTEM_PROMPT
 
 
 
-def test_prompt_requires_the_first_claim_to_be_the_direct_answer():
-    assert "ORDRE DES AFFIRMATIONS" in SYSTEM_PROMPT
-    assert "le premier élément de claims doit être la réponse directe" in SYSTEM_PROMPT
+def test_prompt_claims_must_summarize_sources_without_recommendations():
+    assert "restituer une disposition ou un apport jurisprudentiel précis" in SYSTEM_PROMPT
+    assert "sans avis, diagnostic de la situation individuelle ni recommandation" in SYSTEM_PROMPT
 
 
 def test_prompt_enforces_the_territorial_public_service_legal_hierarchy():
