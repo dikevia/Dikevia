@@ -196,3 +196,18 @@ def test_independent_question_starting_with_et_does_not_inherit_previous_topic()
 def test_plural_contractual_status_is_recognized_in_followup_wording():
     assert qualify_legal_question("Et pour les contractuels ?")["agent_status"] == "CONTRACTUEL_EXPLICIT"
     assert qualify_legal_question("Et pour les agentes contractuelles ?")["agent_status"] == "CONTRACTUEL_EXPLICIT"
+
+def test_chained_followups_keep_the_last_substantive_legal_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    resolved = build_contextual_research_question(
+        "Et pour les stagiaires ?",
+        [
+            "Mon chef refuse de payer mes heures supplémentaires.",
+            "Et pour les contractuels ?",
+        ],
+    )
+    assert resolved.startswith("Et pour les stagiaires ?")
+    assert "heures supplémentaires" in resolved
+    assert "contractuels" not in resolved
+
