@@ -307,7 +307,14 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
             continue
         if source.get("reference_role") == "BASELINE_CONTEXT_ONLY":
             continue
-        if source.get("analysis_eligible") is False or source.get("public_service_scope") == "SCOPE_TO_VERIFY":
+        if (
+            source.get("analysis_eligible") is False
+            or source.get("public_service_scope") in {
+                "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
+                "FPH", "FPE", "OUT_OF_SCOPE_OR_UNCONFIRMED",
+                "OUT_OF_SCOPE_EUROPEAN_LAW",
+            }
+        ):
             continue
         general_information_only = (
             temporal_status == "TEMPORAL_SCOPE_INCOMPLETE"
