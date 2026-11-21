@@ -190,3 +190,20 @@ def test_cgfp_retrieval_keeps_overtime_as_a_specific_topic():
         "Je suis contractuel et mes heures supplémentaires ne sont pas payées."
     )}
     assert topics == {"heures_supplementaires_ihts"}
+
+
+
+def test_cgfp_index_snapshot_is_explicitly_a_dated_discovery_source():
+    from app.cgfp import load_index
+
+    source = load_index()
+    assert source["source_id"] == "FR-CGFP-2026-10-31"
+    assert source["verification_status"] == "SNAPSHOT_NOT_LIVE_VERIFIED"
+    assert source["article_count"] == len(source["articles"])
+    assert source["articles"]
+    assert all(
+        item.get("article") and item.get("text")
+        and item.get("page_start", 0) >= 1
+        and item.get("page_end", 0) >= item.get("page_start", 0)
+        for item in source["articles"]
+    )
