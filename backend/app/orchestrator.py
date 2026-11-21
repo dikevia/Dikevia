@@ -80,13 +80,14 @@ def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
 def should_use_cgfp_snapshot_fallback(
     live_issue: str | None,
     found: dict | None,
-    question: str,
+    research_queries: list[str] | str,
 ) -> bool:
-    """Use the bundled dated CGFP snapshot only when live CGFP lookup failed."""
+    """Use the dated CGFP snapshot only when live lookup failed and a hit serves an axis."""
+    queries = research_queries if isinstance(research_queries, list) else [research_queries]
     return bool(
         live_issue and isinstance(found, dict) and found.get("results")
         and any(
-            is_ihts_relevant_source(question, hit)
+            _source_relevant_to_any_research_axis(queries, hit)
             and _cgfp_article_fpt_eligible(str(hit.get("article") or ""))
             for hit in found["results"]
         )
@@ -935,7 +936,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["ihts_relevant"] = _ihts_relevant_to_any_research_axis(research_queries, item)
+            item["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, item)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
                 "version_matches_facts_date": bool(
@@ -1012,7 +1013,7 @@ class LegalOrchestrator:
 
         if found and cgfp_snapshot_fallback:
             for hit in found["results"]:
-                if not _ihts_relevant_to_any_research_axis(research_queries, hit):
+                if not _source_relevant_to_any_research_axis(research_queries, hit):
                     continue
                 article = get_cgfp_article(hit["article"])
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
@@ -1047,13 +1048,13 @@ class LegalOrchestrator:
             decision["scope_evidence"] = scope_check["evidence"]
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
             decision["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            decision["ihts_relevant"] = _ihts_relevant_to_any_research_axis(research_queries, decision)
+            decision["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, decision)
             sources.append({**decision, "page_start": None, "page_end": None})
 
         # Apply the topic guard only after every source family (including the
         # CGFP snapshot and CETAT full text) has been collected.
         for source in sources:
-            source["topic_relevant"] = any(\n                is_topic_relevant_source(query, source) for query in research_queries\n            )
+            source["research_axis_relevant"] = _source_relevant_to_any_research_axis(\n                research_queries, source,\n            )
 
         # A direct request for the text/content of a numbered CGFP article is an
         # exact-reference lookup. If that article was not independently retrieved,
@@ -1100,7 +1101,7 @@ class LegalOrchestrator:
             and s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}
             and s.get("analysis_eligible") is True
             and s.get("claim_eligible", True) is not False
-            and s.get("ihts_relevant") is not False
+            and s.get("research_axis_relevant", True) is not False
         ]
         usable_official = [
             s for s in sources
@@ -1296,7 +1297,7 @@ class LegalOrchestrator:
                         )
                         for s in sources
                         if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
-                        and s.get("topic_relevant") is not False
+                        and s.get("research_axis_relevant", True) is not False
                         and s.get("content_kind") != "METADATA"
                         and (s.get("citation_integrity") or {}).get("valid") is True
                         and (
