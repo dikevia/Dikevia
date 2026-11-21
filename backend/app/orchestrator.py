@@ -484,14 +484,14 @@ class LegalOrchestrator:
         async def search_official_pillars(cgfp_article_queries: list[str] | None = None):
             if not legifrance.configured:
                 issue = "Identifiants PISTE non configurés : les recherches officielles Légifrance n'ont pas été exécutées."
-                return [], [], [], issue, issue, issue, issue
+                return [], [], [], issue, issue, issue, issue, []
             try:
                 # Refresh OAuth once before the date-scoped searches to avoid token races.
                 await legifrance._get_token()
             except LegifranceUnavailable:
                 logger.exception("Authentification PISTE indisponible avant la recherche multi-sources.")
                 issue = "Authentification PISTE impossible : les recherches officielles n'ont pas pu être exécutées."
-                return [], [], [], issue, issue, issue, issue
+                return [], [], [], issue, issue, issue, issue, []
 
             date_roles: dict[date, str] = {}
             if period_start:
