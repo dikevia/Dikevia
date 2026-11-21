@@ -263,13 +263,18 @@ _TOPIC_FAMILIES = {
         # Query-side expressions must classify the question too; keep generic
         # "titulaire" out of this family because it also appears in unrelated
         # CST provisions (e.g. titular members and substitutes).
-        "me virer", "peut me virer", "licenciement", "radiation des cadres",
+        "me virer", "peut me virer", "me mettre dehors", "mettre dehors",
+        "me licencier", "peut me licencier", "mettre fin a mes fonctions",
+        "fin de mes fonctions", "licenciement", "radiation des cadres",
         "perte de la qualite de fonctionnaire", "cessation definitive de fonctions",
         "insuffisance professionnelle", "abandon de poste", "suppression d emploi",
         "fonctionnaire titulaire",
     ),
     "STAFFING_AND_WORK_CONDITIONS": (
-        "manque de personnel", "sous effectif", "effectifs insuffisants",
+        "manque de personnel", "pas assez d agents", "pas suffisamment d agents",
+        "on manque d agents", "on est pas assez nombreux", "on n est pas assez nombreux",
+        "sous effectif", "effectif reduit", "effectifs insuffisants",
+        "mon service est en sous effectif", "surcharge de travail",
         "charge de travail", "conditions de travail", "risques psychosociaux",
         "risques professionnels", "prevention des risques", "evaluation des risques",
         "sante et securite", "hygiene et securite", "conditions d hygiene et de securite",
