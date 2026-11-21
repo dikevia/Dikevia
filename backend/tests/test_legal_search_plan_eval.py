@@ -108,3 +108,62 @@ def test_unrecognized_everyday_question_stays_in_fpt_scope_without_inventing_top
 def test_exact_article_request_remains_a_single_exact_retrieval_query():
     question = "Que prévoit l'article L123-4 du CGFP ?"
     assert build_official_search_queries(question) == [question]
+
+
+# Coverage gaps found by reviewing the repository's 100-case FPT evaluation set.
+ADDITIONAL_FPT_CASES = [
+    ("Mon supérieur peut-il refuser mes congés annuels ?", "décret 85-1250"),
+    ("Comment fonctionne le compte épargne-temps dans ma collectivité ?", "décret 2004-878"),
+    ("Qui me rémunère pendant un congé de maladie ordinaire ?", "congé maladie ordinaire"),
+    ("Mon avancement d'échelon peut-il être retardé ?", "CGFP livre V"),
+    ("Le CST doit-il être consulté avant une réorganisation ?", "décret 2021-571"),
+    ("Puis-je demander le télétravail pour raison médicale ?", "décret 2016-151"),
+    ("Comment signaler un danger grave et imminent ?", "droit de retrait"),
+    ("Puis-je demander une disponibilité pour suivre mon conjoint ?", "mobilité fonctionnaires territoriaux"),
+    ("Quels sont mes droits si mon poste est supprimé ?", "suppression emploi"),
+    ("Puis-je cumuler une activité indépendante avec mon emploi territorial ?", "décret 2020-69"),
+    ("Que faire si ma collectivité ne répond pas à ma demande ?", "CRPA"),
+]
+
+
+@pytest.mark.parametrize("question, expected_marker", ADDITIONAL_FPT_CASES)
+def test_missing_fpt_domains_have_dedicated_research_axes(question, expected_marker):
+    queries = build_official_search_queries(question)
+    assert len(queries) == 3
+    assert expected_marker.casefold() in " ".join(queries).casefold()
+
+
+def test_cst_questions_are_not_misrouted_as_union_rights_questions():
+    queries = build_official_search_queries(
+        "Le comité social territorial doit-il être consulté avant une réorganisation ?"
+    )
+    joined = " ".join(queries).casefold()
+    assert "décret 2021-571" in joined
+    assert "droit syndical" not in joined
+    assert "autorisations speciales absence syndicale" not in joined
+
+
+def test_threat_by_service_user_reaches_functional_protection_research():
+    queries = build_official_search_queries(
+        "Un usager m'a menacé pendant mon service : puis-je demander la protection fonctionnelle ?"
+    )
+    assert "protection fonctionnelle agent territorial" in " ".join(queries).casefold()
+
+
+def test_all_100_business_evaluation_questions_have_bounded_fpt_retrieval_queries():
+    import json
+    from pathlib import Path
+
+    repository_root = Path(__file__).resolve().parents[2]
+    dataset_path = repository_root / "docs" / "quality" / "fpt_chatbot_eval_v1.json"
+    dataset = json.loads(dataset_path.read_text(encoding="utf-8"))
+
+    assert dataset["case_count"] == 100
+    for case in dataset["cases"]:
+        queries = build_official_search_queries(case["question"])
+        assert queries, case["id"]
+        assert queries[0].startswith(case["question"]), case["id"]
+        assert len(queries) <= 3, case["id"]
+        assert len(queries) == len(set(queries)), case["id"]
+        assert all(len(query) <= 500 for query in queries), case["id"]
+        assert "code du travail" not in " ".join(queries).casefold(), case["id"]
