@@ -18,6 +18,15 @@ _DIRECT_ARTICLE_LOOKUP = re.compile(
 # territorial public-service source families and their implementing texts.
 _TOPIC_EXPANSIONS = (
     (
+        ("evaluation annuelle", "évaluation annuelle", "evaluation a charge", "évaluation à charge",
+         "contester mon evaluation", "contester mon évaluation", "contestation evaluation",
+         "contestation de l evaluation", "compte rendu d evaluation", "compte rendu d'évaluation",
+         "evaluation professionnelle", "évaluation professionnelle"),
+        "CGFP articles L521-1 a L521-5 appreciation valeur professionnelle fonctionnaire territorial "
+        "entretien professionnel annuel compte rendu contestation revision decret 2014-1526 articles 2 3 4 5 6 7 "
+        "superieur hierarchique direct autorite territoriale commission administrative paritaire",
+    ),
+    (
         ("peut me virer", "me virer", "me mettre dehors", "mettre dehors", "me licencier",
          "peut me licencier", "mettre fin a mes fonctions", "fin de mes fonctions",
          "licenciement fonctionnaire", "radiation des cadres",
@@ -138,6 +147,16 @@ _TOPIC_EXPANSIONS = (
          "secret medical", "secret médical", "motif medical", "motif médical"),
         "congé maladie fonction publique territoriale CGFP fonctionnaire contractuel "
         "décret 87-602 décret 88-145 conseil médical temps partiel thérapeutique secret médical",
+    ),
+    (
+        ("evaluation annuelle", "évaluation annuelle", "evaluation a charge", "évaluation à charge",
+         "contester mon evaluation", "contester mon évaluation", "contestation evaluation",
+         "compte rendu d evaluation", "compte rendu d'évaluation", "evaluation professionnelle",
+         "entretien professionnel", "compte rendu d entretien"),
+        (
+            "CGFP L521-1 L521-3 L521-5 appreciation valeur professionnelle entretien annuel fonctionnaire territorial",
+            "décret 2014-1526 articles 2 3 4 5 6 7 entretien professionnel critères compte rendu observations révision CAP recours",
+        ),
     ),
     (
         ("avancement d echelon", "avancement d'échelon", "avancement de grade",
