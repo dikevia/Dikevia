@@ -191,7 +191,11 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
         return {
             "scope": "GENERAL_PUBLIC_SERVICE",
             "evidence": general_hits[:3],
-            "analysis_eligible": True,
+            # General public-service wording does not establish that this
+            # particular provision applies to territorial agents. Keep it as
+            # a discovery lead until an explicit FPT scope or verified legal
+            # cross-reference is available.
+            "analysis_eligible": False,
         }
     return {
         # Do not let an unclassified document enter the AI evidence set.
