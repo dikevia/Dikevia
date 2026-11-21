@@ -173,6 +173,7 @@ def classify_question_intent(question: str) -> str:
         r"\bon m['’]a (?:refusé|sanctionné|notifié|imposé|retiré|placé|licencié|convoqué)\b",
         r"\bje (?:n['’]ai pas (?:été payé|reçu|touché|obtenu)|ne suis pas payé|ne touche pas|subis)\b",
         r"\bj['’]ai (?:été sanctionné|été licencié|été convoqué|été refusé|reçu|déposé|contesté|effectué)\b",
+        r"\b(?:mon employeur|ma collectivité) (?:refuse|ne me paie|ne me paye|m['’]a refusé|m['’]a sanctionné|a refusé|a rejeté)\b.{0,100}\b(?:ma demande|mon congé|ma rémunération|ma protection fonctionnelle|mon recours)\b",
         r"\b(?:mon employeur|ma collectivité) (?:refuse|ne me paie|ne me paye|m['’]a refusé|m['’]a sanctionné)\b",
         r"\b(?:mon|ma|mes)\s+[\wÀ-ÿ'’-]{2,40}\s+(?:a été|ont été)\s+(?:refusé|refusée|refusés|refusées|retiré|retirée|supprimé|supprimée|notifié|notifiée|rejeté|rejetée|suspendu|suspendue)\b",
         r"\b(?:ma demande|mon congé|mon arrêt|ma rémunération|mon dossier)\b.{0,80}\b(?:refusé|refusée|refusés|refusées|rejeté|rejetée|suspendu|suspendue)\b",
