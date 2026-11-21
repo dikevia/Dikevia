@@ -1,5 +1,8 @@
 from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
-from app.orchestrator import (\n    filter_irrelevant_sources_for_display,\n    _ihts_relevant_to_any_research_axis,\n    _topic_relevant_to_any_research_axis,\n)
+from app.orchestrator import (
+    filter_irrelevant_sources_for_display,
+    _source_relevant_to_any_research_axis,
+)
 
 
 def test_relevant_source_for_same_legal_topic_is_kept():
@@ -115,8 +118,7 @@ def test_composite_question_keeps_sources_for_non_ihts_subquestions():
         "title": "Congé de maladie des fonctionnaires territoriaux",
         "text": "Dispositions relatives au congé de maladie et aux agents territoriaux. " * 4,
     }
-    assert _ihts_relevant_to_any_research_axis(axes, sick_leave_source) is True
-    assert _topic_relevant_to_any_research_axis(axes, sick_leave_source) is True
+    assert _source_relevant_to_any_research_axis(axes, sick_leave_source) is True
 
 
 def test_composite_question_still_rejects_irrelevant_ihts_credit_sources():
@@ -129,5 +131,5 @@ def test_composite_question_still_rejects_irrelevant_ihts_credit_sources():
         "article": "R422-96",
         "excerpt": "Crédit d'heures supplémentaires pour prévenir une inaptitude.",
     }
-    assert _ihts_relevant_to_any_research_axis(axes, unrelated_credit) is True
+    assert _source_relevant_to_any_research_axis(axes, unrelated_credit) is False
 
