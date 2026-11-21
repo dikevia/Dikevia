@@ -10,13 +10,13 @@ def test_explicit_fpt_source_is_eligible():
     assert result["analysis_eligible"] is True
 
 
-def test_general_public_service_wording_is_not_proof_of_fpt_applicability():
+def test_genuinely_general_public_service_source_is_eligible():
     result = classify_public_service_scope({
         "title": "Code général de la fonction publique",
         "text": "Le présent texte concerne les agents publics et les fonctionnaires.",
     })
     assert result["scope"] == "GENERAL_PUBLIC_SERVICE"
-    assert result["analysis_eligible"] is False
+    assert result["analysis_eligible"] is True
 
 
 def test_unclassified_source_is_not_eligible_for_fpt_analysis():
