@@ -293,3 +293,26 @@ def test_single_generic_public_service_marker_is_not_enough_even_for_context():
     assert result["analysis_eligible"] is False
     assert result["claim_eligible"] is False
 
+def test_annual_evaluation_question_rejects_clearly_unrelated_topics():
+    from app.fpt_scope import is_topic_relevant_source
+
+    question = "Mon agent de maîtrise m'as fait une évaluation annuelle à charge, puis-je la contester ?"
+    unrelated = {
+        "title": "Protection fonctionnelle",
+        "excerpt": "L'agent public bénéficie d'une protection contre les menaces et violences.",
+    }
+    relevant = {
+        "title": "Appréciation de la valeur professionnelle",
+        "excerpt": "L'entretien professionnel annuel donne lieu à un compte rendu d'évaluation.",
+    }
+    cross_cutting = {
+        "title": "Recours administratif",
+        "excerpt": "La décision administrative peut faire l'objet d'un recours préalable.",
+    }
+
+    assert is_topic_relevant_source(question, unrelated) is False
+    assert is_topic_relevant_source(question, relevant) is True
+    # Unrecognized procedural material remains eligible for review; the
+    # topic guard must not discard potentially cross-cutting appeal provisions.
+    assert is_topic_relevant_source(question, cross_cutting) is True
+
