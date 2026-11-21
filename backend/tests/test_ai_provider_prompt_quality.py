@@ -97,3 +97,9 @@ def test_personal_case_without_date_does_not_authorize_individual_conclusions():
     assert "utilise les faits personnels uniquement pour identifier les textes à rechercher" in SYSTEM_PROMPT
     assert "sans qualifier la situation individuelle" in SYSTEM_PROMPT
     assert "donne déjà les éléments de réponse que le droit actuel permet d'établir" not in SYSTEM_PROMPT
+
+
+def test_prompt_requires_coverage_of_each_retrieval_axis():
+    assert "axes_recherche_documentaire" in SYSTEM_PROMPT
+    assert "n'en omets aucun silencieusement" in SYSTEM_PROMPT
+    assert "indique explicitement qu'aucune source suffisamment pertinente n'a été retrouvée" in SYSTEM_PROMPT
