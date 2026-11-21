@@ -327,3 +327,31 @@ def test_contractual_annual_evaluation_does_not_mix_civil_servant_rules():
     assert "décret 88-145" in joined
     assert "décret 2014-1526" not in joined
     assert all("décret 2014-1526" not in axis for axis in axes)
+
+
+def test_annual_evaluation_with_unknown_status_searches_both_fpt_regimes_separately():
+    question = (
+        "Mon agent de maîtrise m'a fait une évaluation annuelle à charge, "
+        "puis-je la contester ?"
+    )
+    queries = build_official_search_queries(question)
+    joined = " ".join(queries).casefold()
+
+    assert any("décret 2014-1526" in query for query in queries)
+    assert any("décret 88-145 article 1-3" in query for query in queries)
+    assert any("quinze jours francs" in query for query in queries)
+    assert any("commission administrative paritaire" in query or "cap" in query for query in queries)
+    assert all(len(query) <= 500 for query in queries)
+    assert "décret 92-1194" not in joined
+    assert "reprise ancienneté" not in joined
+
+
+def test_professional_interview_alone_does_not_trigger_career_or_trainee_research():
+    queries = build_official_search_queries(
+        "Je souhaite contester le compte rendu de mon entretien professionnel annuel."
+    )
+    joined = " ".join(queries).casefold()
+    assert any("décret 2014-1526" in query for query in queries)
+    assert any("décret 88-145 article 1-3" in query for query in queries)
+    assert "décret 92-1194" not in joined
+    assert "reprise ancienneté" not in joined
