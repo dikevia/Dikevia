@@ -99,9 +99,11 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("temps de travail", "duree du travail", "annualisation", "astreinte",
-         "temps partiel", "cycle de travail", "rtt"),
+         "temps partiel", "cycle de travail", "rtt", "compteur d heures",
+         "compteur d heures remis a zero"),
         "temps de travail fonction publique territoriale décret 2001-623 "
-        "décret 2000-815 cycle de travail annualisation astreintes repos",
+        "décret 2000-815 cycle de travail annualisation astreintes repos décompte heures "
+        "compteur temps de travail délibération locale",
     ),
     (
         ("accident de service", "maladie professionnelle", "citis"),
@@ -122,8 +124,7 @@ _TOPIC_EXPANSIONS = (
          "rappel pendant mes conges", "rappel pendant mes congés", "compte epargne temps",
          "compte épargne-temps", "conge sans solde", "congé sans solde",
          "conge maternite", "congé maternité", "solde de conges", "solde de congés",
-         "regles de conges", "règles de congés", "compteur d heures",
-         "compteur d'heures remis a zero", "compteur d'heures remis à zéro"),
+         "regles de conges", "règles de congés"),
         "congés annuels fonction publique territoriale décret 85-1250 "
         "compte épargne temps décret 2004-878 report congés délibération locale",
     ),
