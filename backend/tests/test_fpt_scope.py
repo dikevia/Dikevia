@@ -147,3 +147,34 @@ def test_ihts_filter_keeps_the_ihts_decrees():
             "text": "Fonctionnaires territoriaux et collectivités territoriales.",
         },
     ) is True
+
+def test_staffing_question_rejects_unrelated_code_articles():
+    from app.fpt_scope import is_topic_relevant_source
+
+    question = "Ma direction ne renforce pas des équipes en manque de personnel."
+    unrelated = {
+        "title": "Code général de la fonction publique — article R326-26",
+        "excerpt": "La formation est dispensée par un organisme extérieur.",
+    }
+    relevant = {
+        "title": "Prévention des risques professionnels",
+        "excerpt": "L'autorité territoriale organise la prévention et l'évaluation des risques professionnels.",
+    }
+    assert is_topic_relevant_source(question, unrelated) is False
+    assert is_topic_relevant_source(question, relevant) is True
+
+
+def test_titular_termination_question_rejects_unrelated_cst_articles():
+    from app.fpt_scope import is_topic_relevant_source
+
+    question = "Je suis titulaire, ma collectivité peut-elle me virer ?"
+    unrelated = {
+        "title": "Code général de la fonction publique — article R252-44",
+        "excerpt": "Chaque titulaire dispose de deux suppléants au comité social.",
+    }
+    relevant = {
+        "title": "Cessation définitive de fonctions",
+        "excerpt": "La radiation des cadres met fin à la qualité de fonctionnaire.",
+    }
+    assert is_topic_relevant_source(question, unrelated) is False
+    assert is_topic_relevant_source(question, relevant) is True
