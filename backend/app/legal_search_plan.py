@@ -43,8 +43,7 @@ _TOPIC_EXPANSIONS = (
          "representants du personnel", "representant syndical", "representants syndicaux", "local syndical", "locaux syndicaux", "decharge d activite", "decharges d activite", "decharge syndicale",
          "credit de temps syndical", "credit d heures syndical", "asa syndicale",
          "autorisation speciale d absence syndicale",
-         "formation syndicale", "reunion d information syndicale",
-         "comite social territorial"),
+         "formation syndicale", "reunion d information syndicale"),
         "droit syndical fonction publique territoriale CGFP livre II exercice du droit "
         "syndical dialogue social représentation des agents garanties exercice droit "
         "syndical facilités organisations syndicales locaux syndicaux autorisations "
@@ -70,7 +69,8 @@ _TOPIC_EXPANSIONS = (
         "protection fonctionnelle jurisprudence administrative",
     ),
     (
-        ("protection fonctionnelle",),
+        ("protection fonctionnelle", "un usager m a menace", "un usager m a menacé",
+         "menace pendant mon service", "agression pendant le service"),
         "protection fonctionnelle agent territorial CGFP obligations employeur public "
         "jurisprudence Conseil d'État collectivités territoriales",
     ),
@@ -94,8 +94,7 @@ _TOPIC_EXPANSIONS = (
         "décret 2000-815 cycle de travail annualisation astreintes repos",
     ),
     (
-        ("accident de service", "maladie professionnelle", "citis",
-         "conge longue maladie", "conge longue duree", "conge maladie"),
+        ("accident de service", "maladie professionnelle", "citis"),
         "congé pour invalidité temporaire imputable au service CITIS agents territoriaux "
         "accident de service maladie professionnelle CGFP décret 87-602",
     ),
@@ -104,6 +103,74 @@ _TOPIC_EXPANSIONS = (
          "remuneration", "traitement indiciaire"),
         "rémunération fonctionnaires territoriaux régime indemnitaire RIFSEEP IFSE NBI "
         "délibération locale décret 91-875 CGFP",
+    ),
+    (
+        ("conges annuels", "congé annuel", "report de conges", "report de congés",
+         "conges non pris", "congés non pris", "compte epargne temps",
+         "compte épargne-temps", "conge sans solde", "congé sans solde",
+         "conge maternite", "congé maternité"),
+        "congés annuels fonction publique territoriale décret 85-1250 "
+        "compte épargne temps décret 2004-878 report congés délibération locale",
+    ),
+    (
+        ("conge maladie ordinaire", "congé de maladie ordinaire", "arret maladie",
+         "arrêt maladie", "conge longue maladie", "congé longue maladie",
+         "conge longue duree", "congé longue durée", "temps partiel therapeutique",
+         "temps partiel thérapeutique", "conseil medical", "conseil médical",
+         "secret medical", "secret médical"),
+        "congé maladie fonction publique territoriale CGFP fonctionnaire contractuel "
+        "décret 87-602 décret 88-145 conseil médical temps partiel thérapeutique secret médical",
+    ),
+    (
+        ("avancement d echelon", "avancement d'échelon", "avancement de grade",
+         "promotion interne", "entretien professionnel", "compte rendu d entretien",
+         "compte rendu d'entretien", "refus de titularisation", "titularisation",
+         "reprise anciennete", "reprise d ancienneté", "anciennete dans le prive",
+         "ancienneté dans le privé"),
+        "CGFP livre V carrière fonction publique territoriale avancement échelon grade "
+        "promotion interne entretien professionnel titularisation stage reprise ancienneté",
+    ),
+    (
+        ("comite social territorial", "comité social territorial", "CST",
+         "formation specialisee", "formation spécialisée"),
+        "CGFP dialogue social comité social territorial décret 2021-571 "
+        "formation spécialisée compétences consultation collectivités territoriales",
+    ),
+    (
+        ("teletravail", "télétravail", "travail a distance", "travail à distance",
+         "materiel de teletravail", "matériel de télétravail"),
+        "fonction publique territoriale télétravail décret 2016-151 décret 2020-524 "
+        "autorisation individuelle délibération locale équipement",
+    ),
+    (
+        ("droit de retrait", "danger grave et imminent", "registre danger grave",
+         "document unique", "duerp", "medecine du travail", "médecine du travail",
+         "preconisation medicale", "préconisation médicale", "adapter mon poste"),
+        "fonction publique territoriale santé sécurité travail décret 85-603 "
+        "droit de retrait danger grave imminent document unique médecin du travail",
+    ),
+    (
+        ("mutation dans l interet du service", "mutation dans l'intérêt du service",
+         "changement d affectation", "changement d'affectation",
+         "disponibilite pour suivre", "disponibilité pour suivre",
+         "suivre mon conjoint", "concours dans une autre collectivite",
+         "concours dans une autre collectivité"),
+        "CGFP mobilité fonctionnaires territoriaux mutation changement affectation "
+        "disponibilité suivi conjoint concours détachement garanties",
+    ),
+    (
+        ("suppression de poste", "poste supprime", "poste supprimé", "demission",
+         "démission", "rupture conventionnelle", "revenir dans la fonction publique",
+         "refus de titularisation"),
+        "CGFP fin de fonctions fonction publique territoriale suppression emploi "
+        "reclassement démission rupture conventionnelle réintégration",
+    ),
+    (
+        ("cumul d activites", "cumul d'activités", "activite independante",
+         "activité indépendante", "cumuler deux emplois", "deux emplois publics",
+         "activite accessoire", "activité accessoire"),
+        "CGFP cumul activités fonctionnaires territoriaux décret 2020-69 "
+        "activité accessoire création entreprise autorisation déclaration",
     ),
 )
 
@@ -159,7 +226,7 @@ _TOPIC_RESEARCH_AXES = (
          "local syndical", "locaux syndicaux", "decharge d activite", "decharges d activite",
          "decharge syndicale", "credit de temps syndical", "credit d heures syndical",
          "asa syndicale", "autorisation speciale d absence syndicale",
-         "formation syndicale", "reunion d information syndicale", "comite social territorial"),
+         "formation syndicale", "reunion d information syndicale"),
         (
             "CGFP livre II droit syndical fonction publique territoriale exercice droits syndicaux agents territoriaux",
             "CGFP autorisations speciales absence syndicale decharges activite service credit temps syndical locaux syndicaux deliberation locale reunions information formation syndicale dialogue social organisations syndicales",
@@ -229,7 +296,7 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail"),
+        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service"),
         (
             "protection fonctionnelle agent territorial CGFP obligation collectivité territoriale",
             "jurisprudence Conseil d'État protection fonctionnelle agents publics territoriaux conditions refus",
@@ -243,7 +310,7 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("accident de service", "maladie professionnelle", "citis", "conge longue maladie", "congé longue maladie", "conge longue duree", "congé longue durée"),
+        ("accident de service", "maladie professionnelle", "citis"),
         (
             "CITIS agent territorial accident de service maladie professionnelle CGFP décret 87-602",
             "fonction publique territoriale congé maladie imputabilité au service expertise médicale droits agent",
@@ -254,6 +321,92 @@ _TOPIC_RESEARCH_AXES = (
         (
             "rémunération agents territoriaux CGFP régime indemnitaire RIFSEEP IFSE NBI délibération locale",
             "fonction publique territoriale décret 91-875 régime indemnitaire équivalence corps délibération assemblée",
+        ),
+    ),
+    (
+        ("conges annuels", "congé annuel", "report de conges", "report de congés",
+         "conges non pris", "congés non pris", "compte epargne temps",
+         "compte épargne-temps", "conge sans solde", "congé sans solde",
+         "conge maternite", "congé maternité"),
+        (
+            "fonction publique territoriale congés annuels décret 85-1250 droits report congés",
+            "FPT compte épargne temps décret 2004-878 congés non pris délibération locale",
+        ),
+    ),
+    (
+        ("conge maladie ordinaire", "congé de maladie ordinaire", "arret maladie",
+         "arrêt maladie", "conge longue maladie", "congé longue maladie",
+         "conge longue duree", "congé longue durée", "temps partiel therapeutique",
+         "temps partiel thérapeutique", "conseil medical", "conseil médical",
+         "secret medical", "secret médical"),
+        (
+            "CGFP congé maladie ordinaire fonctionnaire territorial droits rémunération",
+            "décret 87-602 décret 88-145 FPT conseil médical temps partiel thérapeutique secret médical",
+        ),
+    ),
+    (
+        ("avancement d echelon", "avancement d'échelon", "avancement de grade",
+         "promotion interne", "entretien professionnel", "compte rendu d entretien",
+         "compte rendu d'entretien", "refus de titularisation", "titularisation",
+         "reprise anciennete", "reprise d ancienneté", "anciennete dans le prive",
+         "ancienneté dans le privé"),
+        (
+            "CGFP livre V fonctionnaires territoriaux avancement échelon grade promotion interne",
+            "FPT entretien professionnel titularisation stage reprise ancienneté décret statutaire",
+        ),
+    ),
+    (
+        ("comite social territorial", "comité social territorial", "CST",
+         "formation specialisee", "formation spécialisée"),
+        (
+            "CGFP comité social territorial compétences consultation collectivités territoriales",
+            "décret 2021-571 CST formation spécialisée ordre du jour avis règlement intérieur",
+        ),
+    ),
+    (
+        ("teletravail", "télétravail", "travail a distance", "travail à distance",
+         "materiel de teletravail", "matériel de télétravail"),
+        (
+            "fonction publique territoriale télétravail décret 2016-151 décret 2020-524",
+            "FPT télétravail autorisation individuelle délibération locale équipement accident service",
+        ),
+    ),
+    (
+        ("droit de retrait", "danger grave et imminent", "registre danger grave",
+         "document unique", "duerp", "medecine du travail", "médecine du travail",
+         "preconisation medicale", "préconisation médicale", "adapter mon poste"),
+        (
+            "FPT santé sécurité travail décret 85-603 droit de retrait danger grave imminent",
+            "fonction publique territoriale document unique médecin du travail prévention risques professionnels",
+        ),
+    ),
+    (
+        ("mutation dans l interet du service", "mutation dans l'intérêt du service",
+         "changement d affectation", "changement d'affectation",
+         "disponibilite pour suivre", "disponibilité pour suivre",
+         "suivre mon conjoint", "concours dans une autre collectivite",
+         "concours dans une autre collectivité"),
+        (
+            "CGFP mobilité fonctionnaires territoriaux mutation changement affectation disponibilité",
+            "FPT suivi conjoint concours détachement nomination stage garanties statutaires",
+        ),
+    ),
+    (
+        ("suppression de poste", "poste supprime", "poste supprimé", "demission",
+         "démission", "rupture conventionnelle", "revenir dans la fonction publique",
+         "refus de titularisation"),
+        (
+            "CGFP fin de fonctions territoriales suppression emploi reclassement démission",
+            "fonction publique territoriale rupture conventionnelle réintégration garanties procédure",
+        ),
+    ),
+    (
+        ("cumul d activites", "cumul d'activités", "activite independante",
+         "activité indépendante", "cumuler deux emplois", "deux emplois publics",
+         "activite accessoire", "activité accessoire"),
+        (
+            "CGFP cumul activités agents territoriaux décret 2020-69 autorisation déclaration",
+            "FPT activité accessoire création entreprise cumul emplois publics exceptions",
         ),
     ),
 )
