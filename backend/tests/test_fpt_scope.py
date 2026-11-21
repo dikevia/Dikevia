@@ -220,3 +220,52 @@ def test_plain_language_phrasing_activates_the_same_strict_relevance_filter():
     assert is_topic_relevant_source(
         "Ma collectivité veut me mettre dehors.", unrelated
     ) is False
+
+
+
+def test_fpe_title_is_not_overridden_by_incidental_fpt_reference_in_body():
+    result = classify_public_service_scope({
+        "title": "Décret relatif à la fonction publique de l'État",
+        "text": (
+            "Les agents de l'État sont concernés. Le texte mentionne également "
+            "les collectivités territoriales à titre de comparaison."
+        ),
+    })
+    assert result["scope"] == "FPE"
+    assert result["analysis_eligible"] is False
+
+
+def test_fph_title_is_not_overridden_by_incidental_fpt_reference_in_body():
+    result = classify_public_service_scope({
+        "title": "Dispositions relatives à la fonction publique hospitalière",
+        "text": (
+            "Les personnels hospitaliers sont concernés. Une référence aux "
+            "agents territoriaux figure dans une disposition de coordination."
+        ),
+    })
+    assert result["scope"] == "FPH"
+    assert result["analysis_eligible"] is False
+
+
+def test_mixed_versant_body_without_primary_scope_is_not_assumed_fpt():
+    result = classify_public_service_scope({
+        "title": "Dispositions communes aux agents publics",
+        "text": (
+            "Les fonctionnaires territoriaux et les agents de l'État "
+            "sont mentionnés dans des dispositions distinctes."
+        ),
+    })
+    assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
+    assert result["analysis_eligible"] is False
+
+
+def test_explicit_fpt_title_can_contain_cross_versant_reference():
+    result = classify_public_service_scope({
+        "title": "Décret relatif à la fonction publique territoriale",
+        "text": (
+            "Les fonctionnaires territoriaux sont concernés. Une disposition "
+            "renvoie, pour comparaison, aux agents de l'État."
+        ),
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True
