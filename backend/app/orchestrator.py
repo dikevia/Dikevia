@@ -160,14 +160,6 @@ def classify_question_intent(question: str) -> str:
     if not text:
         return "GENERAL_INFORMATION"
 
-    general_hypothetical_patterns = (
-        r"^(?:quels sont|quels seraient|comment connaitre|comment connaître)\s+mes droits\b",
-        r"\bsi\s+(?:mon employeur|ma collectivité|un employeur)\s+(?:refuse|rejette|sanctionne|impose)\b",
-        r"\b(?:peut-il|peut-elle|est-il possible|dans quels cas)\b",
-    )
-    if any(re.search(pattern, text) for pattern in general_hypothetical_patterns):
-        return "GENERAL_INFORMATION"
-
     personal_event_patterns = (
         r"\bon ne me (?:paie|paye|compense|donne)\b",
         r"\bon m['’]a (?:refusé|sanctionné|notifié|imposé|retiré|placé|licencié|convoqué)\b",
@@ -185,6 +177,17 @@ def classify_question_intent(question: str) -> str:
     )
     if any(re.search(pattern, text) for pattern in personal_event_patterns):
         return "PERSONAL_CASE"
+
+    # Generic rights framing must not hide an actual individual event described
+    # in the same message. Personal-event evidence takes precedence over
+    # hypothetical/general wording.
+    general_hypothetical_patterns = (
+        r"^(?:quels sont|quels seraient|comment connaitre|comment connaître)\s+mes droits\b",
+        r"\bsi\s+(?:mon employeur|ma collectivité|un employeur)\s+(?:refuse|rejette|sanctionne|impose)\b",
+        r"\b(?:peut-il|peut-elle|est-il possible|dans quels cas)\b",
+    )
+    if any(re.search(pattern, text) for pattern in general_hypothetical_patterns):
+        return "GENERAL_INFORMATION"
 
     # A question about what an employer may generally do is not evidence that
     # the user has personally received a refusal or decision.
