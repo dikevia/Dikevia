@@ -91,6 +91,21 @@ def test_compound_question_retains_two_independent_legal_topics():
     assert "discipline fonction publique territoriale" in queries[2].casefold()
 
 
+def test_three_explicit_legal_topics_each_receive_a_focused_research_query():
+    question = (
+        "Mon ASA syndicale est refusée, je subis aussi une sanction disciplinaire "
+        "et mes heures supplémentaires ne sont pas payées."
+    )
+    queries = build_official_search_queries(question)
+
+    assert len(queries) == 4
+    joined = " ".join(queries).casefold()
+    assert "droit syndical" in joined
+    assert "discipline fonction publique territoriale" in joined
+    assert "ihts" in joined
+    assert "décret 2002-60" in joined
+
+
 def test_unrecognized_everyday_question_stays_in_fpt_scope_without_inventing_topic():
     question = "Mon chef me convoque sans explication."
     queries = build_official_search_queries(question)
