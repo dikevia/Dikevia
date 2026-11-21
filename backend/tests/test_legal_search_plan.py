@@ -302,3 +302,28 @@ def test_contractual_evaluation_question_uses_contractual_regime_not_civil_serva
     assert "décret 88-145" in axes[0]
     assert "décret 2014-1526" not in axes[0]
 
+
+
+def test_annual_evaluation_question_does_not_trigger_stagiaire_or_avancement_axes():
+    question = (
+        "Mon agent de maîtrise m'a fait une évaluation annuelle à charge, "
+        "puis-je la contester ?"
+    )
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+    joined = " ".join(queries).casefold()
+    assert any("décret 2014-1526" in query for query in queries)
+    assert any("révision" in query or "revision" in query for query in queries)
+    assert "décret 92-1194" not in joined
+    assert "reprise ancienneté" not in joined
+    assert not any("décret 92-1194" in axis for axis in axes)
+
+
+def test_contractual_annual_evaluation_does_not_mix_civil_servant_rules():
+    question = "Je suis agent contractuel territorial et je veux contester mon évaluation annuelle."
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+    joined = " ".join(queries).casefold()
+    assert "décret 88-145" in joined
+    assert "décret 2014-1526" not in joined
+    assert all("décret 2014-1526" not in axis for axis in axes)
