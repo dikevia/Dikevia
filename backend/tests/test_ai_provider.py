@@ -494,7 +494,8 @@ def test_ai_prompt_distinguishes_fact_period_from_text_effective_date():
     assert "Ne demande pas automatiquement la date des faits" in SYSTEM_PROMPT
     assert "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
     assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
-    assert "Ne transforme pas cette demande en simple exposé général" in SYSTEM_PROMPT
+    assert "utilise les faits personnels uniquement pour identifier les textes à rechercher" in SYSTEM_PROMPT
+    assert "sans qualifier la situation individuelle" in SYSTEM_PROMPT
     assert "FACTS_PERIOD_START_VERSION" in SYSTEM_PROMPT
     assert "CURRENT_LAW_VERSION" in SYSTEM_PROMPT
 
