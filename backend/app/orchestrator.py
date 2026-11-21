@@ -735,6 +735,7 @@ class LegalOrchestrator:
                     result["public_service_scope"] = scope["scope"]
                     result["scope_evidence"] = scope["evidence"]
                     result["analysis_eligible"] = scope["analysis_eligible"]
+                    result["claim_eligible"] = scope.get("claim_eligible", scope["analysis_eligible"])
                     if not scope["analysis_eligible"] or not is_topic_relevant_source(current_question, result):
                         logger.info(
                             "Décision CETAT écartée du dossier IA : périmètre ou thème non confirmé (source=%s, scope=%s)",
@@ -951,6 +952,7 @@ class LegalOrchestrator:
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
+            item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
             item["ihts_relevant"] = is_ihts_relevant_source(request.question, item)
             sources.append({
                 **item,
@@ -1028,6 +1030,7 @@ class LegalOrchestrator:
             decision["public_service_scope"] = scope_check["scope"]
             decision["scope_evidence"] = scope_check["evidence"]
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
+            decision["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
             decision["ihts_relevant"] = is_ihts_relevant_source(request.question, decision)
             sources.append({**decision, "page_start": None, "page_end": None})
 
@@ -1091,6 +1094,7 @@ class LegalOrchestrator:
             and s.get("content_kind") != "METADATA"
             and (s.get("citation_integrity") or {}).get("valid") is True
             and s.get("analysis_eligible") is True
+            and s.get("claim_eligible", True) is not False
             and s.get("ihts_relevant") is not False
         ]
         usable_local = [s for s in local_sources
