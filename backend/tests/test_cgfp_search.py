@@ -161,3 +161,32 @@ def test_snapshot_fallback_rejects_irrelevant_hits_for_overtime():
         "Recherche CGFP indisponible.", found,
         "On ne me paie pas mes heures supplémentaires",
     )
+
+
+
+def test_cgfp_concept_router_covers_major_fpt_code_subjects():
+    from app.cgfp_relevance import _matching_topics
+
+    cases = [
+        ("Mon supérieur m'impose le secret professionnel.", "droits_obligations_deontologie"),
+        ("Comment se passe ma titularisation après le stage ?", "recrutement_stage_titularisation"),
+        ("Ma collectivité refuse ma promotion interne.", "carriere_avancement_evaluation"),
+        ("Puis-je être muté dans une autre collectivité ?", "mobilite_positions_statutaires"),
+        ("Mon employeur refuse ma formation CNFPT.", "formation_professionnelle"),
+        ("Mon congé parental est refusé.", "conges_absences_familiales"),
+        ("Le service de médecine préventive n'intervient pas.", "sante_securite_prevention"),
+        ("Mon employeur peut-il m'interdire de faire grève ?", "greve_dialogue_social_representativite"),
+        ("Je souhaite démissionner de la fonction publique territoriale.", "cessation_fonctions_retraite"),
+        ("Je subis une discrimination au travail.", "egalite_discrimination"),
+    ]
+    for question, expected_topic in cases:
+        assert expected_topic in {topic["key"] for topic in _matching_topics(question)}
+
+
+def test_cgfp_retrieval_keeps_overtime_as_a_specific_topic():
+    from app.cgfp_relevance import _matching_topics
+
+    topics = {topic["key"] for topic in _matching_topics(
+        "Je suis contractuel et mes heures supplémentaires ne sont pas payées."
+    )}
+    assert topics == {"heures_supplementaires_ihts"}
