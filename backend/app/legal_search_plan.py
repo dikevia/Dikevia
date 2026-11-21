@@ -286,6 +286,20 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
+        ("temps partiel", "agent a temps partiel", "agent à temps partiel"),
+        (
+            "fonction publique territoriale temps partiel heures supplémentaires IHTS décret 2004-777 décret 2002-60",
+            "FPT agent à temps partiel conditions indemnités horaires travaux supplémentaires décret 82-624 décret 2004-777",
+        ),
+    ),
+    (
+        ("temps non complet", "agent a temps non complet", "agent à temps non complet"),
+        (
+            "FPT emploi permanent temps non complet heures complémentaires décret 2020-592 seuil 35 heures",
+            "fonction publique territoriale temps non complet heures supplémentaires IHTS décret 2002-60 décret 2001-623",
+        ),
+    ),
+    (
         ("prescription quadriennale", "prescription de ma creance",
          "heures supplementaires realisees il y a deux ans",
          "reclamer des heures supplementaires il y a deux ans"),
@@ -305,13 +319,12 @@ _TOPIC_RESEARCH_AXES = (
     ),
     (
         ("temps de travail", "duree du travail", "annualisation", "astreinte",
-         "temps partiel", "temps non complet", "cycle de travail", "rtt",
-         "compteur d heures", "compteur d heures remis a zero",
-         "heures effectuees au dela de mon horaire", "heures supplementaires",
-         "heure supplementaire", "heures sup", "ihts"),
+         "cycle de travail", "rtt", "compteur d heures",
+         "compteur d heures remis a zero", "heures effectuees au dela de mon horaire",
+         "heures supplementaires", "heure supplementaire", "heures sup", "ihts"),
         (
-            "fonction publique territoriale décret 2001-623 durée annuelle temps de travail cycles délibération locale temps partiel temps non complet heures complémentaires heures supplémentaires",
-            "FPT décret 2001-623 décret 2000-815 temps partiel temps non complet régime heures complémentaires heures supplémentaires seuils décompte",
+            "fonction publique territoriale décret 2001-623 durée annuelle temps de travail cycles délibération locale heures supplémentaires",
+            "FPT décret 2001-623 décret 2000-815 organisation du temps de travail cycles seuils décompte heures supplémentaires",
         ),
     ),
 
