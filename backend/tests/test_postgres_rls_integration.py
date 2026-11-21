@@ -11,6 +11,7 @@ not a substitute for executing them against PostgreSQL.
 import asyncio
 import os
 import uuid
+from datetime import date
 
 import pytest
 
@@ -273,3 +274,72 @@ async def _run_concurrent_tenant_isolation_scenario(tenant_count: int = 12):
 
 def test_postgresql_rls_concurrent_isolation_across_twelve_organizations():
     asyncio.run(_run_concurrent_tenant_isolation_scenario())
+
+
+async def _run_administrative_case_law_search_sql_scenario():
+    import asyncpg
+    from app.legal_corpus import search_legal_corpus, upsert_legal_document
+
+    source_id = "CI_ADMIN_CASELAW_" + uuid.uuid4().hex
+    version_key = "ci-version-" + uuid.uuid4().hex
+    paragraphs = [
+        (
+            "Le Conseil d'État examine les conditions de travail d'un agent territorial. "
+            "La durée du temps de travail et l'organisation du service sont discutées. "
+            "Les pièces du dossier décrivent les fonctions exercées par l'agent public. "
+        ) * 3
+        for _ in range(28)
+    ]
+    paragraphs.append(
+        "MARQUEUR_FINAL_DECISION_CI Ce dernier passage du texte intégral ne reprend "
+        "pas les termes de la requête et permet de vérifier l'ajout du véritable "
+        "dernier fragment de la décision."
+    )
+    full_text = "\\n".join(paragraphs)
+    admin = await asyncpg.connect(ADMIN_URL)
+    try:
+        await upsert_legal_document(admin, {
+            "source_type": "OTHER_OFFICIAL",
+            "source_id": source_id,
+            "title": "Décision administrative de test — agent territorial et temps de travail",
+            "document_kind": "ADMIN_CASELAW",
+            "official_number": "CI-" + uuid.uuid4().hex[:12],
+            "jurisdiction": "Conseil d'État",
+            "publisher": "Justice administrative",
+            "official_url": "https://opendata.justice-administrative.fr/",
+            "signature_date": date(2025, 2, 10),
+            "status": "UNKNOWN",
+            "source_status": "OFFICIAL_XML_IMPORTED",
+            "raw_metadata": {
+                "source_license": "Licence Ouverte version 2.0",
+                "publication_code": "C",
+                "source_xml_sha256": "a" * 64,
+            },
+            "full_text": full_text,
+            "version_key": version_key,
+            "version_status": "UNKNOWN",
+            "raw_version_payload": {"integration_test": True},
+        })
+
+        results = await search_legal_corpus(
+            admin, "agent territorial temps de travail", date(2026, 11, 21), limit=6,
+        )
+        item = next(result for result in results if result["source_id"] == source_id)
+        assert item["document_kind"] == "ADMIN_CASELAW"
+        assert item["temporal_status"] == "DECISION_AVAILABLE_BY_REQUESTED_DATE"
+        assert item["citation_integrity"]["text_hash_verified"] is True
+        assert item["citation_integrity"]["valid"] is True
+        assert item["retrieval_scope"] == (
+            "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+        )
+        assert "MARQUEUR_FINAL_DECISION_CI" in item["text"]
+    finally:
+        await admin.execute(
+            "DELETE FROM legal_documents WHERE source_type='OTHER_OFFICIAL' AND source_id=$1",
+            source_id,
+        )
+        await admin.close()
+
+
+def test_postgresql_executes_administrative_case_law_search_cte():
+    asyncio.run(_run_administrative_case_law_search_sql_scenario())
