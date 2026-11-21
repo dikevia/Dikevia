@@ -592,7 +592,8 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         if triggers != contract_triggers
     )
     contract_subject_present = any(
-        _contains_trigger(folded, trigger) for trigger in contract_triggers[:6]
+        _contains_trigger(folded, trigger)
+        for trigger in ("agent contractuel", "contractuel", "contractuels", "CDD", "CDI")
     )
     ihts_topic_present = any(
         "IHTS" in axes[0]
@@ -715,7 +716,8 @@ def build_official_research_axes(question: str) -> list[str]:
         if triggers != contract_triggers
     )
     contract_subject_present = any(
-        _contains_trigger(folded, trigger) for trigger in contract_triggers[:6]
+        _contains_trigger(folded, trigger)
+        for trigger in ("agent contractuel", "contractuel", "contractuels", "CDD", "CDI")
     )
     ihts_topic_present = any(
         "IHTS" in axes[0]
