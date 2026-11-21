@@ -58,7 +58,7 @@ def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
             continue
         queries.append(f"article {article_ref}")
         seen.add(article_ref)
-        if len(queries) >= 2:
+        if len(queries) >= 6:
             break
     return queries
 
@@ -424,14 +424,53 @@ class LegalOrchestrator:
         async def search_cgfp_index():
             if not settings.cgfp_enabled:
                 return None, "Index documentaire CGFP désactivé : le pilier CGFP n'a pas été interrogé."
-            try:
-                result = await asyncio.to_thread(search_cgfp, contextual_question, limit=8)
-                if not isinstance(result, dict):
-                    return None, "Index documentaire CGFP indisponible : résultat de recherche non conforme."
-                return result, None
-            except Exception:
-                logger.exception("Échec de la recherche dans l'index structuré du CGFP.")
-                return None, "Index documentaire CGFP indisponible ou invalide."
+            # Search the national CGFP discovery index once per recognized
+            # sub-question. A single broad query can otherwise let its strongest
+            # topic hide articles relevant to the other parts of a compound request.
+            results_by_query = await asyncio.gather(*[
+                asyncio.to_thread(search_cgfp, query, limit=8)
+                for query in research_queries
+            ], return_exceptions=True)
+            merged: dict[str, dict] = {}
+            detected_topics: list[str] = []
+            failed_queries = []
+            source_metadata = None
+            for query, result in zip(research_queries, results_by_query):
+                if isinstance(result, BaseException) or not isinstance(result, dict):
+                    logger.warning("Recherche index CGFP indisponible pour un axe (%s): %r", query[:100], result)
+                    failed_queries.append(query)
+                    continue
+                source_metadata = source_metadata or result.get("source")
+                detected_topics.extend(result.get("detected_topics") or [])
+                for hit in result.get("results", []):
+                    article = re.sub(r"\\s+", "", str(hit.get("article") or "")).upper()
+                    if not article:
+                        continue
+                    current = merged.get(article)
+                    candidate = dict(hit)
+                    if current is None or float(candidate.get("score") or 0) > float(current.get("score") or 0):
+                        merged[article] = candidate
+                    else:
+                        current["matched_concepts"] = list(dict.fromkeys([
+                            *(current.get("matched_concepts") or []),
+                            *(candidate.get("matched_concepts") or []),
+                        ]))[:8]
+            ranked = sorted(
+                merged.values(),
+                key=lambda item: (-float(item.get("score") or 0), str(item.get("article") or "")),
+            )[:20]
+            if not ranked and failed_queries:
+                return None, "Index documentaire CGFP indisponible pour tous les axes de recherche."
+            issue = (
+                "La recherche dans l'index CGFP a échoué pour au moins une sous-question."
+                if failed_queries else None
+            )
+            return {
+                "source": source_metadata,
+                "results": ranked,
+                "detected_topics": list(dict.fromkeys(detected_topics)),
+                "queries_executed": len(research_queries) - len(failed_queries),
+            }, issue
 
         async def search_official_pillars(cgfp_article_queries: list[str] | None = None):
             if not legifrance.configured:
@@ -673,13 +712,39 @@ class LegalOrchestrator:
             else:
                 try:
                     local_sources = []
-                    # The tenant-scoped search query is date-independent; fetch
-                    # the top matching documents once, then evaluate each document
-                    # against the facts-period endpoints and today's rules.
-                    base_local_hits = await search_local_documents(
-                        conn, organization_id, request.employer,
-                        contextual_search_query[:500], effective_date, limit=5,
-                    )
+                    # Keep the search strictly tenant-scoped, but execute it for
+                    # each deterministic legal sub-question. Sequential calls
+                    # intentionally reuse the same asyncpg connection.
+                    local_hits_by_id: dict[str, dict] = {}
+                    local_failed_queries = []
+                    for local_query in research_queries:
+                        try:
+                            query_hits = await search_local_documents(
+                                conn, organization_id, request.employer,
+                                local_query[:500], effective_date, limit=5,
+                            )
+                        except Exception:
+                            logger.exception(
+                                "Échec de la recherche locale pour un axe juridique (%s).",
+                                local_query[:100],
+                            )
+                            local_failed_queries.append(local_query)
+                            continue
+                        for query_hit in query_hits:
+                            source_key = str(query_hit.get("source_id") or "")
+                            if not source_key:
+                                continue
+                            existing = local_hits_by_id.get(source_key)
+                            if existing is None or float(query_hit.get("relevance") or 0) > float(existing.get("relevance") or 0):
+                                local_hits_by_id[source_key] = dict(query_hit)
+                    if local_failed_queries:
+                        local_issue = (
+                            "La recherche dans les documents locaux a échoué pour au moins une sous-question."
+                        )
+                    base_local_hits = sorted(
+                        local_hits_by_id.values(),
+                        key=lambda item: -float(item.get("relevance") or 0),
+                    )[:15]
                     for local_date, local_endpoint in _local_document_reference_dates(
                         period_start, period_end, effective_date,
                     ):
