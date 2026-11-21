@@ -362,6 +362,14 @@ _TOPIC_FAMILIES = {
         "compte rendu d evaluation", "compte rendu d entretien",
         "valeur professionnelle", "appreciation de la valeur professionnelle",
     ),
+    # Lexical false positives seen in official search results: these are
+    # evaluations of policies, senior ministry jobs or recruitment skills,
+    # not annual appraisals of territorial staff.
+    "OTHER_EVALUATION": (
+        "emplois superieurs", "evaluation des emplois", "politiques rh",
+        "evaluation des politiques", "evaluation des competences",
+        "competences en matiere de recrutement",
+    ),
 }
 
 
