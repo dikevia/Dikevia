@@ -23,6 +23,38 @@ from .legal_search_plan import build_official_search_query, build_official_searc
 from .legal_qualification import qualify_legal_question
 
 
+def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
+    """Turn relevant, FPT-applicable snapshot hits into exact live CGFP lookups."""
+    if not isinstance(found, dict):
+        return []
+    queries: list[str] = []
+    seen: set[str] = set()
+    for hit in found.get("results", []):
+        article_ref = re.sub(r"\s+", "", str(hit.get("article") or "")).upper()
+        if not re.fullmatch(r"[LDR]\d+(?:-\d+)*", article_ref) or article_ref in seen:
+            continue
+        article_document = get_cgfp_article(article_ref)
+        if not article_document:
+            continue
+        scope = classify_public_service_scope({
+            "title": f"Code général de la fonction publique — article {article_ref}",
+            "text": article_document.get("text") or hit.get("excerpt") or "",
+            "document_kind": "CODE",
+        })
+        if scope.get("analysis_eligible") is not True:
+            continue
+        if not (
+            hit.get("matched_concepts")
+            or hit.get("relevance_label") == "Correspondance lexicale à confirmer"
+        ):
+            continue
+        queries.append(f"article {article_ref}")
+        seen.add(article_ref)
+        if len(queries) >= 2:
+            break
+    return queries
+
+
 def should_use_cgfp_snapshot_fallback(
     live_issue: str | None,
     found: dict | None,
@@ -515,27 +547,7 @@ class LegalOrchestrator:
         # date-scoped Légifrance API. Snapshot text remains unverified and is
         # used as a fallback only when live CGFP retrieval is unavailable.
         found, cgfp_issue = await search_cgfp_index()
-        cgfp_article_queries = []
-        if isinstance(found, dict):
-            for hit in found.get("results", []):
-                article_ref = re.sub(r"\s+", "", str(hit.get("article") or "")).upper()
-                article_document = get_cgfp_article(article_ref) if re.fullmatch(
-                    r"[LDR]\d+(?:-\d+)*", article_ref
-                ) else None
-                article_scope = classify_public_service_scope({
-                    "title": f"Code général de la fonction publique — article {article_ref}",
-                    "text": (article_document or {}).get("text") or hit.get("excerpt") or "",
-                    "document_kind": "CODE",
-                }) if article_document or hit.get("excerpt") else {"analysis_eligible": False}
-                if (
-                    article_document
-                    and article_scope.get("analysis_eligible") is True
-                    and (hit.get("matched_concepts")
-                         or hit.get("relevance_label") == "Correspondance lexicale à confirmer")
-                ):
-                    cgfp_article_queries.append(f"article {article_ref}")
-                if len(cgfp_article_queries) >= 2:
-                    break
+        cgfp_article_queries = _cgfp_article_discovery_queries(found)
 
         # Official legal texts and administrative case law remain the
         # authoritative verification path.
