@@ -566,9 +566,9 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         r"\b(?:et|ainsi que|par ailleurs|de plus|egalement)\b|[;?]\s*(?:et|puis|ensuite)\b",
         folded,
     ))
-    query_limit = max(1, min(max_queries, 6))
+    query_limit = max(1, min(max_queries, 3))
     if explicit_compound and len(matched_axes) >= 3:
-        query_limit = min(query_limit, len(matched_axes) + 1)
+        query_limit = min(max_queries, len(matched_axes) + 1)
 
     # For compound questions, first allocate one focused query to each
     # recognized topic. Only then spend remaining capacity on a second axis
