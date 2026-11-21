@@ -247,3 +247,57 @@ def test_claim_evidence_rejects_interpretive_context_only_sources():
     assert result["valid"] is False
     assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
 
+
+
+
+def test_claim_evidence_rejects_a_compound_answer_that_silently_omits_an_axis():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    axis_overtime = "heures supplémentaires et IHTS"
+    axis_sick_leave = "congé maladie"
+    payload = _evidence_claim(
+        "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+        source["excerpt"],
+    )
+    payload["claims"][0]["axis"] = axis_overtime
+    result = validate_claim_evidence(
+        payload, [source], required_axes=[axis_overtime, axis_sick_leave],
+    )
+    assert result["valid"] is False
+    assert f"research_axis_not_covered:{axis_sick_leave}" in result["invalid_claims"]
+
+
+def test_claim_evidence_accepts_explicit_uncovered_axis_without_inventing_a_claim():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    axis_overtime = "heures supplémentaires et IHTS"
+    axis_sick_leave = "congé maladie"
+    payload = _evidence_claim(
+        "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+        source["excerpt"],
+    )
+    payload["claims"][0]["axis"] = axis_overtime
+    payload["uncovered_axes"] = [axis_sick_leave]
+    result = validate_claim_evidence(
+        payload, [source], required_axes=[axis_overtime, axis_sick_leave],
+    )
+    assert result["valid"] is True
+    assert result["uncovered_axes"] == [axis_sick_leave]
+
+
+def test_claim_evidence_rejects_unknown_axis_labels():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    payload = _evidence_claim(
+        "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+        source["excerpt"],
+    )
+    payload["claims"][0]["axis"] = "un sujet inventé"
+    result = validate_claim_evidence(
+        payload, [source], required_axes=["heures supplémentaires"],
+    )
+    assert result["valid"] is False
+    assert "claim_0:missing_or_unknown_research_axis" in result["invalid_claims"]
