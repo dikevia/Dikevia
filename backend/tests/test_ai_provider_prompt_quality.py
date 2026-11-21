@@ -103,3 +103,11 @@ def test_prompt_requires_coverage_of_each_retrieval_axis():
     assert "axes_recherche_documentaire" in SYSTEM_PROMPT
     assert "n'en omets aucun silencieusement" in SYSTEM_PROMPT
     assert "indique explicitement qu'aucune source suffisamment pertinente n'a été retrouvée" in SYSTEM_PROMPT
+
+def test_prompt_never_assumes_generic_public_service_sources_apply_to_fpt():
+    assert "GENERAL_PUBLIC_SERVICE" in SYSTEM_PROMPT
+    assert "simple contexte de recherche" in SYSTEM_PROMPT
+    assert "ne l'utilise jamais pour soutenir une affirmation applicable à un agent territorial" in SYSTEM_PROMPT
+    assert "COMMON_PUBLIC_SERVICE" in SYSTEM_PROMPT
+    assert "établit explicitement qu'il vise les trois versants" in SYSTEM_PROMPT
+
