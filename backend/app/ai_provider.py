@@ -165,7 +165,14 @@ def _usable_document_sources(sources):
         if (
             source.get("source_type") == "LEGIFRANCE_CETAT_SEARCH"
             or source.get("content_kind") == "METADATA"
+            or source.get("analysis_eligible") is False
         ):
+            continue
+        # The orchestrator normally supplies only integrity-checked sources.
+        # Preserve compatibility for older direct adapters that have no
+        # integrity field, but never let an explicit failed check reach a model.
+        integrity = source.get("citation_integrity")
+        if isinstance(integrity, dict) and integrity.get("valid") is not True:
             continue
         source_id = source.get("source_id") or source.get("official_source_id") or source.get("source_version_id")
         has_date = False
