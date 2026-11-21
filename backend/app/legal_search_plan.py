@@ -508,8 +508,8 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     matched_axes = []
     other_topic_present = any(
         any(_contains_trigger(folded, trigger) for trigger in triggers)
-        for index, (triggers, _axes) in enumerate(_TOPIC_RESEARCH_AXES)
-        if index != 2
+        for triggers, _axes in _TOPIC_RESEARCH_AXES
+        if triggers != contract_triggers
     )
     contract_triggers, contract_axes = _TOPIC_RESEARCH_AXES[2]
     contract_subject_present = any(
