@@ -539,6 +539,10 @@ def test_open_data_case_law_filter_excludes_local_authority_cases_unrelated_to_s
         "Le litige porte sur les obligations contractuelles et la rémunération "
         "du titulaire du marché."
     )
+    elected_officials = (
+        "Le maire refuse de justifier le versement d'une indemnité de fonction "
+        "aux élus municipaux et aux conseillers municipaux."
+    )
     assert not _is_fpt_employment_case_law(
         "Décision concernant une commune", urban_planning,
         {"scope": "FPT", "analysis_eligible": True},
@@ -547,6 +551,10 @@ def test_open_data_case_law_filter_excludes_local_authority_cases_unrelated_to_s
     # contractual employment in the territorial civil service.
     assert not _is_fpt_employment_case_law(
         "Marché public conclu par une commune", procurement,
+        {"scope": "FPT", "analysis_eligible": True},
+    )
+    assert not _is_fpt_employment_case_law(
+        "Décision concernant une commune", elected_officials,
         {"scope": "FPT", "analysis_eligible": True},
     )
 
