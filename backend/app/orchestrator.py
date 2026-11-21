@@ -468,18 +468,18 @@ class LegalOrchestrator:
                 merged.values(),
                 key=lambda item: (-float(item.get("score") or 0), str(item.get("article") or "")),
             )[:20]
-            if not ranked and failed_queries:
+            if failed_queries and len(failed_queries) == len(research_queries):
                 return None, "Index documentaire CGFP indisponible pour tous les axes de recherche."
-            issue = (
-                "La recherche dans l'index CGFP a échoué pour au moins une sous-question."
-                if failed_queries else None
-            )
             return {
                 "source": source_metadata,
                 "results": ranked,
                 "detected_topics": list(dict.fromkeys(detected_topics)),
                 "queries_executed": len(research_queries) - len(failed_queries),
-            }, issue
+                "partial_issue": (
+                    "La recherche dans l'index CGFP a échoué pour au moins une sous-question ; les autres axes ont été conservés."
+                    if failed_queries else None
+                ),
+            }, None
 
         async def search_official_pillars(cgfp_article_queries: list[str] | None = None):
             if not legifrance.configured:
@@ -572,29 +572,53 @@ class LegalOrchestrator:
             ], return_exceptions=True)
             case_results_by_query = []
             case_search_failed = False
+            case_search_succeeded = 0
             for query, result in zip(research_queries, case_results):
                 if isinstance(result, BaseException) or not isinstance(result, list):
                     logger.warning("Recherche CETAT en échec (%s) : %r", query[:100], result)
                     case_search_failed = True
                     case_results_by_query.append([])
                 else:
+                    case_search_succeeded += 1
                     case_results_by_query.append(result)
             # Round-robin across the independent research axes: otherwise the
             # first broad query can monopolize the consultation budget and hide
             # decisions found only by a focused sub-question.
             case_result = interleave_case_law_results(case_results_by_query, limit=30)
+            code_total = len(comparison_dates) * len(code_research_queries)
+            regulatory_total = len(comparison_dates) * len(research_queries)
             code_issue = (
-                "La recherche d'articles du CGFP sur Légifrance a échoué pour au moins un axe de recherche ou une date de référence."
-                if code_failures else None
+                "La recherche d'articles du CGFP sur Légifrance est indisponible pour tous les axes et dates interrogés."
+                if code_failures and len(code_failures) == code_total else None
             )
             regulatory_search_issue = (
-                "La recherche des lois, décrets et arrêtés sur Légifrance a échoué pour au moins un axe de recherche ou une date de référence."
-                if regulatory_failures else None
+                "La recherche des lois, décrets et arrêtés sur Légifrance est indisponible pour tous les axes et dates interrogés."
+                if regulatory_failures and len(regulatory_failures) == regulatory_total else None
             )
+            search_warnings = []
+            if code_failures and code_issue is None:
+                search_warnings.append(
+                    "La recherche d'articles du CGFP a échoué pour certains axes ou certaines dates ; les résultats obtenus ont été conservés."
+                )
+            if regulatory_failures and regulatory_search_issue is None:
+                search_warnings.append(
+                    "La recherche des textes réglementaires a échoué pour certains axes ou certaines dates ; les résultats obtenus ont été conservés."
+                )
             case_search_issue = (
-                "La recherche de jurisprudence administrative (fonds CETAT) n'a pas abouti pour au moins un axe."
-                if case_search_failed else None
+                "La recherche de jurisprudence administrative (fonds CETAT) est indisponible pour tous les axes interrogés."
+                if case_search_failed and case_search_succeeded == 0 else None
             )
+            if case_search_failed and case_search_succeeded:
+                search_warnings.append(
+                    "La recherche de jurisprudence a échoué pour certaines sous-questions ; les résultats des autres axes ont été conservés."
+                )
+            elif case_search_issue and not re.search(
+                r"jurisprudence|arr[eê]t|d[eé]cision du conseil d['’]etat|tribunal administratif",
+                current_question,
+                re.IGNORECASE,
+            ):
+                search_warnings.append(case_search_issue)
+                case_search_issue = None
             temporal_issue = None
             if period_start and period_start < (period_end or effective_date) and len(comparison_dates) > 1 and (code_failures or regulatory_failures):
                 temporal_issue = (
@@ -604,6 +628,7 @@ class LegalOrchestrator:
             return (
                 code_result, regulatory_result, case_result,
                 code_issue, regulatory_search_issue, case_search_issue, temporal_issue,
+                search_warnings,
             )
 
         # Search the complete bundled CGFP article index for discovery on
@@ -611,6 +636,7 @@ class LegalOrchestrator:
         # date-scoped Légifrance API. Snapshot text remains unverified and is
         # used as a fallback only when live CGFP retrieval is unavailable.
         found, cgfp_issue = await search_cgfp_index()
+        cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
         cgfp_article_queries = _cgfp_article_discovery_queries(found)
 
         # Official legal texts and administrative case law remain the
@@ -618,7 +644,7 @@ class LegalOrchestrator:
         official_result = await search_official_pillars(cgfp_article_queries)
         (
             live_sources, regulatory_sources, case_law_sources,
-            live_issue, regulatory_issue, case_law_issue, temporal_issue,
+            live_issue, regulatory_issue, case_law_issue, temporal_issue, search_warnings,
         ) = official_result
         period_version_comparison = None
         comparison_end_date = period_end or effective_date
@@ -1058,6 +1084,9 @@ class LegalOrchestrator:
                 missing.insert(0, permanent_issue)
             if cgfp_issue:
                 missing.insert(0, cgfp_issue)
+            if cgfp_partial_issue:
+                missing.insert(0, cgfp_partial_issue)
+            missing.extend(search_warnings)
             missing.insert(0, "Le snapshot CGFP seul, lorsqu'il existe, reste un repère documentaire et ne peut pas justifier une analyse IA contextualisée.")
             if local_issue:
                 missing.insert(0, local_issue)
@@ -1102,6 +1131,9 @@ class LegalOrchestrator:
             missing.insert(0, permanent_issue)
         if cgfp_issue:
             missing.insert(0, cgfp_issue)
+        if cgfp_partial_issue:
+            missing.insert(0, cgfp_partial_issue)
+        missing.extend(search_warnings)
         if local_issue:
             missing.insert(0, local_issue)
         elif request.employer != "NATIONAL" and not local_sources:
