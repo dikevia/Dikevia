@@ -5,6 +5,7 @@ on:
   pull_request:
     branches:
       - feature/dikevia-v3.38.5-cgfp-chat
+      - feat/chatbot-query-planning-safe
     paths:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
