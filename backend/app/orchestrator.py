@@ -1118,7 +1118,8 @@ class LegalOrchestrator:
         ]
         usable_local = [s for s in local_sources
             if (s.get("citation_integrity") or {}).get("valid") is True
-            and s.get("temporal_status") == "VERIFIED_APPLICABLE"]
+            and s.get("temporal_status") == "VERIFIED_APPLICABLE"
+            and s.get("research_axis_relevant", True) is not False]
         if not usable_official and not usable_permanent and not usable_local:
             missing = ["Aucune disposition législative ou réglementaire exploitable n'a été récupérée.",
                 "Recherche officielle Légifrance/PISTE et vérification des textes réglementaires complémentaires.",
