@@ -358,3 +358,22 @@ def test_professional_interview_alone_does_not_trigger_career_or_trainee_researc
     assert any("décret 88-145 article 1-3" in query for query in queries)
     assert "décret 92-1194" not in joined
     assert "reprise ancienneté" not in joined
+
+
+def test_unknown_evaluation_status_keeps_both_regimes_as_conditional_axes():
+    axes = build_official_research_axes(
+        "Mon agent de maîtrise m'a fait une évaluation annuelle à charge, puis-je la contester ?"
+    )
+    assert len(axes) == 2
+    assert any("décret 2014-1526" in axis for axis in axes)
+    assert any("décret 88-145 article 1-3" in axis for axis in axes)
+    assert any("CDD supérieur à un an" in axis for axis in axes)
+
+
+def test_titular_evaluation_does_not_create_a_contractual_axis():
+    axes = build_official_research_axes(
+        "Je suis fonctionnaire titulaire et je veux contester mon évaluation annuelle."
+    )
+    assert len(axes) == 1
+    assert "décret 2014-1526" in axes[0]
+    assert "décret 88-145" not in axes[0]
