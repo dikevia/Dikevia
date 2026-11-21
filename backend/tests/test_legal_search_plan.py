@@ -279,5 +279,9 @@ def test_compound_union_and_disciplinary_question_keeps_both_topics():
     assert "discipline fonction publique territoriale" in queries[2]
     assert all(len(query) <= 500 for query in queries)
 
-
+def test_trainee_evaluation_question_searches_its_specific_fpt_status_regime():
+    question = "Je suis fonctionnaire stagiaire et je veux contester mon évaluation annuelle."
+    queries = build_official_search_queries(question)
+    assert any("décret 2014-1526" in item for item in queries)
+    assert any("décret 92-1194" in item for item in queries)
 
