@@ -316,3 +316,18 @@ def test_annual_evaluation_question_rejects_clearly_unrelated_topics():
     # topic guard must not discard potentially cross-cutting appeal provisions.
     assert is_topic_relevant_source(question, cross_cutting) is True
 
+
+
+def test_cgfp_article_l521_3_is_classified_as_territorial():
+    source = {
+        "title": "Code général de la fonction publique — article L521-3",
+        "text": (
+            "Le compte rendu concernant un fonctionnaire territorial en fonction "
+            "dans une collectivité ou un établissement mentionné à l'article L. 4 "
+            "est visé par l'autorité territoriale."
+        ),
+        "document_kind": "CODE",
+    }
+    scope = classify_public_service_scope(source)
+    assert scope["scope"] == "FPT"
+    assert scope["analysis_eligible"] is True
