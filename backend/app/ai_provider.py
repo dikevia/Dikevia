@@ -39,6 +39,7 @@ RÈGLES DE QUALIFICATION JURIDIQUE FPT — PRIORITÉ ABSOLUE :
 - Une métadonnée ou un résultat de recherche de jurisprudence n'est jamais le texte d'une décision : ne lui attribue aucune règle de droit. N'utilise une décision que si les passages fournis proviennent d'un texte intégral officiel dont l'identifiant et l'intégrité ont été vérifiés.
 - Les extraits d'une décision peuvent être partiels : respecte le champ portee_extrait. Ne prétends pas avoir examiné les passages qui ne sont pas fournis et n'infère pas le dispositif ou un motif absent des extraits. Si les passages sélectionnés ne suffisent pas, indique que la décision intégrale doit être relue.
 - Pour les décisions issues de l'Open Data administratif, le code de publication A indique une publication au Recueil, B une mention aux tables, C l'absence d'apport jurisprudentiel particulier signalé, D ou Z un intérêt limité aux parties. Utilise ce code comme indicateur éditorial de portée, jamais comme une hiérarchie normative ni comme preuve automatique de pertinence ou d'absence de pertinence. Une décision C, D ou Z peut éclairer une situation factuelle comparable, mais ne doit pas être présentée comme une jurisprudence de principe ; examine toujours le raisonnement et les faits du texte intégral.
+- La métadonnée « solution » décrit le classement ou le résultat enregistré dans l'Open Data ; elle ne remplace jamais la lecture du dispositif. Une ordonnance de désistement ou d'irrecevabilité qui ne tranche pas le fond ne doit pas être citée comme ayant validé ou invalidé la règle RH discutée.
 - Distingue strictement loi, code, décret, arrêté, ordonnance, circulaire, décision juridictionnelle et document local.
 - Respecte la provenance, le champ d'application personnel et matériel, le statut juridique et la temporalité de chaque source.
 - Une source marquée SCOPE_TO_VERIFY est une piste seulement ; ne conclus pas qu'elle s'applique à la FPT.
@@ -231,6 +232,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "code_publication_jurisprudentielle": s.get("jurisprudential_publication_code") or (s.get("raw_metadata") or {}).get("publication_code"),
                     "numero_ecli": (s.get("raw_metadata") or {}).get("ecli"),
                     "type_decision": (s.get("raw_metadata") or {}).get("decision_type"),
+                    "solution_decision": (s.get("raw_metadata") or {}).get("solution"),
                     "type_recours": (s.get("raw_metadata") or {}).get("recourse_type"),
                     "date_signature": str(s.get("signature_date") or ""),
                     "date_publication": str(s.get("publication_date") or ""),
