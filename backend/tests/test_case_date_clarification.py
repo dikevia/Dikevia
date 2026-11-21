@@ -96,3 +96,12 @@ def test_employer_refusal_of_the_users_own_request_is_personal():
     assert classify_question_intent(
         "Ma collectivité peut-elle refuser une demande de protection fonctionnelle ?"
     ) == "GENERAL_INFORMATION"
+
+
+def test_actual_personal_event_takes_precedence_over_generic_rights_framing():
+    assert classify_question_intent(
+        "Quels sont mes droits ? Ma collectivité a refusé ma demande de protection fonctionnelle."
+    ) == "PERSONAL_CASE"
+    assert classify_question_intent(
+        "Quels sont mes droits si ma collectivité refuse une demande de protection fonctionnelle ?"
+    ) == "GENERAL_INFORMATION"
