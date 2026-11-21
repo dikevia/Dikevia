@@ -221,3 +221,19 @@ def test_cgfp_live_article_discovery_keeps_up_to_six_relevant_subtopics(monkeypa
     assert orchestrator._cgfp_article_discovery_queries(found) == [
         f"article L{number}" for number in range(1, 7)
     ]
+
+
+def test_code_research_budget_never_drops_a_recognized_subquestion():
+    from app.orchestrator import _build_code_research_queries
+
+    axes = [f"axe juridique {number}" for number in range(1, 7)]
+    exact_articles = [f"article L{number}" for number in range(1, 7)]
+    result = _build_code_research_queries(axes, exact_articles, max_queries=5)
+    assert result == axes
+
+    result_with_spare_capacity = _build_code_research_queries(
+        axes[:3], exact_articles, max_queries=5
+    )
+    assert result_with_spare_capacity == [
+        *axes[:3], "article L1", "article L2"
+    ]
