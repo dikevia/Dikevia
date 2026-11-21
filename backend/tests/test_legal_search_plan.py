@@ -168,7 +168,7 @@ def test_overtime_does_not_count_as_a_second_generic_working_time_topic():
     assert len(queries) == 3
     assert "IHTS" in " ".join(queries)
     assert "décret 2002-60" in " ".join(queries)
-    assert "décret 2001-623" not in " ".join(queries)
+    assert "décret 2000-815" not in " ".join(queries)
 
 
 def test_compound_question_keeps_union_rights_and_overtime_as_separate_issues():
