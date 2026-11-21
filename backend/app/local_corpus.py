@@ -11,6 +11,30 @@ from datetime import date
 from typing import Any
 
 
+def local_document_temporal_status(
+    effective_from: date | str | None,
+    effective_to: date | str | None,
+    validation_status: str,
+    requested_date: date,
+) -> str:
+    def as_date(value: date | str | None) -> date | None:
+        if isinstance(value, date):
+            return value
+        try:
+            return date.fromisoformat(str(value)[:10]) if value else None
+        except (TypeError, ValueError):
+            return None
+
+    start, end = as_date(effective_from), as_date(effective_to)
+    if start is None:
+        return "TEMPORAL_SCOPE_INCOMPLETE"
+    if requested_date < start or (end is not None and requested_date > end):
+        return "NOT_APPLICABLE_ON_REQUESTED_DATE"
+    if validation_status in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}:
+        return "VERIFIED_APPLICABLE"
+    return "LOCAL_VALIDATION_INCOMPLETE"
+
+
 COLLECTIVITY_FILTERS = {
     "VILLE_SAINT_ETIENNE": {
         "codes": ("VILLE_SAINT_ETIENNE", "VILLE_ST_ETIENNE", "VILLE_DE_SAINT_ETIENNE"),
@@ -92,14 +116,9 @@ async def search_local_documents(
         effective_from = row["effective_from"]
         effective_to = row["effective_to"]
         validation_status = str(row["validation_status"] or "COLLECTED_UNVERIFIED")
-        if effective_from is None:
-            temporal_status = "TEMPORAL_SCOPE_INCOMPLETE"
-        elif effective_date < effective_from or (effective_to is not None and effective_date > effective_to):
-            temporal_status = "NOT_APPLICABLE_ON_REQUESTED_DATE"
-        elif validation_status in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}:
-            temporal_status = "VERIFIED_APPLICABLE"
-        else:
-            temporal_status = "LOCAL_VALIDATION_INCOMPLETE"
+        temporal_status = local_document_temporal_status(
+            effective_from, effective_to, validation_status, effective_date,
+        )
 
         hash_matches = bool(row["sha256"] and row["extracted_sha256"] and
                             str(row["sha256"]).strip() == str(row["extracted_sha256"]).strip())
