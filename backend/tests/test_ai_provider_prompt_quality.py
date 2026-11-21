@@ -91,3 +91,9 @@ def test_prompt_obeys_structured_scope_and_ambiguous_contract_status():
 def test_prompt_restricts_later_case_law_to_interpretative_use_for_historical_claims():
     assert "une décision postérieure ne peut jamais être la source directe ou unique" in SYSTEM_PROMPT
     assert "rattache toute conclusion à un texte ou à une décision antérieure" in SYSTEM_PROMPT
+
+
+def test_personal_case_without_date_does_not_authorize_individual_conclusions():
+    assert "utilise les faits personnels uniquement pour identifier les textes à rechercher" in SYSTEM_PROMPT
+    assert "sans qualifier la situation individuelle" in SYSTEM_PROMPT
+    assert "donne déjà les éléments de réponse que le droit actuel permet d'établir" not in SYSTEM_PROMPT
