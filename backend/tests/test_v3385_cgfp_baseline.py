@@ -10,14 +10,17 @@ async def _fake_piste_token(self):
 
 
 @pytest.mark.asyncio
-async def test_live_legifrance_success_does_not_query_snapshot(monkeypatch):
+async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(monkeypatch):
     import app.orchestrator as module
 
     monkeypatch.setattr(module.settings, "cgfp_enabled", True)
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
     monkeypatch.setattr(type(module.legifrance), "_get_token", _fake_piste_token)
 
+    code_queries = []
+
     async def no_code_articles(*args, **kwargs):
+        code_queries.append(args[0])
         return []
 
     async def regulatory_texts(*args, **kwargs):
@@ -47,6 +50,7 @@ async def test_live_legifrance_success_does_not_query_snapshot(monkeypatch):
         "results": [{
             "article": "L123-4", "source_id": "FR-CGFP-2026-10-31",
             "page_start": 10, "page_end": 10, "excerpt": "Extrait du CGFP",
+            "matched_concepts": ["droits des agents"],
         }],
     })
     monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
@@ -91,11 +95,12 @@ async def test_live_legifrance_success_does_not_query_snapshot(monkeypatch):
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
     assert captured["sources"][0]["source_type"] == "LEGIFRANCE_LODA"
     assert not any(source["source_type"] == "CGFP_SNAPSHOT" for source in captured["sources"])
+    assert "article L123-4" in code_queries
     assert any(source["source_type"] == "LEGIFRANCE_LODA" for source in captured["sources"])
 
 
 @pytest.mark.asyncio
-async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(monkeypatch):
+async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallback_on_outage(monkeypatch):
     import app.orchestrator as module
     from app.legifrance import LegifranceUnavailable
 
@@ -104,9 +109,11 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
     monkeypatch.setattr(type(module.legifrance), "_get_token", _fake_piste_token)
 
     call_order = []
+    code_queries = []
 
     async def failed_live_code_search(*args, **kwargs):
         call_order.append("live-cgfp")
+        code_queries.append(args[0])
         raise LegifranceUnavailable("temporary upstream outage")
 
     async def live_regulatory_search(*args, **kwargs):
@@ -137,6 +144,7 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
             "results": [{
                 "article": "L123-4", "source_id": "FR-CGFP-2026-10-31",
                 "page_start": 10, "page_end": 10, "excerpt": "Extrait du CGFP",
+                "matched_concepts": ["droits des agents"],
             }],
         }
 
@@ -177,11 +185,8 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
     assert "live-cgfp" in call_order
     assert "live-loda" in call_order
     assert "live-cetat" in call_order
-    assert call_order.index("snapshot") > max(
-        call_order.index("live-cgfp"),
-        call_order.index("live-loda"),
-        call_order.index("live-cetat"),
-    )
+    assert call_order.index("snapshot") < call_order.index("live-cgfp")
+    assert "article L123-4" in code_queries
     assert any(
         source.get("source_type") == "CGFP_SNAPSHOT"
         and source.get("reference_role") == "BASELINE_CONTEXT_ONLY"
