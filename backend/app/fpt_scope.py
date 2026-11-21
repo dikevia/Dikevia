@@ -270,6 +270,12 @@ _TOPIC_FAMILIES = {
         "travaux supplementaires", "ihts", "astreinte", "annualisation",
         "repos compensateur", "cycle de travail",
     ),
+    "PART_TIME": (
+        "temps partiel", "decret 2004 777",
+    ),
+    "NON_COMPLETE_TIME": (
+        "temps non complet", "heures complementaires", "decret 2020 592",
+    ),
     "DISCIPLINE": (
         "discipline", "sanction disciplinaire", "conseil de discipline",
         "exclusion temporaire", "blame", "revocation",
@@ -345,6 +351,23 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         "title", "article", "official_number", "excerpt", "text", "full_text"
     ))
     source_topics = _matched_topic_families(source_text[:500_000])
+    # Do not let the similar wording "extra hours" merge two distinct FPT
+    # regimes: decree 2004-777 concerns part-time IHTS conditions, while
+    # decree 2020-592 governs complementary hours for permanent non-complete
+    # jobs. A source explicitly limited to the opposite status is not evidence
+    # for the user's status unless it also addresses that status.
+    if (
+        "PART_TIME" in question_topics
+        and "NON_COMPLETE_TIME" in source_topics
+        and "PART_TIME" not in source_topics
+    ):
+        return False
+    if (
+        "NON_COMPLETE_TIME" in question_topics
+        and "PART_TIME" in source_topics
+        and "NON_COMPLETE_TIME" not in source_topics
+    ):
+        return False
     if question_topics & source_topics:
         return True
 
