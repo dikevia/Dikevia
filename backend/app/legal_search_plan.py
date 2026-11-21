@@ -154,14 +154,14 @@ _TOPIC_EXPANSIONS = (
          "compte rendu d evaluation", "compte rendu d'évaluation", "evaluation professionnelle",
          "entretien professionnel", "compte rendu d entretien"),
         (
-            "CGFP L521-1 L521-3 L521-5 appreciation valeur professionnelle entretien annuel fonctionnaire territorial",
-            "décret 2014-1526 articles 2 3 4 5 6 7 entretien professionnel critères compte rendu observations révision CAP recours",
+            "CGFP L521-1 L521-3 L521-5 fonctionnaire territorial appréciation valeur professionnelle compte rendu demande révision CAP",
+            "décret 2014-1526 articles 2 5 6 7 entretien professionnel territorial notification observations demande révision quinze jours francs CAP délai un mois",
+            "décret 88-145 article 1-3 agent contractuel territorial entretien professionnel annuel compte rendu observations révision CCP quinze jours francs",
         ),
     ),
     (
         ("avancement d echelon", "avancement d'échelon", "avancement de grade",
-         "promotion interne", "entretien professionnel", "compte rendu d entretien",
-         "compte rendu d'entretien", "refus de titularisation", "titularisation",
+         "promotion interne", "refus de titularisation", "titularisation",
          "fonctionnaire stagiaire", "agent stagiaire", "stagiaire",
          "reprise anciennete", "reprise d ancienneté", "anciennete dans le prive",
          "ancienneté dans le privé", "modifier mes missions", "changement de missions",
