@@ -133,3 +133,22 @@ def test_composite_question_still_rejects_irrelevant_ihts_credit_sources():
     }
     assert _source_relevant_to_any_research_axis(axes, unrelated_credit) is False
 
+
+
+def test_required_answer_axes_include_only_distinct_recognized_legal_topics():
+    from app.legal_search_plan import (
+        build_official_research_axes,
+        build_official_search_queries,
+    )
+
+    compound = "Mon employeur refuse mes heures supplémentaires et mon congé maladie."
+    axes = build_official_research_axes(compound)
+    queries = build_official_search_queries(compound)
+    assert len(axes) >= 2
+    assert all(axis in queries for axis in axes)
+
+    # A general question can have several retrieval variants, but those are
+    # not separate legal questions and must not become mandatory answer axes.
+    general = "Quels sont les droits des agents territoriaux ?"
+    assert len(build_official_search_queries(general)) > 1
+    assert build_official_research_axes(general) == []
