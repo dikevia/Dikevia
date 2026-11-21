@@ -66,3 +66,121 @@ def test_case_law_available_by_facts_date_can_still_be_considered_for_conclusion
     assert result["usable_for_conclusion"] is True
     assert result["usable_for_facts_date_conclusion"] is True
     assert result["usable_for_interpretation"] is True
+
+
+def _verified_evidence_source(**overrides):
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000000000123",
+        "article": "L123-4",
+        "title": "Code général de la fonction publique — article L123-4",
+        "text": (
+            "L'autorité territoriale organise le service et veille à la protection "
+            "de la santé et de la sécurité des agents dans les conditions prévues par les textes."
+        ),
+        "excerpt": (
+            "L'autorité territoriale organise le service et veille à la protection "
+            "de la santé et de la sécurité des agents dans les conditions prévues par les textes."
+        ),
+        "content_kind": "FULL_TEXT",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+        "analysis_eligible": True,
+        "official_source": True,
+        "citation_integrity": {"valid": True},
+    }
+    source.update(overrides)
+    return source
+
+
+def _evidence_claim(text, quote, source_id="LEGIARTI000000000123"):
+    return {"claims": [{"text": text, "source_id": source_id, "quote": quote}]}
+
+
+def test_claim_evidence_accepts_exact_quote_from_unique_verified_official_source():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    quote = source["excerpt"]
+    result = validate_claim_evidence(
+        _evidence_claim("L'autorité territoriale veille à la santé et à la sécurité des agents.", quote),
+        [source],
+    )
+    assert result["valid"] is True
+    assert result["claim_count"] == 1
+
+
+def test_claim_evidence_rejects_source_without_valid_citation_integrity():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(citation_integrity={"valid": False})
+    result = validate_claim_evidence(
+        _evidence_claim("L'autorité territoriale veille à la santé des agents.", source["excerpt"]),
+        [source],
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_claim_evidence_rejects_metadata_only_even_if_identifier_is_valid():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(content_kind="METADATA")
+    result = validate_claim_evidence(
+        _evidence_claim("L'autorité territoriale veille à la santé des agents.", source["excerpt"]),
+        [source],
+    )
+    assert result["valid"] is False
+
+
+def test_claim_evidence_rejects_explicitly_out_of_scope_sources():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(analysis_eligible=False, public_service_scope="FPH")
+    result = validate_claim_evidence(
+        _evidence_claim("L'autorité territoriale veille à la santé des agents.", source["excerpt"]),
+        [source],
+    )
+    assert result["valid"] is False
+
+
+def test_claim_evidence_rejects_unsupported_numeric_or_date_details():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale doit répondre sous 15 jours.",
+            source["excerpt"],
+        ),
+        [source],
+    )
+    assert result["valid"] is False
+    assert "claim_0:unsupported_numeric_or_date_detail" in result["invalid_claims"]
+
+
+def test_claim_evidence_rejects_a_quote_that_is_not_present_verbatim():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé des agents.",
+            "L'autorité territoriale doit obligatoirement recruter de nouveaux agents.",
+        ),
+        [source],
+    )
+    assert result["valid"] is False
+    assert "claim_0:quote_not_exactly_found_in_source" in result["invalid_claims"]
+
+
+def test_claim_evidence_rejects_duplicate_source_identifiers_as_ambiguous():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    duplicate = dict(source, title="Autre source")
+    result = validate_claim_evidence(
+        _evidence_claim("L'autorité territoriale veille à la santé des agents.", source["excerpt"]),
+        [source, duplicate],
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
