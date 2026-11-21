@@ -67,3 +67,12 @@ def test_prompt_locks_the_assistant_to_fpt_and_blocks_cross_versant_transpositio
     assert "ne transpose jamais automatiquement" in SYSTEM_PROMPT
     assert "sort du périmètre de Dikévia" in SYSTEM_PROMPT
     assert "s'applique aussi aux agents territoriaux" in SYSTEM_PROMPT
+
+
+
+def test_prompt_uses_the_whole_cgfp_index_as_discovery_and_requires_live_article_verification():
+    assert "référentiel article par article du snapshot CGFP" in SYSTEM_PROMPT
+    assert "explorer l'ensemble du code" in SYSTEM_PROMPT
+    assert "vérifie ensuite sa rédaction intégrale sur Légifrance" in SYSTEM_PROMPT
+    assert "Le classement lexical ou conceptuel" in SYSTEM_PROMPT
+    assert "ne suffit pas toujours à résoudre seul la question" in SYSTEM_PROMPT
