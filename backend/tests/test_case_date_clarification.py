@@ -111,3 +111,10 @@ def test_actual_personal_event_takes_precedence_over_generic_rights_framing():
     assert classify_question_intent(
         "Quels sont mes droits si ma collectivité refuse une demande de protection fonctionnelle ?"
     ) == "GENERAL_INFORMATION"
+
+
+
+def test_annual_evaluation_contestation_is_personal_without_blocking_current_law():
+    question = "Mon agent de maîtrise m'as fait une évaluation annuelle à charge puis-je la contester ?"
+    assert classify_question_intent(question) == "PERSONAL_CASE"
+    assert question_needs_case_date(question) is True
