@@ -231,7 +231,12 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
         conversation_history=history,
     )
 
-    assert all(len(seen[pillar]) == 3 for pillar in ("code", "regulatory", "case_law"))
+    # The CGFP discovery index may add up to two exact article lookups
+    # to the three broad code searches. Regulatory and case-law budgets remain
+    # unchanged.
+    assert 3 <= len(seen["code"]) <= 5
+    assert len(seen["regulatory"]) == 3
+    assert len(seen["case_law"]) == 3
     all_queries = [query for pillar in seen.values() for query in pillar]
     assert all(len(query) <= 500 for query in all_queries)
     assert all_queries[0].startswith(primary_prefix)
