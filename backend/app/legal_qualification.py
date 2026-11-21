@@ -99,7 +99,7 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
             topic = candidate
             break
 
-    if re.search(r"\b(agent|agents|je suis)\s+contractuel(le)?\b|\bcontractuel(le)?\b", folded):
+    if re.search(r"\b(agent|agents|je suis)\s+contractuel(le)?s?\b|\bcontractuel(le)?s?\b", folded):
         status = "CONTRACTUEL_EXPLICIT"
     elif re.search(r"\b(stagiaire|fonctionnaire stagiaire)\b", folded):
         status = "STAGIAIRE_EXPLICIT"
