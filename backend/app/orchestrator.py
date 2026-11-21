@@ -49,7 +49,7 @@ def _build_code_research_queries(
     exact_budget = max(0, max_queries - len(base_queries))
     return [
         *base_queries,
-        *(query for query in (cgfp_article_queries or []) if query)[:exact_budget],
+        *[query for query in (cgfp_article_queries or []) if query][:exact_budget],
     ]
 
 
