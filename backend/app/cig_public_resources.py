@@ -32,6 +32,7 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
         ("sante_securite", "medecine_preventive", "organisation_des_services"),
         "FPT general information; verify territorial and temporal applicability",
         "EDITORIAL_LEGAL_ANALYSIS",
+        publication_date="2026-10-16",
     ),
     CIGPublicResource(
         "CIG_SVP_RIGHTS_UNION_ORGANIZATION",
@@ -51,6 +52,7 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
         ("cumul_activites", "deontologie", "obligations_agents"),
         "FPT-oriented educational resource; verify the underlying current rules",
         "PRACTICAL_GUIDANCE",
+        publication_date="2023-01-01",
     ),
     CIGPublicResource(
         "CIG_INFOGRAPHIC_TEMPS_PARTIEL",
@@ -60,6 +62,7 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
         ("temps_partiel", "temps_travail", "droits_agents"),
         "Explicitly territorial in title",
         "PRACTICAL_GUIDANCE",
+        publication_date="2026-10-15",
     ),
     CIGPublicResource(
         "CIG_INFOGRAPHIC_EMPLOIS_FONCTIONNELS",
@@ -102,13 +105,14 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
         publication_date="2026-10-20",
     ),
     CIGPublicResource(
-        "CIG_SVP_PUBLIC_RESPONSES",
-        "SVP Statut : réponses écrites anonymisées publiées",
-        "https://www.cig929394.fr/actualites/svp-statut-nos-reponses-a-vos-questions-nouvelles-ressources/",
-        "Public article and linked publications",
-        ("questions_statutaires", "situations_individuelles", "analyse_juridique"),
-        "Answers produced for CIG Petite Couronne affiliated authorities; check context",
-        "EDITORIAL_LEGAL_ANALYSIS",
+        "CIG_MINUTE_STATUT_LDG_PROMOTION_INTERNE_2026",
+        "Minute Statut – Les lignes directrices de gestion en matière de promotion interne (LDG-PI)",
+        "https://www.cig929394.fr/publications/minute-statut-les-lignes-directrices-de-gestion-en-matiere-de-promotion-interne-ldg-pi/",
+        "Podcast landing page and linked legal references",
+        ("ldg", "promotion_interne", "carriere", "avancement", "liste_aptitude"),
+        "CIG Petite Couronne; distinguish CIG-affiliated shared promotion procedures from local employer LDG",
+        "EDITORIAL_EXPLANATION",
+        publication_date="2026-09-25",
     ),
     CIGPublicResource(
         "CIG_MINUTE_STATUT_CATALOG",
