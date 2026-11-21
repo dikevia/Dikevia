@@ -737,7 +737,7 @@ class LegalOrchestrator:
                     result["scope_evidence"] = scope["evidence"]
                     result["analysis_eligible"] = scope["analysis_eligible"]
                     result["claim_eligible"] = scope.get("claim_eligible", scope["analysis_eligible"])
-                    if not scope["analysis_eligible"] or not is_topic_relevant_source(current_question, result):
+                    if not scope["analysis_eligible"] or not any(is_topic_relevant_source(query, result) for query in research_queries):
                         logger.info(
                             "Décision CETAT écartée du dossier IA : périmètre ou thème non confirmé (source=%s, scope=%s)",
                             result.get("source_id"), scope["scope"],
@@ -920,7 +920,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["ihts_relevant"] = is_ihts_relevant_source(request.question, item)
+            item["ihts_relevant"] = any(is_ihts_relevant_source(query, item) for query in research_queries)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
                 "version_matches_facts_date": bool(
@@ -997,7 +997,7 @@ class LegalOrchestrator:
 
         if found and cgfp_snapshot_fallback:
             for hit in found["results"]:
-                if not is_ihts_relevant_source(request.question, hit):
+                if not any(is_ihts_relevant_source(query, hit) for query in research_queries):
                     continue
                 article = get_cgfp_article(hit["article"])
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
@@ -1032,13 +1032,13 @@ class LegalOrchestrator:
             decision["scope_evidence"] = scope_check["evidence"]
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
             decision["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            decision["ihts_relevant"] = is_ihts_relevant_source(request.question, decision)
+            decision["ihts_relevant"] = any(is_ihts_relevant_source(query, decision) for query in research_queries)
             sources.append({**decision, "page_start": None, "page_end": None})
 
         # Apply the topic guard only after every source family (including the
         # CGFP snapshot and CETAT full text) has been collected.
         for source in sources:
-            source["topic_relevant"] = is_topic_relevant_source(request.question, source)
+            source["topic_relevant"] = any(\n                is_topic_relevant_source(query, source) for query in research_queries\n            )
 
         # A direct request for the text/content of a numbered CGFP article is an
         # exact-reference lookup. If that article was not independently retrieved,
