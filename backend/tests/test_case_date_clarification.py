@@ -54,3 +54,33 @@ def test_staffing_and_titular_protection_general_questions_do_not_require_a_fact
     assert classify_question_intent(titular) == "GENERAL_INFORMATION"
     assert question_needs_case_date(staffing) is False
     assert question_needs_case_date(titular) is False
+
+
+def test_a_date_mention_alone_does_not_turn_a_general_question_into_a_personal_case():
+    assert classify_question_intent(
+        "Depuis le 12/03/2022, quelles sont les règles applicables aux congés annuels dans la FPT ?"
+    ) == "GENERAL_INFORMATION"
+    assert classify_question_intent(
+        "À compter du 01/01/2024, comment fonctionne le temps partiel dans la fonction publique territoriale ?"
+    ) == "GENERAL_INFORMATION"
+
+
+def test_third_person_union_case_with_refused_request_is_personal():
+    assert classify_question_intent(
+        "Un agent territorial a vu sa demande de protection fonctionnelle refusée."
+    ) == "PERSONAL_CASE"
+    assert classify_question_intent(
+        "Une agente a vu son congé maladie rejeté par sa collectivité."
+    ) == "PERSONAL_CASE"
+
+
+def test_general_question_with_historical_date_does_not_request_a_case_date():
+    question = "Quelles règles encadraient les congés annuels au 1er janvier 2023 ?"
+    assert classify_question_intent(question) == "GENERAL_INFORMATION"
+    assert question_needs_case_date(question) is False
+
+
+def test_explicit_personal_refusal_remains_personal_without_a_date():
+    question = "Ma collectivité a refusé ma demande de protection fonctionnelle."
+    assert classify_question_intent(question) == "PERSONAL_CASE"
+    assert question_needs_case_date(question) is True
