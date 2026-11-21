@@ -2,7 +2,7 @@ name: CI
 on:
   push:
     # Pull-request head branches are checked by pull_request; avoid duplicate CI runs.
-    branches: [main, develop, integration/beta-commercial-security]
+    branches: [main, develop, integration/beta-commercial-security, android/native-compose-integration]
   pull_request:
     branches: [main, develop, integration/beta-commercial-security, feature/dikevia-v3.38.5-cgfp-chat, security/chat-explicit-ownership, security/chat-local-documents-opt-in]
   workflow_dispatch:

@@ -12,6 +12,7 @@ on:
     branches:
       - integration/beta-commercial-security
       - feature/dikevia-v3.38.5-cgfp-chat
+      - android/native-compose-integration
     paths:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
