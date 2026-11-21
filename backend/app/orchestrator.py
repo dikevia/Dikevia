@@ -1361,14 +1361,17 @@ class LegalOrchestrator:
                             structured_answer = json.loads(raw_ai_content) if isinstance(raw_ai_content, str) else None
                         except (TypeError, ValueError):
                             structured_answer = None
-                        claim_validation = validate_claim_evidence(structured_answer, ai_sources)
+                        claim_validation = validate_claim_evidence(
+                            structured_answer, ai_sources,
+                            required_axes=legal_context.get("axes_recherche_documentaire") or None,
+                        )
                         if not claim_validation["valid"]:
                             ai_answer = None
                             if ai_usage is not None:
                                 ai_usage["outcome"] = "REJECTED_UNSUPPORTED_CLAIMS"
                             missing.insert(
                                 0,
-                                "La réponse IA a été bloquée : sortie structurée absente ou affirmation sans citation exacte dans une source officielle applicable.",
+                                "La réponse IA a été bloquée : sortie structurée absente, sous-question documentaire non couverte ou affirmation sans citation exacte dans une source officielle applicable.",
                             )
                         elif not claim_validation["claims"]:
                             ai_answer = None
@@ -1393,6 +1396,8 @@ class LegalOrchestrator:
                                 )
                             else:
                                 claims = claim_validation["claims"]
+                                for uncovered_axis in claim_validation.get("uncovered_axes", []):
+                                    missing.append(f"Aucune source suffisamment pertinente n'a permis de répondre à cette sous-question : {uncovered_axis}")
                                 # The model is instructed to put the direct answer first.
                                 # Render it immediately instead of prefacing it with legal boilerplate.
                                 rendered_claims = []
