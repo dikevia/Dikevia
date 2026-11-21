@@ -396,7 +396,7 @@ class LegalOrchestrator:
         # A genuine short follow-up inherits the immediate prior referent and,
         # where relevant, the personal-case classification. Independent new
         # questions never inherit unrelated topics or facts.
-        is_followup = contextual_question != current_question[:500]
+        is_followup = "\n" in contextual_question
         if is_followup and prior_user_questions:
             if question_intent != "PERSONAL_CASE" and classify_question_intent(prior_user_questions[-1]) == "PERSONAL_CASE":
                 question_intent = "PERSONAL_CASE"
