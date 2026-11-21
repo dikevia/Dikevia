@@ -195,8 +195,8 @@ def test_claim_evidence_requires_exact_quote_from_the_exact_eligible_source():
     assert result["claim_count"] == 1
 
 
-def test_claim_evidence_accepts_later_administrative_case_law_as_interpretative_source():
-    from app.legal_assurance import validate_claim_evidence
+def test_later_administrative_case_law_is_interpretative_but_not_claim_evidence():
+    from app.legal_assurance import classify_legal_source, validate_claim_evidence
 
     source = _claim_source(
         source_type="LEGIFRANCE_CETAT_FULL_TEXT",
@@ -204,6 +204,9 @@ def test_claim_evidence_accepts_later_administrative_case_law_as_interpretative_
         decision_date="2025-02-10",
         temporal_status="DECISION_POSTERIOR_TO_FACTS",
     )
+    assurance = classify_legal_source(source)
+    assert assurance["usable_for_interpretation"] is True
+    assert assurance["usable_for_conclusion"] is False
     result = validate_claim_evidence({
         "claims": [{
             "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
@@ -211,7 +214,8 @@ def test_claim_evidence_accepts_later_administrative_case_law_as_interpretative_
             "quote": source["excerpt"],
         }]
     }, [source])
-    assert result["valid"] is True
+    assert result["valid"] is False
+    assert "claim_0:source_not_eligible_or_ambiguous" in result["invalid_claims"]
 
 
 def test_claim_evidence_accepts_verified_historical_local_document():
