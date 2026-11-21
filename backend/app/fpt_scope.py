@@ -425,7 +425,12 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         "PROFESSIONAL_EVALUATION",
     }
     if question_topics & strict_topics:
-        return False
+        # For annual-appraisal questions, an unclassified procedural source
+        # (for example, a general administrative appeal rule) may still be
+        # relevant. Reject only when the hit is positively classified as a
+        # different legal topic; retain unknown cross-cutting sources.
+        if "PROFESSIONAL_EVALUATION" not in question_topics or source_topics:
+            return False
     if not source_topics:
         return True
 
