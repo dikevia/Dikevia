@@ -462,7 +462,7 @@ _TOPIC_RESEARCH_AXES = (
          "ancienneté dans le privé", "modifier mes missions", "changement de missions",
          "missions sans changer mon grade"),
         (
-            "CGFP livre V fonctionnaires territoriaux avancement échelon grade promotion interne",
+            "CGFP livre V fonctionnaires territoriaux avancement échelon grade promotion interne fonctionnaire stagiaire décret 92-1194 stage évaluation",
             "FPT entretien professionnel titularisation fonctionnaire stagiaire stage évaluation décret 92-1194 reprise ancienneté",
         ),
     ),
