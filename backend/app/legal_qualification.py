@@ -33,12 +33,24 @@ def build_contextual_research_question(
         return ""
     if len(current) >= 220 or not _CONTEXTUAL_FOLLOWUP.match(current):
         return current[:500]
-    prior = next(
-        (str(item).strip() for item in reversed(prior_user_questions or []) if str(item).strip()),
-        "",
-    )
-    if not prior:
+    prior_questions = [
+        str(item).strip()
+        for item in (prior_user_questions or [])
+        if str(item).strip()
+    ]
+    if not prior_questions:
         return current[:500]
+
+    # A chain of short follow-ups must keep the last substantive subject.
+    # Otherwise "and for contractors?" followed by "and for trainees?"
+    # would make the second follow-up lose the original legal topic.
+    prior = next(
+        (
+            item for item in reversed(prior_questions)
+            if not _CONTEXTUAL_FOLLOWUP.match(item)
+        ),
+        prior_questions[-1],
+    )
     # Current wording remains first; prior wording supplies only the missing referent.
     return f"{current[:300]}\n{prior[:180]}"[:500]
 
