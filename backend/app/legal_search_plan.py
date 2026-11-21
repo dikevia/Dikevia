@@ -23,7 +23,7 @@ _TOPIC_EXPANSIONS = (
          "contestation de l evaluation", "compte rendu d evaluation", "compte rendu d'évaluation",
          "evaluation professionnelle", "évaluation professionnelle"),
         "CGFP articles L521-1 a L521-5 appreciation valeur professionnelle fonctionnaire territorial "
-        "entretien professionnel annuel compte rendu contestation revision decret 2014-1526 articles 2 3 4 5 6 7 "
+        "entretien professionnel annuel compte rendu contestation révision décret 2014-1526 articles 2 3 4 5 6 7 "
         "superieur hierarchique direct autorite territoriale commission administrative paritaire",
     ),
     (
@@ -260,6 +260,10 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
         ),
         "",
     )
+    if isinstance(expansion, tuple):
+        # Some topics intentionally fan out into several complementary search
+        # phrases. Keep the official connector contract as one bounded string.
+        expansion = " ".join(str(part) for part in expansion if part)
     if not expansion:
         # Dikévia is an FPT-only product: even an unfamiliar everyday question
         # must be searched in the territorial legal framework, not as a generic
