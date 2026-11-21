@@ -456,8 +456,7 @@ _TOPIC_RESEARCH_AXES = (
          "compte rendu d evaluation", "compte rendu d'évaluation", "evaluation professionnelle",
          "entretien professionnel", "compte rendu d entretien"),
         (
-            "CGFP L521-1 L521-3 L521-5 décret 2014-1526 articles 2 5 6 7 fonctionnaire territorial compte rendu observations révision CAP quinze jours francs délai un mois",
-            "décret 2014-1526 articles 2 3 4 5 6 7 entretien professionnel territorial critères compte rendu observations révision CAP recours",
+            "CGFP L521-1 L521-3 L521-5 décret 2014-1526 articles 2 3 4 5 6 7 fonctionnaire territorial compte rendu observations révision CAP quinze jours francs délai un mois",
             "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet compte rendu observations révision CCP quinze jours francs délai un mois",
             "jurisprudence administrative contestation compte rendu entretien professionnel annuel fonction publique territoriale erreur manifeste appréciation exactitude matérielle faits",
         ),
