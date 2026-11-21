@@ -134,4 +134,8 @@ def test_prompt_requires_each_claim_to_be_bound_to_an_exact_research_axis():
 def test_entailment_prompt_checks_that_a_claim_answers_its_assigned_axis():
     from app.ai_provider import ENTAILMENT_SYSTEM_PROMPT
 
-    assert "répond réellement à l'axe de recherche indiqué" in ENTAILMENT_SYSTEM_PROMPT
+    assert "Lorsqu'un axe de recherche est fourni" in ENTAILMENT_SYSTEM_PROMPT
+
+
+def test_prompt_allows_single_topic_questions_without_synthetic_axes():
+    assert "Lorsque la liste est vide, mets axis à une chaîne vide" in SYSTEM_PROMPT
