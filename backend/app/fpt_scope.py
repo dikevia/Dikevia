@@ -14,7 +14,9 @@ from typing import Any
 
 _FPT_MARKERS = (
     "fonction publique territoriale",
+    "fonctionnaire territorial",
     "fonctionnaires territoriaux",
+    "agent territorial",
     "agents territoriaux",
     "agents publics territoriaux",
     "collectivites territoriales",
