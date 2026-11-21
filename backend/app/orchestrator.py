@@ -224,13 +224,49 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     ]
 
 
+def _research_axis_queries(research_queries: list[str]) -> list[str]:
+    """Return the focused axes actually used for compound-question coverage."""
+    return research_queries[1:] if len(research_queries) > 1 else research_queries
+
+
+def _matching_research_axis_indices(
+    research_queries: list[str], source: dict,
+) -> list[int]:
+    """Identify each focused axis for which a source passes both relevance guards."""
+    axes = _research_axis_queries(research_queries)
+    return [
+        index for index, query in enumerate(axes)
+        if is_topic_relevant_source(query, source)
+        and is_ihts_relevant_source(query, source)
+    ]
+
+
 def _source_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
     """Require both topic and specialized guards to pass for the same research axis."""
-    return any(
-        is_topic_relevant_source(query, source)
-        and is_ihts_relevant_source(query, source)
-        for query in research_queries
-    )
+    return bool(_matching_research_axis_indices(research_queries, source))
+
+
+def _claims_cover_research_axes(
+    claims: list[dict], sources: list[dict], research_queries: list[str],
+) -> bool:
+    """Require at least one evidence-backed claim linked to a source for every axis."""
+    axes = _research_axis_queries(research_queries)
+    if not axes:
+        return False
+    source_axes = {
+        str(source.get("source_id")): set(
+            source.get("research_axis_indices")
+            if isinstance(source.get("research_axis_indices"), list)
+            else _matching_research_axis_indices(research_queries, source)
+        )
+        for source in sources if source.get("source_id")
+    }
+    covered = {
+        axis_index
+        for claim in claims
+        for axis_index in source_axes.get(str(claim.get("source_id")), set())
+    }
+    return all(index in covered for index in range(len(axes)))
 
 
 def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
@@ -1054,9 +1090,9 @@ class LegalOrchestrator:
         # Apply the topic guard only after every source family (including the
         # CGFP snapshot and CETAT full text) has been collected.
         for source in sources:
-            source["research_axis_relevant"] = _source_relevant_to_any_research_axis(
-                research_queries, source,
-            )
+            matching_axes = _matching_research_axis_indices(research_queries, source)
+            source["research_axis_indices"] = matching_axes
+            source["research_axis_relevant"] = bool(matching_axes)
 
         # A direct request for the text/content of a numbered CGFP article is an
         # exact-reference lookup. If that article was not independently retrieved,
@@ -1377,6 +1413,16 @@ class LegalOrchestrator:
                             missing.insert(
                                 0,
                                 "Le moteur IA n'a produit aucune affirmation pouvant être reliée à un extrait documentaire exact. Aucune conclusion n'est formulée.",
+                            )
+                        elif not _claims_cover_research_axes(
+                            claim_validation["claims"], ai_sources, research_queries,
+                        ):
+                            ai_answer = None
+                            if ai_usage is not None:
+                                ai_usage["outcome"] = "ABSTAINED_INCOMPLETE_RESEARCH_AXIS_COVERAGE"
+                            missing.insert(
+                                0,
+                                "La réponse IA a été bloquée : au moins une sous-question recherchée ne dispose d'aucune affirmation reliée à une source pertinente pour cet axe. Aucune réponse partielle n'est présentée comme complète.",
                             )
                         else:
                             entailment_validation = await verify_claim_entailment(
