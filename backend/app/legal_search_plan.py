@@ -274,10 +274,21 @@ _TOPIC_RESEARCH_AXES = (
     ),
     (
         ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
-         "indemnites horaires pour travaux supplementaires", "travaux supplementaires"),
+         "indemnites horaires pour travaux supplementaires", "travaux supplementaires",
+         "rester apres mon horaire",
+         "heures effectuees au dela de mon horaire"),
         (
             "IHTS fonction publique territoriale décret 2002-60 décret 91-875 indemnités horaires travaux supplémentaires",
             "FPT décret 2001-623 temps de travail cycle décompte heures supplémentaires délibération assemblée délibérante repos compensateur",
+        ),
+    ),
+    (
+        ("prescription quadriennale", "prescription de ma creance",
+         "heures supplementaires realisees il y a deux ans",
+         "reclamer des heures supplementaires il y a deux ans"),
+        (
+            "prescription quadriennale créance de rémunération agent public territorial loi 68-1250",
+            "jurisprudence administrative prescription créances salariales heures supplémentaires fonction publique territoriale interruption suspension",
         ),
     ),
     (
@@ -291,10 +302,12 @@ _TOPIC_RESEARCH_AXES = (
     ),
     (
         ("temps de travail", "duree du travail", "annualisation", "astreinte",
-         "temps partiel", "cycle de travail", "rtt"),
+         "temps partiel", "temps non complet", "cycle de travail", "rtt",
+         "compteur d heures", "compteur d heures remis a zero",
+         "heures effectuees au dela de mon horaire"),
         (
             "fonction publique territoriale décret 2001-623 durée annuelle temps de travail cycles délibération locale",
-            "décret 2001-623 décret 2000-815 FPT repos quotidien hebdomadaire astreintes annualisation",
+            "FPT temps partiel temps non complet heures complémentaires heures supplémentaires seuils décompte décret 2001-623",
         ),
     ),
 
@@ -372,8 +385,7 @@ _TOPIC_RESEARCH_AXES = (
          "conges non pris", "congés non pris", "compte epargne temps",
          "compte épargne-temps", "conge sans solde", "congé sans solde",
          "conge maternite", "congé maternité", "solde de conges", "solde de congés",
-         "regles de conges", "règles de congés", "compteur d heures",
-         "compteur d'heures remis a zero", "compteur d'heures remis à zéro"),
+         "regles de conges", "règles de congés"),
         (
             "fonction publique territoriale congés annuels décret 85-1250 droits report congés",
             "FPT compte épargne temps décret 2004-878 congés non pris délibération locale",
