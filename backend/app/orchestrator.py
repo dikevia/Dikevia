@@ -39,6 +39,20 @@ def _cgfp_article_fpt_eligible(article_ref: str) -> bool:
     return scope.get("analysis_eligible") is True
 
 
+def _build_code_research_queries(
+    research_queries: list[str],
+    cgfp_article_queries: list[str] | None = None,
+    max_queries: int = 5,
+) -> list[str]:
+    """Keep every legal axis; use only spare budget for exact article lookups."""
+    base_queries = list(dict.fromkeys(query for query in research_queries if query))
+    exact_budget = max(0, max_queries - len(base_queries))
+    return [
+        *base_queries,
+        *(query for query in (cgfp_article_queries or []) if query)[:exact_budget],
+    ]
+
+
 def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
     """Turn relevant, FPT-applicable snapshot hits into exact live CGFP lookups."""
     if not isinstance(found, dict):
@@ -509,15 +523,11 @@ class LegalOrchestrator:
             # The complete local CGFP snapshot is searched as a discovery
             # index. Its strongest article references become exact Légifrance
             # lookups; the snapshot itself never upgrades to verified evidence.
-            base_code_queries = list(dict.fromkeys(research_queries))
             # Never drop a recognized sub-question to make room for exact
-            # article lookups. The normal budget is five; it grows only when
-            # the question itself has more than five distinct research axes.
-            exact_article_budget = max(0, 5 - len(base_code_queries))
-            code_research_queries = [
-                *base_code_queries,
-                *(cgfp_article_queries or [])[:exact_article_budget],
-            ]
+            # article lookups. The helper uses spare capacity only.
+            code_research_queries = _build_code_research_queries(
+                research_queries, cgfp_article_queries, max_queries=5,
+            )
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
             endpoint_results = await asyncio.gather(*[
