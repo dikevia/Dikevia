@@ -531,7 +531,30 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
     contract_subject_present = any(
         _contains_trigger(folded, trigger) for trigger in contract_triggers[:6]
     )
+    ihts_topic_present = any(
+        "IHTS" in axes[0]
+        and any(_contains_trigger(folded, trigger) for trigger in triggers)
+        for triggers, axes in _TOPIC_RESEARCH_AXES
+    )
+    independent_working_time_triggers = (
+        "temps de travail", "duree du travail", "annualisation", "astreinte",
+        "cycle de travail", "rtt", "compteur d heures",
+        "compteur d heures remis a zero",
+    )
+    independent_working_time_present = any(
+        _contains_trigger(folded, trigger)
+        for trigger in independent_working_time_triggers
+    )
     for triggers, axes in _TOPIC_RESEARCH_AXES:
+        # Overtime/IHTS is already a dedicated legal topic. Do not count the
+        # generic time-work axis as a second issue unless the wording also
+        # raises an independent cycle, annualisation, on-call or counter issue.
+        if (
+            "annualisation" in triggers
+            and ihts_topic_present
+            and not independent_working_time_present
+        ):
+            continue
         if not any(_contains_trigger(folded, trigger) for trigger in triggers):
             continue
         # "Je suis contractuel" identifies status, not the legal topic. Do not
