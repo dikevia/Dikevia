@@ -20,7 +20,7 @@ from .legal_assurance import assess_source_set, validate_answer_citations, valid
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
 from .legal_search_plan import build_official_search_query, build_official_search_queries
-from .legal_qualification import qualify_legal_question
+from .legal_qualification import qualify_legal_question, build_contextual_research_question
 
 
 def _cgfp_article_fpt_eligible(article_ref: str) -> bool:
@@ -390,20 +390,23 @@ class LegalOrchestrator:
         history = (conversation_history or [])[-12:]
         prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"][-3:]
         current_question = request.question.strip()
-        legal_context = qualify_legal_question(current_question, request.employer)
-        contextual_question = current_question[:500]
-        # A short follow-up may depend on the immediately preceding question,
-        # but older exchanges must never displace the current request.
-        if prior_user_questions and len(current_question) < 220:
-            contextual_question = current_question[:350] + "\n" + prior_user_questions[-1][:150]
-            # A short follow-up such as "Et pour les contractuels ?" inherits
-            # the personal-case context of the immediately preceding question.
+        contextual_question = build_contextual_research_question(
+            current_question, prior_user_questions,
+        )
+        # A genuine short follow-up inherits the immediate prior referent and,
+        # where relevant, the personal-case classification. Independent new
+        # questions never inherit unrelated topics or facts.
+        is_followup = contextual_question != current_question[:500]
+        if is_followup and prior_user_questions:
             if question_intent != "PERSONAL_CASE" and classify_question_intent(prior_user_questions[-1]) == "PERSONAL_CASE":
                 question_intent = "PERSONAL_CASE"
                 temporal_context["question_intent"] = question_intent
                 temporal_context["analysis_mode"] = _analysis_mode(
                     question_intent, parsed_date is not None,
                 )
+        # Qualification must use the resolved referent so follow-ups such as
+        # "Et pour les contractuels ?" retain the original legal topic.
+        legal_context = qualify_legal_question(contextual_question, request.employer)
         # PISTE search methods cap their query at 500 characters. The current
         # question must take precedence over older conversational context.
         research_queries = build_official_search_queries(contextual_question)
