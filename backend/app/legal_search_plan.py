@@ -143,24 +143,6 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
 # and provider load while avoiding a single overloaded keyword string.
 _TOPIC_RESEARCH_AXES = (
     (
-        ("peut me virer", "me virer", "licenciement fonctionnaire", "radiation des cadres",
-         "perte de la qualite de fonctionnaire", "titulaire peut elle", "titulaire peut il"),
-        (
-            "fonctionnaire territorial titulaire radiation des cadres licenciement garanties motifs procedure CGFP",
-            "CGFP cessation definitive de fonctions insuffisance professionnelle suppression emploi abandon de poste revocation jurisprudence administrative",
-        ),
-    ),
-    (
-        ("manque de personnel", "manque d effectifs", "sous effectif", "effectifs insuffisants",
-         "ne renforce pas les equipes", "ne recrute pas", "charge de travail",
-         "conditions de travail", "risques psychosociaux", "risques professionnels",
-         "sante et securite au travail"),
-        (
-            "fonction publique territoriale obligation employeur sante securite prevention risques professionnels decret 85-603",
-            "FPT sous effectif charge de travail risques psychosociaux document unique CST formation specialisee conditions de travail",
-        ),
-    ),
-    (
         ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
          "representants du personnel", "representant syndical", "representants syndicaux",
          "local syndical", "locaux syndicaux", "decharge d activite", "decharges d activite",
@@ -197,7 +179,25 @@ _TOPIC_RESEARCH_AXES = (
             "décret 2001-623 décret 2000-815 FPT repos quotidien hebdomadaire astreintes annualisation",
         ),
     ),
-)
+
+    (
+        ("peut me virer", "me virer", "licenciement fonctionnaire", "radiation des cadres",
+         "perte de la qualite de fonctionnaire", "titulaire peut elle", "titulaire peut il"),
+        (
+            "fonctionnaire territorial titulaire radiation des cadres licenciement garanties motifs procedure CGFP",
+            "CGFP cessation definitive de fonctions insuffisance professionnelle suppression emploi abandon de poste revocation jurisprudence administrative",
+        ),
+    ),
+    (
+        ("manque de personnel", "manque d effectifs", "sous effectif", "effectifs insuffisants",
+         "ne renforce pas les equipes", "ne recrute pas", "charge de travail",
+         "conditions de travail", "risques psychosociaux", "risques professionnels",
+         "sante et securite au travail"),
+        (
+            "fonction publique territoriale obligation employeur sante securite prevention risques professionnels decret 85-603",
+            "FPT sous effectif charge de travail risques psychosociaux document unique CST formation specialisee conditions de travail",
+        ),
+    ),)
 
 
 def build_official_search_queries(question: str, max_queries: int = 3) -> list[str]:
