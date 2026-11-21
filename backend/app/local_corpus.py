@@ -57,8 +57,6 @@ async def search_local_documents(
     collectivity_id: str | None = None,
 ) -> list[dict]:
     """Search only clean, extracted documents belonging to the current tenant."""
-    if employer == "NATIONAL":
-        return []
     if collectivity_id is None and employer == "NATIONAL":
         return []
     if collectivity_id is not None:
@@ -75,7 +73,6 @@ async def search_local_documents(
     if not 1 <= limit <= 10:
         raise ValueError("La limite de recherche locale doit être comprise entre 1 et 10.")
 
-    aliases = COLLECTIVITY_FILTERS[employer]
     rows = await conn.fetch(
         """
         SELECT d.id, d.title, d.document_type, d.official_number, d.official_url,

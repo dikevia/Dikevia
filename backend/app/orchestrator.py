@@ -784,7 +784,7 @@ class LegalOrchestrator:
                         )
         local_sources: list[dict] = []
         local_issue = None
-        if request.employer != "NATIONAL":
+        if request.employer != "NATIONAL" or request.collectivity_id is not None:
             if conn is None:
                 local_issue = "Les documents propres à l'employeur ne sont pas accessibles dans ce contexte."
             else:
@@ -1304,6 +1304,7 @@ class LegalOrchestrator:
                         )
                         for s in sources
                         if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
+                        and (s.get("source_type") not in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"} or allow_local_documents)
                         and s.get("research_axis_relevant", True) is not False
                         and s.get("content_kind") != "METADATA"
                         and (s.get("citation_integrity") or {}).get("valid") is True
