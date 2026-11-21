@@ -256,9 +256,9 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
 
     if _is_contractual_evaluation_question(original):
         expansion = (
-            "agent contractuel territorial évaluation professionnelle entretien annuel "
-            "décret 88-145 article 1-3 compte rendu appréciation professionnelle "
-            "procédure observations garanties"
+            "agent contractuel territorial entretien professionnel annuel décret 88-145 "
+            "article 1-3 emploi permanent CDI CDD supérieur à un an contrat de projet "
+            "compte rendu appréciation professionnelle observations demande de révision CCP"
         )
     else:
         expansion = next(
