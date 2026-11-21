@@ -299,6 +299,7 @@ def test_contractual_evaluation_question_uses_contractual_regime_not_civil_serva
     assert "CDD supérieur à un an" in query
     assert "contrat de projet" in query
     assert "décret 2014-1526" not in query
+    assert any("jurisprudence administrative" in item for item in queries)
     assert any("décret 88-145" in item for item in queries)
     assert all("décret 2014-1526" not in item for item in queries)
     assert len(axes) == 1
@@ -342,6 +343,7 @@ def test_annual_evaluation_with_unknown_status_searches_both_fpt_regimes_separat
 
     assert any("décret 2014-1526" in query for query in queries)
     assert any("décret 88-145 article 1-3" in query for query in queries)
+    assert any("jurisprudence administrative" in query for query in queries)
     assert any("quinze jours francs" in query for query in queries)
     assert any("commission administrative paritaire" in query or "cap" in query for query in queries)
     assert all(len(query) <= 500 for query in queries)
@@ -371,9 +373,11 @@ def test_unknown_evaluation_status_keeps_both_regimes_as_conditional_axes():
 
 
 def test_titular_evaluation_does_not_create_a_contractual_axis():
-    axes = build_official_research_axes(
-        "Je suis fonctionnaire titulaire et je veux contester mon évaluation annuelle."
-    )
+    question = "Je suis fonctionnaire titulaire et je veux contester mon évaluation annuelle."
+    axes = build_official_research_axes(question)
+    queries = build_official_search_queries(question)
     assert len(axes) == 1
     assert "décret 2014-1526" in axes[0]
     assert "décret 88-145" not in axes[0]
+    assert all("décret 88-145" not in query for query in queries)
+    assert any("jurisprudence administrative" in query for query in queries)
