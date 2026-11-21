@@ -226,7 +226,7 @@ def test_claim_evidence_accepts_explicitly_common_three_branch_source():
     source = _verified_evidence_source(public_service_scope="COMMON_PUBLIC_SERVICE")
     result = validate_claim_evidence(
         _evidence_claim(
-            "Les règles visent les agents des trois versants de la fonction publique.",
+            "L'autorité territoriale veille à la santé et à la sécurité des agents.",
             source["excerpt"],
         ),
         [source],
