@@ -598,10 +598,6 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         for triggers, _axes in _TOPIC_RESEARCH_AXES
         if triggers != contract_triggers
     )
-    contract_subject_present = any(
-        _contains_trigger(folded, trigger)
-        for trigger in ("agent contractuel", "contractuel", "contractuels", "CDD", "CDI")
-    )
     ihts_topic_present = any(
         "IHTS" in axes[0]
         and any(_contains_trigger(folded, trigger) for trigger in triggers)
