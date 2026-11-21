@@ -156,7 +156,7 @@ _TOPIC_EXPANSIONS = (
         (
             "CGFP L521-1 L521-3 L521-5 fonctionnaire territorial appréciation valeur professionnelle compte rendu demande révision CAP",
             "décret 2014-1526 articles 2 5 6 7 entretien professionnel territorial notification observations demande révision quinze jours francs CAP délai un mois",
-            "décret 88-145 article 1-3 agents contractuels territoriaux emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations révision CCP quinze jours francs délai un mois jurisprudence administrative",
+            "décret 88-145 article 1-3 emploi permanent CDI CDD supérieur à un an contrat de projet agent contractuel territorial entretien professionnel compte rendu révision CCP quinze jours francs délai un mois jurisprudence administrative",
         ),
     ),
     (
@@ -635,7 +635,7 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             and "CGFP livre V" not in " ".join(axes)
         ]
         matched_axes.insert(0, (
-            "décret 88-145 article 1-3 agent contractuel territorial entretien professionnel évaluation compte rendu observations",
+            "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations",
             "jurisprudence administrative évaluation professionnelle agent contractuel territorial impartialité erreur manifeste procédure",
         ))
 
@@ -701,7 +701,7 @@ def build_official_research_axes(question: str) -> list[str]:
     folded = _fold(original)
     if _is_contractual_evaluation_question(original):
         return [
-            "décret 88-145 article 1-3 agent contractuel territorial entretien professionnel évaluation compte rendu observations"
+            "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations"
         ]
     contract_triggers, _contract_axes = next(
         (triggers, axes)
