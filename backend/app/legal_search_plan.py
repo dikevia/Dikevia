@@ -506,21 +506,25 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     folded = _fold(original)
     query_limit = max(1, min(max_queries, 3))
     matched_axes = []
+    contract_triggers, contract_axes = next(
+        (triggers, axes)
+        for triggers, axes in _TOPIC_RESEARCH_AXES
+        if "agent contractuel" in triggers
+    )
     other_topic_present = any(
         any(_contains_trigger(folded, trigger) for trigger in triggers)
         for triggers, _axes in _TOPIC_RESEARCH_AXES
         if triggers != contract_triggers
     )
-    contract_triggers, contract_axes = _TOPIC_RESEARCH_AXES[2]
     contract_subject_present = any(
         _contains_trigger(folded, trigger) for trigger in contract_triggers[:6]
     )
-    for index, (triggers, axes) in enumerate(_TOPIC_RESEARCH_AXES):
+    for triggers, axes in _TOPIC_RESEARCH_AXES:
         if not any(_contains_trigger(folded, trigger) for trigger in triggers):
             continue
         # "Je suis contractuel" identifies status, not the legal topic. Do not
         # let it displace a substantive topic such as IHTS or union rights.
-        if index == 2 and other_topic_present and not contract_subject_present:
+        if triggers == contract_triggers and other_topic_present and not contract_subject_present:
             continue
         matched_axes.append(axes)
 
