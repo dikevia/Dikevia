@@ -502,7 +502,7 @@ _TOPIC_RESEARCH_AXES = (
     ),
 )
 
-def build_official_search_queries(question: str, max_queries: int = 3) -> list[str]:
+def build_official_search_queries(question: str, max_queries: int = 6) -> list[str]:
     """Build a small set of distinct, topic-focused legal retrieval queries.
 
     The original expanded query remains first for backward-compatible recall.
@@ -517,7 +517,18 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(_fold(current_turn)):
         return queries
     folded = _fold(original)
-    query_limit = max(1, min(max_queries, 3))
+    # Keep the usual three-query budget for ordinary questions. When the
+    # wording explicitly combines at least three recognized legal topics,
+    # reserve one focused query for each topic instead of silently dropping
+    # the third issue behind the global cap. The hard ceiling limits provider
+    # fan-out; larger compound requests are handled in a later pass.
+    explicit_compound = bool(re.search(
+        r"\\b(?:et|ainsi que|par ailleurs|de plus|egalement)\\b|[;?]\\s*(?:et|puis|ensuite)\\b",
+        folded,
+    ))
+    query_limit = max(1, min(max_queries, 6))
+    if explicit_compound and len(matched_axes) >= 3:
+        query_limit = min(query_limit, len(matched_axes) + 1)
     matched_axes = []
     contract_triggers, contract_axes = next(
         (triggers, axes)
