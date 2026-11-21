@@ -41,3 +41,15 @@ def test_union_rights_resource_is_directly_catalogued_with_publication_date():
     assert item["publication_date"] == "2026-10-16"
     assert "droits_syndicaux" in item["themes"]
     assert item["content_status"] == "METADATA_ONLY"
+
+
+def test_ldg_promotion_internal_resource_is_catalogued_with_its_publication_date():
+    item = public_resource_metadata("CIG_MINUTE_STATUT_LDG_PROMOTION_INTERNE_2026")
+    assert item is not None
+    assert item["publication_date"] == "2026-09-25"
+    assert "promotion_interne" in item["themes"]
+    assert item["content_status"] == "METADATA_ONLY"
+
+
+def test_unverified_sv_published_responses_page_is_not_catalogued():
+    assert public_resource_metadata("CIG_SVP_PUBLIC_RESPONSES") is None
