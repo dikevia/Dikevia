@@ -22,7 +22,7 @@ _TOPIC_EXPANSIONS = (
          "contester mon evaluation", "contester mon évaluation", "contestation evaluation",
          "contestation de l evaluation", "compte rendu d evaluation", "compte rendu d'évaluation",
          "evaluation professionnelle", "évaluation professionnelle"),
-        "CGFP articles L521-1 a L521-5 appreciation valeur professionnelle fonctionnaire territorial "
+        "CGFP articles L521-1 L521-3 L521-5 appréciation valeur professionnelle fonctionnaire territorial "
         "entretien professionnel annuel compte rendu contestation révision décret 2014-1526 articles 2 3 4 5 6 7 "
         "superieur hierarchique direct autorite territoriale commission administrative paritaire",
     ),
@@ -156,7 +156,7 @@ _TOPIC_EXPANSIONS = (
         (
             "CGFP L521-1 L521-3 L521-5 fonctionnaire territorial appréciation valeur professionnelle compte rendu demande révision CAP",
             "décret 2014-1526 articles 2 5 6 7 entretien professionnel territorial notification observations demande révision quinze jours francs CAP délai un mois",
-            "décret 88-145 article 1-3 agent contractuel territorial entretien professionnel annuel compte rendu observations révision CCP quinze jours francs",
+            "décret 88-145 article 1-3 agents contractuels territoriaux emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations révision CCP quinze jours francs délai un mois jurisprudence administrative",
         ),
     ),
     (
@@ -456,7 +456,7 @@ _TOPIC_RESEARCH_AXES = (
          "compte rendu d evaluation", "compte rendu d'évaluation", "evaluation professionnelle",
          "entretien professionnel", "compte rendu d entretien"),
         (
-            "CGFP L521-1 L521-3 L521-5 appreciation valeur professionnelle entretien annuel fonctionnaire territorial",
+            "CGFP L521-1 L521-3 L521-5 appréciation valeur professionnelle compte rendu fonctionnaire territorial",
             "décret 2014-1526 articles 2 3 4 5 6 7 entretien professionnel critères compte rendu observations révision CAP recours",
         ),
     ),
