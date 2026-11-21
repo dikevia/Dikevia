@@ -84,3 +84,15 @@ def test_explicit_personal_refusal_remains_personal_without_a_date():
     question = "Ma collectivité a refusé ma demande de protection fonctionnelle."
     assert classify_question_intent(question) == "PERSONAL_CASE"
     assert question_needs_case_date(question) is True
+
+
+def test_employer_refusal_of_the_users_own_request_is_personal():
+    assert classify_question_intent(
+        "Ma collectivité a refusé ma demande de protection fonctionnelle."
+    ) == "PERSONAL_CASE"
+    assert classify_question_intent(
+        "Mon employeur a rejeté ma demande de temps partiel."
+    ) == "PERSONAL_CASE"
+    assert classify_question_intent(
+        "Ma collectivité peut-elle refuser une demande de protection fonctionnelle ?"
+    ) == "GENERAL_INFORMATION"
