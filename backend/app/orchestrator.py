@@ -410,6 +410,11 @@ class LegalOrchestrator:
         # PISTE search methods cap their query at 500 characters. The current
         # question must take precedence over older conversational context.
         research_queries = build_official_search_queries(contextual_question)
+        # Pass the same deterministic decomposition to the synthesis stage so
+        # retrieval coverage and answer coverage use one shared list of topics.
+        legal_context["axes_recherche_documentaire"] = (
+            research_queries[1:] if len(research_queries) > 1 else research_queries
+        )
         contextual_search_query = build_official_search_query(contextual_question)
         live_sources: list[dict] = []
         regulatory_sources: list[dict] = []
