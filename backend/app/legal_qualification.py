@@ -16,9 +16,9 @@ def _fold(value: str) -> str:
 
 
 _CONTEXTUAL_FOLLOWUP = re.compile(
-    r"^(?:et\b|dans ce cas\b|pour les\b|pour la\b|pour le\b|"
-    r"qu['’]en est-il\b|quid\b|et si\b|et concernant\b|"
-    r"même chose\b|cela\b|ça\b)",
+    r"^(?:et\s+(?:pour|si|dans|concernant|les|la|le)\b|"
+    r"et\s+l['’]\s*\w+|dans ce cas\b|pour les\b|pour la\b|pour le\b|"
+    r"qu['’]en est-il\b|quid\b|même chose\b|cela\b|ça\b)",
     re.IGNORECASE,
 )
 
