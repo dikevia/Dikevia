@@ -1313,8 +1313,8 @@ class LegalOrchestrator:
             if parsed_date is None:
                 if question_intent == "PERSONAL_CASE":
                     lines.append(
-                        "La date des faits n'est pas un préalable à une première analyse de votre situation. "
-                        "La recherche peut se poursuivre à partir du droit actuel et des faits connus ; une vérification historique ne sera nécessaire que si une évolution du texte ou un acte local peut modifier la solution."
+                        "L'absence de date des faits n'empêche pas de présenter les règles actuellement documentées. "
+                        "Une version historique sera distinguée uniquement si la période concernée est nécessaire pour identifier la rédaction applicable."
                     )
                 else:
                     lines.append(
