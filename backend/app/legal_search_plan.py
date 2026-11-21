@@ -710,6 +710,10 @@ def build_official_research_axes(question: str) -> list[str]:
     ):
         return []
     folded = _fold(original)
+    if _is_contractual_evaluation_question(original):
+        return [
+            "décret 88-145 article 1-3 agent contractuel territorial entretien professionnel évaluation compte rendu observations"
+        ]
     contract_triggers, _contract_axes = next(
         (triggers, axes)
         for triggers, axes in _TOPIC_RESEARCH_AXES
@@ -719,10 +723,6 @@ def build_official_research_axes(question: str) -> list[str]:
         any(_contains_trigger(folded, trigger) for trigger in triggers)
         for triggers, _axes in _TOPIC_RESEARCH_AXES
         if triggers != contract_triggers
-    )
-    contract_subject_present = any(
-        _contains_trigger(folded, trigger)
-        for trigger in ("agent contractuel", "contractuel", "contractuels", "CDD", "CDI")
     )
     ihts_topic_present = any(
         "IHTS" in axes[0]
@@ -748,7 +748,7 @@ def build_official_research_axes(question: str) -> list[str]:
             continue
         if not any(_contains_trigger(folded, trigger) for trigger in triggers):
             continue
-        if triggers == contract_triggers and other_topic_present and not contract_subject_present:
+        if triggers == contract_triggers and other_topic_present:
             continue
         axes_found.append(axes[0][:500])
     return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
