@@ -1423,15 +1423,23 @@ class LegalOrchestrator:
                             "prompt_tokens": None, "completion_tokens": None,
                             "total_tokens": None, "outcome": "PROVIDER_ERROR",
                         }
-        # Ground generated references only against sources actually supplied to
-        # the model, never against excluded snapshot or metadata-only results.
-        allowed_refs = {s.get("article") for s in ai_sources if s.get("article")}
+        # Context-only sources may inform retrieval context, but they cannot
+        # ground legal assertions or citations in the final answer.
+        claim_sources = [
+            source for source in ai_sources
+            if source.get("claim_eligible", True) is not False
+            and source.get("reference_role") not in {
+                "BASELINE_CONTEXT_ONLY", "INTERPRETIVE_CONTEXT_ONLY",
+                "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY",
+            }
+        ]
+        allowed_refs = {s.get("article") for s in claim_sources if s.get("article")}
         allowed_authorities = {
-            value for s in ai_sources
+            value for s in claim_sources
             for value in (s.get("official_number"), s.get("source_id"), s.get("case_number"))
             if value
         }
-        citation_validation = validate_answer_citations(ai_answer or "", ai_sources)
+        citation_validation = validate_answer_citations(ai_answer or "", claim_sources)
         if ai_answer and (
             not answer_references_are_grounded(ai_answer, allowed_refs, allowed_authorities)
             or not citation_validation["valid"]
