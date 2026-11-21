@@ -259,6 +259,17 @@ _TOPIC_FAMILIES = {
         "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
         "agissement sexiste",
     ),
+    "TERMINATION_OF_TITULAR": (
+        "licenciement", "radiation des cadres", "perte de la qualite de fonctionnaire",
+        "cessation definitive de fonctions", "insuffisance professionnelle",
+        "abandon de poste", "suppression d emploi", "fonctionnaire titulaire",
+    ),
+    "STAFFING_AND_WORK_CONDITIONS": (
+        "manque de personnel", "sous effectif", "effectifs insuffisants",
+        "charge de travail", "conditions de travail", "risques psychosociaux",
+        "risques professionnels", "prevention des risques", "sante et securite",
+        "document unique", "formation specialisee", "comite social territorial",
+    ),
     "UNION_RIGHTS": (
         "droit syndical", "autorisation speciale d absence syndicale",
         "decharge d activite de service", "heures de delegation",
@@ -300,7 +311,16 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         "title", "article", "official_number", "excerpt", "text", "full_text"
     ))
     source_topics = _matched_topic_families(source_text[:500_000])
-    if not source_topics or question_topics & source_topics:
+    if question_topics & source_topics:
+        return True
+
+    # For these two question families, a source with no identifiable subject
+    # is not useful evidence: generic CGFP keyword hits must not masquerade
+    # as a relevant answer.
+    strict_topics = {"TERMINATION_OF_TITULAR", "STAFFING_AND_WORK_CONDITIONS"}
+    if question_topics & strict_topics:
+        return False
+    if not source_topics:
         return True
 
     # Some legal mechanisms are structurally connected even when a text is
