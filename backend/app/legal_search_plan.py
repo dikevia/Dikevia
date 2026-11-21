@@ -311,7 +311,7 @@ _TOPIC_RESEARCH_AXES = (
          "heure supplementaire", "heures sup", "ihts"),
         (
             "fonction publique territoriale décret 2001-623 durée annuelle temps de travail cycles délibération locale",
-            "FPT temps partiel temps non complet régime heures complémentaires heures supplémentaires seuils décompte décret 2001-623",
+            "FPT décret 2001-623 décret 2000-815 temps partiel temps non complet régime heures complémentaires heures supplémentaires seuils décompte",
         ),
     ),
 
