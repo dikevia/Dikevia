@@ -937,3 +937,18 @@ async def test_ai_payload_preserves_official_administrative_publication_metadata
     assert payload_sources[0]["type_decision"] == "ordonnance"
     assert payload_sources[0]["solution_decision"] == "Rejet pour irrecevabilité"
     assert payload_sources[0]["portee_extrait"] == "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+
+
+
+def test_usable_sources_reject_explicitly_failed_integrity_and_out_of_scope_records():
+    from app.ai_provider import _usable_document_sources
+
+    base = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000012345678",
+        "requested_effective_date": "2026-11-21",
+        "excerpt": "Extrait officiel daté suffisamment long pour une analyse documentaire.",
+    }
+    invalid_integrity = {**base, "citation_integrity": {"valid": False}}
+    out_of_scope = {**base, "analysis_eligible": False, "public_service_scope": "FPH"}
+    assert _usable_document_sources([invalid_integrity, out_of_scope]) == []
