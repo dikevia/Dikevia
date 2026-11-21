@@ -456,8 +456,10 @@ _TOPIC_RESEARCH_AXES = (
          "compte rendu d evaluation", "compte rendu d'évaluation", "evaluation professionnelle",
          "entretien professionnel", "compte rendu d entretien"),
         (
-            "CGFP L521-1 L521-3 L521-5 appréciation valeur professionnelle compte rendu fonctionnaire territorial",
-            "décret 2014-1526 articles 2 3 4 5 6 7 entretien professionnel critères compte rendu observations révision CAP recours",
+            "CGFP L521-1 L521-3 L521-5 décret 2014-1526 articles 2 5 6 7 fonctionnaire territorial compte rendu observations révision CAP quinze jours francs délai un mois",
+            "décret 2014-1526 articles 2 3 4 5 6 7 entretien professionnel territorial critères compte rendu observations révision CAP recours",
+            "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet compte rendu observations révision CCP quinze jours francs délai un mois",
+            "jurisprudence administrative contestation compte rendu entretien professionnel annuel fonction publique territoriale erreur manifeste appréciation exactitude matérielle faits",
         ),
     ),
     (
@@ -543,6 +545,30 @@ _TOPIC_RESEARCH_AXES = (
     ),
 )
 
+def _is_professional_evaluation_question(question: str) -> bool:
+    folded = _fold(str(question or ""))
+    return any(
+        _contains_trigger(folded, marker)
+        for marker in (
+            "evaluation annuelle", "evaluation a charge", "contester mon evaluation",
+            "contestation evaluation", "compte rendu d evaluation",
+            "evaluation professionnelle", "entretien professionnel",
+        )
+    )
+
+
+def _is_explicit_functionary_status(question: str) -> bool:
+    folded = _fold(str(question or ""))
+    return any(
+        _contains_trigger(folded, marker)
+        for marker in (
+            "fonctionnaire titulaire", "agent titulaire", "je suis titulaire",
+            "fonctionnaire stagiaire", "agent stagiaire", "fonctionnaire",
+            "stagiaire de la fonction publique",
+        )
+    )
+
+
 def _is_contractual_evaluation_question(question: str) -> bool:
     folded = _fold(str(question or ""))
     has_evaluation = any(
@@ -567,6 +593,10 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
     """
     original = str(question or "").strip()
     contractual_evaluation = _is_contractual_evaluation_question(original)
+    functionary_evaluation = (
+        _is_professional_evaluation_question(original)
+        and _is_explicit_functionary_status(original)
+    )
     primary = build_official_search_query(question)
     if not primary:
         return []
@@ -634,9 +664,14 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             and "CGFP livre V" not in " ".join(axes)
         ]
         matched_axes.insert(0, (
-            "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations",
+            "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations révision CCP",
             "jurisprudence administrative évaluation professionnelle agent contractuel territorial impartialité erreur manifeste procédure",
         ))
+    elif functionary_evaluation:
+        matched_axes = [
+            tuple(axis for axis in axes if "décret 88-145" not in axis)
+            for axes in matched_axes
+        ]
 
     # Unclassified everyday questions still receive independent FPT retrieval
     # axes: one for the applicable statutory framework and one for territorial
@@ -658,7 +693,7 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         r"\b(?:et|ainsi que|par ailleurs|de plus|egalement)\b|[;?]\s*(?:et|puis|ensuite)\b",
         folded,
     ))
-    query_limit = max(1, min(max_queries, 3))
+    query_limit = max(1, min(max_queries, 4 if _is_professional_evaluation_question(original) else 3))
     if explicit_compound and len(matched_axes) >= 3:
         query_limit = min(max_queries, len(matched_axes) + 1)
 
@@ -702,19 +737,8 @@ def build_official_research_axes(question: str) -> list[str]:
         return [
             "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations révision CCP"
         ]
-    evaluation_markers = (
-        "evaluation annuelle", "evaluation a charge", "contester mon evaluation",
-        "contestation evaluation", "compte rendu d evaluation",
-        "evaluation professionnelle", "entretien professionnel",
-    )
-    is_evaluation_question = any(_contains_trigger(folded, marker) for marker in evaluation_markers)
-    explicit_functionary_status = any(
-        _contains_trigger(folded, marker)
-        for marker in (
-            "fonctionnaire titulaire", "agent titulaire", "je suis titulaire",
-            "fonctionnaire stagiaire", "agent stagiaire", "fonctionnaire",
-        )
-    )
+    is_evaluation_question = _is_professional_evaluation_question(original)
+    explicit_functionary_status = _is_explicit_functionary_status(original)
     if is_evaluation_question and not explicit_functionary_status:
         # The wording does not establish whether the evaluated person is a
         # civil servant or a contract agent. Keep both legal regimes as
