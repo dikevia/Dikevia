@@ -166,3 +166,16 @@ def test_short_followup_without_prior_question_stays_unchanged():
     from app.legal_qualification import build_contextual_research_question
 
     assert build_contextual_research_question("Et pour les contractuels ?") == "Et pour les contractuels ?"
+
+
+
+def test_followup_context_preserves_topic_and_updates_explicit_agent_status():
+    from app.legal_qualification import build_contextual_research_question
+
+    resolved = build_contextual_research_question(
+        "Et pour les contractuels ?",
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    )
+    result = qualify_legal_question(resolved)
+    assert result["topic"] == "WORKING_TIME"
+    assert result["agent_status"] == "CONTRACTUEL_EXPLICIT"
