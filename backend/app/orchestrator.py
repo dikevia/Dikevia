@@ -443,7 +443,7 @@ class LegalOrchestrator:
                 source_metadata = source_metadata or result.get("source")
                 detected_topics.extend(result.get("detected_topics") or [])
                 for hit in result.get("results", []):
-                    article = re.sub(r"\\s+", "", str(hit.get("article") or "")).upper()
+                    article = re.sub(r"\s+", "", str(hit.get("article") or "")).upper()
                     if not article:
                         continue
                     current = merged.get(article)
