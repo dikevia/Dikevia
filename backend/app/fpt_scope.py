@@ -268,7 +268,6 @@ _TOPIC_FAMILIES = {
         "fin de mes fonctions", "licenciement", "radiation des cadres",
         "perte de la qualite de fonctionnaire", "cessation definitive de fonctions",
         "insuffisance professionnelle", "abandon de poste", "suppression d emploi",
-        "fonctionnaire titulaire",
     ),
     "STAFFING_AND_WORK_CONDITIONS": (
         "manque de personnel", "pas assez d agents", "pas suffisamment d agents",
