@@ -517,18 +517,6 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
     if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(_fold(current_turn)):
         return queries
     folded = _fold(original)
-    # Keep the usual three-query budget for ordinary questions. When the
-    # wording explicitly combines at least three recognized legal topics,
-    # reserve one focused query for each topic instead of silently dropping
-    # the third issue behind the global cap. The hard ceiling limits provider
-    # fan-out; larger compound requests are handled in a later pass.
-    explicit_compound = bool(re.search(
-        r"\\b(?:et|ainsi que|par ailleurs|de plus|egalement)\\b|[;?]\\s*(?:et|puis|ensuite)\\b",
-        folded,
-    ))
-    query_limit = max(1, min(max_queries, 6))
-    if explicit_compound and len(matched_axes) >= 3:
-        query_limit = min(query_limit, len(matched_axes) + 1)
     matched_axes = []
     contract_triggers, contract_axes = next(
         (triggers, axes)
@@ -568,6 +556,19 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             f"fonction publique territoriale agent territorial CGFP autorité territoriale {topic}",
             f"jurisprudence administrative agent territorial collectivité territoriale {topic}",
         )]
+
+    # Keep the usual three-query budget for ordinary questions. When the
+    # wording explicitly combines at least three recognized legal topics,
+    # reserve one focused query for each topic instead of silently dropping
+    # the third issue behind the global cap. The hard ceiling limits provider
+    # fan-out; larger compound requests are handled in a later pass.
+    explicit_compound = bool(re.search(
+        r"\b(?:et|ainsi que|par ailleurs|de plus|egalement)\b|[;?]\s*(?:et|puis|ensuite)\b",
+        folded,
+    ))
+    query_limit = max(1, min(max_queries, 6))
+    if explicit_compound and len(matched_axes) >= 3:
+        query_limit = min(query_limit, len(matched_axes) + 1)
 
     # For compound questions, first allocate one focused query to each
     # recognized topic. Only then spend remaining capacity on a second axis
