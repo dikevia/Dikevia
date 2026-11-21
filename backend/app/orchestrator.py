@@ -1255,7 +1255,18 @@ class LegalOrchestrator:
                     # alongside at least one independently verified, date-scoped
                     # source; never let the snapshot alone trigger an AI conclusion.
                     verified_sources = [
-                        s for s in sources
+                        (
+                            {
+                                **s,
+                                "reference_role": "INTERPRETIVE_CONTEXT_ONLY",
+                            }
+                            if (
+                                s.get("source_type") == "LEGIFRANCE_CETAT_FULL_TEXT"
+                                and s.get("temporal_status") == "DECISION_POSTERIOR_TO_FACTS"
+                            )
+                            else s
+                        )
+                        for s in sources
                         if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
                         and s.get("topic_relevant") is not False
                         and s.get("content_kind") != "METADATA"
@@ -1267,10 +1278,10 @@ class LegalOrchestrator:
                                 and s.get("general_info_eligible") is True
                             )
                         )
-                        # Unknown scope is retained as a review lead; only
-                        # explicitly identified FPE/FPH sources are excluded.
-                        # The AI prompt receives this scope and must not infer
-                        # territorial applicability from an unknown classification.
+                        # Only sources explicitly classified as FPT or as
+                        # common to all three branches may support AI analysis.
+                        # Unclassified and generic public-service sources remain
+                        # visible as research leads but cannot support a claim.
                         and (
                             s.get("analysis_eligible") is True
                             or (
@@ -1471,9 +1482,9 @@ class LegalOrchestrator:
             )
             answer = "\n".join(lines)
 
-        # Apply display-only filtering after legal analysis and validation. Keeping
-        # every retrieved source available until this point prevents unrelated-topic
-        # heuristics from changing the evidence set or verification status.
+        # Apply the display filter after legal analysis and validation. The
+        # earlier relevance guard already excluded explicitly unrelated sources
+        # from the AI evidence set; this final pass controls returned source cards.
         sources = filter_irrelevant_sources_for_display(sources)
 
         # Keep full texts server-side for checks/analysis, but return only bounded
