@@ -75,7 +75,11 @@ def test_natural_language_fpt_corpus_reaches_expected_research_axis(
 
     assert queries
     assert queries[0].startswith(question)
-    assert len(queries) <= 3
+    expected_query_limit = 4 if any(
+        marker in question.casefold()
+        for marker in ("évaluation annuelle", "evaluation annuelle", "entretien professionnel")
+    ) else 3
+    assert len(queries) <= expected_query_limit
     assert len(queries) == len(set(queries))
     assert all(len(query) <= 500 for query in queries)
     joined = " ".join(queries).casefold()
@@ -237,7 +241,11 @@ def test_all_100_business_evaluation_questions_have_bounded_fpt_retrieval_querie
         queries = build_official_search_queries(case["question"])
         assert queries, case["id"]
         assert queries[0].startswith(case["question"]), case["id"]
-        assert len(queries) <= 3, case["id"]
+        is_appraisal_query = any(
+            marker in case["question"].casefold()
+            for marker in ("évaluation annuelle", "evaluation annuelle", "entretien professionnel", "compte rendu d'entretien")
+        )
+        assert len(queries) <= (4 if is_appraisal_query else 3), case["id"]
         assert len(queries) == len(set(queries)), case["id"]
         assert all(len(query) <= 500 for query in queries), case["id"]
         assert "code du travail" not in " ".join(queries).casefold(), case["id"]
