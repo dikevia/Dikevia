@@ -143,6 +143,16 @@ def test_cst_questions_are_not_misrouted_as_union_rights_questions():
     assert "autorisations speciales absence syndicale" not in joined
 
 
+
+
+def test_short_acronym_triggers_require_word_boundaries():
+    # "CST" is a dedicated axis, but the letters embedded in a larger token
+    # must not route an unrelated question to committee-social-territorial law.
+    queries = build_official_search_queries("Mon sujet porte sur xxCSTxx sans lien avec le dialogue social.")
+    joined = " ".join(queries).casefold()
+    assert "décret 2021-571" not in joined
+    assert "droit syndical" not in joined
+
 def test_threat_by_service_user_reaches_functional_protection_research():
     queries = build_official_search_queries(
         "Un usager m'a menacé pendant mon service : puis-je demander la protection fonctionnelle ?"
