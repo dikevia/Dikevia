@@ -919,7 +919,7 @@ class LegalOrchestrator:
         # the facts); it may accompany independently verified decrees/case law,
         # but must never replace those sources or authorize a standalone opinion.
         cgfp_snapshot_fallback = should_use_cgfp_snapshot_fallback(
-            live_issue, found, request.question,
+            live_issue, found, research_queries,
         )
 
         sources: list[dict] = []
@@ -1054,7 +1054,9 @@ class LegalOrchestrator:
         # Apply the topic guard only after every source family (including the
         # CGFP snapshot and CETAT full text) has been collected.
         for source in sources:
-            source["research_axis_relevant"] = _source_relevant_to_any_research_axis(\n                research_queries, source,\n            )
+            source["research_axis_relevant"] = _source_relevant_to_any_research_axis(
+                research_queries, source,
+            )
 
         # A direct request for the text/content of a numbered CGFP article is an
         # exact-reference lookup. If that article was not independently retrieved,
@@ -1112,7 +1114,7 @@ class LegalOrchestrator:
             and (s.get("citation_integrity") or {}).get("valid") is True
             and s.get("analysis_eligible") is True
             and s.get("claim_eligible", True) is not False
-            and s.get("ihts_relevant") is not False
+            and s.get("research_axis_relevant", True) is not False
         ]
         usable_local = [s for s in local_sources
             if (s.get("citation_integrity") or {}).get("valid") is True
@@ -1328,7 +1330,7 @@ class LegalOrchestrator:
                          "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED"}
                         for s in sources
                         if s.get("source_type") == "CGFP_SNAPSHOT"
-                        and s.get("topic_relevant") is not False
+                        and s.get("research_axis_relevant", True) is not False
                         and (s.get("citation_integrity") or {}).get("valid") is True
                     ]
                     ai_sources = cgfp_context_sources + verified_sources if verified_sources else []
