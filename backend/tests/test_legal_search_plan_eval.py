@@ -145,6 +145,15 @@ def test_cst_questions_are_not_misrouted_as_union_rights_questions():
 
 
 
+def test_generic_retaliation_report_does_not_assume_workplace_safety_issue():
+    queries = build_official_search_queries(
+        "Ma hiérarchie me sanctionne après avoir signalé un dysfonctionnement budgétaire."
+    )
+    joined = " ".join(queries).casefold()
+    assert "décret 85-603" not in joined
+    assert "droit de retrait" not in joined
+
+
 def test_short_acronym_triggers_require_word_boundaries():
     # "CST" is a dedicated axis, but the letters embedded in a larger token
     # must not route an unrelated question to committee-social-territorial law.
