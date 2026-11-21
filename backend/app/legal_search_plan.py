@@ -447,6 +447,7 @@ _TOPIC_RESEARCH_AXES = (
         ("avancement d echelon", "avancement d'échelon", "avancement de grade",
          "promotion interne", "entretien professionnel", "compte rendu d entretien",
          "compte rendu d'entretien", "refus de titularisation", "titularisation",
+         "fonctionnaire stagiaire", "agent stagiaire", "stagiaire",
          "reprise anciennete", "reprise d ancienneté", "anciennete dans le prive",
          "ancienneté dans le privé", "modifier mes missions", "changement de missions",
          "missions sans changer mon grade"),
