@@ -162,11 +162,11 @@ def test_cst_questions_are_not_misrouted_as_union_rights_questions():
         ),
         (
             "Je suis à temps partiel : comment sont décomptées les heures effectuées au-delà de mon horaire ?",
-            ("temps partiel", "heures complémentaires"),
+            ("décret 2004-777", "IHTS"),
         ),
         (
             "Comment sont traitées les heures supplémentaires d'un agent à temps non complet ?",
-            ("temps non complet", "heures complémentaires"),
+            ("décret 2020-592", "heures complémentaires"),
         ),
     ],
 )
