@@ -645,7 +645,11 @@ class LegalOrchestrator:
                             hit["version_role"] = (
                                 "FACTS_DATE_VERSION"
                                 if parsed_date and local_date == parsed_date
-                                else "CURRENT_OR_ADDITIONAL_REFERENCE_VERSION"
+                                else "FACTS_PERIOD_START_VERSION"
+                                if local_endpoint == "START"
+                                else "FACTS_PERIOD_END_VERSION"
+                                if local_endpoint == "END"
+                                else "CURRENT_LAW_VERSION"
                             )
                             hit["title"] = (
                                 f"{hit.get('title') or 'Document local'} — situation au {local_date.isoformat()}"
@@ -744,7 +748,11 @@ class LegalOrchestrator:
                 "version_role": (
                     "FACTS_DATE_VERSION"
                     if parsed_date and item.get("requested_effective_date") == parsed_date.isoformat()
-                    else "CURRENT_OR_ADDITIONAL_REFERENCE_VERSION"
+                    else "FACTS_PERIOD_START_VERSION"
+                    if item.get("version_endpoint") == "START"
+                    else "FACTS_PERIOD_END_VERSION"
+                    if item.get("version_endpoint") == "END"
+                    else "CURRENT_LAW_VERSION"
                 ),
                 "page_start": None, "page_end": None, "content_kind": "FULL_TEXT",
                 "general_info_eligible": parsed_date is None,
@@ -777,7 +785,11 @@ class LegalOrchestrator:
                 "version_role": (
                     "FACTS_DATE_VERSION"
                     if parsed_date and item.get("requested_effective_date") == parsed_date.isoformat()
-                    else "CURRENT_OR_ADDITIONAL_REFERENCE_VERSION"
+                    else "FACTS_PERIOD_START_VERSION"
+                    if item.get("version_endpoint") == "START"
+                    else "FACTS_PERIOD_END_VERSION"
+                    if item.get("version_endpoint") == "END"
+                    else "CURRENT_LAW_VERSION"
                 ),
                 "general_info_eligible": parsed_date is None,
                 "citation_integrity": {
