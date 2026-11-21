@@ -527,6 +527,34 @@ _TOPIC_RESEARCH_AXES = (
     ),
 )
 
+def _is_contractual_evaluation_question(question: str) -> bool:
+    folded = _fold(str(question or ""))
+    has_evaluation = any(
+        _contains_trigger(folded, marker)
+        for marker in (
+            "evaluation annuelle", "evaluation professionnelle",
+            "entretien professionnel", "compte rendu d evaluation",
+        )
+    )
+    has_contractual_status = any(
+        _contains_trigger(folded, marker)
+        for marker in ("agent contractuel", "contractuel", "contractuels", "CDD", "CDI")
+    )
+    return has_evaluation and has_contractual_status
+
+
+def _has_independent_career_issue(question: str) -> bool:
+    folded = _fold(str(question or ""))
+    return any(
+        _contains_trigger(folded, marker)
+        for marker in (
+            "avancement d echelon", "avancement de grade", "promotion interne",
+            "reprise anciennete", "refus de titularisation", "titularisation",
+            "modifier mes missions", "changement de missions",
+        )
+    )
+
+
 def build_official_search_queries(question: str, max_queries: int = 6) -> list[str]:
     """Build a small set of distinct, topic-focused legal retrieval queries.
 
@@ -593,6 +621,18 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
     # is already present in the contextual question.
     if not matched_axes and re.search(r"\b(?:et\s+)?pour\s+les?\s+contractuels?\b", folded):
         matched_axes = [contract_axes]
+
+    # Contract agents' annual assessments must be researched under the
+    # territorial contractual regime, not the civil-servant evaluation decree.
+    if _is_contractual_evaluation_question(original):
+        matched_axes = [
+            axes for axes in matched_axes
+            if "CGFP L521-1" not in axes[0]
+            and (
+                "CGFP livre V" not in axes[0]
+                or _has_independent_career_issue(original)
+            )
+        ]
 
     # Unclassified everyday questions still receive independent FPT retrieval
     # axes: one for the applicable statutory framework and one for territorial
