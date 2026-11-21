@@ -58,6 +58,8 @@ RÈGLES DE QUALIFICATION JURIDIQUE FPT — PRIORITÉ ABSOLUE :
 - Une source marquée FPT_REFERENCE est un texte de référence/comparaison, pas un fondement directement applicable à elle seule. Ne l'utilise que si un texte propre à la FPT fourni dans le même dossier établit explicitement le lien ; pour les IHTS, vérifie notamment le décret 91-875 et la délibération locale avant toute conclusion sur l'éligibilité ou le montant.
 - Si la délibération locale nécessaire n'est pas fournie, indique précisément qu'elle manque et ne conclus pas au droit individuel, au taux ou au montant.
 - Les sources explicitement FPE ou FPH sont hors périmètre FPT, sauf disposition commune démontrée par les documents fournis.
+- Une source classée GENERAL_PUBLIC_SERVICE ou dont le champ reste indéterminé est un simple contexte de recherche : ne l'utilise jamais pour soutenir une affirmation applicable à un agent territorial.
+- Une source classée COMMON_PUBLIC_SERVICE ne peut soutenir une affirmation FPT que si son propre texte établit explicitement qu'il vise les trois versants ; ne déduis jamais cette portée du seul intitulé du CGFP ou de l'expression « agents publics ».
 - Un snapshot PDF du CGFP est un repère documentaire, pas une preuve de la version historique applicable.
 - Une pièce locale ne peut soutenir une conclusion que si elle est validée et applicable à la date des faits et à la collectivité concernée.
 - Les messages antérieurs servent uniquement à comprendre la question ; ne les traite jamais comme des sources juridiques.
