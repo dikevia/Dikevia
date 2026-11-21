@@ -61,12 +61,12 @@ CIG_SOURCES: tuple[CIGSource, ...] = (
     CIGSource(
         "CIG_SVP_PUBLIC",
         "SVP Statut – réponses publiées et anonymisées",
-        "https://www.cig929394.fr/actualites/svp-statut-nos-reponses-a-vos-questions-nouvelles-ressources/",
+        "https://www.cig929394.fr/je-souhaite-acceder-aux-publications-et-ressources-du-cig/",
         "ANONYMIZED_QA",
         "PUBLIC",
         "LICENSE_REQUIRED",
         "EDITORIAL_ANALYSIS",
-        "Ne retenir que les réponses effectivement publiées et anonymisées ; vérifier les droits avant indexation.",
+        "Point d'entrée catalogue uniquement ; chaque réponse doit être vérifiée individuellement et ses droits de réutilisation autorisés avant indexation.",
     ),
     CIGSource(
         "CIG_IAJ",
@@ -136,15 +136,15 @@ def can_ingest_cig_content(
     written_permission: bool = False,
     permission_scope: str | None = None,
 ) -> bool:
-    """Fail closed: content ingestion requires documented permission scope.
+    """Fail closed until a verifiable permission registry exists.
 
-    Public visibility or possession of a login is not permission for commercial
-    reproduction, bulk extraction, model training, or cross-tenant indexing.
+    A caller-supplied boolean and free-text scope cannot prove that a written
+    licence exists, is current, covers the exact material, or authorizes the
+    requested commercial processing. No CIG permission registry is integrated,
+    so this helper deliberately never authorizes ingestion.
     """
-    source = get_cig_source(source_id)
-    if source is None or source.content_policy != "LICENSE_REQUIRED":
-        return False
-    return bool(written_permission and permission_scope and permission_scope.strip())
+    # Validate the source identifier, but never infer authorization from input.
+    return get_cig_source(source_id) is not None and False
 
 
 def cig_source_metadata(source_id: str) -> dict[str, str] | None:
