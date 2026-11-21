@@ -74,6 +74,17 @@ _GENERAL_MARKERS = (
     "protection fonctionnelle",
 )
 
+# These formulations explicitly establish a common scope across all three
+# public-service branches. Generic references to "agents publics" alone do not.
+_COMMON_PUBLIC_SERVICE_MARKERS = (
+    "les trois versants de la fonction publique",
+    "les trois fonctions publiques",
+    "fonction publique de l etat territoriale et hospitaliere",
+    "fonction publique de l etat territoriale et de l hospitaliere",
+    "agents des trois versants",
+    "agents des trois fonctions publiques",
+)
+
 
 def _fold(value: str) -> str:
     value = unicodedata.normalize("NFKD", value.casefold())
@@ -141,6 +152,20 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
             "analysis_eligible": False,
         }
 
+    # A common rule may support FPT analysis only when the source itself
+    # explicitly identifies the three branches. Generic public-service wording
+    # is not sufficient evidence of territorial applicability.
+    common_scope_hits = [
+        marker for marker in _COMMON_PUBLIC_SERVICE_MARKERS
+        if _fold(marker) in corpus
+    ]
+    if common_scope_hits:
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": common_scope_hits[:3],
+            "analysis_eligible": True,
+        }
+
     # If the body contains competing versant markers and the title does not
     # identify a territorial instrument, its primary scope is unresolved.
     if fpt_hits and (fpe_hits or fph_hits) and not title_fpt_hits:
@@ -187,11 +212,11 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
         }
 
     general_hits = [marker for marker in _GENERAL_MARKERS if _fold(marker) in corpus]
-    if len(general_hits) >= 2:
+    if general_hits:
         return {
             "scope": "GENERAL_PUBLIC_SERVICE",
             "evidence": general_hits[:3],
-            "analysis_eligible": True,
+            "analysis_eligible": False,
         }
     return {
         # Do not let an unclassified document enter the AI evidence set.
