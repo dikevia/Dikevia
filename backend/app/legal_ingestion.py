@@ -123,9 +123,10 @@ def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) ->
         "conge de maladie", "conge maladie", "accident de service",
         "maladie professionnelle", "droit syndical", "droits syndicaux",
         "decharge d activite de service", "autorisation speciale d absence",
-        "traitement indiciaire", "regime indemnitaire", "indemnite de fonctions",
-        "avancement", "mutation", "detachement", "disponibilite", "reclassement",
-        "retraite d office", "carriere d un agent", "remuneration d un agent",
+        "traitement indiciaire", "regime indemnitaire",
+        "detachement", "disponibilite", "retraite d office",
+        "carriere d un agent", "remuneration d un agent",
+        "service des ressources humaines", "direction des ressources humaines",
     )
     fpt_specific = (
         "fonction publique territoriale", "agent territorial", "agents territoriaux",
