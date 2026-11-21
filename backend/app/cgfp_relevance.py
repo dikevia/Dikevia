@@ -284,7 +284,7 @@ _TOPICS: tuple[dict[str, Any], ...] = (
     {
         "key": "mobilite_positions_statutaires",
         "triggers": (
-            "mobilite", "mutation", "detachement", "mise a disposition",
+            "mobilite", "mutation", "mute", "muter", "detachement", "mise a disposition",
             "disponibilite", "integration directe", "reclassement",
             "position d activite", "position statutaire",
         ),
@@ -294,7 +294,7 @@ _TOPICS: tuple[dict[str, Any], ...] = (
             "emploi collectivité territoriale"
         ),
         "anchors": (
-            "mobilite", "mutation", "detachement", "mise a disposition",
+            "mobilite", "mutation", "mute", "detachement", "mise a disposition",
             "disponibilite", "integration directe", "reclassement",
             "position d activite", "reintegration",
         ),
