@@ -385,7 +385,7 @@ class LegalOrchestrator:
                 logger.exception("Échec de la recherche dans l'index structuré du CGFP.")
                 return None, "Index documentaire CGFP indisponible ou invalide."
 
-        async def search_official_pillars():
+        async def search_official_pillars(cgfp_article_queries: list[str] | None = None):
             if not legifrance.configured:
                 issue = "Identifiants PISTE non configurés : les recherches officielles Légifrance n'ont pas été exécutées."
                 return [], [], [], issue, issue, issue, issue
@@ -405,31 +405,38 @@ class LegalOrchestrator:
             # Always add today's version, even when the user supplied a past date.
             date_roles.setdefault(effective_date, "END" if period_start and not period_end else "CURRENT")
             comparison_dates = sorted(date_roles)
-            # Search a bounded set of independent legal axes. Each query is
-            # evaluated at every required temporal endpoint; one failed axis
-            # must not discard successful results from the others.
+            # The complete local CGFP snapshot is searched as a discovery
+            # index. Its strongest article references become exact Légifrance
+            # lookups; the snapshot itself never upgrades to verified evidence.
+            code_research_queries = list(dict.fromkeys([
+                *research_queries, *(cgfp_article_queries or []),
+            ]))
+            # Exact article leads go only to the CGFP article endpoint, never
+            # to regulatory-text or administrative case-law search.
             endpoint_results = await asyncio.gather(*[
-                asyncio.gather(*[
-                    asyncio.gather(
-                        legifrance.search_code_articles(query, requested_date),
-                        legifrance.search_regulatory_texts(query, requested_date, limit=3),
-                        return_exceptions=True,
-                    )
-                    for query in research_queries
-                ])
+                asyncio.gather(
+                    asyncio.gather(*[
+                        legifrance.search_code_articles(query, requested_date)
+                        for query in code_research_queries
+                    ], return_exceptions=True),
+                    asyncio.gather(*[
+                        legifrance.search_regulatory_texts(query, requested_date, limit=3)
+                        for query in research_queries
+                    ], return_exceptions=True),
+                )
                 for requested_date in comparison_dates
             ])
             code_result, regulatory_result = [], []
             code_failures, regulatory_failures = [], []
-            for requested_date, query_results in zip(comparison_dates, endpoint_results):
+            for requested_date, (code_queries_result, regulatory_queries_result) in zip(comparison_dates, endpoint_results):
                 endpoint = date_roles[requested_date]
-                for query, pair in zip(research_queries, query_results):
-                    code_at_date, regulatory_at_date = pair
+                for query, code_at_date in zip(code_research_queries, code_queries_result):
                     if isinstance(code_at_date, BaseException) or not isinstance(code_at_date, list):
                         logger.warning("Recherche code Légifrance en échec (%s) à %s : %r", query[:100], requested_date, code_at_date)
                         code_failures.append((requested_date.isoformat(), query))
                     else:
                         code_result.extend(_tag_official_versions(code_at_date, requested_date, endpoint))
+                for query, regulatory_at_date in zip(research_queries, regulatory_queries_result):
                     if isinstance(regulatory_at_date, BaseException) or not isinstance(regulatory_at_date, list):
                         logger.warning("Recherche réglementaire Légifrance en échec (%s) à %s : %r", query[:100], requested_date, regulatory_at_date)
                         regulatory_failures.append((requested_date.isoformat(), query))
@@ -503,18 +510,31 @@ class LegalOrchestrator:
                 code_issue, regulatory_search_issue, case_search_issue, temporal_issue,
             )
 
-        # Primary path: query Légifrance/PISTE first for the CGFP, regulatory
-        # texts and CETAT case law. Consult the bundled PDF snapshot only when
-        # the live CGFP article search is unavailable or fails.
-        official_result = await search_official_pillars()
+        # Search the complete bundled CGFP article index for discovery on
+        # every request, then verify its best article leads against the live
+        # date-scoped Légifrance API. Snapshot text remains unverified and is
+        # used as a fallback only when live CGFP retrieval is unavailable.
+        found, cgfp_issue = await search_cgfp_index()
+        cgfp_article_queries = []
+        if isinstance(found, dict):
+            for hit in found.get("results", []):
+                article_ref = re.sub(r"\\s+", "", str(hit.get("article") or "")).upper()
+                if (
+                    re.fullmatch(r"[LDR]\\d+(?:-\\d+)*", article_ref)
+                    and (hit.get("matched_concepts")
+                         or hit.get("relevance_label") == "Correspondance lexicale à confirmer")
+                ):
+                    cgfp_article_queries.append(f"article {article_ref}")
+                if len(cgfp_article_queries) >= 2:
+                    break
+
+        # Official legal texts and administrative case law remain the
+        # authoritative verification path.
+        official_result = await search_official_pillars(cgfp_article_queries)
         (
             live_sources, regulatory_sources, case_law_sources,
             live_issue, regulatory_issue, case_law_issue, temporal_issue,
         ) = official_result
-        if live_issue:
-            found, cgfp_issue = await search_cgfp_index()
-        else:
-            found, cgfp_issue = None, None
         period_version_comparison = None
         comparison_end_date = period_end or effective_date
         if period_start and period_start < comparison_end_date:
@@ -812,7 +832,7 @@ class LegalOrchestrator:
 
         sources.extend(local_sources)
 
-        if found:
+        if found and cgfp_snapshot_fallback:
             for hit in found["results"]:
                 if not is_ihts_relevant_source(request.question, hit):
                     continue
