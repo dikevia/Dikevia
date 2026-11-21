@@ -453,6 +453,15 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
+        ("evaluation annuelle", "évaluation annuelle", "evaluation a charge", "évaluation à charge",
+         "contester mon evaluation", "contester mon évaluation", "contestation evaluation",
+         "compte rendu d evaluation", "compte rendu d'évaluation", "evaluation professionnelle"),
+        (
+            "CGFP L521-1 L521-3 L521-5 appreciation valeur professionnelle entretien annuel fonctionnaire territorial",
+            "décret 2014-1526 articles 2 3 4 5 6 7 entretien professionnel critères compte rendu observations révision CAP recours",
+        ),
+    ),
+    (
         ("avancement d echelon", "avancement d'échelon", "avancement de grade",
          "promotion interne", "entretien professionnel", "compte rendu d entretien",
          "compte rendu d'entretien", "refus de titularisation", "titularisation",
