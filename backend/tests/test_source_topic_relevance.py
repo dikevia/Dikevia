@@ -1,5 +1,5 @@
 from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
-from app.orchestrator import filter_irrelevant_sources_for_display
+from app.orchestrator import (\n    filter_irrelevant_sources_for_display,\n    _ihts_relevant_to_any_research_axis,\n    _topic_relevant_to_any_research_axis,\n)
 
 
 def test_relevant_source_for_same_legal_topic_is_kept():
@@ -105,3 +105,29 @@ def test_titular_status_alone_does_not_hide_working_time_sources():
 def test_actual_termination_question_still_triggers_termination_filter():
     question = "Je suis fonctionnaire titulaire, ma collectivité peut-elle me licencier ?"
     assert "TERMINATION_OF_TITULAR" in _matched_topic_families(question)
+
+def test_composite_question_keeps_sources_for_non_ihts_subquestions():
+    axes = [
+        "Comment sont indemnisées les heures supplémentaires ?",
+        "Quels sont les droits pendant un congé maladie ?",
+    ]
+    sick_leave_source = {
+        "title": "Congé de maladie des fonctionnaires territoriaux",
+        "text": "Dispositions relatives au congé de maladie et aux agents territoriaux. " * 4,
+    }
+    assert _ihts_relevant_to_any_research_axis(axes, sick_leave_source) is True
+    assert _topic_relevant_to_any_research_axis(axes, sick_leave_source) is True
+
+
+def test_composite_question_still_rejects_irrelevant_ihts_credit_sources():
+    axes = [
+        "Comment sont indemnisées les heures supplémentaires ?",
+        "Quels sont les droits pendant un congé maladie ?",
+    ]
+    unrelated_credit = {
+        "title": "CGFP R422-96",
+        "article": "R422-96",
+        "excerpt": "Crédit d'heures supplémentaires pour prévenir une inaptitude.",
+    }
+    assert _ihts_relevant_to_any_research_axis(axes, unrelated_credit) is True
+
