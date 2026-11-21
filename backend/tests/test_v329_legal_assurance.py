@@ -184,3 +184,23 @@ def test_claim_evidence_rejects_duplicate_source_identifiers_as_ambiguous():
     )
     assert result["valid"] is False
     assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+
+def test_claim_evidence_rejects_post_facts_judgment_as_standalone_support_for_conclusion():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(
+        source_type="LEGIFRANCE_CETAT_FULL_TEXT",
+        document_kind="ADMIN_CASELAW",
+        temporal_status="DECISION_POSTERIOR_TO_FACTS",
+    )
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+            source["excerpt"],
+        ),
+        [source],
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
