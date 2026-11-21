@@ -69,3 +69,35 @@ def test_everyday_understaffing_and_termination_phrasing_is_understood():
     termination = qualify_legal_question("Ma collectivité veut me mettre dehors.")
     assert staffing["topic"] == "STAFFING_AND_WORK_CONDITIONS"
     assert termination["topic"] == "TERMINATION_OF_TITULAR"
+
+
+def test_fpe_and_fph_are_flagged_as_outside_the_product_scope():
+    fpe = qualify_legal_question("Je suis fonctionnaire de l'État, puis-je obtenir cette prime ?")
+    fph = qualify_legal_question("Je suis agent hospitalier, quels sont mes droits ?")
+    assert fpe["scope_status"] == "OUT_OF_SCOPE_FPE"
+    assert fph["scope_status"] == "OUT_OF_SCOPE_FPH"
+    assert fpe["scope_evidence"]
+    assert fph["scope_evidence"]
+
+
+def test_private_sector_is_flagged_without_transposing_fpt_rules():
+    result = qualify_legal_question("Je suis salarié du privé, mon employeur peut-il me sanctionner ?")
+    assert result["scope_status"] == "OUT_OF_SCOPE_PRIVATE"
+
+
+def test_bare_cdd_or_cdi_does_not_prove_fpt_contractual_agent_status():
+    cdd = qualify_legal_question("Je suis en CDD, quels sont mes droits ?")
+    cdi = qualify_legal_question("Je travaille en CDI.")
+    assert cdd["agent_status"] == "EMPLOYMENT_STATUS_AMBIGUOUS"
+    assert cdi["agent_status"] == "EMPLOYMENT_STATUS_AMBIGUOUS"
+
+
+def test_explicit_territorial_contractual_status_remains_recognized():
+    result = qualify_legal_question("Je suis agent contractuel en CDD dans une mairie.")
+    assert result["agent_status"] == "CONTRACTUEL_EXPLICIT"
+    assert result["scope_status"] == "FPT_PRODUCT_SCOPE"
+
+
+def test_mentioning_private_law_as_a_question_does_not_reclassify_the_agent():
+    result = qualify_legal_question("Le Code du travail s'applique-t-il aux agents territoriaux ?")
+    assert result["scope_status"] == "FPT_PRODUCT_SCOPE"
