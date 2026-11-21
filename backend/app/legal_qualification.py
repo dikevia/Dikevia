@@ -39,7 +39,8 @@ _TOPIC_MARKERS = (
                                       "risques psychosociaux", "risques professionnels",
                                       "sante et securite au travail")),
     ("DISCIPLINE", ("sanction disciplinaire", "procedure disciplinaire", "conseil de discipline",
-                    "avertissement", "blame", "exclusion temporaire", "revocation")),
+                    "avertissement", "blame", "exclusion temporaire", "revocation",
+                    "on me sanctionne", "je suis sanctionne", "sanctionne par ma collectivite")),
     # Status is classified independently below: the word "contractuel" must not mask the actual topic.
     ("CONTRACTUAL_EMPLOYMENT", ("renouvellement de contrat", "fin de contrat",
                                 "licenciement contractuel", "recrutement contractuel",
@@ -47,7 +48,8 @@ _TOPIC_MARKERS = (
                                 "refus de renouvellement", "refus du renouvellement")),
     ("WORKING_TIME", ("temps de travail", "duree du travail", "heures supplementaires",
                       "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
-                      "travail de nuit", "travail le dimanche")),
+                      "travail de nuit", "travail le dimanche", "venir le dimanche",
+                      "travailler le dimanche", "venir travailler le dimanche")),
     ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "citis", "accident de service",
                                        "maladie professionnelle", "conge longue maladie",
                                        "conge longue duree")),
@@ -55,8 +57,8 @@ _TOPIC_MARKERS = (
                                    "agissement sexiste", "protection fonctionnelle")),
     ("REMUNERATION", ("remuneration", "traitement indiciaire", "regime indemnitaire",
                       "rifseep", "ifse", "nbi", "prime", "indemnite")),
-    ("LEAVE", ("conges annuels", "conge annuel", "compte epargne temps",
-               "autorisation speciale d absence")),
+    ("LEAVE", ("conges annuels", "conge annuel", "poser des conges", "prendre des conges",
+               "compte epargne temps", "autorisation speciale d absence")),
 )
 
 
