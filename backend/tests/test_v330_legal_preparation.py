@@ -475,8 +475,8 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
         return [{
             "source_type": "LEGIFRANCE_API", "source_id": "LEGIARTI000000000123",
             "article": "L123-4", "title": "Code général de la fonction publique — article L. 123-4",
-            "text": "Article L. 123-4 : texte officiel consulté. " * 8,
-            "excerpt": "Article L. 123-4 : texte officiel consulté.",
+            "text": "Article L. 123-4 : dispositions applicables aux agents publics territoriaux. " * 8,
+            "excerpt": "Article L. 123-4 : dispositions applicables aux agents publics territoriaux.",
         }]
 
     async def no_regulatory(*args, **kwargs):
