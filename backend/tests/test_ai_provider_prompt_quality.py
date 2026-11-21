@@ -121,3 +121,10 @@ def test_prompt_never_assumes_generic_public_service_sources_apply_to_fpt():
     assert "COMMON_PUBLIC_SERVICE" in SYSTEM_PROMPT
     assert "établit explicitement qu'il vise les trois versants" in SYSTEM_PROMPT
 
+
+
+
+def test_prompt_requires_each_claim_to_be_bound_to_an_exact_research_axis():
+    assert '"axis": "valeur exacte d\'un axe de axes_recherche_documentaire"' in SYSTEM_PROMPT
+    assert '"uncovered_axes": []' in SYSTEM_PROMPT
+    assert "Aucun axe ne doit être omis" in SYSTEM_PROMPT
