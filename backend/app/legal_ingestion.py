@@ -229,6 +229,7 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             identification = value("Identification", max_length=250) or info.filename
             publication_code = value("Code_Publication", "CodePublication", max_length=20)
             decision_type = value("Type_Decision", "TypeDecision", max_length=80)
+            solution = value("Solution", max_length=250)
             recourse_type = value("Type_Recours", "TypeRecours", max_length=160)
             hearing_date = _date(value("Date_Audience", "DateAudience", max_length=40))
             formation = value("Formation_Jugement", "FormationJugement", max_length=200)
@@ -261,7 +262,8 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                 "raw_metadata": {
                     "court_code": court_code, "ecli": ecli,
                     "publication_code": publication_code,
-                    "decision_type": decision_type, "recourse_type": recourse_type,
+                    "decision_type": decision_type, "solution": solution,
+                    "recourse_type": recourse_type,
                     "hearing_date": hearing_date.isoformat() if hearing_date else None,
                     "formation": formation, "role_number": role_number,
                     "xml_identification": identification,
