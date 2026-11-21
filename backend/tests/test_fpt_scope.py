@@ -178,3 +178,29 @@ def test_titular_termination_question_rejects_unrelated_cst_articles():
     }
     assert is_topic_relevant_source(question, unrelated) is False
     assert is_topic_relevant_source(question, relevant) is True
+
+def test_staffing_question_keeps_relevant_hygiene_and_preventive_medicine_sources():
+    from app.fpt_scope import is_topic_relevant_source
+
+    question = "Ma direction ne renforce pas des équipes en manque de personnel."
+    hygiene_source = {
+        "title": "Hygiène et sécurité au travail",
+        "excerpt": "Les règles d'hygiène et de sécurité protègent les agents territoriaux.",
+    }
+    preventive_medicine_source = {
+        "title": "Médecine préventive",
+        "excerpt": "Le service de médecine préventive conseille l'autorité territoriale.",
+    }
+    assert is_topic_relevant_source(question, hygiene_source) is True
+    assert is_topic_relevant_source(question, preventive_medicine_source) is True
+
+
+def test_titular_query_activates_strict_relevance_filter_without_false_positive_on_cst_titular():
+    from app.fpt_scope import is_topic_relevant_source
+
+    question = "Je suis titulaire, ma collectivité peut-elle me virer ?"
+    unrelated = {
+        "title": "Code général de la fonction publique — article R252-44",
+        "excerpt": "Chaque titulaire dispose de deux suppléants au comité social.",
+    }
+    assert is_topic_relevant_source(question, unrelated) is False
