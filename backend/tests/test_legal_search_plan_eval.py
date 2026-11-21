@@ -145,6 +145,42 @@ def test_cst_questions_are_not_misrouted_as_union_rights_questions():
 
 
 
+@pytest.mark.parametrize(
+    "question, expected_markers",
+    [
+        (
+            "Mon chef me demande de rester après mon horaire sans validation écrite : que dois-je conserver comme preuve ?",
+            ("IHTS", "décret 2002-60"),
+        ),
+        (
+            "Puis-je réclamer des heures supplémentaires réalisées il y a deux ans ?",
+            ("prescription quadriennale", "loi 68-1250"),
+        ),
+        (
+            "Mon compteur d'heures a été remis à zéro en fin d'année : est-ce légal ?",
+            ("décompte heures", "décret 2001-623"),
+        ),
+        (
+            "Je suis à temps partiel : comment sont décomptées les heures effectuées au-delà de mon horaire ?",
+            ("temps partiel", "heures complémentaires"),
+        ),
+        (
+            "Comment sont traitées les heures supplémentaires d'un agent à temps non complet ?",
+            ("temps non complet", "heures complémentaires"),
+        ),
+    ],
+)
+def test_overtime_and_working_time_edge_cases_reach_distinct_fpt_axes(
+    question, expected_markers
+):
+    queries = build_official_search_queries(question)
+    joined = " ".join(queries).casefold()
+    assert queries[0].startswith(question)
+    assert len(queries) <= 3
+    for marker in expected_markers:
+        assert marker.casefold() in joined
+
+
 def test_generic_retaliation_report_does_not_assume_workplace_safety_issue():
     queries = build_official_search_queries(
         "Ma hiérarchie me sanctionne après avoir signalé un dysfonctionnement budgétaire."
