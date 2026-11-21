@@ -416,6 +416,9 @@ def validate_claim_evidence(
         ) or len(set(uncovered_axes)) != len(uncovered_axes):
             invalid.append("invalid_uncovered_research_axes")
             uncovered_axes = []
+        overlap_axes = covered_axes & set(uncovered_axes)
+        if overlap_axes:
+            invalid.extend(f"research_axis_marked_both_covered_and_uncovered:{axis}" for axis in sorted(overlap_axes))
         unresolved_axes = set(required_axes) - covered_axes - set(uncovered_axes)
         if unresolved_axes:
             invalid.extend(f"research_axis_not_covered:{axis}" for axis in sorted(unresolved_axes))
