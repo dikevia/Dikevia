@@ -613,3 +613,60 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         if len(queries) >= query_limit:
             break
     return queries[:query_limit]
+
+
+def build_official_research_axes(question: str) -> list[str]:
+    """Return distinct recognized legal topics, not retrieval variants.
+
+    Generic fallback and case-law expansion queries improve recall but are not
+    independent user sub-questions and must not become mandatory answer axes.
+    """
+    original = str(question or "").strip()
+    current_turn = original.splitlines()[0] if original else ""
+    if not original or (
+        _ARTICLE_REFERENCE.search(current_turn)
+        and _DIRECT_ARTICLE_LOOKUP.search(_fold(current_turn))
+    ):
+        return []
+    folded = _fold(original)
+    contract_triggers, _contract_axes = next(
+        (triggers, axes)
+        for triggers, axes in _TOPIC_RESEARCH_AXES
+        if "agent contractuel" in triggers
+    )
+    other_topic_present = any(
+        any(_contains_trigger(folded, trigger) for trigger in triggers)
+        for triggers, _axes in _TOPIC_RESEARCH_AXES
+        if triggers != contract_triggers
+    )
+    contract_subject_present = any(
+        _contains_trigger(folded, trigger) for trigger in contract_triggers[:6]
+    )
+    ihts_topic_present = any(
+        "IHTS" in axes[0]
+        and any(_contains_trigger(folded, trigger) for trigger in triggers)
+        for triggers, axes in _TOPIC_RESEARCH_AXES
+    )
+    independent_working_time_triggers = (
+        "temps de travail", "duree du travail", "annualisation", "astreinte",
+        "cycle de travail", "rtt", "compteur d heures",
+        "compteur d heures remis a zero",
+    )
+    independent_working_time_present = any(
+        _contains_trigger(folded, trigger)
+        for trigger in independent_working_time_triggers
+    )
+    axes_found = []
+    for triggers, axes in _TOPIC_RESEARCH_AXES:
+        if (
+            "annualisation" in triggers
+            and ihts_topic_present
+            and not independent_working_time_present
+        ):
+            continue
+        if not any(_contains_trigger(folded, trigger) for trigger in triggers):
+            continue
+        if triggers == contract_triggers and other_topic_present and not contract_subject_present:
+            continue
+        axes_found.append(axes[0][:500])
+    return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
