@@ -15,6 +15,34 @@ def _fold(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", value)).strip()
 
 
+_CONTEXTUAL_FOLLOWUP = re.compile(
+    r"^(?:et\\b|dans ce cas\\b|pour les\\b|pour la\\b|pour le\\b|"
+    r"qu['’]en est-il\\b|quid\\b|et si\\b|et concernant\\b|"
+    r"même chose\\b|cela\\b|ça\\b)",
+    re.IGNORECASE,
+)
+
+
+def build_contextual_research_question(
+    current_question: str,
+    prior_user_questions: list[str] | None = None,
+) -> str:
+    """Resolve an explicit short follow-up without letting old turns replace it."""
+    current = " ".join(str(current_question or "").split())
+    if not current:
+        return ""
+    if len(current) >= 220 or not _CONTEXTUAL_FOLLOWUP.match(current):
+        return current[:500]
+    prior = next(
+        (str(item).strip() for item in reversed(prior_user_questions or []) if str(item).strip()),
+        "",
+    )
+    if not prior:
+        return current[:500]
+    # Current wording remains first; prior wording supplies only the missing referent.
+    return f"{current[:300]}\n{prior[:180]}"[:500]
+
+
 _TOPIC_MARKERS = (
     ("UNION_RIGHTS", ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
                       "representants du personnel", "representant syndical", "representants syndicaux",
