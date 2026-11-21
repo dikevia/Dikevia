@@ -19,7 +19,7 @@ from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
-from .legal_search_plan import build_official_search_query, build_official_search_queries
+from .legal_search_plan import build_official_search_query, build_official_search_queries, build_official_research_axes
 from .legal_qualification import qualify_legal_question, build_contextual_research_question
 
 
@@ -441,10 +441,11 @@ class LegalOrchestrator:
         # PISTE search methods cap their query at 500 characters. The current
         # question must take precedence over older conversational context.
         research_queries = build_official_search_queries(contextual_question)
-        # Pass the same deterministic decomposition to the synthesis stage so
-        # retrieval coverage and answer coverage use one shared list of topics.
-        legal_context["axes_recherche_documentaire"] = (
-            research_queries[1:] if len(research_queries) > 1 else research_queries
+        # Only distinct recognized legal topics are mandatory answer axes.
+        # Query variants for broad recall or case-law discovery are not separate
+        # sub-questions and must never force an unrelated claim into the answer.
+        legal_context["axes_recherche_documentaire"] = build_official_research_axes(
+            contextual_question
         )
         contextual_search_query = build_official_search_query(contextual_question)
         live_sources: list[dict] = []
