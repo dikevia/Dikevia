@@ -213,18 +213,23 @@ def question_needs_case_date(question: str) -> bool:
     return classify_question_intent(question) == "PERSONAL_CASE"
 
 def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
-    """Exclude sources explicitly classified as unrelated from analysis and display."""
-    return [source for source in sources if source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False]
+    """Exclude sources explicitly unrelated to every independently searched axis."""
+    return [
+        source for source in sources
+        if source.get(
+            "research_axis_relevant",
+            source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False,
+        )
+    ]
 
 
-def _topic_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
-    """Keep a source when it matches at least one independently searched legal axis."""
-    return any(is_topic_relevant_source(query, source) for query in research_queries)
-
-
-def _ihts_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
-    """Apply the IHTS-specific guard only to axes that actually concern IHTS."""
-    return any(is_ihts_relevant_source(query, source) for query in research_queries)
+def _source_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
+    """Require both topic and specialized guards to pass for the same research axis."""
+    return any(
+        is_topic_relevant_source(query, source)
+        and is_ihts_relevant_source(query, source)
+        for query in research_queries
+    )
 
 
 def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
@@ -747,7 +752,7 @@ class LegalOrchestrator:
                     result["scope_evidence"] = scope["evidence"]
                     result["analysis_eligible"] = scope["analysis_eligible"]
                     result["claim_eligible"] = scope.get("claim_eligible", scope["analysis_eligible"])
-                    if not scope["analysis_eligible"] or not _topic_relevant_to_any_research_axis(research_queries, result):
+                    if not scope["analysis_eligible"] or not _source_relevant_to_any_research_axis(research_queries, result):
                         logger.info(
                             "Décision CETAT écartée du dossier IA : périmètre ou thème non confirmé (source=%s, scope=%s)",
                             result.get("source_id"), scope["scope"],
@@ -964,7 +969,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["ihts_relevant"] = is_ihts_relevant_source(request.question, item)
+            item["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, item)
             sources.append({
                 **item,
                 "excerpt": item.get("excerpt") or full_text[:1800],
@@ -1000,7 +1005,7 @@ class LegalOrchestrator:
             response_source["scope_evidence"] = scope_check["evidence"]
             response_source["analysis_eligible"] = scope_check["analysis_eligible"]
             response_source["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            response_source["ihts_relevant"] = is_ihts_relevant_source(request.question, response_source)
+            response_source["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, response_source)
             sources.append(response_source)
 
         sources.extend(local_sources)
