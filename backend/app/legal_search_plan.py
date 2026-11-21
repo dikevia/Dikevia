@@ -18,17 +18,22 @@ _DIRECT_ARTICLE_LOOKUP = re.compile(
 # territorial public-service source families and their implementing texts.
 _TOPIC_EXPANSIONS = (
     (
-        ("peut me virer", "me virer", "licenciement fonctionnaire", "radiation des cadres",
+        ("peut me virer", "me virer", "me mettre dehors", "mettre dehors", "me licencier",
+         "peut me licencier", "mettre fin a mes fonctions", "fin de mes fonctions",
+         "licenciement fonctionnaire", "radiation des cadres",
          "perte de la qualite de fonctionnaire", "titulaire peut elle", "titulaire peut il"),
         "fonctionnaire territorial titulaire cessation definitive de fonctions radiation des cadres "
         "licenciement fonctionnaire titulaire CGFP motifs procedure insuffisance professionnelle "
         "suppression emploi abandon de poste revocation jurisprudence administrative",
     ),
     (
-        ("manque de personnel", "manque d effectifs", "sous effectif", "effectifs insuffisants",
-         "ne renforce pas les equipes", "ne recrute pas", "charge de travail",
-         "conditions de travail", "risques psychosociaux", "risques professionnels",
-         "sante et securite au travail"),
+        ("manque de personnel", "manque d effectifs", "pas assez d agents",
+         "pas suffisamment d agents", "on manque d agents", "on est pas assez nombreux",
+         "on n est pas assez nombreux", "sous effectif", "effectif reduit",
+         "effectifs insuffisants", "mon service est en sous effectif",
+         "surcharge de travail", "ne renforce pas les equipes", "ne recrute pas",
+         "charge de travail", "conditions de travail", "risques psychosociaux",
+         "risques professionnels", "sante et securite au travail"),
         "fonction publique territoriale obligation employeur prevention sante securite au travail "
         "decret 85-603 document unique evaluation risques professionnels effectifs insuffisants "
         "charge de travail risques psychosociaux comite social territorial formation specialisee",
@@ -181,7 +186,9 @@ _TOPIC_RESEARCH_AXES = (
     ),
 
     (
-        ("peut me virer", "me virer", "licenciement fonctionnaire", "radiation des cadres",
+        ("peut me virer", "me virer", "me mettre dehors", "mettre dehors", "me licencier",
+         "peut me licencier", "mettre fin a mes fonctions", "fin de mes fonctions",
+         "licenciement fonctionnaire", "radiation des cadres",
          "perte de la qualite de fonctionnaire", "titulaire peut elle", "titulaire peut il"),
         (
             "fonctionnaire territorial titulaire radiation des cadres licenciement garanties motifs procedure CGFP",
@@ -189,10 +196,13 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("manque de personnel", "manque d effectifs", "sous effectif", "effectifs insuffisants",
-         "ne renforce pas les equipes", "ne recrute pas", "charge de travail",
-         "conditions de travail", "risques psychosociaux", "risques professionnels",
-         "sante et securite au travail"),
+        ("manque de personnel", "manque d effectifs", "pas assez d agents",
+         "pas suffisamment d agents", "on manque d agents", "on est pas assez nombreux",
+         "on n est pas assez nombreux", "sous effectif", "effectif reduit",
+         "effectifs insuffisants", "mon service est en sous effectif",
+         "surcharge de travail", "ne renforce pas les equipes", "ne recrute pas",
+         "charge de travail", "conditions de travail", "risques psychosociaux",
+         "risques professionnels", "sante et securite au travail"),
         (
             "fonction publique territoriale obligation employeur sante securite prevention risques professionnels decret 85-603",
             "FPT sous effectif charge de travail risques psychosociaux document unique CST formation specialisee conditions de travail",
