@@ -180,6 +180,16 @@ def test_annual_professional_evaluation_rejects_unrelated_evaluation_hits():
     for source in unrelated_sources:
         assert is_topic_relevant_source(question, source) is False
 
+    # A generic administrative-recourse source is cross-cutting, not an
+    # unrelated topic, and must remain available for review.
+    assert is_topic_relevant_source(
+        question,
+        {
+            "title": "Recours administratif",
+            "excerpt": "La décision administrative peut faire l'objet d'un recours préalable.",
+        },
+    ) is True
+
 
 def test_annual_professional_evaluation_keeps_the_appraisal_report_rules():
     question = "Je souhaite contester mon entretien professionnel annuel."
