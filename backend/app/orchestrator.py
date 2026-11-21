@@ -518,9 +518,9 @@ class LegalOrchestrator:
         cgfp_article_queries = []
         if isinstance(found, dict):
             for hit in found.get("results", []):
-                article_ref = re.sub(r"\\s+", "", str(hit.get("article") or "")).upper()
+                article_ref = re.sub(r"\s+", "", str(hit.get("article") or "")).upper()
                 if (
-                    re.fullmatch(r"[LDR]\\d+(?:-\\d+)*", article_ref)
+                    re.fullmatch(r"[LDR]\d+(?:-\d+)*", article_ref)
                     and (hit.get("matched_concepts")
                          or hit.get("relevance_label") == "Correspondance lexicale à confirmer")
                 ):
