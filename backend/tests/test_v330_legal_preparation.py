@@ -555,10 +555,10 @@ async def test_follow_up_search_context_keeps_current_question_first(monkeypatch
     import app.orchestrator as module
 
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: False))
-    captured = {}
+    captured = {"queries": []}
 
     def capture_cgfp(query, limit=8):
-        captured["query"] = query
+        captured["queries"].append(query)
         return None
 
     monkeypatch.setattr(module, "search_cgfp", capture_cgfp)
@@ -570,9 +570,9 @@ async def test_follow_up_search_context_keeps_current_question_first(monkeypatch
             {"role": "user", "content": "Question précédente sur les fonctionnaires titulaires."},
         ],
     )
-    assert captured["query"].startswith("Et pour les contractuels ?")
-    assert "Question précédente sur les fonctionnaires titulaires." in captured["query"]
-    assert "Ancienne question sur les congés maladie." not in captured["query"]
+    assert captured["queries"][0].startswith("Et pour les contractuels ?")
+    assert any("Question précédente sur les fonctionnaires titulaires." in query for query in captured["queries"])
+    assert all("Ancienne question sur les congés maladie." not in query for query in captured["queries"])
     assert response.verification_status == "NON_VERIFIE"
 
 
