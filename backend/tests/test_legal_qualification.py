@@ -51,3 +51,13 @@ def test_contractual_status_does_not_override_the_actual_legal_topic():
     )
     assert result["topic"] == "WORKING_TIME"
     assert result["agent_status"] == "CONTRACTUEL_EXPLICIT"
+
+def test_staffing_shortage_is_qualified_as_work_conditions_not_unclassified():
+    result = qualify_legal_question("Ma direction ne renforce pas des équipes en manque de personnel.")
+    assert result["topic"] == "STAFFING_AND_WORK_CONDITIONS"
+
+
+def test_titular_asking_if_the_collectivity_can_fire_them_is_qualified():
+    result = qualify_legal_question("Je suis titulaire, ma collectivité peut-elle me virer ?")
+    assert result["topic"] == "TERMINATION_OF_TITULAR"
+    assert result["agent_status"] == "TITULAIRE_EXPLICIT"
