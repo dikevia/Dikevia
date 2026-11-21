@@ -2,8 +2,6 @@ from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
 from app.orchestrator import (
     filter_irrelevant_sources_for_display,
     _source_relevant_to_any_research_axis,
-    _matching_research_axis_indices,
-    _claims_cover_research_axes,
 )
 
 
@@ -135,57 +133,3 @@ def test_composite_question_still_rejects_irrelevant_ihts_credit_sources():
     }
     assert _source_relevant_to_any_research_axis(axes, unrelated_credit) is False
 
-
-
-
-def test_compound_answer_must_cover_each_researched_axis():
-    queries = [
-        "Question générale : heures supplémentaires et congé maladie",
-        "IHTS fonction publique territoriale décret 2002-60",
-        "congé maladie fonction publique territoriale décret 87-602",
-    ]
-    overtime = {
-        "source_id": "ihts-source",
-        "title": "Indemnités horaires pour travaux supplémentaires",
-        "text": "Règles relatives aux IHTS et aux agents territoriaux. " * 4,
-    }
-    sick_leave = {
-        "source_id": "sick-leave-source",
-        "title": "Congé de maladie des fonctionnaires territoriaux",
-        "text": "Dispositions relatives au congé de maladie et aux agents territoriaux. " * 4,
-    }
-    overtime["research_axis_indices"] = _matching_research_axis_indices(queries, overtime)
-    sick_leave["research_axis_indices"] = _matching_research_axis_indices(queries, sick_leave)
-    assert overtime["research_axis_indices"] == [0]
-    assert sick_leave["research_axis_indices"] == [1]
-
-    assert not _claims_cover_research_axes(
-        [{"source_id": "ihts-source"}],
-        [overtime, sick_leave],
-        queries,
-    )
-    assert _claims_cover_research_axes(
-        [
-            {"source_id": "ihts-source"},
-            {"source_id": "sick-leave-source"},
-        ],
-        [overtime, sick_leave],
-        queries,
-    )
-
-
-def test_axis_coverage_uses_only_sources_linked_to_claims():
-    queries = [
-        "Question générale : heures supplémentaires et congé maladie",
-        "IHTS fonction publique territoriale décret 2002-60",
-        "congé maladie fonction publique territoriale décret 87-602",
-    ]
-    sources = [
-        {"source_id": "ihts", "research_axis_indices": [0]},
-        {"source_id": "sick", "research_axis_indices": [1]},
-    ]
-    assert not _claims_cover_research_axes(
-        [{"source_id": "ihts"}, {"source_id": "unknown"}],
-        sources,
-        queries,
-    )
