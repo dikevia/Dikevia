@@ -285,3 +285,9 @@ def test_trainee_evaluation_question_searches_its_specific_fpt_status_regime():
     assert any("décret 2014-1526" in item for item in queries)
     assert any("décret 92-1194" in item for item in queries)
 
+def test_contractual_evaluation_question_searches_the_contractual_fpt_regime():
+    question = "Je suis contractuel et je veux contester mon évaluation annuelle."
+    queries = build_official_search_queries(question)
+    assert any("décret 88-145" in item for item in queries)
+    assert any("décret 2014-1526" in item for item in queries)
+
