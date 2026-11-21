@@ -168,6 +168,9 @@ def test_cgfp_concept_router_covers_major_fpt_code_subjects():
     from app.cgfp_relevance import _matching_topics
 
     cases = [
+        ("Mon agent de maîtrise m'a fait une évaluation annuelle à charge, puis-je la contester ?",
+         "carriere_avancement_evaluation"),
+    cases = [
         ("Mon supérieur m'impose le secret professionnel.", "droits_obligations_deontologie"),
         ("Comment se passe ma titularisation après le stage ?", "recrutement_stage_titularisation"),
         ("Ma collectivité refuse ma promotion interne.", "carriere_avancement_evaluation"),
