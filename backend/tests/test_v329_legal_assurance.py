@@ -40,3 +40,29 @@ def test_compliance_review_consumes_ai_result_and_records_all_provider_outcomes(
     assert "record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)" in main
     assert '"outcome": "PROVIDER_ERROR"' in main
     assert 'usage["outcome"] = "REJECTED_UNGROUNDED"' in main
+
+
+
+def test_decision_after_facts_is_interpretive_context_not_proof_of_historical_rule():
+    result = classify_legal_source({
+        "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+        "temporal_status": "DECISION_POSTERIOR_TO_FACTS",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+    })
+    assert result["source_family"] == "ADMIN_CASELAW"
+    assert result["usable_for_conclusion"] is False
+    assert result["usable_for_facts_date_conclusion"] is False
+    assert result["usable_for_interpretation"] is True
+    assert "pas comme preuve autonome" in result["temporal_limit"]
+
+
+def test_case_law_available_by_facts_date_can_still_be_considered_for_conclusion():
+    result = classify_legal_source({
+        "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+        "temporal_status": "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+        "content_kind": "FULL_TEXT",
+    })
+    assert result["usable_for_conclusion"] is True
+    assert result["usable_for_facts_date_conclusion"] is True
+    assert result["usable_for_interpretation"] is True
