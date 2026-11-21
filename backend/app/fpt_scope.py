@@ -16,6 +16,7 @@ _FPT_MARKERS = (
     "fonction publique territoriale",
     "fonctionnaires territoriaux",
     "agents territoriaux",
+    "agents publics territoriaux",
     "collectivites territoriales",
     "collectivite territoriale",
     "centre national de la fonction publique territoriale",
@@ -212,11 +213,21 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
         }
 
     general_hits = [marker for marker in _GENERAL_MARKERS if _fold(marker) in corpus]
-    if general_hits:
+    if len(general_hits) >= 2:
         return {
             "scope": "GENERAL_PUBLIC_SERVICE",
             "evidence": general_hits[:3],
+            # May be supplied to the model as context, but never as proof
+            # of FPT applicability or as direct support for a legal claim.
+            "analysis_eligible": True,
+            "claim_eligible": False,
+        }
+    if general_hits:
+        return {
+            "scope": "GENERAL_PUBLIC_SERVICE",
+            "evidence": general_hits[:2],
             "analysis_eligible": False,
+            "claim_eligible": False,
         }
     return {
         # Do not let an unclassified document enter the AI evidence set.
