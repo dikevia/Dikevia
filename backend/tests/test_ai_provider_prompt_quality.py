@@ -128,3 +128,10 @@ def test_prompt_requires_each_claim_to_be_bound_to_an_exact_research_axis():
     assert '"axis": "valeur exacte d\'un axe de axes_recherche_documentaire"' in SYSTEM_PROMPT
     assert '"uncovered_axes": []' in SYSTEM_PROMPT
     assert "Aucun axe ne doit être omis" in SYSTEM_PROMPT
+
+
+
+def test_entailment_prompt_checks_that_a_claim_answers_its_assigned_axis():
+    from app.ai_provider import ENTAILMENT_SYSTEM_PROMPT
+
+    assert "répond réellement à l'axe de recherche indiqué" in ENTAILMENT_SYSTEM_PROMPT
