@@ -167,3 +167,19 @@ def test_compound_question_keeps_union_rights_and_overtime_as_separate_issues():
     assert "droit syndical" in queries[1]
     assert "IHTS" in queries[2]
     assert "décret 2002-60" in queries[2]
+
+def test_staffing_shortage_searches_health_safety_and_work_conditions():
+    question = "Ma direction ne renforce pas des équipes en manque de personnel."
+    queries = build_official_search_queries(question)
+    assert len(queries) == 3
+    assert "sante securite" in queries[1]
+    assert "decret 85-603" in queries[1]
+    assert "charge de travail" in queries[2]
+
+
+def test_titular_termination_searches_radiation_and_cessation_of_functions():
+    question = "Je suis titulaire, ma collectivité peut-elle me virer ?"
+    queries = build_official_search_queries(question)
+    assert len(queries) == 3
+    assert "radiation des cadres" in queries[1]
+    assert "insuffisance professionnelle" in queries[2]
