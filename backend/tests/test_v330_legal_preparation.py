@@ -146,8 +146,11 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
     async def no_code_articles(*args, **kwargs):
         return []
 
+    searched_dates = []
+    monkeypatch.setattr(module, "_france_today", lambda: date(2026, 11, 21))
+
     async def regulatory_texts(query, effective_date, limit=5):
-        assert str(effective_date) == "2024-06-01"
+        searched_dates.append(effective_date)
         assert limit == 3
         return [{
             "source_type": "LEGIFRANCE_LODA",
@@ -181,6 +184,8 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
                    question="Quelles règles encadrent les agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
+    assert date(2024, 6, 1) in searched_dates
+    assert date(2026, 11, 21) in searched_dates
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
     assert response.answer.startswith("Le décret n° 2024-100")
     assert "Voici ce que les textes permettent de comprendre" not in response.answer
@@ -197,15 +202,23 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
     import app.orchestrator as module
 
     _enable_legifrance(monkeypatch, module)
-    seen = []
+    seen = {"code": [], "regulatory": [], "case_law": []}
 
-    async def capture_query(query, *args, **kwargs):
-        seen.append(query)
+    async def capture_code(query, *args, **kwargs):
+        seen["code"].append(query)
         return []
 
-    monkeypatch.setattr(module.legifrance, "search_code_articles", capture_query)
-    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", capture_query)
-    monkeypatch.setattr(module.case_law_connector, "search", capture_query)
+    async def capture_regulatory(query, *args, **kwargs):
+        seen["regulatory"].append(query)
+        return []
+
+    async def capture_case_law(query, *args, **kwargs):
+        seen["case_law"].append(query)
+        return []
+
+    monkeypatch.setattr(module.legifrance, "search_code_articles", capture_code)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", capture_regulatory)
+    monkeypatch.setattr(module.case_law_connector, "search", capture_case_law)
 
     current_question = "Question actuelle sur le temps de travail. " * 20
     history = [{"role": "user", "content": "Ancienne question sans rapport. " * 50}]
@@ -215,11 +228,12 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
         conversation_history=history,
     )
 
-    assert len(seen) == 3
-    assert all(len(query) <= 500 for query in seen)
-    assert all(query.startswith(current_question.strip()[:250]) for query in seen)
-    assert all("Ancienne question sans rapport" not in query for query in seen)
-    assert all("décret 2001-623" in query for query in seen)
+    assert all(len(seen[pillar]) == 3 for pillar in ("code", "regulatory", "case_law"))
+    all_queries = [query for pillar in seen.values() for query in pillar]
+    assert all(len(query) <= 500 for query in all_queries)
+    assert all(query.startswith(current_question.strip()[:250]) for query in all_queries)
+    assert all("Ancienne question sans rapport" not in query for query in all_queries)
+    assert all("décret 2001-623" in query for query in all_queries)
 
 
 
@@ -245,7 +259,8 @@ async def test_ai_is_not_called_when_only_unverified_cgfp_snapshot_is_available(
     )
     assert called is False
     assert response.verification_status == "NON_VERIFIE"
-    assert response.answer.startswith("Les textes officiels actuels ne me permettent pas de répondre avec certitude")
+    assert "ne permettent pas de répondre avec certitude" in response.answer
+    assert "Aucune conclusion juridique" in response.answer
 
 
 
@@ -434,6 +449,7 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
         "excerpt": "Extrait validé de la délibération.",
         "text": "Extrait validé de la délibération.",
         "citation_integrity": {"valid": True},
+        "version_endpoint": "START",
     }
 
     async def local_search(*args, **kwargs):
@@ -652,11 +668,16 @@ async def test_current_date_repere_sources_are_not_labelled_applicable_without_f
         AskRequest(employer="NATIONAL", question="Quels textes encadrent les agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert all(
-        source.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
-        for source in response.sources
+    official_sources = [
+        source for source in response.sources
         if source.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}
-    )
+    ]
+    assert official_sources
+    assert all(source.get("temporal_status") == "VERSION_RETRIEVED_AT_REQUESTED_DATE"
+               for source in official_sources)
+    assert all(source.get("version_role") == "CURRENT_LAW_VERSION"
+               and source.get("general_info_eligible") is True
+               for source in official_sources)
 
 
 @pytest.mark.asyncio
