@@ -1319,7 +1319,7 @@ class LegalOrchestrator:
                                 and s.get("validation_status") in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}
                             )
                         )
-                        and s.get("ihts_relevant") is not False
+                        and s.get("research_axis_relevant", True) is not False
                         and _source_allowed_for_period_analysis(
                             s, bool(period_version_comparison), period_start,
                             comparison_end_date,
