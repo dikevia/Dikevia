@@ -207,3 +207,53 @@ def test_unfamiliar_plain_language_question_is_not_searched_as_private_sector_la
     assert "fonction publique territoriale" in query
     assert "agent territorial" in query
     assert "code du travail" not in query
+
+def test_harassment_questions_build_distinct_fpt_and_case_law_search_axes():
+    queries = build_official_search_queries("Je subis un harcèlement moral au travail.")
+    assert len(queries) == 3
+    assert "harcèlement moral" in queries[1]
+    assert "agent public territorial" in queries[1]
+    assert "jurisprudence administrative" in queries[2]
+    assert all("fonction publique territoriale" in query or "territorial" in query for query in queries)
+
+
+def test_functional_protection_question_builds_fpt_specific_axes():
+    queries = build_official_search_queries("Ma collectivité refuse ma demande de protection fonctionnelle.")
+    assert len(queries) == 3
+    assert "protection fonctionnelle" in queries[1]
+    assert "agent territorial" in queries[1]
+    assert "Conseil d'État" in queries[2]
+
+
+def test_disciplinary_question_builds_specific_fpt_research_axes():
+    queries = build_official_search_queries("Je conteste une sanction disciplinaire.")
+    assert len(queries) == 3
+    assert "discipline fonction publique territoriale" in queries[1]
+    assert "décret 89-677" in queries[2]
+
+
+def test_citis_question_builds_specific_territorial_research_axes():
+    queries = build_official_search_queries("Ma demande de CITIS après un accident de service est refusée.")
+    assert len(queries) == 3
+    assert "CITIS agent territorial" in queries[1]
+    assert "décret 87-602" in queries[1]
+    assert "imputabilité au service" in queries[2]
+
+
+def test_remuneration_question_builds_fpt_and_local_deliberation_axes():
+    queries = build_official_search_queries("Ma collectivité refuse de verser mon IFSE.")
+    assert len(queries) == 3
+    assert "régime indemnitaire" in queries[1]
+    assert "délibération locale" in queries[1]
+    assert "décret 91-875" in queries[2]
+
+
+def test_compound_union_and_disciplinary_question_keeps_both_topics():
+    queries = build_official_search_queries(
+        "Mon ASA syndicale est refusée et je fais aussi l'objet d'une sanction disciplinaire."
+    )
+    assert len(queries) == 3
+    assert "droit syndical" in queries[1]
+    assert "discipline fonction publique territoriale" in queries[2]
+    assert all(len(query) <= 500 for query in queries)
+
