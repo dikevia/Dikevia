@@ -19,6 +19,7 @@ class CIGPublicResource:
     themes: tuple[str, ...]
     territorial_scope: str
     source_role: str
+    publication_date: str | None = None
     content_status: str = "METADATA_ONLY"
 
 
@@ -35,11 +36,12 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
     CIGPublicResource(
         "CIG_SVP_RIGHTS_UNION_ORGANIZATION",
         "Les modalités d’exercice du droit syndical dans le cadre de la création d’une organisation syndicale",
-        "https://www.cig929394.fr/je-souhaite-acceder-aux-publications-et-ressources-du-cig/?a=1&categorie=&date=&f=1&recherche=statutaire",
-        "PDF publication listed in public catalogue",
+        "https://www.cig929394.fr/publications/les-modalites-dexercice-du-droit-syndical-dans-le-cadre-de-la-creation-dune-organisation-syndicale/",
+        "PDF publication landing page",
         ("droits_syndicaux", "liberte_syndicale", "organisation_syndicale"),
         "FPT general information; verify territorial and temporal applicability",
         "EDITORIAL_LEGAL_ANALYSIS",
+        publication_date="2026-10-16",
     ),
     CIGPublicResource(
         "CIG_INFOGRAPHIC_CUMUL_ACTIVITES",
@@ -67,6 +69,7 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
         ("emplois_fonctionnels", "recrutement", "direction"),
         "FPT; special statutory regime for functional posts",
         "PRACTICAL_GUIDANCE",
+        publication_date="2026-02-25",
     ),
     CIGPublicResource(
         "CIG_SVP_FIA_TITULARISATION",
@@ -76,6 +79,7 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
         ("police_municipale", "stage", "titularisation", "aptitude_professionnelle"),
         "Specific to municipal police officers; never generalize to all territorial agents",
         "EDITORIAL_LEGAL_ANALYSIS",
+        publication_date="2026-10-20",
     ),
     CIGPublicResource(
         "CIG_SVP_CRIMINAL_RECORD_RECRUITMENT",
@@ -85,6 +89,7 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
         ("recrutement", "conditions_acces_emploi_public", "casier_judiciaire"),
         "FPT recruitment context; verify the applicable legal conditions",
         "EDITORIAL_LEGAL_ANALYSIS",
+        publication_date="2026-10-20",
     ),
     CIGPublicResource(
         "CIG_SVP_ASTREINTES_LOGEMENT",
@@ -94,6 +99,7 @@ CIG_PUBLIC_RESOURCES: tuple[CIGPublicResource, ...] = (
         ("astreintes", "logement_fonction", "heures_supplementaires", "IHTS"),
         "Specific to the stated category and housing arrangements",
         "EDITORIAL_LEGAL_ANALYSIS",
+        publication_date="2026-10-20",
     ),
     CIGPublicResource(
         "CIG_SVP_PUBLIC_RESPONSES",
@@ -147,6 +153,7 @@ def public_resource_metadata(resource_id: str) -> dict[str, object] | None:
         "themes": list(item.themes),
         "territorial_scope": item.territorial_scope,
         "source_role": item.source_role,
+        "publication_date": item.publication_date,
         "content_status": item.content_status,
         "legal_weight": "NON_BINDING_EDITORIAL_OR_PRACTICAL_RESOURCE",
         "publisher": "CIG Petite Couronne",
