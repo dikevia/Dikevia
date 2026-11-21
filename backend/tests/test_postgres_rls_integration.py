@@ -298,7 +298,7 @@ async def _run_administrative_case_law_search_sql_scenario():
     full_text = "\\n".join(paragraphs)
     admin = await asyncpg.connect(ADMIN_URL)
     try:
-        await upsert_legal_document(admin, {
+        item = {
             "source_type": "OTHER_OFFICIAL",
             "source_id": source_id,
             "title": "Décision administrative de test — agent territorial et temps de travail",
@@ -314,12 +314,30 @@ async def _run_administrative_case_law_search_sql_scenario():
                 "source_license": "Licence Ouverte version 2.0",
                 "publication_code": "C",
                 "source_xml_sha256": "a" * 64,
+                "solution": "Décision de test",
             },
             "full_text": full_text,
             "version_key": version_key,
             "version_status": "UNKNOWN",
             "raw_version_payload": {"integration_test": True},
-        })
+        }
+        # Importing the same official decision twice must update the same
+        # document/version and replace, not duplicate, its indexed chunks.
+        await upsert_legal_document(admin, item)
+        await upsert_legal_document(admin, item)
+        persisted = await admin.fetchrow("""
+            SELECT count(DISTINCT d.id) AS documents,
+                   count(DISTINCT v.id) AS versions,
+                   count(c.id) AS chunks
+            FROM legal_documents d
+            LEFT JOIN legal_document_versions v ON v.document_id=d.id
+            LEFT JOIN legal_chunks c ON c.version_id=v.id
+            WHERE d.source_type='OTHER_OFFICIAL' AND d.source_id=$1
+        """, source_id)
+        from app.legal_corpus import split_text
+        assert persisted["documents"] == 1
+        assert persisted["versions"] == 1
+        assert persisted["chunks"] == len(split_text(full_text))
 
         results = await search_legal_corpus(
             admin, "agent territorial temps de travail", date(2026, 11, 21), limit=6,
