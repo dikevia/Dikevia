@@ -305,7 +305,9 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
             continue
         if source.get("content_kind") == "METADATA":
             continue
-        if source.get("reference_role") == "BASELINE_CONTEXT_ONLY":
+        if source.get("reference_role") in {
+            "BASELINE_CONTEXT_ONLY", "INTERPRETIVE_CONTEXT_ONLY",
+        }:
             continue
         if (
             source.get("analysis_eligible") is False
