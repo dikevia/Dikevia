@@ -61,3 +61,11 @@ def test_titular_asking_if_the_collectivity_can_fire_them_is_qualified():
     result = qualify_legal_question("Je suis titulaire, ma collectivité peut-elle me virer ?")
     assert result["topic"] == "TERMINATION_OF_TITULAR"
     assert result["agent_status"] == "TITULAIRE_EXPLICIT"
+
+
+
+def test_everyday_understaffing_and_termination_phrasing_is_understood():
+    staffing = qualify_legal_question("Dans mon service on n'est pas assez nombreux.")
+    termination = qualify_legal_question("Ma collectivité veut me mettre dehors.")
+    assert staffing["topic"] == "STAFFING_AND_WORK_CONDITIONS"
+    assert termination["topic"] == "TERMINATION_OF_TITULAR"
