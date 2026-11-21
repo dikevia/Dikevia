@@ -457,13 +457,18 @@ class LegalOrchestrator:
                         continue
                     current = merged.get(article)
                     candidate = dict(hit)
-                    if current is None or float(candidate.get("score") or 0) > float(current.get("score") or 0):
+                    if current is None:
+                        merged[article] = candidate
+                        continue
+                    combined_concepts = list(dict.fromkeys([
+                        *(current.get("matched_concepts") or []),
+                        *(candidate.get("matched_concepts") or []),
+                    ]))[:8]
+                    if float(candidate.get("score") or 0) > float(current.get("score") or 0):
+                        candidate["matched_concepts"] = combined_concepts
                         merged[article] = candidate
                     else:
-                        current["matched_concepts"] = list(dict.fromkeys([
-                            *(current.get("matched_concepts") or []),
-                            *(candidate.get("matched_concepts") or []),
-                        ]))[:8]
+                        current["matched_concepts"] = combined_concepts
             ranked = sorted(
                 merged.values(),
                 key=lambda item: (-float(item.get("score") or 0), str(item.get("article") or "")),
