@@ -25,6 +25,10 @@ FPT_RETRIEVAL_CASES = [
         ("discipline fonction publique territoriale", "droits défense"),
     ),
     (
+        "Mon agent de maîtrise m'as fait une évaluation annuelle à charge, puis-je la contester ?",
+        ("CGFP L521-1 L521-3 L521-5", "décret 2014-1526"),
+    ),
+    (
         "Mon ASA syndicale est refusée.",
         ("CGFP livre II", "droit syndical"),
     ),
