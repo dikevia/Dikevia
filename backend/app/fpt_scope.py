@@ -271,7 +271,11 @@ _TOPIC_FAMILIES = {
     "STAFFING_AND_WORK_CONDITIONS": (
         "manque de personnel", "sous effectif", "effectifs insuffisants",
         "charge de travail", "conditions de travail", "risques psychosociaux",
-        "risques professionnels", "prevention des risques", "sante et securite",
+        "risques professionnels", "prevention des risques", "evaluation des risques",
+        "sante et securite", "hygiene et securite", "conditions d hygiene et de securite",
+        "protection de la sante physique et mentale", "medecine preventive",
+        "service de medecine preventive", "assistant de prevention",
+        "conseiller de prevention", "danger grave et imminent",
         "document unique", "formation specialisee", "comite social territorial",
     ),
     "UNION_RIGHTS": (
