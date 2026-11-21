@@ -560,18 +560,6 @@ def _is_contractual_evaluation_question(question: str) -> bool:
     return has_evaluation and has_contractual_status
 
 
-def _has_independent_career_issue(question: str) -> bool:
-    folded = _fold(str(question or ""))
-    return any(
-        _contains_trigger(folded, marker)
-        for marker in (
-            "avancement d echelon", "avancement de grade", "promotion interne",
-            "reprise anciennete", "refus de titularisation", "titularisation",
-            "modifier mes missions", "changement de missions",
-        )
-    )
-
-
 def build_official_search_queries(question: str, max_queries: int = 6) -> list[str]:
     """Build a small set of distinct, topic-focused legal retrieval queries.
 
