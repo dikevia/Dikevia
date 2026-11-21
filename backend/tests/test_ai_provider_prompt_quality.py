@@ -104,6 +104,16 @@ def test_prompt_requires_coverage_of_each_retrieval_axis():
     assert "n'en omets aucun silencieusement" in SYSTEM_PROMPT
     assert "indique explicitement qu'aucune source suffisamment pertinente n'a été retrouvée" in SYSTEM_PROMPT
 
+def test_prompt_distinguishes_current_general_information_from_undated_personal_cases():
+    assert "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
+    assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
+    assert "réponds à la question générale à partir des règles actuelles documentées" in SYSTEM_PROMPT
+    assert "utilise les faits personnels uniquement pour identifier les textes à rechercher" in SYSTEM_PROMPT
+    assert "sans qualifier la situation individuelle" in SYSTEM_PROMPT
+    assert "Ne bloque pas la recherche au seul motif que la date des faits manque" in SYSTEM_PROMPT
+    assert "une vérification historique sera nécessaire uniquement si la date peut modifier les dispositions applicables" in SYSTEM_PROMPT
+    assert "Ne demande pas automatiquement la date des faits" in SYSTEM_PROMPT
+
 def test_prompt_never_assumes_generic_public_service_sources_apply_to_fpt():
     assert "GENERAL_PUBLIC_SERVICE" in SYSTEM_PROMPT
     assert "simple contexte de recherche" in SYSTEM_PROMPT
