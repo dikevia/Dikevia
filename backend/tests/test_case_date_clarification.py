@@ -91,6 +91,12 @@ def test_employer_refusal_of_the_users_own_request_is_personal():
         "Ma collectivité a refusé ma demande de protection fonctionnelle."
     ) == "PERSONAL_CASE"
     assert classify_question_intent(
+        "Ma collectivité refuse ma demande de protection fonctionnelle."
+    ) == "PERSONAL_CASE"
+    assert classify_question_intent(
+        "Mon employeur refuse de me payer mes heures supplémentaires."
+    ) == "PERSONAL_CASE"
+    assert classify_question_intent(
         "Mon employeur a rejeté ma demande de temps partiel."
     ) == "PERSONAL_CASE"
     assert classify_question_intent(
