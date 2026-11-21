@@ -519,8 +519,17 @@ class LegalOrchestrator:
         if isinstance(found, dict):
             for hit in found.get("results", []):
                 article_ref = re.sub(r"\s+", "", str(hit.get("article") or "")).upper()
+                article_document = get_cgfp_article(article_ref) if re.fullmatch(
+                    r"[LDR]\d+(?:-\d+)*", article_ref
+                ) else None
+                article_scope = classify_public_service_scope({
+                    "title": f"Code général de la fonction publique — article {article_ref}",
+                    "text": (article_document or {}).get("text") or hit.get("excerpt") or "",
+                    "document_kind": "CODE",
+                }) if article_document or hit.get("excerpt") else {"analysis_eligible": False}
                 if (
-                    re.fullmatch(r"[LDR]\d+(?:-\d+)*", article_ref)
+                    article_document
+                    and article_scope.get("analysis_eligible") is True
                     and (hit.get("matched_concepts")
                          or hit.get("relevance_label") == "Correspondance lexicale à confirmer")
                 ):
