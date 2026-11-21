@@ -66,7 +66,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "review_priority": rank,
         "temporal_or_validation_status": status,
         "usable_for_conclusion": usable and not post_facts_decision,
-        "usable_for_interpretation": usable and kind == "ADMIN_CASELAW",
+        "usable_for_interpretation": (usable or post_facts_decision) and kind == "ADMIN_CASELAW",
         "usable_for_facts_date_conclusion": usable and not post_facts_decision,
         "temporal_limit": (
             "Décision postérieure aux faits : utilisable comme éclairage interprétatif, "
@@ -288,7 +288,6 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
         "VERSION_RETRIEVED_AT_REQUESTED_DATE",
         "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
-        "DECISION_POSTERIOR_TO_FACTS",
         "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
         "VERIFIED_APPLICABLE",
     }
