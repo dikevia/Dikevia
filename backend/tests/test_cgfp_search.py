@@ -178,6 +178,7 @@ def test_cgfp_concept_router_covers_major_fpt_code_subjects():
         ("Mon employeur peut-il m'interdire de faire grève ?", "greve_dialogue_social_representativite"),
         ("Je souhaite démissionner de la fonction publique territoriale.", "cessation_fonctions_retraite"),
         ("Je subis une discrimination au travail.", "egalite_discrimination"),
+        ("Mon ASA syndicale est refusée.", "droits_syndicaux_dialogue_social"),
     ]
     for question, expected_topic in cases:
         assert expected_topic in {topic["key"] for topic in _matching_topics(question)}
