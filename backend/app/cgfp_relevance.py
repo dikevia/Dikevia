@@ -426,6 +426,30 @@ _TOPICS: tuple[dict[str, Any], ...] = (
         "boosts": {"discrimination": 12.0, "egalite professionnelle": 10.0, "handicap": 8.0},
         "exclude_unless_anchor": (),
     },
+    {
+        "key": "droits_syndicaux_dialogue_social",
+        "triggers": (
+            "droit syndical", "droits syndicaux", "liberte syndicale",
+            "asa syndicale", "autorisation speciale d absence syndicale",
+            "decharge syndicale", "decharge d activite de service",
+            "credit de temps syndical", "local syndical", "locaux syndicaux",
+            "reunion d information syndicale", "formation syndicale",
+            "representant syndical", "representants du personnel",
+        ),
+        "expansion": (
+            "CGFP livre II droit syndical fonction publique territoriale liberté syndicale "
+            "autorisations spéciales absence décharges activité service crédit temps syndical "
+            "locaux syndicaux réunions information formation organisations syndicales dialogue social"
+        ),
+        "anchors": (
+            "droit syndical", "liberte syndicale", "autorisation speciale d absence",
+            "decharge d activite de service", "credit de temps syndical",
+            "local syndical", "reunion d information syndicale",
+            "formation syndicale", "representant syndical",
+        ),
+        "boosts": {"droit syndical": 14.0, "liberte syndicale": 12.0, "decharge d activite de service": 10.0},
+        "exclude_unless_anchor": (),
+    },
 )
 
 
