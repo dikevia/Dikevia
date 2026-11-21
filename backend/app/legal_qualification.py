@@ -88,7 +88,7 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
         ("OUT_OF_SCOPE_FPE", (
             "fonction publique de l etat", "fonction publique d etat",
             "agent de l etat", "agents de l etat", "fonctionnaire d etat",
-            "fonctionnaires d etat", "ministere",
+            "fonctionnaires d etat", "fonctionnaire de l etat", "fonctionnaires de l etat", "ministere",
         )),
         ("OUT_OF_SCOPE_FPH", (
             "fonction publique hospitaliere", "agent hospitalier",
