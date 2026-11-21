@@ -260,9 +260,13 @@ _TOPIC_FAMILIES = {
         "agissement sexiste",
     ),
     "TERMINATION_OF_TITULAR": (
-        "licenciement", "radiation des cadres", "perte de la qualite de fonctionnaire",
-        "cessation definitive de fonctions", "insuffisance professionnelle",
-        "abandon de poste", "suppression d emploi", "fonctionnaire titulaire",
+        # Query-side expressions must classify the question too; keep generic
+        # "titulaire" out of this family because it also appears in unrelated
+        # CST provisions (e.g. titular members and substitutes).
+        "me virer", "peut me virer", "licenciement", "radiation des cadres",
+        "perte de la qualite de fonctionnaire", "cessation definitive de fonctions",
+        "insuffisance professionnelle", "abandon de poste", "suppression d emploi",
+        "fonctionnaire titulaire",
     ),
     "STAFFING_AND_WORK_CONDITIONS": (
         "manque de personnel", "sous effectif", "effectifs insuffisants",
