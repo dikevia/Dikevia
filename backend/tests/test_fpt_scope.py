@@ -10,12 +10,24 @@ def test_explicit_fpt_source_is_eligible():
     assert result["analysis_eligible"] is True
 
 
-def test_genuinely_general_public_service_source_is_eligible():
+def test_generic_public_service_wording_is_context_only_without_fpt_proof():
     result = classify_public_service_scope({
         "title": "Code général de la fonction publique",
         "text": "Le présent texte concerne les agents publics et les fonctionnaires.",
     })
     assert result["scope"] == "GENERAL_PUBLIC_SERVICE"
+    assert result["analysis_eligible"] is False
+
+
+def test_explicit_three_branch_scope_is_eligible_for_fpt_analysis():
+    result = classify_public_service_scope({
+        "title": "Dispositions communes aux trois versants",
+        "text": (
+            "Les règles concernent les trois versants de la fonction publique : "
+            "la fonction publique de l'État, territoriale et hospitalière."
+        ),
+    })
+    assert result["scope"] == "COMMON_PUBLIC_SERVICE"
     assert result["analysis_eligible"] is True
 
 
