@@ -214,3 +214,21 @@ def test_cgfp_discovery_only_promotes_articles_with_fpt_or_common_scope(monkeypa
         "text": "Le présent article concerne les agents publics et les fonctionnaires."
     })
     assert module._cgfp_article_discovery_queries(found) == ["article L123-4"]
+
+
+
+def test_cgfp_fallback_never_uses_an_fpe_only_article(monkeypatch):
+    import app.orchestrator as module
+
+    monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
+        "text": "Les fonctionnaires de l'État et les administrations centrales."
+    })
+    found = {"results": [{
+        "article": "L999-1",
+        "excerpt": "Protection fonctionnelle",
+    }]}
+    assert not module.should_use_cgfp_snapshot_fallback(
+        "La recherche officielle CGFP a échoué.",
+        found,
+        "Mon employeur refuse ma protection fonctionnelle.",
+    )
