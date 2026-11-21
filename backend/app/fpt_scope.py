@@ -350,7 +350,8 @@ _TOPIC_FAMILIES = {
     "UNION_RIGHTS": (
         "droit syndical", "autorisation speciale d absence syndicale",
         "decharge d activite de service", "heures de delegation",
-        "local syndical",
+        "local syndical", "activite syndicale",
+        "suivi des agents a activite syndicale",
     ),
     "CST": (
         "comite social territorial", "formation specialisee",
