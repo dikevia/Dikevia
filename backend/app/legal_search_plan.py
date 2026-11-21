@@ -99,10 +99,12 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("temps de travail", "duree du travail", "annualisation", "astreinte",
-         "temps partiel", "cycle de travail", "rtt", "compteur d heures",
-         "compteur d heures remis a zero"),
+         "temps partiel", "temps non complet", "cycle de travail", "rtt",
+         "compteur d heures", "compteur d heures remis a zero",
+         "heures effectuees au dela de mon horaire"),
         "temps de travail fonction publique territoriale décret 2001-623 "
         "décret 2000-815 cycle de travail annualisation astreintes repos décompte heures "
+        "temps partiel temps non complet heures complémentaires heures supplémentaires "
         "compteur temps de travail délibération locale",
     ),
     (
@@ -192,7 +194,7 @@ _TOPIC_EXPANSIONS = (
     (
         ("cumul d activites", "cumul d'activités", "activite independante",
          "activité indépendante", "cumuler deux emplois", "deux emplois publics",
-         "activite accessoire", "activité accessoire", "temps non complet"),
+         "activite accessoire", "activité accessoire"),
         "CGFP cumul activités fonctionnaires territoriaux décret 2020-69 "
         "activité accessoire création entreprise autorisation déclaration",
     ),
@@ -305,10 +307,11 @@ _TOPIC_RESEARCH_AXES = (
         ("temps de travail", "duree du travail", "annualisation", "astreinte",
          "temps partiel", "temps non complet", "cycle de travail", "rtt",
          "compteur d heures", "compteur d heures remis a zero",
-         "heures effectuees au dela de mon horaire"),
+         "heures effectuees au dela de mon horaire", "heures supplementaires",
+         "heure supplementaire", "heures sup", "ihts"),
         (
             "fonction publique territoriale décret 2001-623 durée annuelle temps de travail cycles délibération locale",
-            "FPT temps partiel temps non complet heures complémentaires heures supplémentaires seuils décompte décret 2001-623",
+            "FPT temps partiel temps non complet régime heures complémentaires heures supplémentaires seuils décompte décret 2001-623",
         ),
     ),
 
