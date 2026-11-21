@@ -152,3 +152,42 @@ def test_required_answer_axes_include_only_distinct_recognized_legal_topics():
     general = "Quels sont les droits des agents territoriaux ?"
     assert len(build_official_search_queries(general)) > 1
     assert build_official_research_axes(general) == []
+
+
+def test_annual_professional_evaluation_rejects_unrelated_evaluation_hits():
+    question = (
+        "Mon agent de maîtrise m'a fait une évaluation annuelle à charge, "
+        "puis-je la contester ?"
+    )
+    unrelated_sources = [
+        {
+            "title": "Entretien de suivi des agents à activité syndicale",
+            "text": "Évaluation et suivi de l'activité syndicale.",
+        },
+        {
+            "title": "Évaluation des emplois supérieurs ministériels",
+            "text": "Évaluation des emplois supérieurs dans les administrations ministérielles.",
+        },
+        {
+            "title": "Comité chargé de débattre des évaluations et politiques RH",
+            "text": "Débat sur les évaluations des politiques de ressources humaines.",
+        },
+        {
+            "title": "Évaluation des compétences en matière de recrutement",
+            "text": "Évaluation des compétences et procédure de recrutement.",
+        },
+    ]
+    for source in unrelated_sources:
+        assert is_topic_relevant_source(question, source) is False
+
+
+def test_annual_professional_evaluation_keeps_the_appraisal_report_rules():
+    question = "Je souhaite contester mon entretien professionnel annuel."
+    source = {
+        "title": "Décret n° 2014-1526 relatif à l'entretien professionnel",
+        "text": (
+            "L'entretien professionnel annuel des fonctionnaires territoriaux "
+            "donne lieu à un compte rendu et peut faire l'objet d'une demande de révision."
+        ),
+    }
+    assert is_topic_relevant_source(question, source) is True
