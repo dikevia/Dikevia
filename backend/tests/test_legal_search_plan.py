@@ -2,13 +2,14 @@ from app.legal_search_plan import build_official_search_query, build_official_se
 
 
 def test_annual_evaluation_contestation_targets_cgfp_and_territorial_implementing_decree():
-    question = "Mon agent de maîtrise m'a fait une évaluation annuelle à charge, puis-je la contester ?"
+    question = "Mon agent de maîtrise m'as fait une évaluation annuelle à charge, puis-je la contester ?"
     query = build_official_search_query(question)
     queries = build_official_search_queries(question)
     assert "L521-1" in query
     assert "L521-5" in query
     assert "décret 2014-1526" in query
-    assert any("articles 2 3 4 5 6 7" in item for item in queries)
+    assert any("CGFP L521-1 L521-3 L521-5" in item for item in queries)
+    assert any("décret 2014-1526 articles 2 3 4 5 6 7" in item for item in queries)
     assert any("révision" in item or "revision" in item for item in queries)
 
 
@@ -280,12 +281,3 @@ def test_compound_union_and_disciplinary_question_keeps_both_topics():
 
 
 
-
-def test_annual_evaluation_contestation_targets_cgfp_and_territorial_decree():
-    question = "Mon agent de maîtrise m'as fait une évaluation annuelle à charge puis-je la contester ?"
-    query = build_official_search_query(question)
-    axes = build_official_search_queries(question)
-    assert "CGFP articles L521-1 a L521-5" in query
-    assert "décret 2014-1526" in query
-    assert any("CGFP L521-1 L521-3 L521-5" in axis for axis in axes)
-    assert any("décret 2014-1526 articles 2 3 4 5 6 7" in axis for axis in axes)
