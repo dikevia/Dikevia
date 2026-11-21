@@ -208,3 +208,16 @@ def test_cgfp_index_snapshot_is_explicitly_a_dated_discovery_source():
         and item.get("page_end", 0) >= item.get("page_start", 0)
         for item in source["articles"]
     )
+
+
+def test_cgfp_live_article_discovery_keeps_up_to_six_relevant_subtopics(monkeypatch):
+    import app.orchestrator as orchestrator
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", lambda _ref: True)
+    found = {"results": [
+        {"article": f"L{number}", "matched_concepts": ["topic"]}
+        for number in range(1, 9)
+    ]}
+    assert orchestrator._cgfp_article_discovery_queries(found) == [
+        f"article L{number}" for number in range(1, 7)
+    ]
