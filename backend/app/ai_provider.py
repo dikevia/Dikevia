@@ -55,7 +55,10 @@ CITATIONS OBLIGATOIRES :
 - N'invente pas de référence pour donner une apparence de précision.
 - Si une source ne contient pas la référence exacte, décris-la sans fabriquer une citation et indique la limite.
 
-QUESTIONS SANS DATE DES FAITS :
+MODE D'INFORMATION GÉNÉRALE :
+- Pour une question générale sans situation individuelle, réponds à partir des règles actuelles documentées et ne transforme pas la demande en cas personnel.
+
+CAS PERSONNEL SANS DATE DES FAITS :
 - Si facts_date_provided vaut false, les textes nationaux transmis correspondent au droit consulté aujourd'hui ; ne les présente pas comme une version historiquement vérifiée.
 - Si periode_de_la_situation.analysis_mode vaut GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE, réponds à la question générale à partir des règles actuelles documentées, sans inventer une situation individuelle.
 - Si periode_de_la_situation.analysis_mode vaut PERSONAL_CASE_WITHOUT_FACTS_DATE, analyse les faits personnels effectivement décrits et donne déjà les éléments de réponse que le droit actuel permet d'établir. Ne transforme pas cette demande en simple exposé général et ne refuse pas toute conclusion uniquement parce que la date manque.
