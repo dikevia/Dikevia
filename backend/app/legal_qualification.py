@@ -69,15 +69,15 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
             topic = candidate
             break
 
-    if re.search(r"\\b(agent|agents|je suis)\\s+contractuel(le)?\\b|\\bcontractuel(le)?\\b", folded):
+    if re.search(r"\b(agent|agents|je suis)\s+contractuel(le)?\b|\bcontractuel(le)?\b", folded):
         status = "CONTRACTUEL_EXPLICIT"
-    elif re.search(r"\\b(stagiaire|fonctionnaire stagiaire)\\b", folded):
+    elif re.search(r"\b(stagiaire|fonctionnaire stagiaire)\b", folded):
         status = "STAGIAIRE_EXPLICIT"
-    elif re.search(r"\\b(titulaire|fonctionnaire titulaire)\\b", folded):
+    elif re.search(r"\b(titulaire|fonctionnaire titulaire)\b", folded):
         status = "TITULAIRE_EXPLICIT"
-    elif re.search(r"\\bfonctionnaire\\b", folded):
+    elif re.search(r"\bfonctionnaire\b", folded):
         status = "FONCTIONNAIRE_STATUS_UNSPECIFIED"
-    elif re.search(r"\\b(cdd|cdi)\\b", folded):
+    elif re.search(r"\b(cdd|cdi)\b", folded):
         # A CDD/CDI alone does not establish public-agent contractual status.
         status = "EMPLOYMENT_STATUS_AMBIGUOUS"
     else:
@@ -88,7 +88,7 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
         ("OUT_OF_SCOPE_FPE", (
             "fonction publique de l etat", "fonction publique d etat",
             "agent de l etat", "agents de l etat", "fonctionnaire d etat",
-            "fonctionnaires d etat", "fonctionnaire de l etat", "fonctionnaires de l etat", "ministere",
+            "fonctionnaires d etat", "fonctionnaire de l etat", "fonctionnaires de l etat",
         )),
         ("OUT_OF_SCOPE_FPH", (
             "fonction publique hospitaliere", "agent hospitalier",
