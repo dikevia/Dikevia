@@ -179,3 +179,14 @@ def test_followup_context_preserves_topic_and_updates_explicit_agent_status():
     result = qualify_legal_question(resolved)
     assert result["topic"] == "WORKING_TIME"
     assert result["agent_status"] == "CONTRACTUEL_EXPLICIT"
+
+
+
+def test_independent_question_starting_with_et_does_not_inherit_previous_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    question = "Et ensuite, quels sont les délais pour les congés annuels ?"
+    assert build_contextual_research_question(
+        question,
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    ) == question
