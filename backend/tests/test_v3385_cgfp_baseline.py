@@ -114,12 +114,12 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
         return [{
             "source_type": "LEGIFRANCE_LODA",
             "source_id": "LEGITEXT000000000001",
-            "title": "Décret officiel daté",
+            "title": "Décret relatif aux droits des agents territoriaux",
             "document_kind": "DECREE",
             "official_number": "2024-100",
             "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000001",
             "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
-            "full_text": "Texte officiel du décret relatif aux agents territoriaux. " * 20,
+            "full_text": ("Le décret relatif aux droits des agents territoriaux et à la fonction publique territoriale. " * 20),
         }]
 
     async def no_case_law(*args, **kwargs):
