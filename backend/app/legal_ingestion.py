@@ -94,7 +94,7 @@ def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) ->
     corpus = unicodedata.normalize("NFKD", f"{title} {body}".casefold())
     corpus = "".join(char for char in corpus if not unicodedata.combining(char))
     corpus = re.sub(r"[^a-z0-9]+", " ", corpus)
-    corpus = re.sub(r"\\s+", " ", corpus).strip()
+    corpus = re.sub(r"\s+", " ", corpus).strip()
 
     if scope.get("scope") in {
         "FPE", "FPH", "OUT_OF_SCOPE_EUROPEAN_LAW",
@@ -133,7 +133,7 @@ def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) ->
         "fonctionnaire territorial", "fonctionnaires territoriaux",
         "decret 88 145", "decret 87 602", "decret 89 677", "decret 91 298",
     )
-    has_local_employer = any(re.search(rf"\\b{re.escape(marker)}\\b", corpus) for marker in local_employers)
+    has_local_employer = any(re.search(rf"\b{re.escape(marker)}\b", corpus) for marker in local_employers)
     has_public_employment = any(marker in corpus for marker in public_employment)
     has_hr_subject = any(marker in corpus for marker in hr_subjects)
     has_fpt_specific = any(marker in corpus for marker in fpt_specific)
