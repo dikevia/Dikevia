@@ -412,7 +412,8 @@ class LegalOrchestrator:
         # questions never inherit unrelated topics or facts.
         is_followup = "\n" in contextual_question
         if is_followup and prior_user_questions:
-            if question_intent != "PERSONAL_CASE" and classify_question_intent(prior_user_questions[-1]) == "PERSONAL_CASE":
+            inherited_question = contextual_question.split("\n", 1)[1]
+            if question_intent != "PERSONAL_CASE" and classify_question_intent(inherited_question) == "PERSONAL_CASE":
                 question_intent = "PERSONAL_CASE"
                 temporal_context["question_intent"] = question_intent
                 temporal_context["analysis_mode"] = _analysis_mode(
