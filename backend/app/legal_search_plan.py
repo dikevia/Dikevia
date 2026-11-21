@@ -135,10 +135,16 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
         "",
     )
     if not expansion:
-        return original[:max_length]
+        # Dikévia is an FPT-only product: even an unfamiliar everyday question
+        # must be searched in the territorial legal framework, not as a generic
+        # employment query that can drift toward private-sector or FPE results.
+        expansion = (
+            "agent territorial fonction publique territoriale collectivité territoriale "
+            "autorité territoriale CGFP"
+        )
 
-    # Preserve the full question where possible; truncate only the appended
-    # legal vocabulary so the official connector's 500-character contract holds.
+    # Preserve the user's wording first; append only the FPT legal context
+    # within the official connector's 500-character query contract.
     prefix = original[: min(len(original), 250)]
     remaining = max(0, max_length - len(prefix) - 1)
     return (prefix + " " + expansion[:remaining]).strip()
@@ -250,6 +256,17 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     # is already present in the contextual question.
     if not matched_axes and re.search(r"\b(?:et\s+)?pour\s+les?\s+contractuels?\b", folded):
         matched_axes = [contract_axes]
+
+    # Unclassified everyday questions still receive independent FPT retrieval
+    # axes: one for the applicable statutory framework and one for territorial
+    # administrative case law. This improves recall without treating search
+    # terms as legal conclusions.
+    if not matched_axes:
+        topic = original.splitlines()[0][:180]
+        matched_axes = [(
+            f"fonction publique territoriale agent territorial CGFP autorité territoriale {topic}",
+            f"jurisprudence administrative agent territorial collectivité territoriale {topic}",
+        )]
 
     # For compound questions, first allocate one focused query to each
     # recognized topic. Only then spend remaining capacity on a second axis
