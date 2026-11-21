@@ -101,3 +101,40 @@ def test_explicit_territorial_contractual_status_remains_recognized():
 def test_mentioning_private_law_as_a_question_does_not_reclassify_the_agent():
     result = qualify_legal_question("Le Code du travail s'applique-t-il aux agents territoriaux ?")
     assert result["scope_status"] == "FPT_PRODUCT_SCOPE"
+
+
+def test_everyday_french_wording_routes_common_fpt_topics():
+    cases = (
+        ("On me refuse mes heures sup.", "WORKING_TIME"),
+        ("Je voudrais poser des congés, comment ça marche ?", "LEAVE"),
+        ("Mon chef me demande de venir le dimanche.", "WORKING_TIME"),
+        ("Je suis en arrêt maladie après un accident de service.", "SICK_LEAVE_AND_SERVICE_INJURY"),
+        ("La mairie refuse ma protection fonctionnelle.", "HARASSMENT_AND_PROTECTION"),
+        ("On me retire mes heures de décharge syndicale.", "UNION_RIGHTS"),
+    )
+    for question, expected_topic in cases:
+        assert qualify_legal_question(question)["topic"] == expected_topic
+
+
+def test_status_detection_is_independent_from_topic_and_handles_accents():
+    cases = (
+        ("Je suis fonctionnaire titulaire et on me sanctionne.", "DISCIPLINE", "TITULAIRE_EXPLICIT"),
+        ("Je suis stagiaire et mon congé maladie est refusé.", "SICK_LEAVE_AND_SERVICE_INJURY", "STAGIAIRE_EXPLICIT"),
+        ("Je suis agent contractuel, on ne me paie pas mes heures sup.", "WORKING_TIME", "CONTRACTUEL_EXPLICIT"),
+    )
+    for question, expected_topic, expected_status in cases:
+        result = qualify_legal_question(question)
+        assert result["topic"] == expected_topic
+        assert result["agent_status"] == expected_status
+
+
+def test_fpe_scope_detection_does_not_trigger_on_a_generic_ministry_mention():
+    result = qualify_legal_question(
+        "Ma collectivité échange avec le ministère sur les règles applicables aux agents territoriaux."
+    )
+    assert result["scope_status"] == "FPT_PRODUCT_SCOPE"
+
+
+def test_fpe_scope_detects_state_agent_wording_without_accents():
+    result = qualify_legal_question("Je suis fonctionnaire de l'Etat.")
+    assert result["scope_status"] == "OUT_OF_SCOPE_FPE"
