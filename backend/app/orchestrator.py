@@ -681,7 +681,7 @@ class LegalOrchestrator:
             else:
                 consultation_results = await asyncio.gather(
                     *(case_law_connector.consult(item["source_id"])
-                      for item in case_law_sources[:3] if item.get("source_id")),
+                      for item in case_law_sources[:min(6, len(research_queries))] if item.get("source_id")),
                     return_exceptions=True,
                 )
                 for result in consultation_results:
