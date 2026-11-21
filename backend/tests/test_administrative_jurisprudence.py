@@ -228,6 +228,16 @@ async def test_orchestrator_uses_only_consulted_cetat_full_text_when_feature_ena
 
     ai_sources = captured["sources"]
     assert any(
+        source.get("source_type") == "LEGIFRANCE_API"
+        and source.get("version_role") == "FACTS_DATE_VERSION"
+        for source in ai_sources
+    )
+    assert any(
+        source.get("source_type") == "LEGIFRANCE_API"
+        and source.get("version_role") == "CURRENT_LAW_VERSION"
+        for source in ai_sources
+    )
+    assert any(
         source.get("source_type") == "LEGIFRANCE_CETAT_FULL_TEXT"
         and source.get("source_id") == decision_id
         and source.get("content_kind") == "FULL_TEXT"
