@@ -80,3 +80,205 @@ def parse_circulaires_xml(xml_bytes: bytes) -> list[dict[str, Any]]:
             "full_text": text, "raw_metadata": {"xml_element": _local(node.tag),
                 "identifier": identifier, "import_method": "DILA_CIRCULAIRES_XML"}})
     return records
+
+
+def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) -> bool:
+    """Keep only administrative decisions genuinely connected to FPT employment.
+
+    A local authority being a party, or the generic phrase "collectivités
+    territoriales", is not enough: those terms also occur in urban-planning,
+    tax and public-procurement litigation.
+    """
+    import unicodedata
+
+    corpus = unicodedata.normalize("NFKD", f"{title} {body}".casefold())
+    corpus = "".join(char for char in corpus if not unicodedata.combining(char))
+    corpus = re.sub(r"[^a-z0-9]+", " ", corpus)
+    corpus = re.sub(r"\s+", " ", corpus).strip()
+
+    if scope.get("scope") in {
+        "FPE", "FPH", "OUT_OF_SCOPE_EUROPEAN_LAW",
+    }:
+        return False
+
+    local_employers = (
+        "commune", "mairie", "centre communal d action sociale",
+        "etablissement public de cooperation intercommunale", "epci",
+        "metropole", "departement", "region",
+    )
+    public_employment = (
+        "agent public", "agents publics", "agent territorial", "agents territoriaux",
+        "fonctionnaire territorial", "fonctionnaires territoriaux",
+        "fonction publique territoriale", "personnel communal", "personnels communaux",
+        "personnel territorial", "personnels territoriaux", "agent communal",
+        "agents communaux", "agent contractuel territorial",
+        "agents contractuels territoriaux", "agent contractuel de la commune",
+        "agent contractuel de la mairie", "agent de la commune",
+        "agent de la mairie", "fonctionnaire", "fonctionnaires",
+    )
+    hr_subjects = (
+        "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
+        "agissement sexiste", "agissements sexistes", "sanction disciplinaire",
+        "conseil de discipline", "temps de travail", "duree du travail",
+        "conge de maladie", "conge maladie", "accident de service",
+        "maladie professionnelle", "droit syndical", "droits syndicaux",
+        "decharge d activite de service", "autorisation speciale d absence",
+        "traitement indiciaire", "regime indemnitaire",
+        "detachement", "disponibilite", "retraite d office",
+        "carriere d un agent", "remuneration d un agent",
+        "service des ressources humaines", "direction des ressources humaines",
+    )
+    fpt_specific = (
+        "fonction publique territoriale", "agent territorial", "agents territoriaux",
+        "fonctionnaire territorial", "fonctionnaires territoriaux",
+        "decret 88 145", "decret 87 602", "decret 89 677", "decret 91 298",
+    )
+    has_local_employer = any(re.search(rf"\b{re.escape(marker)}\b", corpus) for marker in local_employers)
+    has_public_employment = any(marker in corpus for marker in public_employment)
+    has_hr_subject = any(marker in corpus for marker in hr_subjects)
+    has_fpt_specific = any(marker in corpus for marker in fpt_specific)
+
+    if has_local_employer and (has_public_employment or has_hr_subject):
+        return True
+    return bool(scope.get("analysis_eligible") and has_fpt_specific
+                and has_public_employment and has_hr_subject)
+
+
+def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> list[dict[str, Any]]:
+    """Import only dated, full-text decisions whose content is relevant to FPT.
+
+    The official portal publishes monthly ZIP archives, not an API. XML files are
+    parsed in-place (never extracted), with strict archive and XML resource limits.
+    """
+    import hashlib
+    import zipfile
+
+    from .fpt_scope import classify_public_service_scope
+
+    if not zip_bytes or len(zip_bytes) > 100 * 1024 * 1024:
+        raise ValueError("L'archive Open Data est vide ou dépasse 100 Mo.")
+    try:
+        archive = zipfile.ZipFile(__import__("io").BytesIO(zip_bytes))
+    except (zipfile.BadZipFile, OSError) as exc:
+        raise ValueError("L'archive Open Data n'est pas un ZIP valide.") from exc
+
+    with archive:
+        xml_entries = [
+            info for info in archive.infolist()
+            if not info.is_dir() and re.search(r"\.xml(?:_[a-z0-9]+)?$", info.filename.lower())
+        ]
+        if not xml_entries or len(xml_entries) > 5000:
+            raise ValueError("L'archive doit contenir entre 1 et 5 000 fichiers XML.")
+        total_size = sum(info.file_size for info in xml_entries)
+        if total_size > 500 * 1024 * 1024:
+            raise ValueError("Le volume XML décompressé dépasse 500 Mo.")
+        records: list[dict[str, Any]] = []
+        for info in xml_entries:
+            if info.flag_bits & 0x1 or info.file_size <= 0 or info.file_size > 15 * 1024 * 1024:
+                continue
+            if info.compress_size and info.file_size / info.compress_size > 200:
+                continue
+            try:
+                xml_bytes = archive.read(info)
+                if b"<!DOCTYPE" in xml_bytes.upper() or b"<!ENTITY" in xml_bytes.upper():
+                    continue
+                root = ET.fromstring(xml_bytes)
+            except (KeyError, OSError, EOFError, RuntimeError, NotImplementedError, zipfile.BadZipFile, ET.ParseError, DefusedXmlException):
+                continue
+
+            def value(*names: str, max_length: int = 1000) -> str | None:
+                found = _descendant_text(root, {name.upper() for name in names})
+                return found[:max_length] if found else None
+
+            court_code = value("Code_Juridiction", "CodeJuridiction", max_length=80)
+            court_name = value("Nom_Juridiction", "NomJuridiction", max_length=250)
+            case_number = value("Numero_Dossier", "NumeroDossier", max_length=120)
+            decision_date_raw = value("Date_Lecture", "DateLecture", max_length=40)
+            decision_date = _date(decision_date_raw)
+            if not case_number or not decision_date or not court_name:
+                continue
+
+            body_node = next((node for node in root.iter() if _local(node.tag) == "TEXTE_INTEGRAL"), None)
+            if body_node is None:
+                continue
+            paragraphs = [
+                clean_text(" ".join(part.strip() for part in node.itertext() if part.strip()))
+                for node in body_node.iter() if _local(node.tag) in {"P", "PARAGRAPHE"}
+            ]
+            body_source = "\n".join(paragraph for paragraph in paragraphs if paragraph) or " ".join(
+                part.strip() for part in body_node.itertext() if part.strip()
+            )
+            body = clean_text(body_source)
+            if not 80 <= len(body) <= 100000:
+                continue
+
+            title = f"Décision du {court_name} n° {case_number} du {decision_date.isoformat()}"
+            scope = classify_public_service_scope({"title": title, "text": body, "document_kind": "ADMIN_CASELAW"})
+            if not _is_fpt_employment_case_law(title, body, scope):
+                continue
+            # A local-employer HR decision can be relevant even when the broad
+            # corpus classifier cannot confidently label it from generic terms.
+            if scope.get("scope") == "OUT_OF_SCOPE_OR_UNCONFIRMED":
+                scope = {
+                    "scope": "FPT",
+                    "evidence": ["Décision locale portant sur un sujet de gestion des agents publics"],
+                    "analysis_eligible": True,
+                }
+
+            ecli = value("Numero_ECLI", "NumeroECLI", max_length=160)
+            identification = value("Identification", max_length=250) or info.filename
+            publication_code = value("Code_Publication", "CodePublication", max_length=20)
+            decision_type = value("Type_Decision", "TypeDecision", max_length=80)
+            solution = value("Solution", max_length=250)
+            recourse_type = value("Type_Recours", "TypeRecours", max_length=160)
+            hearing_date = _date(value("Date_Audience", "DateAudience", max_length=40))
+            formation = value("Formation_Jugement", "FormationJugement", max_length=200)
+            role_number = value("Numero_Role", "NumeroRole", max_length=100)
+            update_date = _date(value("Date_Mise_Jour", "DateMiseAJour", max_length=40))
+            identity = "|".join((court_code or court_name, case_number, decision_date.isoformat(), identification))
+            source_digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
+            body_digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+            if len(records) >= 1000:
+                raise ValueError("L'archive contient plus de 1 000 décisions FPT pertinentes ; découpez l'import en archives mensuelles plus petites.")
+            records.append({
+                "source_type": "OTHER_OFFICIAL",
+                "source_id": "OPEN_DATA_JA_" + source_digest,
+                "title": title,
+                "document_kind": "ADMIN_CASELAW",
+                "official_number": case_number,
+                "jurisdiction": court_name,
+                "publisher": "Conseil d'État — Open Data de la justice administrative",
+                "official_url": "https://opendata.justice-administrative.fr/",
+                "signature_date": decision_date,
+                "publication_date": update_date,
+                "status": "UNKNOWN",
+                "source_status": "OFFICIAL_XML_IMPORTED",
+                "valid_from": None,
+                "valid_to": None,
+                "version_status": "UNKNOWN",
+                "version_key": "open-data-xml-" + body_digest[:32],
+                "source_version_id": ecli or identification,
+                "full_text": body,
+                "raw_metadata": {
+                    "court_code": court_code, "ecli": ecli,
+                    "publication_code": publication_code,
+                    "decision_type": decision_type, "solution": solution,
+                    "recourse_type": recourse_type,
+                    "hearing_date": hearing_date.isoformat() if hearing_date else None,
+                    "formation": formation, "role_number": role_number,
+                    "xml_identification": identification,
+                    "source_archive": archive_name[:250],
+                    "public_service_scope": scope.get("scope"),
+                    "scope_evidence": scope.get("evidence", []),
+                    "source_license": "Licence Ouverte version 2.0",
+                    "source_xml_sha256": hashlib.sha256(xml_bytes).hexdigest(),
+                    "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
+                },
+                "raw_version_payload": {
+                    "xml_filename": info.filename[:250],
+                    "source_archive": archive_name[:250],
+                    "source_xml_sha256": hashlib.sha256(xml_bytes).hexdigest(),
+                    "ecli": ecli,
+                },
+            })
+        return records

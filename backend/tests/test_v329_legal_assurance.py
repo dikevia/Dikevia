@@ -39,7 +39,8 @@ def test_compliance_review_consumes_ai_result_and_records_all_provider_outcomes(
     assert "candidate = extract_analysis_content(candidate_result)" in main
     assert "record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)" in main
     assert '"outcome": "PROVIDER_ERROR"' in main
-    assert 'usage["outcome"] = "REJECTED_UNGROUNDED"' in main
+    assert '"REJECTED_UNSUPPORTED_CLAIMS"' in main
+    assert '"ABSTAINED_NO_SUPPORTED_CLAIMS"' in main
 
 
 
