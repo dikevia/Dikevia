@@ -193,3 +193,24 @@ async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallbac
         for source in captured["sources"]
     )
     assert any("Mode de secours CGFP activé" in item for item in response.missing_information)
+
+
+
+def test_cgfp_discovery_only_promotes_articles_with_fpt_or_common_scope(monkeypatch):
+    import app.orchestrator as module
+
+    found = {"results": [{
+        "article": "L123-4",
+        "matched_concepts": ["droits des agents"],
+        "excerpt": "Extrait du CGFP",
+    }]}
+
+    monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
+        "text": "Les fonctionnaires de l'État et les administrations centrales."
+    })
+    assert module._cgfp_article_discovery_queries(found) == []
+
+    monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
+        "text": "Le présent article concerne les agents publics et les fonctionnaires."
+    })
+    assert module._cgfp_article_discovery_queries(found) == ["article L123-4"]
