@@ -204,3 +204,19 @@ def test_titular_query_activates_strict_relevance_filter_without_false_positive_
         "excerpt": "Chaque titulaire dispose de deux suppléants au comité social.",
     }
     assert is_topic_relevant_source(question, unrelated) is False
+
+
+
+def test_plain_language_phrasing_activates_the_same_strict_relevance_filter():
+    from app.fpt_scope import is_topic_relevant_source
+
+    unrelated = {
+        "title": "Code général de la fonction publique — article R326-26",
+        "excerpt": "La formation est dispensée par un organisme extérieur.",
+    }
+    assert is_topic_relevant_source(
+        "Dans mon service on n'est pas assez nombreux.", unrelated
+    ) is False
+    assert is_topic_relevant_source(
+        "Ma collectivité veut me mettre dehors.", unrelated
+    ) is False
