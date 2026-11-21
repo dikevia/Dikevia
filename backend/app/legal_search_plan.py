@@ -493,7 +493,7 @@ def build_official_search_queries(question: str, max_queries: int = 3) -> list[s
     )
     contract_triggers, contract_axes = _TOPIC_RESEARCH_AXES[2]
     contract_subject_present = any(
-        _fold(trigger) in folded for trigger in contract_triggers[:6]
+        _contains_trigger(folded, trigger) for trigger in contract_triggers[:6]
     )
     for index, (triggers, axes) in enumerate(_TOPIC_RESEARCH_AXES):
         if not any(_contains_trigger(folded, trigger) for trigger in triggers):
