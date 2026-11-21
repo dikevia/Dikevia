@@ -1,4 +1,4 @@
-from backend.app.cig_sources import (
+from app.cig_sources import (
     CIG_SOURCES,
     can_ingest_cig_content,
     cig_source_metadata,
