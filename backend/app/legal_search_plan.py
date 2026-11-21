@@ -53,7 +53,8 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
-         "indemnites horaires pour travaux supplementaires", "travaux supplementaires"),
+         "indemnites horaires pour travaux supplementaires", "travaux supplementaires",
+         "rester apres mon horaire", "heures effectuees au dela de mon horaire"),
         "indemnités horaires pour travaux supplémentaires IHTS décret 2002-60 "
         "décret 91-875 décret 2001-623 fonction publique territoriale "
         "délibération assemblée délibérante repos compensateur",
@@ -70,7 +71,9 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("protection fonctionnelle", "un usager m a menace", "un usager m a menacé",
-         "menace pendant mon service", "agression pendant le service"),
+         "menace pendant mon service", "agression pendant le service",
+         "agression au travail", "poursuivi penalement", "poursuites penales",
+         "agent victime de harcelement", "signalement de harcelement"),
         "protection fonctionnelle agent territorial CGFP obligations employeur public "
         "jurisprudence Conseil d'État collectivités territoriales",
     ),
@@ -106,7 +109,9 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("conges annuels", "congé annuel", "report de conges", "report de congés",
-         "conges non pris", "congés non pris", "compte epargne temps",
+         "conges non pris", "congés non pris", "dates de conges", "dates de congés",
+         "jour ferie pendant mes conges", "jour férié pendant mes congés",
+         "rappel pendant mes conges", "rappel pendant mes congés", "compte epargne temps",
          "compte épargne-temps", "conge sans solde", "congé sans solde",
          "conge maternite", "congé maternité"),
         "congés annuels fonction publique territoriale décret 85-1250 "
@@ -159,7 +164,9 @@ _TOPIC_EXPANSIONS = (
         "disponibilité suivi conjoint concours détachement garanties",
     ),
     (
-        ("suppression de poste", "poste supprime", "poste supprimé", "demission",
+        ("suppression de poste", "poste supprime", "poste supprimé", "poste est supprime",
+         "poste est supprimé", "emploi supprime", "emploi supprimé", "emploi est supprime",
+         "emploi est supprimé", "demission",
          "démission", "rupture conventionnelle", "revenir dans la fonction publique",
          "revenir dans la fonction publique"),
         "CGFP fin de fonctions fonction publique territoriale suppression emploi "
@@ -303,7 +310,7 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service"),
+        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service", "agression au travail", "poursuivi penalement", "poursuites penales", "agent victime de harcelement", "signalement de harcelement"),
         (
             "protection fonctionnelle agent territorial CGFP obligation collectivité territoriale",
             "jurisprudence Conseil d'État protection fonctionnelle agents publics territoriaux conditions refus",
