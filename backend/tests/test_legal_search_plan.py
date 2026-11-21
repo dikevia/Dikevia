@@ -183,3 +183,14 @@ def test_titular_termination_searches_radiation_and_cessation_of_functions():
     assert len(queries) == 3
     assert "radiation des cadres" in queries[1]
     assert "insuffisance professionnelle" in queries[2]
+
+
+
+def test_everyday_understaffing_and_termination_phrasing_builds_legal_queries():
+    staffing = build_official_search_queries("Dans mon service on n'est pas assez nombreux.")
+    termination = build_official_search_queries("Ma collectivité veut me mettre dehors.")
+    assert len(staffing) == 3
+    assert "decret 85-603" in staffing[1]
+    assert "charge de travail" in staffing[2]
+    assert len(termination) == 3
+    assert "radiation des cadres" in termination[1]
