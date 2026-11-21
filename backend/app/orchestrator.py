@@ -509,9 +509,15 @@ class LegalOrchestrator:
             # The complete local CGFP snapshot is searched as a discovery
             # index. Its strongest article references become exact Légifrance
             # lookups; the snapshot itself never upgrades to verified evidence.
-            code_research_queries = list(dict.fromkeys([
-                *research_queries, *(cgfp_article_queries or []),
-            ]))[:5]
+            base_code_queries = list(dict.fromkeys(research_queries))
+            # Never drop a recognized sub-question to make room for exact
+            # article lookups. The normal budget is five; it grows only when
+            # the question itself has more than five distinct research axes.
+            exact_article_budget = max(0, 5 - len(base_code_queries))
+            code_research_queries = [
+                *base_code_queries,
+                *(cgfp_article_queries or [])[:exact_article_budget],
+            ]
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
             endpoint_results = await asyncio.gather(*[
