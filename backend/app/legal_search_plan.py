@@ -43,7 +43,10 @@ _TOPIC_EXPANSIONS = (
          "representants du personnel", "representant syndical", "representants syndicaux", "local syndical", "locaux syndicaux", "decharge d activite", "decharges d activite", "decharge syndicale",
          "credit de temps syndical", "credit d heures syndical", "asa syndicale",
          "autorisation speciale d absence syndicale",
-         "formation syndicale", "reunion d information syndicale"),
+         "formation syndicale", "reunion d information syndicale", "reunion syndicale",
+         "tract syndical", "mandat syndical", "appartenance syndicale",
+         "communication syndicale", "messagerie professionnelle syndicale",
+         "fournir un local au syndicat"),
         "droit syndical fonction publique territoriale CGFP livre II exercice du droit "
         "syndical dialogue social représentation des agents garanties exercice droit "
         "syndical facilités organisations syndicales locaux syndicaux autorisations "
@@ -79,7 +82,11 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("sanction disciplinaire", "procedure disciplinaire", "conseil de discipline",
-         "avertissement", "blame", "exclusion temporaire", "revocation"),
+         "avertissement", "blame", "exclusion temporaire", "revocation",
+         "entretien disciplinaire", "suspension de fonctions", "suspension conservatoire",
+         "ordre manifestement illegal", "sanction sans avoir ete entendu",
+         "effacement sanction dossier", "conservation sanction dossier",
+         "faits commis hors service", "temoignages contre moi"),
         "discipline fonction publique territoriale CGFP décret 89-677 "
         "droits défense conseil de discipline jurisprudence administrative",
     ),
@@ -103,7 +110,8 @@ _TOPIC_EXPANSIONS = (
     ),
     (
         ("ifse", "rifseep", "nbi", "regime indemnitaire",
-         "remuneration", "traitement indiciaire"),
+         "remuneration", "traitement indiciaire", "baisse de primes",
+         "suppression de primes"),
         "rémunération fonctionnaires territoriaux régime indemnitaire RIFSEEP IFSE NBI "
         "délibération locale décret 91-875 CGFP",
     ),
@@ -113,7 +121,9 @@ _TOPIC_EXPANSIONS = (
          "jour ferie pendant mes conges", "jour férié pendant mes congés",
          "rappel pendant mes conges", "rappel pendant mes congés", "compte epargne temps",
          "compte épargne-temps", "conge sans solde", "congé sans solde",
-         "conge maternite", "congé maternité"),
+         "conge maternite", "congé maternité", "solde de conges", "solde de congés",
+         "regles de conges", "règles de congés", "compteur d heures",
+         "compteur d'heures remis a zero", "compteur d'heures remis à zéro"),
         "congés annuels fonction publique territoriale décret 85-1250 "
         "compte épargne temps décret 2004-878 report congés délibération locale",
     ),
@@ -122,7 +132,7 @@ _TOPIC_EXPANSIONS = (
          "arrêt maladie", "conge longue maladie", "congé longue maladie",
          "conge longue duree", "congé longue durée", "temps partiel therapeutique",
          "temps partiel thérapeutique", "maintien de traitement", "maintien de rémunération", "conseil medical", "conseil médical",
-         "secret medical", "secret médical"),
+         "secret medical", "secret médical", "motif medical", "motif médical"),
         "congé maladie fonction publique territoriale CGFP fonctionnaire contractuel "
         "décret 87-602 décret 88-145 conseil médical temps partiel thérapeutique secret médical",
     ),
@@ -131,7 +141,8 @@ _TOPIC_EXPANSIONS = (
          "promotion interne", "entretien professionnel", "compte rendu d entretien",
          "compte rendu d'entretien", "refus de titularisation", "titularisation",
          "reprise anciennete", "reprise d ancienneté", "anciennete dans le prive",
-         "ancienneté dans le privé"),
+         "ancienneté dans le privé", "modifier mes missions", "changement de missions",
+         "missions sans changer mon grade"),
         "CGFP livre V carrière fonction publique territoriale avancement échelon grade "
         "promotion interne entretien professionnel titularisation stage reprise ancienneté",
     ),
@@ -150,7 +161,10 @@ _TOPIC_EXPANSIONS = (
     (
         ("droit de retrait", "danger grave et imminent", "registre danger grave",
          "document unique", "duerp", "medecine du travail", "médecine du travail",
-         "preconisation medicale", "préconisation médicale", "adapter mon poste"),
+         "preconisation medicale", "préconisation médicale", "adapter mon poste", "conditions de securite sont dangereuses",
+         "conditions de sécurité sont dangereuses", "poste dangereux",
+         "sanctionne apres avoir signale", "sanctionné après avoir signalé",
+         "represailles apres signalement", "représailles après signalement"),
         "fonction publique territoriale santé sécurité travail décret 85-603 "
         "droit de retrait danger grave imminent document unique médecin du travail",
     ),
