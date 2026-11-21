@@ -356,6 +356,11 @@ _TOPIC_FAMILIES = {
         "comite social territorial", "formation specialisee",
         "comite technique", "instance de dialogue social",
     ),
+    "PROFESSIONAL_EVALUATION": (
+        "entretien professionnel", "evaluation professionnelle", "evaluation annuelle",
+        "compte rendu d evaluation", "compte rendu d entretien",
+        "valeur professionnelle", "appreciation de la valeur professionnelle",
+    ),
 }
 
 
@@ -411,7 +416,7 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
     # For these two question families, a source with no identifiable subject
     # is not useful evidence: generic CGFP keyword hits must not masquerade
     # as a relevant answer.
-    strict_topics = {"TERMINATION_OF_TITULAR", "STAFFING_AND_WORK_CONDITIONS"}
+    strict_topics = {"TERMINATION_OF_TITULAR", "STAFFING_AND_WORK_CONDITIONS", "PROFESSIONAL_EVALUATION"}
     if question_topics & strict_topics:
         return False
     if not source_topics:
