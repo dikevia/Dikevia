@@ -180,7 +180,7 @@ def classify_question_intent(question: str) -> str:
         r"\b(?:dans mon cas|dans ma situation|concernant mon dossier)\b",
         # Union representatives often describe a member's case in the third person.
         r"\b(?:un|une|l['’])\s*agent(?:e)?\b.{0,100}\b(?:a eu|a reçu|a subi|a été|fait l['’]objet|s['’]est vu|subit|rencontre)\b",
-        r"\b(?:depuis|à compter du)\s+(?:le\s+)?\d{1,2}[ /-]\d{1,2}\b",
+        r"\b(?:un|une|l['’])\s*agent(?:e)?\b.{0,100}\b(?:sa demande|son congé|sa rémunération|sa protection fonctionnelle)\b.{0,50}\b(?:refusé|refusée|rejeté|rejetée|suspendu|suspendue)\b",
     )
     if any(re.search(pattern, text) for pattern in personal_event_patterns):
         return "PERSONAL_CASE"
