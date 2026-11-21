@@ -82,3 +82,8 @@ def test_prompt_obeys_structured_scope_and_ambiguous_contract_status():
     assert "scope_status vaut OUT_OF_SCOPE_FPE" in SYSTEM_PROMPT
     assert "EMPLOYMENT_STATUS_AMBIGUOUS" in SYSTEM_PROMPT
     assert "un CDD ou un CDI mentionné seul ne suffit pas" in SYSTEM_PROMPT
+
+
+def test_prompt_restricts_later_case_law_to_interpretative_use_for_historical_claims():
+    assert "une décision postérieure ne peut jamais être la source directe ou unique" in SYSTEM_PROMPT
+    assert "rattache toute conclusion à un texte ou à une décision antérieure" in SYSTEM_PROMPT
