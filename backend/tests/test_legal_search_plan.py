@@ -94,11 +94,16 @@ def test_union_rights_builds_distinct_bounded_research_axes():
     assert all(len(query) <= 500 for query in queries)
 
 
-def test_unclassified_question_keeps_existing_single_query_behavior():
+def test_unclassified_question_still_searches_the_fpt_framework_and_case_law():
     question = "Est-ce que mon employeur peut me convoquer demain ?"
-    assert build_official_search_queries(question) == [
-        build_official_search_query(question)
-    ]
+    queries = build_official_search_queries(question)
+    assert len(queries) == 3
+    assert queries[0].startswith(question)
+    assert "fonction publique territoriale" in queries[0]
+    assert "CGFP" in queries[1]
+    assert "agent territorial" in queries[2]
+    assert "jurisprudence administrative" in queries[2]
+    assert all(len(query) <= 500 for query in queries)
 
 
 def test_research_axis_count_can_be_reduced_by_caller():
@@ -194,3 +199,11 @@ def test_everyday_understaffing_and_termination_phrasing_builds_legal_queries():
     assert "charge de travail" in staffing[2]
     assert len(termination) == 3
     assert "radiation des cadres" in termination[1]
+
+
+
+def test_unfamiliar_plain_language_question_is_not_searched_as_private_sector_law():
+    query = build_official_search_query("Mon chef me convoque sans explication.")
+    assert "fonction publique territoriale" in query
+    assert "agent territorial" in query
+    assert "code du travail" not in query
