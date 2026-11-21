@@ -917,6 +917,7 @@ class LegalOrchestrator:
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
+            item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
             item["ihts_relevant"] = is_ihts_relevant_source(request.question, item)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
@@ -985,6 +986,7 @@ class LegalOrchestrator:
             response_source["public_service_scope"] = scope_check["scope"]
             response_source["scope_evidence"] = scope_check["evidence"]
             response_source["analysis_eligible"] = scope_check["analysis_eligible"]
+            response_source["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
             response_source["ihts_relevant"] = is_ihts_relevant_source(request.question, response_source)
             sources.append(response_source)
 
@@ -1078,6 +1080,7 @@ class LegalOrchestrator:
             and (s.get("citation_integrity") or {}).get("valid") is True
             and s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}
             and s.get("analysis_eligible") is True
+            and s.get("claim_eligible", True) is not False
             and s.get("ihts_relevant") is not False
         ]
         usable_official = [
@@ -1258,6 +1261,11 @@ class LegalOrchestrator:
                         (
                             {
                                 **s,
+                                "reference_role": "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY",
+                            }
+                            if s.get("public_service_scope") == "GENERAL_PUBLIC_SERVICE"
+                            else {
+                                **s,
                                 "reference_role": "INTERPRETIVE_CONTEXT_ONLY",
                             }
                             if (
@@ -1278,10 +1286,9 @@ class LegalOrchestrator:
                                 and s.get("general_info_eligible") is True
                             )
                         )
-                        # Only sources explicitly classified as FPT or as
-                        # common to all three branches may support AI analysis.
-                        # Unclassified and generic public-service sources remain
-                        # visible as research leads but cannot support a claim.
+                        # FPT and explicitly common sources can support claims.
+                        # Generic public-service sources may accompany the prompt
+                        # as context, but are marked context-only and cannot ground claims.
                         and (
                             s.get("analysis_eligible") is True
                             or (
