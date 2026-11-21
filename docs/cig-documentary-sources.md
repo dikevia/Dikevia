@@ -11,6 +11,7 @@ not as binding law.
 - `backend/app/cig_public_resources.py`: curated public discovery metadata and
   topic tags. Metadata only; no PDF, audio, transcript or protected content copied.
 - Unit tests verify source identifiers, topic discovery and rights safeguards.
+- The ingestion gate remains unconditionally closed: a boolean or free-text permission claim cannot prove a licence. A verifiable permission registry and human review must exist before any future authorization.
 
 ## Mandatory legal and data safeguards
 1. Public visibility is not a blanket licence for commercial reproduction,
@@ -37,3 +38,13 @@ not as binding law.
   proposal for BIP, IAJ, public PDFs and podcasts.
 - Only after permission: implement a source-specific importer with provenance,
   versioning, document hashes, update checks and tenant-safe retrieval.
+
+
+## Permission gate status
+
+The current `can_ingest_cig_content` helper always returns false. This is intentional:
+Dikévia does not yet have a verifiable registry of signed permissions, licensed
+materials, scope, expiry, or authorized processing purposes. Supplying
+`written_permission=True` or a free-text scope is not proof of authorization.
+Do not weaken this gate until the permission record can be independently
+verified and tied to the exact resource and processing operation.
