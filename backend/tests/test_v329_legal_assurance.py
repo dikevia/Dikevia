@@ -204,3 +204,32 @@ def test_claim_evidence_rejects_post_facts_judgment_as_standalone_support_for_co
     )
     assert result["valid"] is False
     assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+def test_claim_evidence_rejects_generic_public_service_scope_without_fpt_proof():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(public_service_scope="GENERAL_PUBLIC_SERVICE")
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+            source["excerpt"],
+        ),
+        [source],
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_claim_evidence_accepts_explicitly_common_three_branch_source():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(public_service_scope="COMMON_PUBLIC_SERVICE")
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "Les règles visent les agents des trois versants de la fonction publique.",
+            source["excerpt"],
+        ),
+        [source],
+    )
+    assert result["valid"] is True
+
