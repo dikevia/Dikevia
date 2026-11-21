@@ -213,7 +213,50 @@ _TOPIC_RESEARCH_AXES = (
             "fonction publique territoriale obligation employeur sante securite prevention risques professionnels decret 85-603",
             "FPT sous effectif charge de travail risques psychosociaux document unique CST formation specialisee conditions de travail",
         ),
-    ),)
+    ),
+    (
+        ("harcelement moral", "harcèlement moral", "harcelement au travail", "mise a l ecart", "mise à l'écart"),
+        (
+            "harcèlement moral agent public territorial CGFP protection fonctionnelle obligations employeur prévention",
+            "jurisprudence administrative harcèlement moral fonction publique territoriale charge preuve protection agent",
+        ),
+    ),
+    (
+        ("harcelement sexuel", "harcèlement sexuel", "agissement sexiste", "propos sexistes"),
+        (
+            "harcèlement sexuel agissement sexiste agent territorial CGFP protection fonctionnelle",
+            "jurisprudence administrative harcèlement sexuel agissements sexistes fonction publique territoriale",
+        ),
+    ),
+    (
+        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail"),
+        (
+            "protection fonctionnelle agent territorial CGFP obligation collectivité territoriale",
+            "jurisprudence Conseil d'État protection fonctionnelle agents publics territoriaux conditions refus",
+        ),
+    ),
+    (
+        ("sanction disciplinaire", "procedure disciplinaire", "conseil de discipline", "avertissement", "blame", "exclusion temporaire", "revocation"),
+        (
+            "discipline fonction publique territoriale CGFP garanties disciplinaires droits défense conseil de discipline",
+            "décret 89-677 fonction publique territoriale procédure disciplinaire jurisprudence administrative",
+        ),
+    ),
+    (
+        ("accident de service", "maladie professionnelle", "citis", "conge longue maladie", "congé longue maladie", "conge longue duree", "congé longue durée"),
+        (
+            "CITIS agent territorial accident de service maladie professionnelle CGFP décret 87-602",
+            "fonction publique territoriale congé maladie imputabilité au service expertise médicale droits agent",
+        ),
+    ),
+    (
+        ("ifse", "rifseep", "nbi", "regime indemnitaire", "régime indemnitaire", "indemnite", "indemnité", "remuneration", "rémunération", "traitement indiciaire"),
+        (
+            "rémunération agents territoriaux CGFP régime indemnitaire RIFSEEP IFSE NBI délibération locale",
+            "fonction publique territoriale décret 91-875 régime indemnitaire équivalence corps délibération assemblée",
+        ),
+    ),
+)
 
 
 def build_official_search_queries(question: str, max_queries: int = 3) -> list[str]:
