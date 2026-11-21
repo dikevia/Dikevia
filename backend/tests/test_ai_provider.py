@@ -215,7 +215,7 @@ def test_later_administrative_case_law_is_interpretative_but_not_claim_evidence(
         }]
     }, [source])
     assert result["valid"] is False
-    assert "claim_0:source_not_eligible_or_ambiguous" in result["invalid_claims"]
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
 
 
 def test_claim_evidence_accepts_verified_historical_local_document():
