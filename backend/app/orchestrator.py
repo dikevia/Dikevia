@@ -181,7 +181,7 @@ def classify_question_intent(question: str) -> str:
         r"\bje (?:n['’]ai pas (?:été payé|reçu|touché|obtenu)|ne suis pas payé|ne touche pas|subis)\b",
         # A named hierarchical colleague may be the person who conducted the
         # individual evaluation; this remains a personal case even without its date.
-        r"\bmon\s+(?:agent|responsable|chef|supérieur hiérarchique|superieur hierarchique)\b.{0,100}\bm['’]a fait\b.{0,100}\b(?:évaluation|evaluation|entretien professionnel|compte rendu)\b",
+        r"\bmon\s+(?:agent|responsable|chef|supérieur hiérarchique|superieur hierarchique)\b.{0,100}\bm['’]a(?:s)? fait\b.{0,100}\b(?:évaluation|evaluation|entretien professionnel|compte rendu)\b",
         r"\bj['’]ai (?:été sanctionné|été licencié|été convoqué|été refusé|reçu|déposé|contesté|effectué)\b",
         r"\b(?:mon employeur|ma collectivité) (?:refuse|ne me paie|ne me paye|m['’]a refusé|m['’]a sanctionné|a refusé|a rejeté)\b.{0,100}\b(?:ma demande|mon congé|ma rémunération|ma protection fonctionnelle|mon recours)\b",
         r"\b(?:mon employeur|ma collectivité) refuse de me (?:payer|verser|compenser)\b",
