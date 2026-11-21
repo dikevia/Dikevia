@@ -217,6 +217,16 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     return [source for source in sources if source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False]
 
 
+def _topic_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
+    """Keep a source when it matches at least one independently searched legal axis."""
+    return any(is_topic_relevant_source(query, source) for query in research_queries)
+
+
+def _ihts_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
+    """Apply the IHTS-specific guard only to axes that actually concern IHTS."""
+    return any(is_ihts_relevant_source(query, source) for query in research_queries)
+
+
 def _tag_official_versions(items: list[dict], requested_date: date, endpoint: str) -> list[dict]:
     """Give each dated API result a unique citation key while retaining its official ID."""
     tagged = []
@@ -737,7 +747,7 @@ class LegalOrchestrator:
                     result["scope_evidence"] = scope["evidence"]
                     result["analysis_eligible"] = scope["analysis_eligible"]
                     result["claim_eligible"] = scope.get("claim_eligible", scope["analysis_eligible"])
-                    if not scope["analysis_eligible"] or not any(is_topic_relevant_source(query, result) for query in research_queries):
+                    if not scope["analysis_eligible"] or not _topic_relevant_to_any_research_axis(research_queries, result):
                         logger.info(
                             "Décision CETAT écartée du dossier IA : périmètre ou thème non confirmé (source=%s, scope=%s)",
                             result.get("source_id"), scope["scope"],
@@ -920,7 +930,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["ihts_relevant"] = any(is_ihts_relevant_source(query, item) for query in research_queries)
+            item["ihts_relevant"] = _ihts_relevant_to_any_research_axis(research_queries, item)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
                 "version_matches_facts_date": bool(
@@ -997,7 +1007,7 @@ class LegalOrchestrator:
 
         if found and cgfp_snapshot_fallback:
             for hit in found["results"]:
-                if not any(is_ihts_relevant_source(query, hit) for query in research_queries):
+                if not _ihts_relevant_to_any_research_axis(research_queries, hit):
                     continue
                 article = get_cgfp_article(hit["article"])
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
@@ -1032,7 +1042,7 @@ class LegalOrchestrator:
             decision["scope_evidence"] = scope_check["evidence"]
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
             decision["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            decision["ihts_relevant"] = any(is_ihts_relevant_source(query, decision) for query in research_queries)
+            decision["ihts_relevant"] = _ihts_relevant_to_any_research_axis(research_queries, decision)
             sources.append({**decision, "page_start": None, "page_end": None})
 
         # Apply the topic guard only after every source family (including the
