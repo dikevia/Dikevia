@@ -186,3 +186,24 @@ def test_additional_everyday_fpt_formulations_reach_relevant_sources(
 ):
     queries = build_official_search_queries(question)
     assert expected_marker.casefold() in " ".join(queries).casefold()
+
+
+@pytest.mark.parametrize(
+    "question, expected_marker",
+    [
+        ("Puis-je distribuer un tract syndical dans les locaux ?", "CGFP livre II"),
+        ("Un agent contractuel peut-il exercer un mandat syndical ?", "CGFP livre II"),
+        ("Je suis convoqué à un entretien disciplinaire.", "discipline fonction publique territoriale"),
+        ("La suspension de fonctions est-elle déjà une sanction ?", "droits défense"),
+        ("Peut-on me sanctionner pour avoir refusé un ordre manifestement illégal ?", "discipline fonction publique territoriale"),
+        ("Mon administration peut-elle demander le motif médical détaillé de mon arrêt ?", "secret médical"),
+        ("Que devient mon solde de congés si je quitte la collectivité ?", "décret 85-1250"),
+        ("Mon employeur peut-il modifier mes missions sans changer mon grade ?", "CGFP livre V"),
+        ("Une baisse de primes peut-elle accompagner un changement d'affectation ?", "régime indemnitaire"),
+        ("Puis-je refuser un poste si les conditions de sécurité sont dangereuses ?", "décret 85-603"),
+        ("Puis-je être sanctionné après avoir signalé des risques psychosociaux ?", "droit de retrait"),
+    ],
+)
+def test_fpt_domain_aliases_keep_specific_retrieval_context(question, expected_marker):
+    queries = build_official_search_queries(question)
+    assert expected_marker.casefold() in " ".join(queries).casefold()
