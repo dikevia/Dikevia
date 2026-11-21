@@ -233,3 +233,17 @@ def test_claim_evidence_accepts_explicitly_common_three_branch_source():
     )
     assert result["valid"] is True
 
+def test_claim_evidence_rejects_interpretive_context_only_sources():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(reference_role="INTERPRETIVE_CONTEXT_ONLY")
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+            source["excerpt"],
+        ),
+        [source],
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
