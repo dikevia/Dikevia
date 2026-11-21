@@ -23,6 +23,22 @@ from .legal_search_plan import build_official_search_query, build_official_searc
 from .legal_qualification import qualify_legal_question
 
 
+def _cgfp_article_fpt_eligible(article_ref: str) -> bool:
+    """Check the article body before treating a CGFP hit as an FPT research lead."""
+    normalized_ref = re.sub(r"\s+", "", str(article_ref or "")).upper()
+    if not re.fullmatch(r"[LDR]\d+(?:-\d+)*", normalized_ref):
+        return False
+    article_document = get_cgfp_article(normalized_ref)
+    if not article_document:
+        return False
+    scope = classify_public_service_scope({
+        "title": f"Code général de la fonction publique — article {normalized_ref}",
+        "text": article_document.get("text") or "",
+        "document_kind": "CODE",
+    })
+    return scope.get("analysis_eligible") is True
+
+
 def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
     """Turn relevant, FPT-applicable snapshot hits into exact live CGFP lookups."""
     if not isinstance(found, dict):
@@ -33,15 +49,7 @@ def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
         article_ref = re.sub(r"\s+", "", str(hit.get("article") or "")).upper()
         if not re.fullmatch(r"[LDR]\d+(?:-\d+)*", article_ref) or article_ref in seen:
             continue
-        article_document = get_cgfp_article(article_ref)
-        if not article_document:
-            continue
-        scope = classify_public_service_scope({
-            "title": f"Code général de la fonction publique — article {article_ref}",
-            "text": article_document.get("text") or hit.get("excerpt") or "",
-            "document_kind": "CODE",
-        })
-        if scope.get("analysis_eligible") is not True:
+        if not _cgfp_article_fpt_eligible(article_ref):
             continue
         if not (
             hit.get("matched_concepts")
@@ -65,6 +73,7 @@ def should_use_cgfp_snapshot_fallback(
         live_issue and isinstance(found, dict) and found.get("results")
         and any(
             is_ihts_relevant_source(question, hit)
+            and _cgfp_article_fpt_eligible(str(hit.get("article") or ""))
             for hit in found["results"]
         )
     )
