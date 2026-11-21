@@ -295,6 +295,9 @@ def test_contractual_evaluation_question_uses_contractual_regime_not_civil_serva
     queries = build_official_search_queries(question)
     axes = build_official_research_axes(question)
     assert "décret 88-145" in query
+    assert "CDI" in query
+    assert "CDD supérieur à un an" in query
+    assert "contrat de projet" in query
     assert "décret 2014-1526" not in query
     assert any("décret 88-145" in item for item in queries)
     assert all("décret 2014-1526" not in item for item in queries)
