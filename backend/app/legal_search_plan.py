@@ -215,7 +215,7 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("harcelement moral", "harcèlement moral", "harcelement au travail", "mise a l ecart", "mise à l'écart"),
+        ("harcelement moral", "harcèlement moral"),
         (
             "harcèlement moral agent public territorial CGFP protection fonctionnelle obligations employeur prévention",
             "jurisprudence administrative harcèlement moral fonction publique territoriale charge preuve protection agent",
@@ -250,7 +250,7 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("ifse", "rifseep", "nbi", "regime indemnitaire", "régime indemnitaire", "indemnite", "indemnité", "remuneration", "rémunération", "traitement indiciaire"),
+        ("ifse", "rifseep", "nbi", "regime indemnitaire", "régime indemnitaire", "remuneration", "rémunération", "traitement indiciaire"),
         (
             "rémunération agents territoriaux CGFP régime indemnitaire RIFSEEP IFSE NBI délibération locale",
             "fonction publique territoriale décret 91-875 régime indemnitaire équivalence corps délibération assemblée",
