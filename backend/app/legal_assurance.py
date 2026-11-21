@@ -51,14 +51,28 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+        "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+        "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
         "VERIFIED_APPLICABLE",
     }
+    # A decision issued after the facts may help interpret the law, but it
+    # cannot by itself establish which rule was applicable on the facts date.
+    # Keep these two uses separate instead of exposing one ambiguous boolean.
+    post_facts_decision = status == "DECISION_POSTERIOR_TO_FACTS" and kind == "ADMIN_CASELAW"
     return {
         "source_family": kind,
         "source_family_label": label,
         "review_priority": rank,
         "temporal_or_validation_status": status,
-        "usable_for_conclusion": usable,
+        "usable_for_conclusion": usable and not post_facts_decision,
+        "usable_for_interpretation": (usable or post_facts_decision) and kind == "ADMIN_CASELAW",
+        "usable_for_facts_date_conclusion": usable and not post_facts_decision,
+        "temporal_limit": (
+            "Décision postérieure aux faits : utilisable comme éclairage interprétatif, "
+            "mais pas comme preuve autonome de la règle applicable à la date des faits."
+            if post_facts_decision else None
+        ),
         "limitation": "Classement indicatif pour organiser la vérification ; ne tranche ni la hiérarchie complète ni la légalité du document.",
     }
 
@@ -247,7 +261,9 @@ def _evidence_tokens(value: Any) -> set[str]:
     return tokens - _EVIDENCE_STOPWORDS
 
 
-def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict[str, Any]:
+def validate_claim_evidence(
+    payload: Any, sources: list[dict[str, Any]], required_axes: list[str] | None = None,
+) -> dict[str, Any]:
     """Fail closed unless each generated legal claim quotes its own eligible source.
 
     This verifies exact quote provenance, source identity, date/scope eligibility and
@@ -261,6 +277,7 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
             "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS",
         }
 
+    required_axes = [axis for axis in (required_axes or []) if isinstance(axis, str) and axis.strip()]
     raw_claims = payload["claims"]
     if len(raw_claims) > 12:
         return {
@@ -272,6 +289,9 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
     eligible_statuses = {
         "IN_FORCE_ON_REQUESTED_DATE",
         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+        "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+        "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
         "VERIFIED_APPLICABLE",
     }
     eligible_by_id: dict[str, list[dict[str, Any]]] = {}
@@ -288,11 +308,25 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
             continue
         if source.get("content_kind") == "METADATA":
             continue
-        if source.get("reference_role") == "BASELINE_CONTEXT_ONLY":
+        if source.get("reference_role") in {
+            "BASELINE_CONTEXT_ONLY", "INTERPRETIVE_CONTEXT_ONLY",
+            "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY",
+        } or source.get("claim_eligible") is False:
             continue
-        if source.get("analysis_eligible") is False or source.get("public_service_scope") == "SCOPE_TO_VERIFY":
+        if (
+            source.get("analysis_eligible") is False
+            or source.get("public_service_scope") in {
+                "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
+                "FPH", "FPE", "OUT_OF_SCOPE_OR_UNCONFIRMED",
+                "OUT_OF_SCOPE_EUROPEAN_LAW",
+            }
+        ):
             continue
-        if temporal_status not in eligible_statuses:
+        general_information_only = (
+            temporal_status == "TEMPORAL_SCOPE_INCOMPLETE"
+            and source.get("general_info_eligible") is True
+        )
+        if temporal_status not in eligible_statuses and not general_information_only:
             continue
         if source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
             if source.get("validation_status") not in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}:
@@ -319,6 +353,10 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
         claim_text = item.get("text")
         source_id = item.get("source_id")
         quote = item.get("quote")
+        axis = item.get("axis")
+        if required_axes and (not isinstance(axis, str) or axis not in required_axes):
+            invalid.append(f"claim_{index}:missing_or_unknown_research_axis")
+            continue
         if not isinstance(claim_text, str) or not 12 <= len(claim_text.strip()) <= 1500 or "\n" in claim_text or "\r" in claim_text:
             invalid.append(f"claim_{index}:invalid_text")
             continue
@@ -367,12 +405,29 @@ def validate_claim_evidence(payload: Any, sources: list[dict[str, Any]]) -> dict
             "source_id": source_id,
             "source_title": source_title[:300],
             "quote": " ".join(quote.split()),
+            **({"axis": axis} if required_axes else {}),
         })
+
+    if required_axes:
+        covered_axes = {claim.get("axis") for claim in validated}
+        uncovered_axes = payload.get("uncovered_axes", [])
+        if not isinstance(uncovered_axes, list) or any(
+            not isinstance(axis, str) or axis not in required_axes for axis in uncovered_axes
+        ) or len(set(uncovered_axes)) != len(uncovered_axes):
+            invalid.append("invalid_uncovered_research_axes")
+            uncovered_axes = []
+        overlap_axes = covered_axes & set(uncovered_axes)
+        if overlap_axes:
+            invalid.extend(f"research_axis_marked_both_covered_and_uncovered:{axis}" for axis in sorted(overlap_axes))
+        unresolved_axes = set(required_axes) - covered_axes - set(uncovered_axes)
+        if unresolved_axes:
+            invalid.extend(f"research_axis_not_covered:{axis}" for axis in sorted(unresolved_axes))
 
     return {
         "valid": not invalid,
         "claims": validated,
         "invalid_claims": invalid,
         "claim_count": len(validated),
+        "uncovered_axes": list(payload.get("uncovered_axes", [])) if required_axes and isinstance(payload.get("uncovered_axes", []), list) else [],
         "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS_NOT_SEMANTIC_ENTAILMENT",
     }

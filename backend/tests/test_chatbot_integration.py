@@ -36,6 +36,7 @@ def test_general_public_service_scope_needs_multiple_markers():
     })
     assert eligible["scope"] == "GENERAL_PUBLIC_SERVICE"
     assert eligible["analysis_eligible"] is True
+    assert eligible["claim_eligible"] is False
     assert ambiguous["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
     assert ambiguous["analysis_eligible"] is False
 
@@ -140,3 +141,15 @@ def test_municipal_non_employment_case_law_is_not_admitted_by_locality_alone():
         "full_text": "Le maire a refusé le permis de construire.",
     })
     assert result["analysis_eligible"] is False
+
+
+def test_irrelevant_ihts_search_hits_are_hidden_from_user_facing_sources():
+    from app.orchestrator import filter_irrelevant_sources_for_display
+
+    sources = [
+        {"title": "Décret IHTS", "ihts_relevant": True},
+        {"title": "Crédit d'heures CPF", "ihts_relevant": False},
+        {"title": "Délibération locale", "source_type": "LOCAL_DOCUMENT"},
+    ]
+    visible = filter_irrelevant_sources_for_display(sources)
+    assert [item["title"] for item in visible] == ["Décret IHTS", "Délibération locale"]

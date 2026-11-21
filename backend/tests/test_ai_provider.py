@@ -18,6 +18,8 @@ def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense
     assert "Une pièce locale ne peut soutenir une conclusion que si elle est validée" in SYSTEM_PROMPT
     assert "CITATIONS OBLIGATOIRES" in SYSTEM_PROMPT
     assert "FORMAT DE SORTIE OBLIGATOIRE" in SYSTEM_PROMPT
+    assert "MODE D'INFORMATION GÉNÉRALE" in SYSTEM_PROMPT
+    assert "Ne bloque pas la recherche au seul motif que la date des faits manque" in SYSTEM_PROMPT
     assert "source_id" in SYSTEM_PROMPT and "quote" in SYSTEM_PROMPT
 
 def test_ai_generated_article_references_must_exist_in_sources():
@@ -193,6 +195,49 @@ def test_claim_evidence_requires_exact_quote_from_the_exact_eligible_source():
     assert result["claim_count"] == 1
 
 
+def test_later_administrative_case_law_is_interpretative_but_not_claim_evidence():
+    from app.legal_assurance import classify_legal_source, validate_claim_evidence
+
+    source = _claim_source(
+        source_type="LEGIFRANCE_CETAT_FULL_TEXT",
+        source_id="CETATEXT000012345678",
+        decision_date="2025-02-10",
+        temporal_status="DECISION_POSTERIOR_TO_FACTS",
+    )
+    assurance = classify_legal_source(source)
+    assert assurance["usable_for_interpretation"] is True
+    assert assurance["usable_for_conclusion"] is False
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_claim_evidence_accepts_verified_historical_local_document():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source(
+        source_type="LOCAL_DOCUMENT",
+        source_id="LOCAL-DOC:123_V20240101",
+        validation_status="VERIFIED_HISTORICAL",
+        temporal_status="VERIFIED_APPLICABLE",
+        official_source=False,
+    )
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is True
+
+
 def test_claim_evidence_rejects_quote_not_present_in_source():
     from app.legal_assurance import validate_claim_evidence
 
@@ -206,6 +251,20 @@ def test_claim_evidence_rejects_quote_not_present_in_source():
     }, [source])
     assert result["valid"] is False
     assert "claim_0:quote_not_exactly_found_in_source" in result["invalid_claims"]
+
+
+def test_claim_evidence_accepts_current_date_sources_for_general_information_only():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source(temporal_status="TEMPORAL_SCOPE_INCOMPLETE", general_info_eligible=True)
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is True
 
 
 def test_claim_evidence_rejects_snapshot_and_temporally_incomplete_sources():
@@ -291,6 +350,55 @@ def test_entailment_verifier_fails_closed_on_unsupported_or_mismatched_verdicts(
     assert validate_entailment_verdicts(invented_quote, [claim], [source])["valid"] is False
 
 
+def test_entailment_verifier_rejects_exact_quote_from_unrelated_part_of_same_source():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claim = {
+        "source_id": "LEGIARTI000012345678",
+        "text": "La collectivité doit accorder un repos compensateur aux agents.",
+    }
+    unrelated_quote = "La procédure disciplinaire prévoit une exclusion temporaire de fonctions."
+    source = {
+        "source_id": claim["source_id"],
+        "text": (
+            unrelated_quote
+            + " Le temps de travail supplémentaire ouvre droit à un repos compensateur "
+              "dans les conditions prévues par le présent décret."
+        ),
+    }
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": claim["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": unrelated_quote,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_not_relevantly_aligned" in result["invalid"]
+
+
+def test_entailment_verifier_rejects_unsupported_numeric_claim_details():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claim = {
+        "source_id": "LEGIARTI000012345678",
+        "text": "L'agent bénéficie de 25 jours de congé annuel.",
+    }
+    quote = "Les agents bénéficient d'un congé annuel dans les conditions prévues."
+    source = {"source_id": claim["source_id"], "text": quote}
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": claim["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": quote,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_missing_claim_facts" in result["invalid"]
+
+
 def test_entailment_verifier_rejects_missing_extra_or_reordered_verdicts():
     from app.ai_provider import validate_entailment_verdicts
 
@@ -327,39 +435,40 @@ def test_ask_request_distinguishes_situation_period_from_legacy_exact_date():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_asks_for_situation_period_instead_of_assuming_today():
+async def test_orchestrator_does_not_require_a_facts_date_before_research():
     from app.schemas import AskRequest
     from app.orchestrator import LegalOrchestrator
 
-    request = AskRequest(employer="NATIONAL", question="Question juridique suffisamment longue")
+    request = AskRequest(employer="NATIONAL", question="Mon employeur m'a refusé un congé maladie, que puis-je faire ?")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
-    assert response.clarification_question
-    assert any("date d'entrée en vigueur" in item for item in response.missing_information)
-    assert response.clarification_question
+    assert response.clarification_question is None
+    assert not any("indiquez la date" in item.casefold() for item in response.missing_information)
+    assert not any("date des faits non renseignée" in item.casefold() for item in response.missing_information)
+    assert "recherche générale" not in response.answer.casefold()
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_requires_end_or_ongoing_for_new_start_date():
+async def test_orchestrator_does_not_require_a_complete_period_when_only_start_is_known():
     from app.schemas import AskRequest
     from app.orchestrator import LegalOrchestrator
 
     request = AskRequest(employer="NATIONAL", facts_start_date="2024-01-01",
                          question="Question juridique suffisamment longue")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
-    assert response.verification_status == "NON_VERIFIE"
-    assert "date de fin" in response.missing_information[0]
+    assert response.clarification_question is None
+    assert not any("date de fin" in item.casefold() for item in response.missing_information)
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_requires_start_when_only_end_date_is_given():
+async def test_orchestrator_accepts_an_end_date_without_a_start_date():
     from app.schemas import AskRequest
     from app.orchestrator import LegalOrchestrator
 
     request = AskRequest(employer="NATIONAL", facts_end_date="2024-06-30",
                          question="Question juridique suffisamment longue")
     response = await LegalOrchestrator().ask(request, organization_id="00000000-0000-0000-0000-000000000001")
-    assert response.verification_status == "NON_VERIFIE"
-    assert "début de la situation" in response.missing_information[0]
+    assert response.clarification_question is None
+    assert not any("début de la situation" in item.casefold() for item in response.missing_information)
 
 
 @pytest.mark.asyncio
@@ -378,6 +487,17 @@ async def test_orchestrator_rejects_inverted_situation_period():
 def test_ai_prompt_distinguishes_fact_period_from_text_effective_date():
     assert "Distingue la période de la situation" in SYSTEM_PROMPT
     assert "compare explicitement les sources datées du début et de la fin" in SYSTEM_PROMPT
+    assert "ne doit jamais servir de filtre général" in SYSTEM_PROMPT
+    assert "peuvent pleinement éclairer ou protéger l'agent" in SYSTEM_PROMPT
+    assert "Une décision administrative rendue après les faits ne doit pas être écartée automatiquement" in SYSTEM_PROMPT
+    assert "La date des faits n'est pas un préalable à la recherche" in SYSTEM_PROMPT
+    assert "Ne demande pas automatiquement la date des faits" in SYSTEM_PROMPT
+    assert "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
+    assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
+    assert "utilise les faits personnels uniquement pour identifier les textes à rechercher" in SYSTEM_PROMPT
+    assert "sans qualifier la situation individuelle" in SYSTEM_PROMPT
+    assert "FACTS_PERIOD_START_VERSION" in SYSTEM_PROMPT
+    assert "CURRENT_LAW_VERSION" in SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio
@@ -671,6 +791,7 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
         employer="NATIONAL",
         facts_date="2026-11-19",
         sources=[source, decision],
+        legal_context={"topic": "UNION_RIGHTS", "agent_status": "NOT_SPECIFIED"},
     )
 
     assert result.content == '{"claims": []}'
@@ -682,6 +803,7 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
     assert "Extrait officiel de test suffisamment explicite." in serialized
     assert "CETATEXT000012345678" in serialized
     assert '"date_decision": "2024-05-10"' in serialized
+    assert '"qualification_juridique_pre_recherche": {"topic": "UNION_RIGHTS", "agent_status": "NOT_SPECIFIED"}' in serialized
 
 
 
@@ -717,3 +839,121 @@ def test_system_prompt_treats_fpt_reference_sources_as_non_applicable_without_lo
     assert "décret 91-875" in SYSTEM_PROMPT
     assert "délibération locale" in SYSTEM_PROMPT
     assert "ne conclus pas au droit individuel" in SYSTEM_PROMPT
+
+
+def test_system_prompt_requires_neutral_documentary_explanations_without_case_advice():
+    assert "Tu peux reformuler un passage en langage clair" in SYSTEM_PROMPT
+    assert "strictement fidèle au texte ou à la décision citée" in SYSTEM_PROMPT
+    assert "Ne donne aucun avis personnel" in SYSTEM_PROMPT
+    assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
+    assert "N'ajoute pas de démarches à entreprendre, de recommandations ou de conseils pratiques" in SYSTEM_PROMPT
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_receives_current_question_for_relevance_check(monkeypatch):
+    import httpx
+    import json
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    source_text = "Les heures supplémentaires peuvent ouvrir droit à compensation selon les règles applicables."
+    source = {
+        "source_id": "SRC-IHTS-1",
+        "title": "Règles relatives aux heures supplémentaires",
+        "text": source_text,
+    }
+    claim = {
+        "source_id": "SRC-IHTS-1",
+        "text": "Les heures supplémentaires peuvent ouvrir droit à une compensation.",
+    }
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": json.dumps({
+                "verdicts": [{
+                    "claim_index": 0,
+                    "source_id": "SRC-IHTS-1",
+                    "verdict": "INSUFFICIENT",
+                    "support_quote": "",
+                }]
+            })}}]
+        })
+
+    real_async_client = httpx.AsyncClient
+
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+    result = await verify_claim_entailment(
+        question="Mon employeur peut-il refuser de compenser mes heures supplémentaires ?",
+        claims=[claim],
+        sources=[source],
+    )
+
+    verifier_question = json.loads(captured["payload"]["messages"][1]["content"])["question_actuelle"]
+    assert verifier_question == "Mon employeur peut-il refuser de compenser mes heures supplémentaires ?"
+    # A source that only says compensation may be possible does not answer
+    # whether the employer may refuse in this agent's specific question.
+    assert result["valid"] is False
+    assert "verdict_0:not_supported" in result["invalid"]
+
+
+@pytest.mark.asyncio
+async def test_ai_payload_preserves_official_administrative_publication_metadata(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import analyze_question
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps({"claims": []})}}], "usage": {}})
+
+    real_async_client = httpx.AsyncClient
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr("app.ai_provider.httpx.AsyncClient", lambda **kwargs: real_async_client(transport=transport, **kwargs))
+
+    await analyze_question(
+        question="Question sur un agent territorial",
+        employer="NATIONAL", facts_date="2025-01-01",
+        sources=[{
+            "source_type": "OTHER_OFFICIAL", "source_id": "OPEN_DATA_JA_1234567890123456",
+            "title": "Décision administrative", "signature_date": "2024-05-10",
+            "jurisdiction": "Tribunal administratif de Grenoble", "official_number": "2400001",
+            "source_status": "OFFICIAL_XML_IMPORTED", "content_kind": "FULL_TEXT",
+            "retrieval_scope": "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT",
+            "excerpt": "Texte intégral officiel suffisamment long pour être transmis au modèle.",
+            "raw_metadata": {"publication_code": "B", "ecli": "ECLI:FR:TA38:2024:2400001", "decision_type": "ordonnance", "solution": "Rejet pour irrecevabilité", "recourse_type": "Excès de pouvoir"},
+        }],
+    )
+    payload_sources = json.loads(captured["payload"]["messages"][1]["content"])["extraits_documentaires_valides"]
+    assert payload_sources[0]["code_publication_jurisprudentielle"] == "B"
+    assert payload_sources[0]["numero_ecli"] == "ECLI:FR:TA38:2024:2400001"
+    assert payload_sources[0]["type_decision"] == "ordonnance"
+    assert payload_sources[0]["solution_decision"] == "Rejet pour irrecevabilité"
+    assert payload_sources[0]["portee_extrait"] == "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+
+
+
+def test_usable_sources_reject_explicitly_failed_integrity_and_out_of_scope_records():
+    from app.ai_provider import _usable_document_sources
+
+    base = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000012345678",
+        "requested_effective_date": "2026-11-21",
+        "excerpt": "Extrait officiel daté suffisamment long pour une analyse documentaire.",
+    }
+    invalid_integrity = {**base, "citation_integrity": {"valid": False}}
+    out_of_scope = {**base, "analysis_eligible": False, "public_service_scope": "FPH"}
+    assert _usable_document_sources([invalid_integrity, out_of_scope]) == []

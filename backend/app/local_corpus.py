@@ -11,6 +11,30 @@ from datetime import date
 from typing import Any
 
 
+def local_document_temporal_status(
+    effective_from: date | str | None,
+    effective_to: date | str | None,
+    validation_status: str,
+    requested_date: date,
+) -> str:
+    def as_date(value: date | str | None) -> date | None:
+        if isinstance(value, date):
+            return value
+        try:
+            return date.fromisoformat(str(value)[:10]) if value else None
+        except (TypeError, ValueError):
+            return None
+
+    start, end = as_date(effective_from), as_date(effective_to)
+    if start is None:
+        return "TEMPORAL_SCOPE_INCOMPLETE"
+    if requested_date < start or (end is not None and requested_date > end):
+        return "NOT_APPLICABLE_ON_REQUESTED_DATE"
+    if validation_status in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}:
+        return "VERIFIED_APPLICABLE"
+    return "LOCAL_VALIDATION_INCOMPLETE"
+
+
 COLLECTIVITY_FILTERS = {
     "VILLE_SAINT_ETIENNE": {
         "codes": ("VILLE_SAINT_ETIENNE", "VILLE_ST_ETIENNE", "VILLE_DE_SAINT_ETIENNE"),
@@ -30,16 +54,11 @@ async def search_local_documents(
     query: str,
     effective_date: date,
     limit: int = 5,
-    collectivity_id: str | None = None,
 ) -> list[dict]:
-    """Search clean, extracted documents in this tenant and optional selected collectivity."""
-    if collectivity_id is None and employer == "NATIONAL":
+    """Search only clean, extracted documents belonging to the current tenant."""
+    if employer == "NATIONAL":
         return []
-    if collectivity_id is not None:
-        aliases = {"codes": (), "names": ()}
-    elif employer in COLLECTIVITY_FILTERS:
-        aliases = COLLECTIVITY_FILTERS[employer]
-    else:
+    if employer not in COLLECTIVITY_FILTERS:
         raise ValueError("Employeur local non pris en charge.")
     query = query.strip()
     if len(query) < 3:
@@ -49,6 +68,7 @@ async def search_local_documents(
     if not 1 <= limit <= 10:
         raise ValueError("La limite de recherche locale doit être comprise entre 1 et 10.")
 
+    aliases = COLLECTIVITY_FILTERS[employer]
     rows = await conn.fetch(
         """
         SELECT d.id, d.title, d.document_type, d.official_number, d.official_url,
@@ -78,11 +98,8 @@ async def search_local_documents(
           AND d.scan_status='CLEAN'
           AND dv.scan_status='CLEAN'
           AND (
-            ($6::uuid IS NOT NULL AND c.id=$6::uuid)
-            OR ($6::uuid IS NULL AND (
-              upper(c.code) = ANY($2::text[])
-              OR lower(c.name) = ANY($3::text[])
-            ))
+            upper(c.code) = ANY($2::text[])
+            OR lower(c.name) = ANY($3::text[])
           )
         ORDER BY relevance DESC, d.published_at DESC NULLS LAST
         LIMIT $5
@@ -92,7 +109,6 @@ async def search_local_documents(
         list(aliases["names"]),
         query,
         limit,
-        collectivity_id,
     )
 
     results: list[dict] = []
@@ -100,14 +116,9 @@ async def search_local_documents(
         effective_from = row["effective_from"]
         effective_to = row["effective_to"]
         validation_status = str(row["validation_status"] or "COLLECTED_UNVERIFIED")
-        if effective_from is None:
-            temporal_status = "TEMPORAL_SCOPE_INCOMPLETE"
-        elif effective_date < effective_from or (effective_to is not None and effective_date > effective_to):
-            temporal_status = "NOT_APPLICABLE_ON_REQUESTED_DATE"
-        elif validation_status in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}:
-            temporal_status = "VERIFIED_APPLICABLE"
-        else:
-            temporal_status = "LOCAL_VALIDATION_INCOMPLETE"
+        temporal_status = local_document_temporal_status(
+            effective_from, effective_to, validation_status, effective_date,
+        )
 
         hash_matches = bool(row["sha256"] and row["extracted_sha256"] and
                             str(row["sha256"]).strip() == str(row["extracted_sha256"]).strip())

@@ -84,7 +84,7 @@ def safe_official_url(value: str | None) -> str | None:
     if not value:
         return None
     parsed = urlparse(value)
-    if parsed.scheme == "https" and parsed.hostname in {"www.legifrance.gouv.fr", "legifrance.gouv.fr"}:
+    if parsed.scheme == "https" and parsed.hostname in {"www.legifrance.gouv.fr", "legifrance.gouv.fr", "opendata.justice-administrative.fr"}:
         return value[:1500]
     return None
 
@@ -190,6 +190,28 @@ def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
     return variants
 
 
+def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: int = 12) -> list[dict]:
+    """Keep results from each independent legal sub-question before de-duplication."""
+    if not 1 <= limit <= 30:
+        raise ValueError("La limite de résultats du corpus doit être comprise entre 1 et 30.")
+    selected: list[dict] = []
+    seen: set[str] = set()
+    max_depth = max((len(items) for items in results_by_query), default=0)
+    for depth in range(max_depth):
+        for items in results_by_query:
+            if depth >= len(items):
+                continue
+            item = items[depth]
+            identifier = item.get("source_id")
+            if not isinstance(identifier, str) or not identifier or identifier in seen:
+                continue
+            seen.add(identifier)
+            selected.append(item)
+            if len(selected) >= limit:
+                return selected
+    return selected
+
+
 async def search_legal_corpus(conn, query: str, requested_date: date, limit: int = 12) -> list[dict]:
     if not isinstance(query, str) or len(query.strip()) < 2 or len(query) > 500:
         raise ValueError("La recherche documentaire doit contenir entre 2 et 500 caractères.")
@@ -206,7 +228,8 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
       ), ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
-          d.source_status,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,c.anchor,c.content,c.content_kind,
+          d.source_status,d.raw_metadata,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
+          c.anchor,c.content content_chunk,c.content_kind,c.ordinal,
           (2.0 * ts_rank_cd(c.search_vector,st.original_query)
              + ts_rank_cd(c.search_vector,st.expansion_query)) rank,
           row_number() OVER(PARTITION BY v.id ORDER BY
@@ -217,8 +240,37 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         CROSS JOIN search_terms st
         WHERE c.content_kind='FULL_TEXT'
           AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
+      ), selected_chunks AS (
+        SELECT version_id, string_agg(content_chunk, E'\n\n' ORDER BY chunk_order) AS content, max(rank) AS rank
+        FROM (
+          SELECT version_id,content_chunk,rn AS chunk_order,rank
+          FROM ranked WHERE rn <= CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
+          UNION ALL
+          SELECT final_chunk.version_id,final_chunk.content_chunk,999999 AS chunk_order,0.0 AS rank
+          FROM (
+            SELECT c.version_id,c.content AS content_chunk,c.ordinal
+            FROM legal_chunks c
+            JOIN (SELECT DISTINCT version_id FROM ranked) matched USING(version_id)
+            WHERE c.content_kind='FULL_TEXT'
+              AND c.ordinal=(SELECT max(c2.ordinal) FROM legal_chunks c2
+                             WHERE c2.version_id=c.version_id AND c2.content_kind='FULL_TEXT')
+          ) final_chunk
+          WHERE NOT EXISTS (
+            SELECT 1 FROM ranked r
+            WHERE r.version_id=final_chunk.version_id AND r.ordinal=final_chunk.ordinal AND r.rn <= CASE WHEN r.document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
+          )
+        ) selected_passages
+        GROUP BY version_id
+      ), document_metadata AS (
+        SELECT DISTINCT ON (version_id) document_id,version_id,source_type,source_id,title,document_kind,
+          official_number,jurisdiction,official_url,signature_date,publication_date,document_status,
+          source_status,raw_metadata,valid_from,valid_to,version_status,raw_payload,full_text,text_sha256,
+          anchor,content_kind
+        FROM ranked ORDER BY version_id,rank DESC,ordinal
       )
-      SELECT * FROM ranked WHERE rn=1 ORDER BY rank DESC,publication_date DESC NULLS LAST LIMIT $3
+      SELECT metadata.*,selected_chunks.content,selected_chunks.rank
+      FROM document_metadata metadata JOIN selected_chunks USING(version_id)
+      ORDER BY selected_chunks.rank DESC,metadata.publication_date DESC NULLS LAST LIMIT $3
     """, query.strip(), expansion_expression, limit)
     results = []
     for row in rows:
@@ -226,9 +278,21 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
         item["temporal_status"] = temporal_status(item.get("valid_from"), item.get("valid_to"), requested_date,
             item.get("document_kind"), item.get("signature_date"), item.get("raw_payload"), item.get("version_status"))
         item["requested_date"] = requested_date.isoformat()
+        metadata = item.get("raw_metadata")
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except (ValueError, TypeError):
+                metadata = {}
+        item["raw_metadata"] = metadata if isinstance(metadata, dict) else {}
         item["source_id"] = item.pop("source_id")
         item["source_type"] = item.pop("source_type")
-        item["excerpt"] = item.pop("content")[:2200]
+        item["excerpt"] = item.pop("content")[:8500]
+        item["retrieval_scope"] = (
+            "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            if item.get("document_kind") == "ADMIN_CASELAW"
+            else "SELECTED_RELEVANT_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
+        )
         item["content_kind"] = item.get("content_kind")
         full_text = item.pop("full_text")
         expected_hash = item.pop("text_sha256")
