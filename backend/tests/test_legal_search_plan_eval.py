@@ -46,7 +46,7 @@ FPT_RETRIEVAL_CASES = [
     ),
     (
         "Dans mon service on n'est pas assez nombreux.",
-        ("décret 85-603", "charge de travail"),
+        ("decret 85-603", "charge de travail"),
     ),
     (
         "Je suis titulaire, ma collectivité veut me virer.",
