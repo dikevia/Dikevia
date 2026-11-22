@@ -94,7 +94,7 @@ _TOPICS: tuple[dict[str, Any], ...] = (
         "key": "citis",
         "triggers": (
             "citis", "conge pour invalidite temporaire imputable au service",
-            "invalidite temporaire imputable au service",
+            "invalidite temporaire imputable au service", "accident de service",
         ),
         "expansion": (
             "congé pour invalidité temporaire imputable au service accident reconnu imputable "
@@ -509,7 +509,31 @@ _TOPICS: tuple[dict[str, Any], ...] = (
 )
 
 
+_LEGAL_QUERY_ALIASES: tuple[tuple[str, str], ...] = (
+    # These are retrieval synonyms only. They do not establish a legal
+    # qualification (for example, an "accident du travail" must still be
+    # qualified against the user's public-service status and the official text).
+    ("mi temps therapeutique", "temps partiel pour raison therapeutique"),
+    ("mi-temps therapeutique", "temps partiel pour raison therapeutique"),
+    ("reprise a mi temps", "temps partiel pour raison therapeutique"),
+    ("reprendre a mi temps", "temps partiel pour raison therapeutique"),
+    ("accident du travail", "accident de service"),
+    ("arret apres accident", "accident de service citis"),
+)
+
+
+def _expand_legal_query(query: str) -> str:
+    """Append controlled legal equivalents while preserving the user's wording."""
+    folded = normalize(query)
+    additions: list[str] = []
+    for colloquial, legal in _LEGAL_QUERY_ALIASES:
+        if re.search(r"(?<![a-z0-9])" + re.escape(normalize(colloquial)) + r"(?![a-z0-9])", folded):
+            additions.append(legal)
+    return " ".join(dict.fromkeys([query.strip(), *additions])).strip()
+
+
 def _matching_topics(query: str) -> list[dict[str, Any]]:
+    query = _expand_legal_query(query)
     folded = normalize(query)
     matched = [
         topic for topic in _TOPICS
@@ -535,7 +559,8 @@ def _matching_topics(query: str) -> list[dict[str, Any]]:
 def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
     """Return ranked CGFP leads, with domain-specific precision safeguards."""
     safe_limit = max(1, min(int(limit), 20))
-    base = lexical_search(query, limit=20)
+    search_query = _expand_legal_query(query)
+    base = lexical_search(search_query, limit=20)
     # An explicit article number is a direct lookup, never a lexical search.
     # The BM25 engine also scores ordinary words in the question; returning its
     # top hits when the requested reference is absent creates convincing but
@@ -555,7 +580,7 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
             "reference_found_in_snapshot": bool(exact_results),
         }
 
-    topics = _matching_topics(query)
+    topics = _matching_topics(search_query)
     if not topics:
         # A generic word such as "travail" must not make dozens of unrelated
         # CGFP articles look relevant. Keep only meaningful lexical matches;
@@ -601,7 +626,7 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
         }
 
     expansion = " ".join(topic["expansion"] for topic in topics)
-    enriched = lexical_search((query[:350] + " " + expansion)[:500], limit=20)
+    enriched = lexical_search((search_query[:350] + " " + expansion)[:500], limit=20)
     merged: dict[str, dict[str, Any]] = {}
     for item in base.get("results", []):
         merged[item["article"]] = {**item, "_original_score": float(item.get("score", 0.0))}
@@ -659,7 +684,7 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
         "prefet", "sous-prefet", "administration penitentiaire",
         "agent penitentiaire", "douanes", "douanier",
     )
-    if not any(normalize(term) in normalize(query) for term in special_categories):
+    if not any(normalize(term) in normalize(search_query) for term in special_categories):
         ranked = [item for item in ranked if item.get("article") != "L134-10"]
 
     ranked.sort(key=lambda item: (-float(item["score"]), item["article"]))
