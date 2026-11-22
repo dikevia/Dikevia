@@ -432,7 +432,8 @@ def test_fpt_fallback_search_keeps_territorial_topic_expansion():
         "Quelles sont les règles de congés annuels ?", "FPT",
     )
     assert queries
-    assert axes
+    # One focused topic does not create a mandatory multi-axis evidence contract.
+    assert axes == []
     assert any("décret 85-1250" in query for query in queries)
 
 
