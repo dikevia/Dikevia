@@ -477,3 +477,36 @@ def test_cgfp_article_discovery_verifies_unanchored_lexical_candidates_live(monk
 
     assert orchestrator._cgfp_article_discovery_queries(found) == ["article L823-1"]
 
+
+
+def test_public_service_referentiel_expands_agent_vocabulary_without_activating_citations():
+    from app.cgfp_relevance import _expand_legal_query
+
+    citis = _expand_legal_query("Mon accident du travail et mon CITIS")
+    assert "congé pour invalidité temporaire imputable au service" in citis
+    assert "accident de trajet" in citis
+    assert "L822-21" not in citis
+    assert "87-602" not in citis
+
+    cnfpt = _expand_legal_query("Je souhaite faire évoluer mon emploi-type et ma fiche de poste")
+    assert "métier" in cnfpt
+    assert "compétence" in cnfpt
+    assert "poste de travail" in cnfpt
+
+    tpt = _expand_legal_query("Mon médecin recommande un TPT")
+    assert "quotité de travail thérapeutique" in tpt
+    assert "réadaptation professionnelle" in tpt
+
+
+def test_public_service_referentiel_has_provenance_and_unverified_reference_leads():
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "app" / "fp_lexical_referentiel.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    source_ids = {item["id"] for item in payload["sources"]}
+    assert {"service_public_fp", "dgafp_tpt_2026", "cnfpt_glossaire_metiers_2026",
+            "cnfpt_repertoire", "dgcl_portail", "cig_pc", "legifrance_cgfp"} <= source_ids
+    assert len(payload["entries"]) >= 20
+    assert all(entry["reference_validation"] == "UNVERIFIED_LEAD_ONLY"
+               for entry in payload["entries"])
