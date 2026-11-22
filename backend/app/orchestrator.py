@@ -50,11 +50,9 @@ def _build_versant_fallback_research(
     if public_service == "FPT":
         queries = build_official_search_queries(question)
         axes = build_official_research_axes(question)
-        # Keep a single primary query as a bounded fallback axis when a
-        # recognized single-topic question has no compound-axis plan. Passing
-        # every retrieval variant as a mandatory axis over-constrains evidence
-        # validation and rejects otherwise relevant official sources.
-        return queries, (axes or queries[:1])
+        # A single recognized topic does not become a mandatory coverage axis:
+        # only independently identified sub-questions are required to be covered.
+        return queries, axes
     branch_qualifier = (
         "fonction publique de l'État" if public_service == "FPE"
         else "fonction publique hospitalière"
