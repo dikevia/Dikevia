@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 import httpx
 import pytest
 from app.config import settings
@@ -23,7 +23,7 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
         if request.url.path.endswith("/search"):
             body = __import__("json").loads(request.content)
             assert body["fond"] == "CODE_DATE"
-            assert body["recherche"]["filtres"][1]["singleDate"] == "2025-11-16"
+            assert body["recherche"]["filtres"][1]["singleDate"] == int(datetime(2025, 11, 16, tzinfo=timezone.utc).timestamp() * 1000)
             return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
         if request.url.path.endswith("/consult/getArticle"):
             return httpx.Response(200, json={"article": {"id": ARTICLE_ID, "num": "L. 123-4", "nomCode": "Code général de la fonction publique", "dateDebut": "2025-01-01", "texte": "Le texte réglementaire officiel est ici suffisamment long pour le test."}})
@@ -185,7 +185,8 @@ def test_legifrance_search_payload_uses_code_date_and_article_number(monkeypatch
     payload = LegifranceConnector()._search_payload("article L. 123-4", date(2025, 1, 1))
     assert payload["fond"] == "CODE_DATE"
     assert payload["recherche"]["champs"][0]["criteres"][0]["valeur"] == "L123-4"
-    assert payload["recherche"]["typePagination"] == "DEFAUT"
+    assert payload["recherche"]["typePagination"] == "ARTICLE"
+    assert payload["recherche"]["filtres"][1]["singleDate"] == LegifranceConnector._date_epoch_ms(date(2025, 1, 1))
 
 
 
@@ -357,6 +358,56 @@ async def test_legifrance_ping_falls_back_to_consult_route_only_when_list_route_
     assert await connector.ping() is True
     assert any(path.endswith("/list/ping") for path in seen)
     assert any(path.endswith("/consult/ping") for path in seen)
+
+
+@pytest.mark.asyncio
+async def test_legifrance_ping_falls_back_when_list_route_returns_upstream_500(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_environment", "production")
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/list/ping"):
+            return httpx.Response(500, json={"error": "upstream"})
+        if request.url.path.endswith("/consult/ping"):
+            return httpx.Response(200, text="pong")
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    assert await connector.ping() is True
+    assert any(path.endswith("/list/ping") for path in seen)
+    assert any(path.endswith("/consult/ping") for path in seen)
+
+
+@pytest.mark.parametrize("status_code", [401, 403])
+@pytest.mark.asyncio
+async def test_legifrance_ping_does_not_hide_auth_or_permission_failures(
+    monkeypatch, status_code
+):
+    monkeypatch.setattr(settings, "legifrance_environment", "production")
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/list/ping"):
+            return httpx.Response(status_code)
+        if request.url.path.endswith("/consult/ping"):
+            return httpx.Response(200, text="pong")
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    with pytest.raises(LegifranceUnavailable):
+        await connector.ping()
+    assert any(path.endswith("/list/ping") for path in seen)
+    assert not any(path.endswith("/consult/ping") for path in seen)
 
 
 @pytest.mark.asyncio

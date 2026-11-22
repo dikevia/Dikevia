@@ -28,3 +28,14 @@ def test_oidc_silent_callback_does_not_loop_when_no_sso_session_exists():
     assert "const hadCallback =" in auth
     assert "if (hadCallback || completed || accessToken) return;" in auth
     assert "flow === 'silent'" in auth
+
+
+
+def test_android_webview_flushes_oidc_cookies_without_clearing_the_session():
+    activity = (
+        ROOT / "android/app/src/main/java/fr/dikevia/commercial/MainActivity.kt"
+    ).read_text(encoding="utf-8")
+    assert "override fun onPause()" in activity
+    assert "CookieManager.getInstance().flush()" in activity
+    assert "removeAllCookies" not in activity
+    assert "removeSessionCookies" not in activity

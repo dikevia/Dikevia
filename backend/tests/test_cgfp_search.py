@@ -161,3 +161,81 @@ def test_snapshot_fallback_rejects_irrelevant_hits_for_overtime():
         "Recherche CGFP indisponible.", found,
         "On ne me paie pas mes heures supplémentaires",
     )
+
+
+
+def test_cgfp_concept_router_covers_major_fpt_code_subjects():
+    from app.cgfp_relevance import _matching_topics
+
+    cases = [
+        ("Mon agent de maîtrise m'a fait une évaluation annuelle à charge, puis-je la contester ?",
+         "carriere_avancement_evaluation"),
+        ("Mon supérieur m'impose le secret professionnel.", "droits_obligations_deontologie"),
+        ("Comment se passe ma titularisation après le stage ?", "recrutement_stage_titularisation"),
+        ("Ma collectivité refuse ma promotion interne.", "carriere_avancement_evaluation"),
+        ("Puis-je être muté dans une autre collectivité ?", "mobilite_positions_statutaires"),
+        ("Mon employeur refuse ma formation CNFPT.", "formation_professionnelle"),
+        ("Mon congé parental est refusé.", "conges_absences_familiales"),
+        ("Le service de médecine préventive n'intervient pas.", "sante_securite_prevention"),
+        ("Mon employeur peut-il m'interdire de faire grève ?", "greve_dialogue_social_representativite"),
+        ("Je souhaite démissionner de la fonction publique territoriale.", "cessation_fonctions_retraite"),
+        ("Je subis une discrimination au travail.", "egalite_discrimination"),
+        ("Mon ASA syndicale est refusée.", "droits_syndicaux_dialogue_social"),
+    ]
+    for question, expected_topic in cases:
+        assert expected_topic in {topic["key"] for topic in _matching_topics(question)}
+
+
+def test_cgfp_retrieval_keeps_overtime_as_a_specific_topic():
+    from app.cgfp_relevance import _matching_topics
+
+    topics = {topic["key"] for topic in _matching_topics(
+        "Je suis contractuel et mes heures supplémentaires ne sont pas payées."
+    )}
+    assert topics == {"heures_supplementaires_ihts"}
+
+
+
+def test_cgfp_index_snapshot_is_explicitly_a_dated_discovery_source():
+    from app.cgfp import load_index
+
+    source = load_index()
+    assert source["source_id"] == "FR-CGFP-2026-10-31"
+    assert source["verification_status"] == "SNAPSHOT_NOT_LIVE_VERIFIED"
+    assert source["article_count"] == len(source["articles"])
+    assert source["articles"]
+    assert all(
+        item.get("article") and item.get("text")
+        and item.get("page_start", 0) >= 1
+        and item.get("page_end", 0) >= item.get("page_start", 0)
+        for item in source["articles"]
+    )
+
+
+def test_cgfp_live_article_discovery_keeps_up_to_six_relevant_subtopics(monkeypatch):
+    import app.orchestrator as orchestrator
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", lambda _ref: True)
+    found = {"results": [
+        {"article": f"L{number}", "matched_concepts": ["topic"]}
+        for number in range(1, 9)
+    ]}
+    assert orchestrator._cgfp_article_discovery_queries(found) == [
+        f"article L{number}" for number in range(1, 7)
+    ]
+
+
+def test_code_research_budget_never_drops_a_recognized_subquestion():
+    from app.orchestrator import _build_code_research_queries
+
+    axes = [f"axe juridique {number}" for number in range(1, 7)]
+    exact_articles = [f"article L{number}" for number in range(1, 7)]
+    result = _build_code_research_queries(axes, exact_articles, max_queries=5)
+    assert result == axes
+
+    result_with_spare_capacity = _build_code_research_queries(
+        axes[:3], exact_articles, max_queries=5
+    )
+    assert result_with_spare_capacity == [
+        *axes[:3], "article L1", "article L2"
+    ]

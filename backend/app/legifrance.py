@@ -137,8 +137,9 @@ class LegifranceConnector:
         """Check the documented Légifrance ping endpoint, with guide-compatible fallback.
 
         The DILA FAQ documents /list/ping; the PISTE user guide also exposes
-        /consult/ping. Only a missing-route response triggers the fallback:
-        authentication and server errors remain visible as connection failures.
+        /consult/ping. Missing routes and upstream 5xx responses trigger the
+        independent fallback. Authentication and permission failures remain
+        visible as connection failures.
         """
         token = await self._get_token()
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
@@ -150,7 +151,19 @@ class LegifranceConnector:
                     response.raise_for_status()
                     return True
                 except httpx.HTTPStatusError as exc:
-                    if exc.response.status_code in {404, 405} and path == "list/ping":
+                    # Some production PISTE deployments return 5xx on /list/ping
+                    # while the documented /consult/ping route remains healthy.
+                    # Try the independent fallback for missing/unsupported routes
+                    # and upstream failures, but never hide authentication/permission
+                    # failures (401/403).
+                    if path == "list/ping" and (
+                        exc.response.status_code in {404, 405}
+                        or exc.response.status_code >= 500
+                    ):
+                        logger.warning(
+                            "DIKEVIA_DIAGNOSTIC PISTE_PING_FALLBACK primary=%s status=%d",
+                            path, exc.response.status_code,
+                        )
                         continue
                     raise LegifranceUnavailable(
                         f"Refus du point de contrôle PISTE {path} (HTTP {exc.response.status_code})."
@@ -177,10 +190,12 @@ class LegifranceConnector:
             "champs": [field],
             "filtres": [
                 {"facette": "NOM_CODE", "valeurs": [code_name or settings.legifrance_code_name]},
-                {"facette": "DATE_VERSION", "singleDate": effective_date.isoformat()},
+                {"facette": "DATE_VERSION", "singleDate": self._date_epoch_ms(effective_date)},
             ],
             "pageNumber": 1, "pageSize": 10, "operateur": "ET", "sort": "PERTINENCE",
-            "typePagination": "DEFAUT",
+            # PISTE's official Légifrance FAQ uses ARTICLE pagination for CODE_DATE
+            # article searches; DEFAUT is intended for document-level pagination.
+            "typePagination": "ARTICLE",
         }}
 
     @staticmethod

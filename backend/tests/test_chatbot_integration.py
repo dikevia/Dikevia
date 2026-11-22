@@ -36,6 +36,7 @@ def test_general_public_service_scope_needs_multiple_markers():
     })
     assert eligible["scope"] == "GENERAL_PUBLIC_SERVICE"
     assert eligible["analysis_eligible"] is True
+    assert eligible["claim_eligible"] is False
     assert ambiguous["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
     assert ambiguous["analysis_eligible"] is False
 

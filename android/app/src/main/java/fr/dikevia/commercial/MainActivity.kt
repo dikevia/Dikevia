@@ -126,6 +126,13 @@ class MainActivity : Activity() {
         filePathCallback = null
     }
 
+    override fun onPause() {
+        // Persist Keycloak SSO cookies before Android suspends or backgrounds the WebView.
+        // This keeps prompt=none able to reuse the existing provider session on the next launch.
+        CookieManager.getInstance().flush()
+        super.onPause()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         webView.saveState(outState)
         super.onSaveInstanceState(outState)
