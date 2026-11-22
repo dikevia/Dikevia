@@ -1,5 +1,6 @@
 /* OIDC Authorization Code + PKCE pour application navigateur publique.
  * Jeton d'accès conservé uniquement en mémoire ; aucun refresh token persistant.
+ * La restauration SSO utilise une iframe cachée : pas de redirection complète au démarrage.
  * L'API reste responsable de la validation cryptographique du jeton.
  */
 (() => {
@@ -11,6 +12,7 @@
   let accessToken = null;
   let expiresAt = 0;
   let discovery = null;
+  let silentCheckInFlight = null;
   const encoder = new TextEncoder();
   const random = (n=32) => {
     const bytes = crypto.getRandomValues(new Uint8Array(n));
@@ -34,6 +36,20 @@
     discovery = data;
     return data;
   }
+  function authorizationUrl(oidc, redirectUri, state, verifier, prompt) {
+    const params = {
+      client_id:cfg.client_id,response_type:'code',redirect_uri:redirectUri,
+      scope:cfg.scopes||'openid profile email',state,
+      code_challenge:undefined,code_challenge_method:'S256'
+    };
+    return challenge(verifier).then(value => {
+      params.code_challenge=value;
+      if (prompt) params.prompt=prompt;
+      const url=new URL(oidc.authorization_endpoint);
+      url.search=new URLSearchParams(params);
+      return url.toString();
+    });
+  }
   async function beginAuthorization(prompt) {
     const pending = new URLSearchParams(window.location.search).get('invitation_token');
     if (pending) sessionStorage.setItem('cfdt_pending_invitation', pending);
@@ -41,13 +57,9 @@
     const state = random(24), verifier = random(48);
     sessionStorage.setItem('cfdt_oidc_state',state);
     sessionStorage.setItem('cfdt_oidc_verifier',verifier);
-    sessionStorage.setItem('cfdt_oidc_flow',prompt === 'none' ? 'silent' : 'interactive');
-    const params = {client_id:cfg.client_id,response_type:'code',redirect_uri:cfg.redirect_uri,
-      scope:cfg.scopes||'openid profile email',state,code_challenge:await challenge(verifier),code_challenge_method:'S256'};
-    if (prompt) params.prompt = prompt;
-    const url = new URL(oidc.authorization_endpoint);
-    url.search = new URLSearchParams(params);
-    window.location.assign(url.toString());
+    sessionStorage.setItem('cfdt_oidc_flow','interactive');
+    const url=await authorizationUrl(oidc,cfg.redirect_uri,state,verifier,prompt);
+    window.location.assign(url);
   }
   async function login() {
     sessionStorage.removeItem('cfdt_oidc_silent_failed');
@@ -56,101 +68,176 @@
   function cleanCallbackUrl() {
     history.replaceState({},document.title,window.location.pathname+window.location.hash);
   }
+  async function acceptPendingInvitation() {
+    const pendingInvitation = sessionStorage.getItem('cfdt_pending_invitation');
+    if (!pendingInvitation) return;
+    const accepted = await fetch('/api/v1/invitations/accept', {
+      method:'POST',cache:'no-store',
+      headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({token:pendingInvitation})
+    });
+    if (accepted.ok) {
+      sessionStorage.removeItem('cfdt_pending_invitation');
+      window.dispatchEvent(new CustomEvent('cfdt:invitation-accepted',{detail:await accepted.json()}));
+    } else {
+      const detail=await accepted.json().catch(()=>({}));
+      window.dispatchEvent(new CustomEvent('cfdt:invitation-error',{detail:{message:detail.detail||'Impossible d’accepter l’invitation.'}}));
+    }
+  }
+  async function exchangeCode(code,verifier,redirectUri) {
+    const oidc=await metadata();
+    const body=new URLSearchParams({
+      grant_type:'authorization_code',client_id:cfg.client_id,code,
+      redirect_uri:redirectUri,code_verifier:verifier
+    });
+    const response=await fetch(oidc.token_endpoint,{
+      method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body,cache:'no-store'
+    });
+    if(!response.ok) throw new Error('Échange du code OIDC refusé. Vérifiez les URI autorisées et le support CORS du fournisseur.');
+    const data=await response.json();
+    if(!data.access_token||!Number.isFinite(data.expires_in)) throw new Error('Réponse OIDC incomplète.');
+    accessToken=data.access_token;
+    expiresAt=Date.now()+data.expires_in*1000;
+    sessionStorage.removeItem('cfdt_oidc_silent_failed');
+    await acceptPendingInvitation();
+  }
   async function completeCallback() {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const error = params.get('error');
-    if (!code && !error) return false;
-    const state = params.get('state');
-    const expected = sessionStorage.getItem('cfdt_oidc_state');
-    const verifier = sessionStorage.getItem('cfdt_oidc_verifier');
-    const flow = sessionStorage.getItem('cfdt_oidc_flow');
+    const params=new URLSearchParams(window.location.search);
+    const code=params.get('code'),error=params.get('error');
+    if(!code&&!error) return false;
+    const state=params.get('state');
+    const expected=sessionStorage.getItem('cfdt_oidc_state');
+    const verifier=sessionStorage.getItem('cfdt_oidc_verifier');
     sessionStorage.removeItem('cfdt_oidc_state');
     sessionStorage.removeItem('cfdt_oidc_verifier');
     sessionStorage.removeItem('cfdt_oidc_flow');
-    sessionStorage.removeItem('cfdt_oidc_silent_attempt');
-    if (!state || !expected || state !== expected || (code && !verifier)) {
+    if(!state||!expected||state!==expected||(code&&!verifier)){
       cleanCallbackUrl();
       throw new Error('État OIDC invalide. Relancez la connexion.');
     }
-    if (error) {
+    if(error){
       cleanCallbackUrl();
-      if (flow === 'silent' && ['login_required','interaction_required','consent_required'].includes(error)) {
+      if(['login_required','interaction_required','consent_required'].includes(error)){
         sessionStorage.setItem('cfdt_oidc_silent_failed','1');
         return false;
       }
-      throw new Error(params.get('error_description') || 'Le fournisseur d’identité a refusé la connexion ('+error+').');
+      throw new Error(params.get('error_description')||'Le fournisseur d’identité a refusé la connexion ('+error+').');
     }
-    const oidc = await metadata();
-    const body = new URLSearchParams({grant_type:'authorization_code',client_id:cfg.client_id,code,
-      redirect_uri:cfg.redirect_uri,code_verifier:verifier});
-    const response = await fetch(oidc.token_endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body,cache:'no-store'});
-    if (!response.ok) {
-      cleanCallbackUrl();
-      throw new Error('Échange du code OIDC refusé. Vérifiez les URI autorisées et le support CORS du fournisseur.');
-    }
-    const data = await response.json();
-    if (!data.access_token || !Number.isFinite(data.expires_in)) {
-      cleanCallbackUrl();
-      throw new Error('Réponse OIDC incomplète.');
-    }
-    accessToken = data.access_token;
-    expiresAt = Date.now() + data.expires_in * 1000;
-    sessionStorage.removeItem('cfdt_oidc_silent_failed');
-    const pendingInvitation = sessionStorage.getItem('cfdt_pending_invitation');
-    if (pendingInvitation) {
-      const accepted = await fetch('/api/v1/invitations/accept', {
-        method: 'POST', cache: 'no-store',
-        headers: {'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json'},
-        body: JSON.stringify({token: pendingInvitation})
-      });
-      if (accepted.ok) {
-        sessionStorage.removeItem('cfdt_pending_invitation');
-        window.dispatchEvent(new CustomEvent('cfdt:invitation-accepted', {detail: await accepted.json()}));
-      } else {
-        const detail = await accepted.json().catch(() => ({}));
-        window.dispatchEvent(new CustomEvent('cfdt:invitation-error', {detail: {message: detail.detail || 'Impossible d’accepter l’invitation.'}}));
-      }
-    }
-    cleanCallbackUrl();
+    try { await exchangeCode(code,verifier,cfg.redirect_uri); }
+    finally { cleanCallbackUrl(); }
     return true;
   }
+  async function silentCheckSso(force=false) {
+    if(silentCheckInFlight) return silentCheckInFlight;
+    silentCheckInFlight=(async()=>{
+      const redirectUri=cfg.silent_redirect_uri;
+      if(!redirectUri) return false;
+      const callback=new URL(redirectUri,window.location.href);
+      if(callback.origin!==window.location.origin) return false;
+      const oidc=await metadata();
+      const state=random(24),verifier=random(48);
+      sessionStorage.setItem('cfdt_oidc_state',state);
+      sessionStorage.setItem('cfdt_oidc_verifier',verifier);
+      sessionStorage.setItem('cfdt_oidc_flow','silent');
+      const authUrl=await authorizationUrl(oidc,redirectUri,state,verifier,'none');
+      const frame=document.createElement('iframe');
+      frame.setAttribute('aria-hidden','true');
+      frame.tabIndex=-1;
+      frame.style.cssText='position:absolute;width:1px;height:1px;left:-10000px;border:0';
+      const result=await new Promise(resolve=>{
+        let settled=false;
+        const finish=value=>{
+          if(settled)return;
+          settled=true;
+          clearTimeout(timer);
+          window.removeEventListener('message',onMessage);
+          frame.remove();
+          resolve(value);
+        };
+        const onMessage=event=>{
+          if(event.origin!==window.location.origin||event.source!==frame.contentWindow)return;
+          if(!event.data||event.data.type!=='cfdt-oidc-silent-callback'||typeof event.data.url!=='string')return;
+          finish(event.data.url);
+        };
+        window.addEventListener('message',onMessage);
+        const timer=setTimeout(()=>finish(null),8000);
+        frame.src=authUrl;
+        document.body.appendChild(frame);
+      });
+      if(!result){
+        sessionStorage.removeItem('cfdt_oidc_state');
+        sessionStorage.removeItem('cfdt_oidc_verifier');
+        sessionStorage.removeItem('cfdt_oidc_flow');
+        sessionStorage.setItem('cfdt_oidc_silent_failed','1');
+        return false;
+      }
+      const returned=new URL(result,window.location.origin);
+      if(returned.origin!==window.location.origin||returned.pathname!==callback.pathname){
+        sessionStorage.removeItem('cfdt_oidc_state');
+        sessionStorage.removeItem('cfdt_oidc_verifier');
+        sessionStorage.removeItem('cfdt_oidc_flow');
+        throw new Error('Retour OIDC silencieux provenant d’une origine inattendue.');
+      }
+      const params=returned.searchParams;
+      const code=params.get('code'),error=params.get('error'),returnedState=params.get('state');
+      const expected=sessionStorage.getItem('cfdt_oidc_state');
+      const storedVerifier=sessionStorage.getItem('cfdt_oidc_verifier');
+      sessionStorage.removeItem('cfdt_oidc_state');
+      sessionStorage.removeItem('cfdt_oidc_verifier');
+      sessionStorage.removeItem('cfdt_oidc_flow');
+      if(!returnedState||!expected||returnedState!==expected||(code&&!storedVerifier))
+        throw new Error('État OIDC silencieux invalide.');
+      if(error){
+        if(['login_required','interaction_required','consent_required'].includes(error)){
+          sessionStorage.setItem('cfdt_oidc_silent_failed','1');
+          return false;
+        }
+        throw new Error('Restauration SSO impossible : '+error+'.');
+      }
+      if(!code||!storedVerifier) return false;
+      await exchangeCode(code,storedVerifier,redirectUri);
+      return true;
+    })().finally(()=>{silentCheckInFlight=null;});
+    return silentCheckInFlight;
+  }
   async function restoreSsoSession() {
-    const hadCallback = new URLSearchParams(window.location.search).has('code') ||
+    const hadCallback=new URLSearchParams(window.location.search).has('code')||
       new URLSearchParams(window.location.search).has('error');
-    const completed = await completeCallback();
-    if (hadCallback || completed || accessToken) return;
-    // Une seule tentative silencieuse par navigation de retour : jamais de boucle.
-    if (sessionStorage.getItem('cfdt_oidc_silent_failed') === '1') return;
-    if (sessionStorage.getItem('cfdt_oidc_silent_attempt') === '1') {
-      sessionStorage.removeItem('cfdt_oidc_silent_attempt');
-      return;
-    }
-    if (new URLSearchParams(window.location.search).has('code') ||
-        new URLSearchParams(window.location.search).has('error')) return;
-    sessionStorage.setItem('cfdt_oidc_silent_attempt','1');
-    try {
-      await beginAuthorization('none');
-    } catch (error) {
-      sessionStorage.removeItem('cfdt_oidc_silent_attempt');
+    const completed=await completeCallback();
+    if(hadCallback||completed||accessToken)return;
+    if(sessionStorage.getItem('cfdt_oidc_silent_failed')==='1')return;
+    try { await silentCheckSso(); }
+    catch(error) {
+      sessionStorage.setItem('cfdt_oidc_silent_failed','1');
       throw error;
     }
   }
-  const ready = restoreSsoSession();
-  window.CFDT_JURIS_AUTH = {
+  const ready=restoreSsoSession();
+  window.CFDT_JURIS_AUTH={
     ready,
-    async getAccessToken() {
+    async getAccessToken(){
       await ready;
-      if (accessToken && Date.now() < expiresAt - 60000) return accessToken;
-      if (accessToken && Date.now() >= expiresAt - 60000 && sessionStorage.getItem('cfdt_oidc_silent_failed') !== '1') {
-        // Renew with the existing Keycloak SSO cookie; never persist access or refresh tokens.
-        await beginAuthorization('none');
+      if(accessToken&&Date.now()<expiresAt-60000)return accessToken;
+      if(accessToken&&Date.now()>=expiresAt-60000){
+        accessToken=null;expiresAt=0;
+        const restored=await silentCheckSso(true).catch(()=>false);
+        if(restored&&accessToken&&Date.now()<expiresAt-60000)return accessToken;
       }
       return null;
     },
-    // Une callback précédente peut avoir échoué (code refusé, CORS, réseau).
-    // Cela ne doit pas empêcher l'utilisateur de relancer une authentification.
-    async login() { await ready.catch(() => {}); return login(); },
-    async logout() { accessToken=null;expiresAt=0;sessionStorage.removeItem('cfdt_oidc_state');sessionStorage.removeItem('cfdt_oidc_verifier');const oidc=await metadata().catch(()=>null);if(oidc?.end_session_endpoint)window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({client_id:cfg.client_id,post_logout_redirect_uri:cfg.redirect_uri})); }
+    async login(){await ready.catch(()=>{});return login();},
+    async logout(){
+      accessToken=null;expiresAt=0;
+      sessionStorage.removeItem('cfdt_oidc_state');
+      sessionStorage.removeItem('cfdt_oidc_verifier');
+      sessionStorage.removeItem('cfdt_oidc_flow');
+      sessionStorage.removeItem('cfdt_oidc_silent_failed');
+      const oidc=await metadata().catch(()=>null);
+      if(oidc?.end_session_endpoint)
+        window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({
+          client_id:cfg.client_id,post_logout_redirect_uri:cfg.redirect_uri
+        }));
+    }
   };
 })();
