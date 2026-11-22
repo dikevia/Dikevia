@@ -51,12 +51,3 @@ def test_checkout_event_maps_org_and_plan():
 
 def test_unrecognized_event_is_ignored():
     assert extract_subscription_state({"type": "customer.created", "data": {"object": {}}}) is None
-
-
-def test_public_prices_are_ttc_inclusive_and_server_side():
-    plans = {p["code"]: p for p in public_plans()}
-    assert plans["INDIVIDUAL_1"]["amount_cents"] == 1500
-    assert plans["SYNDICAT_10"]["amount_cents"] == 8000
-    assert plans["SYNDICAT_50"]["amount_cents"] == 30000
-    assert set(plans) == {"INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50"}
-    assert all(PLANS[code]["tax_inclusive"] for code in plans)

@@ -129,14 +129,19 @@ def test_commercial_workspace_has_polished_responsive_tables_and_forms():
     assert "@media(hover:none)" in html
 
 
-def test_billing_screen_uses_validated_commercial_reference_prices():
+def test_billing_screen_uses_official_ttc_catalogue_and_monthly_credit_rules():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "15 €" in html and "HT / mois" in html
-    assert "170 €" in html and "HT / an" in html
-    assert "790 €" in html and "5 accès" in html
-    assert "19 € HT / mois" in html
-    assert "9 à 15 € HT / mois / section" in html
-    assert "20 questions par accès et par jour" in html
-    assert "100 questions par section et par jour" in html
-    assert "souscription en ligne sera activée après alignement" in html
-    assert 'data-checkout="SYNDICAT_10"' not in html
+    for expected in (
+        "14,90 €", "149 € TTC / an", "125 crédits par mois",
+        "29 €", "290 € TTC / an", "248 crédits par mois",
+        "119 €", "1 190 € TTC / an", "1 000 crédits par mois",
+        "299 €", "2 990 € TTC / an", "2 450 crédits par mois",
+        "1 crédit par question juridique standard",
+        "2 crédits pour analyser un résumé",
+        "4 crédits pour résumer intégralement un rapport jusqu’à 50 pages",
+        "Illimité et inclus dans toutes les formules",
+        "Aucun quota journalier n’est appliqué",
+        "souscription en ligne reste désactivée",
+    ):
+        assert expected in html
+    assert "15 €" not in html and "HT / mois" not in html
