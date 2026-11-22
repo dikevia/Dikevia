@@ -372,3 +372,35 @@ def test_cgfp_article_discovery_forwards_the_selected_versant(monkeypatch):
     seen.clear()
     assert orchestrator._cgfp_article_discovery_queries(found, "FPH") == ["article L823-1"]
     assert seen == [("L823-1", "FPH")]
+
+
+def test_snapshot_fallback_is_used_when_live_cgfp_hits_are_off_topic(monkeypatch):
+    from app import orchestrator
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", lambda *_args: True)
+    monkeypatch.setattr(
+        orchestrator, "_source_relevant_to_any_research_axis",
+        lambda _queries, source: source.get("relevant") is True,
+    )
+    found = {"results": [{"article": "L822-21", "relevant": True}]}
+
+    assert orchestrator.should_use_cgfp_snapshot_fallback(
+        None, found, ["axe CITIS"], target_versant="FPT",
+        live_sources=[{"relevant": False, "analysis_eligible": True}],
+    )
+
+
+def test_snapshot_fallback_is_not_used_when_live_cgfp_covers_an_axis(monkeypatch):
+    from app import orchestrator
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", lambda *_args: True)
+    monkeypatch.setattr(
+        orchestrator, "_source_relevant_to_any_research_axis",
+        lambda _queries, source: source.get("relevant") is True,
+    )
+    found = {"results": [{"article": "L822-21", "relevant": True}]}
+
+    assert not orchestrator.should_use_cgfp_snapshot_fallback(
+        None, found, ["axe CITIS"], target_versant="FPT",
+        live_sources=[{"relevant": True, "analysis_eligible": True}],
+    )
