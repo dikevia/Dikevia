@@ -261,7 +261,7 @@ def main() -> int:
     if args.export_json:
         args.export_json.parent.mkdir(parents=True, exist_ok=True)
         args.export_json.write_text(
-            json.dumps({"documents": items, "rejected": rejected}, ensure_ascii=False, indent=2, default=str) + "\\n",
+            json.dumps({"documents": items, "rejected": rejected}, ensure_ascii=False, indent=2, default=str) + "\n",
             encoding="utf-8",
         )
         print(f"Export PDF/HTML préparé : {len(items)} documents vers {args.export_json}")
