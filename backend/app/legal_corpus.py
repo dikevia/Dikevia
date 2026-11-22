@@ -103,7 +103,7 @@ def safe_official_url(value: str | None) -> str | None:
         "service-public.gouv.fr", "www.service-public.gouv.fr",
         "lecomarquage.service-public.gouv.fr",
         "data.gouv.fr", "www.data.gouv.fr",
-        "cnfpt.fr", "www.cnfpt.fr",
+        "cnfpt.fr", "www.cnfpt.fr", "wikiterritorial.cnfpt.fr",
         "cig929394.fr", "www.cig929394.fr",
         "cigversailles.fr", "www.cigversailles.fr",
     }
