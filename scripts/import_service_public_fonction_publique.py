@@ -219,12 +219,21 @@ def extraire_fiches_fonctionnaires(zf: zipfile.ZipFile) -> list[dict[str, Any]]:
             continue
 
         blocks = _extract_blocs_cas(root)
-        versants = sorted({
-            token
-            for block in blocks
-            for token in re.findall(r"\b(?:FPT|FPE|FPH)\b", block["type"] + " " + block["id"] + " " + block["titre"] + " " + block["contenu"], re.I)
-        })
         full_text = _text(root)
+        references = _extract_references(root)
+        scope_text = " ".join((
+            _extract_title(root),
+            full_text,
+            " ".join(item.get("libelle", "") for item in references),
+        )).casefold()
+        versants = set(re.findall(r"\b(?:FPT|FPE|FPH)\b", scope_text, re.I))
+        if "fonction publique territoriale" in scope_text:
+            versants.add("FPT")
+        if "fonction publique hospitalière" in scope_text:
+            versants.add("FPH")
+        if "fonction publique de l'état" in scope_text or "fonction publique d'état" in scope_text:
+            versants.add("FPE")
+        versants = sorted(versants)
         fiches.append({
             "fiche_id": Path(filename).stem.upper(),
             "titre_courant": _extract_title(root),
@@ -232,7 +241,7 @@ def extraire_fiches_fonctionnaires(zf: zipfile.ZipFile) -> list[dict[str, Any]]:
             "versants_detectes": versants,
             "blocs_cas": blocks,
             "contenu": full_text,
-            "references_juridiques": _extract_references(root),
+            "references_juridiques": references,
             "statut_validation_juridique": "NON_VERIFIE",
         })
     return sorted(fiches, key=lambda item: item["fiche_id"])
