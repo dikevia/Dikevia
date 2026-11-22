@@ -48,10 +48,11 @@ def _build_versant_fallback_research(
 ) -> tuple[list[str], list[str]]:
     """Build deterministic fallback searches without leaking FPT templates to FPE/FPH."""
     if public_service == "FPT":
-        return (
-            build_official_search_queries(question),
-            build_official_research_axes(question),
-        )
+        queries = build_official_search_queries(question)
+        axes = build_official_research_axes(question)
+        # A generic but explicit fallback axis is safer than silently dropping
+        # all relevance checks when the topic classifier has no specialized rule.
+        return queries, (axes or queries)
     branch_qualifier = (
         "fonction publique de l'État" if public_service == "FPE"
         else "fonction publique hospitalière"
@@ -148,8 +149,12 @@ def should_use_cgfp_snapshot_fallback(
         and source.get("analysis_eligible") is not False
         for source in (live_sources or [])
     )
+    # An empty list means the live endpoint answered successfully but found
+    # no CGFP article. It is not an outage. Use the snapshot only after an
+    # actual live failure, or when returned live CGFP documents are all
+    # irrelevant to the independently identified research axes.
     live_unusable = bool(live_issue) or (
-        live_sources is not None and not live_covers_an_axis
+        bool(live_sources) and not live_covers_an_axis
     )
     return bool(
         live_unusable and isinstance(found, dict) and found.get("results")
