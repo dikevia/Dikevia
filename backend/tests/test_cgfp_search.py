@@ -239,3 +239,16 @@ def test_code_research_budget_never_drops_a_recognized_subquestion():
     assert result_with_spare_capacity == [
         *axes[:3], "article L1", "article L2"
     ]
+
+
+def test_cgfp_tokenizer_normalizes_french_plural_forms_without_corrupting_invariants():
+    from app.cgfp import tokenize
+
+    assert tokenize("régimes indemnitaires primes") == [
+        "regime", "indemnitaire", "prime"
+    ]
+    assert tokenize("régime indemnitaire prime") == [
+        "regime", "indemnitaire", "prime"
+    ]
+    assert "temps" in tokenize("temps de travail")
+    assert "prix" in tokenize("prix des prestations")
