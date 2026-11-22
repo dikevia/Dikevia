@@ -145,7 +145,8 @@ async def import_snapshot(dsn: str, metadata: dict[str, Any], articles: list[dic
                     "page_start": article["page_start"],
                     "page_end": article["page_end"],
                     "verification_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
-                    "temporal_scope": "UNKNOWN_NOT_HISTORICALLY_VERIFIED",
+                    "temporal_scope": "CURRENT_CODE_SNAPSHOT",
+                    "snapshot_scope_note": "Snapshot du CGFP ; aucune version historique n'est certifiée par cet import.",
                 }
                 version = await conn.fetchrow("""
                     WITH upserted_document AS (
