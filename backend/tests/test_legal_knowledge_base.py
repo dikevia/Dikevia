@@ -185,7 +185,7 @@ async def test_loda_consult_rejects_mismatched_identifier_and_short_text():
 
 
 @pytest.mark.asyncio
-async def test_loda_date_filtered_consult_marks_unknown_search_status_as_applicable_version():
+async def test_loda_date_filtered_consult_preserves_unknown_status_and_marks_retrieved_version():
     connector = LegifranceConnector()
 
     async def fake_request(method, path, *, json_body=None):
@@ -202,8 +202,15 @@ async def test_loda_date_filtered_consult_marks_unknown_search_status_as_applica
     )
     assert len(result) == 1
     assert result[0]["status"] == "UNKNOWN"
-    assert result[0]["version_status"] == "IN_FORCE"
+    assert result[0]["version_status"] == "UNKNOWN"
     assert result[0]["raw_version_payload"]["date_filter"] == "DATE_VERSION"
+    assert temporal_status(
+        result[0]["valid_from"], result[0]["valid_to"], date(2024, 6, 1),
+        document_kind=result[0]["document_kind"],
+        signature_date=result[0]["signature_date"],
+        raw_payload=result[0]["raw_version_payload"],
+        version_status=result[0]["version_status"],
+    ) == "VERSION_RETRIEVED_AT_REQUESTED_DATE"
     assert result[0]["raw_version_payload"]["matching_consulted_id"] == "LEGITEXT000000000099"
 
 
