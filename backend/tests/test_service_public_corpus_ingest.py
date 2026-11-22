@@ -56,6 +56,7 @@ def test_service_public_fiche_maps_to_unverified_guidance_not_primary_law():
     assert item["raw_metadata"]["file_date"] == "2026-11-21"
     assert item["raw_metadata"]["resource_checksum"] == "sha1:abc123"
     assert item["raw_metadata"]["corpus_role"] == "ADMINISTRATIVE_GUIDANCE_NOT_PRIMARY_LEGAL_AUTHORITY"
+    assert importer.sha256_text(item["full_text"]) == item["raw_version_payload"]["content_sha256"]
     assert item["raw_metadata"]["references_juridiques"][0]["id_legifrance"] == "LEGIARTI000000000001"
 
 
