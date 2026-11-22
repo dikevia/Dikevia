@@ -364,6 +364,11 @@ _TOPIC_FAMILIES = {
         "compte rendu d evaluation", "compte rendu d entretien",
         "valeur professionnelle", "appreciation de la valeur professionnelle",
     ),
+    "CONTRACT_CDI_SIX_YEARS": (
+        "6 ans", "six ans", "six annees", "l332 8", "l332 9", "l332 10",
+        "l332 11", "l332 12", "l332 23", "l452 44",
+        "interruption entre deux contrats", "meme categorie hierarchique",
+    ),
     # Lexical false positives seen in official search results: these are
     # evaluations of policies, senior ministry jobs or recruitment skills,
     # not annual appraisals of territorial staff.
@@ -434,6 +439,7 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         # generic references to evaluating risks, health, senior civil-service
         # jobs or skills are not evidence about the annual FPT appraisal report.
         "PROFESSIONAL_EVALUATION",
+        "CONTRACT_CDI_SIX_YEARS",
     }
     if question_topics & strict_topics:
         # For annual-appraisal questions, an unclassified procedural source
