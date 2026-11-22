@@ -304,7 +304,15 @@ def validate_claim_evidence(
         temporal_status = source.get("temporal_status")
         if integrity.get("valid") is not True:
             continue
-        if source_type in {"CGFP_SNAPSHOT", "LEGIFRANCE_CETAT_SEARCH"}:
+        snapshot_fallback_evidence = (
+            source_type == "CGFP_SNAPSHOT"
+            and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+            and bool(source.get("snapshot_modified_at"))
+            and source.get("source_status") == "SNAPSHOT_NOT_LIVE_VERIFIED"
+        )
+        if source_type == "LEGIFRANCE_CETAT_SEARCH":
+            continue
+        if source_type == "CGFP_SNAPSHOT" and not snapshot_fallback_evidence:
             continue
         if source.get("content_kind") == "METADATA":
             continue
@@ -326,13 +334,18 @@ def validate_claim_evidence(
             temporal_status == "TEMPORAL_SCOPE_INCOMPLETE"
             and source.get("general_info_eligible") is True
         )
-        if temporal_status not in eligible_statuses and not general_information_only:
+        if (
+            temporal_status not in eligible_statuses
+            and not general_information_only
+            and not snapshot_fallback_evidence
+        ):
             continue
         if source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
             if source.get("validation_status") not in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}:
                 continue
         elif source_type not in {
             "LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT",
+            "CGFP_SNAPSHOT",
         } and source.get("official_source") is not True:
             continue
         evidence_text = source.get("excerpt") or str(source.get("text") or "")[:1800]
