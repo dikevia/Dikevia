@@ -489,8 +489,11 @@ class LegalOrchestrator:
         history = (conversation_history or [])[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]
         prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"]
         current_question = request.question.strip()
+        prior_assistant_messages = [
+            str(m.get("content", ""))[:1200] for m in history if m.get("role") == "assistant"
+        ]
         contextual_question = build_contextual_research_question(
-            current_question, prior_user_questions,
+            current_question, prior_user_questions, prior_assistant_messages,
         )
         # A genuine short follow-up inherits the immediate prior referent and,
         # where relevant, the personal-case classification. Independent new

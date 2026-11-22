@@ -65,3 +65,31 @@ def test_chat_route_loads_twenty_messages_and_ai_planner_keeps_ten_user_turns():
     assert "CONVERSATION_HISTORY_MESSAGE_LIMIT" in main
     assert "[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]" in orchestrator
     assert "[-RECENT_USER_CONTEXT_LIMIT:]" in provider
+
+
+def test_short_answer_uses_previous_assistant_clarification_without_losing_legal_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    prior_users = ["Je suis en CITIS après un accident de service."]
+    prior_assistant = ["Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"]
+    resolved = build_contextual_research_question(
+        "Contractuel", prior_users, prior_assistant
+    )
+    assert resolved.startswith("Contractuel")
+    assert "CITIS" in resolved
+    assert "titulaire ou contractuel" in resolved
+
+    assert build_contextual_research_question(
+        "Comment fonctionne le CET ?", prior_users, prior_assistant
+    ) == "Comment fonctionne le CET ?"
+
+
+def test_short_answer_does_not_inherit_topic_when_assistant_did_not_ask_a_question():
+    from app.legal_qualification import build_contextual_research_question
+
+    resolved = build_contextual_research_question(
+        "Contractuel",
+        ["Je suis en CITIS après un accident de service."],
+        ["Voici les règles applicables au CITIS."],
+    )
+    assert resolved == "Contractuel"
