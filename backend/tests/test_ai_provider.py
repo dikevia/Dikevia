@@ -1030,6 +1030,17 @@ def test_research_planner_is_not_an_article_or_problem_template_catalog():
     assert "3 à 5 axes de recherche réellement distincts" in source
     assert "2 à 6 termes juridiques ou factuels discriminants" in source
 
+
+@pytest.mark.parametrize("versant", ["FPT", "FPE", "FPH"])
+def test_research_planner_system_prompt_forbids_cross_branch_transposition(versant):
+    from app.ai_provider import _PUBLIC_SERVICE_LABELS, plan_legal_research
+    import inspect
+    selected_label = _PUBLIC_SERVICE_LABELS[versant]
+    source = inspect.getsource(plan_legal_research)
+    assert "CONTRAINTE DE VERSANT" in source
+    assert "N'utilise aucune requête-type" in source
+    assert selected_label in source
+
 def test_research_plan_parser_accepts_empty_queries_only_for_refinement():
     assert _parse_research_plan('{"queries": [], "legal_issues": []}') is None
     refined = _parse_research_plan('{"queries": [], "legal_issues": ["Question juridique couverte"]}', allow_empty=True)
