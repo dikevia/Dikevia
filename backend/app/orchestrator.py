@@ -33,6 +33,7 @@ def _cgfp_article_fpt_eligible(article_ref: str) -> bool:
         return False
     scope = classify_public_service_scope({
         "title": f"Code général de la fonction publique — article {normalized_ref}",
+        "article": normalized_ref,
         "text": article_document.get("text") or "",
         "document_kind": "CODE",
     })
