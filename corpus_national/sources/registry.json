@@ -756,6 +756,121 @@
       "page_count": 58,
       "character_count": 33438,
       "artifact_name": "dikevia-public-guidance-collected.zip"
+    },
+    {
+      "id": "cig-pc-guide-temps-travail-2025",
+      "source_id": "cig-petite-couronne",
+      "title": "Guide du temps de travail — CIG Petite Couronne",
+      "url": "https://www.cig929394.fr/wp-content/uploads/2025/07/guide_temps_de_travail_03_21_vd-1.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "temps de travail",
+        "congés annuels",
+        "temps partiel",
+        "cycles de travail",
+        "CET"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Guide PDF publié sur le domaine officiel CIG Petite Couronne ; vérifier version, dates de mise à jour et droits de réutilisation."
+    },
+    {
+      "id": "cig-pc-faq-clm-cld",
+      "source_id": "cig-petite-couronne",
+      "title": "FAQ — gestion des congés de longue maladie et de longue durée des fonctionnaires territoriaux",
+      "url": "https://www.cig929394.fr/publications/la-gestion-des-conges-de-longue-maladie-et-de-longue-duree-des-fonctionnaires-territoriaux-faq/",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "CLM",
+        "CLD",
+        "congés annuels",
+        "RTT",
+        "report des congés"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Page de FAQ ancienne ; contrôler toutes les règles au regard du CGFP et des décrets actuellement en vigueur."
+    },
+    {
+      "id": "cdg59-actualite-tpt-citis-2026",
+      "source_id": "cdg-59",
+      "title": "Modifications statutaires — congés pour raison de santé, CITIS et temps partiel thérapeutique (août 2026)",
+      "url": "https://www.cdg59.fr/actualites/page-detaillee/modifications-des-dispositions-relatives-aux-conges-pour-raisons-de-sante-et-au-temps-partiel-therapeutique-nouveau-cdg-info",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "décret 2026-705",
+        "TPT",
+        "CITIS",
+        "CMO",
+        "CLM",
+        "CLD",
+        "conseil médical"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2026-08-24",
+      "notes": "Actualité récente annonçant le CDG-INFO2026-12 et les mises à jour des fiches statutaires ; les PDF liés ne sont pas automatiquement suivis."
+    },
+    {
+      "id": "cdg69-faq-conges-annuels-reforme",
+      "source_id": "cdg-69",
+      "title": "FAQ — congés annuels, report et réforme",
+      "url": "https://www.cdg69.fr/le-cdg69/faq/faq-conges-annuels-le-point-sur-la-reforme",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "report",
+        "CITIS",
+        "CMO",
+        "CLM",
+        "CLD",
+        "CGFP"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Ressource d'analyse professionnelle ; contrôler les passages sur l'article 5-1 du décret 85-1250 à la lumière des décisions et textes les plus récents."
+    },
+    {
+      "id": "cnfpt-temps-travail-agents-territoriaux",
+      "source_id": "cnfpt",
+      "title": "Le temps de travail des agent.e.s territoriaux.ales — CNFPT",
+      "url": "https://www.cnfpt.fr/evoluer/carriere/temps-travail-agents-territoriaux/national",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "1607 heures",
+        "temps de travail",
+        "cycles",
+        "CET",
+        "heures supplémentaires"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Page pédagogique ancienne ; conserver comme contexte uniquement après vérification des règles et de la date de mise à jour."
     }
   ]
 }
