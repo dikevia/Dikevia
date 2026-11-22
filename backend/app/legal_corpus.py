@@ -66,6 +66,12 @@ def temporal_status(valid_from: date | None, valid_to: date | None, requested: d
                 raw_payload = json.loads(raw_payload)
             except (ValueError, TypeError):
                 raw_payload = {}
+        # An explicit repeal status always excludes a text from current-law answers.
+        # Historical applicability still requires an independently verified version.
+        if version_status in {"REPEALED", "NOT_IN_FORCE"}:
+            return "NO_LONGER_IN_FORCE"
+        if (raw_payload or {}).get("temporal_scope") == "CURRENT_CODE_SNAPSHOT":
+            return "TEMPORAL_SCOPE_INCOMPLETE"
         imported_for_date = (raw_payload or {}).get("requested_date") == requested.isoformat()
         if imported_for_date and version_status == "IN_FORCE":
             return "IN_FORCE_ON_REQUESTED_DATE"
