@@ -352,3 +352,23 @@ def test_cgfp_article_discovery_can_be_scoped_to_fpe(monkeypatch):
     )
     assert orchestrator._cgfp_article_fpt_eligible("L123-4", "FPE") is True
     assert orchestrator._cgfp_article_fpt_eligible("L123-4", "FPT") is False
+
+def test_cgfp_article_discovery_forwards_the_selected_versant(monkeypatch):
+    from app import orchestrator
+
+    seen = []
+    def eligible(article_ref, target_versant="FPT"):
+        seen.append((article_ref, target_versant))
+        return True
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", eligible)
+    found = {"results": [
+        {"article": "L823-1", "matched_concepts": ["temps partiel thérapeutique"]}
+    ]}
+
+    assert orchestrator._cgfp_article_discovery_queries(found, "FPE") == ["article L823-1"]
+    assert seen == [("L823-1", "FPE")]
+
+    seen.clear()
+    assert orchestrator._cgfp_article_discovery_queries(found, "FPH") == ["article L823-1"]
+    assert seen == [("L823-1", "FPH")]
