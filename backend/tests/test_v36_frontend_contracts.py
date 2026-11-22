@@ -34,6 +34,16 @@ def test_oidc_renews_expired_access_tokens_without_persisting_them():
     assert "refresh_token" not in auth
 
 
+def test_oidc_renews_expired_access_tokens_without_persisting_them():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "beginAuthorization('none')" in auth
+    assert "cfdt_oidc_silent_failed" in auth
+    assert "token=await accessToken()" in html
+    assert "localStorage" not in auth
+    assert "refresh_token" not in auth
+
+
 def test_example_oidc_config_has_no_client_secret():
     config = (ROOT / "frontend/auth-config.example.js").read_text(encoding="utf-8")
     assert "issuer:" in config and "client_id:" in config and "redirect_uri:" in config
