@@ -1,12 +1,14 @@
 -- V3.41 — Stockage vectoriel pour la recherche sémantique hybride du corpus juridique.
--- Les embeddings restent facultatifs tant qu'un modèle et un fournisseur ne sont pas configurés.
+-- Dimension initiale 1536 : compatible avec les modèles d'embeddings OpenAI
+-- text-embedding-3-small. Le modèle reste configurable côté application.
+-- Les embeddings restent facultatifs tant qu'un fournisseur n'est pas configuré.
 -- Le texte intégral et l'index lexical existant restent la voie de secours.
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
 ALTER TABLE legal_chunks
-    ADD COLUMN IF NOT EXISTS embedding vector,
+    ADD COLUMN IF NOT EXISTS embedding vector(1536),
     ADD COLUMN IF NOT EXISTS embedding_model text,
     ADD COLUMN IF NOT EXISTS embedding_dimensions integer,
     ADD COLUMN IF NOT EXISTS embedding_updated_at timestamptz;
