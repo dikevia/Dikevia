@@ -192,6 +192,17 @@ def test_legifrance_search_payload_uses_code_date_and_article_number(monkeypatch
     criterion = free_text["recherche"]["champs"][0]["criteres"][0]
     assert criterion["typeRecherche"] == "UN_DES_MOTS"
     assert criterion["proximite"] == 5
+    precise = LegifranceConnector()._search_payload(
+        "régime indemnitaire fonctions supplémentaires", date(2025, 1, 1), precise=True
+    )
+    precise_criterion = precise["recherche"]["champs"][0]["criteres"][0]
+    assert precise_criterion["typeRecherche"] == "TOUS_LES_MOTS_DANS_UN_CHAMP"
+    assert precise_criterion["proximite"] == 5
+    # Exact article references stay exact regardless of keyword mode.
+    exact = LegifranceConnector()._search_payload(
+        "article L. 123-4", date(2025, 1, 1), precise=True
+    )
+    assert exact["recherche"]["champs"][0]["criteres"][0]["typeRecherche"] == "EXACTE"
     assert payload["recherche"]["filtres"][1]["singleDate"] == LegifranceConnector._date_epoch_ms(date(2025, 1, 1))
 
 
