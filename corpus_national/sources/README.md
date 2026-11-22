@@ -2,6 +2,18 @@
 
 Le registre `registry.json` distingue le statut de gouvernance d'une source de son état réel d'intégration. Une entrée `CANDIDATE` n'est ni collectée ni indexée. Les statuts `IMPORTED` et `RETRIEVAL_VERIFIED` ne doivent être attribués qu'après vérification dans la base et par des tests de recherche.
 
+## Collecte automatisée des PDF et pages HTML
+
+Le script `scripts/import_public_guidance_sources.py` télécharge les ressources PDF/HTML du tableau `document_seeds`, vérifie le domaine final contre la liste blanche du registre, limite la taille, extrait le texte, calcule les empreintes SHA-256 et prépare les métadonnées de provenance.
+
+- Sans option : téléchargement/extraction en **dry-run**, aucune écriture PostgreSQL.
+- `--id <seed-id>` : sélection d'une ou plusieurs ressources précises.
+- `--apply` : écriture via le rôle dédié `cfdt_juris_ingest` uniquement si la source et la réutilisation sont toutes deux explicitement marquées `APPROVED`.
+- Les documents importés restent `IMPORTED_UNVERIFIED`, `UNKNOWN) et `ADMIN_GUIDANCE` ou `PROFESSIONAL_GUIDANCE` ; ils ne constituent jamais une preuve juridique primaire.
+- Les dates d'effet restent nulles lorsqu'elles ne sont pas établies. Un PDF image sans couche texte exploitable est rejeté ; l'OCR doit être ajouté séparément avec contrôle qualité.
+
+Exemple de prévisualisation : `python scripts/import_public_guidance_sources.py --id dgafp-faq-tpt-2026`.
+
 ## Périmètre des sources communiquées pour Dikévia
 
 Le registre recense notamment les domaines suivants, tous encore au statut `CANDIDATE` tant que leur collecte, leurs droits de réutilisation et leur indexation n'ont pas été contrôlés :
