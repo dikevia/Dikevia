@@ -922,12 +922,12 @@ class LegalOrchestrator:
         # It remains a dated snapshot (not proof of the version applicable to
         # the facts); it may accompany independently verified decrees/case law,
         # but must never replace those sources or authorize a standalone opinion.
-        live_cgfp_relevant = any(
+        live_piste_relevant = any(
             _source_relevant_to_any_research_axis(research_queries, item)
-            for item in live_sources
+            for item in [*live_sources, *regulatory_sources]
         )
         fallback_trigger = live_issue or (
-            None if live_cgfp_relevant
+            None if live_piste_relevant
             else "Aucun article CGFP suffisamment pertinent n'a été récupéré en direct."
         )
         cgfp_snapshot_fallback = should_use_cgfp_snapshot_fallback(
