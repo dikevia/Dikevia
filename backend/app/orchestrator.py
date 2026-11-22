@@ -1531,6 +1531,10 @@ class LegalOrchestrator:
                         )
                         for uncovered_axis in claim_validation.get("uncovered_axes", []):
                             missing.append(f"Aucune source suffisamment pertinente n'a permis de répondre à cette sous-question : {uncovered_axis}")
+                        if claim_validation.get("invalid_claims"):
+                            missing.append(
+                                "Certaines propositions générées ont été écartées car leur source, leur citation ou leur correspondance documentaire n'a pas satisfait les contrôles."
+                            )
                         if not claim_validation["valid"]:
                             ai_answer = None
                             if ai_usage is not None:
@@ -1552,16 +1556,28 @@ class LegalOrchestrator:
                                 question=request.question,
                                 claims=claim_validation["claims"], sources=ai_sources,
                             )
-                            if not entailment_validation.get("valid"):
+                            supported_indices = entailment_validation.get("supported_claim_indices", [])
+                            if not entailment_validation.get("valid") and not supported_indices:
                                 ai_answer = None
                                 if ai_usage is not None:
                                     ai_usage["outcome"] = "REJECTED_UNSUPPORTED_ENTAILMENT"
                                 missing.insert(
                                     0,
-                                    "La réponse IA a été bloquée : le contrôle contradictoire n'a pas confirmé que chaque proposition découle directement de son passage officiel. Aucune conclusion n'est formulée.",
+                                    "La réponse IA a été bloquée : aucune proposition n'a passé le contrôle contradictoire de son appui documentaire. Aucune conclusion n'est formulée.",
                                 )
                             else:
-                                claims = claim_validation["claims"]
+                                claims = (
+                                    claim_validation["claims"]
+                                    if entailment_validation.get("valid")
+                                    else [
+                                        claim for index, claim in enumerate(claim_validation["claims"])
+                                        if index in supported_indices
+                                    ]
+                                )
+                                if len(claims) < len(claim_validation["claims"]):
+                                    missing.append(
+                                        "Certaines propositions ont été écartées après le contrôle contradictoire ; seules les propositions confirmées sont conservées."
+                                    )
                                 # The model is instructed to put the direct answer first.
                                 # Render it immediately instead of prefacing it with legal boilerplate.
                                 rendered_claims = []
@@ -1606,7 +1622,12 @@ class LegalOrchestrator:
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
                                     if ai_usage is not None:
-                                        ai_usage["outcome"] = "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK"
+                                        ai_usage["outcome"] = (
+                                            "ANSWERED_WITH_PARTIAL_VERIFIED_CLAIMS"
+                                            if claim_validation.get("partial")
+                                            or len(claims) < claim_validation.get("claim_count", len(claims))
+                                            else "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK"
+                                        )
                                 else:
                                     ai_answer = None
                                     if ai_usage is not None:
