@@ -523,13 +523,23 @@ class LegifranceConnector:
     async def search_code_articles(self, query: str, effective_date: date, *, code_name: str | None = None) -> list[dict]:
         if not query or len(query.strip()) < 2 or len(query) > 500:
             raise ValueError("La recherche Légifrance doit contenir entre 2 et 500 caractères.")
-        payload = self._search_payload(query.strip(), effective_date, code_name)
+        payload = self._search_payload(query.strip(), effective_date, code_name, precise=True)
         result = await self._request("POST", "/search", json_body=payload)
+        article_ids = self._find_article_ids(result)
+        requested_ref_hint = re.search(
+            r"\\b(?:article\\s+)?(?:[LDR]\\.\\s*\\d+(?:-\\d+)*|[LDR]\\s*\\d+(?:-\\d+)*|\\d+(?:-\\d+)*)\\b",
+            query, re.I,
+        )
+        if not article_ids and not requested_ref_hint:
+            # Preserve recall without letting an OR-style query dominate the
+            # normal path: broad PISTE search is a fallback only on zero hits.
+            broad_payload = self._search_payload(query.strip(), effective_date, code_name, precise=False)
+            result = await self._request("POST", "/search", json_body=broad_payload)
+            article_ids = self._find_article_ids(result)
         logger.warning(
             "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH_SUMMARY result_count=%d",
-            len(self._find_article_ids(result)),
+            len(article_ids),
         )
-        article_ids = self._find_article_ids(result)
         if not article_ids:
             # No result IDs means getArticle is deliberately never called.
             logger.warning(
