@@ -19,7 +19,7 @@ from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
-from .legal_search_plan import build_official_search_query, build_official_search_queries, build_official_research_axes
+from .legal_search_plan import build_official_search_query, build_official_search_queries, build_official_research_axes, _is_six_year_cdi_question
 from .legal_qualification import qualify_legal_question, build_contextual_research_question
 
 
@@ -681,6 +681,17 @@ class LegalOrchestrator:
         found, cgfp_issue = await search_cgfp_index()
         cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
         cgfp_article_queries = _cgfp_article_discovery_queries(found)
+        if _is_six_year_cdi_question(current_question):
+            # Search the decisive CGFP provisions by exact article number.
+            # A long natural-language query containing article numbers is not
+            # equivalent to PISTE's NUM_ARTICLE exact lookup.
+            cgfp_article_queries = list(dict.fromkeys([
+                "article L332-9",
+                "article L332-10",
+                "article L332-11",
+                "article L332-23",
+                *cgfp_article_queries,
+            ]))
 
         # Official legal texts and administrative case law remain the
         # authoritative verification path.
