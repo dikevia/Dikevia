@@ -12,7 +12,7 @@ from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
 from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
-from .ai_provider import analyze_question, plan_legal_research, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
+from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
 from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
@@ -1168,12 +1168,32 @@ class LegalOrchestrator:
             decision["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, decision)
             sources.append({**decision, "page_start": None, "page_end": None})
 
-        # Apply the topic guard only after every source family (including the
-        # CGFP snapshot and CETAT full text) has been collected.
+        # Keep the deterministic lexical assessment as a fallback, then let Gemini
+        # assess the actual content. This is relevance triage only: backend source,
+        # citation, temporal and FPT-scope controls remain authoritative.
         for source in sources:
             source["research_axis_relevant"] = _source_relevant_to_any_research_axis(
                 research_queries, source,
             )
+        try:
+            semantic_verdicts = await evaluate_source_relevance(
+                question=request.question,
+                research_axes=research_queries,
+                sources=sources,
+            )
+            for source in sources:
+                verdict = semantic_verdicts.get(source.get("source_id"))
+                if verdict in {"DIRECT", "CONTEXTUAL", "UNCERTAIN"}:
+                    source["research_axis_relevant"] = True
+                    source["semantic_relevance"] = verdict
+                elif verdict == "IRRELEVANT":
+                    source["research_axis_relevant"] = False
+                    source["semantic_relevance"] = verdict
+        except AIProviderUnavailable as exc:
+            # Fail open to the existing deterministic filter; never block the legal
+            # response solely because the optional semantic relevance pass failed.
+            logger.warning("Semantic source relevance unavailable; using lexical fallback: %s", exc)
+
 
         # A direct request for the text/content of a numbered CGFP article is an
         # exact-reference lookup. If that article was not independently retrieved,
