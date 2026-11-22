@@ -14,7 +14,7 @@ def test_unverified_fallback_uses_real_line_breaks():
         if isinstance(node, ast.Constant) and isinstance(node.value, str)
     ]
 
-    assert any("\\nSources retrouvées" in value for value in string_values)
-    assert any("\\nAucune conclusion juridique" in value for value in string_values)
-    assert not any("\\\\nSources retrouvées" in value for value in string_values)
-    assert not any("\\\\nAucune conclusion juridique" in value for value in string_values)
+    assert any("\nSources retrouvées" in value for value in string_values)
+    assert any("\nAucune conclusion juridique" in value for value in string_values)
+    assert not any("\\nSources retrouvées" in value for value in string_values)
+    assert not any("\\nAucune conclusion juridique" in value for value in string_values)
