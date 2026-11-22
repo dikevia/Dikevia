@@ -19,7 +19,7 @@ from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
-from .legal_search_plan import build_official_search_query, build_official_search_queries, build_official_research_axes, merge_ai_and_fallback_research_queries
+from .legal_search_plan import build_official_search_queries, build_official_research_axes, merge_ai_and_fallback_research_queries
 from .legal_qualification import (
     qualify_legal_question, build_contextual_research_question,
     CONVERSATION_HISTORY_MESSAGE_LIMIT,
