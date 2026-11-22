@@ -129,7 +129,7 @@ def main() -> int:
     if args.export_json:
         args.export_json.parent.mkdir(parents=True, exist_ok=True)
         args.export_json.write_text(
-            json.dumps({"source": provenance, "documents": items}, ensure_ascii=False, indent=2, default=str) + "\\n",
+            json.dumps({"source": provenance, "documents": items}, ensure_ascii=False, indent=2, default=str) + "\n",
             encoding="utf-8",
         )
         print(f"Export documentaire préparé : {len(items)} fiches vers {args.export_json}")
