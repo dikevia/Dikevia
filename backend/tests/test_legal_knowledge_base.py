@@ -46,6 +46,16 @@ def test_only_allowlisted_public_legal_and_institutional_source_urls_are_kept():
     assert safe_official_url("https://www.cdg59.fr/")
     assert safe_official_url("https://www.cdg69.fr/")
     assert safe_official_url("https://www.cig929394.fr/")
+    assert safe_official_url("https://www.cdg35.bzh/")
+    assert safe_official_url("https://uffa.cfdt.fr/")
+    assert safe_official_url("https://www.cfdt-interco31.fr/")
+    assert safe_official_url("https://cfdtinterco35.fr/")
+    assert safe_official_url("https://www.cgtservicespublics.fr/")
+    assert safe_official_url("https://www.fo-fonctionnaires.fr/")
+    assert safe_official_url("https://www.cftc.fr/")
+    assert safe_official_url("https://ledecodeur.cftc.fr/")
+    assert safe_official_url("https://www.unsa-fp.org/")
+    assert safe_official_url("https://fonctionpublique.solidaires.org/")
     assert safe_official_url("https://evil.example/legifrance") is None
     assert safe_official_url("https://service-public.gouv.fr.evil.example/") is None
     assert safe_official_url("https://cdg59.fr.evil.example/") is None
