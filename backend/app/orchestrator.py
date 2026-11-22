@@ -1785,7 +1785,7 @@ class LegalOrchestrator:
             if source.get("claim_eligible", True) is not False
             and source.get("reference_role") not in {
                 "BASELINE_CONTEXT_ONLY", "INTERPRETIVE_CONTEXT_ONLY",
-                "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY",
+                "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY", "NON_NORMATIVE_CONTEXT_ONLY",
             }
         ]
         allowed_refs = {s.get("article") for s in claim_sources if s.get("article")}
