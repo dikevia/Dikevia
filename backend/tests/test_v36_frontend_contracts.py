@@ -19,7 +19,7 @@ def test_frontend_uses_oidc_pkce_and_does_not_persist_access_token():
     assert "code_challenge_method:'S256'" in auth
     assert "code_verifier:verifier" in auth
     assert "sessionStorage.setItem('cfdt_oidc_state'" in auth
-    assert "accessToken = data.access_token" in auth
+    assert "accessToken=data.access_token" in auth
     assert "localStorage" not in auth
     assert "refresh_token" not in auth
 
@@ -27,7 +27,7 @@ def test_frontend_uses_oidc_pkce_and_does_not_persist_access_token():
 def test_oidc_renews_expired_access_tokens_without_persisting_them():
     auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "beginAuthorization('none')" in auth
+    assert "silentCheckSso(true)" in auth
     assert "cfdt_oidc_silent_failed" in auth
     assert "token=await accessToken()" in html
     assert "localStorage" not in auth
