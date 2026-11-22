@@ -417,49 +417,11 @@ async def platform_commercial_organizations(platform=Depends(require_platform_ad
 async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin)):
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
-    raise HTTPException(503, "La souscription en ligne reste désactivée jusqu’à la mise en service du compteur de crédits mensuels.")
-    plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
-    if plan_code not in ("INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50"):
-        raise HTTPException(422, "Offre inconnue.")
-    if not settings.stripe_secret_key:
-        raise HTTPException(503, "Le paiement en ligne n'est pas encore configuré.")
-    plan = PLANS[plan_code]
-    current_subscription = await ctx.conn.fetchrow("SELECT provider_subscription_id,status FROM subscriptions WHERE organization_id=$1::uuid", ctx.organization_id)
-    if current_subscription and current_subscription["provider_subscription_id"] and current_subscription["status"] in ("ACTIVE", "TRIAL", "PAST_DUE", "SUSPENDED"):
-        raise HTTPException(409, "Un abonnement Stripe existe déjà pour cet espace. Utilisez le portail de facturation pour le gérer afin d'éviter une double facturation.")
-    user_email = await ctx.conn.fetchval("SELECT email FROM users WHERE id=$1::uuid", ctx.user_id)
-    form = {
-        "mode": "subscription", "success_url": settings.billing_success_url,
-        "cancel_url": settings.billing_cancel_url, "client_reference_id": ctx.organization_id,
-        "line_items[0][quantity]": "1",
-        "line_items[0][price_data][currency]": "eur",
-        "line_items[0][price_data][unit_amount]": str(plan["amount"]),
-        "line_items[0][price_data][recurring][interval]": "month",
-        "line_items[0][price_data][tax_behavior]": "inclusive",
-        "line_items[0][price_data][product_data][name]": "JURIS — " + plan["name"],
-        "automatic_tax[enabled]": str(settings.stripe_automatic_tax_enabled).lower(),
-        "billing_address_collection": "required",
-        "tax_id_collection[enabled]": "true",
-        "metadata[organization_id]": ctx.organization_id, "metadata[plan_code]": plan_code,
-        "subscription_data[metadata][organization_id]": ctx.organization_id,
-        "subscription_data[metadata][plan_code]": plan_code,
-    }
-    if user_email:
-        form["customer_email"] = user_email
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            response = await client.post("https://api.stripe.com/v1/checkout/sessions",
-                data=form, auth=(settings.stripe_secret_key, ""))
-        response.raise_for_status()
-        session = response.json()
-    except Exception:
-        raise HTTPException(502, "Impossible de créer la session de paiement. Réessayez ultérieurement.")
-    if not session.get("url"):
-        raise HTTPException(502, "Le prestataire de paiement n'a pas retourné de lien de paiement.")
-    await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,metadata)
-        VALUES($1::uuid,$2::uuid,'BILLING_CHECKOUT_CREATED','subscription',jsonb_build_object('plan_code',$3))""",
-        ctx.organization_id, ctx.user_id, plan_code)
-    return {"checkout_url": session["url"], "session_id": session.get("id"), "plan_code": plan_code}
+    # Do not accept payments until the monthly credit ledger and enforcement are live.
+    raise HTTPException(
+        503,
+        "La souscription en ligne reste désactivée jusqu’à la mise en service du compteur de crédits mensuels.",
+    )
 
 
 @app.post("/api/v1/billing/portal")
