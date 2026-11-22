@@ -208,6 +208,41 @@ def test_legifrance_search_payload_uses_code_date_and_article_number(monkeypatch
 
 
 @pytest.mark.asyncio
+async def test_legifrance_code_search_uses_broad_mode_only_after_precise_zero_hits(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    search_payloads = []
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            search_payloads.append(payload)
+            if len(search_payloads) == 1:
+                return httpx.Response(200, json={"results": []})
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID, "num": "L123-4",
+                "nomCode": "Code général de la fonction publique",
+                "texte": "Disposition officielle suffisamment longue pour être conservée dans le résultat de test."
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles(
+        "régime indemnitaire fonctions supplémentaires", date(2025, 1, 1)
+    )
+    assert len(results) == 1
+    assert len(search_payloads) == 2
+    first = search_payloads[0]["recherche"]["champs"][0]["criteres"][0]
+    second = search_payloads[1]["recherche"]["champs"][0]["criteres"][0]
+    assert first["typeRecherche"] == "TOUS_LES_MOTS_DANS_UN_CHAMP"
+    assert second["typeRecherche"] == "UN_DES_MOTS"
+
+
+@pytest.mark.asyncio
 async def test_legifrance_exact_article_query_rejects_consulted_body_for_another_article(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
     monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
