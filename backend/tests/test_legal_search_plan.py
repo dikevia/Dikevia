@@ -381,3 +381,23 @@ def test_titular_evaluation_does_not_create_a_contractual_axis():
     assert "décret 88-145" not in axes[0]
     assert all("décret 88-145" not in query for query in queries)
     assert any("jurisprudence administrative" in query for query in queries)
+
+
+def test_six_year_contract_to_cdi_question_uses_dedicated_fpt_research_axes():
+    question = (
+        "Un agent contractuel de la fonction publique territoriale en CDD peut-il "
+        "bénéficier d’un renouvellement au-delà de 6 ans et obtenir un CDI ? "
+        "Précise les conditions, l’ancienneté et les interruptions entre contrats."
+    )
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+
+    assert "L332-10" in query
+    assert "L332-9" in query
+    assert len(queries) == 3
+    assert any("L332-10" in item and "même catégorie hiérarchique" in item for item in queries)
+    assert any("L332-23" in item and "quatre mois" in item for item in queries)
+    assert all("agents contractuels territoriaux décret 88-145 CGFP recrutement renouvellement" not in item for item in queries)
+    assert len(axes) == 1
+    assert "L332-10" in axes[0]
