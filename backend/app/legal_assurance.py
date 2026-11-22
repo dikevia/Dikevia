@@ -71,9 +71,12 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "source_family_label": label,
         "review_priority": rank,
         "temporal_or_validation_status": status,
-        "usable_for_conclusion": usable and not post_facts_decision,
-        "usable_for_interpretation": (usable or post_facts_decision) and kind == "ADMIN_CASELAW",
-        "usable_for_facts_date_conclusion": usable and not post_facts_decision,
+        "normative": not non_normative,
+        "claim_eligible": not non_normative and source.get("claim_eligible", True) is not False,
+        "reference_role": "NON_NORMATIVE_CONTEXT_ONLY" if non_normative else source.get("reference_role"),
+        "usable_for_conclusion": usable and not post_facts_decision and not non_normative,
+        "usable_for_interpretation": non_normative or ((usable or post_facts_decision) and kind == "ADMIN_CASELAW"),
+        "usable_for_facts_date_conclusion": usable and not post_facts_decision and not non_normative,
         "temporal_limit": (
             "Décision postérieure aux faits : utilisable comme éclairage interprétatif, "
             "mais pas comme preuve autonome de la règle applicable à la date des faits."
