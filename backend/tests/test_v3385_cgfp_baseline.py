@@ -153,7 +153,7 @@ async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallbac
     monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
     monkeypatch.setattr(module, "search_cgfp", snapshot_search)
     monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
-        "text": "Le présent article concerne les agents publics et les fonctionnaires."
+        "text": "Le présent article concerne les agents territoriaux et la fonction publique territoriale."
     })
     monkeypatch.setattr(
         module, "validate_snapshot_citation",
