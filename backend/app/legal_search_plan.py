@@ -100,6 +100,13 @@ _TOPIC_EXPANSIONS = (
         "droits défense conseil de discipline jurisprudence administrative",
     ),
     (
+        ("6 ans", "six ans", "six années", "six annees"),
+        (
+            "CGFP L332-8 L332-9 L332-10 L332-11 L332-12 CDI CDD emploi permanent agent contractuel territorial même collectivité même catégorie hiérarchique six ans",
+            "CGFP L332-10 L332-23 L452-44 services publics ancienneté interruption entre contrats quatre mois temps partiel temps non complet décret 88-145",
+        ),
+    ),
+    (
         ("renouvellement de contrat", "non renouvellement", "fin de contrat",
          "licenciement contractuel", "recrutement contractuel", "terme du contrat",
          "agent contractuel", "contractuel", "contractuels", "CDD", "CDI"),
@@ -241,6 +248,21 @@ def _contains_trigger(text: str, trigger: str) -> bool:
     return normalized_trigger in normalized_text
 
 
+def _is_six_year_cdi_question(question: str) -> bool:
+    """Recognize the territorial six-year CDD-to-CDI mechanism explicitly."""
+    folded = _fold(str(question or ""))
+    has_cdi = _contains_trigger(folded, "CDI")
+    has_six_years = any(
+        _contains_trigger(folded, marker)
+        for marker in ("6 ans", "six ans", "six annees", "six années")
+    )
+    has_contract_context = any(
+        _contains_trigger(folded, marker)
+        for marker in ("agent contractuel", "contractuel", "CDD", "renouvellement", "contrat")
+    )
+    return has_cdi and has_six_years and has_contract_context
+
+
 def build_official_search_query(question: str, max_length: int = 500) -> str:
     """Keep the user's wording first, then append one narrowly matched FPT expansion."""
     original = str(question or "").strip()
@@ -254,7 +276,13 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
     if _ARTICLE_REFERENCE.search(current_turn) and _DIRECT_ARTICLE_LOOKUP.search(current_turn_folded):
         return original[:max_length]
 
-    if _is_contractual_evaluation_question(original):
+    if _is_six_year_cdi_question(original):
+        expansion = (
+            "CGFP L332-8 L332-9 L332-10 L332-11 L332-12 L332-23 L452-44 "
+            "décret 88-145 six ans CDI même collectivité même catégorie hiérarchique "
+            "services publics interruption quatre mois temps partiel temps non complet"
+        )
+    elif _is_contractual_evaluation_question(original):
         expansion = (
             "agent contractuel territorial entretien professionnel annuel décret 88-145 "
             "article 1-3 emploi permanent CDI CDD supérieur à un an contrat de projet "
@@ -643,7 +671,9 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             continue
         # "Je suis contractuel" identifies status, not the legal topic. Do not
         # let it displace a substantive topic such as IHTS or union rights.
-        if triggers == contract_triggers and other_topic_present:
+        if triggers == contract_triggers and (
+            other_topic_present or _is_six_year_cdi_question(original)
+        ):
             continue
         matched_axes.append(axes)
 
@@ -732,6 +762,10 @@ def build_official_research_axes(question: str) -> list[str]:
     ):
         return []
     folded = _fold(original)
+    if _is_six_year_cdi_question(original):
+        return [
+            "CGFP L332-8 L332-9 L332-10 L332-11 L332-12 L332-23 L452-44 agent contractuel territorial CDI six ans même collectivité même catégorie hiérarchique interruption quatre mois"
+        ]
     if _is_contractual_evaluation_question(original):
         return [
             "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations révision CCP"
