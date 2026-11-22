@@ -49,7 +49,10 @@
     url.search = new URLSearchParams(params);
     window.location.assign(url.toString());
   }
-  async function login() { return beginAuthorization(null); }
+  async function login() {
+    sessionStorage.removeItem('cfdt_oidc_silent_failed');
+    return beginAuthorization(null);
+  }
   function cleanCallbackUrl() {
     history.replaceState({},document.title,window.location.pathname+window.location.hash);
   }
@@ -118,6 +121,7 @@
     const completed = await completeCallback();
     if (hadCallback || completed || accessToken) return;
     // Une seule tentative silencieuse par navigation de retour : jamais de boucle.
+    if (sessionStorage.getItem('cfdt_oidc_silent_failed') === '1') return;
     if (sessionStorage.getItem('cfdt_oidc_silent_attempt') === '1') {
       sessionStorage.removeItem('cfdt_oidc_silent_attempt');
       return;
