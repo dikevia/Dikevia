@@ -31,10 +31,19 @@ def test_temporal_status_is_conservative_when_dates_missing():
     assert temporal_status(None, None, requested, "DECREE", raw_payload='{"requested_date":"2025-01-01"}', version_status="IN_FORCE") == "IN_FORCE_ON_REQUESTED_DATE"
 
 
-def test_only_allowlisted_official_legal_source_urls_are_kept():
+def test_only_allowlisted_public_legal_and_institutional_source_urls_are_kept():
     assert safe_official_url("https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000000")
     assert safe_official_url("https://opendata.justice-administrative.fr/")
+    assert safe_official_url("https://www.service-public.gouv.fr/particuliers/vosdroits/F123")
+    assert safe_official_url("https://www.data.gouv.fr/datasets/example")
+    assert safe_official_url("https://www.cnfpt.fr/")
+    assert safe_official_url("https://www.cdg59.fr/")
+    assert safe_official_url("https://www.cig929394.fr/")
     assert safe_official_url("https://evil.example/legifrance") is None
+    assert safe_official_url("https://service-public.gouv.fr.evil.example/") is None
+    assert safe_official_url("https://cdg59.fr.evil.example/") is None
+    assert safe_official_url("https://user@www.cnfpt.fr/") is None
+    assert safe_official_url("https://www.cnfpt.fr:8443/") is None
     assert safe_official_url("http://legifrance.gouv.fr") is None
 
 
