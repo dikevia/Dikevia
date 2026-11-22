@@ -40,4 +40,7 @@ def test_document_seeds_have_explicit_non_ingested_status_and_known_source():
             assert item.get("download_sha256")
             assert item.get("text_sha256")
             assert item.get("collected_at")
-            assert item.get("page_count", 0) > 0
+            if item.get("format") == "PDF":
+                assert item.get("page_count", 0) > 0
+            else:
+                assert item.get("character_count", 0) > 0
