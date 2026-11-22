@@ -319,7 +319,13 @@ def validate_claim_evidence(
             source_type == "CGFP_SNAPSHOT"
             and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
             and bool(source.get("snapshot_modified_at"))
-            and source.get("source_status") == "SNAPSHOT_NOT_LIVE_VERIFIED"
+            and (
+                source.get("source_status") == "SNAPSHOT_NOT_LIVE_VERIFIED"
+                or (
+                    source.get("source_status") == "IMPORTED_UNVERIFIED"
+                    and source.get("snapshot_verification_status") == "SNAPSHOT_NOT_LIVE_VERIFIED"
+                )
+            )
         )
         if source_type == "LEGIFRANCE_CETAT_SEARCH":
             continue
