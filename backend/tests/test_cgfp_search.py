@@ -239,3 +239,33 @@ def test_code_research_budget_never_drops_a_recognized_subquestion():
     assert result_with_spare_capacity == [
         *axes[:3], "article L1", "article L2"
     ]
+
+
+def test_cgfp_topic_anchors_rank_but_do_not_suppress_lexical_candidates(monkeypatch):
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    monkeypatch.setattr(
+        "app.cgfp_relevance.lexical_search",
+        lambda query, limit=20: {
+            "source": {"source_id": "test"},
+            "results": [
+                {"article": "L714-4", "score": 2.0, "excerpt": "Régime indemnitaire des agents territoriaux."},
+                {"article": "L714-5", "score": 1.5, "excerpt": "Conditions d'exercice des fonctions."},
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        "app.cgfp_relevance.get_cgfp_article",
+        lambda ref: {
+            "text": (
+                "Régime indemnitaire des agents territoriaux."
+                if ref == "L714-4" else "Conditions d'exercice des fonctions."
+            )
+        },
+    )
+
+    result = search_ranked_cgfp("Je remplace un collègue et demande ses primes")
+
+    assert {item["article"] for item in result["results"]} == {"L714-4", "L714-5"}
+    contextual = next(item for item in result["results"] if item["article"] == "L714-5")
+    assert contextual["relevance_label"].startswith("Correspondance lexicale")
