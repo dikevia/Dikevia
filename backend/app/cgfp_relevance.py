@@ -91,6 +91,59 @@ _TOPICS: tuple[dict[str, Any], ...] = (
         "exclude_unless_anchor": (),
     },
     {
+        "key": "citis",
+        "triggers": (
+            "citis", "conge pour invalidite temporaire imputable au service",
+            "invalidite temporaire imputable au service",
+        ),
+        "expansion": (
+            "congé pour invalidité temporaire imputable au service accident reconnu imputable "
+            "accident de trajet maladie contractée en service incapacité temporaire de travail "
+            "intégralité du traitement reprise du service retraite période de service effectif "
+            "déclaration expertise médicale imputabilité au service"
+        ),
+        "anchors": (
+            "conge pour invalidite temporaire imputable au service",
+            "accident reconnu imputable au service", "accident de trajet",
+            "maladie contractee en service", "integralite du traitement",
+            "periode de service effectif",
+        ),
+        "boosts": {
+            "conge pour invalidite temporaire imputable au service": 18.0,
+            "accident reconnu imputable au service": 12.0,
+            "integralite du traitement": 10.0,
+            "accident de trajet": 8.0,
+        },
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "temps_partiel_therapeutique",
+        "triggers": (
+            "temps partiel therapeutique", "temps partiel pour raison therapeutique",
+            "tpt",
+        ),
+        "expansion": (
+            "temps partiel pour raison thérapeutique maintien retour emploi amélioration état santé "
+            "rééducation réadaptation professionnelle quotité mi temps traitement intégral "
+            "supplément familial traitement indemnité résidence durée continue discontinue "
+            "autorisation nouvelle période"
+        ),
+        "anchors": (
+            "temps partiel pour raison therapeutique", "maintien ou le retour a l emploi",
+            "reeducation", "readaptation professionnelle", "ne peut pas etre inferieur au mi temps",
+            "integralite de son traitement", "supplement familial de traitement",
+            "indemnite de residence", "continue ou discontinue",
+        ),
+        "boosts": {
+            "temps partiel pour raison therapeutique": 18.0,
+            "maintien ou le retour a l emploi": 10.0,
+            "integralite de son traitement": 10.0,
+            "reeducation": 7.0,
+            "readaptation professionnelle": 7.0,
+        },
+        "exclude_unless_anchor": (),
+    },
+    {
         "key": "maladie_service",
         "triggers": (
             "accident de service", "maladie professionnelle", "imputable au service",
@@ -462,6 +515,16 @@ def _matching_topics(query: str) -> list[dict[str, Any]]:
         topic for topic in _TOPICS
         if any(normalize(trigger) in folded for trigger in topic["triggers"])
     ]
+    # Health-related routes are intentionally specific. If the question
+    # explicitly names CITIS or therapeutic part-time, do not dilute retrieval
+    # with generic leave, working-time or sick-leave expansions.
+    focused_health = [
+        topic for topic in matched
+        if topic["key"] in {"citis", "temps_partiel_therapeutique"}
+    ]
+    if focused_health:
+        return focused_health
+
     # Overtime/IHTS is a specific compensation topic. Do not also activate
     # generic remuneration and working-time topics for the same phrase,
     # otherwise their broad anchors reintroduce unrelated CGFP articles.

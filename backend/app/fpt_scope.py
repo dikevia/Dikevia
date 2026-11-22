@@ -104,6 +104,25 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
     article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     corpus = _fold((title + " " + text)[:500_000])
+
+    # These CGFP provisions are retained as contextual research leads only.
+    # Their generic wording does not, by itself, establish the complete FPT
+    # implementation regime. The model may use them to orient further official
+    # searches, but they must never support a legal claim without corroborating
+    # FPT-specific implementing texts and a separate applicability check.
+    if article_ref in (
+        {f"l822 {number}" for number in range(18, 24)}
+        | {f"l823 {number}" for number in range(1, 7)}
+    ):
+        return {
+            "scope": "GENERAL_PUBLIC_SERVICE",
+            "evidence": [
+                f"Article {article_ref.upper()} du CGFP : piste de contexte uniquement",
+                "Applicabilité FPT et dispositions réglementaires d'application à vérifier séparément",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": False,
+        }
     # Articles L. 332-8 to L. 332-14 belong to the CGFP subsection devoted
     # specifically to permanent contractual employment in the FPT. Their
     # individual wording does not always repeat the territorial scope.

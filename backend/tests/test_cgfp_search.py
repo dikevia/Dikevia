@@ -269,3 +269,59 @@ def test_cgfp_topic_anchors_rank_but_do_not_suppress_lexical_candidates(monkeypa
     assert {item["article"] for item in result["results"]} == {"L714-4", "L714-5"}
     contextual = next(item for item in result["results"] if item["article"] == "L714-5")
     assert contextual["relevance_label"].startswith("Correspondance lexicale")
+
+
+
+def test_citis_query_uses_focused_health_topic():
+    from app.cgfp_relevance import _matching_topics
+
+    topics = {item["key"] for item in _matching_topics(
+        "Je suis en CITIS après un accident de service reconnu imputable."
+    )}
+    assert topics == {"citis"}
+
+
+def test_therapeutic_part_time_query_uses_focused_health_topic():
+    from app.cgfp_relevance import _matching_topics
+
+    topics = {item["key"] for item in _matching_topics(
+        "Mon médecin préconise un temps partiel thérapeutique après mon arrêt."
+    )}
+    assert topics == {"temps_partiel_therapeutique"}
+
+
+def test_citis_retrieval_surfaces_its_core_cgfp_provisions():
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    result = search_ranked_cgfp(
+        "Je suis en CITIS après un accident reconnu imputable au service. "
+        "Quels sont mes droits au congé, au maintien du traitement et à la reprise ?",
+        limit=20,
+    )
+    refs = {item["article"] for item in result["results"]}
+    assert {"L822-21", "L822-22", "L822-23"} & refs
+
+
+def test_therapeutic_part_time_retrieval_surfaces_its_core_cgfp_provisions():
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    result = search_ranked_cgfp(
+        "Après un arrêt maladie, mon médecin préconise un temps partiel "
+        "pour raison thérapeutique. Quels sont les droits au maintien de l'emploi "
+        "et à la rémunération ?",
+        limit=20,
+    )
+    refs = {item["article"] for item in result["results"]}
+    assert {"L823-1", "L823-2", "L823-4", "L823-5"} & refs
+
+
+
+def test_code_research_budget_preserves_axes_and_reserves_three_exact_article_lookups():
+    from app.orchestrator import _build_code_research_queries
+
+    axes = [f"axe juridique {number}" for number in range(1, 6)]
+    exact_articles = [f"article L823-{number}" for number in range(1, 7)]
+    result = _build_code_research_queries(
+        axes, exact_articles, max_queries=8
+    )
+    assert result == [*axes, *exact_articles[:3]]

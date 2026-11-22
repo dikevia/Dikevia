@@ -241,10 +241,10 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
         conversation_history=history,
     )
 
-    # The CGFP discovery index may add up to two exact article lookups
-    # to the three broad code searches. Regulatory and case-law budgets remain
-    # unchanged.
-    assert 3 <= len(seen["code"]) <= 5
+    # Preserve all recognized code-research axes, then reserve capacity for
+    # up to three exact article lookups (maximum eight bounded code searches).
+    # Regulatory and case-law budgets remain unchanged.
+    assert 3 <= len(seen["code"]) <= 8
     assert len(seen["regulatory"]) == 3
     assert len(seen["case_law"]) == 3
     all_queries = [query for pillar in seen.values() for query in pillar]

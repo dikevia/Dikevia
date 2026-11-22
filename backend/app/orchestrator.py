@@ -604,10 +604,12 @@ class LegalOrchestrator:
             # The complete local CGFP snapshot is searched as a discovery
             # index. Its strongest article references become exact Légifrance
             # lookups; the snapshot itself never upgrades to verified evidence.
-            # Never drop a recognized sub-question to make room for exact
-            # article lookups. The helper uses spare capacity only.
+            # Keep every recognized research axis and reserve a bounded
+            # additional budget for up to three exact CGFP article lookups.
+            # Exact article calls are essential when lexical discovery identifies
+            # a provision whose title/body does not repeat the user's wording.
             code_research_queries = _build_code_research_queries(
-                research_queries, cgfp_article_queries, max_queries=5,
+                research_queries, cgfp_article_queries, max_queries=8,
             )
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
