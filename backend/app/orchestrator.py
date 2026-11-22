@@ -568,7 +568,7 @@ class LegalOrchestrator:
             # Never drop a recognized sub-question to make room for exact
             # article lookups. The helper uses spare capacity only.
             code_research_queries = _build_code_research_queries(
-                research_queries, cgfp_article_queries, max_queries=5,
+                research_queries, cgfp_article_queries, max_queries=7,
             )
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
@@ -695,6 +695,87 @@ class LegalOrchestrator:
             live_sources, regulatory_sources, case_law_sources,
             live_issue, regulatory_issue, case_law_issue, temporal_issue, search_warnings,
         ) = official_result
+
+        # One bounded evidence-guided refinement pass: Gemini reviews what the
+        # official searches actually returned, identifies uncovered legal issues,
+        # and may request a small number of genuinely new searches. It cannot
+        # promote a result to evidence; the same official verification path runs again.
+        if research_plan is not None:
+            first_pass_evidence = [
+                *live_sources, *regulatory_sources, *case_law_sources,
+                *(
+                    [{"source_type": "CGFP_SNAPSHOT", **item}
+                     for item in (found or {}).get("results", [])[:8]]
+                    if isinstance(found, dict) else []
+                ),
+            ]
+            try:
+                refinement = await plan_legal_research(
+                    question=contextual_question,
+                    employer=request.employer,
+                    facts_period=temporal_context,
+                    legal_context=legal_context,
+                    conversation_history=history,
+                    previous_queries=research_queries,
+                    retrieved_evidence=first_pass_evidence,
+                )
+            except AIProviderUnavailable:
+                refinement = None
+                logger.warning("Affinage IA après première recherche indisponible ; les résultats initiaux sont conservés.")
+            if refinement is not None:
+                additional_queries = [
+                    query for query in refinement.queries
+                    if query.casefold() not in {existing.casefold() for existing in research_queries}
+                ][:2]
+                if refinement.legal_issues:
+                    legal_context["axes_recherche_documentaire"] = list(dict.fromkeys([
+                        *(legal_context.get("axes_recherche_documentaire") or []),
+                        *refinement.legal_issues,
+                    ]))[:10]
+                if additional_queries:
+                    research_queries = [*research_queries, *additional_queries][:7]
+                    logger.info(
+                        "Recherche juridique affinée par IA : %d requête(s) complémentaire(s).",
+                        len(additional_queries),
+                    )
+                    second_found, second_cgfp_issue = await search_cgfp_index()
+                    if isinstance(second_found, dict):
+                        merged_snapshot = {
+                            str(item.get("article") or ""): item
+                            for item in (found or {}).get("results", [])
+                            if isinstance(item, dict)
+                        } if isinstance(found, dict) else {}
+                        for item in second_found.get("results", []):
+                            if isinstance(item, dict):
+                                merged_snapshot[str(item.get("article") or "")] = item
+                        found = {**(found or {}), **second_found, "results": list(merged_snapshot.values())}
+                        cgfp_issue = None
+                    elif not isinstance(found, dict):
+                        cgfp_issue = second_cgfp_issue or cgfp_issue
+                    cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else cgfp_partial_issue
+                    second_article_queries = _cgfp_article_discovery_queries(second_found)
+                    second_result = await search_official_pillars(second_article_queries)
+                    (
+                        live_sources_2, regulatory_sources_2, case_law_sources_2,
+                        live_issue_2, regulatory_issue_2, case_law_issue_2, temporal_issue_2, warnings_2,
+                    ) = second_result
+                    def merge_sources(existing, additions):
+                        merged = {str(item.get("source_id") or id(item)): item for item in existing}
+                        for item in additions:
+                            merged[str(item.get("source_id") or id(item))] = item
+                        return list(merged.values())
+                    had_live = bool(live_sources_2)
+                    had_regulatory = bool(regulatory_sources_2)
+                    had_case_law = bool(case_law_sources_2)
+                    live_sources = merge_sources(live_sources, live_sources_2)
+                    regulatory_sources = merge_sources(regulatory_sources, regulatory_sources_2)
+                    case_law_sources = merge_sources(case_law_sources, case_law_sources_2)
+                    live_issue = None if had_live else (live_issue_2 or live_issue)
+                    regulatory_issue = None if had_regulatory else (regulatory_issue_2 or regulatory_issue)
+                    case_law_issue = None if had_case_law else (case_law_issue_2 or case_law_issue)
+                    temporal_issue = temporal_issue_2 or temporal_issue
+                    search_warnings = list(dict.fromkeys([*(search_warnings or []), *(warnings_2 or [])]))
+
         period_version_comparison = None
         comparison_end_date = period_end or effective_date
         if period_start and period_start < comparison_end_date:
