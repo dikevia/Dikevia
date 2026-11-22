@@ -62,6 +62,9 @@ jobs:
       - name: Dry-run cfdt-interco-guide-agent-public-2026 extraction (union source, no database writes)
         run: python scripts/import_public_guidance_sources.py --id cfdt-interco-guide-agent-public-2026 --export-json /tmp/cfdt-guide-2026.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
+      - name: Dry-run CFDT Interco 2026 agent public guide PDF extraction (no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cfdt-interco-guide-agent-public-2026-pdf --export-json /tmp/cfdt-guide-2026-pdf.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
       - name: Dry-run cgt-fp-site extraction (union source, no database writes)
         run: python scripts/import_public_guidance_sources.py --id cgt-fp-site --export-json /tmp/cgt-fp.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
@@ -98,6 +101,7 @@ jobs:
             /tmp/public-guidance-originals/
             /tmp/cfdt-uffa.json
             /tmp/cfdt-guide-2026.json
+            /tmp/cfdt-guide-2026-pdf.json
             /tmp/cgt-fp.json
             /tmp/fo-fp.json
             /tmp/cftc-fp.json
