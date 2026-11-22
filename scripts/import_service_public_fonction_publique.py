@@ -27,15 +27,21 @@ DATASET_API_URL = (
     "fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers/"
 )
 THEME_FONCTION_PUBLIQUE = "N19806"
-PUBLIC_SCOPE_TERMS = (
+PUBLIC_TITLE_TERMS = (
     "fonction publique", "fonctionnaire", "agent public", "agents publics",
     "agent territorial", "agents territoriaux", "collectivité territoriale",
     "collectivités territoriales", "agent contractuel de droit public",
     "contractuel de droit public", "fonctionnaire territorial",
     "fonctionnaire hospitalier", "fonctionnaire de l'état",
     "fonction publique hospitalière", "fonction publique territoriale",
-    "fonction publique de l'état", "code général de la fonction publique",
-    "cgfp", "ouvrier de l'état",
+    "fonction publique de l'état", "ouvrier de l'état",
+)
+PUBLIC_REFERENCE_TERMS = (
+    "code général de la fonction publique", "cgfp",
+    "décret n° 85-1250", "décret n° 86-83", "décret n° 87-602",
+    "décret n° 88-386", "décret n° 88-145", "décret n° 91-155",
+    "décret n° 2002-60", "décret n° 2002-634", "décret n° 2004-878",
+    "décret n° 2020-592", "décret n° 2025-564", "décret n° 2026-705",
 )
 MAX_ARCHIVE_BYTES = 100 * 1024 * 1024
 MAX_XML_BYTES = 8 * 1024 * 1024
@@ -186,12 +192,13 @@ def _extract_title(root: ET.Element) -> str:
 
 
 def _is_public_function_fiche(root: ET.Element) -> bool:
-    """Reject fiches whose broad theme metadata is incidental to private-sector content."""
+    """Require a public-service title or an explicit public-service legal reference."""
     title = _extract_title(root).casefold()
-    content = _text(root).casefold()
     references = " ".join(item.get("libelle", "") for item in _extract_references(root)).casefold()
-    combined = " ".join((title, content, references))
-    return any(term in combined for term in PUBLIC_SCOPE_TERMS)
+    return (
+        any(term in title for term in PUBLIC_TITLE_TERMS)
+        or any(term in references for term in PUBLIC_REFERENCE_TERMS)
+    )
 
 
 def extraire_fiches_fonctionnaires(zf: zipfile.ZipFile) -> list[dict[str, Any]]:
