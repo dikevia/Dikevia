@@ -53,6 +53,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         else:
             kind = "LOCAL_REGULATION"
     rank, label = _SOURCE_CLASS.get(kind, _SOURCE_CLASS["OTHER"])
+    non_normative = kind in {"ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE"}
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
