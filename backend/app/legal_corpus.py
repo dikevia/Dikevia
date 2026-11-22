@@ -92,10 +92,29 @@ def temporal_status(valid_from: date | None, valid_to: date | None, requested: d
 
 
 def safe_official_url(value: str | None) -> str | None:
+    """Keep HTTPS links only for explicitly trusted public legal/institutional domains."""
     if not value:
         return None
     parsed = urlparse(value)
-    if parsed.scheme == "https" and parsed.hostname in {"www.legifrance.gouv.fr", "legifrance.gouv.fr", "opendata.justice-administrative.fr"}:
+    host = (parsed.hostname or "").lower().rstrip(".")
+    exact_hosts = {
+        "www.legifrance.gouv.fr", "legifrance.gouv.fr",
+        "opendata.justice-administrative.fr",
+        "service-public.gouv.fr", "www.service-public.gouv.fr",
+        "lecomarquage.service-public.gouv.fr",
+        "data.gouv.fr", "www.data.gouv.fr",
+        "cnfpt.fr", "www.cnfpt.fr",
+        "cig929394.fr", "www.cig929394.fr",
+        "cigversailles.fr", "www.cigversailles.fr",
+    }
+    is_cdg_domain = bool(re.fullmatch(r"(?:www\\.)?cdg\\d{2,3}\\.fr", host))
+    if (
+        parsed.scheme == "https"
+        and host in exact_hosts | {"opendata.justice-administrative.fr"}
+        or parsed.scheme == "https" and is_cdg_domain
+    ):
+        if parsed.username or parsed.password or parsed.port:
+            return None
         return value[:1500]
     return None
 
