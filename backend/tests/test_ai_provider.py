@@ -49,7 +49,7 @@ def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense
     assert "MODE D'INFORMATION GÉNÉRALE" in SYSTEM_PROMPT
     assert "Ne bloque pas la recherche au seul motif que la date des faits manque" in SYSTEM_PROMPT
     assert "source_id" in SYSTEM_PROMPT and "quote" in SYSTEM_PROMPT
-    assert "issues de recherche IA ou du plan de secours" in SYSTEM_PROMPT
+    assert "issues du plan de recherche IA ou du plan de secours" in SYSTEM_PROMPT
     assert "conserve néanmoins les affirmations indépendantes" in SYSTEM_PROMPT
 
 def test_ai_generated_article_references_must_exist_in_sources():
