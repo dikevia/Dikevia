@@ -1256,7 +1256,7 @@ class LegalOrchestrator:
 
         sources.extend(local_sources)
 
-        if found and cgfp_snapshot_fallback:
+        if found and cgfp_snapshot_fallback and parsed_date is None:
             for hit in found["results"]:
                 if not _source_relevant_to_any_research_axis(research_queries, hit):
                     continue
