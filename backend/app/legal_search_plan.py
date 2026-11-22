@@ -817,14 +817,15 @@ def merge_ai_and_fallback_research_queries(
         for query in (fallback_queries or [])
         if isinstance(query, str) and query.strip()
     ))
-    # A single recognized topic is already represented in the model's prompt.
-    # Supplement only compound questions, where one omitted axis can hide a
-    # distinct legal mechanism. The first fallback query is the broad user query;
-    # only the focused independent axes are eligible for this reserve.
-    if len(fallback_axes or []) < 2 or len(fallback) < 2:
+    # Always retain one bounded fallback retrieval query: even a single-topic
+    # model plan can omit the central mechanism. Compound questions reserve a
+    # second focused fallback axis. The first fallback query is the broad user
+    # query; only subsequent focused queries are eligible for this reserve.
+    if len(fallback) < 2:
         return primary[:limit] or fallback[:limit]
 
-    reserved = fallback[1:1 + min(2, len(fallback_axes), limit - 1)]
+    reserve_count = 2 if len(fallback_axes or []) >= 2 else 1
+    reserved = fallback[1:1 + min(reserve_count, limit - 1)]
     primary_budget = max(0, limit - len(reserved))
     ordered = [*primary[:primary_budget], *reserved, *primary[primary_budget:]]
     merged: list[str] = []
