@@ -26,9 +26,18 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install collector dependencies
-        run: python -m pip install --disable-pip-version-check httpx defusedxml asyncpg
+        run: python -m pip install --disable-pip-version-check httpx defusedxml asyncpg pypdf
       - name: Download and extract official Service-Public dataset
         run: python scripts/import_service_public_to_legal_corpus.py --export-json /tmp/service-public-corpus.json
+      - name: Dry-run DGAFP TPT PDF extraction (no database writes)
+        run: python scripts/import_public_guidance_sources.py --id dgafp-faq-tpt-2026
+        continue-on-error: true
+      - name: Dry-run CDG35 annual-leave PDF extraction (no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cdg35-actualite-conges-2025
+        continue-on-error: true
+      - name: Dry-run CDG35 annualized-working-time PDF extraction (no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cdg35-annualisation
+        continue-on-error: true
       - name: Archive the extracted public corpus for audit
         uses: actions/upload-artifact@v4
         with:
