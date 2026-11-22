@@ -325,3 +325,16 @@ def test_code_research_budget_preserves_axes_and_reserves_three_exact_article_lo
         axes, exact_articles, max_queries=8
     )
     assert result == [*axes, *exact_articles[:3]]
+
+
+def test_cgfp_tokenizer_normalizes_french_plural_forms_without_corrupting_invariants():
+    from app.cgfp import tokenize
+
+    assert tokenize("régimes indemnitaires primes") == [
+        "regime", "indemnitaire", "prime"
+    ]
+    assert tokenize("régime indemnitaire prime") == [
+        "regime", "indemnitaire", "prime"
+    ]
+    assert "temps" in tokenize("temps de travail")
+    assert "prix" in tokenize("prix des prestations")
