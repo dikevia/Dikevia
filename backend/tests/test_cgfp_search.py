@@ -434,3 +434,32 @@ def test_fpt_fallback_search_keeps_territorial_topic_expansion():
     assert queries
     assert axes
     assert any("décret 85-1250" in query for query in queries)
+
+
+def test_cgfp_retrieval_expands_common_health_terms_without_reclassifying_them():
+    from app.cgfp_relevance import _expand_legal_query, _matching_topics
+
+    question = "Je voudrais reprendre à mi-temps après un accident du travail."
+    expanded = _expand_legal_query(question)
+    assert "temps partiel pour raison therapeutique" in expanded
+    assert "accident de service" in expanded
+
+    topics = {item["key"] for item in _matching_topics(question)}
+    assert topics == {"citis", "temps_partiel_therapeutique"}
+
+
+def test_cgfp_retrieval_alias_preserves_original_user_wording():
+    from app.cgfp_relevance import _expand_legal_query
+
+    question = "Mon médecin parle de mi-temps thérapeutique."
+    expanded = _expand_legal_query(question)
+    assert question in expanded
+    assert "temps partiel pour raison therapeutique" in expanded
+
+
+def test_accident_du_travail_alias_is_only_a_search_route():
+    from app.cgfp_relevance import _expand_legal_query, _matching_topics
+
+    question = "Mon accident du travail est-il reconnu ?"
+    assert "accident de service" in _expand_legal_query(question)
+    assert "citis" in {item["key"] for item in _matching_topics(question)}
