@@ -256,7 +256,7 @@ def test_cgfp_snapshot_fallback_can_support_only_snapshot_scoped_claims():
         "source_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
         "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
         "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED",
-        "public_service_scope": "FPT_REFERENCE",
+        "public_service_scope": "FPT",
         "analysis_eligible": True,
         "claim_eligible": True,
         "citation_integrity": {"valid": True},
