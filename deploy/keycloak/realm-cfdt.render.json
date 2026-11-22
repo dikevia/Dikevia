@@ -81,8 +81,8 @@
     }
   ],
   "accessTokenLifespan": 900,
-  "ssoSessionIdleTimeout": 1800,
-  "ssoSessionMaxLifespan": 28800,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 2592000,
   "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0
 }
