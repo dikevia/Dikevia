@@ -496,6 +496,12 @@ class LegalOrchestrator:
             legal_context["strategie_recherche"] = "PLANIFIEE_PAR_IA_AVANT_CONSULTATION"
             legal_context["axes_recherche_documentaire"] = research_axes
             legal_context["clarification_recherche"] = research_plan.clarification_needed
+            legal_context["faits_extraits_de_la_question"] = research_plan.extracted_facts or []
+            legal_context["faits_extraits_statut"] = "CITATIONS_TEXTUELLES_VERIFIEES_CONTRE_QUESTION"
+            legal_context["faits_extraits_limite"] = (
+                "Ces faits reprennent uniquement des passages explicitement présents dans la question. "
+                "Ils ne prouvent pas leur exactitude et ne constituent pas une qualification juridique."
+            )
         else:
             research_queries = fallback_queries
             legal_context["strategie_recherche"] = "SECOURS_DETERMINISTE_MODELE_INDISPONIBLE"
