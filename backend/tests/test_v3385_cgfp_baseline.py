@@ -190,6 +190,7 @@ async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallbac
     assert any(
         source.get("source_type") == "CGFP_SNAPSHOT"
         and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+        and source.get("general_info_eligible") is True
         for source in captured["sources"]
     )
     assert any("Mode de secours CGFP activé" in item for item in response.missing_information)
