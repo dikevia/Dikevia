@@ -109,6 +109,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true", help="Écrit dans le corpus avec le rôle d'ingestion dédié.")
     parser.add_argument("--limit", type=int, default=0, help="Limite facultative pour un import pilote.")
+    parser.add_argument("--export-json", type=Path, help="Exporte les documents préparés dans un fichier JSON.")
     args = parser.parse_args()
     if args.limit < 0:
         parser.error("--limit doit être positif ou nul.")
@@ -125,6 +126,13 @@ def main() -> int:
     if args.limit:
         fiches = fiches[:args.limit]
     items = [to_corpus_item(fiche, provenance) for fiche in fiches]
+    if args.export_json:
+        args.export_json.parent.mkdir(parents=True, exist_ok=True)
+        args.export_json.write_text(
+            json.dumps({"source": provenance, "documents": items}, ensure_ascii=False, indent=2, default=str) + "\\n",
+            encoding="utf-8",
+        )
+        print(f"Export documentaire préparé : {len(items)} fiches vers {args.export_json}")
     print(json.dumps({
         "mode": "APPLY" if args.apply else "DRY_RUN",
         "documents_detected": len(items),
