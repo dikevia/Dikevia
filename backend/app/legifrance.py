@@ -264,19 +264,19 @@ class LegifranceConnector:
         keys = {"texte", "text", "contenu", "content", "textehtml", "contenuhtml"}
 
         def clean(raw: str) -> str:
-            raw = re.sub(r"<br\\s*/?>", "\\n", raw, flags=re.I)
-            raw = re.sub(r"<li\\b[^>]*>", "\\n- ", raw, flags=re.I)
-            raw = re.sub(r"</li\\s*>", "\\n", raw, flags=re.I)
-            raw = re.sub(r"</(?:p|div|h[1-6]|ul|ol)\\s*>", "\\n", raw, flags=re.I)
-            raw = re.sub(r"<(?:p|div|ul|ol)\\b[^>]*>", "\\n", raw, flags=re.I)
+            raw = re.sub(r"<br\s*/?>", "\n", raw, flags=re.I)
+            raw = re.sub(r"<li\b[^>]*>", "\n- ", raw, flags=re.I)
+            raw = re.sub(r"</li\s*>", "\n", raw, flags=re.I)
+            raw = re.sub(r"</(?:p|div|h[1-6]|ul|ol)\s*>", "\n", raw, flags=re.I)
+            raw = re.sub(r"<(?:p|div|ul|ol)\b[^>]*>", "\n", raw, flags=re.I)
             raw = re.sub(r"<[^>]+>", " ", raw)
             raw = re.sub(r"&nbsp;", " ", raw, flags=re.I)
             raw = re.sub(r"&amp;", "&", raw, flags=re.I)
             raw = re.sub(r"&lt;", "<", raw, flags=re.I)
             raw = re.sub(r"&gt;", ">", raw, flags=re.I)
             raw = re.sub(r"&quot;", '"', raw, flags=re.I)
-            lines = [re.sub(r"[ \\t]+", " ", line).strip() for line in raw.splitlines()]
-            return "\\n".join(line for line in lines if line).strip()
+            lines = [re.sub(r"[ \t]+", " ", line).strip() for line in raw.splitlines()]
+            return "\n".join(line for line in lines if line).strip()
 
         def walk(node: Any) -> None:
             if isinstance(node, dict):
@@ -295,17 +295,16 @@ class LegifranceConnector:
         if not candidates:
             return ""
 
-        # A parent field may contain the complete nested text as well. Keep the
-        # longest representation and discard only segments already contained in it.
+        # Parent fields can contain the complete nested text. Discard only
+        # segments already contained in a longer representation.
         selected: list[tuple[int, str]] = []
         for position, candidate in sorted(candidates, key=lambda item: len(item[1]), reverse=True):
-            folded = re.sub(r"\\s+", " ", candidate).casefold()
-            if any(folded in re.sub(r"\\s+", " ", existing).casefold() for _, existing in selected):
+            folded = re.sub(r"\s+", " ", candidate).casefold()
+            if any(folded in re.sub(r"\s+", " ", existing).casefold() for _, existing in selected):
                 continue
             selected.append((position, candidate))
         selected.sort(key=lambda item: item[0])
-        return "\\n\\n".join(text for _, text in selected)
-
+        return "\n\n".join(text for _, text in selected)
 
     @staticmethod
     def _walk_dicts(value: Any):
