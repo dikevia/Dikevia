@@ -62,6 +62,62 @@
       "url": "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000044416551/",
       "collection": "Code consolidé et textes réglementaires",
       "status": "VERIFICATION_JURIDIQUE_REQUISE"
+    },
+    {
+      "id": "dgcl_rifseep",
+      "name": "DGCL / Collectivités locales",
+      "role": "Notions RIFSEEP, IFSE et CIA en FPT",
+      "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale/la-remuneration-indiciaire-indemnitaire-et-autres-avantages/les-regimes-indemnitaires",
+      "collection": "Page institutionnelle sur les régimes indemnitaires",
+      "status": "SOURCE_OFFICIELLE_REPEREE"
+    },
+    {
+      "id": "service_public_temps_travail",
+      "name": "Service-Public.fr / DILA",
+      "role": "Formulations agent sur 1 607 heures, cycles, RTT et garanties minimales",
+      "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F571",
+      "collection": "Fiche FPT vérifiée le 3 mars 2026",
+      "status": "SOURCE_OFFICIELLE_REPEREE"
+    },
+    {
+      "id": "cdg44_tpt",
+      "name": "Centre de gestion de Loire-Atlantique (CDG 44)",
+      "role": "Veille terrain sur la mise à jour DGAFP du TPT",
+      "url": "https://www.cdg44.fr/actualites/actualisation-de-la-faq-sur-le-tpt-dans-la-fonction-publique",
+      "collection": "Actualité du 18 novembre 2026",
+      "status": "SOURCE_PUBLIQUE_REPEREE"
+    },
+    {
+      "id": "cig_statut_en_bref",
+      "name": "CIG Petite Couronne",
+      "role": "Référentiel de vocabulaire statutaire FPT",
+      "url": "https://www.cig929394.fr/publications/le-statut-en-bref/",
+      "collection": "Ouvrage payant ; page de présentation uniquement, pas d'extraction du contenu",
+      "status": "REFERENCE_BIBLIOGRAPHIQUE_NON_ASPIRABLE"
+    },
+    {
+      "id": "cdg35",
+      "name": "CDG 35",
+      "role": "Source candidate de fiches pratiques FPT",
+      "url": "https://www.cdg35.fr/",
+      "collection": "Pages publiques à sélectionner et qualifier",
+      "status": "A_EXAMINER"
+    },
+    {
+      "id": "cdg59",
+      "name": "CDG 59",
+      "role": "Source candidate de fiches pratiques FPT",
+      "url": "https://www.cdg59.fr/",
+      "collection": "Pages publiques à sélectionner et qualifier",
+      "status": "A_EXAMINER"
+    },
+    {
+      "id": "cdg69",
+      "name": "CDG 69",
+      "role": "Source candidate de fiches pratiques FPT",
+      "url": "https://www.cdg69.fr/",
+      "collection": "Pages publiques à sélectionner et qualifier",
+      "status": "A_EXAMINER"
     }
   ],
   "entries": [
@@ -122,7 +178,13 @@
         "reprise des fonctions à temps partiel",
         "maintien ou retour à l'emploi",
         "rééducation",
-        "réadaptation professionnelle"
+        "réadaptation professionnelle",
+        "délai d'instruction de la demande de TPT",
+        "entretien préalable en cas de refus",
+        "refus motivé",
+        "médecin agréé",
+        "avis du conseil médical",
+        "autorisation initiale ou renouvellement"
       ],
       "reference_leads": {
         "CGFP": [
@@ -153,6 +215,14 @@
             "Décret 2026-705 du 29 juillet 2026"
           ],
           "status": "SOURCE_LEAD_NOT_FULL_SCOPE_VALIDATION"
+        },
+        {
+          "name": "Décret n° 2026-705 du 29 juillet 2026",
+          "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054570030",
+          "references": [
+            "Procédure TPT applicable aux autorisations initiales et renouvellements depuis le 1er août 2026"
+          ],
+          "status": "SOURCE_OFFICIELLE_TEXTE_A_CONSULTER"
         }
       ]
     },
@@ -342,7 +412,11 @@
           "2002-598"
         ]
       },
-      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+      "reference_validation": "UNVERIFIED_LEAD_ONLY",
+      "definitions": {
+        "1607_heures": "Repère de durée annuelle de travail effectif de référence en FPT, sous réserve des sujétions et régimes dérogatoires applicables.",
+        "cycle_de_travail": "Période de référence d'organisation des horaires, définie selon le service ou les fonctions."
+      }
     },
     {
       "id": "temps_partiel",
@@ -453,7 +527,25 @@
         ],
         "FPH": []
       },
-      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+      "reference_validation": "UNVERIFIED_LEAD_ONLY",
+      "definitions": {
+        "rifseep": "Régime indemnitaire tenant compte des fonctions, des sujétions, de l'expertise et de l'engagement professionnel.",
+        "ifse": "Part du RIFSEEP liée aux fonctions, aux sujétions et à l'expertise.",
+        "cia": "Part complémentaire annuelle liée à l'engagement professionnel et à la manière de servir.",
+        "nbi": "Nouvelle bonification indiciaire, attachée à certains emplois comportant une responsabilité ou une technicité particulières."
+      },
+      "official_source_leads": [
+        {
+          "name": "DGCL – Les régimes indemnitaires",
+          "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale/la-remuneration-indiciaire-indemnitaire-et-autres-avantages/les-regimes-indemnitaires",
+          "references": [
+            "CGFP L714-5",
+            "IFSE",
+            "CIA"
+          ],
+          "status": "SOURCE_OFFICIELLE_A_VERIFIER_SELON_DATE_ET_COLLECTIVITE"
+        }
+      ]
     },
     {
       "id": "psc_prevoyance",
