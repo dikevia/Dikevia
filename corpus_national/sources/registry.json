@@ -79,6 +79,20 @@
       "priority": 2
     },
     {
+      "id": "info-gouv",
+      "name": "Info.gouv.fr — informations et communications gouvernementales",
+      "publisher": "Services du Premier ministre",
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques à qualifier individuellement",
+      "scope": [
+        "TRANSVERSAL"
+      ],
+      "reuse": "Ne retenir que les contenus ayant un lien utile avec la fonction publique ; vérifier date, auteur et réutilisation.",
+      "domain": "info.gouv.fr",
+      "priority": 4
+    },
+    {
       "id": "cnfpt",
       "name": "CNFPT — guides, fiches et ressources statutaires",
       "publisher": "Centre national de la fonction publique territoriale",
@@ -89,6 +103,20 @@
         "FPT"
       ],
       "reuse": "Licence, droits de reproduction et conditions d'accès à contrôler avant collecte et indexation.",
+      "priority": 3
+    },
+    {
+      "id": "wikiterritorial-cnfpt",
+      "name": "WikiTerritorial — base de connaissances territoriale du CNFPT",
+      "publisher": "CNFPT",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Articles et ressources publiques accessibles",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les conditions de réutilisation, la date de mise à jour et l'auteur de chaque article.",
+      "domain": "wikiterritorial.cnfpt.fr",
       "priority": 3
     },
     {
@@ -128,6 +156,62 @@
         "FPT"
       ],
       "reuse": "Vérifier séparément les conditions de chaque CDG ; ne pas crawler les espaces réservés.",
+      "priority": 3
+    },
+    {
+      "id": "cdg-35",
+      "name": "CDG 35 — ressources statutaires et RH",
+      "publisher": "Centre de gestion d'Ille-et-Vilaine",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les droits de réutilisation de chaque document.",
+      "domain": "cdg35.fr",
+      "priority": 3
+    },
+    {
+      "id": "cdg-44",
+      "name": "CDG 44 — ressources statutaires et RH",
+      "publisher": "Centre de gestion de Loire-Atlantique",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les droits de réutilisation de chaque document.",
+      "domain": "cdg44.fr",
+      "priority": 3
+    },
+    {
+      "id": "cdg-59",
+      "name": "CDG 59 — ressources statutaires et RH",
+      "publisher": "Centre de gestion du Nord",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les droits de réutilisation de chaque document.",
+      "domain": "cdg59.fr",
+      "priority": 3
+    },
+    {
+      "id": "cdg-69",
+      "name": "CDG 69 — ressources statutaires et RH",
+      "publisher": "Centre de gestion du Rhône et de la Métropole de Lyon",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les droits de réutilisation de chaque document.",
+      "domain": "cdg69.fr",
       "priority": 3
     },
     {
