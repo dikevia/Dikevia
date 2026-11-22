@@ -1026,11 +1026,17 @@ class LegalOrchestrator:
                 if integrity["valid"] and _cgfp_article_fpt_eligible(hit["article"]):
                     article_text = str((article or {}).get("text") or "")
                     article_ref = re.sub(r"\\s+", "", str(hit["article"])).upper()
+                    snapshot_title = f"Code général de la fonction publique — article {article_ref}"
+                    snapshot_scope = classify_public_service_scope({
+                        "title": snapshot_title,
+                        "text": article_text,
+                        "document_kind": "CODE",
+                    })
                     sources.append({
                         "source_type": "CGFP_SNAPSHOT",
                         "source_id": f"{hit['source_id']}:{article_ref}",
                         "snapshot_document_id": hit["source_id"],
-                        "title": f"Code général de la fonction publique — article {article_ref}",
+                        "title": snapshot_title,
                         "article": article_ref,
                         "page_start": hit["page_start"], "page_end": hit["page_end"],
                         "excerpt": article_text[:12000],
@@ -1039,9 +1045,12 @@ class LegalOrchestrator:
                         "snapshot_modified_at": found["source"]["snapshot_modified_at"],
                         "requested_effective_date": found["source"]["snapshot_modified_at"],
                         "source_status": found["source"]["verification_status"],
-                        "public_service_scope": "FPT_REFERENCE",
-                        "analysis_eligible": True,
-                        "claim_eligible": True,
+                        "public_service_scope": snapshot_scope["scope"],
+                        "scope_evidence": snapshot_scope["evidence"],
+                        "analysis_eligible": snapshot_scope["analysis_eligible"],
+                        "claim_eligible": snapshot_scope.get(
+                            "claim_eligible", snapshot_scope["analysis_eligible"]
+                        ),
                         "research_axis_relevant": True,
                         "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
                         "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED",
