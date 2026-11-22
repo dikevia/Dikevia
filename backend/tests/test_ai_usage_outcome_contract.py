@@ -43,7 +43,7 @@ def _outcomes_emitted_by_application():
 
 def test_database_outcome_constraint_accepts_every_application_state():
     sql = MIGRATION.read_text(encoding="utf-8")
-    match = re.search(r"CHECK\\s*\\(\\s*outcome\\s+IN\\s*\\((.*?)\\)\\s*\\)", sql, re.I | re.S)
+    match = re.search(r"CHECK\s*\(\s*outcome\s+IN\s*\((.*?)\)\s*\)", sql, re.I | re.S)
     assert match, "Migration must define an explicit allow-list for outcome."
     allowed = set(re.findall(r"'([A-Z][A-Z0-9_]*)'", match.group(1)))
     emitted = _outcomes_emitted_by_application()
