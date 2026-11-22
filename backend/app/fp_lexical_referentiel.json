@@ -20,7 +20,7 @@
       "name": "DGAFP",
       "role": "Vocabulaire et procédure TPT",
       "url": "https://www.fonction-publique.gouv.fr/files/files/Etre%20agent%20public/Protection%20sociale/FAQ_TPT_2026.pdf",
-      "collection": "FAQ TPT 2026 ; CGFP L823-1 à L823-6 ; décret 2026-705",
+      "collection": "FAQ DGAFP TPT actualisée en 2026 ; document d'aide à la lecture, à croiser avec les textes d'application propres à chaque versant.",
       "status": "SOURCE_OFFICIELLE_REPEREE"
     },
     {
@@ -203,6 +203,18 @@
         ],
         "FPH": [
           "88-386"
+        ],
+        "COMMON": [
+          "2026-705"
+        ],
+        "FPT_CONTRACTUELS": [
+          "88-145"
+        ],
+        "FPE_CONTRACTUELS": [
+          "86-83"
+        ],
+        "FPH_CONTRACTUELS": [
+          "91-155"
         ]
       },
       "reference_validation": "UNVERIFIED_LEAD_ONLY",
@@ -224,6 +236,15 @@
           ],
           "status": "SOURCE_OFFICIELLE_TEXTE_A_CONSULTER"
         }
+      ],
+      "procedure_terms": [
+        "demande initiale ou renouvellement accordé à compter du 1er août 2026",
+        "décision au plus tard le jour de la reprise après CLM, CLD, CITIS ou disponibilité pour raison de santé",
+        "délai de décision de trente jours dans les autres situations",
+        "refus ou interruption motivé",
+        "entretien préalable si le refus repose sur les nécessités de continuité et de fonctionnement du service",
+        "avis préalable du médecin agréé en cas de motif médical",
+        "autorisation dans la limite d'une année"
       ]
     },
     {
