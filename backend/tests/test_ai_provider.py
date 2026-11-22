@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from app.ai_provider import analyze_question, plan_legal_research, _parse_research_plan, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count, check_provider_availability, AIAnalysisRefusedNoSources
 from app.config import settings
