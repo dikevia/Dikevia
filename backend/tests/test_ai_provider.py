@@ -1,5 +1,5 @@
 import pytest
-from app.ai_provider import analyze_question, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count, check_provider_availability, AIAnalysisRefusedNoSources
+from app.ai_provider import analyze_question, plan_legal_research, _parse_research_plan, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count, check_provider_availability, AIAnalysisRefusedNoSources
 from app.config import settings
 
 @pytest.mark.asyncio
@@ -957,3 +957,43 @@ def test_usable_sources_reject_explicitly_failed_integrity_and_out_of_scope_reco
     invalid_integrity = {**base, "citation_integrity": {"valid": False}}
     out_of_scope = {**base, "analysis_eligible": False, "public_service_scope": "FPH"}
     assert _usable_document_sources([invalid_integrity, out_of_scope]) == []
+
+def test_research_plan_parser_accepts_bounded_dynamic_queries_and_subquestions():
+    plan = _parse_research_plan("""{
+        "queries": [
+            "régime juridique des autorisations spéciales d'absence des agents territoriaux",
+            "conditions et procédure de refus d'une autorisation spéciale d'absence syndicale"
+        ],
+        "legal_issues": ["Fondement juridique et champ des ASA syndicales", "Conditions de refus et voies de contestation"],
+        "clarification_needed": null
+    }""")
+    assert plan is not None
+    assert len(plan.queries) == 2
+    assert "ASA syndicales" in plan.queries[0]
+    assert len(plan.legal_issues) == 2
+
+
+def test_research_plan_parser_rejects_empty_or_malformed_model_output():
+    assert _parse_research_plan("not json") is None
+    assert _parse_research_plan('{"queries": [], "legal_issues": []}') is None
+    assert _parse_research_plan('{"queries": ["x"], "legal_issues": []}') is None
+
+
+@pytest.mark.asyncio
+async def test_research_planner_is_disabled_without_provider_credentials(monkeypatch):
+    monkeypatch.setattr(settings, "ai_api_key", "")
+    monkeypatch.setattr(settings, "ai_model", "")
+    monkeypatch.setattr(settings, "ai_api_base_url", "")
+    assert await plan_legal_research(
+        question="Question juridique inédite",
+        employer="NATIONAL",
+    ) is None
+
+
+def test_research_planner_is_not_an_article_or_problem_template_catalog():
+    from app.ai_provider import plan_legal_research
+    import inspect
+
+    source = inspect.getsource(plan_legal_research)
+    assert "Ne pars d'aucune liste prédéfinie" in source
+    assert "N'invente pas de références" in source
