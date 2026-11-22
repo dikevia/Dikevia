@@ -1,9 +1,9 @@
-# CFDT JURIS — Kit développeur V3.30
+# Dikevia — Kit développeur V3.38.5
 
 La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des textes réglementaires complémentaires sur Légifrance et interrogation sécurisée des documents propres à l’employeur.
 
 ## État réel de cette livraison
-- Code FastAPI versionné `3.30.0`.
+- Code FastAPI versionné `3.38.5`.
 - Console plateforme : annuaire des syndicats, création d’espaces, attribution d’accès offerts, suspension et réactivation journalisées.
 - Validation de JWT OIDC via JWKS, issuer, audience, expiration et algorithmes configurés.
 - Appartenance active vérifiée en base pour chaque requête tenant.
@@ -14,7 +14,7 @@ La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des 
 - Invitations à jeton aléatoire à usage unique, stocké sous forme de SHA-256 et lié à l’e-mail OIDC vérifié.
 - Acceptation d’invitation transactionnelle et journalisée.
 - Conversations persistées dans PostgreSQL, privées à l’utilisateur OIDC et à l’organisation active via RLS FORCE.
-- Le CGFP est interrogeable via un index article/page et importable dans le corpus national par `scripts/import_cgfp_to_legal_corpus.py` ; les réponses issues de ce seul snapshot restent `PARTIELLEMENT_VERIFIE` et ne remplacent pas le contrôle Légifrance.
+- Le CGFP constitue la référence nationale de base de Dikevia. Son index article/page alimente le contexte du chat ; le snapshot seul ne suffit jamais à certifier la version applicable. Les textes officiels Légifrance/PISTE contrôlent la rédaction et la temporalité des dispositions.
 
 Le dossier de transfert développeur, avec les seules opérations restantes côté environnement, est décrit dans `docs/39_LIVRAISON_DEVELOPPEUR_V3_30.md`.
 
@@ -25,24 +25,26 @@ Depuis `backend/` :
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r backend/requirements-dev.txt
+pip install -r requirements-dev.txt
 export PYTHONPATH=.
 uvicorn app.main:app --reload
 ```
 Sans `DATABASE_URL` et paramètres OIDC, les endpoints privés échouent volontairement en 503 ; `/health` reste disponible.
 
 ## Migration
-Pour une installation neuve, `database/schema.sql` fournit le baseline jusqu’à la V3.21 (migration 009), puis appliquer les migrations 010, 011, 012, 013 et 014. Pour une base existante, appliquer uniquement les migrations manquantes dans l'ordre : `001_initial_multi_tenant.sql` à `014_cgfp_snapshot_source_type.sql` (créer le rôle `cfdt_juris_ingest` avant la migration 009), avec un rôle de migration distinct. Créer les rôles runtime et ingestion avec `deploy/init/01-create-app-role.sh` et `deploy/init/02-create-corpus-ingest-role.sh`, puis exécuter `database/grant_runtime_permissions.sql` comme DBA après les migrations. Les migrations 010, 011, 012 et 013 ajoutent leurs propres droits applicatifs. Provisionner le premier administrateur plateforme hors API avec `database/bootstrap_platform_admin.sql`. Les rôles runtime et ingestion ne sont pas propriétaires des tables et n’ont ni `SUPERUSER` ni `BYPASSRLS`. Le rôle API est en lecture seule sur le corpus national ; seul le pool d’ingestion séparé peut l’alimenter. Ne jamais utiliser le compte de migration comme compte API.
+Pour une installation neuve, `database/schema.sql` fournit le baseline jusqu’à la V3.21 (migration 009), puis appliquer les migrations 010 à 018 dans l'ordre. Pour une base existante, appliquer uniquement les migrations manquantes dans l'ordre : `001_initial_multi_tenant.sql` à `018_ai_usage_metering.sql` (créer le rôle `cfdt_juris_ingest` avant la migration 009, puis `cfdt_juris_platform_admin` avant la migration 016), avec un rôle de migration distinct. Créer les rôles runtime, ingestion et administrateur plateforme avec `deploy/init/01-create-app-role.sh`, `deploy/init/02-create-corpus-ingest-role.sh` et `deploy/init/04-create-platform-admin-role.sh`, puis exécuter `database/grant_runtime_permissions.sql` comme DBA après les migrations. La migration 018 ajoute le journal de consommation IA ; le rôle runtime peut seulement y insérer des compteurs sans contenu conversationnel. Les migrations 010, 011, 012 et 013 ajoutent leurs propres droits applicatifs. Provisionner le premier administrateur plateforme hors API avec `database/bootstrap_platform_admin.sql`. Les rôles runtime, ingestion et administrateur plateforme ne sont pas propriétaires des tables et n’ont ni `SUPERUSER` ni `BYPASSRLS`. Le rôle API est en lecture seule sur le corpus national ; seul le pool d’ingestion séparé peut l’alimenter. Les opérations transversales de plateforme utilisent `PLATFORM_ADMIN_DATABASE_URL` avec le rôle restreint `cfdt_juris_platform_admin`. Ne jamais utiliser le compte de migration comme compte API.
+
+Pour une instance privée, appliquer aussi la migration `015_private_instance_10_seats.sql` après la 014, puis la migration `016_platform_admin_database_role.sql`. Elle refuse désormais une base qui contient déjà plusieurs organisations : examiner et isoler les données avant de relancer. Pour une base existante, le rôle `cfdt_juris_platform_admin` doit être créé avant la migration 016. Suivre `docs/40_INSTANCE_PRIVEE_10_COMPTES.md` et `docs/43_V3_30_ADMIN_DB_ROLE_MIGRATION.md` pour l'ordre de recette et l'activation du paramètre privé.
 
 ## Variables
-Copier `deploy/.env.example` vers `.env` à la racine du projet, ou utiliser `bash scripts/bootstrap.sh`. Renseigner les paramètres OIDC et les secrets fournisseurs. Docker Compose lit `.env` pour l'infrastructure ; `scripts/render_runtime_env.py` génère `.env.runtime`, transmis à l'API avec les seuls champs applicatifs. Les secrets DBA, Keycloak DB, Grafana et supervision ne sont pas exposés au conteneur API. Ne jamais committer les fichiers `.env*` générés.
+Copier `deploy/.env.example` vers `.env` à la racine du projet, ou utiliser `bash scripts/bootstrap.sh`. Renseigner les paramètres OIDC et les secrets fournisseurs. Docker Compose lit `.env` pour l'infrastructure ; `scripts/render_runtime_env.py` génère `.env.runtime`, transmis à l'API avec les champs applicatifs et les URL des trois pools PostgreSQL (runtime, ingestion et administration restreinte). Les secrets DBA, Keycloak DB, Grafana et supervision ne sont pas exposés au conteneur API. Ne jamais committer les fichiers `.env*` générés.
 
 ## Tests
 ```bash
 cd backend
 PYTHONPATH=. pytest -q
 ```
-La CI V3.22 exécute les tests d'intégration PostgreSQL multi-tenant sur un service PostgreSQL 16, y compris un test de concurrence RLS sur douze organisations. Les tests OIDC avec un IdP réel, les tests de révocation, les tests de concurrence des invitations et la recette de restauration restent à réaliser en staging. La console plateforme utilise des fonctions SQL `SECURITY DEFINER` dont le propriétaire doit être le rôle DBA/BYPASSRLS ; le rôle runtime reçoit uniquement EXECUTE. La migration 008 échoue si cette condition n’est pas satisfaite.
+La CI V3.30 exécute la suite complète sur PostgreSQL 16 éphémère. Dernier résultat validé : **187 tests réussis, aucun échec** ; voir `docs/42_V3_30_PREUVE_VALIDATION_CI.md`. Les tests OIDC avec un IdP réel, les tests de révocation, les tests de concurrence des invitations et la recette de restauration restent à réaliser en staging. Les fonctions SQL `SECURITY DEFINER` d'administration sont réservées au rôle `cfdt_juris_platform_admin` distinct du rôle runtime.
 
 
 ## V3.2 — renforcement RLS du registre d'identité
@@ -61,6 +63,8 @@ La migration `database/migrations/003_global_identity_rls.sql` active RLS et FOR
 Les tests `backend/tests/test_postgres_rls_integration.py` vérifient avec deux organisations que les documents d'un autre espace sont invisibles, qu'une écriture avec un `organization_id` falsifié est rejetée, que le registre d'identité est limité à l'identité authentifiée et que le hash d'invitation n'ouvre qu'une invitation. Ils nécessitent une base PostgreSQL de test jetable, les migrations ci-dessus et deux URL : `TEST_DATABASE_ADMIN_URL` (rôle DBA/superuser de test) et `TEST_DATABASE_URL` (rôle runtime `cfdt_juris_app`).
 
 Exécution : `./scripts/run_postgres_security_tests.sh`. Si ces variables ne sont pas définies, le test d'intégration est ignoré. Les tests statiques ne remplacent pas ce test réel.
+
+Dans GitHub Actions, le workflow crée sa propre base PostgreSQL éphémère, applique le schéma et les migrations, puis fournit ces deux URL locales au test. Aucun secret GitHub ni URL Neon n'est nécessaire pour la CI.
 
 
 `database/schema.sql` est le schéma consolidé de référence pour une installation neuve. Pour une base déjà créée en V3/V3.1, appliquer uniquement les migrations 002 puis 003 qui manquent ; ne pas rejouer le schéma consolidé par-dessus une base existante.
@@ -271,3 +275,28 @@ Pour les employeurs locaux proposés par l'interface, le moteur recherche égale
 - Extraits renvoyés au navigateur bornés ; les textes intégraux restent côté serveur.
 - Tests : 164 réussis, 2 ignorés dans l'environnement de génération ; les deux tests PostgreSQL RLS exigent une base de test réelle.
 - Les accès PISTE, l'import dans la base cible, la recette PostgreSQL, les tests Keycloak/ClamAV et le déploiement restent à réaliser dans l'environnement de l'exploitant.
+
+
+## Profil d'instance privée (10 comptes)
+Le projet comporte un profil privé activable par `PRIVATE_INSTANCE_MODE=true` et `PRIVATE_INSTANCE_MAX_USERS=10`. Voir `docs/40_INSTANCE_PRIVEE_10_COMPTES.md` pour la procédure d'installation, l'approbation manuelle des comptes et la migration 015.
+
+
+## Kit développeur ZIP
+
+Après validation complète de la CI, le workflow publie un artefact téléchargeable nommé `CFDT-JURIS-V3.30-Kit-Developpeur` (conservation 30 jours). Il contient les sources et la documentation, sans dépôt Git local, caches, environnements virtuels ni fichiers de secrets.
+
+Pour produire l'archive depuis une copie locale du dépôt :
+```bash
+python scripts/package_developer_kit.py
+```
+Le fichier est créé dans `dist/CFDT_JURIS_V3_30_Kit_Developpeur.zip`. Le script ajoute `SHA256SUMS_KIT.txt`, qui permet de contrôler l'intégrité des fichiers extraits. Les fichiers `.env` réels, clés privées et certificats ne sont jamais inclus ; seuls les modèles `.env.example` et `.env.staging.example` sont conservés.
+
+Ne placez jamais de mots de passe, jetons, URL de base de données avec identifiants ou données syndicales réelles dans l'archive.
+
+
+## V3.33 — Limitation partagée des parcours juridiques coûteux
+Le quota PostgreSQL existant est désormais partagé entre les questions du chat et les revues de cohérence des règles locales. Une même personne ne peut donc pas contourner la limitation en alternant les deux routes. Le contrôle intervient avant la lecture du document et la recherche du corpus ; le dépassement renvoie HTTP 429 avec `Retry-After`. Le compteur reste limité à l'organisation et à l'utilisateur, sans stocker de contenu juridique.
+
+
+## V3.35 — Sécurisation des imports PISTE
+Les routes d'administration qui importent les textes réglementaires et la jurisprudence contrôlent désormais les recherches et limitent chaque import à 20 résultats maximum avant tout accès à la base d'ingestion ou à l'API PISTE. Cette protection évite les imports involontairement trop volumineux et borne les consultations de décisions intégrales.

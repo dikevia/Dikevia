@@ -1,0 +1,5 @@
+# À ajouter uniquement derrière un reverse proxy de confiance qui écrase X-Forwarded-*.
+services:
+  keycloak:
+    environment:
+      KC_PROXY_HEADERS: xforwarded

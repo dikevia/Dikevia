@@ -1,0 +1,124 @@
+services:
+  - type: web
+    name: dikevia-commercial-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: feature/dikevia-v3.38.5-cgfp-chat
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /ready
+    buildFilter:
+      paths:
+        - backend/**
+        - frontend/**
+        - database/**
+        - Dockerfile
+        - requirements.txt
+        - render.yaml
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: LEGAL_CORPUS_INGEST_DATABASE_URL
+        sync: false
+      - key: PLATFORM_ADMIN_DATABASE_URL
+        sync: false
+      - key: OIDC_ISSUER
+        value: https://dikevia-identity-l2r8.onrender.com/realms/cfdt
+      - key: OIDC_AUDIENCE
+        value: cfdt-juris-api
+      - key: OIDC_JWKS_URL
+        value: https://dikevia-identity-l2r8.onrender.com/realms/cfdt/protocol/openid-connect/certs
+      - key: OIDC_ALGORITHMS
+        value: RS256
+      - key: CORS_ORIGINS
+        value: https://dikevia-commercial-api-l2r8.onrender.com
+      - key: AWS_ENDPOINT_URL_S3
+        value: https://br-quiet-bird-bdmov90l.storage.c-8.us-east-2.aws.neon.tech
+      - key: AWS_REGION
+        value: us-east-2
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: DOCUMENT_STORAGE_BUCKET
+        value: cfdt-juris-documents
+      - key: AI_API_BASE_URL
+        value: https://br-quiet-bird-bdmov90l-api.ai.c-8.us-east-2.aws.neon.tech/v1
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: gpt-5-mini
+      - key: AI_TIMEOUT_SECONDS
+        value: "25"
+      - key: CGFP_ENABLED
+        value: "true"
+      - key: LEGIFRANCE_ENVIRONMENT
+        value: sandbox
+      - key: PRIVATE_INSTANCE_MODE
+        value: "false"
+      - key: BETA_MAX_USERS
+        value: "1"
+      - key: CHAT_RATE_LIMIT_PER_MINUTE
+        value: "10"
+      - key: DOCUMENT_MAX_SIZE_MB
+        value: "20"
+
+  - type: web
+    name: dikevia-identity
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: feature/dikevia-v3.38.5-cgfp-chat
+    dockerfilePath: ./deploy/keycloak/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/ready
+    buildFilter:
+      paths:
+        - deploy/keycloak/**
+        - render.yaml
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: KC_HTTP_PORT
+        value: "10000"
+      - key: KC_CACHE
+        value: local
+      - key: KC_FEATURES
+        value: stateless
+      - key: KC_CACHE_EMBEDDED_CLUSTER_NAME
+        value: ""
+      - key: KC_DB
+        value: postgres
+      - key: KC_DB_URL
+        sync: false
+      - key: KC_DB_SCHEMA
+        value: keycloak
+      - key: KC_DB_USERNAME
+        value: cfdt_keycloak
+      - key: KC_DB_PASSWORD
+        sync: false
+      - key: KC_HOSTNAME
+        value: https://dikevia-identity-l2r8.onrender.com
+      - key: KC_HTTP_ENABLED
+        value: "true"
+      - key: KC_PROXY_HEADERS
+        value: xforwarded
+      - key: KC_HOSTNAME_STRICT
+        value: "true"
+      - key: KC_HEALTH_ENABLED
+        value: "true"
+      - key: KC_METRICS_ENABLED
+        value: "true"
+      - key: KC_BOOTSTRAP_ADMIN_USERNAME
+        value: kc-admin
+      - key: KC_BOOTSTRAP_ADMIN_PASSWORD
+        generateValue: true
