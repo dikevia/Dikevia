@@ -11,11 +11,15 @@ import time
 from typing import Any
 
 PLANS: dict[str, dict[str, Any]] = {
-    # Current public offers. Prices are TTC and generated server-side only.
-    "INDIVIDUAL_1": {"name": "Individuel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 1, "public": True, "tax_inclusive": True},
-    "SYNDICAT_10": {"name": "Syndicat 10", "amount": 8000, "currency": "eur", "interval": "month", "max_users": 10, "public": True, "tax_inclusive": True},
-    "SYNDICAT_50": {"name": "Syndicat 50", "amount": 30000, "currency": "eur", "interval": "month", "max_users": 50, "public": True, "tax_inclusive": True},
-    # Existing subscribers are grandfathered. These codes are not offered to new customers.
+    # Official Dikévia catalogue. Prices are TTC; credits are monthly.
+    "ESSENTIEL": {"name": "Essentiel", "amount": 1490, "annual_amount": 14900, "currency": "eur", "interval": "month", "annual_interval": "year", "max_users": 1, "monthly_credits": 125, "public": True, "tax_inclusive": True},
+    "PRO": {"name": "Pro", "amount": 2900, "annual_amount": 29000, "currency": "eur", "interval": "month", "annual_interval": "year", "max_users": 1, "monthly_credits": 248, "public": True, "tax_inclusive": True},
+    "EQUIPE_INSTANCES": {"name": "Équipe & Instances", "amount": 11900, "annual_amount": 119000, "currency": "eur", "interval": "month", "annual_interval": "year", "max_users": 5, "monthly_credits": 1000, "public": True, "tax_inclusive": True},
+    "COLLECTIVITE_SYNDICATS": {"name": "Collectivité & Syndicats", "amount": 29900, "annual_amount": 299000, "currency": "eur", "interval": "month", "annual_interval": "year", "max_users": 15, "monthly_credits": 2450, "public": True, "tax_inclusive": True},
+    # Existing subscriptions are preserved, but these obsolete offers are no longer sold.
+    "INDIVIDUAL_1": {"name": "Ancienne offre Individuel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 1, "public": False, "tax_inclusive": True},
+    "SYNDICAT_10": {"name": "Ancienne offre Syndicat 10", "amount": 8000, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
+    "SYNDICAT_50": {"name": "Ancienne offre Syndicat 50", "amount": 30000, "currency": "eur", "interval": "month", "max_users": 50, "public": False, "tax_inclusive": True},
     "LEGACY_ESSENTIAL_3": {"name": "Ancienne offre Essentiel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 3, "public": False, "tax_inclusive": True},
     "LEGACY_SYNDICAT_10": {"name": "Ancienne offre Syndicat", "amount": 5000, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
     "FOUNDING_FREE": {"name": "Accès offert organisation", "amount": 0, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
@@ -24,12 +28,23 @@ PLANS: dict[str, dict[str, Any]] = {
 
 def public_plans() -> list[dict[str, Any]]:
     return [
-        {"code": code, "name": p["name"], "amount_cents": p["amount"],
-         "currency": p["currency"], "interval": p["interval"], "max_users": p["max_users"],
-         "tax_behavior": "inclusive" if p.get("tax_inclusive") else "unspecified",
-         "price": f"{p['amount'] / 100:.2f} € TTC" if p["amount"] else "Sur attribution",
-         "description": f"Jusqu'à {p['max_users']} utilisateurs payants ; accès gratuits individuels hors quota"}
-        for code, p in PLANS.items() if p.get("public", False)
+        {
+            "code": code,
+            "name": plan["name"],
+            "amount_cents": plan["amount"],
+            "annual_amount_cents": plan["annual_amount"],
+            "currency": plan["currency"],
+            "interval": plan["interval"],
+            "annual_interval": plan["annual_interval"],
+            "max_users": plan["max_users"],
+            "monthly_credits": plan["monthly_credits"],
+            "tax_behavior": "inclusive",
+            "price": f"{plan['amount'] / 100:.2f} € TTC / mois",
+            "annual_price": f"{plan['annual_amount'] / 100:.2f} € TTC / an",
+            "description": f"{plan['max_users']} accès · {plan['monthly_credits']} crédits par mois",
+        }
+        for code, plan in PLANS.items()
+        if plan.get("public", False)
     ]
 
 

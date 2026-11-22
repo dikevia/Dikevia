@@ -343,7 +343,7 @@ async def billing_plans():
     """Public catalogue; hidden entirely for private instances."""
     if settings.private_instance_mode:
         raise HTTPException(404, "La facturation n'est pas disponible sur cette instance privée.")
-    return {"plans": public_plans(), "billing_provider": "stripe", "currency": "EUR"}
+    return {"plans": public_plans(), "billing_provider": None, "billing_enabled": False, "currency": "EUR", "notice": "Catalogue officiel ; souscription désactivée jusqu’à la mise en service du compteur de crédits mensuels."}
 
 
 @app.get("/api/v1/billing/subscription")
@@ -417,6 +417,7 @@ async def platform_commercial_organizations(platform=Depends(require_platform_ad
 async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin)):
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
+    raise HTTPException(503, "La souscription en ligne reste désactivée jusqu’à la mise en service du compteur de crédits mensuels.")
     plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
     if plan_code not in ("INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50"):
         raise HTTPException(422, "Offre inconnue.")
