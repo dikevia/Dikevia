@@ -1,5 +1,6 @@
 name: Corpus public-source pilot
 on:
+  workflow_dispatch:
   push:
     branches:
       - feature/dikevia-v3.38.5-cgfp-chat
@@ -51,7 +52,10 @@ jobs:
           echo "Délai CI dépassé : import interdit."; exit 1
       - name: Import ten Service-Public records with the dedicated ingestion role
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
-        run: python scripts/import_service_public_to_legal_corpus.py --apply --limit 10 --limit 10
+        run: python scripts/import_service_public_to_legal_corpus.py --apply --limit 10
+      - name: Import the full Service-Public corpus after manual approval
+        if: github.event_name == 'workflow_dispatch' && env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
+        run: python scripts/import_service_public_to_legal_corpus.py --apply
       - name: Skip database write when the ingestion credential is absent
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL == ''
         run: echo 'Collecte vérifiée ; aucune écriture PostgreSQL car le secret dédié est absent.'
