@@ -212,7 +212,7 @@ class LegifranceConnector:
                 for child in node:
                     walk(child)
         walk(value)
-        return list(dict.fromkeys(found))[:5]
+        return list(dict.fromkeys(found))[:10]
 
     @staticmethod
     def _relevant_excerpt(text: str, query: str, max_chars: int = 1800) -> str:
@@ -259,36 +259,52 @@ class LegifranceConnector:
 
     @staticmethod
     def _extract_text(value: Any) -> str:
-        candidates: list[str] = []
-        keys = {"texte", "text", "contenu", "content", "textehtml", "textHtml".lower(), "contenuhtml"}
-        def walk(node: Any):
+        """Extract every distinct text segment without duplicating nested payload fields."""
+        candidates: list[tuple[int, str]] = []
+        keys = {"texte", "text", "contenu", "content", "textehtml", "contenuhtml"}
+
+        def clean(raw: str) -> str:
+            raw = re.sub(r"<br\\s*/?>", "\\n", raw, flags=re.I)
+            raw = re.sub(r"<li\\b[^>]*>", "\\n- ", raw, flags=re.I)
+            raw = re.sub(r"</li\\s*>", "\\n", raw, flags=re.I)
+            raw = re.sub(r"</(?:p|div|h[1-6]|ul|ol)\\s*>", "\\n", raw, flags=re.I)
+            raw = re.sub(r"<(?:p|div|ul|ol)\\b[^>]*>", "\\n", raw, flags=re.I)
+            raw = re.sub(r"<[^>]+>", " ", raw)
+            raw = re.sub(r"&nbsp;", " ", raw, flags=re.I)
+            raw = re.sub(r"&amp;", "&", raw, flags=re.I)
+            raw = re.sub(r"&lt;", "<", raw, flags=re.I)
+            raw = re.sub(r"&gt;", ">", raw, flags=re.I)
+            raw = re.sub(r"&quot;", '"', raw, flags=re.I)
+            lines = [re.sub(r"[ \\t]+", " ", line).strip() for line in raw.splitlines()]
+            return "\\n".join(line for line in lines if line).strip()
+
+        def walk(node: Any) -> None:
             if isinstance(node, dict):
                 for key, child in node.items():
                     if key.lower() in keys and isinstance(child, str) and child.strip():
-                        candidates.append(child)
+                        text = clean(child)
+                        if text:
+                            candidates.append((len(candidates), text))
                     else:
                         walk(child)
             elif isinstance(node, list):
                 for child in node:
                     walk(child)
+
         walk(value)
         if not candidates:
             return ""
-        # Prefer the longest text-like field; HTML remains source text and is not rendered as HTML.
-        raw = max(candidates, key=len)
-        raw = re.sub(r"<br\s*/?>", "\n", raw, flags=re.I)
-        raw = re.sub(r"<li\b[^>]*>", "\n- ", raw, flags=re.I)
-        raw = re.sub(r"</li\s*>", "\n", raw, flags=re.I)
-        raw = re.sub(r"</(?:p|div|h[1-6]|ul|ol)\s*>", "\n", raw, flags=re.I)
-        raw = re.sub(r"<(?:p|div|ul|ol)\b[^>]*>", "\n", raw, flags=re.I)
-        raw = re.sub(r"<[^>]+>", " ", raw)
-        raw = re.sub(r"&nbsp;", " ", raw, flags=re.I)
-        raw = re.sub(r"&amp;", "&", raw, flags=re.I)
-        raw = re.sub(r"&lt;", "<", raw, flags=re.I)
-        raw = re.sub(r"&gt;", ">", raw, flags=re.I)
-        raw = re.sub(r"&quot;", '"', raw, flags=re.I)
-        lines = [re.sub(r"[ \t]+", " ", line).strip() for line in raw.splitlines()]
-        return "\n".join(line for line in lines if line).strip()
+
+        # A parent field may contain the complete nested text as well. Keep the
+        # longest representation and discard only segments already contained in it.
+        selected: list[tuple[int, str]] = []
+        for position, candidate in sorted(candidates, key=lambda item: len(item[1]), reverse=True):
+            folded = re.sub(r"\\s+", " ", candidate).casefold()
+            if any(folded in re.sub(r"\\s+", " ", existing).casefold() for _, existing in selected):
+                continue
+            selected.append((position, candidate))
+        selected.sort(key=lambda item: item[0])
+        return "\\n\\n".join(text for _, text in selected)
 
 
     @staticmethod
