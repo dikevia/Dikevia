@@ -86,7 +86,7 @@ async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(m
     monkeypatch.setattr(module, "verify_claim_entailment", supported_entailment)
     response = await LegalOrchestrator().ask(
         AskRequest(
-            employer="NATIONAL", facts_date="2024-06-01",
+            employer="NATIONAL",
             question="Quels sont les droits des agents ?",
         ),
         "00000000-0000-0000-0000-000000000001",
