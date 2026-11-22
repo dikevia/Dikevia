@@ -201,3 +201,40 @@ def test_annual_professional_evaluation_keeps_the_appraisal_report_rules():
         ),
     }
     assert is_topic_relevant_source(question, source) is True
+
+
+def test_six_year_cdi_question_rejects_unrelated_contract_and_hr_provisions():
+    question = (
+        "Un agent contractuel territorial en CDD peut-il obtenir un CDI "
+        "après 6 ans de services ?"
+    )
+    relevant = {
+        "title": "Code général de la fonction publique — article L332-10",
+        "article": "L332-10",
+        "text": (
+            "Tout contrat établi ou renouvelé pour pourvoir un emploi permanent "
+            "avec un agent contractuel territorial justifiant de six ans de services "
+            "publics sur des fonctions de même catégorie hiérarchique est conclu "
+            "pour une durée indéterminée."
+        ),
+    }
+    unrelated = [
+        {
+            "title": "Code général de la fonction publique — article L554-3",
+            "article": "L554-3",
+            "text": "Indemnité de fin de contrat et plafond de rémunération brute globale.",
+        },
+        {
+            "title": "Code général de la fonction publique — article L556-13",
+            "article": "L556-13",
+            "text": "Prolongation d'activité des agents contractuels avant la retraite.",
+        },
+        {
+            "title": "Code général de la fonction publique — article L422-3",
+            "article": "L422-3",
+            "text": "Formation professionnelle et évolution des agents de catégorie C.",
+        },
+    ]
+
+    assert is_topic_relevant_source(question, relevant) is True
+    assert all(is_topic_relevant_source(question, source) is False for source in unrelated)
