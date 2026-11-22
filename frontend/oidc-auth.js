@@ -72,8 +72,10 @@
     }
     if (error) {
       cleanCallbackUrl();
-      if (flow === 'silent' && ['login_required','interaction_required','consent_required'].includes(error))
+      if (flow === 'silent' && ['login_required','interaction_required','consent_required'].includes(error)) {
+        sessionStorage.setItem('cfdt_oidc_silent_failed','1');
         return false;
+      }
       throw new Error(params.get('error_description') || 'Le fournisseur d’identité a refusé la connexion ('+error+').');
     }
     const oidc = await metadata();
@@ -91,6 +93,7 @@
     }
     accessToken = data.access_token;
     expiresAt = Date.now() + data.expires_in * 1000;
+    sessionStorage.removeItem('cfdt_oidc_silent_failed');
     const pendingInvitation = sessionStorage.getItem('cfdt_pending_invitation');
     if (pendingInvitation) {
       const accepted = await fetch('/api/v1/invitations/accept', {
@@ -132,7 +135,15 @@
   const ready = restoreSsoSession();
   window.CFDT_JURIS_AUTH = {
     ready,
-    async getAccessToken() { await ready; if (!accessToken || Date.now() >= expiresAt-30000) return null; return accessToken; },
+    async getAccessToken() {
+      await ready;
+      if (accessToken && Date.now() < expiresAt - 60000) return accessToken;
+      if (accessToken && Date.now() >= expiresAt - 60000 && sessionStorage.getItem('cfdt_oidc_silent_failed') !== '1') {
+        // Renew with the existing Keycloak SSO cookie; never persist access or refresh tokens.
+        await beginAuthorization('none');
+      }
+      return null;
+    },
     // Une callback précédente peut avoir échoué (code refusé, CORS, réseau).
     // Cela ne doit pas empêcher l'utilisateur de relancer une authentification.
     async login() { await ready.catch(() => {}); return login(); },
