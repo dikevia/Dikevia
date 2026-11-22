@@ -331,3 +331,15 @@ def test_cgfp_article_l521_3_is_classified_as_territorial():
     scope = classify_public_service_scope(source)
     assert scope["scope"] == "FPT"
     assert scope["analysis_eligible"] is True
+
+
+def test_cgfp_permanent_contractual_employment_articles_are_classified_as_fpt():
+    for article in ("L332-8", "L332-9", "L332-10", "L332-11", "L332-12", "L332-13", "L332-14"):
+        result = classify_public_service_scope({
+            "title": f"Code général de la fonction publique — article {article}",
+            "article": article,
+            "text": "Dispositions relatives aux agents contractuels recrutés sur un emploi permanent.",
+            "document_kind": "CODE",
+        })
+        assert result["scope"] == "FPT"
+        assert result["analysis_eligible"] is True
