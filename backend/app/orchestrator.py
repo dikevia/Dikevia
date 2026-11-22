@@ -27,7 +27,7 @@ from .legal_qualification import (
 
 
 def _cgfp_article_fpt_eligible(article_ref: str, target_versant: str = "FPT") -> bool:
-    """Check the article body before treating a CGFP hit as an FPT research lead."""
+    """Check the article body before treating a CGFP hit as a selected-branch research lead."""
     normalized_ref = re.sub(r"\s+", "", str(article_ref or "")).upper()
     if not re.fullmatch(r"[LDR]\d+(?:-\d+)*", normalized_ref):
         return False
@@ -89,7 +89,7 @@ def _build_targeted_regulatory_queries(question: str) -> list[str]:
 
 
 def _cgfp_article_discovery_queries(found: dict | None, target_versant: str = "FPT") -> list[str]:
-    """Turn relevant, FPT-applicable snapshot hits into exact live CGFP lookups."""
+    """Turn relevant, selected-branch snapshot hits into exact live CGFP lookups."""
     if not isinstance(found, dict):
         return []
     queries: list[str] = []
@@ -857,7 +857,7 @@ class LegalOrchestrator:
                     elif not isinstance(found, dict):
                         cgfp_issue = second_cgfp_issue or cgfp_issue
                     cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else cgfp_partial_issue
-                    second_article_queries = _cgfp_article_discovery_queries(second_found)
+                    second_article_queries = _cgfp_article_discovery_queries(second_found, request.public_service)
                     second_result = await search_official_pillars(second_article_queries)
                     (
                         live_sources_2, regulatory_sources_2, case_law_sources_2,
