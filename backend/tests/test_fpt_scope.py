@@ -443,3 +443,15 @@ def test_ihts_reference_remains_fpt_only_after_title_scope_precedence():
     assert fpt["analysis_eligible"] is True
     assert fpe["analysis_eligible"] is False
     assert fph["analysis_eligible"] is False
+
+def test_incidental_ihts_citation_does_not_reclassify_a_mixed_scope_source():
+    result = classify_public_service_scope({
+        "title": "Note de service sur les régimes indemnitaires des agents publics",
+        "text": (
+            "Le décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires "
+            "est cité à titre de comparaison. Le document mentionne les agents territoriaux "
+            "et les agents de l'État dans des parties distinctes."
+        ),
+    })
+    assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
+    assert result["analysis_eligible"] is False
