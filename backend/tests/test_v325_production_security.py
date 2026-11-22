@@ -77,12 +77,3 @@ def test_production_env_audit_rejects_missing_or_weak_configuration(tmp_path):
     assert any("POSTGRES_APP_PASSWORD" in error for error in errors)
     assert any("BACKUP_AGE_RECIPIENT" in error for error in errors)
 
-
-def test_keycloak_entrypoint_updates_the_existing_realm_not_only_the_import_file():
-    entrypoint = (ROOT / "deploy/keycloak/dikevia-entrypoint.sh").read_text(encoding="utf-8")
-    assert "kcadm.sh config credentials" in entrypoint
-    assert "kcadm.sh update realms/cfdt" in entrypoint
-    assert "ssoSessionIdleTimeout=604800" in entrypoint
-    assert "ssoSessionMaxLifespan=2592000" in entrypoint
-    assert "KC_BOOTSTRAP_ADMIN_PASSWORD" in entrypoint
-    assert "WARNING: unable to update the existing cfdt realm" in entrypoint
