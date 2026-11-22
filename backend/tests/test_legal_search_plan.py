@@ -383,7 +383,7 @@ def test_titular_evaluation_does_not_create_a_contractual_axis():
     assert any("jurisprudence administrative" in query for query in queries)
 
 
-def test_six_year_contract_to_cdi_question_uses_dedicated_fpt_research_axes():
+def test_six_year_contract_question_does_not_inject_preselected_article_numbers():
     question = (
         "Un agent contractuel de la fonction publique territoriale en CDD peut-il "
         "bénéficier d’un renouvellement au-delà de 6 ans et obtenir un CDI ? "
@@ -393,11 +393,12 @@ def test_six_year_contract_to_cdi_question_uses_dedicated_fpt_research_axes():
     queries = build_official_search_queries(question)
     axes = build_official_research_axes(question)
 
-    assert "L332-10" in query
-    assert "L332-9" in query
-    assert len(queries) == 3
-    assert any("L332-10" in item and "même catégorie hiérarchique" in item for item in queries)
-    assert any("L332-23" in item and "quatre mois" in item for item in queries)
-    assert all("agents contractuels territoriaux décret 88-145 CGFP recrutement renouvellement" not in item for item in queries)
-    assert len(axes) == 1
-    assert "L332-10" in axes[0]
+    # The deterministic fallback may preserve the subject and broad legal field,
+    # but the article selection must come from the live AI research planner and
+    # verified official retrieval, not a problem-specific hardcoded article list.
+    for article in ("L332-9", "L332-10", "L332-11", "L332-23", "L452-44"):
+        assert article not in query
+        assert all(article not in item for item in queries)
+        assert all(article not in item for item in axes)
+    assert "contractuel" in query.casefold()
+    assert "CDI" in query
