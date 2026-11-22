@@ -147,8 +147,12 @@ def should_use_cgfp_snapshot_fallback(
 ) -> bool:
     """Use the dated snapshot when live CGFP search failed or yielded no relevant article."""
     queries = research_queries if isinstance(research_queries, list) else [research_queries]
+    # Regulatory decrees may complement the CGFP but do not replace a failed
+    # live CGFP article lookup. Only a relevant live code article suppresses
+    # the documentary CGFP snapshot fallback.
     live_covers_an_axis = any(
-        _source_relevant_to_any_research_axis(queries, source)
+        source.get("source_type") == "LEGIFRANCE_API"
+        and _source_relevant_to_any_research_axis(queries, source)
         and source.get("analysis_eligible") is not False
         for source in (live_sources or [])
     )
