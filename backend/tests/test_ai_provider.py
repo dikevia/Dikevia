@@ -9,6 +9,32 @@ async def test_ai_provider_is_disabled_without_credentials(monkeypatch):
     assert await analyze_question(question="Question suffisamment longue", employer="NATIONAL",
         facts_date=None, sources=[]) is None
 
+def test_source_relevance_verdict_validation_accepts_only_known_ids_and_labels():
+    from app.ai_provider import validate_source_relevance_verdicts
+
+    sources = [{"source_id": "a"}, {"source_id": "b"}]
+    parsed = {"items": [
+        {"source_id": "a", "verdict": "DIRECT"},
+        {"source_id": "b", "verdict": "IRRELEVANT"},
+        {"source_id": "invented", "verdict": "DIRECT"},
+        {"source_id": "a", "verdict": "IRRELEVANT"},
+        {"source_id": "b", "verdict": "APPLICABLE"},
+    ]}
+    assert validate_source_relevance_verdicts(parsed, sources) == {
+        "a": "DIRECT", "b": "IRRELEVANT"
+    }
+
+
+def test_source_relevance_verdict_validation_rejects_malformed_payloads():
+    from app.ai_provider import validate_source_relevance_verdicts
+
+    assert validate_source_relevance_verdicts(None, [{"source_id": "a"}]) == {}
+    assert validate_source_relevance_verdicts(
+        {"items": [{"source_id": "a", "verdict": "APPLICABLE"}]},
+        [{"source_id": "a"}],
+    ) == {}
+
+
 def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense():
     assert "POLITIQUE STRICTE DE FENÊTRE FERMÉE" in SYSTEM_PROMPT
     assert "ne dois jamais répondre de mémoire" in SYSTEM_PROMPT
