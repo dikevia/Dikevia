@@ -1,0 +1,51 @@
+import pytest
+
+from app import orchestrator as orchestrator_module
+from app.ai_provider import AIProviderUnavailable
+from app.orchestrator import apply_semantic_source_relevance
+
+
+@pytest.mark.asyncio
+async def test_semantic_verdicts_exclude_irrelevant_and_keep_contextual_sources(monkeypatch):
+    async def fake_evaluator(**kwargs):
+        assert kwargs["question"] == "Question juridique"
+        assert kwargs["research_axes"] == ["axe juridique"]
+        return {"source-irrelevant": "IRRELEVANT", "source-contextual": "CONTEXTUAL"}
+
+    monkeypatch.setattr(orchestrator_module, "_source_relevant_to_any_research_axis",
+                        lambda axes, source: source["lexical"])
+    monkeypatch.setattr(orchestrator_module, "evaluate_source_relevance", fake_evaluator)
+    sources = [
+        {"source_id": "source-irrelevant", "lexical": True},
+        {"source_id": "source-contextual", "lexical": False},
+    ]
+
+    await apply_semantic_source_relevance(
+        question="Question juridique", research_axes=["axe juridique"], sources=sources,
+    )
+
+    assert sources[0]["research_axis_relevant"] is False
+    assert sources[0]["semantic_relevance"] == "IRRELEVANT"
+    assert sources[1]["research_axis_relevant"] is True
+    assert sources[1]["semantic_relevance"] == "CONTEXTUAL"
+
+
+@pytest.mark.asyncio
+async def test_semantic_provider_failure_preserves_lexical_fallback(monkeypatch):
+    async def unavailable(**kwargs):
+        raise AIProviderUnavailable("provider unavailable")
+
+    monkeypatch.setattr(orchestrator_module, "_source_relevant_to_any_research_axis",
+                        lambda axes, source: source["lexical"])
+    monkeypatch.setattr(orchestrator_module, "evaluate_source_relevance", unavailable)
+    sources = [
+        {"source_id": "lexically-relevant", "lexical": True},
+        {"source_id": "lexically-unrelated", "lexical": False},
+    ]
+
+    await apply_semantic_source_relevance(
+        question="Question juridique", research_axes=["axe juridique"], sources=sources,
+    )
+
+    assert [item["research_axis_relevant"] for item in sources] == [True, False]
+    assert all("semantic_relevance" not in item for item in sources)
