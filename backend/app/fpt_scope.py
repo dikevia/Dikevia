@@ -1,9 +1,9 @@
 """Conservative public-service scope classifier for Légifrance regulatory hits.
 
-A text is eligible for case-specific FPT analysis only when its own content
-supports a territorial or genuinely cross-public-service scope. Ambiguous
-records remain visible as research leads but are not sent to Gemini as applicable
-law. This is a relevance guard, not a legal applicability determination.
+A text is eligible for analysis only when its own content supports the selected
+public-service branch (FPT, FPE or FPH), or an explicitly common rule. Ambiguous
+records remain research leads rather than applicable-law evidence. This is a
+relevance guard, not a legal applicability determination.
 """
 from __future__ import annotations
 
@@ -109,7 +109,7 @@ def _fold(value: str) -> str:
 def classify_public_service_scope(
     source: dict[str, Any], target_versant: str = "FPT",
 ) -> dict[str, Any]:
-    """Return a conservative scope label and whether this hit may reach Gemini."""
+    """Return a conservative scope label and eligibility for the selected versant."""
     target_versant = str(target_versant or "FPT").upper()
     if target_versant not in {"FPT", "FPE", "FPH"}:
         target_versant = "FPT"
@@ -145,7 +145,7 @@ def classify_public_service_scope(
             "evidence": [f"Article {article_ref.upper()} situé dans la sous-section FPT des emplois permanents contractuels"],
             "analysis_eligible": True,
         }
-    # Dikévia is deliberately limited to French territorial public-service law.
+    # Dikévia handles French public-service law in the selected versant.
     # Exclude EU instruments by structured metadata before looking at generic
     # public-service wording that may also appear in comparative documents.
     european_metadata = _fold(" ".join(str(source.get(key) or "") for key in (
@@ -172,21 +172,6 @@ def classify_public_service_scope(
     fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in corpus]
     fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in corpus]
 
-    # Narrow FPT bridge: decree n° 2002-60 is the IHTS reference regime
-    # used through the territorial indemnity framework. The prompt still
-    # requires decree n° 91-875 and the local deliberation to be checked.
-    is_ihts_reference = (
-        "2002 60" in corpus
-        and "indemnites horaires pour travaux supplementaires" in corpus
-    )
-    if is_ihts_reference:
-        return {
-            "scope": "FPT_REFERENCE",
-            "evidence": ["Décret 2002-60 : référence IHTS à vérifier avec le décret 91-875 et la délibération locale"],
-            "analysis_eligible": target_versant == "FPT",
-            "claim_eligible": target_versant == "FPT",
-        }
-
     # A territorial reference buried in the body must not override a source
     # whose title identifies it as an FPE/FPH instrument. Titles are a stronger
     # signal of the document's primary scope than incidental cross-references.
@@ -202,9 +187,24 @@ def classify_public_service_scope(
             "claim_eligible": title_scope == target_versant,
         }
 
-    # A common rule may support FPT analysis only when the source itself
-    # explicitly identifies the three branches. Generic public-service wording
-    # is not sufficient evidence of territorial applicability.
+    # Narrow FPT bridge: decree n° 2002-60 is the IHTS reference regime
+    # used through the territorial indemnity framework. The prompt still
+    # requires decree n° 91-875 and the local deliberation to be checked.
+    is_ihts_reference = (
+        "2002 60" in corpus
+        and "indemnites horaires pour travaux supplementaires" in corpus
+    )
+    if is_ihts_reference:
+        return {
+            "scope": "FPT_REFERENCE",
+            "evidence": ["Décret 2002-60 : référence IHTS à vérifier avec le décret 91-875 et la délibération locale"],
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": target_versant == "FPT",
+        }
+
+    # A common rule may support analysis for the selected versant only when
+    # the source itself explicitly identifies all three branches. Generic
+    # public-service wording is not sufficient evidence of cross-branch scope.
     common_scope_hits = [
         marker for marker in _COMMON_PUBLIC_SERVICE_MARKERS
         if _fold(marker) in corpus
