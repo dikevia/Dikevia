@@ -8,7 +8,7 @@ Le script `scripts/import_public_guidance_sources.py` télécharge les ressource
 
 - Sans option : téléchargement/extraction en **dry-run**, aucune écriture PostgreSQL.
 - `--id <seed-id>` : sélection d'une ou plusieurs ressources précises.
-- `--apply` : écriture via le rôle dédié `cfdt_juris_ingest` uniquement si la source et la réutilisation sont toutes deux explicitement marquées `APPROVED`.
+- `--apply` : écriture via le rôle dédié `cfdt_juris_ingest` uniquement si la source et la ressource sont toutes deux explicitement marquées `REUSE_APPROVED` (ou `APPROVED`).
 - Les documents importés restent `IMPORTED_UNVERIFIED`, `UNKNOWN` et `ADMIN_GUIDANCE` ou `PROFESSIONAL_GUIDANCE` ; ils ne constituent jamais une preuve juridique primaire.
 - Les dates d'effet restent nulles lorsqu'elles ne sont pas établies. Un PDF image sans couche texte exploitable est rejeté ; l'OCR doit être ajouté séparément avec contrôle qualité.
 
@@ -30,13 +30,21 @@ Le registre recense notamment les domaines suivants. Leur statut individuel (can
 - **Socle public national** : Légifrance, Service-Public.gouv.fr, data.gouv.fr, DGAFP (`fonction-publique.gouv.fr`), DGCL (`collectivites-locales.gouv.fr`), Info.gouv.fr.
 - **CNFPT** : `cnfpt.fr` et `wikiterritorial.cnfpt.fr`.
 - **CIG** : `cig929394.fr` (Petite Couronne) et `cigversailles.fr` (Grande Couronne).
-- **CDG** : `cdg35.fr`, `cdg44.fr`, `cdg59.fr` et `cdg69.fr`.
+- **CDG** : `cdg35.fr` / `cdg35.bzh`, `cdg44.fr`, `cdg59.fr` et `cdg69.fr`.
 
 Le registre prévoit les glossaires DGAFP/CNFPT, les guides RH DGAFP, les ressources statutaires DGCL et les fiches pratiques/lexiques CDG-CIG. Seules les pages publiques sont dans le périmètre ; aucun extranet, espace abonné ou contenu réservé ne doit être aspiré sans autorisation.
 
 ## Import Service-Public Particuliers
 
 Le flux DILA 3.5 est publié quotidiennement et réutilisable sous Licence Ouverte 2.0, avec attribution obligatoire à Service-Public.gouv.fr / DILA, URL complète de téléchargement, nom du fichier et date du fichier.
+
+### Résultat de collecte vérifié — 22 novembre 2026
+
+Le workflow a téléchargé et extrait :
+- **199 fiches Service-Public Fonction publique**, soit environ 4,45 millions de caractères ; 194 comportent des références juridiques extraites ;
+- **4 PDF professionnels** (DGAFP et CDG35), représentant 125 pages et environ 170 000 caractères.
+
+Les empreintes SHA-256 des textes extraits ont été contrôlées. Les fiches Service-Public sont préparées comme `ADMIN_GUIDANCE`, `IMPORTED_UNVERIFIED`, avec version et dates d'effet inconnues. Les PDF DGAFP/CDG35 restent `EXTRACTED_NOT_IMPORTED` et `REVIEW_REQUIRED` pour la réutilisation. Aucun de ces documents n'est encore présent dans PostgreSQL.
 
 Le script `scripts/import_service_public_to_legal_corpus.py` :
 - télécharge les métadonnées du jeu de données et l'archive ZIP courante ;
