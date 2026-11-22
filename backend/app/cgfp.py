@@ -25,7 +25,25 @@ def normalize(value: str) -> str:
 
 
 def tokenize(value: str) -> list[str]:
-    return [t for t in TOKEN.findall(normalize(value)) if t not in STOPWORDS]
+    """Normalize common French plural forms without changing invariant words."""
+    tokens = []
+    invariant_or_ambiguous = {
+        "apres", "assez", "aussi", "bas", "bois", "bras", "cas", "corps",
+        "cours", "dehors", "dessous", "dessus", "fois", "frais", "gros",
+        "jus", "moins", "plus", "prix", "propos", "sens", "temps", "tous",
+        "vers",
+    }
+    for token in TOKEN.findall(normalize(value)):
+        if token in STOPWORDS:
+            continue
+        singular = (
+            token[:-1]
+            if len(token) > 4 and token.endswith("s") and token not in invariant_or_ambiguous
+            else token
+        )
+        if singular not in STOPWORDS:
+            tokens.append(singular)
+    return tokens
 
 
 @lru_cache(maxsize=1)
