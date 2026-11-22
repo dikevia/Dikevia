@@ -107,6 +107,13 @@ _TOPIC_EXPANSIONS = (
         "licenciement garanties procédure jurisprudence administrative",
     ),
     (
+        ("temps partiel pour raison therapeutique", "temps partiel therapeutique",
+         "mi temps therapeutique", "mi-temps therapeutique", "tpt"),
+        "CGFP articles L823-1 a L823-6 temps partiel pour raison therapeutique maintien retour emploi "
+        "reeducation readaptation mi temps integrality traitement supplement familial indemnité residence "
+        "decret 87-602 articles 13-1 13-2 13-3 13-5 13-7 13-9 13-11 13-13 CITIS reprise apres conge imputable au service",
+    ),
+    (
         ("temps de travail", "duree du travail", "annualisation", "astreinte",
          "temps partiel", "temps non complet", "cycle de travail", "rtt",
          "compteur d heures", "compteur d heures remis a zero",
@@ -241,6 +248,20 @@ def _contains_trigger(text: str, trigger: str) -> bool:
     return normalized_trigger in normalized_text
 
 
+def _is_therapeutic_part_time_question(question: str) -> bool:
+    folded = _fold(str(question or ""))
+    return any(
+        _contains_trigger(folded, trigger)
+        for trigger in (
+            "temps partiel pour raison therapeutique",
+            "temps partiel therapeutique",
+            "mi temps therapeutique",
+            "mi-temps therapeutique",
+            "tpt",
+        )
+    )
+
+
 def build_official_search_query(question: str, max_length: int = 500) -> str:
     """Keep the user's wording first, then append one narrowly matched FPT expansion."""
     original = str(question or "").strip()
@@ -314,6 +335,14 @@ _TOPIC_RESEARCH_AXES = (
         (
             "IHTS fonction publique territoriale décret 2002-60 décret 91-875 indemnités horaires travaux supplémentaires",
             "FPT décret 2001-623 temps de travail cycle décompte heures supplémentaires délibération assemblée délibérante repos compensateur",
+        ),
+    ),
+    (
+        ("temps partiel therapeutique", "temps partiel pour raison therapeutique",
+         "mi temps therapeutique", "mi-temps therapeutique", "tpt"),
+        (
+            "CGFP L823-1 L823-2 L823-3 L823-4 L823-5 L823-6 fonctionnaire territorial temps partiel pour raison therapeutique conditions maintien retour emploi mi temps remuneration integrale traitement SFT indemnite residence decret 87-602",
+            "decret 87-602 articles 13-1 13-2 13-3 13-5 13-7 13-9 13-11 13-13 decret 2026-705 CITIS reprise apres conge imputable au service autorisation temps partiel therapeutique",
         ),
     ),
     (
@@ -629,7 +658,12 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         _contains_trigger(folded, trigger)
         for trigger in independent_working_time_triggers
     )
+    therapeutic_part_time_present = _is_therapeutic_part_time_question(original)
     for triggers, axes in _TOPIC_RESEARCH_AXES:
+        # A therapeutic return is not ordinary part-time work. Keep its
+        # dedicated CGFP/decree axis and suppress the generic IHTS expansion.
+        if therapeutic_part_time_present and "temps partiel heures supplémentaires IHTS" in axes[0]:
+            continue
         # Overtime/IHTS is already a dedicated legal topic. Do not count the
         # generic time-work axis as a second issue unless the wording also
         # raises an independent cycle, annualisation, on-call or counter issue.
@@ -777,7 +811,10 @@ def build_official_research_axes(question: str) -> list[str]:
         for trigger in independent_working_time_triggers
     )
     axes_found = []
+    therapeutic_part_time_present = _is_therapeutic_part_time_question(original)
     for triggers, axes in _TOPIC_RESEARCH_AXES:
+        if therapeutic_part_time_present and "temps partiel heures supplémentaires IHTS" in axes[0]:
+            continue
         if (
             "annualisation" in triggers
             and ihts_topic_present
