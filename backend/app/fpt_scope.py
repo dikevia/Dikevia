@@ -123,7 +123,10 @@ def classify_public_service_scope(
     # framework for civil servants. Only a live Légifrance article may ground
     # a claim; a bundled snapshot remains contextual and cannot certify the
     # current wording. Branch-specific implementing rules must still be checked.
-    if article_ref in {f"l823 {number}" for number in range(1, 7)}:
+    if (
+        title_folded.startswith("code general de la fonction publique")
+        and article_ref in {f"l823 {number}" for number in range(1, 7)}
+    ):
         official_live_article = source.get("source_type") == "LEGIFRANCE_API"
         return {
             "scope": "COMMON_PUBLIC_SERVICE",
