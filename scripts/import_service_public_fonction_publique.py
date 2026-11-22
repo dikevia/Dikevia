@@ -27,6 +27,16 @@ DATASET_API_URL = (
     "fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers/"
 )
 THEME_FONCTION_PUBLIQUE = "N19806"
+PUBLIC_SCOPE_TERMS = (
+    "fonction publique", "fonctionnaire", "agent public", "agents publics",
+    "agent territorial", "agents territoriaux", "collectivité territoriale",
+    "collectivités territoriales", "agent contractuel de droit public",
+    "contractuel de droit public", "fonctionnaire territorial",
+    "fonctionnaire hospitalier", "fonctionnaire de l'état",
+    "fonction publique hospitalière", "fonction publique territoriale",
+    "fonction publique de l'état", "code général de la fonction publique",
+    "cgfp", "ouvrier de l'état",
+)
 MAX_ARCHIVE_BYTES = 100 * 1024 * 1024
 MAX_XML_BYTES = 8 * 1024 * 1024
 
@@ -175,6 +185,15 @@ def _extract_title(root: ET.Element) -> str:
     return next((_text(node) for node in titles if _text(node)), "")
 
 
+def _is_public_function_fiche(root: ET.Element) -> bool:
+    """Reject fiches whose broad theme metadata is incidental to private-sector content."""
+    title = _extract_title(root).casefold()
+    content = _text(root).casefold()
+    references = " ".join(item.get("libelle", "") for item in _extract_references(root)).casefold()
+    combined = " ".join((title, content, references))
+    return any(term in combined for term in PUBLIC_SCOPE_TERMS)
+
+
 def extraire_fiches_fonctionnaires(zf: zipfile.ZipFile) -> list[dict[str, Any]]:
     fiches: list[dict[str, Any]] = []
     for info in zf.infolist():
@@ -189,7 +208,7 @@ def extraire_fiches_fonctionnaires(zf: zipfile.ZipFile) -> list[dict[str, Any]]:
             continue
 
         themes = _theme_ids(root)
-        if THEME_FONCTION_PUBLIQUE not in themes:
+        if THEME_FONCTION_PUBLIQUE not in themes or not _is_public_function_fiche(root):
             continue
 
         blocks = _extract_blocs_cas(root)
