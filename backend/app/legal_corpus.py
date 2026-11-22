@@ -71,6 +71,17 @@ def temporal_status(valid_from: date | None, valid_to: date | None, requested: d
             return "IN_FORCE_ON_REQUESTED_DATE"
         if imported_for_date and version_status in {"REPEALED", "NOT_IN_FORCE"}:
             return "NO_LONGER_IN_FORCE"
+        # A date-filtered LODA search followed by a consultation returning the
+        # same official text ID proves which version was retrieved for that date.
+        # It does not prove the instrument's separate legal status when metadata
+        # omits that status; preserve this weaker, explicit temporal state.
+        if (
+            imported_for_date
+            and version_status == "UNKNOWN"
+            and (raw_payload or {}).get("date_filter") == "DATE_VERSION"
+            and (raw_payload or {}).get("matching_consulted_id")
+        ):
+            return "VERSION_RETRIEVED_AT_REQUESTED_DATE"
     if valid_from and requested < valid_from:
         return "NOT_YET_EFFECTIVE"
     if valid_to and requested > valid_to:
