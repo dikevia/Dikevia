@@ -2,6 +2,7 @@ from datetime import date
 import pytest
 
 from app.legal_corpus import clean_text, sha256_text, split_text, temporal_status, safe_official_url, expand_legal_query
+from app.legal_assurance import classify_legal_source, validate_claim_evidence
 from app.legal_ingestion import parse_circulaires_xml
 from app.legifrance import LegifranceConnector
 
