@@ -328,6 +328,12 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
             except (ValueError, TypeError):
                 metadata = {}
         item["raw_metadata"] = metadata if isinstance(metadata, dict) else {}
+        if item.get("source_type") == "CGFP_SNAPSHOT":
+            item["snapshot_modified_at"] = (
+                item["raw_metadata"].get("snapshot_modified_at")
+                or item["raw_metadata"].get("generated_at")
+            )
+            item["snapshot_verification_status"] = item["raw_metadata"].get("verification_status")
         item["source_id"] = item.pop("source_id")
         item["source_type"] = item.pop("source_type")
         item["excerpt"] = item.pop("content")[:8500]
