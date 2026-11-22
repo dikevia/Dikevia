@@ -281,7 +281,7 @@
       "name": "CFDT Fonctions Publiques — UFFA",
       "publisher": "Union des fédérations de fonctionnaires et assimilés CFDT",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Actualités, analyses, revendications, guides et publications publiques ; conserver l'attribution syndicale.",
       "scope": [
         "FPT",
@@ -300,7 +300,7 @@
       "name": "CFDT Interco — fonction publique territoriale et services publics",
       "publisher": "Fédération CFDT Interco",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Guides, fiches pratiques, analyses statutaires, actualités et documents publics.",
       "scope": [
         "FPT",
@@ -319,7 +319,7 @@
       "name": "CGT — Fonction publique",
       "publisher": "CGT, fédérations des services publics, de l'État et de la santé/action sociale",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Publications et analyses des fédérations CGT couvrant les trois versants ; conserver l'identité de la fédération éditrice.",
       "scope": [
         "FPT",
@@ -343,7 +343,7 @@
       "name": "FO Fonction publique — FGF-FO",
       "publisher": "Fédération générale des fonctionnaires Force ouvrière",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Actualités, publications, droits et services, analyses et revendications publiques.",
       "scope": [
         "FPE",
@@ -363,7 +363,7 @@
       "name": "CFTC — Fonction publique",
       "publisher": "CFTC et fédérations des agents de l'État, des collectivités territoriales et santé-sociaux",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Propositions, analyses, fiches pédagogiques et publications concernant les agents publics.",
       "scope": [
         "FPE",
@@ -384,7 +384,7 @@
       "name": "UNSA Fonction Publique",
       "publisher": "UNSA Fonction Publique",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Actualités, analyses, guides, grilles, communiqués et documents publics.",
       "scope": [
         "FPE",
@@ -404,7 +404,7 @@
       "name": "Solidaires Fonction publique",
       "publisher": "Union syndicale Solidaires — secteur Fonction publique",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Actualités, informations, matériel, analyses et publications publiques.",
       "scope": [
         "FPE",
@@ -1066,10 +1066,15 @@
         "revendications"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
       "reuse_status": "REVIEW_REQUIRED",
-      "notes": "Site syndical national couvrant les trois versants ; les contenus doivent rester attribués à la CFDT."
+      "notes": "Site syndical national couvrant les trois versants ; les contenus doivent rester attribués à la CFDT.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "822f5924bfb975e0cf1cd374d2486c4ff5dc562cfe08b2d426d2d573f5b1cf25",
+      "character_count": 1984,
+      "artifact_name": "service-public-function-public-corpus.zip"
     },
     {
       "id": "cfdt-interco-guide-agent-public-2026",
@@ -1090,11 +1095,16 @@
         "élections professionnelles"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
       "reuse_status": "REVIEW_REQUIRED",
       "publication_date": "2026-10-22",
-      "notes": "La page annonce un PDF de 10,19 Mo intitulé guide_de_l_agent_public_2026_interco-cfdt.pdf. L'URL directe du PDF n'a pas encore été vérifiée ; ne pas la deviner. Le guide devra être extrait et confronté aux textes en vigueur."
+      "notes": "La page annonce un PDF de 10,19 Mo intitulé guide_de_l_agent_public_2026_interco-cfdt.pdf. L'URL directe du PDF n'a pas encore été vérifiée ; ne pas la deviner. Le guide devra être extrait et confronté aux textes en vigueur.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "f89c2fde3da1b835a944828658b858724cf89f73d1e964a8ce8b9d2a5d898eb0",
+      "character_count": 1229,
+      "artifact_name": "service-public-function-public-corpus.zip"
     },
     {
       "id": "cgt-fp-site",
@@ -1113,9 +1123,14 @@
         "revendications"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
-      "reuse_status": "REVIEW_REQUIRED"
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "5c0aea40f70a2dcbb56c3d6ca25a6bb2fc0077d89f946e5fc895765eda18650b",
+      "character_count": 7432,
+      "artifact_name": "service-public-function-public-corpus.zip"
     },
     {
       "id": "fo-fp-site",
@@ -1137,9 +1152,14 @@
         "publications"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
-      "reuse_status": "REVIEW_REQUIRED"
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "cd00ae9959cf234d43769f05aa8569d7356b3ee99cdbff8fdea74f161ec49060",
+      "character_count": 5853,
+      "artifact_name": "service-public-function-public-corpus.zip"
     },
     {
       "id": "cftc-fp-propositions",
@@ -1161,9 +1181,14 @@
         "formation"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
-      "reuse_status": "REVIEW_REQUIRED"
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "73639f802eda746ae9850785650af7d7ff0ad12d899dc4750a04f9164c7de522",
+      "character_count": 8663,
+      "artifact_name": "service-public-function-public-corpus.zip"
     },
     {
       "id": "cftc-decodeur-greve-fp",
@@ -1183,10 +1208,15 @@
         "organisations syndicales"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
       "reuse_status": "REVIEW_REQUIRED",
-      "notes": "Fiche pédagogique syndicale ; vérifier chaque règle contre le CGFP et les textes applicables."
+      "notes": "Fiche pédagogique syndicale ; vérifier chaque règle contre le CGFP et les textes applicables.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "df8c9b1d05a53861a86b79b0c96da671defaf35d55dd12c0cceb63b81ae1be85",
+      "character_count": 13710,
+      "artifact_name": "service-public-function-public-corpus.zip"
     },
     {
       "id": "unsa-fp-site",
@@ -1209,9 +1239,14 @@
         "dialogue social"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
-      "reuse_status": "REVIEW_REQUIRED"
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "39b0a8954e82af97ee1c3ac5d0b4cb8795642aeb81725950f7e38437ef8a2d29",
+      "character_count": 10175,
+      "artifact_name": "service-public-function-public-corpus.zip"
     },
     {
       "id": "solidaires-fp-site",
@@ -1233,9 +1268,14 @@
         "revendications"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
-      "reuse_status": "REVIEW_REQUIRED"
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "c9687b3dbfaf1714e6142e23161a7c282462990b0c9c16c9cde6ede14e085003",
+      "character_count": 890,
+      "artifact_name": "service-public-function-public-corpus.zip"
     }
   ]
 }
