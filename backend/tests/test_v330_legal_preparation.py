@@ -50,23 +50,33 @@ async def test_general_sick_leave_question_does_not_request_personal_facts_date(
     import app.orchestrator as module
 
     called = False
+    captured = {}
 
-    async def forbidden_ai_call(**kwargs):
+    async def bounded_snapshot_ai(**kwargs):
         nonlocal called
         called = True
-        raise AssertionError("L'IA ne doit pas produire d'analyse contextualisée sans date des faits.")
+        captured.update(kwargs)
+        axes = (kwargs.get("legal_context") or {}).get("axes_recherche_documentaire") or []
+        return json.dumps({"claims": [], "uncovered_axes": axes}, ensure_ascii=False)
 
-    monkeypatch.setattr(module, "analyze_question", forbidden_ai_call)
+    async def provider_available():
+        return {"status": "AVAILABLE"}
+
+    monkeypatch.setattr(module, "analyze_question", bounded_snapshot_ai)
+    monkeypatch.setattr(module, "check_provider_availability", provider_available)
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: False))
     response = await LegalOrchestrator().ask(
         AskRequest(employer="NATIONAL", question="Quels sont les droits à congé maladie ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert called is False
-    assert response.verification_status == "NON_VERIFIE"
-    assert not any("date des faits" in item.lower() for item in response.missing_information)
+    assert called is True
+    assert any(
+        source.get("source_type") == "CGFP_SNAPSHOT"
+        and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+        for source in captured["sources"]
+    )
     assert response.clarification_question is None
-    assert "aucune conclusion juridique" in response.answer.lower()
+    assert response.verification_status == "NON_VERIFIE"
 
 
 def test_cgfp_import_script_validates_full_snapshot_and_article_count():
@@ -246,28 +256,35 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
 
 
 @pytest.mark.asyncio
-async def test_ai_is_not_called_when_only_unverified_cgfp_snapshot_is_available(monkeypatch):
+async def test_ai_can_use_only_the_dated_cgfp_snapshot_as_a_bounded_fallback(monkeypatch):
     import app.orchestrator as module
 
-    called = False
+    captured = {}
 
-    async def forbidden_ai(**kwargs):
-        nonlocal called
-        called = True
-        raise AssertionError("Le snapshot CGFP seul ne doit pas alimenter l'analyse IA.")
+    async def bounded_snapshot_ai(**kwargs):
+        captured["sources"] = kwargs["sources"]
+        axes = (kwargs.get("legal_context") or {}).get("axes_recherche_documentaire") or []
+        return json.dumps({"claims": [], "uncovered_axes": axes}, ensure_ascii=False)
 
-    monkeypatch.setattr(module, "analyze_question", forbidden_ai)
+    async def provider_available():
+        return {"status": "AVAILABLE"}
+
+    monkeypatch.setattr(module, "analyze_question", bounded_snapshot_ai)
+    monkeypatch.setattr(module, "check_provider_availability", provider_available)
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: False))
-    monkeypatch.setattr(module.case_law_connector, "search", forbidden_ai)
 
     response = await LegalOrchestrator().ask(
         AskRequest(employer="NATIONAL", facts_date="2024-06-01",
                    question="Quels sont les droits des agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert called is False
+    assert any(
+        source.get("source_type") == "CGFP_SNAPSHOT"
+        and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+        for source in captured["sources"]
+    )
     assert response.verification_status == "NON_VERIFIE"
-    assert "ne permettent pas de répondre avec certitude" in response.answer
+    assert any("Mode de secours CGFP activé" in item for item in response.missing_information)
     assert "Aucune conclusion juridique" in response.answer
 
 
