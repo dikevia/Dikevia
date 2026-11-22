@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import import_service_public_to_legal_corpus as importer
+import import_service_public_to_legal_corpus as importer  # noqa: E402
 
 
 def _fiche():
