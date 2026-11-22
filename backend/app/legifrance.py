@@ -176,17 +176,30 @@ class LegifranceConnector:
     def _date_epoch_ms(value: date) -> int:
         return int(datetime(value.year, value.month, value.day, tzinfo=timezone.utc).timestamp() * 1000)
 
-    def _search_payload(self, query: str, effective_date: date, code_name: str | None = None) -> dict:
-        ref = re.search(r"\b([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b", query, re.I)
+    @staticmethod
+    def _keyword_criterion(query: str, *, precise: bool) -> dict:
+        """Build a documented PISTE keyword criterion; precise mode requires all words."""
+        return {
+            "typeRecherche": "TOUS_LES_MOTS_DANS_UN_CHAMP" if precise else "UN_DES_MOTS",
+            "valeur": query[:250],
+            "proximite": 5,
+            "operateur": "ET",
+        }
+
+    def _search_payload(
+        self, query: str, effective_date: date, code_name: str | None = None,
+        *, precise: bool = False,
+    ) -> dict:
+        ref = re.search(r"\\b([LDR]\\.\\s*\\d+(?:-\\d+)*|[LDR]\\s*\\d+(?:-\\d+)*)\\b", query, re.I)
         if ref is None:
-            ref = re.search(r"\barticle\s+(\d+(?:-\d+)*)\b", query, re.I)
+            ref = re.search(r"\\barticle\\s+(\\d+(?:-\\d+)*)\\b", query, re.I)
         if ref:
             field = {"typeChamp": "NUM_ARTICLE", "criteres": [{
-                "typeRecherche": "EXACTE", "valeur": re.sub(r"[.\s]+", "", ref.group(1)).upper(), "operateur": "ET"}], "operateur": "ET"}
+                "typeRecherche": "EXACTE", "valeur": re.sub(r"[.\\s]+", "", ref.group(1)).upper(), "operateur": "ET"}], "operateur": "ET"}
         else:
-            field = {"typeChamp": "ARTICLE", "criteres": [{
-                "typeRecherche": "UN_DES_MOTS", "valeur": query[:250],
-                "proximite": 5, "operateur": "ET"}], "operateur": "ET"}
+            field = {"typeChamp": "ARTICLE", "criteres": [
+                self._keyword_criterion(query, precise=precise)
+            ], "operateur": "ET"}
         return {"fond": "CODE_DATE", "recherche": {
             "champs": [field],
             "filtres": [
