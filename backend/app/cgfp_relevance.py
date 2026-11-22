@@ -517,6 +517,8 @@ _LEGAL_QUERY_ALIASES: tuple[tuple[str, str], ...] = (
     ("mi-temps therapeutique", "temps partiel pour raison therapeutique"),
     ("reprise a mi temps", "temps partiel pour raison therapeutique"),
     ("reprendre a mi temps", "temps partiel pour raison therapeutique"),
+    ("reprendre a mi-temps", "temps partiel pour raison therapeutique"),
+    ("reprise a mi-temps", "temps partiel pour raison therapeutique"),
     ("accident du travail", "accident de service"),
     ("arret apres accident", "accident de service citis"),
 )
