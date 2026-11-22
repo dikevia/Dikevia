@@ -49,3 +49,22 @@ async def test_semantic_provider_failure_preserves_lexical_fallback(monkeypatch)
 
     assert [item["research_axis_relevant"] for item in sources] == [True, False]
     assert all("semantic_relevance" not in item for item in sources)
+
+
+
+@pytest.mark.asyncio
+async def test_uncertain_semantic_verdict_does_not_override_lexical_exclusion(monkeypatch):
+    async def fake_evaluator(**kwargs):
+        return {"source-uncertain": "UNCERTAIN"}
+
+    monkeypatch.setattr(orchestrator_module, "_source_relevant_to_any_research_axis",
+                        lambda axes, source: source["lexical"])
+    monkeypatch.setattr(orchestrator_module, "evaluate_source_relevance", fake_evaluator)
+    sources = [{"source_id": "source-uncertain", "lexical": False}]
+
+    await apply_semantic_source_relevance(
+        question="Question juridique", research_axes=["axe juridique"], sources=sources,
+    )
+
+    assert sources[0]["research_axis_relevant"] is False
+    assert sources[0]["semantic_relevance"] == "UNCERTAIN"
