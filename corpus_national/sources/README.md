@@ -42,9 +42,9 @@ Le flux DILA 3.5 est publié quotidiennement et réutilisable sous Licence Ouver
 
 Le workflow a téléchargé et extrait :
 - **199 fiches Service-Public Fonction publique**, soit environ 4,45 millions de caractères ; 194 comportent des références juridiques extraites ;
-- **4 PDF professionnels** (DGAFP et CDG35), représentant 125 pages et environ 170 000 caractères.
+- **9 ressources professionnelles** (5 PDF et 4 pages HTML : DGAFP, CDG35, CIG Petite Couronne, CDG59, CDG69 et CNFPT), dont 173 pages PDF et environ 359 000 caractères.
 
-Les empreintes SHA-256 des textes extraits ont été contrôlées. Les fiches Service-Public sont préparées comme `ADMIN_GUIDANCE`, `IMPORTED_UNVERIFIED`, avec version et dates d'effet inconnues. Les PDF DGAFP/CDG35 restent `EXTRACTED_NOT_IMPORTED` et `REVIEW_REQUIRED` pour la réutilisation. Aucun de ces documents n'est encore présent dans PostgreSQL.
+Les empreintes SHA-256 des textes extraits ont été contrôlées. Les fiches Service-Public sont préparées comme `ADMIN_GUIDANCE`, `IMPORTED_UNVERIFIED`, avec version et dates d'effet inconnues. Les ressources professionnelles restent `EXTRACTED_NOT_IMPORTED` et `REVIEW_REQUIRED` pour la réutilisation. Aucun de ces documents n'est encore présent dans PostgreSQL.
 
 Le script `scripts/import_service_public_to_legal_corpus.py` :
 - télécharge les métadonnées du jeu de données et l'archive ZIP courante ;
