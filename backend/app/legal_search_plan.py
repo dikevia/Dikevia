@@ -110,7 +110,7 @@ _TOPIC_EXPANSIONS = (
         ("temps partiel pour raison therapeutique", "temps partiel therapeutique",
          "mi temps therapeutique", "mi-temps therapeutique", "tpt"),
         "CGFP articles L823-1 a L823-6 temps partiel pour raison therapeutique maintien retour emploi "
-        "reeducation readaptation mi temps integrality traitement supplement familial indemnité residence "
+        "rééducation réadaptation mi-temps intégralité traitement supplément familial indemnité résidence "
         "decret 87-602 articles 13-1 13-2 13-3 13-5 13-7 13-9 13-11 13-13 CITIS reprise apres conge imputable au service",
     ),
     (
