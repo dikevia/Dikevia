@@ -56,3 +56,12 @@ def test_conversation_history_supports_ten_exchange_context_and_resolves_followu
     assert build_contextual_research_question(
         "Comment fonctionne le CET ?", prior
     ) == "Comment fonctionne le CET ?"
+
+def test_chat_route_loads_twenty_messages_and_ai_planner_keeps_ten_user_turns():
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    orchestrator = (ROOT / "backend/app/orchestrator.py").read_text(encoding="utf-8")
+    provider = (ROOT / "backend/app/ai_provider.py").read_text(encoding="utf-8")
+    assert "ORDER BY created_at DESC,id DESC LIMIT $3" in main
+    assert "CONVERSATION_HISTORY_MESSAGE_LIMIT" in main
+    assert "[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]" in orchestrator
+    assert "[-RECENT_USER_CONTEXT_LIMIT:]" in provider
