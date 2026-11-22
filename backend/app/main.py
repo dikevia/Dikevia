@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 import asyncio
 import logging
+import os
 from uuid import uuid4, UUID
 import hashlib
 import json
@@ -304,7 +305,7 @@ async def readiness():
         await get_pool().fetchval("SELECT 1")
     except Exception:
         raise HTTPException(503, "Service temporairement indisponible.")
-    return {"status": "ready"}
+    return {"status": "ready", "revision": os.getenv("RENDER_GIT_COMMIT", "unknown")}
 
 @app.get("/", response_class=HTMLResponse)
 async def home():

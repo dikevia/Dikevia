@@ -145,3 +145,7 @@ def test_billing_screen_uses_official_ttc_catalogue_and_monthly_credit_rules():
     ):
         assert expected in html
     assert "15 €" not in html and "HT / mois" not in html
+
+def test_readiness_exposes_render_revision_for_post_deploy_verification():
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    assert 'os.getenv("RENDER_GIT_COMMIT", "unknown")' in main

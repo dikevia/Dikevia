@@ -1,61 +1,81 @@
 name: Commercial backend smoke test
 
 on:
-  push:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches:
       - feature/dikevia-v3.38.5-cgfp-chat
-    paths:
-      - ".github/workflows/commercial-smoke.yml"
-      - "backend/**"
-      - "frontend/**"
-      - "deploy/keycloak/**"
-      - "render.yaml"
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   smoke-test:
-    # Run against the live Render services only on explicit dispatch, after deployment.
-    # A PR-time live smoke test would block Render's checksPass deployment and test the old revision.
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Wait for commercial API readiness
+      - name: Verify the deployed revision, API, OIDC and web client
         shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || '' }}
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 30); do
-            if curl --connect-timeout 10 --max-time 20 -fsS https://dikevia-commercial-api-l2r8.onrender.com/ready -o /tmp/api-ready.json; then
-              cat /tmp/api-ready.json
+
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            current_sha="$(curl --connect-timeout 10 --max-time 20 -fsS \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/dikevia/Dikevia/branches/feature%2Fdikevia-v3.38.5-cgfp-chat" \
+              | python -c 'import json,sys; print(json.load(sys.stdin)["commit"]["sha"])')"
+            if [[ "$current_sha" != "$EXPECTED_SHA" ]]; then
+              echo "Smoke test skipped: this successful CI revision has been superseded by $current_sha."
               exit 0
             fi
-            echo "Commercial API not ready yet (attempt $attempt/30)"
-            sleep 10
-          done
-          echo "Commercial API did not become ready within five minutes."
-          exit 1
+          fi
 
-      - name: Wait for Keycloak readiness
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 30); do
-            if curl --connect-timeout 10 --max-time 20 -fsS https://dikevia-identity-l2r8.onrender.com/health/ready -o /tmp/id-ready.json; then
-              cat /tmp/id-ready.json
-              exit 0
+          api_ready=false
+          for attempt in $(seq 1 60); do
+            if curl --connect-timeout 10 --max-time 20 -fsS \
+              https://dikevia-commercial-api-l2r8.onrender.com/ready -o /tmp/api-ready.json; then
+              deployed_sha="$(python -c 'import json; print(json.load(open("/tmp/api-ready.json"))["revision"])')"
+              if [[ -z "$EXPECTED_SHA" || "$deployed_sha" == "$EXPECTED_SHA" ]]; then
+                api_ready=true
+                echo "Commercial API ready on revision $deployed_sha."
+                break
+              fi
+              echo "API still serves revision $deployed_sha; waiting for $EXPECTED_SHA (attempt $attempt/60)."
+            else
+              echo "Commercial API not ready yet (attempt $attempt/60)."
             fi
-            echo "Identity service not ready yet (attempt $attempt/30)"
             sleep 10
           done
-          echo "Identity service did not become ready within five minutes."
-          exit 1
+          if [[ "$api_ready" != true ]]; then
+            echo "Commercial API did not reach the expected revision within ten minutes."
+            cat /tmp/api-ready.json 2>/dev/null || true
+            exit 1
+          fi
 
-      - name: Verify OIDC discovery and issuer
-        run: |
-          set -euo pipefail
+          identity_ready=false
+          for attempt in $(seq 1 30); do
+            if curl --connect-timeout 10 --max-time 20 -fsS \
+              https://dikevia-identity-l2r8.onrender.com/health/ready -o /tmp/id-ready.json; then
+              identity_ready=true
+              echo "Keycloak readiness endpoint is healthy."
+              break
+            fi
+            echo "Keycloak not ready yet (attempt $attempt/30)."
+            sleep 10
+          done
+          if [[ "$identity_ready" != true ]]; then
+            echo "Keycloak did not become ready within five minutes."
+            exit 1
+          fi
+
           curl --connect-timeout 10 --max-time 20 -fsS \
             https://dikevia-identity-l2r8.onrender.com/realms/cfdt/.well-known/openid-configuration \
             -o /tmp/oidc.json
@@ -71,9 +91,6 @@ jobs:
           print("OIDC discovery valid; issuer and endpoints match.")
           PY
 
-      - name: Verify commercial web application and OIDC client configuration
-        run: |
-          set -euo pipefail
           curl --connect-timeout 10 --max-time 20 -fsS \
             https://dikevia-commercial-api-l2r8.onrender.com/ -o /tmp/app.html
           grep -q "/static/oidc-auth.js" /tmp/app.html
