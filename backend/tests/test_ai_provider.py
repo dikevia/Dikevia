@@ -1039,7 +1039,8 @@ def test_research_planner_system_prompt_forbids_cross_branch_transposition(versa
     source = inspect.getsource(plan_legal_research)
     assert "CONTRAINTE DE VERSANT" in source
     assert "N'utilise aucune requête-type" in source
-    assert selected_label in source
+    assert "({selected_label})" in source
+    assert selected_label in _PUBLIC_SERVICE_LABELS.values()
 
 def test_research_plan_parser_accepts_empty_queries_only_for_refinement():
     assert _parse_research_plan('{"queries": [], "legal_issues": []}') is None
