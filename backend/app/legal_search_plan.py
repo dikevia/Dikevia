@@ -117,7 +117,7 @@ _TOPIC_EXPANSIONS = (
         "compteur temps de travail délibération locale",
     ),
     (
-        ("accident de service", "maladie professionnelle", "citis"),
+        ("accident de service", "accident sur mon lieu de travail", "imputable au service", "imputabilité au service", "maladie professionnelle", "citis"),
         "congé pour invalidité temporaire imputable au service CITIS agents territoriaux "
         "accident de service maladie professionnelle CGFP décret 87-602",
     ),
