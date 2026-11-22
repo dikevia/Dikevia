@@ -228,6 +228,34 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     ]
 
 
+
+async def apply_semantic_source_relevance(
+    *, question: str, research_axes: list[str], sources: list[dict],
+) -> None:
+    """Apply Gemini relevance verdicts while preserving lexical fallback on provider failure."""
+    for source in sources:
+        source["research_axis_relevant"] = _source_relevant_to_any_research_axis(
+            research_axes, source,
+        )
+    try:
+        semantic_verdicts = await evaluate_source_relevance(
+            question=question,
+            research_axes=research_axes,
+            sources=sources,
+        )
+        for source in sources:
+            verdict = semantic_verdicts.get(source.get("source_id"))
+            if verdict in {"DIRECT", "CONTEXTUAL", "UNCERTAIN"}:
+                source["research_axis_relevant"] = True
+                source["semantic_relevance"] = verdict
+            elif verdict == "IRRELEVANT":
+                source["research_axis_relevant"] = False
+                source["semantic_relevance"] = verdict
+    except AIProviderUnavailable as exc:
+        # The semantic pass is optional; retain the deterministic lexical assessment.
+        logger.warning("Semantic source relevance unavailable; using lexical fallback: %s", exc)
+
+
 def _source_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
     """Require both topic and specialized guards to pass for the same research axis."""
     return any(
@@ -1168,31 +1196,11 @@ class LegalOrchestrator:
             decision["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, decision)
             sources.append({**decision, "page_start": None, "page_end": None})
 
-        # Keep the deterministic lexical assessment as a fallback, then let Gemini
-        # assess the actual content. This is relevance triage only: backend source,
-        # citation, temporal and FPT-scope controls remain authoritative.
-        for source in sources:
-            source["research_axis_relevant"] = _source_relevant_to_any_research_axis(
-                research_queries, source,
-            )
-        try:
-            semantic_verdicts = await evaluate_source_relevance(
-                question=request.question,
-                research_axes=research_queries,
-                sources=sources,
-            )
-            for source in sources:
-                verdict = semantic_verdicts.get(source.get("source_id"))
-                if verdict in {"DIRECT", "CONTEXTUAL", "UNCERTAIN"}:
-                    source["research_axis_relevant"] = True
-                    source["semantic_relevance"] = verdict
-                elif verdict == "IRRELEVANT":
-                    source["research_axis_relevant"] = False
-                    source["semantic_relevance"] = verdict
-        except AIProviderUnavailable as exc:
-            # Fail open to the existing deterministic filter; never block the legal
-            # response solely because the optional semantic relevance pass failed.
-            logger.warning("Semantic source relevance unavailable; using lexical fallback: %s", exc)
+        # Gemini assesses document content after the lexical fallback. This is relevance
+        # triage only; source, citation, temporal and FPT-scope controls remain authoritative.
+        await apply_semantic_source_relevance(
+            question=request.question, research_axes=research_queries, sources=sources,
+        )
 
 
         # A direct request for the text/content of a numbered CGFP article is an
