@@ -11,6 +11,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
@@ -38,8 +39,8 @@ def to_corpus_item(fiche: dict, provenance: dict) -> dict:
     fiche_id = str(fiche.get("fiche_id") or "").strip().upper()
     title = str(fiche.get("titre_courant") or "").strip()
     full_text = str(fiche.get("contenu") or "").strip()
-    if not fiche_id or not title or len(full_text) < 80:
-        raise ValueError("Fiche Service-Public incomplète : identifiant, titre et contenu substantiel requis.")
+    if not re.fullmatch(r"F\\d+", fiche_id) or not title or len(full_text) < 80:
+        raise ValueError("Fiche Service-Public incomplète : identifiant F valide, titre et contenu substantiel requis.")
     digest = sha256_text(full_text)
     return {
         "source_type": "SERVICE_PUBLIC_PART",
@@ -47,7 +48,7 @@ def to_corpus_item(fiche: dict, provenance: dict) -> dict:
         "title": title[:1000],
         "document_kind": "ADMIN_GUIDANCE",
         "publisher": "Service-Public.gouv.fr / DILA",
-        "official_url": None,
+        "official_url": f"https://www.service-public.gouv.fr/particuliers/vosdroits/{fiche_id}",
         "status": "UNKNOWN",
         "source_status": "IMPORTED_UNVERIFIED",
         "full_text": full_text,
@@ -56,6 +57,7 @@ def to_corpus_item(fiche: dict, provenance: dict) -> dict:
         "valid_from": None,
         "valid_to": None,
         "raw_metadata": {
+            "dataset_api_url": provenance.get("dataset_api_url"),
             "dataset_id": provenance.get("dataset_id"),
             "dataset_title": provenance.get("dataset_title"),
             "dataset_last_update": provenance.get("dataset_last_update"),
@@ -63,6 +65,9 @@ def to_corpus_item(fiche: dict, provenance: dict) -> dict:
             "resource_title": provenance.get("resource_title"),
             "download_url": provenance.get("download_url"),
             "filename": provenance.get("filename"),
+            "file_date": provenance.get("file_date"),
+            "resource_last_modified": provenance.get("resource_last_modified"),
+            "resource_checksum": provenance.get("resource_checksum"),
             "downloaded_at": provenance.get("downloaded_at"),
             "license": provenance.get("license"),
             "attribution": provenance.get("attribution") or "Service-Public.gouv.fr / DILA",
@@ -107,6 +112,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.limit < 0:
         parser.error("--limit doit être positif ou nul.")
+    dsn = os.environ.get("LEGAL_CORPUS_INGEST_DATABASE_URL", "")
+    if args.apply:
+        validate_ingest_dsn(dsn)
     archive, provenance = telecharger_archive_sp()
     try:
         fiches = extraire_fiches_fonctionnaires(archive)
@@ -130,7 +138,6 @@ def main() -> int:
     if not args.apply:
         print("DRY RUN : aucune donnée n'a été écrite. Relancer avec --apply après validation.")
         return 0
-    dsn = os.environ.get("LEGAL_CORPUS_INGEST_DATABASE_URL", "")
     result = asyncio.run(import_items(items, dsn))
     print(json.dumps(result, ensure_ascii=False))
     return 0
