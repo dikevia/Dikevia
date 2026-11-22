@@ -3,12 +3,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-def test_keycloak_access_token_lifetime_is_15_minutes_in_template_and_import():
-    for relative in ("deploy/keycloak/realm-cfdt.template.json", "deploy/keycloak/import/realm-cfdt.json"):
+def test_keycloak_access_token_and_persistent_sso_lifetimes_in_all_realm_configs():
+    for relative in ("deploy/keycloak/realm-cfdt.template.json", "deploy/keycloak/import/realm-cfdt.json", "deploy/keycloak/realm-cfdt.render.json"):
         realm = json.loads((ROOT / relative).read_text(encoding="utf-8"))
         assert realm["accessTokenLifespan"] == 900
-        assert realm["ssoSessionIdleTimeout"] == 1800
-        assert realm["ssoSessionMaxLifespan"] == 28800
+        assert realm["ssoSessionIdleTimeout"] == 604800
+        assert realm["ssoSessionMaxLifespan"] == 2592000
         assert realm["revokeRefreshToken"] is True
         assert realm["refreshTokenMaxReuse"] == 0
         client = next(c for c in realm["clients"] if c["clientId"] == "cfdt-juris-web")
@@ -76,3 +76,13 @@ def test_production_env_audit_rejects_missing_or_weak_configuration(tmp_path):
     assert any("DEBUG" in error for error in errors)
     assert any("POSTGRES_APP_PASSWORD" in error for error in errors)
     assert any("BACKUP_AGE_RECIPIENT" in error for error in errors)
+
+
+def test_keycloak_entrypoint_updates_the_existing_realm_not_only_the_import_file():
+    entrypoint = (ROOT / "deploy/keycloak/dikevia-entrypoint.sh").read_text(encoding="utf-8")
+    assert "kcadm.sh config credentials" in entrypoint
+    assert "kcadm.sh update realms/cfdt" in entrypoint
+    assert "ssoSessionIdleTimeout=604800" in entrypoint
+    assert "ssoSessionMaxLifespan=2592000" in entrypoint
+    assert "KC_BOOTSTRAP_ADMIN_PASSWORD" in entrypoint
+    assert "WARNING: unable to update the existing cfdt realm" in entrypoint
