@@ -272,6 +272,34 @@ class LegifranceConnector:
         return " … ".join(sentence for _, sentence in chosen)[:max_chars]
 
     @staticmethod
+    def _requested_article_excerpt(text: str, query: str, max_chars: int = 10000) -> str:
+        """Prefer complete requested article sections over a keyword-selected fragment."""
+        article_clause = re.search(r"\barticles?\b(.*)", query, re.IGNORECASE)
+        if not article_clause:
+            return ""
+        requested_refs = list(dict.fromkeys(
+            re.findall(r"\b\d{1,2}(?:-\d{1,2})?\b", article_clause.group(1))
+        ))
+        if not requested_refs:
+            return ""
+        headings = list(re.finditer(
+            r"(?im)^[ \t]*(?:«\s*)?Article\s*(\d{1,2}(?:-\d{1,2})?)\b",
+            text,
+        ))
+        if not headings:
+            return ""
+        selected = []
+        for index, heading in enumerate(headings):
+            if heading.group(1) not in requested_refs:
+                continue
+            end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+            section = text[heading.start():end].strip()
+            if section:
+                selected.append(section)
+        return "\n\n".join(selected)[:max_chars].strip()
+
+
+    @staticmethod
     def _extract_text(value: Any) -> str:
         """Extract every distinct text segment without duplicating nested payload fields."""
         candidates: list[tuple[int, str]] = []
@@ -506,7 +534,7 @@ class LegifranceConnector:
                 "official_url": f"https://www.legifrance.gouv.fr/loda/id/{identifier}",
                 "signature_date": signature, "publication_date": publication,
                 "status": status, "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
-                "excerpt": self._relevant_excerpt(text, query.strip()),
+                "excerpt": self._requested_article_excerpt(text, query.strip()) or self._relevant_excerpt(text, query.strip()),
                 "valid_from": valid_from, "valid_to": valid_to,
                 # Keep the legal status unknown when Légifrance metadata omits it.
                 # The verified DATE_VERSION search + matching dated consultation

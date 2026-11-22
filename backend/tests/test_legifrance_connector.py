@@ -706,3 +706,46 @@ async def test_loda_exact_91_875_lookup_preserves_territorial_decree_number(monk
     assert results[0]["nor"] == "INTB9100377D"
     assert results[0]["source_id"] == "LEGITEXT000052196548"
     assert results[0]["full_text"] == full_text.strip()
+
+
+@pytest.mark.asyncio
+async def test_regulatory_search_prefers_complete_requested_article_sections(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    text_id = "LEGITEXT000012345678"
+    full_text = (
+        "Préambule sans rapport avec la demande.\n"
+        "Article 37-1\nDisposition antérieure sans rapport.\n"
+        "Article 37-2\nDéclaration d'accident de service et certificat médical requis. "
+        "L'agent adresse les pièces à l'autorité territoriale.\n"
+        "Article 37-5\nL'autorité dispose d'un délai d'un mois pour instruire la déclaration.\n"
+        "Article 37-9\nDisposition postérieure non demandée."
+    )
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            criterion = payload["recherche"]["champs"][0]["criteres"][0]
+            assert criterion["typeRecherche"] == "EXACTE"
+            assert criterion["valeur"] == "87-602"
+            return httpx.Response(200, json={"results": [{
+                "id": text_id, "titre": "Décret n° 87-602 du 30 juillet 1987",
+                "dateTexte": "1987-07-30",
+            }]})
+        if request.url.path.endswith("/consult/legiPart"):
+            return httpx.Response(200, json={"id": text_id, "texte": full_text})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_regulatory_texts(
+        "décret n° 87-602 articles 37-2 37-5 CITIS accident déclaration imputabilité",
+        date(2026, 11, 22),
+    )
+    assert len(results) == 1
+    assert "Article 37-2" in results[0]["excerpt"]
+    assert "Article 37-5" in results[0]["excerpt"]
+    assert "Article 37-1" not in results[0]["excerpt"]
+    assert "Article 37-9" not in results[0]["excerpt"]
+    assert results[0]["full_text"] == full_text

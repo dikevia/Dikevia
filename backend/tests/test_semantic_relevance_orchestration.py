@@ -68,3 +68,22 @@ async def test_uncertain_semantic_verdict_does_not_override_lexical_exclusion(mo
 
     assert sources[0]["research_axis_relevant"] is False
     assert sources[0]["semantic_relevance"] == "UNCERTAIN"
+
+
+def test_targeted_regulatory_queries_include_current_fpt_citis_and_tpt_texts():
+    from app.orchestrator import _build_targeted_regulatory_queries
+
+    citis = _build_targeted_regulatory_queries(
+        "Je suis fonctionnaire territorial et je suis en CITIS après un accident de service."
+    )
+    assert any("87-602" in query and "37-2" in query for query in citis)
+    assert any("2026-705" in query for query in citis)
+
+    tpt = _build_targeted_regulatory_queries(
+        "Je souhaite demander un temps partiel thérapeutique."
+    )
+    assert any("87-602" in query and "13-2" in query for query in tpt)
+    assert any("2026-705" in query for query in tpt)
+    assert any("88-145" in query and "9-1" in query for query in tpt)
+
+    assert _build_targeted_regulatory_queries("Je souhaite un temps partiel à 80 %.") == []

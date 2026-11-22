@@ -54,6 +54,37 @@ def _build_code_research_queries(
     ]
 
 
+def _build_targeted_regulatory_queries(question: str) -> list[str]:
+    """Add exact, date-scoped FPT health texts without treating them as legal conclusions."""
+    folded = " ".join(str(question or "").casefold().split())
+    queries: list[str] = []
+    citis = any(marker in folded for marker in (
+        "citis", "invalidité temporaire imputable au service",
+        "invalidite temporaire imputable au service",
+    )) or (
+        "accident de service" in folded and
+        ("imputable au service" in folded or "maladie professionnelle" in folded)
+    )
+    therapeutic_part_time = any(marker in folded for marker in (
+        "temps partiel thérapeutique", "temps partiel therapeutique",
+        "temps partiel pour raison thérapeutique",
+        "temps partiel pour raison therapeutique", "tpt",
+    ))
+    if citis:
+        queries.extend([
+            "décret n° 87-602 articles 37-1 37-2 37-5 37-9 37-9-1 37-20 CITIS accident de service déclaration imputabilité instruction",
+            "décret n° 2026-705 article 3 CITIS fonction publique territoriale déclaration accident maladie professionnelle",
+        ])
+    if therapeutic_part_time:
+        queries.extend([
+            "décret n° 87-602 articles 13-1 13-2 13-3 13-5 13-7 13-9 13-11 13-13 temps partiel pour raison thérapeutique fonctionnaire territorial",
+            "décret n° 2026-705 article 3 temps partiel pour raison thérapeutique fonctionnaire territorial",
+            "décret n° 88-145 article 9-1 temps partiel pour raison thérapeutique agent contractuel territorial",
+            "décret n° 2026-705 article 6 temps partiel pour raison thérapeutique agent contractuel territorial décret 88-145",
+        ])
+    return list(dict.fromkeys(queries))
+
+
 def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
     """Turn relevant, FPT-applicable snapshot hits into exact live CGFP lookups."""
     if not isinstance(found, dict):
@@ -611,6 +642,12 @@ class LegalOrchestrator:
             code_research_queries = _build_code_research_queries(
                 research_queries, cgfp_article_queries, max_queries=8,
             )
+            # These targeted, exact-number queries are sent only to the LODA
+            # regulatory-text endpoint. They do not consume the CGFP or CETAT
+            # query budgets and preserve the applicable FPT implementing texts.
+            regulatory_queries = list(dict.fromkeys([
+                *research_queries, *_build_targeted_regulatory_queries(current_question),
+            ]))
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
             endpoint_results = await asyncio.gather(*[
@@ -621,7 +658,7 @@ class LegalOrchestrator:
                     ], return_exceptions=True),
                     asyncio.gather(*[
                         legifrance.search_regulatory_texts(query, requested_date, limit=3)
-                        for query in research_queries
+                        for query in regulatory_queries
                     ], return_exceptions=True),
                 )
                 for requested_date in comparison_dates
@@ -636,7 +673,7 @@ class LegalOrchestrator:
                         code_failures.append((requested_date.isoformat(), query))
                     else:
                         code_result.extend(_tag_official_versions(code_at_date, requested_date, endpoint))
-                for query, regulatory_at_date in zip(research_queries, regulatory_queries_result):
+                for query, regulatory_at_date in zip(regulatory_queries, regulatory_queries_result):
                     if isinstance(regulatory_at_date, BaseException) or not isinstance(regulatory_at_date, list):
                         logger.warning("Recherche réglementaire Légifrance en échec (%s) à %s : %r", query[:100], requested_date, regulatory_at_date)
                         regulatory_failures.append((requested_date.isoformat(), query))
@@ -676,7 +713,7 @@ class LegalOrchestrator:
             # decisions found only by a focused sub-question.
             case_result = interleave_case_law_results(case_results_by_query, limit=30)
             code_total = len(comparison_dates) * len(code_research_queries)
-            regulatory_total = len(comparison_dates) * len(research_queries)
+            regulatory_total = len(comparison_dates) * len(regulatory_queries)
             code_issue = (
                 "La recherche d'articles du CGFP sur Légifrance est indisponible pour tous les axes et dates interrogés."
                 if code_failures and len(code_failures) == code_total else None
