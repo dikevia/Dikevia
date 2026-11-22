@@ -7,36 +7,71 @@ KC_LOCAL_URL="http://127.0.0.1:${KC_HTTP_PORT:-10000}"
 KC_TEMP_ADMIN="${KC_BOOTSTRAP_ADMIN_USERNAME:-kc-admin}"
 KC_ADMIN_PASSWORD="${KC_BOOTSTRAP_ADMIN_PASSWORD:-}"
 KC_PERMANENT_ADMIN="dikevia-ops"
+KC_PID=""
 
 shutdown() {
-  kill "$KC_PID" 2>/dev/null || true
-  wait "$KC_PID" 2>/dev/null || true
+  if [[ -n "${KC_PID:-}" ]]; then
+    kill "$KC_PID" 2>/dev/null || true
+    wait "$KC_PID" 2>/dev/null || true
+  fi
 }
 trap shutdown TERM INT
+
+keycloak_ready() {
+  local response="" line
+  if ! exec 3<>"/dev/tcp/127.0.0.1/${KC_HTTP_PORT:-10000}" 2>/dev/null; then
+    return 1
+  fi
+  if ! printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; then
+    exec 3<&- 3>&-
+    return 1
+  fi
+  while IFS= read -r -t 2 line <&3; do
+    response+="$line"$'\n'
+    if [[ "$response" == *'"status":"UP"'* ]]; then
+      break
+    fi
+  done
+  exec 3<&- 3>&-
+  [[ "$response" == *"200 OK"* && "$response" == *'"status":"UP"'* ]]
+}
 
 run_admin_migration() {
   local ready=0 candidate attempt perm_users perm_id temp_users temp_id realm_json
 
   rm -f "$KCADM_CONFIG"
-  for ((attempt=1; attempt<=60; attempt++)); do
+  echo "Waiting for Keycloak readiness before running the administrative migration."
+  for ((attempt=1; attempt<=240; attempt++)); do
     if ! kill -0 "$KC_PID" 2>/dev/null; then
       echo "Keycloak exited before the admin migration could run." >&2
       return 1
     fi
-    if (echo >"/dev/tcp/127.0.0.1/${KC_HTTP_PORT:-10000}") 2>/dev/null; then
-      for candidate in "$KC_TEMP_ADMIN" "$KC_PERMANENT_ADMIN"; do
-        if KC_CLI_PASSWORD="$KC_ADMIN_PASSWORD" "$KCADM" config credentials \
-          --server "$KC_LOCAL_URL" --realm master --user "$candidate" \
-          --password "$KC_ADMIN_PASSWORD" --config "$KCADM_CONFIG" >/dev/null 2>&1; then
-          ready=1
-          break 2
-        fi
-      done
+    if keycloak_ready; then
+      ready=1
+      break
     fi
     sleep 3
   done
 
   if [[ "$ready" != "1" ]]; then
+    echo "WARNING: Keycloak did not report readiness within 12 minutes; administrative migration skipped." >&2
+    return 1
+  fi
+  echo "Keycloak readiness confirmed; authenticating the recovery administrator."
+
+  for ((attempt=1; attempt<=10; attempt++)); do
+    for candidate in "$KC_TEMP_ADMIN" "$KC_PERMANENT_ADMIN"; do
+      if "$KCADM" config credentials \
+        --server "$KC_LOCAL_URL" --realm master --user "$candidate" \
+        --password "$KC_ADMIN_PASSWORD" --config "$KCADM_CONFIG" >/dev/null 2>&1; then
+        ready=2
+        break 2
+      fi
+    done
+    sleep 3
+  done
+
+  if [[ "$ready" != "2" ]]; then
     echo "WARNING: no temporary or permanent Keycloak administrator could authenticate; migration skipped." >&2
     return 1
   fi
