@@ -463,3 +463,16 @@ def test_accident_du_travail_alias_is_only_a_search_route():
     question = "Mon accident du travail est-il reconnu ?"
     assert "accident de service" in _expand_legal_query(question)
     assert "citis" in {item["key"] for item in _matching_topics(question)}
+
+def test_cgfp_article_discovery_verifies_unanchored_lexical_candidates_live(monkeypatch):
+    from app import orchestrator
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", lambda *_args: True)
+    found = {"results": [{
+        "article": "L823-1",
+        "matched_concepts": [],
+        "relevance_label": "Correspondance lexicale — pertinence à vérifier",
+    }]}
+
+    assert orchestrator._cgfp_article_discovery_queries(found) == ["article L823-1"]
+
