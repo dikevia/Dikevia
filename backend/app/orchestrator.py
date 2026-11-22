@@ -1800,7 +1800,7 @@ class LegalOrchestrator:
                         "La recherche porte sur les règles actuelles ; une version historique ne sera vérifiée que si elle devient déterminante."
                     )
             if sources:
-                lines.append("\\nSources retrouvées, à examiner (elles ne constituent pas à elles seules une réponse) :")
+                lines.append("\nSources retrouvées, à examiner (elles ne constituent pas à elles seules une réponse) :")
                 seen_source_ids = set()
                 for source in sources[:8]:
                     source_id = str(source.get("source_id") or "")
@@ -1816,7 +1816,7 @@ class LegalOrchestrator:
             else:
                 lines.append("Aucune source exploitable n'a été retrouvée pour cette recherche.")
             lines.append(
-                "\\nAucune conclusion juridique n'est formulée. Vous pouvez préciser le mécanisme ou le point exact "
+                "\nAucune conclusion juridique n'est formulée. Vous pouvez préciser le mécanisme ou le point exact "
                 "qui vous intéresse ; les sources doivent ensuite être vérifiées au regard de leur version, "
                 "de leur champ d'application et, si nécessaire, des règles locales."
             )
