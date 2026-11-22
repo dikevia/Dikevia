@@ -24,6 +24,11 @@ def _archive() -> zipfile.ZipFile:
     with zipfile.ZipFile(buffer, "w") as archive:
         archive.writestr("F12345.xml", payload)
         archive.writestr("F99999.xml", payload.replace(b'N19806', b'N00000'))
+        archive.writestr(
+            "F100.xml",
+            b'<Fiche><dc:title>Quels sont les moyens du comite social et economique (CSE) ?</dc:title>'
+            b'<Theme ID="N19806"/><Texte>Les salaries elisent leur CSE dans les entreprises privees.</Texte></Fiche>',
+        )
         archive.writestr("arborescence.xml", b"<Arborescence/>")
     buffer.seek(0)
     return zipfile.ZipFile(buffer)
