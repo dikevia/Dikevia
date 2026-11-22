@@ -44,6 +44,11 @@ _FPH_MARKERS = (
     "personnels medicaux",
     "directeur d hopital",
     "centres hospitaliers",
+    "decret n 91 155",
+    "decret 91 155",
+    "loi n 86 33",
+    "loi 86 33",
+    "agents contractuels hospitaliers",
 )
 
 _FPE_MARKERS = (
@@ -53,6 +58,9 @@ _FPE_MARKERS = (
     "administrations centrales",
     "services deconcentres de l etat",
     "ministeres",
+    "agents contractuels de l etat",
+    "decret n 86 83",
+    "decret 86 83",
 )
 
 _LOCAL_EMPLOYER_MARKERS = (

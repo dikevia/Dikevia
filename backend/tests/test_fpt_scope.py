@@ -389,3 +389,18 @@ def test_explicitly_common_public_service_rule_remains_available_to_each_versant
         assert result["scope"] == "COMMON_PUBLIC_SERVICE"
         assert result["analysis_eligible"] is True
         assert result["claim_eligible"] is True
+
+
+def test_official_fpe_and_fph_contractual_decrees_are_classified_by_their_own_scope():
+    fpe_decree = {
+        "title": "Décret n° 86-83 du 17 janvier 1986 relatif aux dispositions générales applicables aux agents contractuels de l'État",
+        "text": "Les dispositions du présent décret s'appliquent aux agents contractuels de l'État.",
+    }
+    fph_decree = {
+        "title": "Décret n° 91-155 du 6 février 1991 relatif aux agents contractuels des établissements mentionnés à l'article 2 de la loi n° 86-33",
+        "text": "Le présent décret concerne les agents contractuels hospitaliers.",
+    }
+    assert classify_public_service_scope(fpe_decree, target_versant="FPE")["analysis_eligible"] is True
+    assert classify_public_service_scope(fpe_decree, target_versant="FPT")["analysis_eligible"] is False
+    assert classify_public_service_scope(fph_decree, target_versant="FPH")["analysis_eligible"] is True
+    assert classify_public_service_scope(fph_decree, target_versant="FPE")["analysis_eligible"] is False
