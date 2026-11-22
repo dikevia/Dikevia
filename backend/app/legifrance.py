@@ -190,12 +190,12 @@ class LegifranceConnector:
         self, query: str, effective_date: date, code_name: str | None = None,
         *, precise: bool = False,
     ) -> dict:
-        ref = re.search(r"\\b([LDR]\\.\\s*\\d+(?:-\\d+)*|[LDR]\\s*\\d+(?:-\\d+)*)\\b", query, re.I)
+        ref = re.search(r"\b([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b", query, re.I)
         if ref is None:
-            ref = re.search(r"\\barticle\\s+(\\d+(?:-\\d+)*)\\b", query, re.I)
+            ref = re.search(r"\barticle\s+(\d+(?:-\d+)*)\b", query, re.I)
         if ref:
             field = {"typeChamp": "NUM_ARTICLE", "criteres": [{
-                "typeRecherche": "EXACTE", "valeur": re.sub(r"[.\\s]+", "", ref.group(1)).upper(), "operateur": "ET"}], "operateur": "ET"}
+                "typeRecherche": "EXACTE", "valeur": re.sub(r"[.\s]+", "", ref.group(1)).upper(), "operateur": "ET"}], "operateur": "ET"}
         else:
             field = {"typeChamp": "ARTICLE", "criteres": [
                 self._keyword_criterion(query, precise=precise)
@@ -391,7 +391,7 @@ class LegifranceConnector:
         found = await self._request("POST", "/search", json_body=payload)
         has_legal_text_id = any(
             (raw_id := self._first_value(node, ("id", "idTexte", "id_text", "textId")))
-            and re.fullmatch(r"LEGITEXT\\d{12}", raw_id.split("_", 1)[0])
+            and re.fullmatch(r"LEGITEXT\d{12}", raw_id.split("_", 1)[0])
             for node in self._walk_dicts(found)
         )
         if not has_legal_text_id and not number_match:
@@ -527,11 +527,11 @@ class LegifranceConnector:
         result = await self._request("POST", "/search", json_body=payload)
         article_ids = self._find_article_ids(result)
         requested_ref_hint = re.search(
-            r"\\b(?:article\\s+)?(?:[LDR]\\.\\s*\\d+(?:-\\d+)*|[LDR]\\s*\\d+(?:-\\d+)*)\\b",
+            r"\b(?:article\s+)?(?:[LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b",
             query, re.I,
         )
         if requested_ref_hint is None:
-            requested_ref_hint = re.search(r"\\barticle\\s+\\d+(?:-\\d+)*\\b", query, re.I)
+            requested_ref_hint = re.search(r"\barticle\s+\d+(?:-\d+)*\b", query, re.I)
         if not article_ids and not requested_ref_hint:
             # Preserve recall without letting an OR-style query dominate the
             # normal path: broad PISTE search is a fallback only on zero hits.
