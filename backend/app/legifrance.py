@@ -390,9 +390,10 @@ class LegifranceConnector:
             "typePagination": "DEFAUT"}}
         found = await self._request("POST", "/search", json_body=payload)
         has_legal_text_id = any(
-            (raw_id := self._first_value(node, ("id", "idTexte", "id_text", "textId")))
-            and re.fullmatch(r"LEGITEXT\d{12}", raw_id.split("_", 1)[0])
+            isinstance(node.get(key), (str, int))
+            and re.fullmatch(r"LEGITEXT\d{12}", str(node[key]).split("_", 1)[0])
             for node in self._walk_dicts(found)
+            for key in ("id", "idTexte", "id_text", "textId")
         )
         if not has_legal_text_id and not number_match:
             # Precision-first retrieval protects relevance; the documented broad
