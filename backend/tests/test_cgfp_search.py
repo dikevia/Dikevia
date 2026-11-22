@@ -313,3 +313,15 @@ def test_therapeutic_part_time_retrieval_surfaces_its_core_cgfp_provisions():
     )
     refs = {item["article"] for item in result["results"]}
     assert {"L823-1", "L823-2", "L823-4", "L823-5"} & refs
+
+
+
+def test_code_research_budget_preserves_axes_and_reserves_three_exact_article_lookups():
+    from app.orchestrator import _build_code_research_queries
+
+    axes = [f"axe juridique {number}" for number in range(1, 6)]
+    exact_articles = [f"article L823-{number}" for number in range(1, 7)]
+    result = _build_code_research_queries(
+        axes, exact_articles, max_queries=8
+    )
+    assert result == [*axes, *exact_articles[:3]]
