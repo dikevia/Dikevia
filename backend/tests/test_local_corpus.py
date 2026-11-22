@@ -91,3 +91,20 @@ async def test_local_search_refuses_hash_mismatch():
         "VILLE_SAINT_ETIENNE", "temps de travail", date(2024, 6, 1)
     )
     assert results[0]["citation_integrity"]["valid"] is False
+
+
+
+def test_local_document_temporal_status_can_be_checked_at_multiple_period_dates():
+    from app.local_corpus import local_document_temporal_status
+
+    start = date(2024, 1, 1)
+    end = date(2024, 12, 31)
+    assert local_document_temporal_status(
+        start, end, "VERIFIED_HISTORICAL", date(2024, 6, 30)
+    ) == "VERIFIED_APPLICABLE"
+    assert local_document_temporal_status(
+        start, end, "VERIFIED_HISTORICAL", date(2025, 1, 1)
+    ) == "NOT_APPLICABLE_ON_REQUESTED_DATE"
+    assert local_document_temporal_status(
+        None, end, "VERIFIED_APPLICABLE", date(2024, 6, 30)
+    ) == "TEMPORAL_SCOPE_INCOMPLETE"

@@ -220,6 +220,239 @@ _TOPICS: tuple[dict[str, Any], ...] = (
         "boosts": {"agent contractuel": 12.0, "contrat a duree determinee": 8.0},
         "exclude_unless_anchor": (),
     },
+    {
+        "key": "droits_obligations_deontologie",
+        "triggers": (
+            "obligations professionnelles", "obligation de neutralite", "neutralite",
+            "laicite", "secret professionnel", "discretion professionnelle",
+            "devoir de reserve", "integrite", "probite", "conflit d interets",
+            "cumul d activites", "obligation d obeissance",
+        ),
+        "expansion": (
+            "droits obligations agents publics territoriaux neutralité laïcité dignité "
+            "impartialité intégrité probité secret professionnel discrétion professionnelle "
+            "obéissance hiérarchique cumul activités conflits intérêts"
+        ),
+        "anchors": (
+            "neutralite", "laicite", "secret professionnel", "discretion professionnelle",
+            "integrite", "probite", "conflit d interets", "cumul d activites",
+            "obligation d obeissance", "dignité",
+        ),
+        "boosts": {"obligations": 8.0, "neutralite": 12.0, "laicite": 10.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "recrutement_stage_titularisation",
+        "triggers": (
+            "recrutement", "concours", "concours externe", "concours interne",
+            "liste d aptitude", "nomination stagiaire", "fonctionnaire stagiaire",
+            "stage", "titularisation", "refus de titularisation", "prolongation de stage",
+        ),
+        "expansion": (
+            "recrutement fonction publique territoriale concours liste aptitude nomination "
+            "fonctionnaire stagiaire stage titularisation prolongation stage refus titularisation "
+            "aptitude physique autorité territoriale"
+        ),
+        "anchors": (
+            "concours", "liste d aptitude", "fonctionnaire stagiaire", "titularisation",
+            "nomination stagiaire", "stage", "refus de titularisation",
+        ),
+        "boosts": {"titularisation": 14.0, "fonctionnaire stagiaire": 12.0, "concours": 7.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "carriere_avancement_evaluation",
+        "triggers": (
+            "avancement", "avancement d echelon", "avancement de grade",
+            "promotion interne", "carriere", "entretien professionnel",
+            "evaluation professionnelle", "evaluation annuelle", "evaluation a charge",
+            "contester evaluation", "contestation evaluation", "compte rendu d evaluation",
+            "compte rendu d entretien", "tableau d avancement", "ligne directrice de gestion",
+        ),
+        "expansion": (
+            "CGFP L521-1 L521-3 L521-5 appréciation valeur professionnelle fonctionnaire territorial "
+            "entretien professionnel annuel compte rendu révision contestation décret 2014-1526 "
+            "articles 2 3 4 5 6 7 autorité territoriale commission administrative paritaire"
+        ),
+        "anchors": (
+            "avancement", "avancement d echelon", "avancement de grade",
+            "promotion interne", "entretien professionnel", "evaluation annuelle",
+            "evaluation a charge", "contester evaluation", "compte rendu d evaluation",
+            "valeur professionnelle", "tableau d avancement", "ligne directrice de gestion",
+        ),
+        "boosts": {"avancement": 10.0, "promotion interne": 12.0, "entretien professionnel": 9.0,
+                   "evaluation annuelle": 14.0, "contester evaluation": 16.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "mobilite_positions_statutaires",
+        "triggers": (
+            "mobilite", "mutation", "mute", "muter", "detachement", "mise a disposition",
+            "disponibilite", "integration directe", "reclassement",
+            "position d activite", "position statutaire",
+        ),
+        "expansion": (
+            "fonctionnaire territorial mobilité mutation détachement mise à disposition "
+            "disponibilité intégration directe reclassement positions statutaires réintégration "
+            "emploi collectivité territoriale"
+        ),
+        "anchors": (
+            "mobilite", "mutation", "mute", "detachement", "mise a disposition",
+            "disponibilite", "integration directe", "reclassement",
+            "position d activite", "reintegration",
+        ),
+        "boosts": {"detachement": 10.0, "disponibilite": 10.0, "mutation": 9.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "formation_professionnelle",
+        "triggers": (
+            "formation professionnelle", "formation cnfpt", "cnfpt",
+            "compte personnel de formation", "cpf", "vae",
+            "bilan de competences", "conge de formation",
+            "formation obligatoire", "formation d integration",
+        ),
+        "expansion": (
+            "formation professionnelle agents territoriaux CNFPT formation intégration "
+            "professionnalisation perfectionnement compte personnel formation CPF VAE "
+            "bilan compétences congé formation obligation employeur"
+        ),
+        "anchors": (
+            "formation professionnelle", "cnfpt", "compte personnel de formation",
+            "bilan de competences", "conge de formation", "formation d integration",
+            "formation de professionnalisation", "validation des acquis",
+        ),
+        "boosts": {"formation professionnelle": 12.0, "cnfpt": 12.0, "compte personnel de formation": 9.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "conges_absences_familiales",
+        "triggers": (
+            "conges annuels", "conge annuel", "conge parental", "conge maternite",
+            "conge paternite", "conge adoption", "conge proche aidant",
+            "conge presence parentale", "autorisation speciale d absence",
+            "absence familiale", "temps partiel therapeutique",
+        ),
+        "expansion": (
+            "agents territoriaux congés annuels congé parental maternité paternité adoption "
+            "proche aidant présence parentale autorisation spéciale absence événements familiaux "
+            "temps partiel thérapeutique droits garanties"
+        ),
+        "anchors": (
+            "conges annuels", "conge parental", "conge maternite", "conge paternite",
+            "conge adoption", "conge proche aidant", "conge de presence parentale",
+            "autorisation speciale d absence", "temps partiel therapeutique",
+        ),
+        "boosts": {"conge parental": 10.0, "conge maternite": 10.0, "conges annuels": 8.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "sante_securite_prevention",
+        "triggers": (
+            "sante et securite", "hygiene et securite", "risques professionnels",
+            "prevention des risques", "medecine preventive", "medecin du travail",
+            "accident de service", "maladie professionnelle", "citis",
+            "inaptitude physique", "reclassement pour inaptitude",
+        ),
+        "expansion": (
+            "fonction publique territoriale santé sécurité travail prévention risques professionnels "
+            "médecine préventive accident service maladie professionnelle CITIS aptitude physique "
+            "inaptitude reclassement protection santé agents"
+        ),
+        "anchors": (
+            "sante et securite", "hygiene et securite", "prevention des risques",
+            "medecine preventive", "accident de service", "maladie professionnelle",
+            "citis", "inaptitude physique", "reclassement",
+        ),
+        "boosts": {"prevention des risques": 10.0, "medecine preventive": 12.0, "citis": 12.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "greve_dialogue_social_representativite",
+        "triggers": (
+            "droit de greve", "greve", "preavis de greve", "service minimum",
+            "dialogue social", "comite social territorial", "cst",
+            "representants du personnel", "representativite syndicale",
+            "negociation collective", "accord collectif",
+        ),
+        "expansion": (
+            "fonction publique territoriale droit de grève préavis service minimum dialogue social "
+            "comité social territorial CST représentants du personnel organisations syndicales "
+            "représentativité négociation accords collectifs garanties agents"
+        ),
+        "anchors": (
+            "droit de greve", "preavis de greve", "service minimum",
+            "dialogue social", "comite social territorial", "representants du personnel",
+            "representativite syndicale", "negociation collective", "accord collectif",
+        ),
+        "boosts": {"droit de greve": 12.0, "comite social territorial": 10.0, "dialogue social": 8.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "cessation_fonctions_retraite",
+        "triggers": (
+            "demission", "retraite", "radiation des cadres", "licenciement",
+            "abandon de poste", "perte de la qualite de fonctionnaire",
+            "cessation definitive de fonctions", "rupture conventionnelle",
+            "retraite pour invalidite", "mise a la retraite",
+        ),
+        "expansion": (
+            "fonctionnaire territorial cessation définitive fonctions démission retraite radiation "
+            "cadres licenciement abandon poste perte qualité fonctionnaire rupture conventionnelle "
+            "retraite invalidité garanties procédure"
+        ),
+        "anchors": (
+            "demission", "retraite", "radiation des cadres", "licenciement",
+            "abandon de poste", "cessation definitive de fonctions",
+            "rupture conventionnelle", "retraite pour invalidite",
+        ),
+        "boosts": {"radiation des cadres": 10.0, "retraite": 8.0, "demission": 8.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "egalite_discrimination",
+        "triggers": (
+            "discrimination", "egalite professionnelle", "egalite femmes hommes",
+            "sexisme", "grossesse", "origine", "handicap", "amenagement de poste",
+            "lanceur d alerte", "alerte ethique",
+        ),
+        "expansion": (
+            "agents publics territoriaux égalité professionnelle non discrimination égalité femmes "
+            "hommes handicap grossesse aménagement poste lanceur alerte protection signalement "
+            "agissements sexistes"
+        ),
+        "anchors": (
+            "discrimination", "egalite professionnelle", "egalite femmes hommes",
+            "agissement sexiste", "grossesse", "handicap", "amenagement de poste",
+            "lanceur d alerte", "signalement",
+        ),
+        "boosts": {"discrimination": 12.0, "egalite professionnelle": 10.0, "handicap": 8.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "droits_syndicaux_dialogue_social",
+        "triggers": (
+            "droit syndical", "droits syndicaux", "liberte syndicale",
+            "asa syndicale", "autorisation speciale d absence syndicale",
+            "decharge syndicale", "decharge d activite de service",
+            "credit de temps syndical", "local syndical", "locaux syndicaux",
+            "reunion d information syndicale", "formation syndicale",
+            "representant syndical", "representants du personnel",
+        ),
+        "expansion": (
+            "CGFP livre II droit syndical fonction publique territoriale liberté syndicale "
+            "autorisations spéciales absence décharges activité service crédit temps syndical "
+            "locaux syndicaux réunions information formation organisations syndicales dialogue social"
+        ),
+        "anchors": (
+            "droit syndical", "liberte syndicale", "autorisation speciale d absence",
+            "decharge d activite de service", "credit de temps syndical",
+            "local syndical", "reunion d information syndicale",
+            "formation syndicale", "representant syndical",
+        ),
+        "boosts": {"droit syndical": 14.0, "liberte syndicale": 12.0, "decharge d activite de service": 10.0},
+        "exclude_unless_anchor": (),
+    },
 )
 
 

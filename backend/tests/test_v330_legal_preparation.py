@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 import importlib.util
 import json
@@ -45,7 +46,7 @@ def _enable_legifrance(monkeypatch, module):
 
 
 @pytest.mark.asyncio
-async def test_missing_facts_date_does_not_call_ai_for_case_specific_analysis(monkeypatch):
+async def test_general_sick_leave_question_does_not_request_personal_facts_date(monkeypatch):
     import app.orchestrator as module
 
     called = False
@@ -63,8 +64,9 @@ async def test_missing_facts_date_does_not_call_ai_for_case_specific_analysis(mo
     )
     assert called is False
     assert response.verification_status == "NON_VERIFIE"
-    assert any("date des faits" in item.lower() for item in response.missing_information)
-    assert "repérage documentaire" in response.answer.lower()
+    assert not any("date des faits" in item.lower() for item in response.missing_information)
+    assert response.clarification_question is None
+    assert "aucune conclusion juridique" in response.answer.lower()
 
 
 def test_cgfp_import_script_validates_full_snapshot_and_article_count():
@@ -145,8 +147,11 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
     async def no_code_articles(*args, **kwargs):
         return []
 
+    searched_dates = []
+    monkeypatch.setattr(module, "_france_today", lambda: date(2026, 11, 21))
+
     async def regulatory_texts(query, effective_date, limit=5):
-        assert str(effective_date) == "2024-06-01"
+        searched_dates.append(effective_date)
         assert limit == 3
         return [{
             "source_type": "LEGIFRANCE_LODA",
@@ -180,8 +185,14 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
                    question="Quelles règles encadrent les agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
+    assert date(2024, 6, 1) in searched_dates
+    assert date(2026, 11, 21) in searched_dates
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+    assert response.answer.startswith("Le décret n° 2024-100")
+    assert "Voici ce que les textes permettent de comprendre" not in response.answer
     loda_response = next(s for s in response.sources if s["source_type"] == "LEGIFRANCE_LODA")
+    assert loda_response["version_role"] == "FACTS_DATE_VERSION"
+    assert loda_response["requested_effective_date"] == "2024-06-01"
     assert len(loda_response["text"]) <= 1800
     assert "full_text" not in loda_response
     assert any(s["source_type"] == "LEGIFRANCE_LODA" for s in captured["sources"])
@@ -193,17 +204,26 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
     import app.orchestrator as module
 
     _enable_legifrance(monkeypatch, module)
-    seen = []
+    seen = {"code": [], "regulatory": [], "case_law": []}
 
-    async def capture_query(query, *args, **kwargs):
-        seen.append(query)
+    async def capture_code(query, *args, **kwargs):
+        seen["code"].append(query)
         return []
 
-    monkeypatch.setattr(module.legifrance, "search_code_articles", capture_query)
-    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", capture_query)
-    monkeypatch.setattr(module.case_law_connector, "search", capture_query)
+    async def capture_regulatory(query, *args, **kwargs):
+        seen["regulatory"].append(query)
+        return []
+
+    async def capture_case_law(query, *args, **kwargs):
+        seen["case_law"].append(query)
+        return []
+
+    monkeypatch.setattr(module.legifrance, "search_code_articles", capture_code)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", capture_regulatory)
+    monkeypatch.setattr(module.case_law_connector, "search", capture_case_law)
 
     current_question = "Question actuelle sur le temps de travail. " * 20
+    primary_prefix = current_question.strip()[:250]
     history = [{"role": "user", "content": "Ancienne question sans rapport. " * 50}]
     await LegalOrchestrator().ask(
         AskRequest(employer="NATIONAL", question=current_question),
@@ -211,11 +231,17 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
         conversation_history=history,
     )
 
-    assert len(seen) == 3
-    assert all(len(query) <= 500 for query in seen)
-    assert all(query.startswith(current_question.strip()[:250]) for query in seen)
-    assert all("Ancienne question sans rapport" not in query for query in seen)
-    assert all("décret 2001-623" in query for query in seen)
+    # The CGFP discovery index may add up to two exact article lookups
+    # to the three broad code searches. Regulatory and case-law budgets remain
+    # unchanged.
+    assert 3 <= len(seen["code"]) <= 5
+    assert len(seen["regulatory"]) == 3
+    assert len(seen["case_law"]) == 3
+    all_queries = [query for pillar in seen.values() for query in pillar]
+    assert all(len(query) <= 500 for query in all_queries)
+    assert all_queries[0].startswith(primary_prefix)
+    assert all("Ancienne question sans rapport" not in query for query in all_queries)
+    assert any("décret 2001-623" in query for query in all_queries)
 
 
 
@@ -241,7 +267,8 @@ async def test_ai_is_not_called_when_only_unverified_cgfp_snapshot_is_available(
     )
     assert called is False
     assert response.verification_status == "NON_VERIFIE"
-    assert response.answer.startswith("Les textes officiels actuels ne me permettent pas de répondre avec certitude")
+    assert "ne permettent pas de répondre avec certitude" in response.answer
+    assert "Aucune conclusion juridique" in response.answer
 
 
 
@@ -426,10 +453,12 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
         "collectivity": "Ville de Saint-Étienne",
         "validation_status": "VERIFIED_APPLICABLE",
         "temporal_status": "VERIFIED_APPLICABLE",
+        "effective_from": "2020-01-01",
         "content_kind": "FULL_TEXT",
         "excerpt": "Extrait validé de la délibération.",
         "text": "Extrait validé de la délibération.",
         "citation_integrity": {"valid": True},
+        "version_endpoint": "START",
     }
 
     async def local_search(*args, **kwargs):
@@ -446,8 +475,8 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
         return [{
             "source_type": "LEGIFRANCE_API", "source_id": "LEGIARTI000000000123",
             "article": "L123-4", "title": "Code général de la fonction publique — article L. 123-4",
-            "text": "Article L. 123-4 : texte officiel consulté. " * 8,
-            "excerpt": "Article L. 123-4 : texte officiel consulté.",
+            "text": "Article L. 123-4 : dispositions applicables aux agents publics territoriaux. " * 8,
+            "excerpt": "Article L. 123-4 : dispositions applicables aux agents publics territoriaux.",
         }]
 
     async def no_regulatory(*args, **kwargs):
@@ -526,10 +555,10 @@ async def test_follow_up_search_context_keeps_current_question_first(monkeypatch
     import app.orchestrator as module
 
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: False))
-    captured = {}
+    captured = {"queries": []}
 
     def capture_cgfp(query, limit=8):
-        captured["query"] = query
+        captured["queries"].append(query)
         return None
 
     monkeypatch.setattr(module, "search_cgfp", capture_cgfp)
@@ -541,9 +570,9 @@ async def test_follow_up_search_context_keeps_current_question_first(monkeypatch
             {"role": "user", "content": "Question précédente sur les fonctionnaires titulaires."},
         ],
     )
-    assert captured["query"].startswith("Et pour les contractuels ?")
-    assert "Question précédente sur les fonctionnaires titulaires." in captured["query"]
-    assert "Ancienne question sur les congés maladie." not in captured["query"]
+    assert captured["queries"][0].startswith("Et pour les contractuels ?")
+    assert any("Question précédente sur les fonctionnaires titulaires." in query for query in captured["queries"])
+    assert all("Ancienne question sur les congés maladie." not in query for query in captured["queries"])
     assert response.verification_status == "NON_VERIFIE"
 
 
@@ -648,8 +677,147 @@ async def test_current_date_repere_sources_are_not_labelled_applicable_without_f
         AskRequest(employer="NATIONAL", question="Quels textes encadrent les agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert all(
-        source.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
-        for source in response.sources
+    official_sources = [
+        source for source in response.sources
         if source.get("source_type") in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}
+    ]
+    assert official_sources
+    assert all(source.get("temporal_status") == "VERSION_RETRIEVED_AT_REQUESTED_DATE"
+               for source in official_sources)
+    assert all(source.get("version_role") == "CURRENT_LAW_VERSION"
+               and source.get("general_info_eligible") is True
+               for source in official_sources)
+
+
+@pytest.mark.asyncio
+async def test_ihts_query_retrieves_decree_91_875_and_filters_irrelevant_cgfp_hits(monkeypatch):
+    import app.orchestrator as module
+
+    _enable_legifrance(monkeypatch, module)
+
+    async def code_articles(*args, **kwargs):
+        return [{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000000000431",
+            "article": "R431-3",
+            "title": "Code général de la fonction publique — article R431-3",
+            "text": (
+                "Les périodes d'astreintes mentionnées à l'article 5 du décret "
+                "n° 2001-623 du 12 juillet 2001 ne constituent pas du télétravail."
+            ) * 2,
+        }]
+
+    calls = []
+
+    async def regulatory_texts(query, effective_date, limit=3):
+        calls.append(query)
+        if "91-875" in query:
+            text = (
+                "Le présent décret fixe les conditions du régime indemnitaire "
+                "applicable aux fonctionnaires territoriaux et aux collectivités territoriales."
+            )
+            return [{
+                "source_type": "LEGIFRANCE_LODA",
+                "source_id": "LEGITEXT000000000875",
+                "title": "Décret n° 91-875 relatif au régime indemnitaire des collectivités territoriales",
+                "document_kind": "DECREE",
+                "official_number": "91-875",
+                "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000875",
+                "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+                "full_text": text,
+                "excerpt": text,
+            }]
+        return [{
+            "source_type": "LEGIFRANCE_LODA",
+            "source_id": "LEGITEXT000000000260",
+            "title": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+            "document_kind": "DECREE",
+            "official_number": "2002-60",
+            "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000260",
+            "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+            "full_text": (
+                "Le décret concerne les indemnités horaires pour travaux supplémentaires. "
+                "Il doit être rapproché du régime indemnitaire territorial."
+            ) * 4,
+        }]
+
+    async def no_case_law(*args, **kwargs):
+        return []
+
+    captured = {}
+
+    async def fake_ai(**kwargs):
+        captured["sources"] = kwargs["sources"]
+        source = next(s for s in kwargs["sources"] if s.get("official_number") == "91-875")
+        return _structured_claim(
+            source,
+            "Le décret n° 91-875 concerne le régime indemnitaire des fonctionnaires territoriaux.",
+        )
+
+    monkeypatch.setattr(module.legifrance, "search_code_articles", code_articles)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
+    monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
+    monkeypatch.setattr(module, "analyze_question", fake_ai)
+    monkeypatch.setattr(module, "verify_claim_entailment", lambda **kwargs: _always_supported(kwargs))
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(employer="NATIONAL", question="On me paie pas mes heures supplémentaires."),
+        "00000000-0000-0000-0000-000000000001",
     )
+
+    assert any(query == "décret n° 91-875" for query in calls)
+    assert all(source.get("article") != "R431-3" for source in response.sources)
+    assert any(source.get("official_number") == "91-875" for source in captured["sources"])
+    assert all(source.get("article") != "R431-3" for source in captured["sources"])
+    assert response.verification_status == "PARTIELLEMENT_VERIFIE"
+
+
+
+@pytest.mark.asyncio
+async def test_unanswerable_question_does_not_dump_legal_excerpts_into_answer(monkeypatch):
+    import app.orchestrator as module
+
+    _enable_legifrance(monkeypatch, module)
+
+    async def no_code_articles(*args, **kwargs):
+        return []
+
+    exact_excerpt = (
+        "Les agents territoriaux bénéficient des dispositions réglementaires "
+        "relatives à l'organisation du service et aux conditions de travail. "
+    ) * 8
+
+    async def regulatory_texts(*args, **kwargs):
+        return [{
+            "source_type": "LEGIFRANCE_LODA",
+            "source_id": "LEGITEXT000000000099",
+            "title": "Décret relatif à l'organisation des services territoriaux",
+            "document_kind": "DECREE",
+            "official_number": "2024-999",
+            "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000099",
+            "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+            "full_text": exact_excerpt,
+        }]
+
+    async def no_case_law(*args, **kwargs):
+        return []
+
+    async def no_supported_claims(**kwargs):
+        return '{"claims": []}'
+
+    monkeypatch.setattr(module.legifrance, "search_code_articles", no_code_articles)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
+    monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
+    monkeypatch.setattr(module, "analyze_question", no_supported_claims)
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            facts_date="2024-06-01",
+            question="Mon employeur a refusé ma demande de mobilité : quels recours ?",
+        ),
+        "00000000-0000-0000-0000-000000000001",
+    )
+    assert exact_excerpt[:100] not in response.answer
+    assert "plutôt que de recopier des articles" in response.answer
+    assert "Sources retrouvées" in response.answer

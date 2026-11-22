@@ -10,26 +10,29 @@ async def _fake_piste_token(self):
 
 
 @pytest.mark.asyncio
-async def test_live_legifrance_success_does_not_query_snapshot(monkeypatch):
+async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(monkeypatch):
     import app.orchestrator as module
 
     monkeypatch.setattr(module.settings, "cgfp_enabled", True)
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: True))
     monkeypatch.setattr(type(module.legifrance), "_get_token", _fake_piste_token)
 
+    code_queries = []
+
     async def no_code_articles(*args, **kwargs):
+        code_queries.append(args[0])
         return []
 
     async def regulatory_texts(*args, **kwargs):
         return [{
             "source_type": "LEGIFRANCE_LODA",
             "source_id": "LEGITEXT000000000001",
-            "title": "Décret officiel daté",
+            "title": "Décret relatif aux droits des agents territoriaux",
             "document_kind": "DECREE",
             "official_number": "2024-100",
             "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000001",
             "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
-            "full_text": "Texte officiel du décret relatif aux agents territoriaux. " * 20,
+            "full_text": ("Le décret relatif aux droits des agents territoriaux et à la fonction publique territoriale. " * 20),
         }]
 
     async def no_case_law(*args, **kwargs):
@@ -47,10 +50,11 @@ async def test_live_legifrance_success_does_not_query_snapshot(monkeypatch):
         "results": [{
             "article": "L123-4", "source_id": "FR-CGFP-2026-10-31",
             "page_start": 10, "page_end": 10, "excerpt": "Extrait du CGFP",
+            "matched_concepts": ["droits des agents"],
         }],
     })
     monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
-        "text": "Texte complet de l'article L123-4."
+        "text": "Le présent article concerne les agents publics et les fonctionnaires."
     })
     monkeypatch.setattr(
         module, "validate_snapshot_citation",
@@ -91,11 +95,12 @@ async def test_live_legifrance_success_does_not_query_snapshot(monkeypatch):
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
     assert captured["sources"][0]["source_type"] == "LEGIFRANCE_LODA"
     assert not any(source["source_type"] == "CGFP_SNAPSHOT" for source in captured["sources"])
+    assert "article L123-4" in code_queries
     assert any(source["source_type"] == "LEGIFRANCE_LODA" for source in captured["sources"])
 
 
 @pytest.mark.asyncio
-async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(monkeypatch):
+async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallback_on_outage(monkeypatch):
     import app.orchestrator as module
     from app.legifrance import LegifranceUnavailable
 
@@ -104,9 +109,11 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
     monkeypatch.setattr(type(module.legifrance), "_get_token", _fake_piste_token)
 
     call_order = []
+    code_queries = []
 
     async def failed_live_code_search(*args, **kwargs):
         call_order.append("live-cgfp")
+        code_queries.append(args[0])
         raise LegifranceUnavailable("temporary upstream outage")
 
     async def live_regulatory_search(*args, **kwargs):
@@ -114,12 +121,12 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
         return [{
             "source_type": "LEGIFRANCE_LODA",
             "source_id": "LEGITEXT000000000001",
-            "title": "Décret officiel daté",
+            "title": "Décret relatif aux droits des agents territoriaux",
             "document_kind": "DECREE",
             "official_number": "2024-100",
             "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000001",
             "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
-            "full_text": "Texte officiel du décret relatif aux agents territoriaux. " * 20,
+            "full_text": ("Le décret relatif aux droits des agents territoriaux et à la fonction publique territoriale. " * 20),
         }]
 
     async def no_case_law(*args, **kwargs):
@@ -137,6 +144,7 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
             "results": [{
                 "article": "L123-4", "source_id": "FR-CGFP-2026-10-31",
                 "page_start": 10, "page_end": 10, "excerpt": "Extrait du CGFP",
+                "matched_concepts": ["droits des agents"],
             }],
         }
 
@@ -145,7 +153,7 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
     monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
     monkeypatch.setattr(module, "search_cgfp", snapshot_search)
     monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
-        "text": "Texte complet de l'article L123-4."
+        "text": "Le présent article concerne les agents publics et les fonctionnaires."
     })
     monkeypatch.setattr(
         module, "validate_snapshot_citation",
@@ -177,14 +185,50 @@ async def test_cgfp_snapshot_is_consulted_only_after_live_legifrance_failure(mon
     assert "live-cgfp" in call_order
     assert "live-loda" in call_order
     assert "live-cetat" in call_order
-    assert call_order.index("snapshot") > max(
-        call_order.index("live-cgfp"),
-        call_order.index("live-loda"),
-        call_order.index("live-cetat"),
-    )
+    assert call_order.index("snapshot") < call_order.index("live-cgfp")
+    assert "article L123-4" in code_queries
     assert any(
         source.get("source_type") == "CGFP_SNAPSHOT"
         and source.get("reference_role") == "BASELINE_CONTEXT_ONLY"
         for source in captured["sources"]
     )
     assert any("Mode de secours CGFP activé" in item for item in response.missing_information)
+
+
+
+def test_cgfp_discovery_only_promotes_articles_with_fpt_or_common_scope(monkeypatch):
+    import app.orchestrator as module
+
+    found = {"results": [{
+        "article": "L123-4",
+        "matched_concepts": ["droits des agents"],
+        "excerpt": "Extrait du CGFP",
+    }]}
+
+    monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
+        "text": "Les fonctionnaires de l'État et les administrations centrales."
+    })
+    assert module._cgfp_article_discovery_queries(found) == []
+
+    monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
+        "text": "Le présent article concerne les agents publics et les fonctionnaires."
+    })
+    assert module._cgfp_article_discovery_queries(found) == ["article L123-4"]
+
+
+
+def test_cgfp_fallback_never_uses_an_fpe_only_article(monkeypatch):
+    import app.orchestrator as module
+
+    monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
+        "text": "Les fonctionnaires de l'État et les administrations centrales."
+    })
+    found = {"results": [{
+        "article": "L999-1",
+        "excerpt": "Protection fonctionnelle",
+    }]}
+    assert not module.should_use_cgfp_snapshot_fallback(
+        "La recherche officielle CGFP a échoué.",
+        found,
+        "Mon employeur refuse ma protection fonctionnelle.",
+    )

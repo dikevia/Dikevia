@@ -17,6 +17,45 @@ from .legifrance import LegifranceConnector, LegifranceUnavailable
 DECISION_ID_RE = re.compile(r"^CETATEXT\d{12}$")
 
 
+def decision_temporal_status(decision_date: str | None, facts_date: date | None) -> str:
+    """Classify a decision's timing without excluding later interpretative case law.
+
+    A judgment after the facts may still interpret the law applicable to them.
+    Its date is therefore contextual metadata, not a hard retrieval boundary.
+    """
+    try:
+        parsed = date.fromisoformat(str(decision_date or "")[:10])
+    except (TypeError, ValueError):
+        return "DECISION_DATE_UNKNOWN"
+    if facts_date is None:
+        return "DECISION_DATE_VERIFIED_NO_FACTS_DATE"
+    if parsed > facts_date:
+        return "DECISION_POSTERIOR_TO_FACTS"
+    return "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS"
+
+
+def interleave_case_law_results(results_by_query: list[list[dict]], limit: int = 10) -> list[dict]:
+    """Preserve diversity across independent legal research axes before de-duplication."""
+    if not 1 <= limit <= 30:
+        raise ValueError("La limite de décisions doit être comprise entre 1 et 30.")
+    selected: list[dict] = []
+    seen: set[str] = set()
+    max_depth = max((len(items) for items in results_by_query), default=0)
+    for depth in range(max_depth):
+        for items in results_by_query:
+            if depth >= len(items):
+                continue
+            item = items[depth]
+            identifier = item.get("source_id")
+            if not isinstance(identifier, str) or not DECISION_ID_RE.fullmatch(identifier) or identifier in seen:
+                continue
+            seen.add(identifier)
+            selected.append(item)
+            if len(selected) >= limit:
+                return selected
+    return selected
+
+
 class AdministrativeCaseLawConnector:
     def __init__(self, api: LegifranceConnector):
         self.api = api
@@ -159,7 +198,7 @@ class AdministrativeCaseLawConnector:
                   .replace("&quot;", '"').replace("&#39;", "'"))
         cleaned = re.sub(r"[ \t]+", " ", raw)
         cleaned = re.sub(r"\n\s*\n+", "\n\n", cleaned).strip()
-        return cleaned[:100000] if len(cleaned) >= 80 else None
+        return cleaned if 80 <= len(cleaned) <= 100000 else None
 
     async def consult(self, decision_id: str) -> dict:
         """Fetch and validate the official full text for one decision identifier.

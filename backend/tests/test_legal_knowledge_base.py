@@ -31,8 +31,9 @@ def test_temporal_status_is_conservative_when_dates_missing():
     assert temporal_status(None, None, requested, "DECREE", raw_payload='{"requested_date":"2025-01-01"}', version_status="IN_FORCE") == "IN_FORCE_ON_REQUESTED_DATE"
 
 
-def test_only_official_legifrance_urls_are_kept():
+def test_only_allowlisted_official_legal_source_urls_are_kept():
     assert safe_official_url("https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000000")
+    assert safe_official_url("https://opendata.justice-administrative.fr/")
     assert safe_official_url("https://evil.example/legifrance") is None
     assert safe_official_url("http://legifrance.gouv.fr") is None
 
@@ -125,7 +126,8 @@ async def test_search_marks_unknown_temporal_range_as_incomplete():
                 "official_number": "2024-100", "jurisdiction": None,
                 "official_url": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000001",
                 "signature_date": None, "publication_date": None, "document_status": "UNKNOWN",
-                "source_status": "OFFICIAL_TEXT_ID_VERIFIED", "valid_from": None, "valid_to": None,
+                "source_status": "OFFICIAL_TEXT_ID_VERIFIED", "raw_metadata": '{"publication_code":"B"}',
+                "valid_from": None, "valid_to": None,
                 "version_status": "UNKNOWN", "full_text": full_text,
                 "text_sha256": sha256_text(full_text), "anchor": None, "content": full_text,
                 "content_kind": "FULL_TEXT", "rank": 0.5}]
@@ -135,6 +137,7 @@ async def test_search_marks_unknown_temporal_range_as_incomplete():
     assert result[0]["temporal_status"] == "TEMPORAL_SCOPE_INCOMPLETE"
     assert result[0]["citation_integrity"]["text_hash_verified"] is True
     assert result[0]["citation_integrity"]["valid"] is True
+    assert result[0]["raw_metadata"]["publication_code"] == "B"
 
 
 def test_ai_authority_references_must_exist_in_retrieved_sources():
