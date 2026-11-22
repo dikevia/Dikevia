@@ -60,7 +60,7 @@ RÈGLES DE QUALIFICATION JURIDIQUE FPT — PRIORITÉ ABSOLUE :
 - Les sources explicitement FPE ou FPH sont hors périmètre FPT, sauf disposition commune démontrée par les documents fournis.
 - Une source classée GENERAL_PUBLIC_SERVICE ou dont le champ reste indéterminé est un simple contexte de recherche : ne l'utilise jamais pour soutenir une affirmation applicable à un agent territorial.
 - Une source classée COMMON_PUBLIC_SERVICE ne peut soutenir une affirmation FPT que si son propre texte établit explicitement qu'il vise les trois versants ; ne déduis jamais cette portée du seul intitulé du CGFP ou de l'expression « agents publics ».
-- Un snapshot PDF du CGFP est un repère documentaire, pas une preuve de la version historique applicable.
+- Un snapshot PDF du CGFP ne certifie jamais l'applicabilité temporelle. Si un document porte le rôle CGFP_SNAPSHOT_FALLBACK_EVIDENCE, tu peux l'utiliser pour expliquer précisément la rédaction reproduite dans ce snapshot, en indiquant explicitement sa date et son caractère non vérifié en direct. Ne présente jamais cette rédaction comme nécessairement en vigueur aujourd'hui ou applicable à une date passée. N'en déduis pas un délai, une procédure ou une exception qui ne figure pas dans le texte transmis.
 - Une pièce locale ne peut soutenir une conclusion que si elle est validée et applicable à la date des faits et à la collectivité concernée.
 - Les messages antérieurs servent uniquement à comprendre la question ; ne les traite jamais comme des sources juridiques.
 
@@ -131,7 +131,9 @@ Retourne uniquement un objet JSON valide de la forme :
 - Le champ source_id doit reprendre à l'identique la valeur identifiant_source d'un seul document fourni.
 - Lorsque axes_recherche_documentaire n'est pas vide, le champ axis doit reprendre exactement l'un des axes fournis ; un axe non couvert doit figurer exactement une fois dans uncovered_axes. Aucun axe ne doit être omis. Lorsque la liste est vide, mets axis à une chaîne vide.
 - Le champ quote doit être copié mot pour mot depuis le champ extrait de ce même document et contenir au moins 20 caractères.
-- N'utilise jamais un snapshot CGFP marqué BASELINE_CONTEXT_ONLY comme preuve d'une règle applicable.
+- N'utilise jamais un snapshot CGFP marqué BASELINE_CONTEXT_ONLY comme preuve.
+- Un document marqué CGFP_SNAPSHOT_FALLBACK_EVIDENCE peut soutenir uniquement une affirmation décrivant fidèlement le contenu exact de l'article reproduit. Formule-la comme une disposition figurant dans le snapshot daté ; ne certifie pas son entrée en vigueur, son maintien en vigueur ou son applicabilité historique.
+- Si le snapshot ne contient pas les dispositions réglementaires nécessaires pour répondre à la question, indique précisément cette limite et marque l'axe concerné comme non couvert. Ne comble jamais le manque par tes connaissances internes.
 - N'utilise jamais une métadonnée CETAT comme preuve ; seule une décision intégrale fournie peut soutenir un claim.
 - Ne cite aucun numéro, date, montant, délai ou seuil qui n'apparaît pas dans la citation exacte.
 - Si aucune proposition ne peut être directement soutenue par une citation exacte, retourne exactement {"claims": []}.
@@ -167,7 +169,7 @@ def _usable_document_sources(sources):
     usable = []
     date_fields = (
         "requested_effective_date", "valid_from", "effective_from",
-        "publication_date", "signature_date", "decision_date",
+        "publication_date", "signature_date", "decision_date", "snapshot_modified_at",
     )
     for source in sources:
         if not isinstance(source, dict):
@@ -397,7 +399,7 @@ def answer_references_are_grounded(answer: str, allowed_refs: set[str | None],
 
 ENTAILMENT_SYSTEM_PROMPT = """Tu es un vérificateur contradictoire de l'appui documentaire d'une proposition juridique.
 Tu ne réponds pas à la question juridique et tu n'utilises aucune connaissance externe.
-Tu dois vérifier deux conditions indépendantes : (1) la proposition est entièrement et directement impliquée par le texte officiel fourni ; (2) elle répond réellement à la question actuelle de l'agent. Une proposition peut être exacte au regard d'un texte mais hors sujet par rapport à la question : dans ce cas, réponds INSUFFICIENT.
+Tu dois vérifier deux conditions indépendantes : (1) la proposition est entièrement et directement impliquée par le texte fourni ; (2) elle répond réellement à la question actuelle de l'agent. Pour une source dont source_type vaut CGFP_SNAPSHOT et reference_role vaut CGFP_SNAPSHOT_FALLBACK_EVIDENCE, vérifie uniquement que la proposition décrit exactement la rédaction reproduite ; rejette toute affirmation qui prétend que cette rédaction est actuellement en vigueur ou applicable à une date historique. Une proposition peut être exacte au regard d'un texte mais hors sujet par rapport à la question : dans ce cas, réponds INSUFFICIENT.
 Contrôle notamment : correspondance entre la question actuelle et le sujet précis de la proposition, même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
 Une simple proximité de vocabulaire, un thème commun ou une citation exacte ne suffisent jamais.
 Si un élément de la proposition n'est pas expressément établi, si le texte est ambigu, incomplet, contradictoire, ou si une condition/exception empêche une conclusion certaine, réponds INSUFFICIENT.
@@ -535,6 +537,11 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             "source_id": claim.get("source_id"),
             "claim": claim.get("text"),
             "source_title": source.get("title"),
+            "source_type": source.get("source_type"),
+            "reference_role": source.get("reference_role"),
+            "source_status": source.get("source_status"),
+            "snapshot_modified_at": source.get("snapshot_modified_at"),
+            "temporal_status": source.get("temporal_status"),
             **({"research_axis": claim.get("axis")} if claim.get("axis") else {}),
             "official_text": evidence_text,
         })
