@@ -140,6 +140,28 @@ jobs:
       - name: Import the full Service-Public corpus after explicit branch request
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != '' && steps.import-mode.outputs.full == 'true'
         run: python scripts/import_service_public_to_legal_corpus.py --apply
+      - name: Import owner-approved institutional and union guidance resources
+        if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
+        run: >-
+          python scripts/import_public_guidance_sources.py --apply
+          --id dgafp-faq-tpt-2026
+          --id cdg35-annualisation-2025-v2
+          --id cdg35-reglement-temps-travail-cst-2025
+          --id cdg35-actualites-statutaires-2026-09
+          --id cig-pc-guide-temps-travail-2025
+          --id cig-pc-faq-clm-cld
+          --id cdg59-actualite-tpt-citis-2026
+          --id cdg69-faq-conges-annuels-reforme
+          --id cnfpt-temps-travail-agents-territoriaux
+          --id cfdt-uffa-site
+          --id cfdt-interco-guide-agent-public-2026
+          --id cfdt-interco-guide-agent-public-2026-pdf
+          --id cgt-fp-site
+          --id fo-fp-site
+          --id cftc-fp-propositions
+          --id cftc-decodeur-greve-fp
+          --id unsa-fp-site
+          --id solidaires-fp-site
       - name: Skip database write when the ingestion credential is absent
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL == ''
         run: echo 'Collecte vérifiée ; aucune écriture PostgreSQL car le secret dédié est absent.'
