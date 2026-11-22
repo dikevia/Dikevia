@@ -278,13 +278,9 @@ async def test_ai_does_not_use_current_cgfp_snapshot_for_historical_facts(monkey
                    question="Quels sont les droits des agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert any(
-        source.get("source_type") == "CGFP_SNAPSHOT"
-        and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
-        for source in captured["sources"]
-    )
+    assert captured == {}
+    assert not any(source.get("source_type") == "CGFP_SNAPSHOT" for source in response.sources)
     assert response.verification_status == "NON_VERIFIE"
-    assert any("Mode de secours CGFP activé" in item for item in response.missing_information)
     assert "Aucune conclusion juridique" in response.answer
 
 
