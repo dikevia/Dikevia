@@ -33,7 +33,7 @@ def _archive() -> zipfile.ZipFile:
             "F12346.xml",
             b'<Fiche><dc:title>Droits a conges annuels</dc:title><Theme ID="N19806"/>'
             b'<Texte>Regles de report et d indemnisation.</Texte>'
-            b'<Reference ID="D85-1250" type="decret">Decret n 85-1250 du 26 novembre 1985</Reference></Fiche>',
+            b'<Reference ID="D85-1250" type="decret">Décret n° 85-1250 du 26 novembre 1985</Reference></Fiche>',
         )
         archive.writestr("arborescence.xml", b"<Arborescence/>")
     buffer.seek(0)
