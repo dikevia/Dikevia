@@ -1812,7 +1812,7 @@ class LegalOrchestrator:
 
         if ai_answer:
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
-                "Les extraits du snapshot PDF ne certifient pas l'authenticité officielle. Les versions du corpus dont les dates d'effet sont incomplètes ne sont pas utilisées pour les conclusions IA. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
+                "Le snapshot du CGFP est une consolidation documentaire datée du 31 octobre 2026, non une consultation en direct de Légifrance ; il sert aux questions générales et ne reconstitue pas une version historique. Les ressources Service-Public, institutionnelles et professionnelles sont uniquement informatives et ne fondent pas les affirmations juridiques. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
         else:
             lines = [
                 "Je n'ai pas pu établir une réponse suffisamment fiable à la question précise à partir des éléments retrouvés.",
