@@ -1312,9 +1312,16 @@
       ],
       "authority_level": "TRADE_UNION_POSITION",
       "status": "ACCESS_REVIEWED",
-      "content_status": "NOT_COLLECTED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
       "reuse_status": "REVIEW_REQUIRED",
-      "notes": "PDF intégral identifié sur le site CFDT Interco 35. Publication éditoriale syndicale : conserver l'attribution et vérifier chaque règle dans les textes normatifs. Collecte automatisée à effectuer ; droits de réutilisation à examiner avant import PostgreSQL."
+      "notes": "PDF intégral téléchargé et extrait avec succès en dry-run le 22/11/2026 : 68 pages, 181 469 caractères. Original et JSON d'extraction conservés dans l'artefact GitHub Actions. Réutilisation toujours REVIEW_REQUIRED ; aucun import PostgreSQL.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "077faba42ccbd29874cc7291541e9052ad4399aabe86b2af59153b4ca1085649",
+      "text_sha256": "33b6ffbcd531264862fd0d750383fee474e93da34bd5ec8277e918a150b5e1aa",
+      "page_count": 68,
+      "character_count": 181469,
+      "artifact_name": "service-public-function-public-corpus"
     }
   ]
 }
