@@ -216,7 +216,10 @@
       "priority": 3,
       "domains": [
         "cdg35.fr",
-        "www.cdg35.fr"
+        "www.cdg35.fr",
+        "cdg35.bzh",
+        "www.cdg35.bzh",
+        "espace-echanges.cdg35.bzh"
       ]
     },
     {
@@ -649,6 +652,80 @@
       "reuse_status": "REVIEW_REQUIRED",
       "publication_date": "2021-04",
       "notes": "URL hébergée sur preprod.cdg44.fr : ne pas intégrer tant qu'une version publique de production n'est pas confirmée."
+    },
+    {
+      "id": "cdg35-annualisation-2025-v2",
+      "source_id": "cdg-35",
+      "title": "Guide du temps de travail — annualisation (juin 2025)",
+      "url": "https://www.cdg35.bzh/app/uploads/13/1/2025/12/GUIDE_T_de_T__Annualisation_2025_derniere_version-1.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "annualisation",
+        "1607 heures",
+        "cycles de travail",
+        "CST",
+        "congés annuels",
+        "temps non complet",
+        "heures complémentaires",
+        "heures supplémentaires"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2025-06",
+      "notes": "Version publiée sur le domaine actuel cdg35.bzh ; contrôler licence et extraction avant indexation."
+    },
+    {
+      "id": "cdg35-reglement-temps-travail-cst-2025",
+      "source_id": "cdg-35",
+      "title": "Règlement du temps de travail et modèle CST — congés annuels et cycles (novembre 2025)",
+      "url": "https://www.cdg35.bzh/app/uploads/13/1/2025/11/2025_REGLEMENT_T_de_T_CST_Modele_derniere_version_-1.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "temps de travail",
+        "CST",
+        "temps partiel",
+        "temps non complet",
+        "annualisation"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2025-11",
+      "notes": "Document statutaire de référence du CDG35 ; licence et réutilisation à contrôler."
+    },
+    {
+      "id": "cdg35-actualites-statutaires-2026-09",
+      "source_id": "cdg-35",
+      "title": "Support webinaire — actualités statutaires (17 septembre 2026)",
+      "url": "https://www.cdg35.bzh/app/uploads/13/1/2026/09/Support-webinaire-Actualites-statutaires_170926.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "report des congés",
+        "congé pour raison de santé",
+        "période de report de 15 mois",
+        "reprise de fonctions",
+        "quatre semaines"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2026-09-17",
+      "notes": "Ressource récente avec cas pratiques sur le report des congés après congé de santé ; contrôler licence et portée exacte."
     }
   ]
 }
