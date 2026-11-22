@@ -470,3 +470,34 @@ def test_merged_research_queries_respect_the_five_query_budget():
     assert merged[:3] == ["axe IA 1", "axe IA 2", "axe IA 3"]
     assert "recherche de secours 2" in merged
     assert "recherche de secours 3" in merged
+
+def test_therapeutic_part_time_after_citis_has_a_dedicated_cgfp_and_fpt_decree_axis():
+    question = (
+        "Je suis fonctionnaire territorial titulaire. Après un CITIS pour accident de service, "
+        "je souhaite reprendre à temps partiel pour raison thérapeutique. "
+        "Quelles conditions et quelles conséquences sur ma rémunération ?"
+    )
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+
+    # The TPT route must retrieve its own CGFP chapter and FPT implementing
+    # decree; it must not be diluted into ordinary part-time/IHTS research.
+    assert "L823-1" in query
+    assert "L823-6" in query
+    assert "décret 87-602" in query
+    assert any("L823-1" in item and "décret 87-602" in item for item in queries)
+    assert any("CITIS" in item and "décret 87-602" in item for item in queries)
+    assert not any("heures supplémentaires IHTS" in item for item in queries)
+    assert any("L823-1" in item for item in axes)
+    assert any("CITIS" in item for item in axes)
+
+
+def test_plain_language_mi_temps_therapeutique_uses_the_specific_tpt_axis():
+    question = "Après mon accident de service, je peux reprendre à mi-temps thérapeutique ?"
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+    assert "L823-1" in query
+    assert any("L823-1" in item for item in queries)
+    assert not any("heures supplémentaires IHTS" in item for item in queries)
+
