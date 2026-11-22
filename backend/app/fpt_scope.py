@@ -429,9 +429,9 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
     if question_topics & source_topics:
         return True
 
-    # For these two question families, a source with no identifiable subject
-    # is not useful evidence: generic CGFP keyword hits must not masquerade
-    # as a relevant answer.
+    # Strict question families reject generic keyword hits that cannot be
+    # tied to the requested legal mechanism. Annual-appraisal questions retain
+    # unclassified cross-cutting procedural sources as a narrow exception.
     strict_topics = {
         "TERMINATION_OF_TITULAR",
         "STAFFING_AND_WORK_CONDITIONS",
@@ -442,10 +442,9 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         "CONTRACT_CDI_SIX_YEARS",
     }
     if question_topics & strict_topics:
-        # For annual-appraisal questions, an unclassified procedural source
-        # (for example, a general administrative appeal rule) may still be
-        # relevant. Reject only when the hit is positively classified as a
-        # different legal topic; retain unknown cross-cutting sources.
+        # For annual-appraisal questions only, an unclassified procedural
+        # source may still be relevant. The CDI six-year mechanism remains
+        # strict: generic or unrelated CGFP provisions are rejected.
         if "PROFESSIONAL_EVALUATION" not in question_topics or source_topics:
             return False
     if not source_topics:
