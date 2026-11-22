@@ -28,7 +28,15 @@
     const issuer = cfg.issuer.replace(/\/$/,'');
     if (!issuer.startsWith('https://') && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(issuer))
       throw new Error('L’émetteur OIDC doit utiliser HTTPS.');
-    const response = await fetch(issuer+'/.well-known/openid-configuration',{cache:'no-store'});
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),10000);
+    let response;
+    try {
+      response=await fetch(issuer+'/.well-known/openid-configuration',{cache:'no-store',signal:controller.signal});
+    } catch(error) {
+      if(error.name==='AbortError') throw new Error('Le fournisseur d’identité met trop de temps à répondre.');
+      throw error;
+    } finally { clearTimeout(timeout); }
     if (!response.ok) throw new Error('Découverte OIDC indisponible.');
     const data = await response.json();
     if (data.issuer !== issuer || !data.authorization_endpoint || !data.token_endpoint)
@@ -40,7 +48,7 @@
     const params = {
       client_id:cfg.client_id,response_type:'code',redirect_uri:redirectUri,
       scope:cfg.scopes||'openid profile email',state,
-      code_challenge:undefined,code_challenge_method:'S256'
+      code_challenge_method:'S256'
     };
     return challenge(verifier).then(value => {
       params.code_challenge=value;
@@ -90,10 +98,18 @@
       grant_type:'authorization_code',client_id:cfg.client_id,code,
       redirect_uri:redirectUri,code_verifier:verifier
     });
-    const response=await fetch(oidc.token_endpoint,{
-      method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body,cache:'no-store'
-    });
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),10000);
+    let response;
+    try {
+      response=await fetch(oidc.token_endpoint,{
+        method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body,cache:'no-store',signal:controller.signal
+      });
+    } catch(error) {
+      if(error.name==='AbortError') throw new Error('Le fournisseur d’identité ne répond pas assez rapidement.');
+      throw error;
+    } finally { clearTimeout(timeout); }
     if(!response.ok) throw new Error('Échange du code OIDC refusé. Vérifiez les URI autorisées et le support CORS du fournisseur.');
     const data=await response.json();
     if(!data.access_token||!Number.isFinite(data.expires_in)) throw new Error('Réponse OIDC incomplète.');
