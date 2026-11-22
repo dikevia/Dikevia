@@ -19,8 +19,8 @@ def test_migration_has_reversible_legacy_plan_preservation():
     assert "platform_free_email_access" in up and "platform_audit_events" in up
     assert "LEGACY_ESSENTIAL_3" in down and "LEGACY_SYNDICAT_10" in down
 
-def test_checkout_uses_tax_inclusive_prices_and_automatic_tax():
+def test_checkout_stays_disabled_until_credit_enforcement_is_implemented():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
-    assert '"line_items[0][price_data][tax_behavior]": "inclusive"' in main
-    assert '"automatic_tax[enabled]"' in main
-    assert '"tax_id_collection[enabled]": "true"' in main
+    assert '"billing_enabled": False' in main
+    assert "compteur de crédits mensuels" in main
+    assert '"line_items[0][price_data][tax_behavior]"' not in main
