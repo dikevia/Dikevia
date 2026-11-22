@@ -535,6 +535,120 @@
       "content_status": "NOT_COLLECTED",
       "reuse_status": "REVIEW_REQUIRED",
       "notes": "Date et actualité juridique à vérifier ; ne pas le traiter comme guide statutaire à jour sans contrôle."
+    },
+    {
+      "id": "dgafp-faq-tpt-2026",
+      "source_id": "dgafp",
+      "title": "FAQ DGAFP — Temps partiel thérapeutique dans la fonction publique (version 2026)",
+      "url": "https://www.fonction-publique.gouv.fr/files/files/Etre%20agent%20public/Protection%20sociale/FAQ_TPT_2026.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "topics": [
+        "TPT",
+        "conditions d'octroi",
+        "renouvellement",
+        "droits",
+        "rémunération",
+        "congés annuels",
+        "RTT"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2026-11",
+      "notes": "Version signalée comme mise à jour le 18 novembre 2026 ; contrôler directement le PDF, son contenu et les références réglementaires avant intégration."
+    },
+    {
+      "id": "cdg44-actualite-faq-tpt-2026",
+      "source_id": "cdg-44",
+      "title": "Actualisation de la FAQ sur le TPT dans la fonction publique",
+      "url": "https://www.cdg44.fr/actualites/actualisation-de-la-faq-sur-le-tpt-dans-la-fonction-publique",
+      "format": "HTML",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "topics": [
+        "TPT",
+        "décret 2026-705",
+        "FAQ DGAFP"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2026-11-18",
+      "notes": "Relais d'information du CDG44 sur la FAQ DGAFP ; utiliser le PDF DGAFP comme ressource principale."
+    },
+    {
+      "id": "cdg35-actualite-conges-2025",
+      "source_id": "cdg-35",
+      "title": "Actualité juridique — congés annuels non pris, report et indemnisation",
+      "url": "https://www.cdg35.fr/beacdf17e90166e1ba64332030865eexy/iedit/1016/507341_527004_2025_09_29_Actus_CNFPT_CDG.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "report",
+        "indemnisation",
+        "décret 2025-564"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2025-09-29"
+    },
+    {
+      "id": "cdg35-annualisation",
+      "source_id": "cdg-35",
+      "title": "Fiche pratique — annualisation du temps de travail",
+      "url": "https://www.cdg35.fr/beacdf17e90166e1ba64332030865eexy/iedit/11/449509_466494_WB_Annualisation.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "annualisation",
+        "temps de travail",
+        "congés annuels",
+        "CET"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2024-06-06"
+    },
+    {
+      "id": "cdg44-fiche-heures-supplementaires",
+      "source_id": "cdg-44",
+      "title": "Fiche statut — heures supplémentaires et heures complémentaires",
+      "url": "https://preprod.cdg44.fr/sites/default/files/atoms/files/fiche%20statut%20n%C2%B01-heuressup_0.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "IHTS",
+        "heures supplémentaires",
+        "heures complémentaires",
+        "temps non complet"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2021-04",
+      "notes": "URL hébergée sur preprod.cdg44.fr : ne pas intégrer tant qu'une version publique de production n'est pas confirmée."
     }
   ]
 }
