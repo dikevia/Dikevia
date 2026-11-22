@@ -182,8 +182,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         "scores_question": question_scores,
         "methodologie": "Notation humaine documentée, 0=incorrect/absent, 1=partiel, 2=conforme. Le score n'est publiable que si les 100 questions sont évaluées.",
     }
-    Path(output_path).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "
-", encoding="utf-8")
+    Path(output_path).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return result
 
 
