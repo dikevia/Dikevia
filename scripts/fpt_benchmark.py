@@ -110,8 +110,7 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
             "sources_officielles_de_controle": [],
             "date_controle": None,
         })
-    Path(output_path).write_text(json.dumps(review, ensure_ascii=False, indent=2) + "
-", encoding="utf-8")
+    Path(output_path).write_text(json.dumps(review, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def score(dataset_path: str, responses_path: str, reviews_path: str, output_path: str) -> dict:
