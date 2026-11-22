@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-22",
+  "purpose": "Registre de gouvernance des sources du corpus documentaire national Dikévia. Une source enregistrée n'est pas réputée collectée ni indexée.",
+  "statuses": [
+    "CANDIDATE",
+    "ACCESS_REVIEWED",
+    "REUSE_APPROVED",
+    "IMPORTED",
+    "INDEXED",
+    "RETRIEVAL_VERIFIED",
+    "SUSPENDED"
+  ],
+  "authority_levels": {
+    "PRIMARY_LEGAL": "Textes normatifs et décisions publiés par les autorités compétentes. Fondement juridique prioritaire.",
+    "OFFICIAL_ADMIN_GUIDANCE": "Information administrative officielle. Source d'explication, non substitutive au texte normatif.",
+    "PROFESSIONAL_GUIDANCE": "Guides et analyses d'organismes professionnels. Aide à la compréhension, sans valeur normative propre."
+  },
+  "sources": [
+    {
+      "id": "legifrance-cgfp",
+      "name": "Légifrance — CGFP, lois, décrets, arrêtés et jurisprudence",
+      "publisher": "DILA / autorités publiques compétentes",
+      "authority_level": "PRIMARY_LEGAL",
+      "status": "CANDIDATE",
+      "collection_mode": "API officielle / flux open data selon les conditions de chaque jeu",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "reuse": "Vérifier les conditions propres à chaque flux et conserver les identifiants, versions et dates d'effet.",
+      "priority": 1
+    },
+    {
+      "id": "service-public-part",
+      "name": "Service-Public.gouv.fr — fiches pratiques Particuliers",
+      "publisher": "Service-Public.gouv.fr / DILA",
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Flux XML 3.5 via data.gouv.fr",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "reuse": "Licence Ouverte 2.0 ; attribution Service-Public.gouv.fr / DILA, URL complète de téléchargement, nom du fichier et date du fichier.",
+      "dataset_url": "https://www.data.gouv.fr/datasets/fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers",
+      "download_url": "https://lecomarquage.service-public.gouv.fr/vdd/3.5/part/zip/vosdroits-latest.zip",
+      "ingestion": "Importer comme ADMIN_GUIDANCE / IMPORTED_UNVERIFIED ; les références citées dans les fiches restent à vérifier.",
+      "priority": 2
+    },
+    {
+      "id": "dgafp",
+      "name": "DGAFP — ressources et guides de la fonction publique de l'État",
+      "publisher": "Direction générale de l'administration et de la fonction publique",
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages et documents publics à inventorier",
+      "scope": [
+        "FPE",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier la licence et les conditions de réutilisation document par document.",
+      "priority": 2
+    },
+    {
+      "id": "dgcl",
+      "name": "DGCL — ressources statutaires et territoriales",
+      "publisher": "Direction générale des collectivités locales",
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages et documents publics à inventorier",
+      "scope": [
+        "FPT",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier la licence et les conditions de réutilisation document par document.",
+      "priority": 2
+    },
+    {
+      "id": "cnfpt",
+      "name": "CNFPT — guides, fiches et ressources statutaires",
+      "publisher": "Centre national de la fonction publique territoriale",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Licence, droits de reproduction et conditions d'accès à contrôler avant collecte et indexation.",
+      "priority": 3
+    },
+    {
+      "id": "cig-petite-couronne",
+      "name": "CIG Petite Couronne — ressources statutaires",
+      "publisher": "Centre interdépartemental de gestion de la petite couronne",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Licence et conditions de réutilisation à contrôler ; exclure les contenus sous accès réservé.",
+      "priority": 3
+    },
+    {
+      "id": "cig-grande-couronne",
+      "name": "CIG Grande Couronne — ressources statutaires",
+      "publisher": "Centre interdépartemental de gestion de la grande couronne",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Licence et conditions de réutilisation à contrôler ; exclure les contenus sous accès réservé.",
+      "priority": 3
+    },
+    {
+      "id": "cdg-departements",
+      "name": "Centres de gestion départementaux — documentation statutaire",
+      "publisher": "Centres de gestion de la fonction publique territoriale",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Sélection de sites départementaux et documents publics",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier séparément les conditions de chaque CDG ; ne pas crawler les espaces réservés.",
+      "priority": 3
+    },
+    {
+      "id": "wikiterritorial",
+      "name": "WikiTerritorial — ressources professionnelles",
+      "publisher": "CNFPT / WikiTerritorial selon les pages",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques à qualifier individuellement",
+      "scope": [
+        "FPT",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier l'éditeur exact, la licence et la date de mise à jour de chaque contenu.",
+      "priority": 4
+    }
+  ],
+  "rules": [
+    "Aucun document n'est considéré importé ou indexé sur la seule base de sa présence dans ce registre.",
+    "Conserver éditeur, URL source, licence, date de collecte, date de mise à jour et empreinte du contenu.",
+    "Ne jamais déduire le versant applicable par simple détection lexicale ; le conserver comme indice non validé.",
+    "Les guides et fiches professionnelles n'ont pas priorité sur le texte normatif applicable.",
+    "Une référence juridique extraite d'une fiche reste une piste jusqu'à vérification sur la source primaire.",
+    "Ne pas collecter les espaces privés, extranet ou contenus soumis à abonnement sans autorisation explicite."
+  ]
+}
