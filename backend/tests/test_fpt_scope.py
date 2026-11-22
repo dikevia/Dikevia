@@ -404,3 +404,42 @@ def test_official_fpe_and_fph_contractual_decrees_are_classified_by_their_own_sc
     assert classify_public_service_scope(fpe_decree, target_versant="FPT")["analysis_eligible"] is False
     assert classify_public_service_scope(fph_decree, target_versant="FPH")["analysis_eligible"] is True
     assert classify_public_service_scope(fph_decree, target_versant="FPE")["analysis_eligible"] is False
+
+def test_fpt_ihts_reference_marker_cannot_override_an_fpe_or_fph_title():
+    fpe_source = {
+        "title": "Décret relatif aux agents de la fonction publique de l'État",
+        "text": (
+            "Les agents de l'État sont concernés. Le texte cite le décret n° 2002-60 "
+            "relatif aux indemnités horaires pour travaux supplémentaires à titre de comparaison."
+        ),
+    }
+    fph_source = {
+        "title": "Décret relatif aux personnels de la fonction publique hospitalière",
+        "text": (
+            "Les personnels hospitaliers sont concernés. Le texte cite le décret n° 2002-60 "
+            "relatif aux indemnités horaires pour travaux supplémentaires à titre de comparaison."
+        ),
+    }
+
+    assert classify_public_service_scope(fpe_source, "FPE")["scope"] == "FPE"
+    assert classify_public_service_scope(fpe_source, "FPE")["analysis_eligible"] is True
+    assert classify_public_service_scope(fpe_source, "FPT")["analysis_eligible"] is False
+
+    assert classify_public_service_scope(fph_source, "FPH")["scope"] == "FPH"
+    assert classify_public_service_scope(fph_source, "FPH")["analysis_eligible"] is True
+    assert classify_public_service_scope(fph_source, "FPT")["analysis_eligible"] is False
+
+
+def test_ihts_reference_remains_fpt_only_after_title_scope_precedence():
+    source = {
+        "title": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+        "text": "Le régime est utilisé dans le cadre indemnitaire territorial.",
+    }
+    fpt = classify_public_service_scope(source, "FPT")
+    fpe = classify_public_service_scope(source, "FPE")
+    fph = classify_public_service_scope(source, "FPH")
+
+    assert fpt["scope"] == "FPT_REFERENCE"
+    assert fpt["analysis_eligible"] is True
+    assert fpe["analysis_eligible"] is False
+    assert fph["analysis_eligible"] is False
