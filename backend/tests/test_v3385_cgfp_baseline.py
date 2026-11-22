@@ -254,6 +254,7 @@ def test_cgfp_snapshot_fallback_can_support_only_snapshot_scoped_claims():
         "content_kind": "SNAPSHOT_EXCERPT",
         "snapshot_modified_at": "2026-10-31",
         "source_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
+        "general_info_eligible": True,
         "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
         "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED",
         "public_service_scope": "FPT",
