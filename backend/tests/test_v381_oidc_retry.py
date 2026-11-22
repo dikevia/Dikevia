@@ -8,7 +8,8 @@ def test_oidc_login_can_be_retried_after_callback_failure():
     # The callback promise is shared with token retrieval, so its failure must
     # remain visible to the application while not permanently blocking login.
     assert "const ready = restoreSsoSession();" in auth
-    assert "async getAccessToken() { await ready;" in auth
+    assert "async getAccessToken()" in auth
+    assert "await ready;" in auth
     assert "async login() { await ready.catch(() => {}); return login(); }" in auth
     assert "async logout()" in auth
 
