@@ -127,7 +127,10 @@ def _cgfp_article_discovery_queries(found: dict | None, target_versant: str = "F
             continue
         if not (
             hit.get("matched_concepts")
-            or hit.get("relevance_label") == "Correspondance lexicale à confirmer"
+            or hit.get("relevance_label") in {
+                "Correspondance lexicale à confirmer",
+                "Correspondance lexicale — pertinence à vérifier",
+            }
         ):
             continue
         queries.append(f"article {article_ref}")
