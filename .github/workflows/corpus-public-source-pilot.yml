@@ -27,7 +27,13 @@ jobs:
       - name: Install collector dependencies
         run: python -m pip install --disable-pip-version-check httpx defusedxml asyncpg
       - name: Download and extract official Service-Public dataset
-        run: python scripts/import_service_public_to_legal_corpus.py
+        run: python scripts/import_service_public_to_legal_corpus.py --export-json /tmp/service-public-corpus.json
+      - name: Archive the extracted public corpus for audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-public-function-public-corpus
+          path: /tmp/service-public-corpus.json
+          retention-days: 2
       - name: Wait for CI to pass on this exact commit
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
         env:
@@ -45,7 +51,7 @@ jobs:
           echo "Délai CI dépassé : import interdit."; exit 1
       - name: Import ten Service-Public records with the dedicated ingestion role
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
-        run: python scripts/import_service_public_to_legal_corpus.py --apply --limit 10
+        run: python scripts/import_service_public_to_legal_corpus.py --apply --limit 10 --limit 10
       - name: Skip database write when the ingestion credential is absent
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL == ''
         run: echo 'Collecte vérifiée ; aucune écriture PostgreSQL car le secret dédié est absent.'
