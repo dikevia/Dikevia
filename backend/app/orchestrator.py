@@ -1129,6 +1129,14 @@ class LegalOrchestrator:
                         "official_url": item.get("official_url"),
                         "official_source": item.get("official_source"),
                         "citation_integrity": item.get("citation_integrity"),
+                        # Current CGFP snapshot articles are usable for general questions
+                        # when no repeal is explicitly recorded; never infer historical effect.
+                        "general_info_eligible": parsed_date is None,
+                        "reference_role": (
+                            "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+                            if item.get("source_type") == "CGFP_SNAPSHOT" and parsed_date is None
+                            else item.get("reference_role")
+                        ),
                     })
             except Exception:
                 logger.exception("Échec de la recherche dans le corpus juridique national.")
