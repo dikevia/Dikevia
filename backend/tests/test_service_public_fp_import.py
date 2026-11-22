@@ -39,7 +39,7 @@ def _archive() -> zipfile.ZipFile:
         )
         archive.writestr(
             "F12347.xml",
-            '<Fiche xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Congé maladie dans la fonction publique hospitalière</dc:title><Theme ID="N19806"/><Texte>Règles applicables aux agents hospitaliers.</Texte></Fiche>'.encode("utf-8"),
+            '<Fiche xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Congé maladie dans la fonction publique hospitalière</dc:title><Theme ID="N19806"/><Texte>Règles applicables aux agents hospitaliers et aux agents fpt.</Texte></Fiche>'.encode("utf-8"),
         )
         archive.writestr("arborescence.xml", b"<Arborescence/>")
     buffer.seek(0)
@@ -74,7 +74,7 @@ def test_extracts_only_function_public_fiches_and_preserves_legal_context():
     generic_title_fiche = next(item for item in fiches if item["fiche_id"] == "F12346")
     assert generic_title_fiche["titre_courant"] == "Droits a conges annuels"
     hospital_fiche = next(item for item in fiches if item["fiche_id"] == "F12347")
-    assert hospital_fiche["versants_detectes"] == ["FPH"]
+    assert hospital_fiche["versants_detectes"] == ["FPH", "FPT"]
     assert fiche["titre_courant"] == "Temps partiel thérapeutique dans la fonction publique"
     assert fiche["versants_detectes"] == ["FPT"]
     assert "temps partiel pour raison thérapeutique" in fiche["contenu"].lower()
