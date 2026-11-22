@@ -1102,3 +1102,44 @@ async def test_source_relevance_evaluator_raises_provider_error_on_http_failure(
             research_axes=["axe"],
             sources=[{"source_id": "DOC-1", "excerpt": "Texte officiel suffisamment renseigné."}],
         )
+
+
+def test_research_plan_extracts_only_facts_with_verbatim_question_evidence():
+    plan = _parse_research_plan(
+        json.dumps({
+            "queries": ["régime indemnitaire territorial fonctions supplémentaires"],
+            "legal_issues": ["Conditions de réexamen du régime indemnitaire"],
+            "extracted_facts": [
+                {"fact": "L'agent est titulaire.", "evidence_quote": "je suis titulaire"},
+                {"fact": "Le remplacement a duré 23 mois.", "evidence_quote": "pendant un an et 11 mois"},
+                {"fact": "L'agent a travaillé la nuit.", "evidence_quote": "travail de nuit"},
+                {"fact": "L'agent est titulaire.", "evidence_quote": "je suis titulaire"},
+            ],
+            "clarification_needed": None,
+        }, ensure_ascii=False),
+        question=(
+            "Je suis titulaire de la fonction publique territoriale, "
+            "suite à l'absence d'un collègue pendant un an et 11 mois "
+            "j'ai dû prendre en charge ses fonctions en plus des miennes."
+        ),
+    )
+    assert plan is not None
+    assert len(plan.extracted_facts) == 2
+    assert plan.extracted_facts[0]["evidence_quote"] == "je suis titulaire"
+    assert plan.extracted_facts[1]["evidence_quote"] == "pendant un an et 11 mois"
+
+
+def test_research_plan_facts_are_empty_without_verbatim_evidence():
+    plan = _parse_research_plan(
+        json.dumps({
+            "queries": ["régime indemnitaire territorial"],
+            "legal_issues": ["Régime indemnitaire"],
+            "extracted_facts": [
+                {"fact": "La durée est de deux ans.", "evidence_quote": "deux ans"},
+                {"fact": "L'agent est titulaire.", "evidence_quote": "titulaire"},
+            ],
+        }, ensure_ascii=False),
+        question="Je remplace un collègue depuis plusieurs mois.",
+    )
+    assert plan is not None
+    assert plan.extracted_facts == []
