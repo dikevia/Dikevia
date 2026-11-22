@@ -245,7 +245,12 @@ def main() -> int:
         for seed in seeds:
             source = source_for(seed, registry)
             validate_public_url(seed["url"], source)
-            if args.apply and (source.get("status") != "APPROVED" or seed.get("reuse_status") != "APPROVED"):
+            approved_source_statuses = {"REUSE_APPROVED", "APPROVED"}
+            approved_reuse_statuses = {"REUSE_APPROVED", "APPROVED"}
+            if args.apply and (
+                source.get("status") not in approved_source_statuses
+                or seed.get("reuse_status") not in approved_reuse_statuses
+            ):
                 rejected.append({"id": seed["id"], "reason": "source_or_reuse_not_approved"})
                 continue
             fetched = fetch_seed(client, seed, source)
