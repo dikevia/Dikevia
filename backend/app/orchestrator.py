@@ -1230,15 +1230,29 @@ class LegalOrchestrator:
 
         for item in permanent_sources:
             response_source = {**item, "source_url": item.get("official_url")}
-            # Apply the same French FPT perimeter to the permanent corpus as
-            # to live Légifrance and CETAT results. Otherwise a stored EU or
-            # FPE/FPH document could bypass the live-source scope guard.
+            # Apply the same French public-service perimeter as live sources.
             scope_check = classify_public_service_scope(response_source, target_versant=request.public_service)
             response_source["public_service_scope"] = scope_check["scope"]
             response_source["scope_evidence"] = scope_check["evidence"]
             response_source["analysis_eligible"] = scope_check["analysis_eligible"]
             response_source["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
             response_source["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, response_source)
+            response_source["general_info_eligible"] = (
+                parsed_date is None
+                and response_source.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
+            )
+            if response_source.get("source_type") in {"SERVICE_PUBLIC_PART", "INSTITUTIONAL_GUIDANCE"}:
+                response_source["claim_eligible"] = False
+                response_source["reference_role"] = "NON_NORMATIVE_CONTEXT_ONLY"
+            if response_source.get("source_type") == "CGFP_SNAPSHOT":
+                response_source["reference_role"] = "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+                response_source["snapshot_modified_at"] = (
+                    (response_source.get("raw_metadata") or {}).get("snapshot_modified_at")
+                    or (response_source.get("raw_metadata") or {}).get("generated_at")
+                )
+                response_source["snapshot_verification_status"] = (
+                    (response_source.get("raw_metadata") or {}).get("verification_status")
+                )
             sources.append(response_source)
 
         sources.extend(local_sources)
