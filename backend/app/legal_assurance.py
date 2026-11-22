@@ -29,7 +29,12 @@ _SOURCE_CLASS = {
 
 def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     kind = str(source.get("document_kind") or source.get("source_type") or "OTHER").upper()
-    if kind == "CGFP_SNAPSHOT":
+    source_type = str(source.get("source_type") or "").upper()
+    if source_type == "SERVICE_PUBLIC_PART" or kind == "ADMIN_GUIDANCE":
+        kind = "ADMIN_GUIDANCE"
+    elif source_type == "INSTITUTIONAL_GUIDANCE" and kind == "PROFESSIONAL_GUIDANCE":
+        kind = "PROFESSIONAL_GUIDANCE"
+    elif kind == "CGFP_SNAPSHOT":
         kind = "CODE"
     elif kind in {"LEGIFRANCE_CETAT_SEARCH", "LEGIFRANCE_CETAT_FULL_TEXT"}:
         kind = "ADMIN_CASELAW"
