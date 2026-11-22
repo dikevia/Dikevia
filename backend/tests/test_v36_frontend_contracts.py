@@ -137,10 +137,10 @@ def test_billing_screen_uses_official_ttc_catalogue_and_monthly_credit_rules():
         "119 €", "1 190 € TTC / an", "1 000 crédits par mois",
         "299 €", "2 990 € TTC / an", "2 450 crédits par mois",
         "1 crédit par question juridique standard",
-        "2 crédits pour analyser un résumé",
-        "4 crédits pour résumer intégralement un rapport jusqu’à 50 pages",
-        "Illimité et inclus dans toutes les formules",
-        "Aucun quota journalier n’est appliqué",
+        "2 crédits pour une analyse approfondie d’un résumé",
+        "4 crédits pour le résumé intégral d’un rapport de commission jusqu’à 50 pages",
+        "Gratuit, illimité et sans consommation de crédits : 0 crédit",
+        "Aucun quota journalier contraignant n’est appliqué",
         "souscription en ligne reste désactivée",
     ):
         assert expected in html
