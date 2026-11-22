@@ -232,7 +232,7 @@ Voir `docs/33_V3_25_PRODUCTION_SECURITY.md` : audit bloquant des secrets et vari
 - Les recherches documentaires utilisent les questions précédentes de l'utilisateur et la question courante pour mieux résoudre les références implicites.
 - Consultation, reprise et suppression des conversations depuis l'interface ; suppression en cascade des messages.
 - Migrations `012_persistent_chat_conversations.sql` et `013_legal_dossiers.sql` et leurs rollbacks associés.
-- La conversation fournit un contexte limité aux 12 derniers messages ; elle ne remplace pas la vérification des textes, dates d'effet, sources et actes locaux.
+- La conversation conserve jusqu’à 20 messages (10 échanges) pour les questions de suivi et les réponses brèves aux demandes de clarification. Ce contexte sert à comprendre la demande ; il ne remplace pas la vérification des textes, dates d’effet, sources et actes locaux.
 
 
 ## V3.28 — Dossiers juridiques constitués à partir des échanges
