@@ -214,12 +214,24 @@ async def test_legifrance_exact_article_query_rejects_consulted_body_for_another
 
 
 
-def test_legifrance_article_consultation_is_bounded_to_five_ids():
+def test_legifrance_article_consultation_keeps_all_ten_search_hits():
     payload = {"results": [{"titles": [{"id": f"LEGIARTI{i:012d}", "cid": f"LEGIARTI{i:012d}"}]}
                           for i in range(1, 12)]}
     ids = LegifranceConnector._find_article_ids(payload)
-    assert len(ids) == 5
+    assert len(ids) == 10
     assert ids[0] == "LEGIARTI000000000001"
+    assert ids[-1] == "LEGIARTI000000000010"
+
+
+def test_legifrance_text_extraction_keeps_distinct_sibling_segments_without_duplicates():
+    payload = {"article": {"texte": "Article A complet.", "children": [
+        {"texte": "Article B complet."},
+        {"texte": "Article A complet."},
+    ]}}
+    extracted = LegifranceConnector._extract_text(payload)
+    assert "Article A complet." in extracted
+    assert "Article B complet." in extracted
+    assert extracted.count("Article A complet.") == 1
 
 
 
