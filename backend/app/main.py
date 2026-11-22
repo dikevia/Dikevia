@@ -776,7 +776,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)
     current_message_id = await ctx.conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
         VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
         str(conversation_id), ctx.user_id, payload.question,
-        json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
+        json.dumps({"employer": payload.employer, "public_service": payload.public_service, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
     history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
         WHERE conversation_id=$1::uuid AND id<>$2::uuid AND role IN ('user','assistant')
         ORDER BY created_at DESC,id DESC LIMIT $3""", str(conversation_id), current_message_id,
@@ -798,7 +798,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)
                     "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
                 for source in result.sources[:30]],
             "missing_information": result.missing_information, "disclaimer": result.disclaimer,
-            "clarification_question": result.clarification_question},
+            "clarification_question": result.clarification_question, "public_service": payload.public_service},
             ensure_ascii=False, default=str))
     await ctx.conn.execute("UPDATE chat_conversations SET updated_at=now() WHERE id=$1::uuid", str(conversation_id))
     return result

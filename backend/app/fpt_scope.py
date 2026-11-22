@@ -98,8 +98,13 @@ def _fold(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
 
 
-def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
+def classify_public_service_scope(
+    source: dict[str, Any], target_versant: str = "FPT",
+) -> dict[str, Any]:
     """Return a conservative scope label and whether this hit may reach Gemini."""
+    target_versant = str(target_versant or "FPT").upper()
+    if target_versant not in {"FPT", "FPE", "FPH"}:
+        target_versant = "FPT"
     title = str(source.get("title") or "")
     text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
     article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
@@ -110,7 +115,7 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     # implementation regime. The model may use them to orient further official
     # searches, but they must never support a legal claim without corroborating
     # FPT-specific implementing texts and a separate applicability check.
-    if article_ref in (
+    if target_versant == "FPT" and article_ref in (
         {f"l822 {number}" for number in range(18, 24)}
         | {f"l823 {number}" for number in range(1, 7)}
     ):
@@ -126,7 +131,7 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     # Articles L. 332-8 to L. 332-14 belong to the CGFP subsection devoted
     # specifically to permanent contractual employment in the FPT. Their
     # individual wording does not always repeat the territorial scope.
-    if article_ref in {f"l332 {number}" for number in range(8, 15)}:
+    if target_versant == "FPT" and article_ref in {f"l332 {number}" for number in range(8, 15)}:
         return {
             "scope": "FPT",
             "evidence": [f"Article {article_ref.upper()} situé dans la sous-section FPT des emplois permanents contractuels"],
@@ -170,7 +175,8 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
         return {
             "scope": "FPT_REFERENCE",
             "evidence": ["Décret 2002-60 : référence IHTS à vérifier avec le décret 91-875 et la délibération locale"],
-            "analysis_eligible": True,
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": target_versant == "FPT",
         }
 
     # A territorial reference buried in the body must not override a source
@@ -180,10 +186,12 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     title_fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in title_folded]
     title_fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in title_folded]
     if (title_fpe_hits or title_fph_hits) and not title_fpt_hits:
+        title_scope = "FPH" if title_fph_hits else "FPE"
         return {
-            "scope": "FPH" if title_fph_hits else "FPE",
+            "scope": title_scope,
             "evidence": (title_fph_hits or title_fpe_hits)[:3],
-            "analysis_eligible": False,
+            "analysis_eligible": title_scope == target_versant,
+            "claim_eligible": title_scope == target_versant,
         }
 
     # A common rule may support FPT analysis only when the source itself
@@ -214,19 +222,22 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
         return {
             "scope": "FPT",
             "evidence": fpt_hits[:3],
-            "analysis_eligible": True,
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": target_versant == "FPT",
         }
     if fph_hits:
         return {
             "scope": "FPH",
             "evidence": fph_hits[:3],
-            "analysis_eligible": False,
+            "analysis_eligible": target_versant == "FPH",
+            "claim_eligible": target_versant == "FPH",
         }
     if fpe_hits:
         return {
             "scope": "FPE",
             "evidence": fpe_hits[:3],
-            "analysis_eligible": False,
+            "analysis_eligible": target_versant == "FPE",
+            "claim_eligible": target_versant == "FPE",
         }
 
     # Administrative case law often names the local employer ("commune de…")
@@ -239,7 +250,7 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     employment_context_hits = [
         marker for marker in _EMPLOYMENT_CONTEXT_MARKERS if _fold(marker) in corpus
     ]
-    if local_employer_hits and employment_context_hits:
+    if target_versant == "FPT" and local_employer_hits and employment_context_hits:
         return {
             "scope": "FPT",
             "evidence": (local_employer_hits[:2] + employment_context_hits[:2]),

@@ -510,6 +510,7 @@ class LegalOrchestrator:
         # Qualification must use the resolved referent so follow-ups such as
         # "Et pour les contractuels ?" retain the original legal topic.
         legal_context = qualify_legal_question(contextual_question, request.employer)
+        legal_context["versant_fonction_publique"] = request.public_service
         # Gemini plans the research from the actual facts before any legal source
         # is retrieved. Its output contains search language only, never legal evidence.
         # Deterministic topic templates remain a resilience fallback when the model
@@ -924,7 +925,7 @@ class LegalOrchestrator:
                     else:
                         result["excerpt"] = decision_text[:9000] + "\n\n[Passages intermédiaires non transmis]\n\n" + decision_text[-3000:]
                         result["retrieval_scope"] = "BEGINNING_AND_FINAL_PASSAGES_FROM_VERIFIED_FULL_TEXT"
-                    scope = classify_public_service_scope(result)
+                    scope = classify_public_service_scope(result, target_versant=request.public_service)
                     result["public_service_scope"] = scope["scope"]
                     result["scope_evidence"] = scope["evidence"]
                     result["analysis_eligible"] = scope["analysis_eligible"]
@@ -1107,7 +1108,7 @@ class LegalOrchestrator:
                     f"{item.get('title') or 'Article du CGFP'} — version consultée au "
                     f"{item['requested_effective_date']}"
                 )
-            scope_check = classify_public_service_scope(item)
+            scope_check = classify_public_service_scope(item, target_versant=request.public_service)
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
@@ -1141,7 +1142,7 @@ class LegalOrchestrator:
                     f"{item['requested_effective_date']}"
                 )
             full_text = item.get("full_text") or ""
-            scope_check = classify_public_service_scope(item)
+            scope_check = classify_public_service_scope(item, target_versant=request.public_service)
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
@@ -1177,7 +1178,7 @@ class LegalOrchestrator:
             # Apply the same French FPT perimeter to the permanent corpus as
             # to live Légifrance and CETAT results. Otherwise a stored EU or
             # FPE/FPH document could bypass the live-source scope guard.
-            scope_check = classify_public_service_scope(response_source)
+            scope_check = classify_public_service_scope(response_source, target_versant=request.public_service)
             response_source["public_service_scope"] = scope_check["scope"]
             response_source["scope_evidence"] = scope_check["evidence"]
             response_source["analysis_eligible"] = scope_check["analysis_eligible"]
@@ -1203,7 +1204,7 @@ class LegalOrchestrator:
                         "title": snapshot_title,
                         "text": article_text,
                         "document_kind": "CODE",
-                    })
+                    }, target_versant=request.public_service)
                     sources.append({
                         "source_type": "CGFP_SNAPSHOT",
                         "source_id": f"{hit['source_id']}:{article_ref}",
@@ -1244,7 +1245,7 @@ class LegalOrchestrator:
             })
 
         for decision in case_law_full_text_sources:
-            scope_check = classify_public_service_scope(decision)
+            scope_check = classify_public_service_scope(decision, target_versant=request.public_service)
             decision["public_service_scope"] = scope_check["scope"]
             decision["scope_evidence"] = scope_check["evidence"]
             decision["analysis_eligible"] = scope_check["analysis_eligible"]

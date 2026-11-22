@@ -7,6 +7,7 @@ Employer = Literal["NATIONAL", "VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE"]
 
 class AskRequest(BaseModel):
     employer: Employer
+    public_service: Literal["FPT", "FPE", "FPH"] = "FPT"
     # Legacy exact date remains supported for existing clients.
     facts_date: str | None = None
     facts_start_date: str | None = None

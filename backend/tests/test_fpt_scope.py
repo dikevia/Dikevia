@@ -360,3 +360,32 @@ def test_citis_and_therapeutic_part_time_articles_are_context_only_not_fpt_claim
         assert result["scope"] == "GENERAL_PUBLIC_SERVICE"
         assert result["analysis_eligible"] is True
         assert result["claim_eligible"] is False
+
+
+def test_public_service_scope_is_eligible_only_for_the_selected_versant():
+    fpe = {
+        "title": "Décret relatif à la fonction publique de l'État",
+        "text": "Les agents de la fonction publique de l'État sont concernés.",
+    }
+    fph = {
+        "title": "Décret relatif à la fonction publique hospitalière",
+        "text": "Les personnels de la fonction publique hospitalière sont concernés.",
+    }
+    for target in ("FPT", "FPH"):
+        assert classify_public_service_scope(fpe, target_versant=target)["analysis_eligible"] is False
+    assert classify_public_service_scope(fpe, target_versant="FPE")["analysis_eligible"] is True
+    for target in ("FPT", "FPE"):
+        assert classify_public_service_scope(fph, target_versant=target)["analysis_eligible"] is False
+    assert classify_public_service_scope(fph, target_versant="FPH")["analysis_eligible"] is True
+
+
+def test_explicitly_common_public_service_rule_remains_available_to_each_versant():
+    source = {
+        "title": "Dispositions communes aux trois versants de la fonction publique",
+        "text": "Les agents des trois versants de la fonction publique bénéficient de cette garantie.",
+    }
+    for target in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=target)
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True
