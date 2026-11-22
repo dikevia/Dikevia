@@ -569,14 +569,24 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
             for phrase, boost in topic["boosts"].items():
                 if normalize(phrase) in body:
                     score += boost
-        if excluded or not matched_anchors:
-            continue
+        # Topic anchors and exclusions may improve ordering, but must not
+        # suppress lexical candidates: applicable general provisions may use
+        # different vocabulary from the question and this topic taxonomy.
         unique_anchors = list(dict.fromkeys(matched_anchors))
+        if excluded:
+            score *= 0.35
+        elif not unique_anchors:
+            score *= 0.55
         ranked.append({
             **{k: v for k, v in item.items() if not k.startswith("_")},
             "score": round(score, 4),
             "matched_concepts": unique_anchors[:6],
-            "relevance_label": "Fondement à examiner en priorité" if score >= 10 else "Disposition complémentaire à examiner",
+            "relevance_label": (
+                "Correspondance lexicale — pertinence à vérifier"
+                if excluded or not unique_anchors
+                else "Fondement à examiner en priorité" if score >= 10
+                else "Disposition complémentaire à examiner"
+            ),
         })
 
     # L134-10 ne concerne que des catégories précises d'agents publics
