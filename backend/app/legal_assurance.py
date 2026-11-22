@@ -319,6 +319,7 @@ def validate_claim_evidence(
             source_type == "CGFP_SNAPSHOT"
             and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
             and bool(source.get("snapshot_modified_at"))
+            and source.get("general_info_eligible") is True
             and (
                 source.get("source_status") == "SNAPSHOT_NOT_LIVE_VERIFIED"
                 or (
