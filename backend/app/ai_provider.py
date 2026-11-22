@@ -682,7 +682,9 @@ def validate_entailment_verdicts(payload, claims, sources):
         if isinstance(source_id, str):
             source_by_id.setdefault(source_id, []).append(source)
     invalid = []
+    supported_claim_indices = []
     for index, (verdict, claim) in enumerate(zip(verdicts, claims)):
+        invalid_count_before = len(invalid)
         if (not isinstance(verdict, dict) or isinstance(verdict.get("claim_index"), bool)
                 or not isinstance(verdict.get("claim_index"), int) or verdict.get("claim_index") != index):
             invalid.append(f"verdict_{index}:index_mismatch")
@@ -719,8 +721,14 @@ def validate_entailment_verdicts(payload, claims, sources):
         )
         if missing_numbers or missing_dates:
             invalid.append(f"verdict_{index}:support_quote_missing_claim_facts")
-    return {"valid": not invalid, "invalid": invalid,
-            "verification_scope": "SECOND_STAGE_CONSERVATIVE_MODEL_ENTAILMENT_WITH_EXACT_SOURCE_SPAN"}
+        if len(invalid) == invalid_count_before:
+            supported_claim_indices.append(index)
+    return {
+        "valid": not invalid,
+        "invalid": invalid,
+        "supported_claim_indices": supported_claim_indices,
+        "verification_scope": "SECOND_STAGE_CONSERVATIVE_MODEL_ENTAILMENT_WITH_EXACT_SOURCE_SPAN",
+    }
 
 
 async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict]) -> dict:
