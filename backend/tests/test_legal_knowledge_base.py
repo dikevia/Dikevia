@@ -36,6 +36,8 @@ def test_only_allowlisted_public_legal_and_institutional_source_urls_are_kept():
     assert safe_official_url("https://opendata.justice-administrative.fr/")
     assert safe_official_url("https://www.service-public.gouv.fr/particuliers/vosdroits/F123")
     assert safe_official_url("https://www.data.gouv.fr/datasets/example")
+    assert safe_official_url("https://www.fonction-publique.gouv.fr/")
+    assert safe_official_url("https://www.collectivites-locales.gouv.fr/")
     assert safe_official_url("https://www.cnfpt.fr/")
     assert safe_official_url("https://www.cdg59.fr/")
     assert safe_official_url("https://www.cig929394.fr/")
