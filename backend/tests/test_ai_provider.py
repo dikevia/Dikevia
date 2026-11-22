@@ -1147,3 +1147,49 @@ def test_research_plan_facts_are_empty_without_verbatim_evidence():
     )
     assert plan is not None
     assert plan.extracted_facts == []
+
+
+
+def test_entailment_verifier_keeps_individually_supported_claim_indices():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claims = [
+        {
+            "source_id": "LEGIARTI000000000001",
+            "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions prévues.",
+        },
+        {
+            "source_id": "LEGIARTI000000000002",
+            "text": "La collectivité doit verser une indemnité supplémentaire.",
+        },
+    ]
+    sources = [
+        {
+            "source_id": claims[0]["source_id"],
+            "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions prévues.",
+        },
+        {
+            "source_id": claims[1]["source_id"],
+            "text": "La collectivité organise le service et veille à la santé des agents.",
+        },
+    ]
+    result = validate_entailment_verdicts({
+        "verdicts": [
+            {
+                "claim_index": 0,
+                "source_id": claims[0]["source_id"],
+                "verdict": "SUPPORTED",
+                "support_quote": sources[0]["text"],
+            },
+            {
+                "claim_index": 1,
+                "source_id": claims[1]["source_id"],
+                "verdict": "INSUFFICIENT",
+                "support_quote": "",
+            },
+        ]
+    }, claims, sources)
+
+    assert result["valid"] is False
+    assert result["supported_claim_indices"] == [0]
+    assert "verdict_1:not_supported" in result["invalid"]
