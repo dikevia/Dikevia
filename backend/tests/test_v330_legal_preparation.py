@@ -256,7 +256,7 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
 
 
 @pytest.mark.asyncio
-async def test_ai_can_use_only_the_dated_cgfp_snapshot_as_a_bounded_fallback(monkeypatch):
+async def test_ai_does_not_use_current_cgfp_snapshot_for_historical_facts(monkeypatch):
     import app.orchestrator as module
 
     captured = {}
