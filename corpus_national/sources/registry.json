@@ -236,5 +236,260 @@
     "Les guides et fiches professionnelles n'ont pas priorité sur le texte normatif applicable.",
     "Une référence juridique extraite d'une fiche reste une piste jusqu'à vérification sur la source primaire.",
     "Ne pas collecter les espaces privés, extranet ou contenus soumis à abonnement sans autorisation explicite."
+  ],
+  "document_seeds": [
+    {
+      "id": "dgafp-structuration-droit-fp",
+      "source_id": "dgafp",
+      "title": "Les grands principes et la structuration du droit de la fonction publique de l'État",
+      "url": "https://www.fonction-publique.gouv.fr/index.php/toutes-les-publications/parcours-de-professionnalisation-de-la-filiere-rh-les-grands-principes-et-la-structuration-du-droit-de-la-fonction-publique-de-letat",
+      "format": "HTML_WITH_PDF_LINKS",
+      "scope": [
+        "FPE"
+      ],
+      "topics": [
+        "sources du droit",
+        "statut",
+        "carrière",
+        "GRH"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2023-06-08",
+      "notes": "La page renvoie vers trois livrets PDF ; contrôler les liens et leur version avant collecte."
+    },
+    {
+      "id": "dgafp-maintien-emploi-etat",
+      "source_id": "dgafp",
+      "title": "Le maintien dans l'emploi des agents publics de l'État",
+      "url": "https://www.fonction-publique.gouv.fr/toutes-les-publications/le-maintien-dans-lemploi-des-agents-publics-de-letat",
+      "format": "HTML_WITH_PDF_LINK",
+      "scope": [
+        "FPE"
+      ],
+      "topics": [
+        "inaptitude",
+        "PPR",
+        "reclassement",
+        "santé au travail"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2025-01-23"
+    },
+    {
+      "id": "dgafp-repertoire-metiers",
+      "source_id": "dgafp",
+      "title": "Répertoire commun des métiers de la fonction publique",
+      "url": "https://www.fonction-publique.gouv.fr/toutes-les-publications/repertoire-commun-des-metiers-de-la-fonction-publique",
+      "format": "HTML_WITH_PDF_LINK",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "topics": [
+        "métiers",
+        "mobilité",
+        "référentiel lexical"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2023-09-15"
+    },
+    {
+      "id": "dgcl-conges-fpt",
+      "source_id": "dgcl",
+      "title": "Les congés dans la fonction publique territoriale",
+      "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale/le-temps-de-travail-les-conges-et-absences/les-conges",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "congés maladie",
+        "maternité",
+        "reclassement"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "dgcl-ppr-faq",
+      "source_id": "dgcl",
+      "title": "La période de préparation au reclassement (PPR) : foire aux questions",
+      "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale/la-carriere/la-periode-de-preparation-au-reclassement-ppr-foire-aux-questions",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "PPR",
+        "inaptitude",
+        "reclassement",
+        "rémunération"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "dgcl-remuneration",
+      "source_id": "dgcl",
+      "title": "Le traitement et les accessoires obligatoires de la rémunération",
+      "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale/la-remuneration-indiciaire-indemnitaire-et-autres-avantages/le-traitement-et-les-accessoires-obligatoires-de-la-remuneration",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "traitement indiciaire",
+        "indice",
+        "NBI",
+        "SFT"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "cdg59-info-statut",
+      "source_id": "cdg-59",
+      "title": "Fiches Info Statut — documentation statutaire",
+      "url": "https://www.cdg59.fr/carrieres-2/information-statutaire/documentation-statutaire/fiches-info-statut",
+      "format": "HTML_WITH_PDF_LINKS",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés maladie",
+        "carrière",
+        "recrutement",
+        "emplois fonctionnels"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Page indexant plusieurs fiches PDF ; vérifier individuellement leur date et leur droit de réutilisation."
+    },
+    {
+      "id": "cig929394-faq-sante-temps-partiel",
+      "source_id": "cig-petite-couronne",
+      "title": "FAQ statutaire — impact du congé pour raison de santé sur le temps partiel",
+      "url": "https://www.cig929394.fr/sites/default/files/commun/faq_2-tp-situation-fin_2025_04v2.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "temps partiel",
+        "CMO",
+        "CLM",
+        "CLD",
+        "CITIS",
+        "rémunération"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2025-04"
+    },
+    {
+      "id": "cig929394-faq-conges-annuels-tpt",
+      "source_id": "cig-petite-couronne",
+      "title": "FAQ statutaire — congés annuels et temps partiel thérapeutique",
+      "url": "https://www.cig929394.fr/wp-content/uploads/2025/09/faq_ca_2024_12v4.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "TPT"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Date exacte de version à vérifier dans le PDF ; nom de fichier indique une version 2024-12."
+    },
+    {
+      "id": "cdg69-fiches-medecine-statutaire",
+      "source_id": "cdg-69",
+      "title": "Médecine statutaire et de contrôle — fiches pratiques",
+      "url": "https://www.cdg69.fr/sites/default/files/content/ressources/fichiers/2024-11/02_fiches_pratiques.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "TPT",
+        "CITIS",
+        "imputabilité",
+        "aptitude",
+        "CLM",
+        "CLD",
+        "invalidité"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2023-07",
+      "notes": "Le fichier indique une édition juillet 2023 malgré un chemin de publication 2024-11 ; à contrôler, potentiellement obsolète."
+    },
+    {
+      "id": "cdg69-faq-conges-annuels",
+      "source_id": "cdg-69",
+      "title": "FAQ — congés annuels, réforme et report",
+      "url": "https://www.cdg69.fr/le-cdg69/faq/faq-conges-annuels-le-point-sur-la-reforme",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "report",
+        "CITIS",
+        "congés maladie"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "cnfpt-guide-employeur-collectivites",
+      "source_id": "cnfpt",
+      "title": "Guide de l'employeur — collectivités",
+      "url": "https://www.cnfpt.fr/sites/default/files/guide_de_lemployeur_-_collectivites.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "employeur territorial",
+        "formation",
+        "glossaire"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Date et actualité juridique à vérifier ; ne pas le traiter comme guide statutaire à jour sans contrôle."
+    }
   ]
 }
