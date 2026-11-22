@@ -451,9 +451,12 @@ def test_gemini_plan_is_not_replaced_by_fallback_for_single_topic():
         "CITIS imputabilité au service fonctionnaire territorial",
         "congé invalidité temporaire accident de service",
     ]
-    assert merge_ai_and_fallback_research_queries(
+    merged = merge_ai_and_fallback_research_queries(
         ai_queries, fallback_queries, fallback_axes, max_queries=5,
-    ) == ai_queries
+    )
+    assert merged[:len(ai_queries)] == ai_queries
+    assert fallback_queries[1] in merged
+    assert len(merged) <= 5
 
 
 def test_merged_research_queries_respect_the_five_query_budget():
