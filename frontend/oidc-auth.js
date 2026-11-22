@@ -29,7 +29,7 @@
     if (!issuer.startsWith('https://') && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(issuer))
       throw new Error('L’émetteur OIDC doit utiliser HTTPS.');
     const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),150000);
+    const timeout=setTimeout(()=>controller.abort(),210000);
     let response;
     try {
       response=await fetch(issuer+'/.well-known/openid-configuration',{cache:'no-store',signal:controller.signal});
