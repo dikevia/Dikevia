@@ -122,11 +122,20 @@ def should_use_cgfp_snapshot_fallback(
     found: dict | None,
     research_queries: list[str] | str,
     target_versant: str = "FPT",
+    live_sources: list[dict] | None = None,
 ) -> bool:
-    """Use the dated CGFP snapshot only when live lookup failed and a hit serves an axis."""
+    """Use the dated snapshot when live CGFP search failed or yielded no relevant article."""
     queries = research_queries if isinstance(research_queries, list) else [research_queries]
+    live_covers_an_axis = any(
+        _source_relevant_to_any_research_axis(queries, source)
+        and source.get("analysis_eligible") is not False
+        for source in (live_sources or [])
+    )
+    live_unusable = bool(live_issue) or (
+        live_sources is not None and not live_covers_an_axis
+    )
     return bool(
-        live_issue and isinstance(found, dict) and found.get("results")
+        live_unusable and isinstance(found, dict) and found.get("results")
         and any(
             _source_relevant_to_any_research_axis(queries, hit)
             and (
@@ -1115,7 +1124,8 @@ class LegalOrchestrator:
         # the facts); it may accompany independently verified decrees/case law,
         # but must never replace those sources or authorize a standalone opinion.
         cgfp_snapshot_fallback = should_use_cgfp_snapshot_fallback(
-            live_issue, found, research_queries, target_versant=request.public_service,
+            live_issue, found, research_queries,
+            target_versant=request.public_service, live_sources=live_sources,
         )
 
         sources: list[dict] = []
