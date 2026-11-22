@@ -18,20 +18,15 @@ shutdown() {
 trap shutdown TERM INT
 
 keycloak_ready() {
-  local response="" line
+  local response=""
   if ! exec 3<>"/dev/tcp/127.0.0.1/${KC_HTTP_PORT:-10000}" 2>/dev/null; then
     return 1
   fi
-  if ! printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; then
+  if ! printf 'GET /health/ready HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; then
     exec 3<&- 3>&-
     return 1
   fi
-  while IFS= read -r -t 2 line <&3; do
-    response+="$line"$'\n'
-    if [[ "$response" == *'"status":"UP"'* ]]; then
-      break
-    fi
-  done
+  IFS= read -r -t 5 -N 4096 response <&3 || true
   exec 3<&- 3>&-
   [[ "$response" == *"200 OK"* && "$response" == *'"status":"UP"'* ]]
 }
