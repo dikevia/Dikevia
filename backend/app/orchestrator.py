@@ -568,7 +568,7 @@ class LegalOrchestrator:
             # Never drop a recognized sub-question to make room for exact
             # article lookups. The helper uses spare capacity only.
             code_research_queries = _build_code_research_queries(
-                research_queries, cgfp_article_queries, max_queries=7,
+                research_queries, cgfp_article_queries, max_queries=5,
             )
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
