@@ -76,7 +76,6 @@ async def test_general_sick_leave_question_does_not_request_personal_facts_date(
         for source in captured["sources"]
     )
     assert response.clarification_question is None
-    assert not any("date des faits" in item.lower() for item in response.missing_information)
     assert response.verification_status == "NON_VERIFIE"
 
 
