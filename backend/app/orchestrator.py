@@ -10,16 +10,16 @@ from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
+from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
-from .ai_provider import analyze_question, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
+from .ai_provider import analyze_question, plan_legal_research, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
 from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
-from .legal_search_plan import build_official_search_query, build_official_search_queries, build_official_research_axes, _is_six_year_cdi_question
+from .legal_search_plan import build_official_search_query, build_official_search_queries, build_official_research_axes
 from .legal_qualification import qualify_legal_question, build_contextual_research_question
 
 
@@ -442,15 +442,35 @@ class LegalOrchestrator:
         # Qualification must use the resolved referent so follow-ups such as
         # "Et pour les contractuels ?" retain the original legal topic.
         legal_context = qualify_legal_question(contextual_question, request.employer)
-        # PISTE search methods cap their query at 500 characters. The current
-        # question must take precedence over older conversational context.
-        research_queries = build_official_search_queries(contextual_question)
-        # Only distinct recognized legal topics are mandatory answer axes.
-        # Query variants for broad recall or case-law discovery are not separate
-        # sub-questions and must never force an unrelated claim into the answer.
-        legal_context["axes_recherche_documentaire"] = build_official_research_axes(
-            contextual_question
-        )
+        # Gemini plans the research from the actual facts before any legal source
+        # is retrieved. Its output contains search language only, never legal evidence.
+        # Deterministic topic templates remain a resilience fallback when the model
+        # is not configured or temporarily unavailable.
+        fallback_queries = build_official_search_queries(contextual_question)
+        fallback_axes = build_official_research_axes(contextual_question)
+        research_plan = None
+        try:
+            research_plan = await plan_legal_research(
+                question=contextual_question,
+                employer=request.employer,
+                facts_period=temporal_context,
+                legal_context=legal_context,
+                conversation_history=history,
+            )
+        except AIProviderUnavailable:
+            logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
+        if research_plan is not None:
+            research_queries = list(dict.fromkeys(research_plan.queries))[:5]
+            research_axes = research_plan.legal_issues or fallback_axes
+            legal_context["strategie_recherche"] = "PLANIFIEE_PAR_IA_AVANT_CONSULTATION"
+            legal_context["axes_recherche_documentaire"] = research_axes
+            legal_context["clarification_recherche"] = research_plan.clarification_needed
+        else:
+            research_queries = fallback_queries
+            legal_context["strategie_recherche"] = "SECOURS_DETERMINISTE_MODELE_INDISPONIBLE"
+            legal_context["axes_recherche_documentaire"] = fallback_axes
+        # PISTE search methods cap each query at 500 characters.
+        research_queries = [query[:500] for query in research_queries if query.strip()][:5]
         contextual_search_query = build_official_search_query(contextual_question)
         live_sources: list[dict] = []
         regulatory_sources: list[dict] = []
@@ -588,20 +608,6 @@ class LegalOrchestrator:
                 unique_code[source.get("source_id") or str(id(source))] = source
             code_result = list(unique_code.values())
 
-            # The broad LODA query can rank unrelated texts above the FPT
-            # implementing instrument. For IHTS questions, retrieve decree 91-875
-            # by its exact official number at every requested date as well.
-            if is_ihts_question(current_question):
-                for requested_date in comparison_dates:
-                    try:
-                        territorial_ihts = await legifrance.search_regulatory_texts(
-                            "décret n° 91-875", requested_date, limit=3,
-                        )
-                        endpoint = date_roles[requested_date]
-                        regulatory_result.extend(_tag_official_versions(territorial_ihts, requested_date, endpoint))
-                    except Exception as exc:
-                        logger.warning("Recherche ciblée du décret 91-875 indisponible à %s : %r", requested_date, exc)
-
             # Exact-number retrieval may overlap the broad search; keep one
             # canonical source per dated source ID to avoid ambiguous citations.
             unique_regulatory = {}
@@ -681,17 +687,6 @@ class LegalOrchestrator:
         found, cgfp_issue = await search_cgfp_index()
         cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
         cgfp_article_queries = _cgfp_article_discovery_queries(found)
-        if _is_six_year_cdi_question(current_question):
-            # Search the decisive CGFP provisions by exact article number.
-            # A long natural-language query containing article numbers is not
-            # equivalent to PISTE's NUM_ARTICLE exact lookup.
-            cgfp_article_queries = list(dict.fromkeys([
-                "article L332-9",
-                "article L332-10",
-                "article L332-11",
-                "article L332-23",
-                *cgfp_article_queries,
-            ]))
 
         # Official legal texts and administrative case law remain the
         # authoritative verification path.
