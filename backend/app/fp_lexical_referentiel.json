@@ -1,0 +1,855 @@
+{
+  "schema_version": "1.0.0",
+  "scope": [
+    "FPT",
+    "FPE",
+    "FPH"
+  ],
+  "description": "Référentiel lexical d'expansion de requêtes. Les références réglementaires sont des pistes historiques fournies ou collectées et ne sont jamais injectées comme droit applicable sans vérification indépendante.",
+  "sources": [
+    {
+      "id": "service_public_fp",
+      "name": "Service-Public.fr / DILA",
+      "role": "Langage courant des démarches et titres de fiches",
+      "url": "https://www.data.gouv.fr/datasets/fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers",
+      "collection": "Import XML filtré par thème N19806",
+      "status": "IMPORTER_PRESENT_ARCHIVE_REELLE_A_VALIDER"
+    },
+    {
+      "id": "dgafp_tpt_2026",
+      "name": "DGAFP",
+      "role": "Vocabulaire et procédure TPT",
+      "url": "https://www.fonction-publique.gouv.fr/files/files/Etre%20agent%20public/Protection%20sociale/FAQ_TPT_2026.pdf",
+      "collection": "FAQ TPT 2026 ; CGFP L823-1 à L823-6 ; décret 2026-705",
+      "status": "SOURCE_OFFICIELLE_REPEREE"
+    },
+    {
+      "id": "cnfpt_glossaire_metiers_2026",
+      "name": "CNFPT",
+      "role": "Définitions des notions métier territoriales",
+      "url": "https://www.cnfpt.fr/sites/default/files/document/1781871915/17134%20MaJ%20Glossaire%20des%20me%CC%81tiers%2009%202026.pdf",
+      "collection": "Glossaire Répertoire des métiers territoriaux, septembre 2026",
+      "status": "SOURCE_OFFICIELLE_REPEREE"
+    },
+    {
+      "id": "cnfpt_repertoire",
+      "name": "CNFPT / INET",
+      "role": "Répertoire des métiers et champs d'action publique locale",
+      "url": "https://inet.cnfpt.fr/ressources/ressources-metiers/repertoire-metiers",
+      "collection": "Plus de 250 fiches métiers ; référentiel RH non réglementaire",
+      "status": "SOURCE_OFFICIELLE_REPEREE"
+    },
+    {
+      "id": "dgcl_portail",
+      "name": "DGCL / Collectivités locales",
+      "role": "Cadre institutionnel et références FPT",
+      "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale",
+      "collection": "Ressources institutionnelles et statutaires",
+      "status": "SOURCE_OFFICIELLE_REPEREE"
+    },
+    {
+      "id": "cig_pc",
+      "name": "CIG Petite Couronne",
+      "role": "Vocabulaire statutaire et pratique FPT",
+      "url": "https://www.cig929394.fr/",
+      "collection": "Pages publiques uniquement ; contenus éditoriaux non copiés",
+      "status": "A_COLLECTER_MANUELLEMENT_SELON_DROITS"
+    },
+    {
+      "id": "legifrance_cgfp",
+      "name": "Légifrance",
+      "role": "Validation des fondements juridiques",
+      "url": "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000044416551/",
+      "collection": "Code consolidé et textes réglementaires",
+      "status": "VERIFICATION_JURIDIQUE_REQUISE"
+    }
+  ],
+  "entries": [
+    {
+      "id": "citis",
+      "triggers": [
+        "citis",
+        "accident de service",
+        "accident du travail",
+        "accident de trajet",
+        "maladie professionnelle",
+        "imputabilite au service",
+        "imputable au service"
+      ],
+      "legal_terms": [
+        "congé pour invalidité temporaire imputable au service",
+        "accident de service",
+        "accident de trajet",
+        "maladie professionnelle",
+        "imputabilité au service",
+        "déclaration d'accident",
+        "date de consolidation"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L822-18",
+          "L822-19",
+          "L822-20",
+          "L822-21",
+          "L822-22",
+          "L822-23"
+        ],
+        "FPT": [
+          "87-602"
+        ],
+        "FPE": [
+          "86-442"
+        ],
+        "FPH": [
+          "88-386"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "temps_partiel_therapeutique",
+      "triggers": [
+        "tpt",
+        "mi-temps therapeutique",
+        "mi temps therapeutique",
+        "temps partiel therapeutique",
+        "reprise therapeutique",
+        "temps partiel pour raison therapeutique"
+      ],
+      "legal_terms": [
+        "temps partiel pour raison thérapeutique",
+        "quotité de travail thérapeutique",
+        "reprise des fonctions à temps partiel",
+        "maintien ou retour à l'emploi",
+        "rééducation",
+        "réadaptation professionnelle"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L823-1",
+          "L823-2",
+          "L823-3",
+          "L823-4",
+          "L823-5",
+          "L823-6"
+        ],
+        "FPT": [
+          "87-602"
+        ],
+        "FPE": [
+          "86-442"
+        ],
+        "FPH": [
+          "88-386"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "conges_annuels",
+      "triggers": [
+        "conges annuels",
+        "conge annuel",
+        "ca",
+        "vacances",
+        "jours de conges",
+        "report de conges",
+        "indemnisation conges non pris"
+      ],
+      "legal_terms": [
+        "congé annuel avec traitement",
+        "durée du congé annuel",
+        "obligations hebdomadaires de service",
+        "report des congés annuels",
+        "indemnisation des congés non pris"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L621-1",
+          "L621-2",
+          "L621-3",
+          "L621-4",
+          "L621-5"
+        ],
+        "FPT": [
+          "85-1250"
+        ],
+        "FPE": [
+          "84-972"
+        ],
+        "FPH": [
+          "2002-8"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "maladie_ordinaire",
+      "triggers": [
+        "cmo",
+        "maladie ordinaire",
+        "arret maladie",
+        "conge maladie",
+        "jour de carence",
+        "plein traitement maladie",
+        "demi-traitement"
+      ],
+      "legal_terms": [
+        "congé de maladie",
+        "maladie non imputable au service",
+        "maintien du traitement",
+        "demi-traitement",
+        "jour de carence"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L822-1",
+          "L822-2",
+          "L822-3",
+          "L822-4",
+          "L822-5"
+        ],
+        "FPT": [
+          "87-602"
+        ],
+        "FPE": [
+          "86-442"
+        ],
+        "FPH": [
+          "88-386"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "clm_cld",
+      "triggers": [
+        "clm",
+        "cld",
+        "longue maladie",
+        "longue duree",
+        "conge de longue maladie",
+        "conge de longue duree",
+        "conseil medical"
+      ],
+      "legal_terms": [
+        "congé de longue maladie",
+        "congé de longue durée",
+        "conseil médical",
+        "affection ouvrant droit"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L822-6",
+          "L822-7",
+          "L822-12",
+          "L822-13"
+        ],
+        "FPT": [
+          "87-602"
+        ],
+        "FPE": [
+          "86-442"
+        ],
+        "FPH": [
+          "88-386"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "inaptitude_ppr",
+      "triggers": [
+        "inaptitude",
+        "inapte",
+        "reclassement",
+        "ppr",
+        "periode de preparation au reclassement",
+        "retraite pour invalidite"
+      ],
+      "legal_terms": [
+        "inaptitude physique",
+        "reclassement pour inaptitude physique",
+        "période de préparation au reclassement",
+        "recherche de reclassement"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L826-1",
+          "L826-2",
+          "L826-3",
+          "L826-4",
+          "L826-5"
+        ],
+        "FPT": [
+          "85-1054"
+        ],
+        "FPE": [
+          "84-1051"
+        ],
+        "FPH": [
+          "89-376"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "temps_travail_rtt",
+      "triggers": [
+        "rtt",
+        "artt",
+        "1607 heures",
+        "temps de travail",
+        "cycle de travail",
+        "heures supplementaires",
+        "ihts",
+        "astreinte"
+      ],
+      "legal_terms": [
+        "durée annuelle du travail effectif",
+        "aménagement et réduction du temps de travail",
+        "cycles de travail",
+        "indemnités horaires pour travaux supplémentaires",
+        "garanties minimales de travail et de repos"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L611-1",
+          "L611-2"
+        ],
+        "FPT": [
+          "2001-623",
+          "2000-815",
+          "2002-60"
+        ],
+        "FPE": [
+          "2000-815",
+          "2002-60"
+        ],
+        "FPH": [
+          "2002-9",
+          "2002-598"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "temps_partiel",
+      "triggers": [
+        "temps partiel",
+        "80%",
+        "90%",
+        "50%",
+        "temps partiel de droit",
+        "temps partiel sur autorisation",
+        "quotite de travail"
+      ],
+      "legal_terms": [
+        "service à temps partiel",
+        "temps partiel de droit",
+        "temps partiel sur autorisation",
+        "quotité de travail"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L612-1",
+          "L612-2",
+          "L612-3",
+          "L612-4",
+          "L612-5"
+        ],
+        "FPT": [
+          "2004-777"
+        ],
+        "FPE": [
+          "82-624"
+        ],
+        "FPH": [
+          "82-1003"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "cet",
+      "triggers": [
+        "cet",
+        "compte epargne temps",
+        "epargner des jours",
+        "monetisation cet",
+        "indemnisation cet"
+      ],
+      "legal_terms": [
+        "compte épargne-temps",
+        "alimentation du compte épargne-temps",
+        "indemnisation des jours épargnés",
+        "congé au titre du CET"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L621-4",
+          "L621-5"
+        ],
+        "FPT": [
+          "2004-878"
+        ],
+        "FPE": [
+          "2002-788"
+        ],
+        "FPH": [
+          "2002-789"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "rifseep_primes",
+      "triggers": [
+        "rifseep",
+        "ifse",
+        "cia",
+        "regime indemnitaire",
+        "prime",
+        "primes",
+        "maintien des primes",
+        "nbi",
+        "nouvelle bonification indiciaire",
+        "sft",
+        "supplement familial"
+      ],
+      "legal_terms": [
+        "régime indemnitaire tenant compte des fonctions, des sujétions, de l'expertise et de l'engagement professionnel",
+        "indemnité de fonctions, de sujétions et d'expertise",
+        "complément indemnitaire annuel",
+        "nouvelle bonification indiciaire",
+        "supplément familial de traitement"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L712-1",
+          "L712-12",
+          "L714-1",
+          "L714-4",
+          "L714-5"
+        ],
+        "FPT": [
+          "2014-513",
+          "91-875",
+          "2006-779"
+        ],
+        "FPE": [
+          "2014-513"
+        ],
+        "FPH": []
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "psc_prevoyance",
+      "triggers": [
+        "psc",
+        "prevoyance",
+        "mutuelle",
+        "complementaire sante",
+        "maintien de salaire",
+        "participation employeur mutuelle"
+      ],
+      "legal_terms": [
+        "protection sociale complémentaire",
+        "participation financière aux contrats de prévoyance",
+        "complémentaire santé",
+        "contrat collectif",
+        "contrat individuel"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L827-1",
+          "L827-2",
+          "L827-3",
+          "L827-9",
+          "L827-11"
+        ],
+        "FPT": [
+          "2022-581"
+        ],
+        "FPE": [
+          "2022-633"
+        ],
+        "FPH": []
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "disponibilite",
+      "triggers": [
+        "disponibilite",
+        "dispo",
+        "mise en disponibilite",
+        "convenances personnelles",
+        "suivre son conjoint",
+        "elever un enfant",
+        "reintegration apres disponibilite"
+      ],
+      "legal_terms": [
+        "mise en disponibilité",
+        "disponibilité de droit",
+        "disponibilité sur demande",
+        "disponibilité d'office",
+        "réintégration à l'issue d'une disponibilité"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L514-1",
+          "L514-2",
+          "L514-3",
+          "L514-4",
+          "L514-6",
+          "L514-7"
+        ],
+        "FPT": [
+          "86-68"
+        ],
+        "FPE": [
+          "85-986"
+        ],
+        "FPH": [
+          "88-976"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "detachement_mutation",
+      "triggers": [
+        "detachement",
+        "mutation",
+        "mobilite",
+        "integration directe",
+        "changement de collectivite",
+        "preavis mutation"
+      ],
+      "legal_terms": [
+        "position de détachement",
+        "intégration directe",
+        "mutation",
+        "déclaration de vacance d'emploi",
+        "mobilité dans la fonction publique"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L512-19",
+          "L512-23",
+          "L513-1",
+          "L513-2",
+          "L513-20"
+        ],
+        "FPT": [
+          "86-68"
+        ],
+        "FPE": [
+          "85-986"
+        ],
+        "FPH": [
+          "88-976"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "avancement_promotion",
+      "triggers": [
+        "avancement",
+        "avancement d'echelon",
+        "avancement de grade",
+        "promotion interne",
+        "tableau d'avancement",
+        "liste d'aptitude",
+        "ldp",
+        "lignes directrices de gestion"
+      ],
+      "legal_terms": [
+        "avancement d'échelon",
+        "avancement de grade",
+        "promotion interne",
+        "lignes directrices de gestion",
+        "tableau annuel d'avancement",
+        "valeur professionnelle"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L413-1",
+          "L522-1",
+          "L522-4",
+          "L522-18",
+          "L523-1"
+        ],
+        "FPT": [
+          "2019-1265"
+        ],
+        "FPE": [
+          "2019-1265"
+        ],
+        "FPH": [
+          "2019-1265"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "stage_titularisation",
+      "triggers": [
+        "stagiaire",
+        "stage",
+        "titularisation",
+        "stagiairisation",
+        "prorogation de stage",
+        "licenciement fin de stage"
+      ],
+      "legal_terms": [
+        "fonctionnaire stagiaire",
+        "période de stage",
+        "titularisation",
+        "prorogation du stage",
+        "refus de titularisation"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L327-1",
+          "L327-2",
+          "L327-4",
+          "L327-5"
+        ],
+        "FPT": [
+          "92-1194"
+        ],
+        "FPE": [
+          "94-874"
+        ],
+        "FPH": [
+          "97-487"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "contractuels",
+      "triggers": [
+        "contractuel",
+        "contractuels",
+        "cdd",
+        "cdi",
+        "cdi-sation",
+        "prime de precarite",
+        "indemnite de fin de contrat",
+        "renouvellement contrat"
+      ],
+      "legal_terms": [
+        "agent contractuel",
+        "contrat à durée déterminée",
+        "contrat à durée indéterminée",
+        "indemnité de fin de contrat",
+        "renouvellement du contrat"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L332-1",
+          "L332-8",
+          "L332-9",
+          "L332-23",
+          "L554-3"
+        ],
+        "FPT": [
+          "88-145"
+        ],
+        "FPE": [
+          "86-83"
+        ],
+        "FPH": [
+          "91-155"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "discipline_protection",
+      "triggers": [
+        "discipline",
+        "sanction",
+        "blame",
+        "avertissement",
+        "exclusion temporaire",
+        "revocation",
+        "conseil de discipline",
+        "suspension",
+        "protection fonctionnelle",
+        "harcelement"
+      ],
+      "legal_terms": [
+        "procédure disciplinaire",
+        "sanctions disciplinaires",
+        "conseil de discipline",
+        "suspension de fonctions",
+        "protection fonctionnelle",
+        "harcèlement moral"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L133-2",
+          "L134-1",
+          "L134-5",
+          "L531-1",
+          "L532-1",
+          "L533-1"
+        ],
+        "FPT": [
+          "89-677"
+        ],
+        "FPE": [
+          "84-961"
+        ],
+        "FPH": [
+          "89-822"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "instances_droit_syndical",
+      "triggers": [
+        "cst",
+        "csa",
+        "cse",
+        "f3sct",
+        "chsct",
+        "cap",
+        "ccp",
+        "decharge syndicale",
+        "credit d'heures",
+        "asa syndicale",
+        "ris",
+        "reunion d'information syndicale",
+        "greve"
+      ],
+      "legal_terms": [
+        "comité social territorial",
+        "comité social d'administration",
+        "comité social d'établissement",
+        "formation spécialisée en matière de santé, de sécurité et des conditions de travail",
+        "commission administrative paritaire",
+        "commission consultative paritaire",
+        "crédit de temps syndical",
+        "autorisations spéciales d'absence"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L114-1",
+          "L212-1",
+          "L214-1",
+          "L215-1",
+          "L251-1",
+          "L251-8",
+          "L261-1",
+          "L271-1"
+        ],
+        "FPT": [
+          "2021-571",
+          "85-397"
+        ],
+        "FPE": [
+          "2020-1427",
+          "82-447"
+        ],
+        "FPH": [
+          "2021-1570",
+          "86-660"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "rupture_conventionnelle",
+      "triggers": [
+        "rupture conventionnelle",
+        "indemnite rupture conventionnelle",
+        "quitter la fonction publique",
+        "demission"
+      ],
+      "legal_terms": [
+        "rupture conventionnelle",
+        "indemnité spécifique de rupture conventionnelle",
+        "cessation définitive de fonctions"
+      ],
+      "reference_leads": {
+        "CGFP": [
+          "L551-1",
+          "L552-1",
+          "L552-2",
+          "L552-3"
+        ],
+        "FPT": [
+          "2019-1593",
+          "2019-1596"
+        ],
+        "FPE": [
+          "2019-1593",
+          "2019-1596"
+        ],
+        "FPH": [
+          "2019-1593",
+          "2019-1596"
+        ]
+      },
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "vocabulaire_metiers_territoriaux",
+      "triggers": [
+        "metier territorial",
+        "emploi territorial",
+        "emploi type",
+        "fiche de poste",
+        "poste de travail",
+        "competences professionnelles",
+        "famille professionnelle",
+        "domaine d intervention",
+        "activite professionnelle",
+        "tache"
+      ],
+      "legal_terms": [
+        "métier",
+        "fonction",
+        "emploi-type",
+        "emploi",
+        "poste de travail",
+        "tâche",
+        "activité",
+        "compétence",
+        "famille professionnelle",
+        "domaine d'intervention"
+      ],
+      "reference_leads": {},
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    },
+    {
+      "id": "organisation_temps_travail",
+      "triggers": [
+        "cycle de travail",
+        "horaires variables",
+        "forfait jours",
+        "1607 heures",
+        "temps de travail effectif",
+        "repos minimum"
+      ],
+      "legal_terms": [
+        "cycles de travail",
+        "horaires variables",
+        "régime du forfait en jours",
+        "durée annuelle du travail effectif",
+        "garanties minimales de travail et de repos",
+        "délibération après avis du comité social"
+      ],
+      "reference_leads": {},
+      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+    }
+  ]
+}
