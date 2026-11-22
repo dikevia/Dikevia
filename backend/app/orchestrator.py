@@ -922,8 +922,16 @@ class LegalOrchestrator:
         # It remains a dated snapshot (not proof of the version applicable to
         # the facts); it may accompany independently verified decrees/case law,
         # but must never replace those sources or authorize a standalone opinion.
+        live_cgfp_relevant = any(
+            _source_relevant_to_any_research_axis(research_queries, item)
+            for item in live_sources
+        )
+        fallback_trigger = live_issue or (
+            None if live_cgfp_relevant
+            else "Aucun article CGFP suffisamment pertinent n'a été récupéré en direct."
+        )
         cgfp_snapshot_fallback = should_use_cgfp_snapshot_fallback(
-            live_issue, found, research_queries,
+            fallback_trigger, found, research_queries,
         )
 
         sources: list[dict] = []
@@ -1023,15 +1031,31 @@ class LegalOrchestrator:
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
                     "page_start": hit["page_start"], "page_end": hit["page_end"], "excerpt": hit["excerpt"]}
                 integrity = validate_snapshot_citation(citation, article or {})
-                if integrity["valid"]:
-                    sources.append({"source_type": "CGFP_SNAPSHOT", "source_id": hit["source_id"],
-                        "title": f"Code général de la fonction publique — article {hit['article']}",
-                        "article": hit["article"], "page_start": hit["page_start"], "page_end": hit["page_end"],
-                        "excerpt": hit["excerpt"], "text": (article or {}).get("text", ""),
+                if integrity["valid"] and _cgfp_article_fpt_eligible(hit["article"]):
+                    article_text = str((article or {}).get("text") or "")
+                    article_ref = re.sub(r"\\s+", "", str(hit["article"])).upper()
+                    sources.append({
+                        "source_type": "CGFP_SNAPSHOT",
+                        "source_id": f"{hit['source_id']}:{article_ref}",
+                        "snapshot_document_id": hit["source_id"],
+                        "title": f"Code général de la fonction publique — article {article_ref}",
+                        "article": article_ref,
+                        "page_start": hit["page_start"], "page_end": hit["page_end"],
+                        "excerpt": article_text[:12000],
+                        "text": article_text,
                         "content_kind": "SNAPSHOT_EXCERPT",
                         "snapshot_modified_at": found["source"]["snapshot_modified_at"],
+                        "requested_effective_date": found["source"]["snapshot_modified_at"],
                         "source_status": found["source"]["verification_status"],
-                        "citation_integrity": integrity, "document": found["source"]["source_file"]})
+                        "public_service_scope": "FPT_REFERENCE",
+                        "analysis_eligible": True,
+                        "claim_eligible": True,
+                        "research_axis_relevant": True,
+                        "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
+                        "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED",
+                        "citation_integrity": integrity,
+                        "document": found["source"]["source_file"],
+                    })
 
         for decision in case_law_sources:
             # A CETAT search hit is metadata only; it is never passed as legal evidence to AI.
@@ -1124,7 +1148,14 @@ class LegalOrchestrator:
             if (s.get("citation_integrity") or {}).get("valid") is True
             and s.get("temporal_status") == "VERIFIED_APPLICABLE"
             and s.get("research_axis_relevant", True) is not False]
-        if not usable_official and not usable_permanent and not usable_local:
+        usable_snapshot_fallback = [
+            s for s in sources
+            if s.get("source_type") == "CGFP_SNAPSHOT"
+            and s.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+            and s.get("research_axis_relevant") is True
+            and (s.get("citation_integrity") or {}).get("valid") is True
+        ]
+        if not usable_official and not usable_permanent and not usable_local and not usable_snapshot_fallback:
             missing = ["Aucune disposition législative ou réglementaire exploitable n'a été récupérée.",
                 "Recherche officielle Légifrance/PISTE et vérification des textes réglementaires complémentaires.",
                 "Recherche de jurisprudence pertinente et vérification des sources locales applicables."]
@@ -1249,7 +1280,7 @@ class LegalOrchestrator:
 
         ai_sources: list[dict] = []
         ai_usage = None
-        if cgfp_issue or (live_issue and not cgfp_snapshot_fallback) or regulatory_issue or case_law_issue or temporal_issue:
+        if not (usable_official or usable_permanent or usable_local or usable_snapshot_fallback):
             ai_answer = None
             missing.insert(
                 0,
@@ -1281,10 +1312,9 @@ class LegalOrchestrator:
                         "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
                         "VERIFIED_APPLICABLE",
                     }
-                    # The CGFP snapshot is the national baseline for explanation, but
-                    # it is not temporally authoritative. Pass it to the model only
-                    # alongside at least one independently verified, date-scoped
-                    # source; never let the snapshot alone trigger an AI conclusion.
+                    # A dated CGFP snapshot may support a bounded fallback explanation
+                    # when PISTE cannot return a relevant article. It is never promoted
+                    # to proof of current or historical applicability.
                     verified_sources = [
                         (
                             {
@@ -1330,15 +1360,17 @@ class LegalOrchestrator:
                             comparison_end_date,
                         )
                     ]
-                    cgfp_context_sources = [
-                        {**s, "reference_role": "BASELINE_CONTEXT_ONLY",
-                         "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED"}
-                        for s in sources
+                    cgfp_fallback_sources = [
+                        s for s in sources
                         if s.get("source_type") == "CGFP_SNAPSHOT"
-                        and s.get("research_axis_relevant", True) is not False
+                        and s.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+                        and s.get("research_axis_relevant") is True
                         and (s.get("citation_integrity") or {}).get("valid") is True
                     ]
-                    ai_sources = cgfp_context_sources + verified_sources if verified_sources else []
+                    ai_sources = (
+                        cgfp_fallback_sources + verified_sources
+                        if verified_sources or cgfp_fallback_sources else []
+                    )
                     if ai_sources:
                         ai_result = await analyze_question(
                             question=request.question,
@@ -1418,14 +1450,31 @@ class LegalOrchestrator:
                                 rendered_claims.append("Textes et références à consulter :")
                                 for source_id, source_title in unique_sources.items():
                                     rendered_claims.append(f"• {source_title} [source:{source_id}]")
-                                rendered_claims.extend([
-                                    "",
-                                    (
-                                        f"Cette réponse porte sur les règles consultées au {effective_date.isoformat()} ; elle ne constitue pas une conclusion sur une situation individuelle."
-                                        if parsed_date is None
-                                        else f"Cette analyse prend pour date de référence le {effective_date.isoformat()} ; son application dépend aussi des faits établis et des éventuels actes locaux applicables."
-                                    ),
-                                ])
+                                rendered_claims.extend([""])
+                                if any(
+                                    source.get("source_type") == "CGFP_SNAPSHOT"
+                                    and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+                                    for source in ai_sources
+                                    if source.get("source_id") in unique_sources
+                                ):
+                                    snapshot_date = next(
+                                        (source.get("snapshot_modified_at") for source in ai_sources
+                                         if source.get("source_type") == "CGFP_SNAPSHOT"),
+                                        "date non précisée",
+                                    )
+                                    rendered_claims.append(
+                                        f"Réserve importante : PISTE n'a pas permis de vérifier ces dispositions. "
+                                        f"Cette explication s'appuie sur le snapshot local du CGFP daté du {snapshot_date}. "
+                                        "Elle ne confirme pas que cette rédaction est toujours en vigueur ni qu'elle était applicable à une date antérieure. "
+                                        "Les décrets et autres textes complémentaires doivent être vérifiés séparément."
+                                    )
+                                else:
+                                    rendered_claims.append(
+                                        f"Cette réponse porte sur les règles consultées au {effective_date.isoformat()} ; "
+                                        + ("elle ne constitue pas une conclusion sur une situation individuelle."
+                                           if parsed_date is None else
+                                           "son application dépend aussi des faits établis et des éventuels actes locaux applicables.")
+                                    )
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
                                     if ai_usage is not None:
@@ -1439,7 +1488,7 @@ class LegalOrchestrator:
                         ai_answer = None
                         missing.insert(
                             0,
-                            "Analyse IA suspendue : aucune source officielle datée et exploitable n'est disponible. Le snapshot CGFP seul reste une piste documentaire.",
+                            "Analyse IA suspendue : aucune source juridique exploitable, y compris dans le corpus CGFP local, n'est disponible.",
                         )
                 except AIAnalysisRefusedNoSources:
                     ai_answer = None
