@@ -97,3 +97,33 @@ def test_service_public_import_rejects_untrusted_fiche_identifier():
         assert "identifiant F valide" in str(exc)
     else:
         raise AssertionError("Un identifiant de fiche arbitraire ne doit pas construire une URL.")
+
+
+def test_service_public_guidance_cannot_become_legal_claim_evidence():
+    from app.legal_assurance import validate_claim_evidence
+
+    quote = (
+        "Cette fiche présente les règles administratives relatives au temps partiel "
+        "thérapeutique dans la fonction publique."
+    )
+    source = {
+        "source_type": "SERVICE_PUBLIC_PART",
+        "source_id": "F12345",
+        "title": "Temps partiel thérapeutique dans la fonction publique",
+        "document_kind": "ADMIN_GUIDANCE",
+        "source_status": "IMPORTED_UNVERIFIED",
+        "official_source": False,
+        "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
+        "citation_integrity": {"valid": True},
+        "excerpt": quote,
+    }
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "La fiche établit une règle de temps partiel thérapeutique.",
+            "source_id": "F12345",
+            "quote": quote,
+            "axis": "temps_partiel_therapeutique",
+        }]
+    }, [source], required_axes=["temps_partiel_therapeutique"])
+    assert result["valid"] is False
+    assert result["invalid_claims"] == ["claim_0:source_missing_ineligible_or_ambiguous"]
