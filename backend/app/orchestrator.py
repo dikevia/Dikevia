@@ -649,7 +649,7 @@ class LegalOrchestrator:
             # regulatory-text endpoint. They do not consume the CGFP or CETAT
             # query budgets and preserve the applicable FPT implementing texts.
             regulatory_queries = list(dict.fromkeys([
-                *research_queries, *_build_targeted_regulatory_queries(current_question),
+                *research_queries, *_build_targeted_regulatory_queries(contextual_question),
             ]))
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.

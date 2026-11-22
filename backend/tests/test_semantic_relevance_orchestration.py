@@ -87,3 +87,16 @@ def test_targeted_regulatory_queries_include_current_fpt_citis_and_tpt_texts():
     assert any("88-145" in query and "9-1" in query for query in tpt)
 
     assert _build_targeted_regulatory_queries("Je souhaite un temps partiel à 80 %.") == []
+
+
+def test_followup_questions_keep_citis_context_for_targeted_regulatory_search():
+    from app.legal_qualification import build_contextual_research_question
+    from app.orchestrator import _build_targeted_regulatory_queries
+
+    contextual = build_contextual_research_question(
+        "Et pour les contractuels ?",
+        ["Je suis fonctionnaire territorial et je suis en CITIS après un accident de service."],
+    )
+    queries = _build_targeted_regulatory_queries(contextual)
+    assert any("87-602" in query and "37-2" in query for query in queries)
+    assert any("2026-705" in query for query in queries)
