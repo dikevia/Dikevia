@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-22",
+  "updated_at": "2026-11-23",
   "purpose": "Registre de gouvernance des sources du corpus documentaire national Dikévia. Une source enregistrée n'est pas réputée collectée ni indexée.",
   "statuses": [
     "CANDIDATE",
@@ -65,7 +65,7 @@
       "name": "DGAFP — ressources et guides de la fonction publique de l'État",
       "publisher": "Direction générale de l'administration et de la fonction publique",
       "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Pages et documents publics à inventorier",
       "scope": [
         "FPE",
@@ -76,7 +76,13 @@
       "domains": [
         "fonction-publique.gouv.fr",
         "www.fonction-publique.gouv.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "dgcl",
@@ -119,7 +125,7 @@
       "name": "CNFPT — guides, fiches et ressources statutaires",
       "publisher": "Centre national de la fonction publique territoriale",
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Pages publiques et documents téléchargeables autorisés",
       "scope": [
         "FPT"
@@ -129,7 +135,13 @@
       "domains": [
         "cnfpt.fr",
         "www.cnfpt.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "wikiterritorial-cnfpt",
@@ -153,7 +165,7 @@
       "name": "CIG Petite Couronne — ressources statutaires",
       "publisher": "Centre interdépartemental de gestion de la petite couronne",
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Pages publiques et documents téléchargeables autorisés",
       "scope": [
         "FPT"
@@ -163,7 +175,13 @@
       "domains": [
         "cig929394.fr",
         "www.cig929394.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "cig-grande-couronne",
@@ -206,7 +224,7 @@
       "name": "CDG 35 — ressources statutaires et RH",
       "publisher": "Centre de gestion d'Ille-et-Vilaine",
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Pages publiques et documents téléchargeables autorisés",
       "scope": [
         "FPT"
@@ -220,7 +238,13 @@
         "cdg35.bzh",
         "www.cdg35.bzh",
         "espace-echanges.cdg35.bzh"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "cdg-44",
@@ -245,7 +269,7 @@
       "name": "CDG 59 — ressources statutaires et RH",
       "publisher": "Centre de gestion du Nord",
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Pages publiques et documents téléchargeables autorisés",
       "scope": [
         "FPT"
@@ -256,14 +280,20 @@
       "domains": [
         "cdg59.fr",
         "www.cdg59.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "cdg-69",
       "name": "CDG 69 — ressources statutaires et RH",
       "publisher": "Centre de gestion du Rhône et de la Métropole de Lyon",
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Pages publiques et documents téléchargeables autorisés",
       "scope": [
         "FPT"
@@ -274,14 +304,20 @@
       "domains": [
         "cdg69.fr",
         "www.cdg69.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "cfdt-fonctions-publiques",
       "name": "CFDT Fonctions Publiques — UFFA",
       "publisher": "Union des fédérations de fonctionnaires et assimilés CFDT",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Actualités, analyses, revendications, guides et publications publiques ; conserver l'attribution syndicale.",
       "scope": [
         "FPT",
@@ -293,14 +329,20 @@
       "priority": 4,
       "domains": [
         "uffa.cfdt.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "cfdt-interco",
       "name": "CFDT Interco — fonction publique territoriale et services publics",
       "publisher": "Fédération CFDT Interco",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Guides, fiches pratiques, analyses statutaires, actualités et documents publics.",
       "scope": [
         "FPT",
@@ -313,14 +355,20 @@
         "cfdt-interco31.fr",
         "www.cfdt-interco31.fr",
         "cfdtinterco35.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "cgt-fonction-publique",
       "name": "CGT — Fonction publique",
       "publisher": "CGT, fédérations des services publics, de l'État et de la santé/action sociale",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Publications et analyses des fédérations CGT couvrant les trois versants ; conserver l'identité de la fédération éditrice.",
       "scope": [
         "FPT",
@@ -337,14 +385,20 @@
         "www.cgtetat.fr",
         "sante.cgt.fr",
         "www.sante.cgt.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "fo-fonction-publique",
       "name": "FO Fonction publique — FGF-FO",
       "publisher": "Fédération générale des fonctionnaires Force ouvrière",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Actualités, publications, droits et services, analyses et revendications publiques.",
       "scope": [
         "FPE",
@@ -357,14 +411,20 @@
       "domains": [
         "fo-fonctionnaires.fr",
         "www.fo-fonctionnaires.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "cftc-fonction-publique",
       "name": "CFTC — Fonction publique",
       "publisher": "CFTC et fédérations des agents de l'État, des collectivités territoriales et santé-sociaux",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Propositions, analyses, fiches pédagogiques et publications concernant les agents publics.",
       "scope": [
         "FPE",
@@ -378,14 +438,20 @@
         "cftc.fr",
         "www.cftc.fr",
         "ledecodeur.cftc.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "unsa-fonction-publique",
       "name": "UNSA Fonction Publique",
       "publisher": "UNSA Fonction Publique",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Actualités, analyses, guides, grilles, communiqués et documents publics.",
       "scope": [
         "FPE",
@@ -398,14 +464,20 @@
       "domains": [
         "unsa-fp.org",
         "www.unsa-fp.org"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     },
     {
       "id": "solidaires-fonction-publique",
       "name": "Solidaires Fonction publique",
       "publisher": "Union syndicale Solidaires — secteur Fonction publique",
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Actualités, informations, matériel, analyses et publications publiques.",
       "scope": [
         "FPE",
@@ -417,7 +489,13 @@
       "priority": 4,
       "domains": [
         "fonctionpublique.solidaires.org"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
     }
   ],
   "rules": [
@@ -703,9 +781,9 @@
         "RTT"
       ],
       "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "publication_date": "2026-11",
       "notes": "Version signalée comme mise à jour le 18 novembre 2026 ; contrôler directement le PDF, son contenu et les références réglementaires avant intégration.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
@@ -714,7 +792,8 @@
       "text_sha256": "05aa19f3219328a24830646d8c9583d2cc217e72145614de6940229395f7a79a",
       "page_count": 16,
       "character_count": 45048,
-      "artifact_name": "dikevia-public-guidance-collected.zip"
+      "artifact_name": "dikevia-public-guidance-collected.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cdg44-actualite-faq-tpt-2026",
@@ -825,9 +904,9 @@
         "heures supplémentaires"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "publication_date": "2025-06",
       "notes": "Version publiée sur le domaine actuel cdg35.bzh ; contrôler licence et extraction avant indexation.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
@@ -836,7 +915,8 @@
       "text_sha256": "29e4fd05653483bd915e9cfbb8e0d2dfe8af87077c9e753e42f6473feda9049c",
       "page_count": 20,
       "character_count": 39553,
-      "artifact_name": "dikevia-public-guidance-collected.zip"
+      "artifact_name": "dikevia-public-guidance-collected.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cdg35-reglement-temps-travail-cst-2025",
@@ -856,9 +936,9 @@
         "annualisation"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "publication_date": "2025-11",
       "notes": "Document statutaire de référence du CDG35 ; licence et réutilisation à contrôler.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
@@ -867,7 +947,8 @@
       "text_sha256": "0b393a0dadc946c9ac8ce0d65602948e9bc3e81f4c6325b837243c5b0926167c",
       "page_count": 31,
       "character_count": 52077,
-      "artifact_name": "dikevia-public-guidance-collected.zip"
+      "artifact_name": "dikevia-public-guidance-collected.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cdg35-actualites-statutaires-2026-09",
@@ -887,9 +968,9 @@
         "quatre semaines"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "publication_date": "2026-09-17",
       "notes": "Ressource récente avec cas pratiques sur le report des congés après congé de santé ; contrôler licence et portée exacte.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
@@ -898,7 +979,8 @@
       "text_sha256": "24130ffa0deb560c575be9316676dad663a138dbd59919f6a16424dabeba36b5",
       "page_count": 58,
       "character_count": 33438,
-      "artifact_name": "dikevia-public-guidance-collected.zip"
+      "artifact_name": "dikevia-public-guidance-collected.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cig-pc-guide-temps-travail-2025",
@@ -917,9 +999,9 @@
         "CET"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "notes": "Guide PDF publié sur le domaine officiel CIG Petite Couronne ; vérifier version, dates de mise à jour et droits de réutilisation.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
@@ -927,7 +1009,8 @@
       "text_sha256": "0a90731dbd8312a615e7db4864cc83bf162b2043cf4d5962d0e4d65b315910a0",
       "character_count": 130170,
       "artifact_name": "dikevia-expanded-public-guidance.zip",
-      "page_count": 48
+      "page_count": 48,
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cig-pc-faq-clm-cld",
@@ -946,16 +1029,17 @@
         "report des congés"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "notes": "Page de FAQ ancienne ; contrôler toutes les règles au regard du CGFP et des décrets actuellement en vigueur.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "download_sha256": "a5e2e3139e9245a784f19f3978856cfe88d44b2868ce81ddaa5215feead19019",
       "text_sha256": "3fa3d199da005d65acfa579a1c88f3f400a38167f47e51d2e177881203a93756",
       "character_count": 22645,
-      "artifact_name": "dikevia-expanded-public-guidance.zip"
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cdg59-actualite-tpt-citis-2026",
@@ -976,9 +1060,9 @@
         "conseil médical"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "publication_date": "2026-08-24",
       "notes": "Actualité récente annonçant le CDG-INFO2026-12 et les mises à jour des fiches statutaires ; les PDF liés ne sont pas automatiquement suivis.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
@@ -986,7 +1070,8 @@
       "download_sha256": "fab3b8b0d505dfdc143f87c697da993be359277783ce93a4e480452503b2a633",
       "text_sha256": "58a070a0f0f02067ef0a7abc5da245edacb1887a5b31081d8515bfd477faf454",
       "character_count": 1788,
-      "artifact_name": "dikevia-expanded-public-guidance.zip"
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cdg69-faq-conges-annuels-reforme",
@@ -1007,16 +1092,17 @@
         "CGFP"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "notes": "Ressource d'analyse professionnelle ; contrôler les passages sur l'article 5-1 du décret 85-1250 à la lumière des décisions et textes les plus récents.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "download_sha256": "790884fd35d5211a757a41bb74f892951d848405784a97f1a7e86d74b4f7201d",
       "text_sha256": "b3412c9987e7ec476a437e2729e0289a26bd67b2f1fab95da071b9f2a2b29fcb",
       "character_count": 29178,
-      "artifact_name": "dikevia-expanded-public-guidance.zip"
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cnfpt-temps-travail-agents-territoriaux",
@@ -1035,16 +1121,17 @@
         "heures supplémentaires"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "notes": "Page pédagogique ancienne ; conserver comme contexte uniquement après vérification des règles et de la date de mise à jour.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "download_sha256": "05646d2c058badfa08b4aa20cc106a3e8a7df922cef8e91065345a62395f7a9a",
       "text_sha256": "bddd8905eb5d0e0330757d1f5a708ceedd822f4df241bc366a022b26a03a7f1b",
       "character_count": 5414,
-      "artifact_name": "dikevia-expanded-public-guidance.zip"
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cfdt-uffa-site",
@@ -1067,16 +1154,17 @@
         "revendications"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "notes": "Site syndical national couvrant les trois versants ; les contenus doivent rester attribués à la CFDT.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "text_sha256": "822f5924bfb975e0cf1cd374d2486c4ff5dc562cfe08b2d426d2d573f5b1cf25",
       "character_count": 1984,
       "artifact_name": "service-public-function-public-corpus.zip",
-      "download_sha256": "822f5924bfb975e0cf1cd374d2486c4ff5dc562cfe08b2d426d2d573f5b1cf25"
+      "download_sha256": "822f5924bfb975e0cf1cd374d2486c4ff5dc562cfe08b2d426d2d573f5b1cf25",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cfdt-interco-guide-agent-public-2026",
@@ -1097,9 +1185,9 @@
         "élections professionnelles"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "publication_date": "2026-10-22",
       "notes": "La page annonce un PDF de 10,19 Mo intitulé guide_de_l_agent_public_2026_interco-cfdt.pdf. L'URL directe du PDF n'a pas encore été vérifiée ; ne pas la deviner. Le guide devra être extrait et confronté aux textes en vigueur.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
@@ -1107,7 +1195,8 @@
       "text_sha256": "f89c2fde3da1b835a944828658b858724cf89f73d1e964a8ce8b9d2a5d898eb0",
       "character_count": 1229,
       "artifact_name": "service-public-function-public-corpus.zip",
-      "download_sha256": "f89c2fde3da1b835a944828658b858724cf89f73d1e964a8ce8b9d2a5d898eb0"
+      "download_sha256": "f89c2fde3da1b835a944828658b858724cf89f73d1e964a8ce8b9d2a5d898eb0",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cgt-fp-site",
@@ -1126,15 +1215,16 @@
         "revendications"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "text_sha256": "5c0aea40f70a2dcbb56c3d6ca25a6bb2fc0077d89f946e5fc895765eda18650b",
       "character_count": 7432,
       "artifact_name": "service-public-function-public-corpus.zip",
-      "download_sha256": "93d6264ac54b3da9e254a7fccf5367979ab8ed812dae92b6fb9d0d15548632ff"
+      "download_sha256": "93d6264ac54b3da9e254a7fccf5367979ab8ed812dae92b6fb9d0d15548632ff",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "fo-fp-site",
@@ -1156,15 +1246,16 @@
         "publications"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "text_sha256": "cd00ae9959cf234d43769f05aa8569d7356b3ee99cdbff8fdea74f161ec49060",
       "character_count": 5853,
       "artifact_name": "service-public-function-public-corpus.zip",
-      "download_sha256": "cd00ae9959cf234d43769f05aa8569d7356b3ee99cdbff8fdea74f161ec49060"
+      "download_sha256": "cd00ae9959cf234d43769f05aa8569d7356b3ee99cdbff8fdea74f161ec49060",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cftc-fp-propositions",
@@ -1186,15 +1277,16 @@
         "formation"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "text_sha256": "73639f802eda746ae9850785650af7d7ff0ad12d899dc4750a04f9164c7de522",
       "character_count": 8663,
       "artifact_name": "service-public-function-public-corpus.zip",
-      "download_sha256": "4c43f68e28c081425576eeb5679c82ca039f82e30ac9c12ece8d47d44ffc5a61"
+      "download_sha256": "4c43f68e28c081425576eeb5679c82ca039f82e30ac9c12ece8d47d44ffc5a61",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cftc-decodeur-greve-fp",
@@ -1214,16 +1306,17 @@
         "organisations syndicales"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "notes": "Fiche pédagogique syndicale ; vérifier chaque règle contre le CGFP et les textes applicables.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "text_sha256": "df8c9b1d05a53861a86b79b0c96da671defaf35d55dd12c0cceb63b81ae1be85",
       "character_count": 13710,
       "artifact_name": "service-public-function-public-corpus.zip",
-      "download_sha256": "df8c9b1d05a53861a86b79b0c96da671defaf35d55dd12c0cceb63b81ae1be85"
+      "download_sha256": "df8c9b1d05a53861a86b79b0c96da671defaf35d55dd12c0cceb63b81ae1be85",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "unsa-fp-site",
@@ -1246,15 +1339,16 @@
         "dialogue social"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "text_sha256": "39b0a8954e82af97ee1c3ac5d0b4cb8795642aeb81725950f7e38437ef8a2d29",
       "character_count": 10175,
       "artifact_name": "service-public-function-public-corpus.zip",
-      "download_sha256": "39b0a8954e82af97ee1c3ac5d0b4cb8795642aeb81725950f7e38437ef8a2d29"
+      "download_sha256": "39b0a8954e82af97ee1c3ac5d0b4cb8795642aeb81725950f7e38437ef8a2d29",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "solidaires-fp-site",
@@ -1276,15 +1370,16 @@
         "revendications"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
       "text_sha256": "c9687b3dbfaf1714e6142e23161a7c282462990b0c9c16c9cde6ede14e085003",
       "character_count": 890,
       "artifact_name": "service-public-function-public-corpus.zip",
-      "download_sha256": "c9687b3dbfaf1714e6142e23161a7c282462990b0c9c16c9cde6ede14e085003"
+      "download_sha256": "c9687b3dbfaf1714e6142e23161a7c282462990b0c9c16c9cde6ede14e085003",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     },
     {
       "id": "cfdt-interco-guide-agent-public-2026-pdf",
@@ -1311,9 +1406,9 @@
         "instances représentatives"
       ],
       "authority_level": "TRADE_UNION_POSITION",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "content_status": "EXTRACTED_NOT_IMPORTED",
-      "reuse_status": "REVIEW_REQUIRED",
+      "reuse_status": "REUSE_APPROVED",
       "notes": "PDF intégral téléchargé et extrait avec succès en dry-run le 22/11/2026 : 68 pages, 181 469 caractères. Original et JSON d'extraction conservés dans l'artefact GitHub Actions. Réutilisation toujours REVIEW_REQUIRED ; aucun import PostgreSQL.",
       "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
       "collected_at": "2026-11-22",
@@ -1321,7 +1416,8 @@
       "text_sha256": "33b6ffbcd531264862fd0d750383fee474e93da34bd5ec8277e918a150b5e1aa",
       "page_count": 68,
       "character_count": 181469,
-      "artifact_name": "service-public-function-public-corpus"
+      "artifact_name": "service-public-function-public-corpus",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
     }
   ]
 }
