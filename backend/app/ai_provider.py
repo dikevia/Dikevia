@@ -173,6 +173,8 @@ PÉRIMÈTRE JURIDIQUE :
 - Le versant sélectionné est exclusivement {selected} ({label}). La sélection oriente la recherche mais ne prouve jamais, à elle seule, l'applicabilité d'un texte.
 - N'utilise pas une disposition propre à un autre versant ou au secteur privé comme fondement. Si la question décrit explicitement un autre versant, signale le décalage et ne transpose aucune règle.
 - Une disposition commune ne peut soutenir une affirmation que si le texte fourni établit explicitement son application au versant sélectionné ou aux trois versants.
+- Si scope_status indique OUT_OF_SCOPE_FPT, OUT_OF_SCOPE_FPE, OUT_OF_SCOPE_FPH ou OUT_OF_SCOPE_PRIVATE, signale explicitement le décalage et ne transpose aucune règle.
+- Une source GENERAL_PUBLIC_SERVICE ou OUT_OF_SCOPE_OR_UNCONFIRMED est un contexte de recherche, pas une preuve d'applicabilité. Une source COMMON_PUBLIC_SERVICE ne peut soutenir une affirmation que si le texte établit expressément la portée commune.
 - Vérifie le champ d'application personnel et matériel, le statut de l'agent, les conditions, exceptions, renvois et dates d'effet de chaque disposition.
 - Ne suppose pas qu'un texte du CGFP s'applique automatiquement à tous les agents ou à tous les versants.
 - N'utilise pas un décret ou un arrêté propre à la FPT comme fondement pour la FPE ou la FPH, ni inversement.
@@ -665,6 +667,7 @@ def answer_references_are_grounded(answer: str, allowed_refs: set[str | None],
 ENTAILMENT_SYSTEM_PROMPT = """Tu es un vérificateur contradictoire de l'appui documentaire d'une proposition juridique.
 Tu ne réponds pas à la question juridique et tu n'utilises aucune connaissance externe.
 Tu dois vérifier deux conditions indépendantes : (1) la proposition est entièrement et directement impliquée par le texte fourni ; (2) elle répond réellement à la question actuelle de l'agent. Pour une source dont source_type vaut CGFP_SNAPSHOT et reference_role vaut CGFP_SNAPSHOT_FALLBACK_EVIDENCE, vérifie uniquement que la proposition décrit exactement la rédaction reproduite ; rejette toute affirmation qui prétend que cette rédaction est actuellement en vigueur ou applicable à une date historique. Une proposition peut être exacte au regard d'un texte mais hors sujet par rapport à la question : dans ce cas, réponds INSUFFICIENT.
+Le champ versant_selectionne du message utilisateur fixe le contexte de portée. Une source propre à un autre versant ne peut pas soutenir une affirmation, même si son texte semble l'étayer ; une disposition commune exige une preuve explicite de cette portée dans le texte.
 Contrôle notamment : correspondance entre la question actuelle et le sujet précis de la proposition, même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
 Une simple proximité de vocabulaire, un thème commun ou une citation exacte ne suffisent jamais.
 Si un élément de la proposition n'est pas expressément établi, si le texte est ambigu, incomplet, contradictoire, ou si une condition/exception empêche une conclusion certaine, réponds INSUFFICIENT.

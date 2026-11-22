@@ -155,3 +155,14 @@ def test_ai_analysis_prompt_changes_with_the_selected_public_service():
     assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" not in fpe
     assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" not in fph
     assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" in fpt
+
+
+def test_non_fpt_prompt_requires_explicit_scope_and_blocks_context_only_sources():
+    from app.ai_provider import _system_prompt_for_versant, ENTAILMENT_SYSTEM_PROMPT
+
+    prompt = _system_prompt_for_versant("FPH")
+    assert "OUT_OF_SCOPE_FPT" in prompt
+    assert "GENERAL_PUBLIC_SERVICE" in prompt
+    assert "portée commune" in prompt
+    assert "versant_selectionne" in ENTAILMENT_SYSTEM_PROMPT
+    assert "Une source propre à un autre versant ne peut pas soutenir une affirmation" in ENTAILMENT_SYSTEM_PROMPT
