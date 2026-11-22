@@ -527,9 +527,11 @@ class LegifranceConnector:
         result = await self._request("POST", "/search", json_body=payload)
         article_ids = self._find_article_ids(result)
         requested_ref_hint = re.search(
-            r"\\b(?:article\\s+)?(?:[LDR]\\.\\s*\\d+(?:-\\d+)*|[LDR]\\s*\\d+(?:-\\d+)*|\\d+(?:-\\d+)*)\\b",
+            r"\\b(?:article\\s+)?(?:[LDR]\\.\\s*\\d+(?:-\\d+)*|[LDR]\\s*\\d+(?:-\\d+)*)\\b",
             query, re.I,
         )
+        if requested_ref_hint is None:
+            requested_ref_hint = re.search(r"\\barticle\\s+\\d+(?:-\\d+)*\\b", query, re.I)
         if not article_ids and not requested_ref_hint:
             # Preserve recall without letting an OR-style query dominate the
             # normal path: broad PISTE search is a fallback only on zero hits.
