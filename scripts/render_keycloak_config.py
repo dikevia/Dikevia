@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Render the Keycloak realm import and browser OIDC config from deployment URLs."""
-import argparse
 import json
 import os
 from pathlib import Path
@@ -36,6 +35,7 @@ def main() -> None:
         "issuer": idp + "/realms/cfdt",
         "client_id": "cfdt-juris-web",
         "redirect_uri": app + "/",
+        "silent_redirect_uri": app + "/static/silent-check-sso.html",
         "scopes": "openid profile email"
     }
     FRONTEND_CONFIG.write_text("// Généré par scripts/render_keycloak_config.py — ne pas ajouter de secret ici.\n"
