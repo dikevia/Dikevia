@@ -8,6 +8,10 @@ on:
       - scripts/import_service_public_fonction_publique.py
       - scripts/import_service_public_to_legal_corpus.py
       - scripts/import_public_guidance_sources.py
+      - scripts/import_cgfp_to_legal_corpus.py
+      - corpus_national/index/CGFP_articles_2026-10-31.json
+      - corpus_national/legislation/CGFP_2026-10-31.pdf
+      - backend/tests/test_v330_legal_preparation.py
       - backend/tests/test_service_public_fp_import.py
       - backend/tests/test_public_source_registry.py
       - backend/tests/test_legal_knowledge_base.py
