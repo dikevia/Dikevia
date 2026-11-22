@@ -1,0 +1,44 @@
+[
+  {
+    "id": "FPT-LEAVE-001",
+    "versant": "FPT",
+    "question": "Je suis fonctionnaire territorial et mon employeur refuse le report de mes congés annuels. Quelles règles dois-je vérifier ?",
+    "expected_topic": "LEAVE",
+    "expected_scope": "FPT_PRODUCT_SCOPE",
+    "official_sources": [
+      {
+        "reference": "Décret n° 85-1250 du 26 novembre 1985, relatif aux congés annuels des fonctionnaires territoriaux",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000690444"
+      }
+    ],
+    "review_status": "SOURCE_LOCATED_NOT_LEGAL_APPROVED"
+  },
+  {
+    "id": "FPE-LEAVE-001",
+    "versant": "FPE",
+    "question": "Je suis fonctionnaire de l'État et mon administration refuse le report de mes congés annuels. Quelles règles dois-je vérifier ?",
+    "expected_topic": "LEAVE",
+    "expected_scope": "FPE_PRODUCT_SCOPE",
+    "official_sources": [
+      {
+        "reference": "Décret n° 84-972 du 26 octobre 1984, relatif aux congés annuels des fonctionnaires de l'État",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000886529"
+      }
+    ],
+    "review_status": "SOURCE_LOCATED_NOT_LEGAL_APPROVED"
+  },
+  {
+    "id": "FPH-LEAVE-001",
+    "versant": "FPH",
+    "question": "Je suis fonctionnaire hospitalier dans un établissement public de santé et mon établissement refuse le report de mes congés annuels. Quelles règles dois-je vérifier ?",
+    "expected_topic": "LEAVE",
+    "expected_scope": "FPH_PRODUCT_SCOPE",
+    "official_sources": [
+      {
+        "reference": "Décret n° 2002-8 du 4 janvier 2002, relatif aux congés annuels des agents des établissements mentionnés à l'article L. 5 du CGFP",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000398297"
+      }
+    ],
+    "review_status": "SOURCE_LOCATED_NOT_LEGAL_APPROVED"
+  }
+]
