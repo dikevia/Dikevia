@@ -38,6 +38,22 @@ Le registre prévoit les glossaires DGAFP/CNFPT, les guides RH DGAFP, les ressou
 
 Le flux DILA 3.5 est publié quotidiennement et réutilisable sous Licence Ouverte 2.0, avec attribution obligatoire à Service-Public.gouv.fr / DILA, URL complète de téléchargement, nom du fichier et date du fichier.
 
+### Sources syndicales : traitement documentaire spécifique
+
+Les publications syndicales sont enregistrées dans une famille distincte `TRADE_UNION_POSITION`. Elles servent à documenter les analyses, revendications, guides pratiques, argumentaires et retours d'expérience des organisations. Elles ne constituent pas, à elles seules, une preuve du droit positif.
+
+Règles de traitement :
+- conserver systématiquement l'organisation éditrice, la date, le versant et le contexte ;
+- distinguer une règle juridique citée, une interprétation syndicale, une revendication et un commentaire ;
+- vérifier toute règle de droit dans le CGFP, les lois, décrets, arrêtés et jurisprudences applicables ;
+- en cas de divergence entre organisations, restituer les positions attribuées sans fabriquer de consensus ;
+- ne pas présenter une organisation comme référence exclusive ou comme source neutre ;
+- vérifier les droits de réutilisation avant toute ingestion durable ou exposition de larges extraits.
+
+Périmètre initial inscrit au registre : CFDT Fonctions Publiques (UFFA), CFDT Interco, CGT Fonction publique, FO Fonction publique, CFTC, UNSA Fonction Publique et Solidaires Fonction publique. Les pages et documents restent candidats tant que collecte, fraîcheur, portée et réutilisation ne sont pas contrôlées.
+
+Le Guide de l'agent public 2026 CFDT Interco est identifié via sa page de présentation du 22 octobre 2026. Le lien direct du PDF n'a pas été confirmé ; il ne doit pas être reconstitué ou deviné. La page de présentation peut être collectée séparément, mais ne remplace pas le guide PDF.
+
 ### Résultat de collecte vérifié — 22 novembre 2026
 
 Le workflow a téléchargé et extrait :
