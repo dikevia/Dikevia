@@ -20,10 +20,10 @@ RECENT_USER_CONTEXT_LIMIT = 10
 
 
 _CLARIFICATION_REPLY = re.compile(
-    r"^(?:oui\\b|non\\b|exactement\\b|c['’]est\\s+(?:ça|bien\\s+ça)\\b|"
-    r"je\\s+suis\\b|je\\s+travaille\\b|mon\\s+statut\\b|"
-    r"depuis\\b|à\\b|au\\b|en\\b|titulaire\\b|contractuel(?:le)?\\b|"
-    r"stagiaire\\b|fonctionnaire\\b|agent\\b|temps\\b)",
+    r"^(?:oui\b|non\b|exactement\b|c['’]est\s+(?:ça|bien\s+ça)\b|"
+    r"je\s+suis\b|je\s+travaille\b|mon\s+statut\b|"
+    r"depuis\b|à\b|au\b|en\b|titulaire\b|contractuel(?:le)?\b|"
+    r"stagiaire\b|fonctionnaire\b|agent\b|temps\b)",
     re.IGNORECASE,
 )
 
