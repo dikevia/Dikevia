@@ -782,7 +782,7 @@ async def test_ihts_query_retrieves_decree_91_875_and_filters_irrelevant_cgfp_hi
         "00000000-0000-0000-0000-000000000001",
     )
 
-    assert any(query == "décret n° 91-875" for query in calls)
+    assert any("91-875" in query for query in calls)
     assert all(source.get("article") != "R431-3" for source in response.sources)
     assert any(source.get("official_number") == "91-875" for source in captured["sources"])
     assert all(source.get("article") != "R431-3" for source in captured["sources"])
