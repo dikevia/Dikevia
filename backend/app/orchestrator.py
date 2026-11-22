@@ -43,6 +43,23 @@ def _cgfp_article_fpt_eligible(article_ref: str, target_versant: str = "FPT") ->
     return scope.get("analysis_eligible") is True
 
 
+def _build_versant_fallback_research(
+    question: str, public_service: str,
+) -> tuple[list[str], list[str]]:
+    """Build deterministic fallback searches without leaking FPT templates to FPE/FPH."""
+    if public_service == "FPT":
+        return (
+            build_official_search_queries(question),
+            build_official_research_axes(question),
+        )
+    branch_qualifier = (
+        "fonction publique de l'État" if public_service == "FPE"
+        else "fonction publique hospitalière"
+    )
+    branch_query = f"{question} {branch_qualifier}".strip()
+    return [branch_query], [branch_query]
+
+
 def _build_code_research_queries(
     research_queries: list[str],
     cgfp_article_queries: list[str] | None = None,
@@ -534,8 +551,9 @@ class LegalOrchestrator:
         # is retrieved. Its output contains search language only, never legal evidence.
         # Deterministic topic templates remain a resilience fallback when the model
         # is not configured or temporarily unavailable.
-        fallback_queries = build_official_search_queries(contextual_question)
-        fallback_axes = build_official_research_axes(contextual_question)
+        fallback_queries, fallback_axes = _build_versant_fallback_research(
+            contextual_question, request.public_service,
+        )
         research_plan = None
         try:
             research_plan = await plan_legal_research(
@@ -565,16 +583,8 @@ class LegalOrchestrator:
             research_queries = fallback_queries
             legal_context["strategie_recherche"] = "SECOURS_DETERMINISTE_MODELE_INDISPONIBLE"
             legal_context["axes_recherche_documentaire"] = fallback_axes
-        if request.public_service in {"FPE", "FPH"}:
-            branch_qualifier = (
-                "fonction publique de l'État" if request.public_service == "FPE"
-                else "fonction publique hospitalière"
-            )
-            branch_query = f"{contextual_question} {branch_qualifier}"
-            research_queries = list(dict.fromkeys([*research_queries[:4], branch_query]))
         # PISTE search methods cap each query at 500 characters.
         research_queries = [query[:500] for query in research_queries if query.strip()][:5]
-        contextual_search_query = build_official_search_query(contextual_question)
         live_sources: list[dict] = []
         regulatory_sources: list[dict] = []
         case_law_sources: list[dict] = []
