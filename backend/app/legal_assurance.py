@@ -421,26 +421,37 @@ def validate_claim_evidence(
             **({"axis": axis} if required_axes else {}),
         })
 
+    uncovered_axes: list[str] = []
     if required_axes:
         covered_axes = {claim.get("axis") for claim in validated}
-        uncovered_axes = payload.get("uncovered_axes", [])
-        if not isinstance(uncovered_axes, list) or any(
-            not isinstance(axis, str) or axis not in required_axes for axis in uncovered_axes
-        ) or len(set(uncovered_axes)) != len(uncovered_axes):
+        declared_uncovered = payload.get("uncovered_axes", [])
+        if not isinstance(declared_uncovered, list):
             invalid.append("invalid_uncovered_research_axes")
-            uncovered_axes = []
-        overlap_axes = covered_axes & set(uncovered_axes)
+            declared_uncovered = []
+        else:
+            declared_uncovered = [
+                axis for axis in declared_uncovered
+                if isinstance(axis, str) and axis in required_axes
+            ]
+        overlap_axes = covered_axes & set(declared_uncovered)
         if overlap_axes:
-            invalid.extend(f"research_axis_marked_both_covered_and_uncovered:{axis}" for axis in sorted(overlap_axes))
-        unresolved_axes = set(required_axes) - covered_axes - set(uncovered_axes)
-        if unresolved_axes:
-            invalid.extend(f"research_axis_not_covered:{axis}" for axis in sorted(unresolved_axes))
+            invalid.extend(
+                f"research_axis_marked_both_covered_and_uncovered:{axis}"
+                for axis in sorted(overlap_axes)
+            )
+        # Missing axes are a coverage limitation, not a reason to discard
+        # independently validated claims from other axes. Compute coverage
+        # from the claims that actually survived exact-source validation.
+        uncovered_axes = sorted(set(required_axes) - covered_axes)
 
     return {
-        "valid": not invalid,
+        # Reject the whole answer only when no claim survives. Each accepted
+        # claim has already passed its own source, quote, scope and date checks.
+        "valid": bool(validated),
+        "partial": bool(invalid or uncovered_axes),
         "claims": validated,
         "invalid_claims": invalid,
         "claim_count": len(validated),
-        "uncovered_axes": list(payload.get("uncovered_axes", [])) if required_axes and isinstance(payload.get("uncovered_axes", []), list) else [],
-        "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS_NOT_SEMANTIC_ENTAILMENT",
+        "uncovered_axes": uncovered_axes,
+        "verification_scope": "PER_CLAIM_EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS_NOT_SEMANTIC_ENTAILMENT",
     }
