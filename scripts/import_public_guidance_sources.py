@@ -223,6 +223,7 @@ def main() -> int:
     parser.add_argument("--id", action="append", default=[], help="Identifiant de seed (répétable).")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--apply", action="store_true", help="Importe uniquement les ressources approuvées.")
+    parser.add_argument("--export-json", type=Path, help="Exporte les documents téléchargés et extraits pour audit.")
     args = parser.parse_args()
     if args.limit < 0:
         parser.error("--limit doit être positif ou nul.")
@@ -257,6 +258,13 @@ def main() -> int:
             items.append(to_corpus_item(seed, source, fetched))
     finally:
         client.close()
+    if args.export_json:
+        args.export_json.parent.mkdir(parents=True, exist_ok=True)
+        args.export_json.write_text(
+            json.dumps({"documents": items, "rejected": rejected}, ensure_ascii=False, indent=2, default=str) + "\\n",
+            encoding="utf-8",
+        )
+        print(f"Export PDF/HTML préparé : {len(items)} documents vers {args.export_json}")
     print(json.dumps({
         "mode": "APPLY" if args.apply else "DRY_RUN",
         "downloaded": len(items),
