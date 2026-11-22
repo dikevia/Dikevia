@@ -50,9 +50,11 @@ def _build_versant_fallback_research(
     if public_service == "FPT":
         queries = build_official_search_queries(question)
         axes = build_official_research_axes(question)
-        # A generic but explicit fallback axis is safer than silently dropping
-        # all relevance checks when the topic classifier has no specialized rule.
-        return queries, (axes or queries)
+        # Keep a single primary query as a bounded fallback axis when a
+        # recognized single-topic question has no compound-axis plan. Passing
+        # every retrieval variant as a mandatory axis over-constrains evidence
+        # validation and rejects otherwise relevant official sources.
+        return queries, (axes or queries[:1])
     branch_qualifier = (
         "fonction publique de l'État" if public_service == "FPE"
         else "fonction publique hospitalière"
