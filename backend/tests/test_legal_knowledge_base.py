@@ -34,6 +34,62 @@ def test_temporal_status_is_conservative_when_dates_missing():
     assert temporal_status(None, None, requested, "DECREE", raw_payload='{"requested_date":"2025-01-01"}', version_status="IN_FORCE") == "IN_FORCE_ON_REQUESTED_DATE"
 
 
+def test_guidance_sources_are_context_only_and_never_ground_legal_claims():
+    for source in (
+        {"source_type": "SERVICE_PUBLIC_PART", "document_kind": "ADMIN_GUIDANCE"},
+        {"source_type": "INSTITUTIONAL_GUIDANCE", "document_kind": "PROFESSIONAL_GUIDANCE"},
+    ):
+        result = classify_legal_source({
+            **source, "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
+        })
+        assert result["normative"] is False
+        assert result["claim_eligible"] is False
+        assert result["usable_for_conclusion"] is False
+        assert result["reference_role"] == "NON_NORMATIVE_CONTEXT_ONLY"
+
+    guide = {
+        "source_type": "SERVICE_PUBLIC_PART", "source_id": "service-public:F123",
+        "title": "Fiche d'information", "excerpt": "Les agents peuvent consulter les informations relatives à leur congé.",
+        "content_kind": "FULL_TEXT", "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
+        "general_info_eligible": True, "citation_integrity": {"valid": True},
+        "official_source": True, "claim_eligible": False,
+        "reference_role": "NON_NORMATIVE_CONTEXT_ONLY",
+    }
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "Les agents peuvent consulter les informations relatives à leur congé.",
+            "source_id": "service-public:F123",
+            "quote": "Les agents peuvent consulter les informations relatives à leur congé.",
+        }]
+    }, [guide])
+    assert result["valid"] is False
+    assert result["claims"] == []
+
+
+def test_imported_cgfp_snapshot_can_support_bounded_general_claim_with_provenance():
+    source = {
+        "source_type": "CGFP_SNAPSHOT", "source_id": "CGFP:article:L1234-1",
+        "title": "Code général de la fonction publique — article L1234-1",
+        "article": "L1234-1",
+        "excerpt": "Le présent article fixe les dispositions applicables aux agents publics concernés.",
+        "content_kind": "FULL_TEXT", "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
+        "general_info_eligible": True, "citation_integrity": {"valid": True},
+        "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
+        "snapshot_modified_at": "2026-10-31",
+        "snapshot_verification_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
+        "source_status": "IMPORTED_UNVERIFIED",
+    }
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "L'article L1234-1 fixe les dispositions applicables aux agents publics concernés.",
+            "source_id": "CGFP:article:L1234-1",
+            "quote": "Le présent article fixe les dispositions applicables aux agents publics concernés.",
+        }]
+    }, [source])
+    assert result["valid"] is True
+    assert result["claims"][0]["source_id"] == "CGFP:article:L1234-1"
+
+
 def test_only_allowlisted_public_legal_and_institutional_source_urls_are_kept():
     assert safe_official_url("https://www.legifrance.gouv.fr/loda/id/LEGITEXT000000000000")
     assert safe_official_url("https://opendata.justice-administrative.fr/")
