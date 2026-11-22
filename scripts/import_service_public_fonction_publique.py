@@ -226,7 +226,9 @@ def extraire_fiches_fonctionnaires(zf: zipfile.ZipFile) -> list[dict[str, Any]]:
             full_text,
             " ".join(item.get("libelle", "") for item in references),
         )).casefold()
-        versants = set(re.findall(r"\b(?:FPT|FPE|FPH)\b", scope_text, re.I))
+        versants = {
+            token.upper() for token in re.findall(r"\b(?:FPT|FPE|FPH)\b", scope_text, re.I)
+        }
         if "fonction publique territoriale" in scope_text:
             versants.add("FPT")
         if "fonction publique hospitalière" in scope_text:
