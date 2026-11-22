@@ -39,7 +39,7 @@ def to_corpus_item(fiche: dict, provenance: dict) -> dict:
     fiche_id = str(fiche.get("fiche_id") or "").strip().upper()
     title = str(fiche.get("titre_courant") or "").strip()
     full_text = str(fiche.get("contenu") or "").strip()
-    if not re.fullmatch(r"F\\d+", fiche_id) or not title or len(full_text) < 80:
+    if not re.fullmatch(r"F\d+", fiche_id) or not title or len(full_text) < 80:
         raise ValueError("Fiche Service-Public incomplète : identifiant F valide, titre et contenu substantiel requis.")
     digest = sha256_text(full_text)
     return {
