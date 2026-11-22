@@ -11,6 +11,8 @@ from typing import Any
 
 # This is a review order, not a universal rule for resolving every conflict.
 _SOURCE_CLASS = {
+    "ADMIN_GUIDANCE": (25, "Fiche d'information administrative — non normative"),
+    "PROFESSIONAL_GUIDANCE": (20, "Ressource professionnelle — non normative"),
     "CONSTITUTIONAL": (100, "Norme constitutionnelle"),
     "EUROPEAN_TREATY": (95, "Droit de l'Union / convention internationale"),
     "LAW": (80, "Loi / ordonnance ratifiée selon son régime"),
