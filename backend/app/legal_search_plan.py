@@ -790,3 +790,51 @@ def build_official_research_axes(question: str) -> list[str]:
             continue
         axes_found.append(axes[0][:500])
     return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
+
+
+def merge_ai_and_fallback_research_queries(
+    ai_queries: list[str],
+    fallback_queries: list[str],
+    fallback_axes: list[str],
+    *,
+    max_queries: int = 5,
+) -> list[str]:
+    """Preserve model-led research while retaining independent fallback axes for compound cases.
+
+    The fallback planner is not treated as legal authority. Its independent retrieval
+    queries provide recall insurance when the model planner omits one of the explicit
+    topics in a compound question. Keep a bounded fan-out and give the model's first
+    queries priority.
+    """
+    limit = max(1, min(int(max_queries), 8))
+    primary = list(dict.fromkeys(
+        re.sub(r"\\s+", " ", str(query or "")).strip()[:500]
+        for query in (ai_queries or [])
+        if isinstance(query, str) and query.strip()
+    ))
+    fallback = list(dict.fromkeys(
+        re.sub(r"\\s+", " ", str(query or "")).strip()[:500]
+        for query in (fallback_queries or [])
+        if isinstance(query, str) and query.strip()
+    ))
+    # A single recognized topic is already represented in the model's prompt.
+    # Supplement only compound questions, where one omitted axis can hide a
+    # distinct legal mechanism. The first fallback query is the broad user query;
+    # only the focused independent axes are eligible for this reserve.
+    if len(fallback_axes or []) < 2 or len(fallback) < 2:
+        return primary[:limit] or fallback[:limit]
+
+    reserved = fallback[1:1 + min(2, len(fallback_axes), limit - 1)]
+    primary_budget = max(0, limit - len(reserved))
+    ordered = [*primary[:primary_budget], *reserved, *primary[primary_budget:]]
+    merged: list[str] = []
+    seen: set[str] = set()
+    for query in ordered:
+        key = query.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(query)
+        if len(merged) >= limit:
+            break
+    return merged or fallback[:limit]
