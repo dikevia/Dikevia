@@ -27,7 +27,7 @@ run_admin_migration() {
       for candidate in "$KC_TEMP_ADMIN" "$KC_PERMANENT_ADMIN"; do
         if KC_CLI_PASSWORD="$KC_ADMIN_PASSWORD" "$KCADM" config credentials \
           --server "$KC_LOCAL_URL" --realm master --user "$candidate" \
-          --config "$KCADM_CONFIG" >/dev/null 2>&1; then
+          --password "$KC_ADMIN_PASSWORD" --config "$KCADM_CONFIG" >/dev/null 2>&1; then
           ready=1
           break 2
         fi
@@ -41,7 +41,7 @@ run_admin_migration() {
     return 1
   fi
 
-  perm_users=$("$KCADM" get users -r master -q "q=username:$KC_PERMANENT_ADMIN" --config "$KCADM_CONFIG") || return 1
+  perm_users=$("$KCADM" get users -r master -q "username=$KC_PERMANENT_ADMIN" --config "$KCADM_CONFIG") || return 1
   if [[ "$perm_users" =~ \"id\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
     perm_id="${BASH_REMATCH[1]}"
   else
@@ -59,7 +59,7 @@ run_admin_migration() {
     return 1
   fi
 
-  temp_users=$("$KCADM" get users -r master -q "q=username:$KC_TEMP_ADMIN" --config "$KCADM_CONFIG") || return 1
+  temp_users=$("$KCADM" get users -r master -q "username=$KC_TEMP_ADMIN" --config "$KCADM_CONFIG") || return 1
   if [[ "$temp_users" =~ \"id\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
     temp_id="${BASH_REMATCH[1]}"
     if [[ "$KC_TEMP_ADMIN" != "$KC_PERMANENT_ADMIN" ]]; then
