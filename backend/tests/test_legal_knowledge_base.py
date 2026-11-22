@@ -25,6 +25,8 @@ def test_temporal_status_is_conservative_when_dates_missing():
     assert temporal_status(date(2024, 1, 1), date(2025, 1, 1), requested) == "IN_FORCE_ON_REQUESTED_DATE"
     assert temporal_status(date(2025, 2, 1), None, requested) == "NOT_YET_EFFECTIVE"
     assert temporal_status(None, None, requested) == "TEMPORAL_SCOPE_INCOMPLETE"
+    assert temporal_status(None, None, requested, "DECREE", version_status="REPEALED") == "NO_LONGER_IN_FORCE"
+    assert temporal_status(None, None, requested, "CODE", raw_payload={"temporal_scope": "CURRENT_CODE_SNAPSHOT"}, version_status="IN_FORCE") == "TEMPORAL_SCOPE_INCOMPLETE"
     assert temporal_status(None, None, requested, "ADMIN_CASELAW", date(2024, 6, 1)) == "DECISION_AVAILABLE_BY_REQUESTED_DATE"
     assert temporal_status(None, None, requested, "ADMIN_CASELAW", date(2025, 6, 1)) == "DECISION_POSTERIOR_TO_REQUESTED_DATE"
     assert temporal_status(None, None, requested, "DECREE", raw_payload={"requested_date": "2025-01-01"}, version_status="IN_FORCE") == "IN_FORCE_ON_REQUESTED_DATE"
