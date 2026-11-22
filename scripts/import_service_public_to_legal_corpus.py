@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from app.legal_corpus import sha256_text, upsert_legal_document  # noqa: E402
+from app.legal_corpus import clean_text, sha256_text, upsert_legal_document  # noqa: E402
 from import_service_public_fonction_publique import (  # noqa: E402
     extraire_fiches_fonctionnaires,
     telecharger_archive_sp,
@@ -38,7 +38,7 @@ def validate_ingest_dsn(dsn: str) -> None:
 def to_corpus_item(fiche: dict, provenance: dict) -> dict:
     fiche_id = str(fiche.get("fiche_id") or "").strip().upper()
     title = str(fiche.get("titre_courant") or "").strip()
-    full_text = str(fiche.get("contenu") or "").strip()
+    full_text = clean_text(str(fiche.get("contenu") or ""))
     if not re.fullmatch(r"F\d+", fiche_id) or not title or len(full_text) < 80:
         raise ValueError("Fiche Service-Public incomplète : identifiant F valide, titre et contenu substantiel requis.")
     digest = sha256_text(full_text)
