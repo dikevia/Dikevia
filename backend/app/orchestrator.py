@@ -1294,6 +1294,7 @@ class LegalOrchestrator:
                         ),
                         "research_axis_relevant": True,
                         "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
+                        "general_info_eligible": parsed_date is None,
                         "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED",
                         "citation_integrity": integrity,
                         "document": found["source"]["source_file"],
