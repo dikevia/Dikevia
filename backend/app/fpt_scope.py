@@ -119,15 +119,26 @@ def classify_public_service_scope(
     corpus = _fold((title + " " + text)[:500_000])
     title_folded = _fold(title)
 
-    # These CGFP provisions are retained as contextual research leads only.
-    # Their generic wording does not, by itself, establish the complete FPT
-    # implementation regime. The model may use them to orient further official
-    # searches, but they must never support a legal claim without corroborating
-    # FPT-specific implementing texts and a separate applicability check.
-    if target_versant == "FPT" and article_ref in (
-        {f"l822 {number}" for number in range(18, 24)}
-        | {f"l823 {number}" for number in range(1, 7)}
-    ):
+    # The CGFP chapter L823-1 to L823-6 states the common statutory TPT
+    # framework for civil servants. Only a live Légifrance article may ground
+    # a claim; a bundled snapshot remains contextual and cannot certify the
+    # current wording. Branch-specific implementing rules must still be checked.
+    if article_ref in {f"l823 {number}" for number in range(1, 7)}:
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                f"Article {article_ref.upper()} du CGFP : disposition statutaire commune relative au TPT",
+                "Le texte réglementaire propre au versant doit être vérifié pour les modalités d'application",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+    # CITIS provisions remain contextual until their branch-specific scope and
+    # implementing rules have been independently established.
+    if target_versant == "FPT" and article_ref in {
+        f"l822 {number}" for number in range(18, 24)
+    }:
         return {
             "scope": "GENERAL_PUBLIC_SERVICE",
             "evidence": [
