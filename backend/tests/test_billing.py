@@ -1,6 +1,11 @@
 import hashlib
 import hmac
 import json
+
+import pytest
+from fastapi import HTTPException
+from app.config import settings
+from app.main import billing_checkout
 from app.billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
 
 
@@ -51,3 +56,11 @@ def test_checkout_event_maps_org_and_plan():
 
 def test_unrecognized_event_is_ignored():
     assert extract_subscription_state({"type": "customer.created", "data": {"object": {}}}) is None
+
+@pytest.mark.asyncio
+async def test_checkout_is_blocked_until_monthly_credit_enforcement_is_live(monkeypatch):
+    monkeypatch.setattr(settings, "private_instance_mode", False)
+    with pytest.raises(HTTPException) as exc:
+        await billing_checkout({"plan_code": "ESSENTIEL"})
+    assert exc.value.status_code == 503
+    assert "compteur de crédits mensuels" in exc.value.detail
