@@ -15,7 +15,10 @@ on:
       - backend/tests/test_service_public_fp_import.py
       - backend/tests/test_public_source_registry.py
       - backend/tests/test_legal_knowledge_base.py
+      - backend/tests/test_v3385_cgfp_baseline.py
       - backend/app/legal_corpus.py
+      - backend/app/legal_assurance.py
+      - backend/app/orchestrator.py
       - corpus_national/sources/registry.json
       - corpus_national/sources/FULL_IMPORT_REQUESTED
       - .github/workflows/corpus-public-source-pilot.yml
