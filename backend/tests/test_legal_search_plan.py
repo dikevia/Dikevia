@@ -2,6 +2,7 @@ from app.legal_search_plan import (
     build_official_research_axes,
     build_official_search_query,
     build_official_search_queries,
+    merge_ai_and_fallback_research_queries,
 )
 
 
@@ -402,3 +403,67 @@ def test_six_year_contract_question_does_not_inject_preselected_article_numbers(
         assert all(article not in item for item in axes)
     assert "contractuel" in query.casefold()
     assert "CDI" in query
+
+
+
+def test_gemini_plan_keeps_independent_fallback_axes_for_compound_health_case():
+    question = (
+        "Je suis fonctionnaire territorial titulaire dans une mairie. "
+        "J’ai été victime d’un accident sur mon lieu de travail, reconnu comme imputable au service. "
+        "Après plusieurs mois d’arrêt, le médecin estime que mon état nécessite une reprise "
+        "à temps partiel thérapeutique. Mon employeur envisage une disponibilité d’office "
+        "et je m’interroge aussi sur le maintien dans l’emploi, le reclassement et les recours."
+    )
+    fallback_queries = build_official_search_queries(question)
+    fallback_axes = build_official_research_axes(question)
+    assert len(fallback_axes) >= 2
+    assert len(fallback_queries) >= 3
+
+    # Simulate a plausible Gemini plan that identifies the return-to-work and
+    # availability issues but omits one of the explicit legal mechanisms.
+    ai_queries = [
+        "temps partiel thérapeutique fonctionnaire territorial",
+        "disponibilité d’office raison de santé fonction publique territoriale",
+        "reclassement inaptitude physique agent territorial",
+        "recours décision administrative agent public",
+        "maintien dans l’emploi collectivité territoriale",
+    ]
+    merged = merge_ai_and_fallback_research_queries(
+        ai_queries, fallback_queries, fallback_axes, max_queries=5,
+    )
+
+    assert len(merged) == 5
+    assert len(merged) == len(set(merged))
+    # Both independent fallback axes survive even when Gemini already
+    # supplied the maximum number of queries.
+    assert fallback_queries[1] in merged
+    assert fallback_queries[2] in merged
+    assert merged[:3] == ai_queries[:3]
+
+
+def test_gemini_plan_is_not_replaced_by_fallback_for_single_topic():
+    question = "Ma demande de CITIS après un accident de service est refusée."
+    fallback_queries = build_official_search_queries(question)
+    fallback_axes = build_official_research_axes(question)
+    assert fallback_axes == []
+
+    ai_queries = [
+        "CITIS imputabilité au service fonctionnaire territorial",
+        "congé invalidité temporaire accident de service",
+    ]
+    assert merge_ai_and_fallback_research_queries(
+        ai_queries, fallback_queries, fallback_axes, max_queries=5,
+    ) == ai_queries
+
+
+def test_merged_research_queries_respect_the_five_query_budget():
+    merged = merge_ai_and_fallback_research_queries(
+        [f"axe IA {index}" for index in range(1, 8)],
+        [f"recherche de secours {index}" for index in range(1, 5)],
+        ["axe de secours A", "axe de secours B", "axe de secours C"],
+        max_queries=5,
+    )
+    assert len(merged) == 5
+    assert merged[:3] == ["axe IA 1", "axe IA 2", "axe IA 3"]
+    assert "recherche de secours 2" in merged
+    assert "recherche de secours 3" in merged
