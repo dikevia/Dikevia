@@ -749,3 +749,35 @@ async def test_regulatory_search_prefers_complete_requested_article_sections(mon
     assert "Article 37-1" not in results[0]["excerpt"]
     assert "Article 37-9" not in results[0]["excerpt"]
     assert results[0]["full_text"] == full_text
+
+
+def test_requested_excerpt_extracts_targeted_amendments_from_long_decree_article():
+    prefix = "Article 3\n" + ("Disposition générale sans lien avec le CITIS. " * 450)
+    full_text = (
+        prefix
+        + "\n2° L'article 13-2 est remplacé par les dispositions suivantes :\n"
+        + "« Art. 13-2. - La décision relative au temps partiel thérapeutique intervient au plus tard trente jours. »\n"
+        + "3° L'article 13-5 est remplacé par les dispositions suivantes :\n"
+        + "« Art. 13-5. - Les conclusions médicales peuvent être contestées devant le conseil médical. »\n"
+        + "11° Le 2° de l'article 37-2 est remplacé par les dispositions suivantes :\n"
+        + "« Un certificat médical indique la nature et le siège des lésions. »\n"
+        + "12° Après l'article 37-9, il est inséré un article 37-9-1 ainsi rédigé :\n"
+        + "« Art. 37-9-1. - Les dispositions des articles 26-1, 28, 31-2 et 34-1 s'appliquent au CITIS. »\n"
+        + "13° Les articles 13-4, 13-6 et 37-15 sont abrogés."
+    )
+    citis = LegifranceConnector._requested_article_excerpt(
+        full_text,
+        "décret n° 2026-705 article 3 modifie articles 37-2 et 37-9-1 CITIS",
+    )
+    assert "nature et le siège des lésions" in citis
+    assert "s'appliquent au CITIS" in citis
+    assert "temps partiel thérapeutique" not in citis
+    assert len(citis) < 5000
+
+    tpt = LegifranceConnector._requested_article_excerpt(
+        full_text,
+        "décret n° 2026-705 article 3 modifie articles 13-2 et 13-5 temps partiel thérapeutique",
+    )
+    assert "trente jours" in tpt
+    assert "contestées devant le conseil médical" in tpt
+    assert "s'appliquent au CITIS" not in tpt

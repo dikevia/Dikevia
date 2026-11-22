@@ -272,8 +272,9 @@ class LegifranceConnector:
         return " … ".join(sentence for _, sentence in chosen)[:max_chars]
 
     @staticmethod
+    @staticmethod
     def _requested_article_excerpt(text: str, query: str, max_chars: int = 10000) -> str:
-        """Prefer complete requested article sections over a keyword-selected fragment."""
+        """Prefer exact requested articles or amendment clauses over a truncated whole decree."""
         article_clause = re.search(r"\barticles?\b(.*)", query, re.IGNORECASE)
         if not article_clause:
             return ""
@@ -282,21 +283,44 @@ class LegifranceConnector:
         ))
         if not requested_refs:
             return ""
+
+        # When a decree modifies named articles, target those clauses rather than
+        # the whole numbered decree article (which may be longer than max_chars).
+        modified_refs = [ref for ref in requested_refs if "-" in ref]
+        if modified_refs:
+            selected = []
+            for ref in modified_refs:
+                mention = re.compile(
+                    rf"\b(?:articles?|art\.)\s*{re.escape(ref)}\b",
+                    re.IGNORECASE,
+                )
+                match = mention.search(text)
+                if not match:
+                    continue
+                prefix_items = list(re.finditer(r"(?m)^[ \t]*\d+\s*°", text[:match.start()]))
+                section_start = prefix_items[-1].start() if prefix_items else max(0, text.rfind("\n", 0, match.start()))
+                next_item = re.search(r"(?m)^[ \t]*\d+\s*°", text[match.end():])
+                section_end = match.end() + next_item.start() if next_item else min(len(text), match.end() + 2200)
+                section = text[section_start:section_end].strip()
+                if section and section not in selected:
+                    selected.append(section)
+            if selected:
+                return "\n\n".join(selected)[:max_chars].strip()
+
         headings = list(re.finditer(
             r"(?im)^[ \t]*(?:«\s*)?Article\s*(\d{1,2}(?:-\d{1,2})?)\b",
             text,
         ))
-        if not headings:
-            return ""
         selected = []
         for index, heading in enumerate(headings):
             if heading.group(1) not in requested_refs:
                 continue
-            end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
-            section = text[heading.start():end].strip()
+            section_end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+            section = text[heading.start():section_end].strip()
             if section:
                 selected.append(section)
         return "\n\n".join(selected)[:max_chars].strip()
+
 
 
     @staticmethod

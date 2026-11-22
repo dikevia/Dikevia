@@ -100,3 +100,13 @@ def test_followup_questions_keep_citis_context_for_targeted_regulatory_search():
     queries = _build_targeted_regulatory_queries(contextual)
     assert any("87-602" in query and "37-2" in query for query in queries)
     assert any("2026-705" in query for query in queries)
+
+
+def test_targeted_regulatory_queries_name_the_exact_modified_articles():
+    from app.orchestrator import _build_targeted_regulatory_queries
+
+    citis = _build_targeted_regulatory_queries("Je suis en CITIS après un accident de service.")
+    assert any("article 3 modifie articles 37-2 et 37-9-1" in query for query in citis)
+
+    tpt = _build_targeted_regulatory_queries("Je demande un temps partiel thérapeutique.")
+    assert any("article 3 modifie articles 13-2 et 13-5" in query for query in tpt)

@@ -76,12 +76,12 @@ def _build_targeted_regulatory_queries(question: str) -> list[str]:
     if citis:
         queries.extend([
             "décret n° 87-602 articles 37-1 37-2 37-5 37-9 37-9-1 37-20 CITIS accident de service déclaration imputabilité instruction",
-            "décret n° 2026-705 article 3 CITIS fonction publique territoriale déclaration accident maladie professionnelle",
+            "décret n° 2026-705 article 3 modifie articles 37-2 et 37-9-1 CITIS fonction publique territoriale déclaration accident maladie professionnelle",
         ])
     if therapeutic_part_time:
         queries.extend([
             "décret n° 87-602 articles 13-1 13-2 13-3 13-5 13-7 13-9 13-11 13-13 temps partiel pour raison thérapeutique fonctionnaire territorial",
-            "décret n° 2026-705 article 3 temps partiel pour raison thérapeutique fonctionnaire territorial",
+            "décret n° 2026-705 article 3 modifie articles 13-2 et 13-5 temps partiel pour raison thérapeutique fonctionnaire territorial",
             "décret n° 88-145 article 9-1 temps partiel pour raison thérapeutique agent contractuel territorial",
             "décret n° 2026-705 article 6 temps partiel pour raison thérapeutique agent contractuel territorial décret 88-145",
         ])
