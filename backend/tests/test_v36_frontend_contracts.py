@@ -149,3 +149,18 @@ def test_billing_screen_uses_official_ttc_catalogue_and_monthly_credit_rules():
 def test_readiness_exposes_render_revision_for_post_deploy_verification():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     assert 'os.getenv("RENDER_GIT_COMMIT", "unknown")' in main
+
+
+def test_public_service_picker_routes_each_chat_and_keeps_conversation_history_scoped():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    schemas = (ROOT / "backend/app/schemas.py").read_text(encoding="utf-8")
+    assert 'data-public-service="FPT"' in html
+    assert 'data-public-service="FPE"' in html
+    assert 'data-public-service="FPH"' in html
+    assert "await ensurePublicServiceSelection()" in html
+    assert "public_service:selectedPublicService" in html
+    assert "conversationScope!==selectedPublicService" in html
+    assert "metadata->>'public_service'" in main
+    assert '"public_service": r["public_service"] or "FPT"' in main
+    assert 'public_service: Literal["FPT", "FPE", "FPH"] = "FPT"' in schemas
