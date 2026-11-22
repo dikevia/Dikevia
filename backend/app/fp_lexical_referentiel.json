@@ -143,7 +143,18 @@
           "88-386"
         ]
       },
-      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+      "reference_validation": "UNVERIFIED_LEAD_ONLY",
+      "official_source_leads": [
+        {
+          "name": "FAQ DGAFP TPT 2026",
+          "url": "https://www.fonction-publique.gouv.fr/files/files/Etre%20agent%20public/Protection%20sociale/FAQ_TPT_2026.pdf",
+          "references": [
+            "CGFP L823-1 à L823-6",
+            "Décret 2026-705 du 29 juillet 2026"
+          ],
+          "status": "SOURCE_LEAD_NOT_FULL_SCOPE_VALIDATION"
+        }
+      ]
     },
     {
       "id": "conges_annuels",
@@ -828,7 +839,17 @@
         "domaine d'intervention"
       ],
       "reference_leads": {},
-      "reference_validation": "UNVERIFIED_LEAD_ONLY"
+      "reference_validation": "UNVERIFIED_LEAD_ONLY",
+      "definitions": {
+        "metier": "Ensemble d'emplois liés par une technicité dominante et un socle commun d'activités et de compétences.",
+        "fonction": "Rôle particulier dans l'organisation d'un employeur ; ne se confond pas nécessairement avec le métier exercé.",
+        "emploi_type": "Déclinaison d'un ou plusieurs référentiels métiers dans l'organisation du travail d'une collectivité.",
+        "emploi": "Regroupement de postes présentant des activités et caractéristiques suffisamment proches.",
+        "poste_de_travail": "Situation individuelle de travail décrite par les tâches, activités et missions exercées.",
+        "activite": "Ensemble cohérent d'actions organisées concourant à la production d'un service.",
+        "competence": "Combinaison de savoirs et savoir-faire mobilisés dans une situation de travail.",
+        "famille_professionnelle": "Regroupement de métiers ayant une finalité de service, une technicité et une culture professionnelle communes."
+      }
     },
     {
       "id": "organisation_temps_travail",
