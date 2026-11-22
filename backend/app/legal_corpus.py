@@ -106,6 +106,16 @@ def safe_official_url(value: str | None) -> str | None:
         "cnfpt.fr", "www.cnfpt.fr", "wikiterritorial.cnfpt.fr",
         "cig929394.fr", "www.cig929394.fr",
         "cigversailles.fr", "www.cigversailles.fr",
+        # Exact HTTPS hosts of the explicitly selected and approved guidance corpus.
+        "cdg35.bzh", "www.cdg35.bzh",
+        "uffa.cfdt.fr",
+        "cfdt-interco31.fr", "www.cfdt-interco31.fr",
+        "cfdtinterco35.fr", "www.cfdtinterco35.fr",
+        "cgtservicespublics.fr", "www.cgtservicespublics.fr",
+        "fo-fonctionnaires.fr", "www.fo-fonctionnaires.fr",
+        "cftc.fr", "www.cftc.fr", "ledecodeur.cftc.fr",
+        "unsa-fp.org", "www.unsa-fp.org",
+        "fonctionpublique.solidaires.org",
     }
     is_cdg_domain = bool(re.fullmatch(r"(?:www\.)?cdg\d{2,3}\.fr", host))
     is_gouv_domain = host == "gouv.fr" or host.endswith(".gouv.fr")
