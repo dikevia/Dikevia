@@ -1357,7 +1357,14 @@ class LegalOrchestrator:
             if s.get("source_id") in permanent_source_ids
             and s.get("content_kind") == "FULL_TEXT"
             and (s.get("citation_integrity") or {}).get("valid") is True
-            and s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}
+            and (
+                s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}
+                or (
+                    s.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
+                    and s.get("general_info_eligible") is True
+                    and s.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
+                )
+            )
             and s.get("analysis_eligible") is True
             and s.get("claim_eligible", True) is not False
             and s.get("research_axis_relevant", True) is not False
