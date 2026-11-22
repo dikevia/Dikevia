@@ -56,6 +56,30 @@ jobs:
       - name: Dry-run CNFPT working-time guidance extraction
         run: python scripts/import_public_guidance_sources.py --id cnfpt-temps-travail-agents-territoriaux --export-json /tmp/cnfpt-temps-travail.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
+      - name: Dry-run cfdt-uffa-site extraction (union source, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cfdt-uffa-site --export-json /tmp/cfdt-uffa.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run cfdt-interco-guide-agent-public-2026 extraction (union source, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cfdt-interco-guide-agent-public-2026 --export-json /tmp/cfdt-guide-2026.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run cgt-fp-site extraction (union source, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cgt-fp-site --export-json /tmp/cgt-fp.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run fo-fp-site extraction (union source, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id fo-fp-site --export-json /tmp/fo-fp.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run cftc-fp-propositions extraction (union source, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cftc-fp-propositions --export-json /tmp/cftc-fp.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run cftc-decodeur-greve-fp extraction (union source, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cftc-decodeur-greve-fp --export-json /tmp/cftc-greve.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run unsa-fp-site extraction (union source, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id unsa-fp-site --export-json /tmp/unsa-fp.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run solidaires-fp-site extraction (union source, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id solidaires-fp-site --export-json /tmp/solidaires-fp.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
       - name: Archive the extracted public corpus for audit
         uses: actions/upload-artifact@v4
         with:
@@ -72,6 +96,14 @@ jobs:
             /tmp/cdg69-conges.json
             /tmp/cnfpt-temps-travail.json
             /tmp/public-guidance-originals/
+            /tmp/cfdt-uffa.json
+            /tmp/cfdt-guide-2026.json
+            /tmp/cgt-fp.json
+            /tmp/fo-fp.json
+            /tmp/cftc-fp.json
+            /tmp/cftc-greve.json
+            /tmp/unsa-fp.json
+            /tmp/solidaires-fp.json
           if-no-files-found: warn
           retention-days: 2
       - name: Detect an explicit full-import request on this branch
