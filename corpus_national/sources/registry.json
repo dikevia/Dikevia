@@ -65,7 +65,7 @@
       "name": "DGAFP — ressources et guides de la fonction publique de l'État",
       "publisher": "Direction générale de l'administration et de la fonction publique",
       "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Pages et documents publics à inventorier",
       "scope": [
         "FPE",
@@ -206,7 +206,7 @@
       "name": "CDG 35 — ressources statutaires et RH",
       "publisher": "Centre de gestion d'Ille-et-Vilaine",
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "CANDIDATE",
+      "status": "ACCESS_REVIEWED",
       "collection_mode": "Pages publiques et documents téléchargeables autorisés",
       "scope": [
         "FPT"
@@ -560,11 +560,18 @@
         "RTT"
       ],
       "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
       "reuse_status": "REVIEW_REQUIRED",
       "publication_date": "2026-11",
-      "notes": "Version signalée comme mise à jour le 18 novembre 2026 ; contrôler directement le PDF, son contenu et les références réglementaires avant intégration."
+      "notes": "Version signalée comme mise à jour le 18 novembre 2026 ; contrôler directement le PDF, son contenu et les références réglementaires avant intégration.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "f6684fb63d04b1e6144289a7eec8d31dc225d9c5026bb513c0f5efa6bdb45ffe",
+      "text_sha256": "05aa19f3219328a24830646d8c9583d2cc217e72145614de6940229395f7a79a",
+      "page_count": 16,
+      "character_count": 45048,
+      "artifact_name": "dikevia-public-guidance-collected.zip"
     },
     {
       "id": "cdg44-actualite-faq-tpt-2026",
@@ -675,11 +682,18 @@
         "heures supplémentaires"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
       "reuse_status": "REVIEW_REQUIRED",
       "publication_date": "2025-06",
-      "notes": "Version publiée sur le domaine actuel cdg35.bzh ; contrôler licence et extraction avant indexation."
+      "notes": "Version publiée sur le domaine actuel cdg35.bzh ; contrôler licence et extraction avant indexation.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "cd2953e6e602eda745d318e05a8decddaa789867fe51681e2853a938c3e791c5",
+      "text_sha256": "29e4fd05653483bd915e9cfbb8e0d2dfe8af87077c9e753e42f6473feda9049c",
+      "page_count": 20,
+      "character_count": 39553,
+      "artifact_name": "dikevia-public-guidance-collected.zip"
     },
     {
       "id": "cdg35-reglement-temps-travail-cst-2025",
@@ -699,11 +713,18 @@
         "annualisation"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
       "reuse_status": "REVIEW_REQUIRED",
       "publication_date": "2025-11",
-      "notes": "Document statutaire de référence du CDG35 ; licence et réutilisation à contrôler."
+      "notes": "Document statutaire de référence du CDG35 ; licence et réutilisation à contrôler.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "54cf4f343057e18157b34f4d256d8dcd25d7c0d113c39cc8ade9674c8ef91f07",
+      "text_sha256": "0b393a0dadc946c9ac8ce0d65602948e9bc3e81f4c6325b837243c5b0926167c",
+      "page_count": 31,
+      "character_count": 52077,
+      "artifact_name": "dikevia-public-guidance-collected.zip"
     },
     {
       "id": "cdg35-actualites-statutaires-2026-09",
@@ -723,11 +744,18 @@
         "quatre semaines"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "CANDIDATE",
-      "content_status": "NOT_COLLECTED",
+      "status": "ACCESS_REVIEWED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
       "reuse_status": "REVIEW_REQUIRED",
       "publication_date": "2026-09-17",
-      "notes": "Ressource récente avec cas pratiques sur le report des congés après congé de santé ; contrôler licence et portée exacte."
+      "notes": "Ressource récente avec cas pratiques sur le report des congés après congé de santé ; contrôler licence et portée exacte.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "2b1d45f0cb0316832ba922e7b37564526cc7dac9eb38d27a2718fc8c9960480e",
+      "text_sha256": "24130ffa0deb560c575be9316676dad663a138dbd59919f6a16424dabeba36b5",
+      "page_count": 58,
+      "character_count": 33438,
+      "artifact_name": "dikevia-public-guidance-collected.zip"
     }
   ]
 }
