@@ -1025,7 +1025,7 @@ class LegalOrchestrator:
                 integrity = validate_snapshot_citation(citation, article or {})
                 if integrity["valid"] and _cgfp_article_fpt_eligible(hit["article"]):
                     article_text = str((article or {}).get("text") or "")
-                    article_ref = re.sub(r"\\s+", "", str(hit["article"])).upper()
+                    article_ref = re.sub(r"\s+", "", str(hit["article"])).upper()
                     snapshot_title = f"Code général de la fonction publique — article {article_ref}"
                     snapshot_scope = classify_public_service_scope({
                         "title": snapshot_title,
