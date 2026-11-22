@@ -145,6 +145,7 @@ def fetch_seed(client: httpx.Client, seed: dict, source: dict) -> dict:
     digest = hashlib.sha256(content).hexdigest()
     return {
         "text": text,
+        "raw_content": content,
         "sha256": digest,
         "byte_count": len(content),
         "format": detected_format,
@@ -224,6 +225,7 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--apply", action="store_true", help="Importe uniquement les ressources approuvées.")
     parser.add_argument("--export-json", type=Path, help="Exporte les documents téléchargés et extraits pour audit.")
+    parser.add_argument("--download-dir", type=Path, help="Conserve les fichiers PDF/HTML originaux dans ce dossier.")
     args = parser.parse_args()
     if args.limit < 0:
         parser.error("--limit doit être positif ou nul.")
@@ -255,6 +257,11 @@ def main() -> int:
                 rejected.append({"id": seed["id"], "reason": "source_or_reuse_not_approved"})
                 continue
             fetched = fetch_seed(client, seed, source)
+            if args.download_dir:
+                args.download_dir.mkdir(parents=True, exist_ok=True)
+                extension = ".pdf" if fetched["format"] == "PDF" else ".html"
+                filename = re.sub(r"[^A-Za-z0-9_.-]+", "-", seed["id"]) + extension
+                (args.download_dir / filename).write_bytes(fetched["raw_content"])
             items.append(to_corpus_item(seed, source, fetched))
     finally:
         client.close()
