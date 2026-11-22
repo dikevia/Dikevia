@@ -273,6 +273,7 @@ class LegifranceConnector:
 
     @staticmethod
     @staticmethod
+    @staticmethod
     def _requested_article_excerpt(text: str, query: str, max_chars: int = 10000) -> str:
         """Prefer exact requested articles or amendment clauses over a truncated whole decree."""
         article_clause = re.search(r"\barticles?\b(.*)", query, re.IGNORECASE)
@@ -284,11 +285,29 @@ class LegifranceConnector:
         if not requested_refs:
             return ""
 
-        # When a decree modifies named articles, target those clauses rather than
-        # the whole numbered decree article (which may be longer than max_chars).
+        headings = list(re.finditer(
+            r"(?im)^[ \t]*(?:«\s*)?Article\s*(\d{1,2}(?:-\d{1,2})?)\b",
+            text,
+        ))
         modified_refs = [ref for ref in requested_refs if "-" in ref]
+
+        # If the retrieved document is the consolidated decree itself, use its
+        # complete requested article sections rather than amendment references.
         if modified_refs:
-            selected = []
+            heading_sections = []
+            for index, heading in enumerate(headings):
+                if heading.group(1) not in modified_refs:
+                    continue
+                section_end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+                section = text[heading.start():section_end].strip()
+                if section:
+                    heading_sections.append(section)
+            if heading_sections:
+                return "\n\n".join(heading_sections)[:max_chars].strip()
+
+            # If the retrieved document is an amending decree, extract only
+            # the numbered clauses that amend the requested articles.
+            amendment_sections = []
             for ref in modified_refs:
                 mention = re.compile(
                     rf"\b(?:articles?|art\.)\s*{re.escape(ref)}\b",
@@ -302,15 +321,11 @@ class LegifranceConnector:
                 next_item = re.search(r"(?m)^[ \t]*\d+\s*°", text[match.end():])
                 section_end = match.end() + next_item.start() if next_item else min(len(text), match.end() + 2200)
                 section = text[section_start:section_end].strip()
-                if section and section not in selected:
-                    selected.append(section)
-            if selected:
-                return "\n\n".join(selected)[:max_chars].strip()
+                if section and section not in amendment_sections:
+                    amendment_sections.append(section)
+            if amendment_sections:
+                return "\n\n".join(amendment_sections)[:max_chars].strip()
 
-        headings = list(re.finditer(
-            r"(?im)^[ \t]*(?:«\s*)?Article\s*(\d{1,2}(?:-\d{1,2})?)\b",
-            text,
-        ))
         selected = []
         for index, heading in enumerate(headings):
             if heading.group(1) not in requested_refs:
