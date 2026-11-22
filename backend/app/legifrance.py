@@ -468,10 +468,10 @@ class LegifranceConnector:
                 "status": status, "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
                 "excerpt": self._relevant_excerpt(text, query.strip()),
                 "valid_from": valid_from, "valid_to": valid_to,
-                # LODA_DATE + DATE_VERSION and the dated consultation select
-                # the version applicable to the requested date even when the
-                # search metadata omits a separate status label.
-                "version_status": status if status != "UNKNOWN" else "IN_FORCE",
+                # Keep the legal status unknown when Légifrance metadata omits it.
+                # The verified DATE_VERSION search + matching dated consultation
+                # is recorded separately as temporal retrieval evidence below.
+                "version_status": status,
                 "version_key": f"{identifier}:{effective_date.isoformat()}",
                 "source_version_id": identifier, "full_text": text[:500000],
                 "raw_metadata": record, "raw_version_payload": {
