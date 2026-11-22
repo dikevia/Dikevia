@@ -275,6 +275,148 @@
         "cdg69.fr",
         "www.cdg69.fr"
       ]
+    },
+    {
+      "id": "cfdt-fonctions-publiques",
+      "name": "CFDT Fonctions Publiques — UFFA",
+      "publisher": "Union des fédérations de fonctionnaires et assimilés CFDT",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "collection_mode": "Actualités, analyses, revendications, guides et publications publiques ; conserver l'attribution syndicale.",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; ne pas assimiler les analyses syndicales au droit positif.",
+      "priority": 4,
+      "domains": [
+        "uffa.cfdt.fr"
+      ]
+    },
+    {
+      "id": "cfdt-interco",
+      "name": "CFDT Interco — fonction publique territoriale et services publics",
+      "publisher": "Fédération CFDT Interco",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "collection_mode": "Guides, fiches pratiques, analyses statutaires, actualités et documents publics.",
+      "scope": [
+        "FPT",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; distinguer analyse syndicale et texte juridique.",
+      "priority": 4,
+      "domains": [
+        "interco.cfdt.fr",
+        "cfdt-interco31.fr",
+        "www.cfdt-interco31.fr"
+      ]
+    },
+    {
+      "id": "cgt-fonction-publique",
+      "name": "CGT — Fonction publique",
+      "publisher": "CGT, fédérations des services publics, de l'État et de la santé/action sociale",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "collection_mode": "Publications et analyses des fédérations CGT couvrant les trois versants ; conserver l'identité de la fédération éditrice.",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; positions revendicatives non assimilables au droit positif.",
+      "priority": 4,
+      "domains": [
+        "cgtservicespublics.fr",
+        "www.cgtservicespublics.fr",
+        "cgtetat.fr",
+        "www.cgtetat.fr",
+        "sante.cgt.fr",
+        "www.sante.cgt.fr"
+      ]
+    },
+    {
+      "id": "fo-fonction-publique",
+      "name": "FO Fonction publique — FGF-FO",
+      "publisher": "Fédération générale des fonctionnaires Force ouvrière",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "collection_mode": "Actualités, publications, droits et services, analyses et revendications publiques.",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; distinguer revendications, commentaires et règles applicables.",
+      "priority": 4,
+      "domains": [
+        "fo-fonctionnaires.fr",
+        "www.fo-fonctionnaires.fr"
+      ]
+    },
+    {
+      "id": "cftc-fonction-publique",
+      "name": "CFTC — Fonction publique",
+      "publisher": "CFTC et fédérations des agents de l'État, des collectivités territoriales et santé-sociaux",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "collection_mode": "Propositions, analyses, fiches pédagogiques et publications concernant les agents publics.",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; distinguer les positions CFTC du droit positif.",
+      "priority": 4,
+      "domains": [
+        "cftc.fr",
+        "www.cftc.fr",
+        "ledecodeur.cftc.fr"
+      ]
+    },
+    {
+      "id": "unsa-fonction-publique",
+      "name": "UNSA Fonction Publique",
+      "publisher": "UNSA Fonction Publique",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "collection_mode": "Actualités, analyses, guides, grilles, communiqués et documents publics.",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; conserver date et attribution.",
+      "priority": 4,
+      "domains": [
+        "unsa-fp.org",
+        "www.unsa-fp.org"
+      ]
+    },
+    {
+      "id": "solidaires-fonction-publique",
+      "name": "Solidaires Fonction publique",
+      "publisher": "Union syndicale Solidaires — secteur Fonction publique",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "collection_mode": "Actualités, informations, matériel, analyses et publications publiques.",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; distinguer positions syndicales et droit positif.",
+      "priority": 4,
+      "domains": [
+        "fonctionpublique.solidaires.org"
+      ]
     }
   ],
   "rules": [
@@ -902,6 +1044,198 @@
       "text_sha256": "bddd8905eb5d0e0330757d1f5a708ceedd822f4df241bc366a022b26a03a7f1b",
       "character_count": 5414,
       "artifact_name": "dikevia-expanded-public-guidance.zip"
+    },
+    {
+      "id": "cfdt-uffa-site",
+      "source_id": "cfdt-fonctions-publiques",
+      "title": "Site officiel CFDT Fonctions Publiques — UFFA",
+      "url": "https://uffa.cfdt.fr/",
+      "format": "HTML",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "droits des agents publics",
+        "rémunération",
+        "carrière",
+        "santé",
+        "dialogue social",
+        "revendications"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Site syndical national couvrant les trois versants ; les contenus doivent rester attribués à la CFDT."
+    },
+    {
+      "id": "cfdt-interco-guide-agent-public-2026",
+      "source_id": "cfdt-interco",
+      "title": "Guide de l'agent public 2026 — CFDT Interco (page de présentation)",
+      "url": "https://www.cfdt-interco31.fr/post/guide-de-l-agent-public-2026-un-outil-cfdt-pour-conna%C3%AEtre-ses-droits-avant-les-%C3%A9lections",
+      "format": "HTML",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "topics": [
+        "droits des agents publics",
+        "fonctionnaires",
+        "contractuels",
+        "guide pratique",
+        "élections professionnelles"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2026-10-22",
+      "notes": "La page annonce un PDF de 10,19 Mo intitulé guide_de_l_agent_public_2026_interco-cfdt.pdf. L'URL directe du PDF n'a pas encore été vérifiée ; ne pas la deviner. Le guide devra être extrait et confronté aux textes en vigueur."
+    },
+    {
+      "id": "cgt-fp-site",
+      "source_id": "cgt-fonction-publique",
+      "title": "Fédération CGT des services publics — dossier Fonction publique",
+      "url": "https://www.cgtservicespublics.fr/societe/la-fonction-publique/",
+      "format": "HTML",
+      "scope": [
+        "FPT",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "statut général",
+        "trois versants",
+        "droits des agents",
+        "revendications"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "fo-fp-site",
+      "source_id": "fo-fonction-publique",
+      "title": "FO Fonction publique — site et publications",
+      "url": "https://www.fo-fonctionnaires.fr/",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "droits des agents",
+        "statut",
+        "carrière",
+        "rémunération",
+        "publications"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "cftc-fp-propositions",
+      "source_id": "cftc-fonction-publique",
+      "title": "Fonction publique — propositions de la CFTC",
+      "url": "https://www.cftc.fr/thematique/fonction-publique-les-propositions-de-la-cftc",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "rémunération",
+        "pouvoir d'achat",
+        "conditions de travail",
+        "reconversion",
+        "formation"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "cftc-decodeur-greve-fp",
+      "source_id": "cftc-fonction-publique",
+      "title": "Le droit de grève dans la fonction publique — CFTC Le Décodeur",
+      "url": "https://ledecodeur.cftc.fr/3-min-pour-comprendre/le-droit-de-greve-dans-la-fonction-publique/",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH"
+      ],
+      "topics": [
+        "droit de grève",
+        "préavis",
+        "négociation",
+        "organisations syndicales"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Fiche pédagogique syndicale ; vérifier chaque règle contre le CGFP et les textes applicables."
+    },
+    {
+      "id": "unsa-fp-site",
+      "source_id": "unsa-fonction-publique",
+      "title": "UNSA Fonction Publique — site officiel",
+      "url": "https://www.unsa-fp.org/",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "grilles indiciaires",
+        "rémunération",
+        "temps de travail",
+        "santé",
+        "carrière",
+        "dialogue social"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "solidaires-fp-site",
+      "source_id": "solidaires-fonction-publique",
+      "title": "Solidaires Fonction publique — actualités, informations et matériel",
+      "url": "https://fonctionpublique.solidaires.org/",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "droits des agents",
+        "rémunération",
+        "conditions de travail",
+        "santé",
+        "revendications"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
     }
   ]
 }
