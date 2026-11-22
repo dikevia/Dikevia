@@ -245,8 +245,11 @@ async def apply_semantic_source_relevance(
         )
         for source in sources:
             verdict = semantic_verdicts.get(source.get("source_id"))
-            if verdict in {"DIRECT", "CONTEXTUAL", "UNCERTAIN"}:
+            if verdict in {"DIRECT", "CONTEXTUAL"}:
                 source["research_axis_relevant"] = True
+                source["semantic_relevance"] = verdict
+            elif verdict == "UNCERTAIN":
+                # Uncertainty is not positive relevance evidence: keep the lexical result.
                 source["semantic_relevance"] = verdict
             elif verdict == "IRRELEVANT":
                 source["research_axis_relevant"] = False
