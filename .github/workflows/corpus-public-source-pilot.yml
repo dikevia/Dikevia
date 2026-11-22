@@ -30,31 +30,31 @@ jobs:
       - name: Download and extract official Service-Public dataset
         run: python scripts/import_service_public_to_legal_corpus.py --export-json /tmp/service-public-corpus.json
       - name: Dry-run DGAFP TPT PDF extraction (no database writes)
-        run: python scripts/import_public_guidance_sources.py --id dgafp-faq-tpt-2026 --export-json /tmp/dgafp-tpt.json
+        run: python scripts/import_public_guidance_sources.py --id dgafp-faq-tpt-2026 --export-json /tmp/dgafp-tpt.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Dry-run CDG35 annualized-working-time PDF extraction (no database writes)
-        run: python scripts/import_public_guidance_sources.py --id cdg35-annualisation-2025-v2 --export-json /tmp/cdg35-annualisation.json
+        run: python scripts/import_public_guidance_sources.py --id cdg35-annualisation-2025-v2 --export-json /tmp/cdg35-annualisation.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Dry-run CDG35 working-time and annual-leave PDF extraction (no database writes)
-        run: python scripts/import_public_guidance_sources.py --id cdg35-reglement-temps-travail-cst-2025 --export-json /tmp/cdg35-reglement.json
+        run: python scripts/import_public_guidance_sources.py --id cdg35-reglement-temps-travail-cst-2025 --export-json /tmp/cdg35-reglement.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Dry-run CDG35 September 2026 statutory update PDF extraction (no database writes)
-        run: python scripts/import_public_guidance_sources.py --id cdg35-actualites-statutaires-2026-09 --export-json /tmp/cdg35-actualites-2026.json
+        run: python scripts/import_public_guidance_sources.py --id cdg35-actualites-statutaires-2026-09 --export-json /tmp/cdg35-actualites-2026.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Dry-run CIG Petite Couronne working-time guide PDF extraction
-        run: python scripts/import_public_guidance_sources.py --id cig-pc-guide-temps-travail-2025 --export-json /tmp/cig-pc-guide.json
+        run: python scripts/import_public_guidance_sources.py --id cig-pc-guide-temps-travail-2025 --export-json /tmp/cig-pc-guide.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Dry-run CIG Petite Couronne CLM and CLD FAQ extraction
-        run: python scripts/import_public_guidance_sources.py --id cig-pc-faq-clm-cld --export-json /tmp/cig-pc-clm-cld.json
+        run: python scripts/import_public_guidance_sources.py --id cig-pc-faq-clm-cld --export-json /tmp/cig-pc-clm-cld.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Dry-run CDG59 2026 TPT and CITIS update extraction
-        run: python scripts/import_public_guidance_sources.py --id cdg59-actualite-tpt-citis-2026 --export-json /tmp/cdg59-tpt-citis.json
+        run: python scripts/import_public_guidance_sources.py --id cdg59-actualite-tpt-citis-2026 --export-json /tmp/cdg59-tpt-citis.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Dry-run CDG69 annual-leave FAQ extraction
-        run: python scripts/import_public_guidance_sources.py --id cdg69-faq-conges-annuels-reforme --export-json /tmp/cdg69-conges.json
+        run: python scripts/import_public_guidance_sources.py --id cdg69-faq-conges-annuels-reforme --export-json /tmp/cdg69-conges.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Dry-run CNFPT working-time guidance extraction
-        run: python scripts/import_public_guidance_sources.py --id cnfpt-temps-travail-agents-territoriaux --export-json /tmp/cnfpt-temps-travail.json
+        run: python scripts/import_public_guidance_sources.py --id cnfpt-temps-travail-agents-territoriaux --export-json /tmp/cnfpt-temps-travail.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Archive the extracted public corpus for audit
         uses: actions/upload-artifact@v4
@@ -71,6 +71,7 @@ jobs:
             /tmp/cdg59-tpt-citis.json
             /tmp/cdg69-conges.json
             /tmp/cnfpt-temps-travail.json
+            /tmp/public-guidance-originals/
           if-no-files-found: warn
           retention-days: 2
       - name: Wait for CI to pass on this exact commit
