@@ -19,7 +19,7 @@ trap shutdown TERM INT
 # Render. Never expose these credentials to the API or browser.
 if [[ -n "${KC_BOOTSTRAP_ADMIN_USERNAME:-}" && -n "${KC_BOOTSTRAP_ADMIN_PASSWORD:-}" ]]; then
   ready=0
-  for attempt in $(seq 1 60); do
+  for ((attempt=1; attempt<=60; attempt++)); do
     if ! kill -0 "$KC_PID" 2>/dev/null; then
       echo "Keycloak exited before becoming ready." >&2
       wait "$KC_PID"
