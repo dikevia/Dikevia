@@ -15,6 +15,10 @@ def _fold(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", value)).strip()
 
 
+CONVERSATION_HISTORY_MESSAGE_LIMIT = 20
+RECENT_USER_CONTEXT_LIMIT = 10
+
+
 _CONTEXTUAL_FOLLOWUP = re.compile(
     r"^(?:et\s+(?:pour|si|dans|concernant|les|la|le)\b|"
     r"et\s+l['’]\s*\w+|dans ce cas\b|pour les\b|pour la\b|pour le\b|"

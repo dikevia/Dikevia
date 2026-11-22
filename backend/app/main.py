@@ -38,6 +38,7 @@ from .legal_assurance import assess_source_set
 from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
 from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip
 from .dossiers import build_dossier_content, validate_dossier_content
+from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
 import httpx
 
@@ -812,9 +813,9 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)
         VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
         str(conversation_id), ctx.user_id, payload.question,
         json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
-    history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
+    history_rows = await ctx.conn.fetch(f"""SELECT role,content FROM chat_messages
         WHERE conversation_id=$1::uuid AND id<>$2::uuid AND role IN ('user','assistant')
-        ORDER BY created_at DESC,id DESC LIMIT 12""", str(conversation_id), current_message_id)
+        ORDER BY created_at DESC,id DESC LIMIT {CONVERSATION_HISTORY_MESSAGE_LIMIT}""", str(conversation_id), current_message_id)
     history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
     result = await orchestrator.ask(payload,ctx.organization_id,conn=ctx.conn,conversation_history=history)
     result.conversation_id = conversation_id

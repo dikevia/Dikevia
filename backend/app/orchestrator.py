@@ -483,7 +483,7 @@ class LegalOrchestrator:
                 answer="La période de la situation n'a pas pu être interprétée. Aucune analyse juridique n'est produite.",
                 missing_information=[str(exc)])
 
-        history = (conversation_history or [])[-12:]
+        history = (conversation_history or [])[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]
         prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"]
         current_question = request.question.strip()
         contextual_question = build_contextual_research_question(

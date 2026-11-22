@@ -35,3 +35,24 @@ def test_ai_provider_explicitly_treats_history_as_context_not_legal_authority():
     from app.ai_provider import SYSTEM_PROMPT
     assert "messages antérieurs servent uniquement à comprendre" in SYSTEM_PROMPT
     assert "ne les traite jamais comme des sources juridiques" in SYSTEM_PROMPT
+
+def test_conversation_history_supports_ten_exchange_context_and_resolves_followup_chains():
+    from app.legal_qualification import (
+        CONVERSATION_HISTORY_MESSAGE_LIMIT,
+        RECENT_USER_CONTEXT_LIMIT,
+        build_contextual_research_question,
+    )
+
+    assert CONVERSATION_HISTORY_MESSAGE_LIMIT == 20
+    assert RECENT_USER_CONTEXT_LIMIT == 10
+
+    prior = [
+        "Je suis fonctionnaire territorial et je subis un accident de service.",
+        "Et pour les contractuels ?",
+    ]
+    resolved = build_contextual_research_question("Et pour les stagiaires ?", prior)
+    assert resolved.startswith("Et pour les stagiaires ?")
+    assert "accident de service" in resolved
+    assert build_contextual_research_question(
+        "Comment fonctionne le CET ?", prior
+    ) == "Comment fonctionne le CET ?"
