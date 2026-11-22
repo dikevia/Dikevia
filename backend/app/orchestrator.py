@@ -151,7 +151,7 @@ def should_use_cgfp_snapshot_fallback(
     # live CGFP article lookup. Only a relevant live code article suppresses
     # the documentary CGFP snapshot fallback.
     live_covers_an_axis = any(
-        source.get("source_type") == "LEGIFRANCE_API"
+        source.get("source_type") in {None, "LEGIFRANCE_API"}
         and _source_relevant_to_any_research_axis(queries, source)
         and source.get("analysis_eligible") is not False
         for source in (live_sources or [])
