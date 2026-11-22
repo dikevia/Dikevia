@@ -531,6 +531,10 @@ function applyPublicServiceInterface(){
   const label=names[selectedPublicService]||'fonction publique';
   const heading=document.querySelector('#view-ask .heading .muted');
   if(heading)heading.textContent='Posez vos questions sur le droit de la '+label;
+  const brandSubtitle=document.querySelector('.brand small');
+  if(brandSubtitle)brandSubtitle.textContent='Assistant d’information juridique · '+label;
+  const homeDescription=document.querySelector('#view-overview .home-hero p');
+  if(homeDescription)homeDescription.textContent='Un espace de travail dédié au droit de la '+label+'. Posez une question, retrouvez vos documents et suivez les ressources de votre organisation.';
   const employer=$('#askEmployer');
   if(!employer)return;
   if(selectedPublicService==='FPT'){
