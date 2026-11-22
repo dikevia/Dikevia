@@ -176,7 +176,7 @@ async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallbac
 
     response = await LegalOrchestrator().ask(
         AskRequest(
-            employer="NATIONAL", facts_date="2024-06-01",
+            employer="NATIONAL",
             question="Quels sont les droits des agents ?",
         ),
         "00000000-0000-0000-0000-000000000001",
