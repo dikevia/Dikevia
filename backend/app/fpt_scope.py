@@ -117,6 +117,7 @@ def classify_public_service_scope(
     text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
     article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     corpus = _fold((title + " " + text)[:500_000])
+    title_folded = _fold(title)
 
     # These CGFP provisions are retained as contextual research leads only.
     # Their generic wording does not, by itself, establish the complete FPT
@@ -151,7 +152,6 @@ def classify_public_service_scope(
     european_metadata = _fold(" ".join(str(source.get(key) or "") for key in (
         "jurisdiction", "source_type", "official_source", "document_kind"
     )))
-    title_folded = _fold(title)
     direct_eu_instrument_title = title_folded.startswith((
         "directive ue ", "directive europeenne ", "reglement ue ",
         "reglement europeen ", "decision ue ", "decision europeenne ",
@@ -191,8 +191,8 @@ def classify_public_service_scope(
     # used through the territorial indemnity framework. The prompt still
     # requires decree n° 91-875 and the local deliberation to be checked.
     is_ihts_reference = (
-        "2002 60" in corpus
-        and "indemnites horaires pour travaux supplementaires" in corpus
+        "2002 60" in title_folded
+        and "indemnites horaires pour travaux supplementaires" in title_folded
     )
     if is_ihts_reference:
         return {
