@@ -2,6 +2,17 @@
 
 Le registre `registry.json` distingue le statut de gouvernance d'une source de son état réel d'intégration. Une entrée `CANDIDATE` n'est ni collectée ni indexée. Les statuts `IMPORTED` et `RETRIEVAL_VERIFIED` ne doivent être attribués qu'après vérification dans la base et par des tests de recherche.
 
+## Périmètre des sources communiquées pour Dikévia
+
+Le registre recense notamment les domaines suivants, tous encore au statut `CANDIDATE` tant que leur collecte, leurs droits de réutilisation et leur indexation n'ont pas été contrôlés :
+
+- **Socle public national** : Légifrance, Service-Public.gouv.fr, data.gouv.fr, DGAFP (`fonction-publique.gouv.fr`), DGCL (`collectivites-locales.gouv.fr`), Info.gouv.fr.
+- **CNFPT** : `cnfpt.fr` et `wikiterritorial.cnfpt.fr`.
+- **CIG** : `cig929394.fr` (Petite Couronne) et `cigversailles.fr` (Grande Couronne).
+- **CDG** : `cdg35.fr`, `cdg44.fr`, `cdg59.fr` et `cdg69.fr`.
+
+Le registre prévoit les glossaires DGAFP/CNFPT, les guides RH DGAFP, les ressources statutaires DGCL et les fiches pratiques/lexiques CDG-CIG. Seules les pages publiques sont dans le périmètre ; aucun extranet, espace abonné ou contenu réservé ne doit être aspiré sans autorisation.
+
 ## Import Service-Public Particuliers
 
 Le flux DILA 3.5 est publié quotidiennement et réutilisable sous Licence Ouverte 2.0, avec attribution obligatoire à Service-Public.gouv.fr / DILA, URL complète de téléchargement, nom du fichier et date du fichier.
