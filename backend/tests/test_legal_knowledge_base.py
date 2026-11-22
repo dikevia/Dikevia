@@ -39,7 +39,12 @@ def test_only_allowlisted_public_legal_and_institutional_source_urls_are_kept():
     assert safe_official_url("https://www.fonction-publique.gouv.fr/")
     assert safe_official_url("https://www.collectivites-locales.gouv.fr/")
     assert safe_official_url("https://www.cnfpt.fr/")
+    assert safe_official_url("https://wikiterritorial.cnfpt.fr/")
+    assert safe_official_url("https://info.gouv.fr/")
+    assert safe_official_url("https://www.cdg35.fr/")
+    assert safe_official_url("https://www.cdg44.fr/")
     assert safe_official_url("https://www.cdg59.fr/")
+    assert safe_official_url("https://www.cdg69.fr/")
     assert safe_official_url("https://www.cig929394.fr/")
     assert safe_official_url("https://evil.example/legifrance") is None
     assert safe_official_url("https://service-public.gouv.fr.evil.example/") is None
