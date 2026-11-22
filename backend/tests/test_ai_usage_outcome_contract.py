@@ -10,7 +10,7 @@ MIGRATION = ROOT / "database" / "migrations" / "020_ai_usage_outcome_contract.sq
 def _outcomes_emitted_by_application():
     emitted = set()
     for relative_path in ("app/main.py", "app/orchestrator.py"):
-        source = (ROOT / "app" / relative_path.removeprefix("app/")).read_text(encoding="utf-8")
+        source = (ROOT / "backend" / relative_path).read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.Dict):
@@ -43,7 +43,7 @@ def _outcomes_emitted_by_application():
 
 def test_database_outcome_constraint_accepts_every_application_state():
     sql = MIGRATION.read_text(encoding="utf-8")
-    match = re.search(r"CHECK\s*\(\s*outcome\s+IN\s*\((.*?)\)\s*\)", sql, re.I | re.S)
+    match = re.search(r"CHECK\\s*\\(\\s*outcome\\s+IN\\s*\\((.*?)\\)\\s*\\)", sql, re.I | re.S)
     assert match, "Migration must define an explicit allow-list for outcome."
     allowed = set(re.findall(r"'([A-Z][A-Z0-9_]*)'", match.group(1)))
     emitted = _outcomes_emitted_by_application()
