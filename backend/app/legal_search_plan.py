@@ -808,12 +808,12 @@ def merge_ai_and_fallback_research_queries(
     """
     limit = max(1, min(int(max_queries), 8))
     primary = list(dict.fromkeys(
-        re.sub(r"\\s+", " ", str(query or "")).strip()[:500]
+        " ".join(str(query or "").split())[:500]
         for query in (ai_queries or [])
         if isinstance(query, str) and query.strip()
     ))
     fallback = list(dict.fromkeys(
-        re.sub(r"\\s+", " ", str(query or "")).strip()[:500]
+        " ".join(str(query or "").split())[:500]
         for query in (fallback_queries or [])
         if isinstance(query, str) and query.strip()
     ))
