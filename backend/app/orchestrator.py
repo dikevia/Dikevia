@@ -26,7 +26,7 @@ from .legal_qualification import (
 )
 
 
-def _cgfp_article_fpt_eligible(article_ref: str) -> bool:
+def _cgfp_article_fpt_eligible(article_ref: str, target_versant: str = "FPT") -> bool:
     """Check the article body before treating a CGFP hit as an FPT research lead."""
     normalized_ref = re.sub(r"\s+", "", str(article_ref or "")).upper()
     if not re.fullmatch(r"[LDR]\d+(?:-\d+)*", normalized_ref):
@@ -39,7 +39,7 @@ def _cgfp_article_fpt_eligible(article_ref: str) -> bool:
         "article": normalized_ref,
         "text": article_document.get("text") or "",
         "document_kind": "CODE",
-    })
+    }, target_versant=target_versant)
     return scope.get("analysis_eligible") is True
 
 
@@ -88,7 +88,7 @@ def _build_targeted_regulatory_queries(question: str) -> list[str]:
     return list(dict.fromkeys(queries))
 
 
-def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
+def _cgfp_article_discovery_queries(found: dict | None, target_versant: str = "FPT") -> list[str]:
     """Turn relevant, FPT-applicable snapshot hits into exact live CGFP lookups."""
     if not isinstance(found, dict):
         return []
@@ -98,7 +98,12 @@ def _cgfp_article_discovery_queries(found: dict | None) -> list[str]:
         article_ref = re.sub(r"\s+", "", str(hit.get("article") or "")).upper()
         if not re.fullmatch(r"[LDR]\d+(?:-\d+)*", article_ref) or article_ref in seen:
             continue
-        if not _cgfp_article_fpt_eligible(article_ref):
+        eligible = (
+            _cgfp_article_fpt_eligible(article_ref)
+            if target_versant == "FPT"
+            else _cgfp_article_fpt_eligible(article_ref, target_versant)
+        )
+        if not eligible:
             continue
         if not (
             hit.get("matched_concepts")
@@ -116,6 +121,7 @@ def should_use_cgfp_snapshot_fallback(
     live_issue: str | None,
     found: dict | None,
     research_queries: list[str] | str,
+    target_versant: str = "FPT",
 ) -> bool:
     """Use the dated CGFP snapshot only when live lookup failed and a hit serves an axis."""
     queries = research_queries if isinstance(research_queries, list) else [research_queries]
@@ -123,7 +129,11 @@ def should_use_cgfp_snapshot_fallback(
         live_issue and isinstance(found, dict) and found.get("results")
         and any(
             _source_relevant_to_any_research_axis(queries, hit)
-            and _cgfp_article_fpt_eligible(str(hit.get("article") or ""))
+            and (
+                _cgfp_article_fpt_eligible(str(hit.get("article") or ""))
+                if target_versant == "FPT"
+                else _cgfp_article_fpt_eligible(str(hit.get("article") or ""), target_versant)
+            )
             for hit in found["results"]
         )
     )
@@ -546,6 +556,13 @@ class LegalOrchestrator:
             research_queries = fallback_queries
             legal_context["strategie_recherche"] = "SECOURS_DETERMINISTE_MODELE_INDISPONIBLE"
             legal_context["axes_recherche_documentaire"] = fallback_axes
+        if request.public_service in {"FPE", "FPH"}:
+            branch_qualifier = (
+                "fonction publique de l'État" if request.public_service == "FPE"
+                else "fonction publique hospitalière"
+            )
+            branch_query = f"{contextual_question} {branch_qualifier}"
+            research_queries = list(dict.fromkeys([*research_queries[:4], branch_query]))
         # PISTE search methods cap each query at 500 characters.
         research_queries = [query[:500] for query in research_queries if query.strip()][:5]
         contextual_search_query = build_official_search_query(contextual_question)
@@ -653,7 +670,9 @@ class LegalOrchestrator:
             # regulatory-text endpoint. They do not consume the CGFP or CETAT
             # query budgets and preserve the applicable FPT implementing texts.
             regulatory_queries = list(dict.fromkeys([
-                *research_queries, *_build_targeted_regulatory_queries(contextual_question),
+                *research_queries,
+                *(_build_targeted_regulatory_queries(contextual_question)
+                  if request.public_service == "FPT" else []),
             ]))
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
@@ -771,7 +790,7 @@ class LegalOrchestrator:
         # used as a fallback only when live CGFP retrieval is unavailable.
         found, cgfp_issue = await search_cgfp_index()
         cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
-        cgfp_article_queries = _cgfp_article_discovery_queries(found)
+        cgfp_article_queries = _cgfp_article_discovery_queries(found, request.public_service)
 
         # Official legal texts and administrative case law remain the
         # authoritative verification path.
@@ -1096,7 +1115,7 @@ class LegalOrchestrator:
         # the facts); it may accompany independently verified decrees/case law,
         # but must never replace those sources or authorize a standalone opinion.
         cgfp_snapshot_fallback = should_use_cgfp_snapshot_fallback(
-            live_issue, found, research_queries,
+            live_issue, found, research_queries, target_versant=request.public_service,
         )
 
         sources: list[dict] = []
@@ -1196,7 +1215,7 @@ class LegalOrchestrator:
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
                     "page_start": hit["page_start"], "page_end": hit["page_end"], "excerpt": hit["excerpt"]}
                 integrity = validate_snapshot_citation(citation, article or {})
-                if integrity["valid"] and _cgfp_article_fpt_eligible(hit["article"]):
+                if integrity["valid"] and _cgfp_article_fpt_eligible(hit["article"], request.public_service):
                     article_text = str((article or {}).get("text") or "")
                     article_ref = re.sub(r"\s+", "", str(hit["article"])).upper()
                     snapshot_title = f"Code général de la fonction publique — article {article_ref}"

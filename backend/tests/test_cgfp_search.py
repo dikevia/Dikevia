@@ -338,3 +338,17 @@ def test_cgfp_tokenizer_normalizes_french_plural_forms_without_corrupting_invari
     ]
     assert "temps" in tokenize("temps de travail")
     assert "prix" in tokenize("prix des prestations")
+
+
+def test_cgfp_article_discovery_can_be_scoped_to_fpe(monkeypatch):
+    from app import orchestrator
+
+    monkeypatch.setattr(
+        orchestrator,
+        "get_cgfp_article",
+        lambda _article: {
+            "text": "Les agents de la fonction publique de l'État bénéficient de cette disposition."
+        },
+    )
+    assert orchestrator._cgfp_article_fpt_eligible("L123-4", "FPE") is True
+    assert orchestrator._cgfp_article_fpt_eligible("L123-4", "FPT") is False
