@@ -37,7 +37,7 @@ def test_oidc_renews_expired_access_tokens_without_persisting_them():
 def test_oidc_renews_expired_access_tokens_without_persisting_them():
     auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "beginAuthorization('none')" in auth
+    assert "silentCheckSso(true)" in auth
     assert "cfdt_oidc_silent_failed" in auth
     assert "token=await accessToken()" in html
     assert "localStorage" not in auth
