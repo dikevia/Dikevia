@@ -12,6 +12,7 @@ from urllib.parse import urlparse, quote
 from dataclasses import dataclass
 import httpx
 from .config import settings
+from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
 
 SYSTEM_PROMPT = """Tu es Dikevia, un assistant juridique spécialisé en droit de la fonction publique territoriale française. Tu aides à comprendre les documents officiels ; tu ne remplaces ni un avocat, ni un juriste, ni une autorité administrative.
 
@@ -412,7 +413,7 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
              "excerpt": str(item.get("excerpt") or item.get("text") or "")[:700]}
             for item in (retrieved_evidence or [])[:24] if isinstance(item, dict)
         ],
-        "recent_user_context": [{"content": str(item.get("content", ""))[:1000]} for item in [m for m in (conversation_history or []) if m.get("role") == "user"][-10:]],
+        "recent_user_context": [{"content": str(item.get("content", ""))[:1000]} for item in [m for m in (conversation_history or []) if m.get("role") == "user"][-RECENT_USER_CONTEXT_LIMIT:]],
     }
     payload = {"model": settings.ai_model, "temperature": 0.1, "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)}]}
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
