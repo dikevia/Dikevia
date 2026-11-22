@@ -27,7 +27,13 @@ def _archive() -> zipfile.ZipFile:
         archive.writestr(
             "F100.xml",
             b'<Fiche><dc:title>Quels sont les moyens du comite social et economique (CSE) ?</dc:title>'
-            b'<Theme ID="N19806"/><Texte>Les salaries elisent leur CSE dans les entreprises privees.</Texte></Fiche>',
+            b'<Theme ID="N19806"/><Texte>Les salaries elisent leur CSE dans les entreprises privees. Une mention de la fonction publique figure dans un lien connexe.</Texte></Fiche>',
+        )
+        archive.writestr(
+            "F12346.xml",
+            b'<Fiche><dc:title>Droits a conges annuels</dc:title><Theme ID="N19806"/>'
+            b'<Texte>Regles de report et d indemnisation.</Texte>'
+            b'<Reference ID="D85-1250" type="decret">Decret n 85-1250 du 26 novembre 1985</Reference></Fiche>',
         )
         archive.writestr("arborescence.xml", b"<Arborescence/>")
     buffer.seek(0)
@@ -57,9 +63,10 @@ def test_extracts_only_function_public_fiches_and_preserves_legal_context():
     finally:
         archive.close()
 
-    assert len(fiches) == 1
-    fiche = fiches[0]
-    assert fiche["fiche_id"] == "F12345"
+    assert len(fiches) == 2
+    fiche = next(item for item in fiches if item["fiche_id"] == "F12345")
+    generic_title_fiche = next(item for item in fiches if item["fiche_id"] == "F12346")
+    assert generic_title_fiche["titre_courant"] == "Droits a conges annuels"
     assert fiche["titre_courant"] == "Temps partiel thérapeutique dans la fonction publique"
     assert fiche["versants_detectes"] == ["FPT"]
     assert "temps partiel pour raison thérapeutique" in fiche["contenu"].lower()
