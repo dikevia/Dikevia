@@ -631,11 +631,12 @@ async def platform_grant_free(organization_id: str, payload: dict,
 async def list_chat_conversations(ctx: TenantContext = Depends(get_tenant_context)):
     rows = await ctx.conn.fetch("""SELECT c.id,c.title,c.created_at,c.updated_at,
         (SELECT count(*) FROM chat_messages m WHERE m.conversation_id=c.id) AS message_count,
-        (SELECT content FROM chat_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message
+        (SELECT content FROM chat_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
+        (SELECT metadata->>'public_service' FROM chat_messages m WHERE m.conversation_id=c.id AND m.role='user' ORDER BY m.created_at,m.id LIMIT 1) AS public_service
         FROM chat_conversations c ORDER BY c.updated_at DESC LIMIT 100""")
     return [{"id": str(r["id"]), "title": r["title"], "created_at": r["created_at"],
         "updated_at": r["updated_at"], "message_count": r["message_count"],
-        "last_message": (r["last_message"] or "")[:180]} for r in rows]
+        "last_message": (r["last_message"] or "")[:180], "public_service": r["public_service"] or "FPT"} for r in rows]
 
 
 @app.post("/api/v1/chat/conversations", status_code=201)
