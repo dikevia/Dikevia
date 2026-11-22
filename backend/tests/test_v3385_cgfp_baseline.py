@@ -263,7 +263,7 @@ def test_cgfp_snapshot_fallback_can_support_only_snapshot_scoped_claims():
     }
     payload = {
         "claims": [{
-            "text": "Le snapshot reproduit une disposition relative aux agents territoriaux.",
+            "text": "Le snapshot reproduit les dispositions applicables aux agents territoriaux.",
             "source_id": source["source_id"],
             "axis": "disposition CGFP",
             "quote": "dispositions applicables aux agents territoriaux",
