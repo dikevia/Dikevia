@@ -404,3 +404,33 @@ def test_snapshot_fallback_is_not_used_when_live_cgfp_covers_an_axis(monkeypatch
         None, found, ["axe CITIS"], target_versant="FPT",
         live_sources=[{"relevant": True, "analysis_eligible": True}],
     )
+
+
+@pytest.mark.parametrize(
+    ("versant", "expected"),
+    [
+        ("FPE", "fonction publique de l'État"),
+        ("FPH", "fonction publique hospitalière"),
+    ],
+)
+def test_non_fpt_fallback_search_does_not_inherit_fpt_templates(versant, expected):
+    from app.orchestrator import _build_versant_fallback_research
+
+    queries, axes = _build_versant_fallback_research(
+        "Quelles sont les règles de congés annuels ?", versant,
+    )
+    assert queries == [f"Quelles sont les règles de congés annuels ? {expected}"]
+    assert axes == queries
+    assert all("décret 85-1250" not in query for query in queries)
+    assert all("fonction publique territoriale" not in query for query in queries)
+
+
+def test_fpt_fallback_search_keeps_territorial_topic_expansion():
+    from app.orchestrator import _build_versant_fallback_research
+
+    queries, axes = _build_versant_fallback_research(
+        "Quelles sont les règles de congés annuels ?", "FPT",
+    )
+    assert queries
+    assert axes
+    assert any("décret 85-1250" in query for query in queries)
