@@ -18,6 +18,8 @@ _FPT_MARKERS = (
     "fonctionnaires territoriaux",
     "agent territorial",
     "agents territoriaux",
+    "agent contractuel territorial",
+    "agents contractuels territoriaux",
     "agents publics territoriaux",
     "collectivites territoriales",
     "collectivite territoriale",
@@ -100,7 +102,17 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     """Return a conservative scope label and whether this hit may reach Gemini."""
     title = str(source.get("title") or "")
     text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
+    article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     corpus = _fold((title + " " + text)[:500_000])
+    # Articles L. 332-8 to L. 332-14 belong to the CGFP subsection devoted
+    # specifically to permanent contractual employment in the FPT. Their
+    # individual wording does not always repeat the territorial scope.
+    if article_ref in {f"l332 {number}" for number in range(8, 15)}:
+        return {
+            "scope": "FPT",
+            "evidence": [f"Article {article_ref.upper()} situé dans la sous-section FPT des emplois permanents contractuels"],
+            "analysis_eligible": True,
+        }
     # Dikévia is deliberately limited to French territorial public-service law.
     # Exclude EU instruments by structured metadata before looking at generic
     # public-service wording that may also appear in comparative documents.
