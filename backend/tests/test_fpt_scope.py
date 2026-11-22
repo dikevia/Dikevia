@@ -346,11 +346,9 @@ def test_cgfp_permanent_contractual_employment_articles_are_classified_as_fpt():
 
 
 
-def test_citis_and_therapeutic_part_time_articles_are_context_only_not_fpt_claim_evidence():
-    for article in (
-        *(f"L822-{number}" for number in range(18, 24)),
-        *(f"L823-{number}" for number in range(1, 7)),
-    ):
+def test_citis_articles_remain_context_only_without_branch_implementation_proof():
+    for number in range(18, 24):
+        article = f"L822-{number}"
         result = classify_public_service_scope({
             "title": f"Code général de la fonction publique — article {article}",
             "article": article,
@@ -360,6 +358,31 @@ def test_citis_and_therapeutic_part_time_articles_are_context_only_not_fpt_claim
         assert result["scope"] == "GENERAL_PUBLIC_SERVICE"
         assert result["analysis_eligible"] is True
         assert result["claim_eligible"] is False
+
+
+def test_live_cgfp_tpt_articles_are_common_claim_evidence_but_snapshot_is_not():
+    for number in range(1, 7):
+        article = f"L823-{number}"
+        common = {
+            "title": f"Code général de la fonction publique — article {article}",
+            "article": article,
+            "text": "Le fonctionnaire bénéficie des dispositions prévues au présent chapitre.",
+            "document_kind": "CODE",
+        }
+        snapshot = classify_public_service_scope({
+            **common, "source_type": "CGFP_SNAPSHOT",
+        }, target_versant="FPT")
+        assert snapshot["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert snapshot["analysis_eligible"] is True
+        assert snapshot["claim_eligible"] is False
+
+        for versant in ("FPT", "FPE", "FPH"):
+            live = classify_public_service_scope({
+                **common, "source_type": "LEGIFRANCE_API",
+            }, target_versant=versant)
+            assert live["scope"] == "COMMON_PUBLIC_SERVICE"
+            assert live["analysis_eligible"] is True
+            assert live["claim_eligible"] is True
 
 
 def test_public_service_scope_is_eligible_only_for_the_selected_versant():
