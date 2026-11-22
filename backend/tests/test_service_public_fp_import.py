@@ -12,14 +12,14 @@ import import_service_public_fonction_publique as importer
 
 
 def _archive() -> zipfile.ZipFile:
-    payload = b"""<?xml version="1.0" encoding="UTF-8"?>
+    payload = """<?xml version="1.0" encoding="UTF-8"?>
     <Fiche xmlns:dc="http://purl.org/dc/elements/1.1/">
       <dc:title>Temps partiel thérapeutique dans la fonction publique</dc:title>
       <Theme ID="N19806"/>
       <FilDAriane><Niveau ID="N19806"/></FilDAriane>
       <BlocCas type="FPT"><Titre>Fonction publique territoriale</Titre><Texte>Temps partiel pour raison thérapeutique.</Texte></BlocCas>
       <Reference ID="LEGIARTI000000000001" type="article">Code général de la fonction publique</Reference>
-    </Fiche>"""
+    </Fiche>""".encode("utf-8")
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
         archive.writestr("F12345.xml", payload)
