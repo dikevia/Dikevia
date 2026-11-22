@@ -32,6 +32,12 @@ def test_oidc_silent_callback_does_not_loop_when_no_sso_session_exists():
 
 
 
+def test_oidc_silent_failure_does_not_repeat_until_user_retries():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    assert "if (sessionStorage.getItem('cfdt_oidc_silent_failed') === '1') return;" in auth
+    assert "sessionStorage.removeItem('cfdt_oidc_silent_failed');" in auth
+
+
 def test_android_webview_flushes_oidc_cookies_without_clearing_the_session():
     activity = (
         ROOT / "android/app/src/main/java/fr/dikevia/commercial/MainActivity.kt"
