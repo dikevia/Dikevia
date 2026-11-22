@@ -102,7 +102,8 @@ def test_personal_case_without_date_does_not_authorize_individual_conclusions():
 def test_prompt_requires_coverage_of_each_retrieval_axis():
     assert "axes_recherche_documentaire" in SYSTEM_PROMPT
     assert "n'en omets aucun silencieusement" in SYSTEM_PROMPT
-    assert "indique explicitement qu'aucune source suffisamment pertinente n'a été retrouvée" in SYSTEM_PROMPT
+    assert "indique-le dans uncovered_axes" in SYSTEM_PROMPT
+    assert "conserve néanmoins les affirmations indépendantes" in SYSTEM_PROMPT
 
 def test_prompt_distinguishes_current_general_information_from_undated_personal_cases():
     assert "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
