@@ -1030,3 +1030,75 @@ def test_research_plan_parser_accepts_empty_queries_only_for_refinement():
     assert refined is not None
     assert refined.queries == []
     assert refined.legal_issues == ["Question juridique couverte"]
+
+
+@pytest.mark.asyncio
+async def test_source_relevance_evaluator_sends_document_text_and_validates_ids(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import evaluate_source_relevance
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{
+            "message": {"content": json.dumps({"items": [
+                {"source_id": "DOC-1", "verdict": "DIRECT"},
+                {"source_id": "FORGED", "verdict": "IRRELEVANT"},
+                {"source_id": "META-1", "verdict": "IRRELEVANT"},
+            ]})}
+        }]})
+
+    real_async_client = httpx.AsyncClient
+
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+    result = await evaluate_source_relevance(
+        question="Puis-je percevoir une indemnité pour les fonctions supplémentaires ?",
+        research_axes=["régime indemnitaire et fonctions exercées"],
+        sources=[
+            {"source_id": "DOC-1", "source_type": "LEGIFRANCE_API",
+             "title": "Régime indemnitaire", "excerpt": "Le régime indemnitaire tient compte des fonctions exercées."},
+            {"source_id": "META-1", "content_kind": "METADATA",
+             "excerpt": "Simple résultat de recherche sans texte intégral."},
+        ],
+    )
+
+    documents = json.loads(captured["payload"]["messages"][1]["content"])["documents"]
+    assert [item["source_id"] for item in documents] == ["DOC-1"]
+    assert "fonctions exercées" in documents[0]["body"]
+    assert result == {"DOC-1": "DIRECT"}
+
+
+@pytest.mark.asyncio
+async def test_source_relevance_evaluator_raises_provider_error_on_http_failure(monkeypatch):
+    import httpx
+    from app.ai_provider import evaluate_source_relevance, AIProviderUnavailable
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(503, request=request)
+
+    real_async_client = httpx.AsyncClient
+
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+    with pytest.raises(AIProviderUnavailable):
+        await evaluate_source_relevance(
+            question="Question juridique",
+            research_axes=["axe"],
+            sources=[{"source_id": "DOC-1", "excerpt": "Texte officiel suffisamment renseigné."}],
+        )
