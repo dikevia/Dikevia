@@ -28,6 +28,16 @@ def test_document_seeds_have_explicit_non_ingested_status_and_known_source():
     for item in seeds:
         assert item["source_id"] in source_ids
         assert item["url"].startswith("https://")
-        assert item["status"] == "CANDIDATE"
-        assert item["content_status"] == "NOT_COLLECTED"
-        assert item["reuse_status"] == "REVIEW_REQUIRED"
+        assert item["status"] in {"CANDIDATE", "ACCESS_REVIEWED", "SUSPENDED"}
+        assert item["content_status"] in {"NOT_COLLECTED", "EXTRACTED_NOT_IMPORTED"}
+        assert item["reuse_status"] in {"REVIEW_REQUIRED", "REUSE_APPROVED", "APPROVED"}
+        if item["status"] == "SUSPENDED":
+            assert item["content_status"] == "NOT_COLLECTED"
+            assert item["reuse_status"] == "REVIEW_REQUIRED"
+        if item["content_status"] == "EXTRACTED_NOT_IMPORTED":
+            assert item["status"] == "ACCESS_REVIEWED"
+            assert item["reuse_status"] == "REVIEW_REQUIRED"
+            assert item.get("download_sha256")
+            assert item.get("text_sha256")
+            assert item.get("collected_at")
+            assert item.get("page_count", 0) > 0
