@@ -1,7 +1,8 @@
 # Dossier de revue technique — Dikévia
 Date de préparation : 22 novembre 2026
 Branche analysée : `feature/dikevia-v3.38.5-cgfp-chat`
-Commit de référence au démarrage du dossier : `cdb4ee805ff5abe390cb855045885428b935b5be`
+Commit exact inclus dans le ZIP : `ef6d09e27ebfc918f165634c8128a6b7fe161703`.
+Le snapshot CGFP et le code sont ceux de cette révision ; le dossier est produit par GitHub Actions.
 
 ## Mission confiée à Claude
 
