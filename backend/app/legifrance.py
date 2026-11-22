@@ -185,7 +185,8 @@ class LegifranceConnector:
                 "typeRecherche": "EXACTE", "valeur": re.sub(r"[.\s]+", "", ref.group(1)).upper(), "operateur": "ET"}], "operateur": "ET"}
         else:
             field = {"typeChamp": "ARTICLE", "criteres": [{
-                "typeRecherche": "UN_DES_MOTS", "valeur": query[:250], "operateur": "ET"}], "operateur": "ET"}
+                "typeRecherche": "UN_DES_MOTS", "valeur": query[:250],
+                "proximite": 5, "operateur": "ET"}], "operateur": "ET"}
         return {"fond": "CODE_DATE", "recherche": {
             "champs": [field],
             "filtres": [
