@@ -519,7 +519,7 @@ class LegalOrchestrator:
                 )
         # Qualification must use the resolved referent so follow-ups such as
         # "Et pour les contractuels ?" retain the original legal topic.
-        legal_context = qualify_legal_question(contextual_question, request.employer)
+        legal_context = qualify_legal_question(contextual_question, request.employer, request.public_service)
         legal_context["versant_fonction_publique"] = request.public_service
         # Gemini plans the research from the actual facts before any legal source
         # is retrieved. Its output contains search language only, never legal evidence.
@@ -1620,6 +1620,7 @@ class LegalOrchestrator:
                             entailment_validation = await verify_claim_entailment(
                                 question=request.question,
                                 claims=claim_validation["claims"], sources=ai_sources,
+                                public_service=request.public_service,
                             )
                             supported_indices = entailment_validation.get("supported_claim_indices", [])
                             if not entailment_validation.get("valid") and not supported_indices:
