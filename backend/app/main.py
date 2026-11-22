@@ -236,13 +236,25 @@ case_law_connector = AdministrativeCaseLawConnector(legifrance)
 
 
 async def record_ai_usage_event(conn, organization_id, user_id, request_id, usage):
-    """Append privacy-minimal provider usage metadata for one tenant-scoped AI call."""
-    await conn.execute("""INSERT INTO ai_usage_events(
-        organization_id,user_id,request_id,provider,model,prompt_tokens,
-        completion_tokens,total_tokens,outcome)
-        VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
-    """, organization_id, user_id, request_id, usage["provider"], usage["model"],
-        usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
+    """Append usage metadata without allowing telemetry failure to abort a user operation.
+
+    The nested transaction creates a savepoint when called inside a request
+    transaction. If the metering table is unavailable or rejects a state, the
+    savepoint is rolled back and the legal response can still be persisted.
+    """
+    try:
+        async with conn.transaction():
+            await conn.execute("""INSERT INTO ai_usage_events(
+                organization_id,user_id,request_id,provider,model,prompt_tokens,
+                completion_tokens,total_tokens,outcome)
+                VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
+            """, organization_id, user_id, request_id, usage["provider"], usage["model"],
+                usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+            "AI usage metering write failed; request processing continues (error_type=%s)",
+            type(exc).__name__,
+        )
 
 
 async def enforce_legal_connector_rate_limit(ctx: TenantContext) -> None:
