@@ -250,7 +250,7 @@ def test_claim_evidence_rejects_interpretive_context_only_sources():
 
 
 
-def test_claim_evidence_rejects_a_compound_answer_that_silently_omits_an_axis():
+def test_claim_evidence_allows_a_verified_partial_answer_when_an_axis_is_uncovered():
     from app.legal_assurance import validate_claim_evidence
 
     source = _verified_evidence_source()
@@ -264,8 +264,10 @@ def test_claim_evidence_rejects_a_compound_answer_that_silently_omits_an_axis():
     result = validate_claim_evidence(
         payload, [source], required_axes=[axis_overtime, axis_sick_leave],
     )
-    assert result["valid"] is False
-    assert f"research_axis_not_covered:{axis_sick_leave}" in result["invalid_claims"]
+    assert result["valid"] is True
+    assert result["partial"] is True
+    assert result["claim_count"] == 1
+    assert result["uncovered_axes"] == [axis_sick_leave]
 
 
 def test_claim_evidence_accepts_explicit_uncovered_axis_without_inventing_a_claim():
