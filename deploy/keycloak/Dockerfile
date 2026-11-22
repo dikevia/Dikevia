@@ -15,6 +15,7 @@ ENV KC_DB=postgres \
     KC_HTTP_ENABLED=true \
     KC_PROXY_HEADERS=xforwarded \
     KC_HOSTNAME_STRICT=true \
+    KC_RECOVERY_BOOTSTRAP=1 \
     JAVA_OPTS_KC_HEAP="-XX:MaxRAMPercentage=20 -XX:InitialRAMPercentage=5"
 
 # Build the optimized server image once, rather than augmenting it at every boot.
