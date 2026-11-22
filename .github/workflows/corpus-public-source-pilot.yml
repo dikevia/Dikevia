@@ -169,6 +169,9 @@ jobs:
           --id cftc-decodeur-greve-fp
           --id unsa-fp-site
           --id solidaires-fp-site
+      - name: Import the 4,242-article CGFP snapshot into the searchable legal corpus
+        if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
+        run: python scripts/import_cgfp_to_legal_corpus.py --apply
       - name: Skip database write when the ingestion credential is absent
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL == ''
         run: echo 'Collecte vérifiée ; aucune écriture PostgreSQL car le secret dédié est absent.'
