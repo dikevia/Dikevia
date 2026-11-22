@@ -41,6 +41,21 @@ jobs:
       - name: Dry-run CDG35 September 2026 statutory update PDF extraction (no database writes)
         run: python scripts/import_public_guidance_sources.py --id cdg35-actualites-statutaires-2026-09 --export-json /tmp/cdg35-actualites-2026.json
         continue-on-error: true
+      - name: Dry-run CIG Petite Couronne working-time guide PDF extraction
+        run: python scripts/import_public_guidance_sources.py --id cig-pc-guide-temps-travail-2025 --export-json /tmp/cig-pc-guide.json
+        continue-on-error: true
+      - name: Dry-run CIG Petite Couronne CLM and CLD FAQ extraction
+        run: python scripts/import_public_guidance_sources.py --id cig-pc-faq-clm-cld --export-json /tmp/cig-pc-clm-cld.json
+        continue-on-error: true
+      - name: Dry-run CDG59 2026 TPT and CITIS update extraction
+        run: python scripts/import_public_guidance_sources.py --id cdg59-actualite-tpt-citis-2026 --export-json /tmp/cdg59-tpt-citis.json
+        continue-on-error: true
+      - name: Dry-run CDG69 annual-leave FAQ extraction
+        run: python scripts/import_public_guidance_sources.py --id cdg69-faq-conges-annuels-reforme --export-json /tmp/cdg69-conges.json
+        continue-on-error: true
+      - name: Dry-run CNFPT working-time guidance extraction
+        run: python scripts/import_public_guidance_sources.py --id cnfpt-temps-travail-agents-territoriaux --export-json /tmp/cnfpt-temps-travail.json
+        continue-on-error: true
       - name: Archive the extracted public corpus for audit
         uses: actions/upload-artifact@v4
         with:
@@ -51,6 +66,11 @@ jobs:
             /tmp/cdg35-annualisation.json
             /tmp/cdg35-reglement.json
             /tmp/cdg35-actualites-2026.json
+            /tmp/cig-pc-guide.json
+            /tmp/cig-pc-clm-cld.json
+            /tmp/cdg59-tpt-citis.json
+            /tmp/cdg69-conges.json
+            /tmp/cnfpt-temps-travail.json
           if-no-files-found: warn
           retention-days: 2
       - name: Wait for CI to pass on this exact commit
