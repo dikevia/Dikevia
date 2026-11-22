@@ -42,7 +42,7 @@ run_admin_migration() {
   fi
 
   perm_users=$("$KCADM" get users -r master -q "q=username:$KC_PERMANENT_ADMIN" --config "$KCADM_CONFIG") || return 1
-  if [[ "$perm_users" =~ \\"id\\"[[:space:]]*:[[:space:]]*\\"([^\\"]+)\\" ]]; then
+  if [[ "$perm_users" =~ \"id\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
     perm_id="${BASH_REMATCH[1]}"
   else
     perm_id=$("$KCADM" create users -r master -s username="$KC_PERMANENT_ADMIN" -s enabled=true -i --config "$KCADM_CONFIG") || return 1
@@ -53,14 +53,14 @@ run_admin_migration() {
   "$KCADM" update realms/cfdt -s ssoSessionIdleTimeout=604800 -s ssoSessionMaxLifespan=2592000 --config "$KCADM_CONFIG" || return 1
 
   realm_json=$("$KCADM" get realms/cfdt --fields ssoSessionIdleTimeout,ssoSessionMaxLifespan --config "$KCADM_CONFIG") || return 1
-  if [[ ! "$realm_json" =~ \\"ssoSessionIdleTimeout\\"[[:space:]]*:[[:space:]]*604800 ]] || \
-     [[ ! "$realm_json" =~ \\"ssoSessionMaxLifespan\\"[[:space:]]*:[[:space:]]*2592000 ]]; then
+  if [[ ! "$realm_json" =~ \"ssoSessionIdleTimeout\"[[:space:]]*:[[:space:]]*604800 ]] || \
+     [[ ! "$realm_json" =~ \"ssoSessionMaxLifespan\"[[:space:]]*:[[:space:]]*2592000 ]]; then
     echo "WARNING: cfdt SSO timeout verification failed; temporary administrator retained." >&2
     return 1
   fi
 
   temp_users=$("$KCADM" get users -r master -q "q=username:$KC_TEMP_ADMIN" --config "$KCADM_CONFIG") || return 1
-  if [[ "$temp_users" =~ \\"id\\"[[:space:]]*:[[:space:]]*\\"([^\\"]+)\\" ]]; then
+  if [[ "$temp_users" =~ \"id\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
     temp_id="${BASH_REMATCH[1]}"
     if [[ "$KC_TEMP_ADMIN" != "$KC_PERMANENT_ADMIN" ]]; then
       "$KCADM" delete "users/$temp_id" -r master --config "$KCADM_CONFIG" || return 1
