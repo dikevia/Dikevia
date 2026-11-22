@@ -34,6 +34,8 @@ def _provenance():
         "resource_id": "resource-123",
         "download_url": "https://lecomarquage.service-public.gouv.fr/vdd/3.5/part/zip/vosdroits-latest.zip",
         "filename": "vosdroits-latest.zip",
+        "file_date": "2026-11-21",
+        "resource_checksum": "sha1:abc123",
         "license": "fr-lo",
         "attribution": "Service-Public.gouv.fr / DILA",
     }
@@ -48,9 +50,11 @@ def test_service_public_fiche_maps_to_unverified_guidance_not_primary_law():
     assert item["status"] == "UNKNOWN"
     assert item["valid_from"] is None
     assert item["valid_to"] is None
-    assert item["official_url"] is None
+    assert item["official_url"] == "https://www.service-public.gouv.fr/particuliers/vosdroits/F12345"
     assert item["raw_metadata"]["attribution"] == "Service-Public.gouv.fr / DILA"
     assert item["raw_metadata"]["license"] == "fr-lo"
+    assert item["raw_metadata"]["file_date"] == "2026-11-21"
+    assert item["raw_metadata"]["resource_checksum"] == "sha1:abc123"
     assert item["raw_metadata"]["corpus_role"] == "ADMINISTRATIVE_GUIDANCE_NOT_PRIMARY_LEGAL_AUTHORITY"
     assert item["raw_metadata"]["references_juridiques"][0]["id_legifrance"] == "LEGIARTI000000000001"
 
@@ -82,3 +86,14 @@ def test_service_public_import_refuses_incomplete_fiche():
         assert "incomplète" in str(exc)
     else:
         raise AssertionError("Une fiche incomplète ne doit pas être importée.")
+
+
+def test_service_public_import_rejects_untrusted_fiche_identifier():
+    fiche = _fiche()
+    fiche["fiche_id"] = "../../evil.example"
+    try:
+        importer.to_corpus_item(fiche, _provenance())
+    except ValueError as exc:
+        assert "identifiant F valide" in str(exc)
+    else:
+        raise AssertionError("Un identifiant de fiche arbitraire ne doit pas construire une URL.")
