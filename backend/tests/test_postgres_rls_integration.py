@@ -361,3 +361,60 @@ async def _run_administrative_case_law_search_sql_scenario():
 
 def test_postgresql_executes_administrative_case_law_search_cte():
     asyncio.run(_run_administrative_case_law_search_sql_scenario())
+
+
+async def _run_service_public_guidance_corpus_scenario():
+    import asyncpg
+    from app.legal_corpus import search_legal_corpus, upsert_legal_document
+
+    source_id = "CI_SERVICE_PUBLIC_" + uuid.uuid4().hex
+    admin = await asyncpg.connect(ADMIN_URL)
+    try:
+        full_text = (
+            "Le temps partiel pour raison thérapeutique permet à un agent public "
+            "de reprendre ou de maintenir son activité dans des conditions adaptées. "
+            "La présente fiche décrit les démarches administratives et les règles "
+            "générales applicables selon le versant de la fonction publique."
+        )
+        await upsert_legal_document(admin, {
+            "source_type": "SERVICE_PUBLIC_PART",
+            "source_id": source_id,
+            "title": "Temps partiel thérapeutique — fiche administrative de test",
+            "document_kind": "ADMIN_GUIDANCE",
+            "publisher": "Service-Public.gouv.fr / DILA",
+            "official_url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F12345",
+            "status": "UNKNOWN",
+            "source_status": "IMPORTED_UNVERIFIED",
+            "raw_metadata": {
+                "corpus_role": "ADMINISTRATIVE_GUIDANCE_NOT_PRIMARY_LEGAL_AUTHORITY",
+                "license": "fr-lo",
+                "attribution": "Service-Public.gouv.fr / DILA",
+            },
+            "full_text": full_text,
+            "version_key": "ci-" + uuid.uuid4().hex,
+            "version_status": "UNKNOWN",
+            "valid_from": None,
+            "valid_to": None,
+            "raw_version_payload": {"integration_test": True},
+        })
+        results = await search_legal_corpus(
+            admin, "temps partiel thérapeutique agent public", date(2026, 11, 22), limit=10,
+        )
+        item = next(result for result in results if result["source_id"] == source_id)
+        assert item["document_kind"] == "ADMIN_GUIDANCE"
+        assert item["source_status"] == "IMPORTED_UNVERIFIED"
+        assert item["official_source"] is False
+        assert item["temporal_status"] == "TEMPORAL_SCOPE_INCOMPLETE"
+        assert item["official_url"].endswith("/F12345")
+        assert item["citation_integrity"]["text_hash_verified"] is True
+        assert item["citation_integrity"]["valid"] is True
+    finally:
+        await admin.execute(
+            "DELETE FROM legal_documents WHERE source_type='SERVICE_PUBLIC_PART' AND source_id=$1",
+            source_id,
+        )
+        await admin.close()
+
+
+def test_postgresql_indexes_service_public_guidance_without_promoting_it_to_law():
+    asyncio.run(_run_service_public_guidance_corpus_scenario())
