@@ -969,7 +969,7 @@ def test_research_plan_parser_accepts_bounded_dynamic_queries_and_subquestions()
     }""")
     assert plan is not None
     assert len(plan.queries) == 2
-    assert "ASA syndicales" in plan.queries[0]
+    assert "autorisations spéciales d'absence" in plan.queries[0]
     assert len(plan.legal_issues) == 2
 
 
