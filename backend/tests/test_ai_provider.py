@@ -997,3 +997,10 @@ def test_research_planner_is_not_an_article_or_problem_template_catalog():
     source = inspect.getsource(plan_legal_research)
     assert "Ne pars d'aucune liste prédéfinie" in source
     assert "N'invente pas de références" in source
+
+def test_research_plan_parser_accepts_empty_queries_only_for_refinement():
+    assert _parse_research_plan('{"queries": [], "legal_issues": []}') is None
+    refined = _parse_research_plan('{"queries": [], "legal_issues": ["Question juridique couverte"]}', allow_empty=True)
+    assert refined is not None
+    assert refined.queries == []
+    assert refined.legal_issues == ["Question juridique couverte"]
