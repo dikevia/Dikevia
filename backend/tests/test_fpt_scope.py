@@ -478,3 +478,14 @@ def test_incidental_ihts_citation_does_not_reclassify_a_mixed_scope_source():
     })
     assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
     assert result["analysis_eligible"] is False
+
+def test_unrelated_source_cannot_claim_common_tpt_scope_from_article_number_alone():
+    result = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_API",
+        "title": "Décret relatif à un régime de santé particulier",
+        "article": "L823-4",
+        "text": "Le fonctionnaire perçoit sa rémunération dans les conditions prévues.",
+    }, target_versant="FPT")
+    assert result["scope"] != "COMMON_PUBLIC_SERVICE"
+    assert result.get("claim_eligible") is not True
+
