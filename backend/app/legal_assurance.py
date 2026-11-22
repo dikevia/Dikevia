@@ -337,7 +337,7 @@ def validate_claim_evidence(
         if source.get("reference_role") in {
             "BASELINE_CONTEXT_ONLY", "INTERPRETIVE_CONTEXT_ONLY",
             "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY",
-        } or source.get("claim_eligible") is False:
+        } or source.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY" or source.get("claim_eligible") is False:
             continue
         if (
             source.get("analysis_eligible") is False
