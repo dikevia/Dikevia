@@ -232,3 +232,64 @@ def test_cgfp_fallback_never_uses_an_fpe_only_article(monkeypatch):
         found,
         "Mon employeur refuse ma protection fonctionnelle.",
     )
+
+
+
+def test_cgfp_snapshot_fallback_can_support_only_snapshot_scoped_claims():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = {
+        "source_type": "CGFP_SNAPSHOT",
+        "source_id": "FR-CGFP-2026-10-31:L521-1",
+        "title": "Code général de la fonction publique — article L521-1",
+        "article": "L521-1",
+        "excerpt": (
+            "Le présent article fixe les dispositions applicables aux agents "
+            "territoriaux dans les conditions prévues par le code."
+        ),
+        "text": (
+            "Le présent article fixe les dispositions applicables aux agents "
+            "territoriaux dans les conditions prévues par le code."
+        ),
+        "content_kind": "SNAPSHOT_EXCERPT",
+        "snapshot_modified_at": "2026-10-31",
+        "source_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
+        "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
+        "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED",
+        "public_service_scope": "FPT_REFERENCE",
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "citation_integrity": {"valid": True},
+    }
+    payload = {
+        "claims": [{
+            "text": "Le snapshot reproduit une disposition relative aux agents territoriaux.",
+            "source_id": source["source_id"],
+            "axis": "disposition CGFP",
+            "quote": "dispositions applicables aux agents territoriaux",
+        }],
+        "uncovered_axes": [],
+    }
+    result = validate_claim_evidence(payload, [source], required_axes=["disposition CGFP"])
+    assert result["valid"] is True
+    assert result["claims"][0]["source_id"] == source["source_id"]
+
+    baseline = {**source, "reference_role": "BASELINE_CONTEXT_ONLY"}
+    rejected = validate_claim_evidence(payload, [baseline], required_axes=["disposition CGFP"])
+    assert rejected["claims"] == []
+
+
+def test_cgfp_snapshot_date_is_accepted_as_document_date_for_ai_input():
+    from app.ai_provider import _usable_document_sources
+
+    source = {
+        "source_type": "CGFP_SNAPSHOT",
+        "source_id": "FR-CGFP-2026-10-31:L521-1",
+        "snapshot_modified_at": "2026-10-31",
+        "source_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
+        "excerpt": "Un extrait de texte du CGFP suffisamment long pour être transmis.",
+        "citation_integrity": {"valid": True},
+    }
+    assert _usable_document_sources([source]) == [
+        {**source, "excerpt": "Un extrait de texte du CGFP suffisamment long pour être transmis."}
+    ]
