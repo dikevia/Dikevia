@@ -311,7 +311,8 @@
       "domains": [
         "interco.cfdt.fr",
         "cfdt-interco31.fr",
-        "www.cfdt-interco31.fr"
+        "www.cfdt-interco31.fr",
+        "cfdtinterco35.fr"
       ]
     },
     {
@@ -1074,7 +1075,8 @@
       "collected_at": "2026-11-22",
       "text_sha256": "822f5924bfb975e0cf1cd374d2486c4ff5dc562cfe08b2d426d2d573f5b1cf25",
       "character_count": 1984,
-      "artifact_name": "service-public-function-public-corpus.zip"
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "822f5924bfb975e0cf1cd374d2486c4ff5dc562cfe08b2d426d2d573f5b1cf25"
     },
     {
       "id": "cfdt-interco-guide-agent-public-2026",
@@ -1104,7 +1106,8 @@
       "collected_at": "2026-11-22",
       "text_sha256": "f89c2fde3da1b835a944828658b858724cf89f73d1e964a8ce8b9d2a5d898eb0",
       "character_count": 1229,
-      "artifact_name": "service-public-function-public-corpus.zip"
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "f89c2fde3da1b835a944828658b858724cf89f73d1e964a8ce8b9d2a5d898eb0"
     },
     {
       "id": "cgt-fp-site",
@@ -1130,7 +1133,8 @@
       "collected_at": "2026-11-22",
       "text_sha256": "5c0aea40f70a2dcbb56c3d6ca25a6bb2fc0077d89f946e5fc895765eda18650b",
       "character_count": 7432,
-      "artifact_name": "service-public-function-public-corpus.zip"
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "93d6264ac54b3da9e254a7fccf5367979ab8ed812dae92b6fb9d0d15548632ff"
     },
     {
       "id": "fo-fp-site",
@@ -1159,7 +1163,8 @@
       "collected_at": "2026-11-22",
       "text_sha256": "cd00ae9959cf234d43769f05aa8569d7356b3ee99cdbff8fdea74f161ec49060",
       "character_count": 5853,
-      "artifact_name": "service-public-function-public-corpus.zip"
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "cd00ae9959cf234d43769f05aa8569d7356b3ee99cdbff8fdea74f161ec49060"
     },
     {
       "id": "cftc-fp-propositions",
@@ -1188,7 +1193,8 @@
       "collected_at": "2026-11-22",
       "text_sha256": "73639f802eda746ae9850785650af7d7ff0ad12d899dc4750a04f9164c7de522",
       "character_count": 8663,
-      "artifact_name": "service-public-function-public-corpus.zip"
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "4c43f68e28c081425576eeb5679c82ca039f82e30ac9c12ece8d47d44ffc5a61"
     },
     {
       "id": "cftc-decodeur-greve-fp",
@@ -1216,7 +1222,8 @@
       "collected_at": "2026-11-22",
       "text_sha256": "df8c9b1d05a53861a86b79b0c96da671defaf35d55dd12c0cceb63b81ae1be85",
       "character_count": 13710,
-      "artifact_name": "service-public-function-public-corpus.zip"
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "df8c9b1d05a53861a86b79b0c96da671defaf35d55dd12c0cceb63b81ae1be85"
     },
     {
       "id": "unsa-fp-site",
@@ -1246,7 +1253,8 @@
       "collected_at": "2026-11-22",
       "text_sha256": "39b0a8954e82af97ee1c3ac5d0b4cb8795642aeb81725950f7e38437ef8a2d29",
       "character_count": 10175,
-      "artifact_name": "service-public-function-public-corpus.zip"
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "39b0a8954e82af97ee1c3ac5d0b4cb8795642aeb81725950f7e38437ef8a2d29"
     },
     {
       "id": "solidaires-fp-site",
@@ -1275,7 +1283,38 @@
       "collected_at": "2026-11-22",
       "text_sha256": "c9687b3dbfaf1714e6142e23161a7c282462990b0c9c16c9cde6ede14e085003",
       "character_count": 890,
-      "artifact_name": "service-public-function-public-corpus.zip"
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "c9687b3dbfaf1714e6142e23161a7c282462990b0c9c16c9cde6ede14e085003"
+    },
+    {
+      "id": "cfdt-interco-guide-agent-public-2026-pdf",
+      "source_id": "cfdt-interco",
+      "title": "Guide de l'agent public 2026 — Fédération CFDT Interco (PDF intégral)",
+      "url": "https://cfdtinterco35.fr/wp-content/uploads/2026/04/Guide-de-lagent-public-2026-PDF.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "droits des agents",
+        "obligations",
+        "rémunération",
+        "carrière",
+        "formation",
+        "positions administratives",
+        "temps de travail",
+        "congés",
+        "discipline",
+        "instances représentatives"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "ACCESS_REVIEWED",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "PDF intégral identifié sur le site CFDT Interco 35. Publication éditoriale syndicale : conserver l'attribution et vérifier chaque règle dans les textes normatifs. Collecte automatisée à effectuer ; droits de réutilisation à examiner avant import PostgreSQL."
     }
   ]
 }
