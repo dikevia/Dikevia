@@ -31,7 +31,7 @@ def _archive() -> zipfile.ZipFile:
         )
         archive.writestr(
             "F12346.xml",
-            b'<Fiche><dc:title>Droits a conges annuels</dc:title><Theme ID="N19806"/>'
+            b'<Fiche xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Droits a conges annuels</dc:title><Theme ID="N19806"/>'
             b'<Texte>Regles de report et d indemnisation.</Texte>'
             b'<Reference ID="D85-1250" type="decret">'
             + "Décret n° 85-1250 du 26 novembre 1985".encode("utf-8")
