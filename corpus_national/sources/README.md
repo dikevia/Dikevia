@@ -19,7 +19,7 @@ Exemple de prévisualisation : `python scripts/import_public_guidance_sources.py
 Le workflow GitHub `Corpus public-source pilot` réalise une collecte réelle en dry-run à chaque changement pertinent. Pour autoriser l'écriture :
 1. créer le secret GitHub Actions `LEGAL_CORPUS_INGEST_DATABASE_URL` avec la chaîne PostgreSQL du rôle dédié `cfdt_juris_ingest` ;
 2. vérifier que la CI est verte ;
-3. lancer manuellement `Corpus public-source pilot` sur la branche de développement : le déclenchement manuel importe l'ensemble des fiches sélectionnées. Le push automatique, lui, se limite à un pilote de dix fiches.
+3. demander l'import complet en ajoutant le marqueur `corpus_national/sources/FULL_IMPORT_REQUESTED` sur la branche de développement. Le workflow détecte ce marqueur et importe toutes les fiches. Sans marqueur, un push autorise uniquement un pilote de dix fiches.
 Sans ce secret, aucune écriture n'est effectuée. Ne jamais utiliser le compte propriétaire ou le compte runtime pour contourner ce contrôle.
 
 
