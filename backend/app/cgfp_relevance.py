@@ -7,7 +7,9 @@ uniquement à ordonner les documents à examiner. Aucun statut juridique n'est d
 from __future__ import annotations
 
 from typing import Any
+import json
 import re
+from pathlib import Path
 
 from .cgfp import get_cgfp_article, normalize, search_cgfp as lexical_search
 
@@ -524,6 +526,58 @@ _LEGAL_QUERY_ALIASES: tuple[tuple[str, str], ...] = (
 )
 
 
+
+_FP_LEXICAL_REFERENTIEL_PATH = Path(__file__).with_name("fp_lexical_referentiel.json")
+
+
+def _load_fp_lexical_referentiel() -> tuple[dict[str, Any], ...]:
+    """Load curated public-service query vocabulary; legal references stay inert."""
+    try:
+        payload = json.loads(_FP_LEXICAL_REFERENTIEL_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ()
+    if payload.get("schema_version") != "1.0.0" or not isinstance(payload.get("entries"), list):
+        return ()
+    valid: list[dict[str, Any]] = []
+    for entry in payload["entries"]:
+        if not isinstance(entry, dict):
+            continue
+        triggers = entry.get("triggers")
+        legal_terms = entry.get("legal_terms")
+        if (
+            isinstance(entry.get("id"), str)
+            and isinstance(triggers, list) and all(isinstance(x, str) for x in triggers)
+            and isinstance(legal_terms, list) and all(isinstance(x, str) for x in legal_terms)
+        ):
+            valid.append(entry)
+    return tuple(valid)
+
+
+_FP_LEXICAL_ENTRIES = _load_fp_lexical_referentiel()
+
+
+def _trigger_matches(query: str, trigger: str) -> bool:
+    folded_trigger = normalize(trigger)
+    if not folded_trigger:
+        return False
+    if len(folded_trigger) <= 3 or any(char.isdigit() for char in folded_trigger):
+        return bool(re.search(
+            r"(?<![a-z0-9])" + re.escape(folded_trigger) + r"(?![a-z0-9])",
+            query,
+        ))
+    return folded_trigger in query
+
+
+def _expand_from_public_service_referentiel(query: str) -> list[str]:
+    """Return lexical expansions only; never promote candidate citations to law."""
+    folded = normalize(query)
+    additions: list[str] = []
+    for entry in _FP_LEXICAL_ENTRIES:
+        if any(_trigger_matches(folded, trigger) for trigger in entry["triggers"]):
+            additions.extend(entry["legal_terms"])
+    return list(dict.fromkeys(additions))[:36]
+
+
 def _expand_legal_query(query: str) -> str:
     """Append controlled legal equivalents while preserving the user's wording."""
     folded = normalize(query)
@@ -531,6 +585,9 @@ def _expand_legal_query(query: str) -> str:
     for colloquial, legal in _LEGAL_QUERY_ALIASES:
         if re.search(r"(?<![a-z0-9])" + re.escape(normalize(colloquial)) + r"(?![a-z0-9])", folded):
             additions.append(legal)
+    # Public-service vocabulary expands retrieval but never establishes scope,
+    # legal applicability, or the validity of the reference_leads in the JSON.
+    additions.extend(_expand_from_public_service_referentiel(folded))
     return " ".join(dict.fromkeys([query.strip(), *additions])).strip()
 
 
