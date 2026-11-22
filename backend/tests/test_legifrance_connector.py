@@ -186,6 +186,12 @@ def test_legifrance_search_payload_uses_code_date_and_article_number(monkeypatch
     assert payload["fond"] == "CODE_DATE"
     assert payload["recherche"]["champs"][0]["criteres"][0]["valeur"] == "L123-4"
     assert payload["recherche"]["typePagination"] == "ARTICLE"
+    free_text = LegifranceConnector()._search_payload(
+        "régime indemnitaire fonctions supplémentaires", date(2025, 1, 1)
+    )
+    criterion = free_text["recherche"]["champs"][0]["criteres"][0]
+    assert criterion["typeRecherche"] == "UN_DES_MOTS"
+    assert criterion["proximite"] == 5
     assert payload["recherche"]["filtres"][1]["singleDate"] == LegifranceConnector._date_epoch_ms(date(2025, 1, 1))
 
 
