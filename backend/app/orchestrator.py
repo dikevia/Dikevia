@@ -1388,6 +1388,7 @@ class LegalOrchestrator:
             s for s in sources
             if s.get("source_type") == "CGFP_SNAPSHOT"
             and s.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+            and s.get("general_info_eligible") is True
             and s.get("research_axis_relevant") is True
             and (s.get("citation_integrity") or {}).get("valid") is True
         ]
