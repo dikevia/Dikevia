@@ -30,19 +30,22 @@ jobs:
       - name: Download and extract official Service-Public dataset
         run: python scripts/import_service_public_to_legal_corpus.py --export-json /tmp/service-public-corpus.json
       - name: Dry-run DGAFP TPT PDF extraction (no database writes)
-        run: python scripts/import_public_guidance_sources.py --id dgafp-faq-tpt-2026
-        continue-on-error: true
-      - name: Dry-run CDG35 annual-leave PDF extraction (no database writes)
-        run: python scripts/import_public_guidance_sources.py --id cdg35-actualite-conges-2025
+        run: python scripts/import_public_guidance_sources.py --id dgafp-faq-tpt-2026 --export-json /tmp/dgafp-tpt.json
         continue-on-error: true
       - name: Dry-run CDG35 annualized-working-time PDF extraction (no database writes)
-        run: python scripts/import_public_guidance_sources.py --id cdg35-annualisation
+        run: python scripts/import_public_guidance_sources.py --id cdg35-annualisation-2025-v2 --export-json /tmp/cdg35-annualisation.json
+        continue-on-error: true
+      - name: Dry-run CDG35 working-time and annual-leave PDF extraction (no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cdg35-reglement-temps-travail-cst-2025 --export-json /tmp/cdg35-reglement.json
+        continue-on-error: true
+      - name: Dry-run CDG35 September 2026 statutory update PDF extraction (no database writes)
+        run: python scripts/import_public_guidance_sources.py --id cdg35-actualites-statutaires-2026-09 --export-json /tmp/cdg35-actualites-2026.json
         continue-on-error: true
       - name: Archive the extracted public corpus for audit
         uses: actions/upload-artifact@v4
         with:
           name: service-public-function-public-corpus
-          path: /tmp/service-public-corpus.json
+          path: |\n            /tmp/service-public-corpus.json\n            /tmp/dgafp-tpt.json\n            /tmp/cdg35-annualisation.json\n            /tmp/cdg35-reglement.json\n            /tmp/cdg35-actualites-2026.json\n          if-no-files-found: warn
           retention-days: 2
       - name: Wait for CI to pass on this exact commit
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
