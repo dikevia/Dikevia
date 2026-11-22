@@ -30,7 +30,11 @@
         "FPH"
       ],
       "reuse": "Vérifier les conditions propres à chaque flux et conserver les identifiants, versions et dates d'effet.",
-      "priority": 1
+      "priority": 1,
+      "domains": [
+        "legifrance.gouv.fr",
+        "www.legifrance.gouv.fr"
+      ]
     },
     {
       "id": "service-public-part",
@@ -48,7 +52,13 @@
       "dataset_url": "https://www.data.gouv.fr/datasets/fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers",
       "download_url": "https://lecomarquage.service-public.gouv.fr/vdd/3.5/part/zip/vosdroits-latest.zip",
       "ingestion": "Importer comme ADMIN_GUIDANCE / IMPORTED_UNVERIFIED ; les références citées dans les fiches restent à vérifier.",
-      "priority": 2
+      "priority": 2,
+      "domains": [
+        "service-public.gouv.fr",
+        "www.service-public.gouv.fr",
+        "lecomarquage.service-public.gouv.fr",
+        "data.gouv.fr"
+      ]
     },
     {
       "id": "dgafp",
@@ -62,7 +72,11 @@
         "TRANSVERSAL"
       ],
       "reuse": "Vérifier la licence et les conditions de réutilisation document par document.",
-      "priority": 2
+      "priority": 2,
+      "domains": [
+        "fonction-publique.gouv.fr",
+        "www.fonction-publique.gouv.fr"
+      ]
     },
     {
       "id": "dgcl",
@@ -76,7 +90,11 @@
         "TRANSVERSAL"
       ],
       "reuse": "Vérifier la licence et les conditions de réutilisation document par document.",
-      "priority": 2
+      "priority": 2,
+      "domains": [
+        "collectivites-locales.gouv.fr",
+        "www.collectivites-locales.gouv.fr"
+      ]
     },
     {
       "id": "info-gouv",
@@ -90,7 +108,11 @@
       ],
       "reuse": "Ne retenir que les contenus ayant un lien utile avec la fonction publique ; vérifier date, auteur et réutilisation.",
       "domain": "info.gouv.fr",
-      "priority": 4
+      "priority": 4,
+      "domains": [
+        "info.gouv.fr",
+        "www.info.gouv.fr"
+      ]
     },
     {
       "id": "cnfpt",
@@ -103,7 +125,11 @@
         "FPT"
       ],
       "reuse": "Licence, droits de reproduction et conditions d'accès à contrôler avant collecte et indexation.",
-      "priority": 3
+      "priority": 3,
+      "domains": [
+        "cnfpt.fr",
+        "www.cnfpt.fr"
+      ]
     },
     {
       "id": "wikiterritorial-cnfpt",
@@ -117,7 +143,10 @@
       ],
       "reuse": "Vérifier les conditions de réutilisation, la date de mise à jour et l'auteur de chaque article.",
       "domain": "wikiterritorial.cnfpt.fr",
-      "priority": 3
+      "priority": 3,
+      "domains": [
+        "wikiterritorial.cnfpt.fr"
+      ]
     },
     {
       "id": "cig-petite-couronne",
@@ -130,7 +159,11 @@
         "FPT"
       ],
       "reuse": "Licence et conditions de réutilisation à contrôler ; exclure les contenus sous accès réservé.",
-      "priority": 3
+      "priority": 3,
+      "domains": [
+        "cig929394.fr",
+        "www.cig929394.fr"
+      ]
     },
     {
       "id": "cig-grande-couronne",
@@ -143,7 +176,11 @@
         "FPT"
       ],
       "reuse": "Licence et conditions de réutilisation à contrôler ; exclure les contenus sous accès réservé.",
-      "priority": 3
+      "priority": 3,
+      "domains": [
+        "cigversailles.fr",
+        "www.cigversailles.fr"
+      ]
     },
     {
       "id": "cdg-departements",
@@ -156,7 +193,13 @@
         "FPT"
       ],
       "reuse": "Vérifier séparément les conditions de chaque CDG ; ne pas crawler les espaces réservés.",
-      "priority": 3
+      "priority": 3,
+      "domains": [
+        "cdg35.fr",
+        "cdg44.fr",
+        "cdg59.fr",
+        "cdg69.fr"
+      ]
     },
     {
       "id": "cdg-35",
@@ -170,7 +213,11 @@
       ],
       "reuse": "Vérifier les droits de réutilisation de chaque document.",
       "domain": "cdg35.fr",
-      "priority": 3
+      "priority": 3,
+      "domains": [
+        "cdg35.fr",
+        "www.cdg35.fr"
+      ]
     },
     {
       "id": "cdg-44",
@@ -184,7 +231,11 @@
       ],
       "reuse": "Vérifier les droits de réutilisation de chaque document.",
       "domain": "cdg44.fr",
-      "priority": 3
+      "priority": 3,
+      "domains": [
+        "cdg44.fr",
+        "www.cdg44.fr"
+      ]
     },
     {
       "id": "cdg-59",
@@ -198,7 +249,11 @@
       ],
       "reuse": "Vérifier les droits de réutilisation de chaque document.",
       "domain": "cdg59.fr",
-      "priority": 3
+      "priority": 3,
+      "domains": [
+        "cdg59.fr",
+        "www.cdg59.fr"
+      ]
     },
     {
       "id": "cdg-69",
@@ -212,21 +267,11 @@
       ],
       "reuse": "Vérifier les droits de réutilisation de chaque document.",
       "domain": "cdg69.fr",
-      "priority": 3
-    },
-    {
-      "id": "wikiterritorial",
-      "name": "WikiTerritorial — ressources professionnelles",
-      "publisher": "CNFPT / WikiTerritorial selon les pages",
-      "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "CANDIDATE",
-      "collection_mode": "Pages publiques à qualifier individuellement",
-      "scope": [
-        "FPT",
-        "TRANSVERSAL"
-      ],
-      "reuse": "Vérifier l'éditeur exact, la licence et la date de mise à jour de chaque contenu.",
-      "priority": 4
+      "priority": 3,
+      "domains": [
+        "cdg69.fr",
+        "www.cdg69.fr"
+      ]
     }
   ],
   "rules": [
