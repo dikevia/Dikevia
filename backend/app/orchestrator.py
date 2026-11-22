@@ -1144,11 +1144,10 @@ class LegalOrchestrator:
         else:
             permanent_issue = "Le corpus juridique permanent n'est pas connecté à cette analyse."
 
-        # If the live CGFP article endpoint is unavailable, use the bundled
-        # Légifrance PDF/index as a clearly-labelled documentary fallback.
-        # It remains a dated snapshot (not proof of the version applicable to
-        # the facts); it may accompany independently verified decrees/case law,
-        # but must never replace those sources or authorize a standalone opinion.
+        # If the live CGFP article endpoint is unavailable, the indexed official
+        # CGFP snapshot may support a bounded explanation for general questions.
+        # It is never represented as a live Légifrance verification and is not
+        # used to reconstruct the version applicable to historical facts.
         cgfp_snapshot_fallback = should_use_cgfp_snapshot_fallback(
             live_issue, found, research_queries,
             target_versant=request.public_service, live_sources=live_sources,
