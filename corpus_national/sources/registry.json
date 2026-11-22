@@ -605,10 +605,11 @@
         "décret 2025-564"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "CANDIDATE",
+      "status": "SUSPENDED",
       "content_status": "NOT_COLLECTED",
       "reuse_status": "REVIEW_REQUIRED",
-      "publication_date": "2025-09-29"
+      "publication_date": "2025-09-29",
+      "notes": "Ancienne URL historique : le domaine redirige vers cdg35.bzh et le serveur renvoie HTTP 418 à la collecte automatisée. Remplacé par les nouvelles ressources directes cdg35.bzh enregistrées dans le registre."
     },
     {
       "id": "cdg35-annualisation",
@@ -626,10 +627,11 @@
         "CET"
       ],
       "authority_level": "PROFESSIONAL_GUIDANCE",
-      "status": "CANDIDATE",
+      "status": "SUSPENDED",
       "content_status": "NOT_COLLECTED",
       "reuse_status": "REVIEW_REQUIRED",
-      "publication_date": "2024-06-06"
+      "publication_date": "2024-06-06",
+      "notes": "Ancienne URL historique : le domaine redirige vers cdg35.bzh et le serveur renvoie HTTP 418 à la collecte automatisée. Remplacé par les nouvelles ressources directes cdg35.bzh enregistrées dans le registre."
     },
     {
       "id": "cdg44-fiche-heures-supplementaires",
