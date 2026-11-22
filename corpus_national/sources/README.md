@@ -9,7 +9,7 @@ Le script `scripts/import_public_guidance_sources.py` télécharge les ressource
 - Sans option : téléchargement/extraction en **dry-run**, aucune écriture PostgreSQL.
 - `--id <seed-id>` : sélection d'une ou plusieurs ressources précises.
 - `--apply` : écriture via le rôle dédié `cfdt_juris_ingest` uniquement si la source et la réutilisation sont toutes deux explicitement marquées `APPROVED`.
-- Les documents importés restent `IMPORTED_UNVERIFIED`, `UNKNOWN) et `ADMIN_GUIDANCE` ou `PROFESSIONAL_GUIDANCE` ; ils ne constituent jamais une preuve juridique primaire.
+- Les documents importés restent `IMPORTED_UNVERIFIED`, `UNKNOWN` et `ADMIN_GUIDANCE` ou `PROFESSIONAL_GUIDANCE` ; ils ne constituent jamais une preuve juridique primaire.
 - Les dates d'effet restent nulles lorsqu'elles ne sont pas établies. Un PDF image sans couche texte exploitable est rejeté ; l'OCR doit être ajouté séparément avec contrôle qualité.
 
 Exemple de prévisualisation : `python scripts/import_public_guidance_sources.py --id dgafp-faq-tpt-2026`.
