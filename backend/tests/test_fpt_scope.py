@@ -343,3 +343,20 @@ def test_cgfp_permanent_contractual_employment_articles_are_classified_as_fpt():
         })
         assert result["scope"] == "FPT"
         assert result["analysis_eligible"] is True
+
+
+
+def test_citis_and_therapeutic_part_time_articles_are_context_only_not_fpt_claim_evidence():
+    for article in (
+        *(f"L822-{number}" for number in range(18, 24)),
+        *(f"L823-{number}" for number in range(1, 7)),
+    ):
+        result = classify_public_service_scope({
+            "title": f"Code général de la fonction publique — article {article}",
+            "article": article,
+            "text": "Le fonctionnaire bénéficie des dispositions prévues au présent chapitre.",
+            "document_kind": "CODE",
+        })
+        assert result["scope"] == "GENERAL_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is False
