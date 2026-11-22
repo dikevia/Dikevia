@@ -107,7 +107,7 @@ def safe_official_url(value: str | None) -> str | None:
         "cig929394.fr", "www.cig929394.fr",
         "cigversailles.fr", "www.cigversailles.fr",
     }
-    is_cdg_domain = bool(re.fullmatch(r"(?:www\\.)?cdg\\d{2,3}\\.fr", host))
+    is_cdg_domain = bool(re.fullmatch(r"(?:www\.)?cdg\d{2,3}\.fr", host))
     if parsed.scheme == "https" and (host in exact_hosts or is_cdg_domain):
         if parsed.username or parsed.password or parsed.port:
             return None
