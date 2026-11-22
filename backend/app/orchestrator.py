@@ -19,7 +19,7 @@ from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
-from .legal_search_plan import build_official_search_query, build_official_search_queries, build_official_research_axes
+from .legal_search_plan import build_official_search_query, build_official_search_queries, build_official_research_axes, merge_ai_and_fallback_research_queries
 from .legal_qualification import qualify_legal_question, build_contextual_research_question
 
 
@@ -491,7 +491,9 @@ class LegalOrchestrator:
         except AIProviderUnavailable:
             logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
         if research_plan is not None:
-            research_queries = list(dict.fromkeys(research_plan.queries))[:5]
+            research_queries = merge_ai_and_fallback_research_queries(
+                research_plan.queries, fallback_queries, fallback_axes, max_queries=5,
+            )
             research_axes = research_plan.legal_issues or fallback_axes
             legal_context["strategie_recherche"] = "PLANIFIEE_PAR_IA_AVANT_CONSULTATION"
             legal_context["axes_recherche_documentaire"] = research_axes
