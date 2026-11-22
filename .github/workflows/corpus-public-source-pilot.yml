@@ -45,7 +45,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: service-public-function-public-corpus
-          path: |\n            /tmp/service-public-corpus.json\n            /tmp/dgafp-tpt.json\n            /tmp/cdg35-annualisation.json\n            /tmp/cdg35-reglement.json\n            /tmp/cdg35-actualites-2026.json\n          if-no-files-found: warn
+          path: |
+            /tmp/service-public-corpus.json
+            /tmp/dgafp-tpt.json
+            /tmp/cdg35-annualisation.json
+            /tmp/cdg35-reglement.json
+            /tmp/cdg35-actualites-2026.json\n          if-no-files-found: warn
           retention-days: 2
       - name: Wait for CI to pass on this exact commit
         if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
