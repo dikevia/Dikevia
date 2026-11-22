@@ -379,12 +379,7 @@ class LegifranceConnector:
         else:
             search_field = {
                 "typeChamp": "ALL",
-                "criteres": [{
-                    "typeRecherche": "UN_DES_MOTS",
-                    "valeur": query.strip()[:250],
-                    "proximite": 5,
-                    "operateur": "ET",
-                }],
+                "criteres": [self._keyword_criterion(query.strip(), precise=True)],
                 "operateur": "ET",
             }
         payload = {"fond": "LODA_DATE", "recherche": {
@@ -394,6 +389,21 @@ class LegifranceConnector:
             "operateur": "ET", "sort": "PERTINENCE", "secondSort": "SIGNATURE_DATE_DESC",
             "typePagination": "DEFAUT"}}
         found = await self._request("POST", "/search", json_body=payload)
+        has_legal_text_id = any(
+            (raw_id := self._first_value(node, ("id", "idTexte", "id_text", "textId")))
+            and re.fullmatch(r"LEGITEXT\\d{12}", raw_id.split("_", 1)[0])
+            for node in self._walk_dicts(found)
+        )
+        if not has_legal_text_id and not number_match:
+            # Precision-first retrieval protects relevance; the documented broad
+            # mode is a recall fallback only when the precise pass found no text.
+            broad_field = {
+                "typeChamp": "ALL",
+                "criteres": [self._keyword_criterion(query.strip(), precise=False)],
+                "operateur": "ET",
+            }
+            broad_payload = {**payload, "recherche": {**payload["recherche"], "champs": [broad_field]}}
+            found = await self._request("POST", "/search", json_body=broad_payload)
         nodes = list(self._walk_dicts(found))
         records: list[dict] = []
         seen: set[str] = set()
