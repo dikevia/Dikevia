@@ -142,7 +142,9 @@ _TOPIC_MARKERS = (
 )
 
 
-def qualify_legal_question(question: str, employer: str | None = None) -> dict:
+def qualify_legal_question(
+    question: str, employer: str | None = None, public_service: str = "FPT",
+) -> dict:
     """Return conservative pre-research routing hints; never a legal conclusion."""
     folded = _fold(question)
     topic = "UNCLASSIFIED"
@@ -165,26 +167,49 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
     else:
         status = "NOT_SPECIFIED"
 
-    # Explicitly named non-territorial sectors are flagged, never transposed.
-    scope_markers = (
-        ("OUT_OF_SCOPE_FPE", (
+    # Versant selection is routing context only; explicit references to another
+    # branch are flagged so rules are never transposed across public services.
+    public_service = str(public_service or "FPT").upper()
+    if public_service not in {"FPT", "FPE", "FPH"}:
+        public_service = "FPT"
+    branch_markers = {
+        "FPT": ("OUT_OF_SCOPE_FPE", (
             "fonction publique de l etat", "fonction publique d etat",
-            "agent de l etat", "agents de l etat", "fonctionnaire d etat",
-            "fonctionnaires d etat", "fonctionnaire de l etat", "fonctionnaires de l etat",
-        )),
-        ("OUT_OF_SCOPE_FPH", (
+            "agent de l etat", "agents de l etat", "fonctionnaire de l etat",
+            "fonctionnaires de l etat",
+        ), "OUT_OF_SCOPE_FPH", (
             "fonction publique hospitaliere", "agent hospitalier",
             "agents hospitaliers", "fonctionnaire hospitalier",
             "etablissement public de sante", "personnel hospitalier",
         )),
+        "FPE": ("OUT_OF_SCOPE_FPT", (
+            "fonction publique territoriale", "agent territorial", "agents territoriaux",
+            "fonctionnaire territorial", "collectivite territoriale", "collectivites territoriales",
+        ), "OUT_OF_SCOPE_FPH", (
+            "fonction publique hospitaliere", "agent hospitalier",
+            "agents hospitaliers", "fonctionnaire hospitalier",
+            "etablissement public de sante", "personnel hospitalier",
+        )),
+        "FPH": ("OUT_OF_SCOPE_FPT", (
+            "fonction publique territoriale", "agent territorial", "agents territoriaux",
+            "fonctionnaire territorial", "collectivite territoriale", "collectivites territoriales",
+        ), "OUT_OF_SCOPE_FPE", (
+            "fonction publique de l etat", "fonction publique d etat",
+            "agent de l etat", "agents de l etat", "fonctionnaire de l etat",
+            "fonctionnaires de l etat",
+        )),
+    }
+    first_code, first_markers, second_code, second_markers = branch_markers[public_service]
+    scope_status = f"{public_service}_PRODUCT_SCOPE"
+    scope_evidence = []
+    for candidate, markers in (
+        (first_code, first_markers),
+        (second_code, second_markers),
         ("OUT_OF_SCOPE_PRIVATE", (
             "salarie du prive", "salarie dans le prive", "secteur prive",
             "entreprise privee", "employeur prive", "droit prive",
         )),
-    )
-    scope_status = "FPT_PRODUCT_SCOPE"
-    scope_evidence = []
-    for candidate, markers in scope_markers:
+    ):
         matched = [marker for marker in markers if _fold(marker) in folded]
         if matched:
             scope_status = candidate
@@ -194,26 +219,27 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
     local_employer_selected = bool(employer and employer != "NATIONAL")
     priorities = [
         "CODE_GENERAL_FONCTION_PUBLIQUE",
-        "FPT_IMPLEMENTING_LAWS_DECREES_AND_ORDERS",
+        f"{public_service}_IMPLEMENTING_LAWS_DECREES_AND_ORDERS",
         "RELEVANT_ADMINISTRATIVE_CASE_LAW",
     ]
-    if local_employer_selected:
+    if public_service == "FPT" and local_employer_selected:
         priorities.append("VALIDATED_LOCAL_COLLECTIVITY_ACTS_AND_DOCUMENTS")
 
     return {
-        "target_legal_field": "FRENCH_TERRITORIAL_PUBLIC_SERVICE",
+        "target_legal_field": {"FPT": "FRENCH_TERRITORIAL_PUBLIC_SERVICE", "FPE": "FRENCH_STATE_PUBLIC_SERVICE", "FPH": "FRENCH_HOSPITAL_PUBLIC_SERVICE"}[public_service],
         "scope_status": scope_status,
         "scope_evidence": scope_evidence,
         "topic": topic,
         "agent_status": status,
+        "public_service": public_service,
         "employer_document_scope": (
-            "LOCAL_EMPLOYER_SELECTED" if local_employer_selected else "NATIONAL_CORPUS_ONLY"
+            "LOCAL_EMPLOYER_SELECTED" if public_service == "FPT" and local_employer_selected else "NATIONAL_CORPUS_ONLY"
         ),
         "research_priorities": priorities,
         "code_du_travail_rule": "DO_NOT_APPLY_WITHOUT_VERIFIED_EXPRESS_LEGAL_BASIS_OR_REFERRAL",
         "qualification_limits": [
             "Routing hints only; not a determination of legal applicability.",
             "Do not infer agent status, facts, dates, or local rules when not stated.",
-            "Do not transpose private-sector rules to territorial public servants.",
+            "Do not transpose rules between FPT, FPE, FPH or the private sector.",
         ],
     }

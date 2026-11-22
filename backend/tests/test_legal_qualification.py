@@ -211,3 +211,25 @@ def test_chained_followups_keep_the_last_substantive_legal_topic():
     assert "heures supplémentaires" in resolved
     assert "contractuels" not in resolved
 
+
+
+def test_qualification_uses_selected_versant_and_flags_cross_versant_cases():
+    fpe = qualify_legal_question(
+        "Je suis fonctionnaire de l'État, quels sont mes droits ?",
+        public_service="FPE",
+    )
+    fph = qualify_legal_question(
+        "Je suis agent hospitalier, quels sont mes droits ?",
+        public_service="FPH",
+    )
+    assert fpe["target_legal_field"] == "FRENCH_STATE_PUBLIC_SERVICE"
+    assert fpe["scope_status"] == "FPE_PRODUCT_SCOPE"
+    assert "FPE_IMPLEMENTING_LAWS_DECREES_AND_ORDERS" in fpe["research_priorities"]
+    assert fph["target_legal_field"] == "FRENCH_HOSPITAL_PUBLIC_SERVICE"
+    assert fph["scope_status"] == "FPH_PRODUCT_SCOPE"
+    assert "FPH_IMPLEMENTING_LAWS_DECREES_AND_ORDERS" in fph["research_priorities"]
+    wrong_branch = qualify_legal_question(
+        "Je suis agent territorial, quels sont mes droits ?",
+        public_service="FPE",
+    )
+    assert wrong_branch["scope_status"] == "OUT_OF_SCOPE_FPT"
