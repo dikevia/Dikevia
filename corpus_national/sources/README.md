@@ -58,9 +58,9 @@ Le Guide de l'agent public 2026 CFDT Interco est identifié via sa page de prés
 
 Le workflow a téléchargé et extrait :
 - **199 fiches Service-Public Fonction publique**, soit environ 4,45 millions de caractères ; 194 comportent des références juridiques extraites ;
-- **9 ressources professionnelles** (5 PDF et 4 pages HTML : DGAFP, CDG35, CIG Petite Couronne, CDG59, CDG69 et CNFPT), dont 173 pages PDF et environ 359 000 caractères.
+- **17 ressources institutionnelles et syndicales** (5 PDF et 12 pages HTML : DGAFP, CDG35, CIG Petite Couronne, CDG59, CDG69, CNFPT, CFDT, CGT, FO, CFTC, UNSA et Solidaires), dont 173 pages PDF et environ 409 000 caractères.
 
-Les empreintes SHA-256 des textes extraits ont été contrôlées. Les fiches Service-Public sont préparées comme `ADMIN_GUIDANCE`, `IMPORTED_UNVERIFIED`, avec version et dates d'effet inconnues. Les ressources professionnelles restent `EXTRACTED_NOT_IMPORTED` et `REVIEW_REQUIRED` pour la réutilisation. Aucun de ces documents n'est encore présent dans PostgreSQL.
+Les empreintes SHA-256 des textes extraits ont été contrôlées. Les fiches Service-Public sont préparées comme `ADMIN_GUIDANCE`, `IMPORTED_UNVERIFIED`, avec version et dates d'effet inconnues. Les ressources professionnelles restent `EXTRACTED_NOT_IMPORTED` et `REVIEW_REQUIRED` pour la réutilisation. Les 8 pages syndicales collectées sont également `EXTRACTED_NOT_IMPORTED` et `REVIEW_REQUIRED` ; leurs empreintes sont consignées dans le registre. La page Solidaires extraite ne contient que 890 caractères : elle est à considérer comme une collecte partielle, à approfondir. Aucun de ces documents n'est encore présent dans PostgreSQL.
 
 Le script `scripts/import_service_public_to_legal_corpus.py` :
 - télécharge les métadonnées du jeu de données et l'archive ZIP courante ;
