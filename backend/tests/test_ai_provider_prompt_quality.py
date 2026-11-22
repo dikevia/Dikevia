@@ -140,3 +140,18 @@ def test_entailment_prompt_checks_that_a_claim_answers_its_assigned_axis():
 
 def test_prompt_allows_single_topic_questions_without_synthetic_axes():
     assert "Lorsque la liste est vide, mets axis à une chaîne vide" in SYSTEM_PROMPT
+
+
+def test_ai_analysis_prompt_changes_with_the_selected_public_service():
+    from app.ai_provider import _system_prompt_for_versant
+
+    fpt = _system_prompt_for_versant("FPT")
+    fpe = _system_prompt_for_versant("FPE")
+    fph = _system_prompt_for_versant("FPH")
+    assert "exclusivement FPE" in fpe
+    assert "exclusivement FPH" in fph
+    assert "fonction publique de l'État" in fpe
+    assert "fonction publique hospitalière" in fph
+    assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" not in fpe
+    assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" not in fph
+    assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" in fpt

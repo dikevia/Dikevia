@@ -1,4 +1,4 @@
-"""Deterministic routing hints for questions handled by the FPT legal assistant.
+"""Deterministic routing hints for questions handled by the selected public-service branch.
 
 This module classifies the subject and explicit status cues only. It does not
 decide legal applicability, infer missing facts, or create legal evidence.
