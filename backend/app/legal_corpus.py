@@ -197,6 +197,12 @@ _LEGAL_QUERY_EXPANSIONS = {
     "ihts": ("indemnités horaires pour travaux supplémentaires", "heures supplémentaires"),
     "indemnités horaires pour travaux supplémentaires": ("IHTS", "heures supplémentaires"),
     "heures supplémentaires": ("IHTS", "indemnités horaires pour travaux supplémentaires"),
+    # Colloquial formulations used by agents must retrieve the same legal
+    # mechanism without treating recovery and payment as legally interchangeable.
+    "récupérerai": ("repos compensateur", "récupération des heures supplémentaires", "indemnisation des heures supplémentaires"),
+    "récupérer": ("repos compensateur", "récupération des heures supplémentaires", "indemnisation des heures supplémentaires"),
+    "récupération": ("repos compensateur", "compensation des heures supplémentaires", "indemnités horaires pour travaux supplémentaires"),
+    "payées": ("indemnisation des heures supplémentaires", "versement des IHTS", "repos compensateur"),
     "compte épargne temps": ("CET", "compte épargne-temps"),
     "cet": ("compte épargne temps", "compte épargne-temps"),
     "congé maladie": ("congé de maladie", "maladie ordinaire", "CMO"),
@@ -321,6 +327,17 @@ def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: i
             if len(selected) >= limit:
                 return selected
     return selected
+
+
+def select_multi_source_chunks(results_by_query: list[list[dict]], limit: int = 12) -> list[dict]:
+    """Select multi-axis corpus results without inventing or recomputing relevance scores.
+
+    Each inner list is the ranked output of one independent legal research query.
+    Round-robin interleaving prevents the first query from crowding out complementary
+    legal sources. Existing temporal, authority and public-service guards remain
+    responsible for deciding whether a retrieved source may support an answer.
+    """
+    return interleave_legal_corpus_results(results_by_query, limit=limit)
 
 
 async def search_legal_corpus(
