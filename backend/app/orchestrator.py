@@ -1651,9 +1651,18 @@ class LegalOrchestrator:
                         and s.get("research_axis_relevant") is True
                         and (s.get("citation_integrity") or {}).get("valid") is True
                     ]
+                    context_guidance_sources = [
+                        s for s in sources
+                        if s.get("source_type") in {"SERVICE_PUBLIC_PART", "INSTITUTIONAL_GUIDANCE"}
+                        and s.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY"
+                        and (s.get("legal_assurance") or {}).get("usable_for_interpretation") is True
+                        and s.get("content_kind") == "FULL_TEXT"
+                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and s.get("research_axis_relevant", True) is not False
+                    ]
                     ai_sources = (
-                        cgfp_fallback_sources + verified_sources
-                        if verified_sources or cgfp_fallback_sources else []
+                        cgfp_fallback_sources + verified_sources + context_guidance_sources
+                        if verified_sources or cgfp_fallback_sources or context_guidance_sources else []
                     )
                     if ai_sources:
                         ai_result = await analyze_question(
