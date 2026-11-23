@@ -271,6 +271,34 @@ if settings.cors_origins:
         allow_headers=["Authorization","Content-Type","X-Organization-ID"])
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
+
+
+@app.get("/auth-config.js", include_in_schema=False)
+async def browser_oidc_configuration():
+    """Expose only public OIDC client settings; never return provider secrets."""
+    if not settings.oidc_client_id:
+        return Response(
+            "/* Runtime OIDC override not configured; use the static fallback. */",
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-store"},
+        )
+    script = (
+        "window.CFDT_JURIS_OIDC = Object.freeze({"
+        f"issuer:{json.dumps(settings.oidc_issuer)},"
+        f"client_id:{json.dumps(settings.oidc_client_id)},"
+        "redirect_uri:window.location.origin + '/',"
+        "silent_redirect_uri:window.location.origin + '/static/silent-check-sso.html',"
+        f"scopes:{json.dumps(settings.oidc_scopes)},"
+        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)}"
+        "});"
+    )
+    return Response(
+        script,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
+
 orchestrator = LegalOrchestrator()
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
 
