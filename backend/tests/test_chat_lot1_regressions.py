@@ -1,5 +1,6 @@
 import ast
 import inspect
+import textwrap
 
 import pytest
 from pydantic import ValidationError
@@ -61,7 +62,7 @@ async def test_research_planner_clarification_is_returned_before_retrieval(monke
 
 def test_vector_search_uses_ask_request_not_undefined_payload():
     source = inspect.getsource(LegalOrchestrator.ask)
-    tree = ast.parse(source)
+    tree = ast.parse(textwrap.dedent(source))
     names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
     assert "payload" not in names
     assert "request" in names
