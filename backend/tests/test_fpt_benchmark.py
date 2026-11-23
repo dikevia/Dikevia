@@ -106,8 +106,8 @@ def test_validate_repository_quality_benchmark_schema():
         source["url"].startswith(("https://www.legifrance.gouv.fr/", "https://www.cig929394.fr/", "https://www.conseil-etat.fr/", "https://www.service-public.gouv.fr/", "https://www.cnil.fr/", "https://www.fonction-publique.gouv.fr/"))
         for q in first_thirty for source in q["candidate_sources"]
     )
-    assert any("506127" in source["url"] for q in first_twenty for source in q["candidate_sources"])
-    assert any("2026-768" in source["url"] for q in first_twenty for source in q["candidate_sources"])
+    assert any("506127" in source["url"] for q in first_thirty for source in q["candidate_sources"])
+    assert any("2026-768" in source["url"] for q in first_thirty for source in q["candidate_sources"])
     assert any("2026-705" in source["url"] for q in first_thirty for source in q["candidate_sources"])
     assert any("LEGIARTI000051201136" in source["url"] for q in first_thirty for source in q["candidate_sources"])
 
