@@ -426,3 +426,170 @@ def test_ask_request_validates_optional_client_embedding_shape_and_values():
         AskRequest(**base, query_embedding=[float("inf")] + [0.0] * 383)
     with pytest.raises(ValueError):
         AskRequest(**base, query_embedding=[0.0] * 384)
+
+
+
+def test_source_classification_exposes_authority_publisher_and_union_doctrine():
+    from app.legal_assurance import classify_legal_source
+
+    official = classify_legal_source({
+        "source_type": "SERVICE_PUBLIC_PART",
+        "document_kind": "ADMIN_GUIDANCE",
+        "publisher": "Service-Public.gouv.fr / DILA",
+    })
+    assert official["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert official["publisher"] == "Service-Public.gouv.fr / DILA"
+    assert official["normative"] is False
+
+    union = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "PROFESSIONAL_GUIDANCE",
+        "raw_metadata": {
+            "source_id": "cfdt-fonctions-publiques",
+            "source_name": "CFDT Fonctions publiques",
+            "authority_level": "PROFESSIONAL_GUIDANCE",
+        },
+    })
+    assert union["authority_level"] == "PROFESSIONAL_GUIDANCE"
+    assert union["publisher"] == "CFDT Fonctions publiques"
+    assert union["publisher_type"] == "TRADE_UNION"
+    assert union["source_family_label"] == "Doctrine syndicale — non normative"
+    assert union["claim_eligible"] is False
+    assert union["usable_for_interpretation"] is True
+
+
+def test_unknown_source_is_not_mislabelled_as_primary_legal_authority():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "UNRECOGNIZED_SOURCE",
+        "document_kind": "OTHER",
+        "source_id": "unknown-source-001",
+    })
+    assert result["authority_level"] == "UNCLASSIFIED"
+    assert result["authority_label"] == "Nature et autorité de la source à qualifier"
+    assert result["claim_eligible"] is False
+    assert result["normative"] is False
+
+
+def test_official_guidance_keeps_public_administration_publisher_type():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "PROFESSIONAL_GUIDANCE",
+        "raw_metadata": {
+            "source_id": "dgafp",
+            "source_name": "Direction générale de l'administration et de la fonction publique",
+            "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+        },
+    })
+    assert result["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert result["publisher_type"] == "PUBLIC_ADMINISTRATION"
+    assert result["source_family_label"] == "Information administrative officielle — non normative"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+
+
+
+def test_institutional_guidance_source_type_cannot_be_promoted_by_document_kind():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "CODE",
+        "source_id": "cnfpt-resource-001",
+    })
+    assert result["source_family"] == "PROFESSIONAL_GUIDANCE"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+
+
+@pytest.mark.parametrize(
+    ("document_kind", "expected_authority"),
+    [
+        ("CODE", "PRIMARY_LEGAL"),
+        ("LAW", "PRIMARY_LEGAL"),
+        ("DECREE", "PRIMARY_LEGAL"),
+        ("DECRET", "PRIMARY_LEGAL"),
+        ("ORDER", "PRIMARY_LEGAL"),
+        ("ARRETE", "PRIMARY_LEGAL"),
+        ("ADMIN_CASELAW", "JURISPRUDENCE"),
+        ("CIRCULAR", "OFFICIAL_INTERPRETIVE"),
+        ("LOCAL_DELIBERATION", "LOCAL_NORMATIVE"),
+        ("LOCAL_REGULATION", "LOCAL_NORMATIVE"),
+    ],
+)
+def test_known_legal_document_kinds_receive_correct_authority_level(
+    document_kind, expected_authority,
+):
+    result = classify_legal_source({
+        "source_type": "LEGIFRANCE_API" if document_kind in {"CODE", "LAW", "DECREE", "DECRET", "ORDER", "ARRETE"} else "OTHER",
+        "document_kind": document_kind,
+        "source_id": "authority-test-001",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == expected_authority
+    assert result["claim_eligible"] is True
+    assert result["normative"] is True
+
+
+def test_unknown_document_kind_remains_unclassified_and_not_claim_eligible():
+    result = classify_legal_source({
+        "source_type": "UNRECOGNIZED_SOURCE",
+        "document_kind": "UNKNOWN_DOCUMENT_KIND",
+        "source_id": "unknown-authority-test",
+    })
+    assert result["authority_level"] == "UNCLASSIFIED"
+    assert result["claim_eligible"] is False
+    assert result["normative"] is False
+
+
+@pytest.mark.parametrize(
+    ("source_type", "document_kind", "publisher_type", "expected_authority"),
+    [
+        ("SERVICE_PUBLIC_PART", "CODE", "PUBLIC_ADMINISTRATION", "OFFICIAL_ADMIN_GUIDANCE"),
+        ("INSTITUTIONAL_GUIDANCE", "CODE", "TRADE_UNION", "PROFESSIONAL_GUIDANCE"),
+        ("INSTITUTIONAL_GUIDANCE", "CODE", "PUBLIC_ADMINISTRATION", "OFFICIAL_ADMIN_GUIDANCE"),
+    ],
+)
+def test_guidance_provenance_cannot_be_promoted_to_primary_law_by_raw_metadata(
+    source_type, document_kind, publisher_type, expected_authority,
+):
+    result = classify_legal_source({
+        "source_type": source_type,
+        "document_kind": document_kind,
+        "publisher_type": publisher_type,
+        "authority_level": "PRIMARY_LEGAL",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == expected_authority
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+    assert result["usable_for_conclusion"] is False
+
+
+def test_corpus_result_interleaving_preserves_each_research_axis_before_depth():
+    from app.legal_corpus import interleave_legal_corpus_results
+
+    axes = [
+        [{"source_id": f"axis-a-{n}"} for n in range(1, 4)],
+        [{"source_id": f"axis-b-{n}"} for n in range(1, 4)],
+        [{"source_id": f"axis-c-{n}"} for n in range(1, 4)],
+    ]
+    result = interleave_legal_corpus_results(axes, limit=6)
+    assert [item["source_id"] for item in result] == [
+        "axis-a-1", "axis-b-1", "axis-c-1",
+        "axis-a-2", "axis-b-2", "axis-c-2",
+    ]
+
+
+def test_corpus_candidate_overfetch_budget_stays_bounded_for_post_retrieval_guards():
+    from app.orchestrator import (
+        LEGAL_CORPUS_CANDIDATE_LIMIT,
+        LEGAL_CORPUS_INTERLEAVED_LIMIT,
+    )
+
+    assert LEGAL_CORPUS_CANDIDATE_LIMIT == 12
+    assert LEGAL_CORPUS_INTERLEAVED_LIMIT == 18
+    assert LEGAL_CORPUS_INTERLEAVED_LIMIT <= 30

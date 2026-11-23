@@ -4,7 +4,7 @@ concurrency:
   cancel-in-progress: true
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feat/chatbot-p0-legal-qualification, fix/chatbot-legal-reliability, feat/chatbot-query-planning-safe, feature/dikevia-v3.38.5-cgfp-chat, feature/dikevia-free-vector-search-poc]
+    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feat/chatbot-p0-legal-qualification, fix/chatbot-legal-reliability, feat/chatbot-query-planning-safe, feature/dikevia-v3.38.5-cgfp-chat, feature/dikevia-free-vector-search-poc, fix/chat-orchestration-lot1]
   pull_request:
     branches: [main, feature/dikevia-v3.38.5-cgfp-chat, feature/dikevia-free-vector-search-poc]
   workflow_dispatch:

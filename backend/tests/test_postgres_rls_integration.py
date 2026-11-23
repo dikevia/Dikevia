@@ -418,3 +418,59 @@ async def _run_service_public_guidance_corpus_scenario():
 
 def test_postgresql_indexes_service_public_guidance_without_promoting_it_to_law():
     asyncio.run(_run_service_public_guidance_corpus_scenario())
+
+async def _run_transaction_local_context_reset_scenario():
+    """Tenant GUCs must not survive release/reacquire of a pooled connection."""
+    import asyncpg
+
+    org_a, org_b = str(uuid.uuid4()), str(uuid.uuid4())
+    user_a, user_b = str(uuid.uuid4()), str(uuid.uuid4())
+    issuer_a, issuer_b = "https://issuer-a.test", "https://issuer-b.test"
+    subject_a, subject_b = "subject-a-" + uuid.uuid4().hex, "subject-b-" + uuid.uuid4().hex
+    pool = await asyncpg.create_pool(RUNTIME_URL, min_size=1, max_size=1)
+    try:
+        async with pool.acquire() as conn:
+            backend_pid = await conn.fetchval("SELECT pg_backend_pid()")
+            async with conn.transaction():
+                await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", issuer_a)
+                await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", subject_a)
+                await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_a)
+                await conn.execute("SELECT set_config('app.current_user_id',$1,true)", user_a)
+                assert await conn.fetchval("SELECT current_setting('app.current_org_id',true)") == org_a
+                assert await conn.fetchval("SELECT current_setting('app.current_user_id',true)") == user_a
+
+        # max_size=1 guarantees the next borrower receives the same backend.
+        async with pool.acquire() as conn:
+            assert await conn.fetchval("SELECT pg_backend_pid()") == backend_pid
+            for setting in (
+                "app.oidc_issuer", "app.oidc_subject",
+                "app.current_org_id", "app.current_user_id",
+            ):
+                assert await conn.fetchval(
+                    "SELECT NULLIF(current_setting($1,true),'')", setting
+                ) is None
+
+            async with conn.transaction():
+                await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", issuer_b)
+                await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", subject_b)
+                await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_b)
+                await conn.execute("SELECT set_config('app.current_user_id',$1,true)", user_b)
+                assert await conn.fetchval("SELECT current_setting('app.oidc_issuer',true)") == issuer_b
+                assert await conn.fetchval("SELECT current_setting('app.oidc_subject',true)") == subject_b
+                assert await conn.fetchval("SELECT current_setting('app.current_org_id',true)") == org_b
+                assert await conn.fetchval("SELECT current_setting('app.current_user_id',true)") == user_b
+
+        async with pool.acquire() as conn:
+            for setting in (
+                "app.oidc_issuer", "app.oidc_subject",
+                "app.current_org_id", "app.current_user_id",
+            ):
+                assert await conn.fetchval(
+                    "SELECT NULLIF(current_setting($1,true),'')", setting
+                ) is None
+    finally:
+        await pool.close()
+
+
+def test_postgresql_transaction_local_tenant_context_is_cleared_on_connection_reuse():
+    asyncio.run(_run_transaction_local_context_reset_scenario())

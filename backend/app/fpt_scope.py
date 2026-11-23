@@ -328,9 +328,11 @@ def is_ihts_question(question: str) -> bool:
     return any(_fold(marker) in folded_question for marker in _IHTS_QUERY_MARKERS)
 
 
-def is_ihts_relevant_source(question: str, source: dict[str, Any]) -> bool:
-    """Reject generic hour credits and unrelated CGFP hits for IHTS questions."""
-    if not is_ihts_question(question):
+def is_ihts_relevant_source(
+    question: str, source: dict[str, Any], target_versant: str = "FPT",
+) -> bool:
+    """Apply the IHTS-specific FPT guard only to territorial public-service questions."""
+    if str(target_versant or "FPT").upper() != "FPT" or not is_ihts_question(question):
         return True
 
     title = str(source.get("title") or "")
@@ -460,7 +462,9 @@ def _matched_topic_families(value: str) -> set[str]:
     return matched
 
 
-def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
+def is_topic_relevant_source(
+    question: str, source: dict[str, Any], target_versant: str = "FPT",
+) -> bool:
     """Reject only a source clearly belonging to another recognized topic family.
 
     Sources with no recognized family are retained as potentially cross-cutting
@@ -478,13 +482,13 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
     # decree 2020-592 governs complementary hours for permanent non-complete
     # jobs. A source explicitly limited to the opposite status is not evidence
     # for the user's status unless it also addresses that status.
-    if (
+    if str(target_versant or "FPT").upper() == "FPT" and (
         "PART_TIME" in question_topics
         and "NON_COMPLETE_TIME" in source_topics
         and "PART_TIME" not in source_topics
     ):
         return False
-    if (
+    if str(target_versant or "FPT").upper() == "FPT" and (
         "NON_COMPLETE_TIME" in question_topics
         and "PART_TIME" in source_topics
         and "NON_COMPLETE_TIME" not in source_topics
@@ -505,7 +509,7 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         "PROFESSIONAL_EVALUATION",
         "CONTRACT_CDI_SIX_YEARS",
     }
-    if question_topics & strict_topics:
+    if str(target_versant or "FPT").upper() == "FPT" and question_topics & strict_topics:
         # For annual-appraisal questions only, an unclassified procedural
         # source may still be relevant. The CDI six-year mechanism remains
         # strict: generic or unrelated CGFP provisions are rejected.

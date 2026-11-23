@@ -75,10 +75,34 @@ def _build_code_research_queries(
     ]
 
 
-def _build_targeted_regulatory_queries(question: str) -> list[str]:
-    """Add exact, date-scoped FPT health texts without treating them as legal conclusions."""
+def _build_targeted_regulatory_queries(
+    question: str, public_service: str = "FPT",
+) -> list[str]:
+    """Add exact, date-scoped implementing-text searches for the selected public-service branch."""
     folded = " ".join(str(question or "").casefold().split())
     queries: list[str] = []
+    availability = any(marker in folded for marker in (
+        "disponibilité", "disponibilite", "convenances personnelles",
+    ))
+    if availability:
+        branch_availability_articles = {
+            "FPT": (
+                "décret n° 86-68 du 13 janvier 1986 article 21 disponibilité sur demande convenances personnelles fonctionnaires territoriaux",
+            ),
+            "FPE": (
+                "décret n° 85-986 du 16 septembre 1985 article 44 disponibilité sur demande convenances personnelles fonctionnaires de l'État",
+            ),
+            "FPH": (
+                "décret n° 88-976 du 13 octobre 1988 article 31 disponibilité sur demande convenances personnelles fonctionnaires hospitaliers",
+            ),
+        }
+        queries.extend(branch_availability_articles.get(public_service, ()))
+
+    # The following implementing texts are specific to the territorial
+    # health/absence regimes and must never be sent as FPE/FPH requirements.
+    if public_service != "FPT":
+        return list(dict.fromkeys(queries))
+
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
         "invalidite temporaire imputable au service",
@@ -152,7 +176,7 @@ def should_use_cgfp_snapshot_fallback(
     # the documentary CGFP snapshot fallback.
     live_covers_an_axis = any(
         source.get("source_type") in {None, "LEGIFRANCE_API"}
-        and _source_relevant_to_any_research_axis(queries, source)
+        and _source_relevant_for_target(queries, source, target_versant)
         and source.get("analysis_eligible") is not False
         for source in (live_sources or [])
     )
@@ -166,7 +190,7 @@ def should_use_cgfp_snapshot_fallback(
     return bool(
         live_unusable and isinstance(found, dict) and found.get("results")
         and any(
-            _source_relevant_to_any_research_axis(queries, hit)
+            _source_relevant_for_target(queries, hit, target_versant)
             and (
                 _cgfp_article_fpt_eligible(str(hit.get("article") or ""))
                 if target_versant == "FPT"
@@ -179,6 +203,12 @@ def should_use_cgfp_snapshot_fallback(
 
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
 logger = logging.getLogger(__name__)
+
+# The corpus is filtered for topic, source authority and public-service scope
+# after retrieval. Overfetch per axis so the first six lexical/vector hits do
+# not crowd out relevant documents before those deterministic guards run.
+LEGAL_CORPUS_CANDIDATE_LIMIT = 12
+LEGAL_CORPUS_INTERLEAVED_LIMIT = 18
 
 
 def _france_today() -> date:
@@ -313,11 +343,12 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
 
 async def apply_semantic_source_relevance(
     *, question: str, research_axes: list[str], sources: list[dict],
+    target_versant: str = "FPT",
 ) -> None:
     """Apply Gemini relevance verdicts while preserving lexical fallback on provider failure."""
     for source in sources:
-        source["research_axis_relevant"] = _source_relevant_to_any_research_axis(
-            research_axes, source,
+        source["research_axis_relevant"] = _source_relevant_for_target(
+            research_axes, source, target_versant,
         )
     try:
         semantic_verdicts = await evaluate_source_relevance(
@@ -341,12 +372,26 @@ async def apply_semantic_source_relevance(
         logger.warning("Semantic source relevance unavailable; using lexical fallback: %s", exc)
 
 
-def _source_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
-    """Require both topic and specialized guards to pass for the same research axis."""
+def _source_relevant_to_any_research_axis(
+    research_queries: list[str], source: dict, target_versant: str = "FPT",
+) -> bool:
+    """Require topic relevance while applying FPT-only safeguards to FPT questions."""
     return any(
-        is_topic_relevant_source(query, source)
-        and is_ihts_relevant_source(query, source)
+        is_topic_relevant_source(query, source, target_versant=target_versant)
+        and is_ihts_relevant_source(query, source, target_versant=target_versant)
         for query in research_queries
+    )
+
+
+def _source_relevant_for_target(
+    research_queries: list[str], source: dict, target_versant: str,
+) -> bool:
+    # Keep the historical two-argument FPT call contract for existing adapters
+    # and tests; FPE/FPH must not inherit FPT-specific retrieval guards.
+    if str(target_versant or "FPT").upper() == "FPT":
+        return _source_relevant_to_any_research_axis(research_queries, source)
+    return _source_relevant_to_any_research_axis(
+        research_queries, source, target_versant,
     )
 
 
@@ -577,6 +622,17 @@ class LegalOrchestrator:
             )
         except AIProviderUnavailable:
             logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
+        if research_plan is not None and research_plan.clarification_needed:
+            clarification = research_plan.clarification_needed
+            logger.info("Clarification juridique demandée avant recherche documentaire (request_id=%s).", request_id)
+            return AskResponse(
+                request_id=request_id,
+                verification_status="NON_VERIFIE",
+                answer=clarification,
+                clarification_question=clarification,
+                sources=[],
+                missing_information=[],
+            )
         if research_plan is not None:
             research_queries = merge_ai_and_fallback_research_queries(
                 research_plan.queries, fallback_queries, fallback_axes, max_queries=5,
@@ -702,8 +758,7 @@ class LegalOrchestrator:
             # query budgets and preserve the applicable FPT implementing texts.
             regulatory_queries = list(dict.fromkeys([
                 *research_queries,
-                *(_build_targeted_regulatory_queries(contextual_question)
-                  if request.public_service == "FPT" else []),
+                *_build_targeted_regulatory_queries(contextual_question, request.public_service),
             ]))
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
@@ -980,7 +1035,7 @@ class LegalOrchestrator:
                     result["scope_evidence"] = scope["evidence"]
                     result["analysis_eligible"] = scope["analysis_eligible"]
                     result["claim_eligible"] = scope.get("claim_eligible", scope["analysis_eligible"])
-                    if not scope["analysis_eligible"] or not _source_relevant_to_any_research_axis(research_queries, result):
+                    if not scope["analysis_eligible"] or not _source_relevant_for_target(research_queries, result, request.public_service):
                         logger.info(
                             "Décision CETAT écartée du dossier IA : périmètre ou thème non confirmé (source=%s, scope=%s)",
                             result.get("source_id"), scope["scope"],
@@ -1092,7 +1147,9 @@ class LegalOrchestrator:
                 # independent corpus searches sequential on this tenant-safe connection.
                 for query in research_queries:
                     try:
-                        result = await search_legal_corpus(conn, query, effective_date, limit=6)
+                        result = await search_legal_corpus(
+                            conn, query, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
+                        )
                     except Exception as exc:
                         logger.warning("Recherche du corpus juridique en échec (%s) : %r", query[:100], exc)
                         stored_search_failed = True
@@ -1103,18 +1160,20 @@ class LegalOrchestrator:
                             stored_search_failed = True
                 # The client computes the user's original-question embedding locally.
                 # Generated research axes remain lexical so no server-side model is loaded.
-                if settings.vector_search_enabled and payload.query_embedding is not None:
+                if settings.vector_search_enabled and request.query_embedding is not None:
                     try:
                         vector_results = await search_legal_corpus(
-                            conn, payload.question, effective_date, limit=6,
-                            query_embedding=payload.query_embedding,
+                            conn, request.question, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
+                            query_embedding=request.query_embedding,
                         )
                     except Exception as exc:
                         logger.warning("Recherche vectorielle indisponible ; maintien du repli lexical : %r", exc)
                         stored_search_failed = True
                     else:
                         stored_by_query.insert(0, vector_results if isinstance(vector_results, list) else [])
-                stored = interleave_legal_corpus_results(stored_by_query, limit=12)
+                stored = interleave_legal_corpus_results(
+                    stored_by_query, limit=LEGAL_CORPUS_INTERLEAVED_LIMIT,
+                )
                 if stored_search_failed:
                     permanent_issue = "La recherche dans le corpus juridique permanent a échoué pour au moins un axe ; les résultats disponibles sont partiels."
                 for item in stored:
@@ -1184,7 +1243,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, item)
+            item["research_axis_relevant"] = _source_relevant_for_target(research_queries, item, request.public_service)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
                 "version_matches_facts_date": bool(
@@ -1218,7 +1277,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, item)
+            item["research_axis_relevant"] = _source_relevant_for_target(research_queries, item, request.public_service)
             sources.append({
                 **item,
                 "excerpt": item.get("excerpt") or full_text[:1800],
@@ -1252,7 +1311,7 @@ class LegalOrchestrator:
             response_source["scope_evidence"] = scope_check["evidence"]
             response_source["analysis_eligible"] = scope_check["analysis_eligible"]
             response_source["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            response_source["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, response_source)
+            response_source["research_axis_relevant"] = _source_relevant_for_target(research_queries, response_source, request.public_service)
             response_source["general_info_eligible"] = (
                 parsed_date is None
                 and response_source.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
@@ -1275,7 +1334,7 @@ class LegalOrchestrator:
 
         if found and cgfp_snapshot_fallback and parsed_date is None:
             for hit in found["results"]:
-                if not _source_relevant_to_any_research_axis(research_queries, hit):
+                if not _source_relevant_for_target(research_queries, hit, request.public_service):
                     continue
                 article = get_cgfp_article(hit["article"])
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
@@ -1336,13 +1395,14 @@ class LegalOrchestrator:
             decision["scope_evidence"] = scope_check["evidence"]
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
             decision["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            decision["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, decision)
+            decision["research_axis_relevant"] = _source_relevant_for_target(research_queries, decision, request.public_service)
             sources.append({**decision, "page_start": None, "page_end": None})
 
         # Gemini assesses document content after the lexical fallback. This is relevance
         # triage only; source, citation, temporal and FPT-scope controls remain authoritative.
         await apply_semantic_source_relevance(
             question=request.question, research_axes=research_queries, sources=sources,
+            target_versant=request.public_service,
         )
 
 
@@ -1640,9 +1700,18 @@ class LegalOrchestrator:
                         and s.get("research_axis_relevant") is True
                         and (s.get("citation_integrity") or {}).get("valid") is True
                     ]
+                    context_guidance_sources = [
+                        s for s in sources
+                        if s.get("source_type") in {"SERVICE_PUBLIC_PART", "INSTITUTIONAL_GUIDANCE"}
+                        and s.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY"
+                        and (s.get("legal_assurance") or {}).get("usable_for_interpretation") is True
+                        and s.get("content_kind") == "FULL_TEXT"
+                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and s.get("research_axis_relevant", True) is not False
+                    ]
                     ai_sources = (
-                        cgfp_fallback_sources + verified_sources
-                        if verified_sources or cgfp_fallback_sources else []
+                        cgfp_fallback_sources + verified_sources + context_guidance_sources
+                        if verified_sources or cgfp_fallback_sources or context_guidance_sources else []
                     )
                     if ai_sources:
                         ai_result = await analyze_question(

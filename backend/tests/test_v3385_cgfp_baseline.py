@@ -295,3 +295,34 @@ def test_cgfp_snapshot_date_is_accepted_as_document_date_for_ai_input():
     assert _usable_document_sources([source]) == [
         {**source, "excerpt": "Un extrait de texte du CGFP suffisamment long pour être transmis."}
     ]
+
+
+@pytest.mark.parametrize(
+    ("versant", "expected"),
+    [
+        ("FPT", "décret n° 86-68 du 13 janvier 1986 article 21"),
+        ("FPE", "décret n° 85-986 du 16 septembre 1985 article 44"),
+        ("FPH", "décret n° 88-976 du 13 octobre 1988 article 31"),
+    ],
+)
+def test_availability_research_targets_the_selected_versant_decree(versant, expected):
+    import app.orchestrator as module
+
+    queries = module._build_targeted_regulatory_queries(
+        "Un fonctionnaire titulaire peut-il demander une disponibilité pour convenances personnelles ?",
+        versant,
+    )
+
+    assert len(queries) == 1
+    assert expected in queries[0]
+
+
+def test_territorial_health_regulatory_queries_do_not_leak_to_other_versants():
+    import app.orchestrator as module
+
+    for versant in ("FPE", "FPH"):
+        queries = module._build_targeted_regulatory_queries(
+            "Un agent demande un temps partiel thérapeutique après un accident de service.",
+            versant,
+        )
+        assert queries == []

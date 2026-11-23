@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
-from .dependencies import get_principal, get_tenant_context, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
+from .dependencies import get_principal, get_tenant_context, get_tenant_identity, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
@@ -270,6 +270,34 @@ async def enforce_legal_connector_rate_limit(ctx: TenantContext) -> None:
             detail="Limite de requêtes juridiques atteinte. Réessayez dans quelques instants.",
             headers={"Retry-After": str(decision.retry_after_seconds)},
         )
+
+
+
+async def _set_tenant_rls_context(conn, ctx: TenantContext) -> None:
+    """Set transaction-local identity and tenant GUCs before every protected DB unit."""
+    await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", ctx.principal.issuer)
+    await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", ctx.principal.subject)
+    await conn.execute("SELECT set_config('app.current_org_id',$1,true)", ctx.organization_id)
+    await conn.execute("SELECT set_config('app.current_user_id',$1,true)", ctx.user_id)
+
+
+class _TenantScopedReadConnection:
+    """Short-lived, tenant-scoped read adapter for orchestrator corpus lookups.
+
+    The orchestrator uses this adapter only for fetch() calls against the local
+    and permanent legal corpora. Each call owns a pool connection and a short
+    transaction; no database connection remains checked out during AI/network
+    work between searches.
+    """
+    def __init__(self, pool, ctx: TenantContext):
+        self._pool = pool
+        self._ctx = ctx
+
+    async def fetch(self, query: str, *args):
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                await _set_tenant_rls_context(conn, self._ctx)
+                return await conn.fetch(query, *args)
 
 
 def decode_jsonb(value):
@@ -755,54 +783,74 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
 
 
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
-async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)):
-    rate = await consume_chat_request(
-        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity)):
+    pool = get_pool()
+    # Persist and rate-limit the incoming message in one short tenant transaction.
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant_rls_context(conn, ctx)
+            rate = await consume_chat_request(
+                conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+            )
+            if not rate.allowed:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
+                    headers={"Retry-After": str(rate.retry_after_seconds)},
+                )
+            conversation_id = payload.conversation_id
+            if conversation_id is None:
+                row = await conn.fetchrow("""INSERT INTO chat_conversations(organization_id,user_id,title)
+                    VALUES($1::uuid,$2::uuid,$3) RETURNING id""", ctx.organization_id, ctx.user_id,
+                    payload.question[:157] + ("…" if len(payload.question) > 157 else ""))
+                conversation_id = row["id"]
+            else:
+                exists = await conn.fetchval(
+                    "SELECT id FROM chat_conversations WHERE id=$1::uuid", str(conversation_id)
+                )
+                if not exists:
+                    raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
+            current_message_id = await conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
+                VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
+                str(conversation_id), ctx.user_id, payload.question,
+                json.dumps({"employer": payload.employer, "public_service": payload.public_service, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
+            history_rows = await conn.fetch("""SELECT role,content FROM chat_messages
+                WHERE conversation_id=$1::uuid AND id<>$2::uuid AND role IN ('user','assistant')
+                ORDER BY created_at DESC,id DESC LIMIT $3""", str(conversation_id), current_message_id,
+                CONVERSATION_HISTORY_MESSAGE_LIMIT)
+            history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
+
+    # No connection or transaction is held while the orchestrator plans or calls providers.
+    scoped_reader = _TenantScopedReadConnection(pool, ctx)
+    result = await orchestrator.ask(
+        payload, ctx.organization_id, conn=scoped_reader, conversation_history=history
     )
-    if not rate.allowed:
-        return JSONResponse(
-            status_code=429,
-            content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
-            headers={"Retry-After": str(rate.retry_after_seconds)},
-        )
-    conversation_id = payload.conversation_id
-    if conversation_id is None:
-        row = await ctx.conn.fetchrow("""INSERT INTO chat_conversations(organization_id,user_id,title)
-            VALUES($1::uuid,$2::uuid,$3) RETURNING id""", ctx.organization_id, ctx.user_id,
-            payload.question[:157] + ("…" if len(payload.question) > 157 else ""))
-        conversation_id = row["id"]
-    else:
-        exists = await ctx.conn.fetchval("SELECT id FROM chat_conversations WHERE id=$1::uuid", str(conversation_id))
-        if not exists:
-            raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
-    current_message_id = await ctx.conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
-        VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
-        str(conversation_id), ctx.user_id, payload.question,
-        json.dumps({"employer": payload.employer, "public_service": payload.public_service, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
-    history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
-        WHERE conversation_id=$1::uuid AND id<>$2::uuid AND role IN ('user','assistant')
-        ORDER BY created_at DESC,id DESC LIMIT $3""", str(conversation_id), current_message_id,
-        CONVERSATION_HISTORY_MESSAGE_LIMIT)
-    history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
-    result = await orchestrator.ask(payload,ctx.organization_id,conn=ctx.conn,conversation_history=history)
     result.conversation_id = conversation_id
-    if result.ai_usage is not None:
-        usage = result.ai_usage
-        await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, result.request_id, usage)
-    await ctx.conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
-        VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
-        str(conversation_id), ctx.user_id, result.answer,
-        json.dumps({"verification_status": result.verification_status,
-            "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
-                if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
-                    "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
-                    "article", "page_start", "page_end", "citation_integrity", "collectivity",
-                    "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
-                for source in result.sources[:30]],
-            "missing_information": result.missing_information, "disclaimer": result.disclaimer,
-            "clarification_question": result.clarification_question, "public_service": payload.public_service},
-            ensure_ascii=False, default=str))
-    await ctx.conn.execute("UPDATE chat_conversations SET updated_at=now() WHERE id=$1::uuid", str(conversation_id))
+
+    # Persist the generated answer and usage in a second short transaction.
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant_rls_context(conn, ctx)
+            if result.ai_usage is not None:
+                await record_ai_usage_event(
+                    conn, ctx.organization_id, ctx.user_id, result.request_id, result.ai_usage
+                )
+            await conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
+                VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
+                str(conversation_id), ctx.user_id, result.answer,
+                json.dumps({"verification_status": result.verification_status,
+                    "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
+                        if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
+                            "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
+                            "article", "page_start", "page_end", "citation_integrity", "collectivity",
+                            "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
+                        for source in result.sources[:30]],
+                    "missing_information": result.missing_information, "disclaimer": result.disclaimer,
+                    "clarification_question": result.clarification_question, "public_service": payload.public_service},
+                    ensure_ascii=False, default=str))
+            await conn.execute(
+                "UPDATE chat_conversations SET updated_at=now() WHERE id=$1::uuid", str(conversation_id)
+            )
     return result
 
 @app.get("/api/v1/integrations/legifrance/status")

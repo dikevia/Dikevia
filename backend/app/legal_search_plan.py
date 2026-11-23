@@ -27,6 +27,16 @@ _TOPIC_EXPANSIONS = (
         "superieur hierarchique direct autorite territoriale commission administrative paritaire",
     ),
     (
+        ("disponibilite pour convenances personnelles",
+         "disponibilité pour convenances personnelles",
+         "mise en disponibilite pour convenances personnelles",
+         "mise en disponibilité pour convenances personnelles",
+         "convenances personnelles"),
+        "décret 86-68 du 13 janvier 1986 article 21 disponibilité pour convenances personnelles "
+        "fonctionnaire territorial titulaire durée maximale cinq ans renouvellement dix ans "
+        "nécessités du service demande de l'intéressé",
+    ),
+    (
         ("peut me virer", "me virer", "me mettre dehors", "mettre dehors", "me licencier",
          "peut me licencier", "mettre fin a mes fonctions", "fin de mes fonctions",
          "licenciement fonctionnaire", "radiation des cadres",
@@ -533,6 +543,17 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
+        ("disponibilite pour convenances personnelles",
+         "disponibilité pour convenances personnelles",
+         "mise en disponibilite pour convenances personnelles",
+         "mise en disponibilité pour convenances personnelles",
+         "convenances personnelles"),
+        (
+            "décret 86-68 du 13 janvier 1986 article 21 disponibilité pour convenances personnelles fonctionnaire territorial titulaire durée renouvellement nécessités du service",
+            "CGFP positions statutaires disponibilité fonctionnaire territorial convenances personnelles réintégration",
+        ),
+    ),
+    (
         ("mutation dans l interet du service", "mutation dans l'intérêt du service",
          "changement d affectation", "changement d'affectation",
          "disponibilite pour suivre", "disponibilité pour suivre",
@@ -659,7 +680,22 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         for trigger in independent_working_time_triggers
     )
     therapeutic_part_time_present = _is_therapeutic_part_time_question(original)
+    personal_convenience_availability = any(
+        _contains_trigger(folded, trigger)
+        for trigger in (
+            "disponibilite pour convenances personnelles",
+            "mise en disponibilite pour convenances personnelles",
+            "convenances personnelles",
+        )
+    )
     for triggers, axes in _TOPIC_RESEARCH_AXES:
+        # A personal-convenience availability request has its own implementing
+        # decree; do not dilute it with the broader mutation/following-spouse route.
+        if personal_convenience_availability and (
+            "mutation dans l interet du service" in triggers
+            or "titulaire peut il" in triggers
+        ):
+            continue
         # A therapeutic return is not ordinary part-time work. Keep its
         # dedicated CGFP/decree axis and suppress the generic IHTS expansion.
         if therapeutic_part_time_present and "temps partiel heures supplémentaires IHTS" in axes[0]:
