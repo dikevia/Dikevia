@@ -510,3 +510,22 @@ def test_public_service_referentiel_has_provenance_and_unverified_reference_lead
     assert len(payload["entries"]) >= 20
     assert all(entry["reference_validation"] == "UNVERIFIED_LEAD_ONLY"
                for entry in payload["entries"])
+
+
+
+def test_cgfp_text_cleanup_removes_running_headers_and_only_trailing_navigation():
+    from app.cgfp import clean_cgfp_article_text
+
+    raw = (
+        "Premier alinéa juridique.\\n"
+        "Code général de la fonction publique - Dernière modification le 31 octobre 2026 - Document généré le 13 novembre 2026\\n"
+        "Chapitre Ier : Dispositions générales\\n"
+        "Deuxième alinéa juridique.\\n"
+        "Titre II : Dispositions suivantes"
+    )
+    cleaned = clean_cgfp_article_text(raw)
+    assert "Premier alinéa juridique." in cleaned
+    assert "Deuxième alinéa juridique." in cleaned
+    assert "Dernière modification" not in cleaned
+    assert "Titre II : Dispositions suivantes" not in cleaned
+    assert "Chapitre Ier : Dispositions générales" in cleaned
