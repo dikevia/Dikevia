@@ -1766,6 +1766,7 @@ class LegalOrchestrator:
                         claim_validation = validate_claim_evidence(
                             structured_answer, ai_sources,
                             required_axes=legal_context.get("axes_recherche_documentaire") or None,
+                            facts_period=temporal_context,
                         )
                         for uncovered_axis in claim_validation.get("uncovered_axes", []):
                             missing.append(f"Aucune source suffisamment pertinente n'a permis de répondre à cette sous-question : {uncovered_axis}")
@@ -1795,6 +1796,7 @@ class LegalOrchestrator:
                                 claims=claim_validation["claims"], sources=ai_sources,
                                 public_service=request.public_service,
                                 allow_local_documents=allow_local_documents,
+                                facts_period=temporal_context,
                             )
                             supported_indices = entailment_validation.get("supported_claim_indices", [])
                             if not entailment_validation.get("valid") and not supported_indices:
