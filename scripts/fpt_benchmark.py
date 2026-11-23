@@ -307,7 +307,14 @@ def main() -> int:
             print(f"Grille créée : {args.out}")
         else:
             result = score(args.dataset, args.responses, args.reviews, args.out)
-            print(json.dumps({k: result[k] for k in ("status", "questions_evaluees", "score_global_percent", "repartition_severite")}, ensure_ascii=False, indent=2))
+            summary = {
+                k: result[k]
+                for k in ("status", "questions_evaluees", "score_global_percent", "score_global_sur_max", "repartition_severite")
+                if k in result
+            }
+            if "release_gate" in result:
+                summary["release_gate"] = result["release_gate"]
+            print(json.dumps(summary, ensure_ascii=False, indent=2))
         return 0
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
