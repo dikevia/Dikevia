@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote, urlparse
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool, assert_runtime_role_is_safe
-from .dependencies import get_principal, get_tenant_context, get_tenant_identity, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
+from .dependencies import get_principal, get_tenant_context, get_tenant_identity, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
