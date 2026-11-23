@@ -12,7 +12,7 @@ from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
 from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
-from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
+from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, parse_structured_answer, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
 from .legal_corpus import search_legal_corpus, select_multi_source_chunks
@@ -1783,10 +1783,7 @@ class LegalOrchestrator:
                         else:
                             # All providers and test adapters must use the same strict JSON contract.
                             raw_ai_content = ai_result
-                        try:
-                            structured_answer = json.loads(raw_ai_content) if isinstance(raw_ai_content, str) else None
-                        except (TypeError, ValueError):
-                            structured_answer = None
+                        structured_answer = parse_structured_answer(raw_ai_content)
                         claim_validation = validate_claim_evidence(
                             structured_answer, ai_sources,
                             required_axes=legal_context.get("axes_recherche_documentaire") or None,
