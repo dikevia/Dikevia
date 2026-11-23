@@ -166,3 +166,37 @@ async def test_tenant_scoped_read_adapter_applies_all_rls_gucs_and_releases_conn
         "issuer-A", "subject-A", "org-A", "user-A"
     ]
     assert events[-3:] == [("fetch", "SELECT 1", (42,)), "transaction_exit", "release"]
+
+
+def test_chat_orchestration_failure_response_is_safe_and_non_verified():
+    from uuid import uuid4
+
+    from app.main import _chat_orchestration_failure
+
+    conversation_id = uuid4()
+    response = _chat_orchestration_failure(conversation_id)
+
+    assert response.conversation_id == conversation_id
+    assert response.verification_status == "NON_VERIFIE"
+    assert response.sources == []
+    assert "incident temporaire" in response.answer
+    assert "traceback" not in response.answer.lower()
+    assert "exception" not in response.answer.lower()
+
+
+def test_chat_route_persists_a_controlled_response_when_orchestration_raises():
+    from pathlib import Path
+
+    source = Path(__file__).parents[1].joinpath("app", "main.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    ask_node = next(
+        node for node in tree.body
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == "ask"
+    )
+    ask_source = ast.get_source_segment(source, ask_node)
+    assert "try:" in ask_source
+    assert "except Exception:" in ask_source
+    assert "_chat_orchestration_failure(conversation_id)" in ask_source
+    assert "logger.exception(" in ask_source
+    assert "INSERT INTO chat_messages" in ask_source
+    assert "result.answer" in ask_source
