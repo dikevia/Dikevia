@@ -9,6 +9,8 @@ import re
 import unicodedata
 from typing import Any
 
+from .evidence_text import normalize_evidence_text
+
 # This is a review order, not a universal rule for resolving every conflict.
 _SOURCE_CLASS = {
     "ADMIN_GUIDANCE": (25, "Information administrative officielle — non normative"),
@@ -359,7 +361,7 @@ def validate_answer_citations(
 
 
 def _normalized_evidence_text(value: Any) -> str:
-    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
+    return normalize_evidence_text(value)
 
 
 def _evidence_tokens(value: Any) -> set[str]:
