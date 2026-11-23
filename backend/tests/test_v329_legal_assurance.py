@@ -361,3 +361,113 @@ def test_claim_evidence_discards_only_the_unsupported_claim_when_another_is_vali
     assert result["claims"][0]["axis"] == "santé et sécurité"
     assert result["uncovered_axes"] == ["rémunération"]
     assert "claim_1:quote_not_relevantly_aligned" in result["invalid_claims"]
+
+
+def _period_claim(text):
+    return {
+        "claims": [{
+            "text": text,
+            "source_id": "LEGIARTI000000000001",
+            "quote": "Les agents territoriaux bénéficient d'une protection statutaire.",
+        }]
+    }
+
+
+def _period_source(endpoint="START"):
+    return {
+        "source_type": "LEGIFRANCE_LODA",
+        "source_id": "LEGIARTI000000000001",
+        "title": "Disposition relative aux agents territoriaux",
+        "excerpt": "Les agents territoriaux bénéficient d'une protection statutaire.",
+        "citation_integrity": {"valid": True},
+        "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+        "public_service_scope": "FPT",
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "version_endpoint": endpoint,
+        "valid_from": "2024-01-01",
+        "valid_to": "2024-12-31",
+    }
+
+
+def test_claim_may_be_scoped_to_the_verified_start_endpoint():
+    from app.legal_assurance import validate_claim_evidence
+
+    result = validate_claim_evidence(
+        _period_claim("Au 2024-01-01, les agents territoriaux bénéficient d'une protection statutaire."),
+        [_period_source("START")],
+        facts_period={
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "reference_date_for_retrieval": "2024-12-31",
+            "ongoing": False,
+        },
+    )
+    assert result["valid"] is True
+
+
+def test_start_endpoint_cannot_support_a_whole_period_assertion():
+    from app.legal_assurance import validate_claim_evidence
+
+    result = validate_claim_evidence(
+        _period_claim("Sur toute la période, les agents territoriaux bénéficient d'une protection statutaire."),
+        [_period_source("START")],
+        facts_period={
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "reference_date_for_retrieval": "2024-12-31",
+            "ongoing": False,
+        },
+    )
+    assert result["valid"] is False
+    assert "claim_0:period_endpoint_not_date_scoped" in result["invalid_claims"]
+
+
+def test_end_endpoint_requires_the_end_date_in_the_claim():
+    from app.legal_assurance import validate_claim_evidence
+
+    result = validate_claim_evidence(
+        _period_claim("Au 2024-12-31, les agents territoriaux bénéficient d'une protection statutaire."),
+        [_period_source("END")],
+        facts_period={
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "reference_date_for_retrieval": "2024-12-31",
+            "ongoing": False,
+        },
+    )
+    assert result["valid"] is True
+
+
+def test_claim_validator_rejects_mixed_versant_sources():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _period_source("START")
+    source["public_service_scope"] = "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+    result = validate_claim_evidence(
+        _period_claim("Au 2024-01-01, les agents territoriaux bénéficient d'une protection statutaire."),
+        [source],
+        facts_period={"period_start": "2024-01-01", "period_end": "2024-12-31"},
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_entailment_verifier_uses_excerpt_not_unrelated_full_text():
+    from app.ai_provider import validate_entailment_verdicts
+
+    result = validate_entailment_verdicts(
+        {"verdicts": [{
+            "claim_index": 0,
+            "source_id": "LEGIARTI000000000001",
+            "verdict": "SUPPORTED",
+            "support_quote": "Passage présent uniquement dans le texte intégral non pertinent.",
+        }]},
+        [{
+            "source_id": "LEGIARTI000000000001",
+            "excerpt": "Extrait pertinent de vingt caractères au moins.",
+            "full_text": "Passage présent uniquement dans le texte intégral non pertinent.",
+        }],
+        [{"source_id": "LEGIARTI000000000001", "text": "Proposition juridique de test."}],
+    )
+    assert result["valid"] is False
