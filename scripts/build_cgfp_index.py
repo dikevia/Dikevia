@@ -8,6 +8,11 @@ import re
 from pathlib import Path
 from pypdf import PdfReader
 
+ROOT = Path(__file__).resolve().parents[1]
+import sys
+sys.path.insert(0, str(ROOT / "backend"))
+from app.cgfp import clean_cgfp_article_text
+
 ARTICLE_RE = re.compile(r'^\s*Article\s+([LDR]\s*\d+(?:-\d+)*?)\s*$', re.I)
 
 def build(pdf: Path, output: Path) -> dict:
@@ -17,7 +22,7 @@ def build(pdf: Path, output: Path) -> dict:
     def finish():
         if current is None:
             return
-        text = "\n".join(current.pop("_lines")).strip()
+        text = clean_cgfp_article_text("\n".join(current.pop("_lines")) )
         if text:
             current["text"] = text
             articles.append(current.copy())
