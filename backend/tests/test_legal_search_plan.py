@@ -501,3 +501,28 @@ def test_plain_language_mi_temps_therapeutique_uses_the_specific_tpt_axis():
     assert any("L823-1" in item for item in queries)
     assert not any("heures supplémentaires IHTS" in item for item in queries)
 
+
+
+def test_personal_convenience_availability_targets_decree_86_68_article_21():
+    question = "Un agent titulaire peut-il demander une disponibilité pour convenances personnelles ?"
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+
+    assert "décret 86-68" in query
+    assert "article 21" in query
+    assert "convenances personnelles" in query
+    assert len(queries) == 3
+    assert "décret 86-68" in queries[1]
+    assert "article 21" in queries[1]
+    assert "réintégration" in queries[2]
+    assert all(len(item) <= 500 for item in queries)
+
+
+def test_personal_convenience_availability_does_not_get_diluted_by_generic_mobility_route():
+    question = "Je souhaite une disponibilité pour convenances personnelles."
+    queries = build_official_search_queries(question)
+    assert len(queries) == 3
+    assert "décret 86-68" in queries[0]
+    assert "décret 86-68" in queries[1]
+    assert "CGFP positions statutaires" in queries[2]
+    assert all("suivi conjoint" not in item for item in queries)
