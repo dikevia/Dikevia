@@ -15,7 +15,7 @@ from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
-from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
+from .legal_corpus import search_legal_corpus, select_multi_source_chunks
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
@@ -1194,7 +1194,7 @@ class LegalOrchestrator:
                         stored_search_failed = True
                     else:
                         stored_by_query.insert(0, vector_results if isinstance(vector_results, list) else [])
-                stored = interleave_legal_corpus_results(
+                stored = select_multi_source_chunks(
                     stored_by_query, limit=LEGAL_CORPUS_INTERLEAVED_LIMIT,
                 )
                 if stored_search_failed:
