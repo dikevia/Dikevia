@@ -567,3 +567,29 @@ def test_guidance_provenance_cannot_be_promoted_to_primary_law_by_raw_metadata(
     assert result["normative"] is False
     assert result["claim_eligible"] is False
     assert result["usable_for_conclusion"] is False
+
+
+def test_corpus_result_interleaving_preserves_each_research_axis_before_depth():
+    from app.legal_corpus import interleave_legal_corpus_results
+
+    axes = [
+        [{"source_id": f"axis-a-{n}"} for n in range(1, 4)],
+        [{"source_id": f"axis-b-{n}"} for n in range(1, 4)],
+        [{"source_id": f"axis-c-{n}"} for n in range(1, 4)],
+    ]
+    result = interleave_legal_corpus_results(axes, limit=6)
+    assert [item["source_id"] for item in result] == [
+        "axis-a-1", "axis-b-1", "axis-c-1",
+        "axis-a-2", "axis-b-2", "axis-c-2",
+    ]
+
+
+def test_corpus_candidate_overfetch_budget_stays_bounded_for_post_retrieval_guards():
+    from app.orchestrator import (
+        LEGAL_CORPUS_CANDIDATE_LIMIT,
+        LEGAL_CORPUS_INTERLEAVED_LIMIT,
+    )
+
+    assert LEGAL_CORPUS_CANDIDATE_LIMIT == 12
+    assert LEGAL_CORPUS_INTERLEAVED_LIMIT == 18
+    assert LEGAL_CORPUS_INTERLEAVED_LIMIT <= 30
