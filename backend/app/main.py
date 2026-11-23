@@ -504,7 +504,7 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
             "cancel_at_period_end": row["cancel_at_period_end"] if row else False,
             "free_access_until": row["free_access_until"] if row else None,
             "founder_entitlement": bool(founder_entitlement),
-            "premium_access": bool(founder_entitlement),
+            "premium_access": bool(founder_entitlement or plan_status in {"ACTIVE", "TRIALING"}),
             "updated_at": row["updated_at"] if row else None}
 
 
