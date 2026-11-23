@@ -1423,10 +1423,13 @@ class LegalOrchestrator:
 
         # Gemini assesses document content after the lexical fallback. This is relevance
         # triage only; source, citation, temporal and FPT-scope controls remain authoritative.
-        await apply_semantic_source_relevance(
-            question=request.question, research_axes=research_queries, sources=sources,
-            target_versant=request.public_service, allow_local_documents=allow_local_documents,
-        )
+        # Semantic source ranking is optional and previously caused an extra Gemini
+        # request on every chat turn. Keep the deterministic topic/versant filter as
+        # the baseline; reserve model calls for research planning and evidence analysis.
+        for source in sources:
+            source["research_axis_relevant"] = _source_relevant_for_target(
+                research_queries, source, request.public_service,
+            )
 
 
         # A direct request for the text/content of a numbered CGFP article is an
