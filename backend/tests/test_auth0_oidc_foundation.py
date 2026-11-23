@@ -29,6 +29,8 @@ def production_base():
         oidc_authorization_audience="urn:dikevia:api",
         oidc_email_claim="https://dikevia.invalid/claims/email",
         oidc_email_verified_claim="https://dikevia.invalid/claims/email_verified",
+        oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
+        oidc_identity_subject_prefix="auth0|",
         cors_origins="https://dikevia.example",
         aws_endpoint_url_s3="https://storage.example",
         aws_region="us-east-2",
@@ -49,6 +51,10 @@ def test_auth0_production_configuration_requires_public_client_and_api_audience(
     missing_audience = {**base, "oidc_authorization_audience": ""}
     with pytest.raises(RuntimeError, match="OIDC_CLIENT_ID"):
         validate_runtime_configuration(Settings(**missing_audience))
+
+    mismatched_audience = {**base, "oidc_authorization_audience": "urn:other:api"}
+    with pytest.raises(RuntimeError, match="identique"):
+        validate_runtime_configuration(Settings(**mismatched_audience))
 
 
 def test_oidc_provider_scopes_and_compatibility_settings_are_validated():
