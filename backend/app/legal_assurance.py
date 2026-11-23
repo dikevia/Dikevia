@@ -228,7 +228,7 @@ _CASE_CITATION_RE = re.compile(
 _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGNORECASE)
 _SOURCE_ID_CITATION_RE = re.compile(r"\[source:([A-Za-z0-9:_-]{6,128})\]", re.IGNORECASE)
 _NUMERIC_FACT_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)(?!\w)", re.IGNORECASE)
-_DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}(?:er)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})\b", re.IGNORECASE)
+_DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}(?:er)?\s+(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|a[oô]ut|septembre|octobre|novembre|d[eé]cembre)\s+\d{4})\b", re.IGNORECASE)
 
 _FRENCH_MONTHS = {
     "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4,
@@ -273,11 +273,7 @@ def _parse_legal_date(value: object) -> date | None:
 def _same_legal_date(value: object, expected: object) -> bool:
     actual_date = _parse_legal_date(value)
     expected_date = _parse_legal_date(expected)
-    if actual_date is not None and expected_date is not None:
-        return actual_date == expected_date
-    return _normalized_evidence_text(str(value or "")).casefold() == (
-        _normalized_evidence_text(str(expected or "")).casefold()
-    )
+    return actual_date is not None and expected_date is not None and actual_date == expected_date
 _WHOLE_PERIOD_ASSERTION_RE = re.compile(
     r"\b(?:sur|pendant|pour)\s+(?:toute|l['’]ensemble de la)\s+(?:la\s+)?(?:période|année)\b|"
     r"\b(?:sur|pendant|pour)\s+l['’]ensemble\s+de\s+la\s+période\b|"
