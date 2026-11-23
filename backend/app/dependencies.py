@@ -96,41 +96,6 @@ async def require_legal_editor(ctx: TenantContext = Depends(get_tenant_context))
     return ctx
 
 
-async def require_org_admin_for_external(
-    ctx: TenantContext = Depends(get_tenant_context_for_chat),
-):
-    """Authorize an admin without holding a DB transaction during external calls."""
-    if ctx.role != "ORG_ADMIN":
-        raise HTTPException(403, "Permission insuffisante.")
-    return ctx
-
-
-async def require_legal_editor_for_external(
-    ctx: TenantContext = Depends(get_tenant_context_for_chat),
-):
-    """Authorize document editors without a DB transaction during external I/O."""
-    if ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR"):
-        raise HTTPException(403, "Permission insuffisante.")
-    return ctx
-
-
-async def require_platform_admin(principal: Principal = Depends(get_principal)):
-    """Platform authority is read from the dedicated global registry, never from a tenant role."""
-    async with get_pool().acquire() as conn:
-        async with conn.transaction():
-            await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", principal.issuer)
-            await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", principal.subject)
-            row = await conn.fetchrow(
-                "SELECT u.id FROM users u JOIN platform_admins pa ON pa.user_id=u.id "
-                "WHERE u.oidc_issuer=$1 AND u.oidc_subject=$2 AND u.status='ACTIVE'",
-                principal.issuer,
-                principal.subject,
-            )
-    if not row:
-        raise HTTPException(403, "Droit administrateur plateforme requis.")
-    return {"principal": principal, "user_id": str(row["id"])}
-
-
 async def get_tenant_context_for_chat(
     principal: Principal = Depends(get_principal),
     x_organization_id: str | None = Header(default=None, alias="X-Organization-ID"),
@@ -184,3 +149,37 @@ async def get_tenant_context_for_chat(
                 terminate = getattr(conn, "terminate", None)
                 if callable(terminate):
                     terminate()
+
+async def require_org_admin_for_external(
+    ctx: TenantContext = Depends(get_tenant_context_for_chat),
+):
+    """Authorize an admin without holding a DB transaction during external calls."""
+    if ctx.role != "ORG_ADMIN":
+        raise HTTPException(403, "Permission insuffisante.")
+    return ctx
+
+
+async def require_legal_editor_for_external(
+    ctx: TenantContext = Depends(get_tenant_context_for_chat),
+):
+    """Authorize document editors without a DB transaction during external I/O."""
+    if ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR"):
+        raise HTTPException(403, "Permission insuffisante.")
+    return ctx
+
+
+async def require_platform_admin(principal: Principal = Depends(get_principal)):
+    """Platform authority is read from the dedicated global registry, never from a tenant role."""
+    async with get_pool().acquire() as conn:
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", principal.issuer)
+            await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", principal.subject)
+            row = await conn.fetchrow(
+                "SELECT u.id FROM users u JOIN platform_admins pa ON pa.user_id=u.id "
+                "WHERE u.oidc_issuer=$1 AND u.oidc_subject=$2 AND u.status='ACTIVE'",
+                principal.issuer,
+                principal.subject,
+            )
+    if not row:
+        raise HTTPException(403, "Droit administrateur plateforme requis.")
+    return {"principal": principal, "user_id": str(row["id"])}
