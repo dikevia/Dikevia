@@ -44,3 +44,14 @@ def test_document_seeds_have_explicit_ingestion_status_and_known_source():
                 assert item.get("page_count", 0) > 0
             else:
                 assert item.get("character_count", 0) > 0
+
+
+def test_administrative_justice_open_data_is_registered_as_primary_case_law():
+    registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    source = next(item for item in registry["sources"] if item["id"] == "justice-administrative-opendata")
+    assert source["authority_level"] == "PRIMARY_LEGAL"
+    assert source["status"] == "CANDIDATE"
+    assert source["dataset_url"].startswith("https://opendata.justice-administrative.fr/")
+    assert "archives XML ZIP mensuelles" in source["collection_mode"]
+    assert "profilage" in source["reuse"]
+    assert "numéro" in source["reuse"]
