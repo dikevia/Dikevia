@@ -1517,7 +1517,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-032",
@@ -1544,7 +1566,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-033",
@@ -1571,7 +1615,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-034",
@@ -1598,7 +1664,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-035",
@@ -1625,7 +1713,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-036",
@@ -1652,7 +1762,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-037",
@@ -1679,7 +1811,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-038",
@@ -1706,7 +1860,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-039",
@@ -1733,7 +1909,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-040",
@@ -1760,7 +1958,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2014-1526 du 16 décembre 2014 relatif à l'appréciation de la valeur professionnelle des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2019-1265 du 29 novembre 2019 relatif aux lignes directrices de gestion et à l'évolution des attributions des CAP",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000039417162/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Les règles varient selon le grade, le cadre d'emplois, le statut, le tableau d'avancement, les lignes directrices de gestion et les délibérations locales. Pour la NBI, la prime ou la reprise d'ancienneté, vérifier le texte réglementaire spécial correspondant aux fonctions et au recrutement : le seul intitulé du poste ou le seul principe général du CGFP ne suffit pas."
     },
     {
       "id": "FPT-041",
@@ -1787,7 +2007,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-042",
@@ -1814,7 +2056,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-043",
@@ -1841,7 +2105,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-044",
@@ -1868,7 +2154,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-045",
@@ -1895,7 +2203,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-046",
@@ -1922,7 +2252,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-047",
@@ -1949,7 +2301,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-048",
@@ -1976,7 +2350,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-049",
@@ -2003,7 +2399,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-050",
@@ -2030,7 +2448,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 89-677 du 18 septembre 1989 relatif à la procédure disciplinaire applicable aux fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988 relatif aux agents contractuels de la fonction publique territoriale — dispositions disciplinaires",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas appliquer indistinctement le régime disciplinaire des fonctionnaires titulaires aux contractuels. Vérifier la nature de la mesure (suspension conservatoire ou sanction), le groupe de sanction, les droits d'accès au dossier, la consultation du conseil de discipline lorsqu'elle est requise, la prescription et les délais de recours. Les pièces communicables peuvent faire l'objet d'occultations légalement justifiées."
     },
     {
       "id": "FPT-051",
@@ -2057,7 +2497,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-052",
@@ -2084,7 +2546,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-053",
@@ -2111,7 +2595,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-054",
@@ -2138,7 +2644,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-055",
@@ -2165,7 +2693,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-056",
@@ -2192,7 +2742,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-057",
@@ -2219,7 +2791,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-058",
@@ -2246,7 +2840,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-059",
@@ -2273,7 +2889,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-060",
@@ -2300,7 +2938,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 134-1 à L. 134-12 et R. 134-1 à R. 134-9 — protection fonctionnelle",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Protection fonctionnelle des agents publics agressés ou poursuivis en raison de leurs fonctions",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32574",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer protection fonctionnelle, prévention des risques, enquête administrative, responsabilité de la collectivité et réparation des préjudices. Vérifier le lien avec les fonctions, l'absence de faute personnelle détachable, les faits et la décision écrite. Les frais d'avocat ne sont pas automatiquement pris en charge sans limites : modalités et montant doivent être déterminés."
     },
     {
       "id": "FPT-061",
@@ -2327,7 +2987,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-062",
@@ -2354,7 +3036,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-063",
@@ -2381,7 +3085,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-064",
@@ -2408,7 +3134,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-065",
@@ -2435,7 +3183,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-066",
@@ -2462,7 +3232,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-067",
@@ -2489,7 +3281,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-068",
@@ -2516,7 +3330,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-069",
@@ -2543,7 +3379,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-070",
@@ -2570,7 +3428,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — livre II : exercice du droit syndical et dialogue social",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Circulaire du 20 janvier 2016 relative à l'exercice du droit syndical dans la fonction publique territoriale — document d'interprétation ancien à confronter aux dispositions codifiées actuelles",
+          "url": "https://www.collectivites-locales.gouv.fr/sites/default/files/migration/Circulaire.pdf",
+          "source_type": "circulaire_historique",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le décret n° 85-397 du 3 avril 1985 a été abrogé à compter du 1er février 2025 dans le cadre de la codification : ne pas le citer comme texte en vigueur. Vérifier les dispositions réglementaires codifiées actuelles du CGFP, les effectifs, la représentativité, le mandat, le type d'ASA ou de crédit de temps et les protocoles/délibérations locales. La circulaire de 2016 n'est qu'un document historique à confronter au droit codifié."
     },
     {
       "id": "FPT-071",
@@ -2597,7 +3477,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-072",
@@ -2624,7 +3526,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-073",
@@ -2651,7 +3575,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-074",
@@ -2678,7 +3624,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-075",
@@ -2705,7 +3673,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-076",
@@ -2732,7 +3722,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-077",
@@ -2759,7 +3771,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-078",
@@ -2786,7 +3820,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-079",
@@ -2813,7 +3869,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-080",
@@ -2840,7 +3918,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-571 du 10 mai 2021 relatif aux comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043492409/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, articles L. 251-1 et suivants et L. 253-5 et suivants — comités sociaux territoriaux",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer CST et formation spécialisée, seuils d'effectifs, consultation obligatoire ou facultative, compétence de l'instance, délais de transmission et règlement intérieur. Un avis consultatif ne vaut généralement pas décision contraignante ; contrôler toutefois les formalités substantielles et les textes particuliers du projet."
     },
     {
       "id": "FPT-081",
@@ -2867,7 +3967,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-082",
@@ -2894,7 +4022,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-083",
@@ -2921,7 +4077,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-084",
@@ -2948,7 +4132,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-085",
@@ -2975,7 +4187,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-086",
@@ -3002,7 +4242,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-087",
@@ -3029,7 +4297,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-088",
@@ -3056,7 +4352,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-089",
@@ -3083,7 +4407,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-090",
@@ -3110,7 +4462,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-603 du 10 juin 1985 relatif à l'hygiène, la sécurité et la médecine professionnelle et préventive dans la FPT",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000700869/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2016-151 du 11 février 2016 relatif au télétravail dans la fonction publique, modifié notamment par le décret n° 2020-524",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032003377/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Santé et sécurité au travail dans la fonction publique",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F496",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer télétravail, aménagement de poste, droit de retrait, alerte danger grave et imminent, accident de service et prévention. Examiner la délibération et l'autorisation individuelle, les préconisations médicales, les faits précis et le régime de preuve. Le DUERP doit être tenu à jour et accessible selon les règles applicables ; ne pas conclure sans vérifier les versions et modalités locales."
     },
     {
       "id": "FPT-091",
@@ -3137,7 +4517,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-092",
@@ -3164,7 +4566,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-093",
@@ -3191,7 +4615,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-094",
@@ -3218,7 +4664,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-095",
@@ -3245,7 +4713,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-096",
@@ -3272,7 +4762,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-097",
@@ -3299,7 +4811,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-098",
@@ -3326,7 +4860,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-099",
@@ -3353,7 +4909,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     },
     {
       "id": "FPT-100",
@@ -3380,7 +4958,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique — version consolidée, partie législative et dispositions applicables à la FPT",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986 relatif au détachement, à la disponibilité, au congé parental et à l'intégration des fonctionnaires territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000704342/",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique — positions, mobilité et cessation de fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000044416551/",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier le statut, le grade, la nature exacte de la mesure (mutation, changement d'affectation, suppression d'emploi, disponibilité, recrutement, démission ou rupture conventionnelle), l'employeur et la date. Les règles diffèrent fortement entre titulaire, stagiaire et contractuel ; les règles de CDI, cumul et rupture conventionnelle nécessitent une vérification spéciale des textes et dispositions transitoires en vigueur."
     }
   ]
 }
