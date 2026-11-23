@@ -52,6 +52,6 @@ def test_administrative_justice_open_data_is_registered_as_primary_case_law():
     assert source["authority_level"] == "PRIMARY_LEGAL"
     assert source["status"] == "CANDIDATE"
     assert source["dataset_url"].startswith("https://opendata.justice-administrative.fr/")
-    assert "archives XML ZIP mensuelles" in source["collection_mode"]
+    assert "archives XML ZIP mensuelles" in source["collection_mode"].casefold()
     assert "profilage" in source["reuse"]
     assert "numéro" in source["reuse"]
