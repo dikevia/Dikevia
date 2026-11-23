@@ -567,10 +567,18 @@ def validate_claim_evidence(
             invalid.append("invalid_uncovered_research_axes")
             declared_uncovered = []
         else:
-            declared_uncovered = [
-                axis for axis in declared_uncovered
-                if isinstance(axis, str) and axis in required_axes
-            ]
+            normalized_uncovered: list[str] = []
+            seen_uncovered: set[str] = set()
+            for axis in declared_uncovered:
+                if not isinstance(axis, str) or axis not in required_axes:
+                    invalid.append("unknown_or_invalid_uncovered_research_axis")
+                    continue
+                if axis in seen_uncovered:
+                    invalid.append("duplicate_uncovered_research_axis")
+                    continue
+                seen_uncovered.add(axis)
+                normalized_uncovered.append(axis)
+            declared_uncovered = normalized_uncovered
         overlap_axes = covered_axes & set(declared_uncovered)
         if overlap_axes:
             invalid.extend(
