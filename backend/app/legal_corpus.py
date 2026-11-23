@@ -208,28 +208,75 @@ _LEGAL_QUERY_EXPANSIONS = {
 }
 
 
-def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
-    """Ajoute quelques formulations FPT proches sans remplacer la requête d'origine."""
+def _normalize_legal_phrase(value: str) -> str:
     import unicodedata
+    folded = unicodedata.normalize("NFKD", value.casefold())
+    return re.sub(r"\s+", " ", "".join(ch for ch in folded if not unicodedata.combining(ch))).strip()
 
-    def normalize(value: str) -> str:
-        folded = unicodedata.normalize("NFKD", value.casefold())
-        return re.sub(r"\s+", " ", "".join(ch for ch in folded if not unicodedata.combining(ch))).strip()
 
+def _referential_query_expansions() -> list[tuple[tuple[str, ...], tuple[str, ...]]]:
+    """Load only lexical triggers and legal wording; reference leads remain non-authoritative."""
+    try:
+        with ( __import__("pathlib").Path(__file__).with_name("fp_lexical_referentiel.json")).open(encoding="utf-8") as stream:
+            payload = json.load(stream)
+    except (OSError, ValueError, TypeError):
+        return []
+    entries = payload.get("entries", []) if isinstance(payload, dict) else []
+    expansions = []
+    if not isinstance(entries, list):
+        return []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        triggers = entry.get("triggers")
+        terms = entry.get("legal_terms")
+        if not isinstance(triggers, list) or not isinstance(terms, list):
+            continue
+        clean_triggers = tuple(x.strip() for x in triggers if isinstance(x, str) and x.strip())
+        clean_terms = tuple(x.strip() for x in terms if isinstance(x, str) and x.strip())
+        if clean_triggers and clean_terms:
+            expansions.append((clean_triggers, clean_terms))
+    return expansions
+
+
+_REFERENTIAL_QUERY_EXPANSIONS = _referential_query_expansions()
+
+
+def expand_legal_query(query: str, max_variants: int = 8) -> list[str]:
+    """Expand user wording with curated synonyms while keeping the original query first."""
+    if not isinstance(query, str) or not query.strip() or not 1 <= max_variants <= 20:
+        raise ValueError("La requête doit être non vide et max_variants compris entre 1 et 20.")
     original = re.sub(r"\s+", " ", query).strip()
-    normalized = normalize(original)
+    normalized = _normalize_legal_phrase(original)
     variants = [original]
     seen = {normalized}
+
+    def append_terms(terms: tuple[str, ...]) -> bool:
+        for term in terms:
+            candidate = _normalize_legal_phrase(term)
+            if candidate and candidate not in seen:
+                variants.append(term)
+                seen.add(candidate)
+                if len(variants) >= max_variants:
+                    return True
+        return False
+
+    # Explicit, reviewed phrase mappings retain precedence.
     for phrase, expansions in _LEGAL_QUERY_EXPANSIONS.items():
-        key = normalize(phrase)
+        key = _normalize_legal_phrase(phrase)
         if re.search(r"(?<!\w)" + re.escape(key) + r"(?!\w)", normalized):
-            for expansion in expansions:
-                candidate = normalize(expansion)
-                if candidate not in seen:
-                    variants.append(expansion)
-                    seen.add(candidate)
-                    if len(variants) >= max_variants:
-                        return variants
+            if append_terms(expansions):
+                return variants
+
+    # The JSON referential is used strictly for query recall. Its historical
+    # article/decree leads are deliberately never injected as legal evidence.
+    for triggers, legal_terms in _REFERENTIAL_QUERY_EXPANSIONS:
+        if any(
+            re.search(r"(?<!\w)" + re.escape(_normalize_legal_phrase(trigger)) + r"(?!\w)", normalized)
+            for trigger in triggers
+        ):
+            if append_terms(legal_terms):
+                return variants
     return variants
 
 
