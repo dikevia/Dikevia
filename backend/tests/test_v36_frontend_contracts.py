@@ -164,3 +164,10 @@ def test_public_service_picker_routes_each_chat_and_keeps_conversation_history_s
     assert "metadata->>'public_service'" in main
     assert '"public_service": r["public_service"] or "FPT"' in main
     assert 'public_service: Literal["FPT", "FPE", "FPH"] = "FPT"' in schemas
+
+
+def test_chat_source_cards_show_authority_family_and_publisher():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "src.legal_assurance?.source_family_label" in html
+    assert "src.legal_assurance?.authority_label" in html
+    assert "src.legal_assurance?.publisher||src.publisher" in html
