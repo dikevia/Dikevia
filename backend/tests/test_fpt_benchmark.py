@@ -122,6 +122,9 @@ def test_canonical_benchmark_review_uses_its_declared_five_dimension_release_gat
     benchmark.prepare_review(str(dataset_path), str(responses_path), str(review_path))
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert set(review[0]["evaluations"]) == set(benchmark.CANONICAL_DIMENSIONS)
+    assert review[0]["candidate_sources"]
+    assert review[0]["source_scope_warning"]
+    assert review[0]["source_review_status"] == "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED"
     for item in review:
         item["evaluations"] = {dimension: 2 for dimension in benchmark.CANONICAL_DIMENSIONS}
         item["question_relevance"] = True
