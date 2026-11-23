@@ -335,3 +335,24 @@ async def test_search_prioritizes_original_terms_over_fpt_expansions():
     assert conn.args[0] == original
     assert "IHTS" in conn.args[1]
     assert len(conn.args) == 3
+
+
+def test_incomplete_dates_allow_general_information_but_not_verified_conclusion():
+    from app.legal_assurance import classify_legal_source, assess_source_set
+
+    source = {
+        "source_type": "CGFP_SNAPSHOT",
+        "document_kind": "CODE",
+        "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
+        "general_info_eligible": True,
+        "version_status": "UNKNOWN",
+        "source_status": "IMPORTED_UNVERIFIED",
+    }
+    assurance = classify_legal_source(source)
+    assert assurance["usable_for_general_information"] is True
+    assert assurance["usable_for_conclusion"] is False
+    assessed = assess_source_set([source])
+    assert not any("statut temporel" in warning for warning in assessed["warnings"])
+
+    repealed = {**source, "version_status": "REPEALED"}
+    assert classify_legal_source(repealed)["usable_for_general_information"] is False
