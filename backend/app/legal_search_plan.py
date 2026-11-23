@@ -18,6 +18,16 @@ _DIRECT_ARTICLE_LOOKUP = re.compile(
 # territorial public-service source families and their implementing texts.
 _TOPIC_EXPANSIONS = (
     (
+        ("accompagne d un syndicat", "accompagne par un syndicat",
+         "accompagne d un representant syndical", "accompagne par un representant syndical",
+         "assiste par un representant syndical", "venir avec mon syndicat",
+         "venir avec un syndicat", "assistance syndicale lors d une convocation",
+         "accompagnement syndical lors d une convocation"),
+        "agent territorial convocation hierarchie entretien accompagnement assistance representant syndical "
+        "procedure disciplinaire garanties droits de la defense defenseur de son choix CGFP "
+        "distinguer entretien hierarchique ordinaire et procedure disciplinaire",
+    ),
+    (
         ("evaluation annuelle", "évaluation annuelle", "evaluation a charge", "évaluation à charge",
          "contester mon evaluation", "contester mon évaluation", "contestation evaluation",
          "contestation de l evaluation", "compte rendu d evaluation", "compte rendu d'évaluation",
@@ -258,6 +268,29 @@ def _contains_trigger(text: str, trigger: str) -> bool:
     return normalized_trigger in normalized_text
 
 
+
+def _is_union_assistance_convocation_question(question: str) -> bool:
+    """Recognize a request about bringing union assistance to a hierarchical summons."""
+    folded = _fold(str(question or ""))
+    assistance = (
+        "accompagne d un syndicat",
+        "accompagne par un syndicat",
+        "accompagne d un representant syndical",
+        "accompagne par un representant syndical",
+        "assiste par un representant syndical",
+        "venir avec mon syndicat",
+        "venir avec un syndicat",
+        "etre accompagne par un syndicat",
+        "etre accompagne d un syndicat",
+        "assistance syndicale lors d une convocation",
+        "accompagnement syndical lors d une convocation",
+    )
+    has_assistance = any(_contains_trigger(folded, trigger) for trigger in assistance)
+    has_summons = any(_contains_trigger(folded, trigger) for trigger in (
+        "convocation", "entretien avec ma hierarchie", "entretien hierarchique",
+    ))
+    return has_assistance and has_summons
+
 def _is_therapeutic_part_time_question(question: str) -> bool:
     folded = _fold(str(question or ""))
     return any(
@@ -291,6 +324,12 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
             "article 1-3 emploi permanent CDI CDD supérieur à un an contrat de projet "
             "compte rendu appréciation professionnelle observations demande de révision CCP"
         )
+    elif _is_union_assistance_convocation_question(original):
+        expansion = (
+            "agent territorial convocation hiérarchie entretien accompagnement syndical "
+            "assistance représentant syndical procédure disciplinaire droits de la défense "
+            "défenseur de son choix entretien ordinaire"
+        )
     else:
         expansion = next(
             (
@@ -322,6 +361,17 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
 # not claims about the applicable law. Keep the number small to control latency
 # and provider load while avoiding a single overloaded keyword string.
 _TOPIC_RESEARCH_AXES = (
+    (
+        ("accompagne d un syndicat", "accompagne par un syndicat",
+         "accompagne d un representant syndical", "accompagne par un representant syndical",
+         "assiste par un representant syndical", "venir avec mon syndicat",
+         "venir avec un syndicat", "assistance syndicale lors d une convocation",
+         "accompagnement syndical lors d une convocation"),
+        (
+            "agent territorial convocation hierarchie entretien ordinaire accompagnement representant syndical assistance entretien conditions applicables",
+            "fonction publique territoriale procedure disciplinaire droits de la defense droit etre assiste defenseur de son choix CGFP decret 89-677",
+        ),
+    ),
     (
         ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
          "representants du personnel", "representant syndical", "representants syndicaux",
@@ -688,7 +738,10 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             "convenances personnelles",
         )
     )
+    union_assistance_convocation = _is_union_assistance_convocation_question(original)
     for triggers, axes in _TOPIC_RESEARCH_AXES:
+        if union_assistance_convocation and "CGFP livre II droit syndical" in axes[0]:
+            continue
         # A personal-convenience availability request has its own implementing
         # decree; do not dilute it with the broader mutation/following-spouse route.
         if personal_convenience_availability and (
@@ -848,7 +901,10 @@ def build_official_research_axes(question: str) -> list[str]:
     )
     axes_found = []
     therapeutic_part_time_present = _is_therapeutic_part_time_question(original)
+    union_assistance_convocation = _is_union_assistance_convocation_question(original)
     for triggers, axes in _TOPIC_RESEARCH_AXES:
+        if union_assistance_convocation and "CGFP livre II droit syndical" in axes[0]:
+            continue
         if therapeutic_part_time_present and "temps partiel heures supplémentaires IHTS" in axes[0]:
             continue
         if (
