@@ -30,8 +30,6 @@ def production_base():
         oidc_authorization_audience="urn:dikevia:api",
         oidc_email_claim="https://dikevia.invalid/claims/email",
         oidc_email_verified_claim="https://dikevia.invalid/claims/email_verified",
-        oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
-        oidc_identity_subject_prefix="auth0|",
         cors_origins="https://dikevia.example",
         aws_endpoint_url_s3="https://storage.example",
         aws_region="us-east-2",
