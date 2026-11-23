@@ -114,7 +114,9 @@ def classify_public_service_scope(
     if target_versant not in {"FPT", "FPE", "FPH"}:
         target_versant = "FPT"
     title = str(source.get("title") or "")
-    text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
+    # Classify the same relevant passage that can support a claim, not an
+    # entire instrument whose unrelated chapters may mention another versant.
+    text = str(source.get("excerpt") or source.get("text") or source.get("full_text") or "")
     article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     corpus = _fold((title + " " + text)[:500_000])
     title_folded = _fold(title)
@@ -229,6 +231,16 @@ def classify_public_service_scope(
             "evidence": common_scope_hits[:3],
             "analysis_eligible": True,
             "claim_eligible": True,
+        }
+
+    # A source containing competing territorial and State/hospital markers
+    # is not safe FPT proof, even when one marker appears in its title.
+    if fpt_hits and (fpe_hits or fph_hits):
+        return {
+            "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+            "evidence": fpt_hits[:2] + fpe_hits[:1] + fph_hits[:1],
+            "analysis_eligible": False,
+            "claim_eligible": False,
         }
 
     # If the body contains competing versant markers and the title does not
