@@ -192,6 +192,7 @@ jobs:
       - name: Verify dedicated staging database identity
         run: |
           test -n "$LEGAL_CORPUS_INGEST_DATABASE_URL"
+          python -m pip install asyncpg
           python - <<'PY'
           import os, asyncio, asyncpg
           async def main():
