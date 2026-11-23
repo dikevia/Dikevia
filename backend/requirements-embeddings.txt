@@ -1,0 +1,3 @@
+# Optional CPU-only local embedding runtime for the legal corpus.
+# Kept separate from the API's base dependencies until Render memory is benchmarked.
+fastembed==0.7.3
