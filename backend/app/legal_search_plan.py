@@ -291,6 +291,26 @@ def _is_union_assistance_convocation_question(question: str) -> bool:
     ))
     return has_assistance and has_summons
 
+
+def clarification_for_union_assistance_summons(question: str) -> str | None:
+    """Ask for the type of summons before researching an ambiguous assistance question."""
+    if not _is_union_assistance_convocation_question(question):
+        return None
+    folded = _fold(str(question or ""))
+    procedure_is_specified = any(_contains_trigger(folded, marker) for marker in (
+        "procedure disciplinaire", "entretien disciplinaire", "sanction disciplinaire",
+        "simple entretien", "entretien ordinaire", "entretien non disciplinaire",
+        "enquete administrative", "enquete interne", "entretien professionnel",
+        "audition administrative", "entretien de recadrage",
+    ))
+    if procedure_is_specified:
+        return None
+    return (
+        "Pour identifier les règles applicables, votre convocation concerne-t-elle "
+        "un entretien hiérarchique ordinaire, une procédure disciplinaire, ou une autre "
+        "procédure (par exemple une enquête administrative) ?"
+    )
+
 def _is_therapeutic_part_time_question(question: str) -> bool:
     folded = _fold(str(question or ""))
     return any(
