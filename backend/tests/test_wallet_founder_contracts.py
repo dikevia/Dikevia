@@ -50,3 +50,23 @@ def test_platform_admin_ui_separates_founder_entitlement_from_chat():
     assert 'id="founderEntitlementForm"' in html
     assert "/api/v1/platform/founder-entitlements" in html
     assert 'id="accountUserId"' in html
+
+
+def test_all_migrations_after_022_have_explicit_rollback_scripts():
+    migrations = ROOT / "database/migrations"
+    rollbacks = migrations / "rollback"
+    for up in sorted(migrations.glob("[0-9][0-9][0-9]_*.sql")):
+        version = int(up.name[:3])
+        if version >= 23:
+            assert (rollbacks / f"{up.stem}.down.sql").is_file(), up.name
+
+
+def test_multilingual_embedding_rollback_preserves_1536_vectors_and_vector_extension():
+    down = (ROOT / "database/migrations/rollback/024_legal_embeddings_multilingual_384.down.sql").read_text(encoding="utf-8")
+    assert "DROP INDEX IF EXISTS legal_chunks_embedding_384_hnsw" in down
+    assert "DROP COLUMN IF EXISTS embedding_384" in down
+    assert "DROP COLUMN IF EXISTS embedding_384_model" in down
+    assert "DROP COLUMN IF EXISTS embedding_384_dimensions" in down
+    assert "DROP COLUMN IF EXISTS embedding_384_updated_at" in down
+    assert "DROP COLUMN IF EXISTS embedding;" not in down
+    assert "DROP EXTENSION" not in down
