@@ -1117,7 +1117,7 @@
       "candidate_sources": [
         {
           "title": "Code de la santé publique, article L. 1110-4 — secret des informations concernant la personne prise en charge",
-          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000043895798",
+          "url": "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006170991",
           "source_type": "code",
           "verification_status": "candidate_not_yet_human_validated"
         },
@@ -1172,7 +1172,7 @@
         },
         {
           "title": "Décret n° 2026-705 du 29 juillet 2026 — réforme des congés pour raisons de santé des agents publics, notamment transmission des arrêts et contrôle",
-          "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054641660",
+          "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054570030",
           "source_type": "texte_national",
           "verification_status": "candidate_not_yet_human_validated"
         },
