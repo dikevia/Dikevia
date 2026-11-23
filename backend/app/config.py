@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     ai_model: str = ""
     ai_timeout_seconds: float = 25.0
     ai_local_document_review_enabled: bool = False
+    ai_local_documents_in_chat_enabled: bool = False
+    startup_external_diagnostics_enabled: bool = False
     chat_rate_limit_per_minute: int = 10
     legifrance_environment: str = "sandbox"
     # Accept both documented LEGIFRANCE_* names and the common PISTE_* aliases.
@@ -62,6 +64,7 @@ class Settings(BaseSettings):
     private_instance_mode: bool = False
     private_instance_max_users: int = 10
     beta_max_users: int = 1
+    stripe_billing_enabled: bool = False
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_automatic_tax_enabled: bool = True
@@ -97,6 +100,8 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("BETA_MAX_USERS doit être compris entre 0 (désactivé) et 1000.")
     if config.private_instance_mode and (config.stripe_secret_key or config.stripe_webhook_secret):
         raise RuntimeError("Stripe doit être entièrement désactivé en mode instance privée.")
+    if config.stripe_billing_enabled and not (config.stripe_secret_key and config.stripe_webhook_secret):
+        raise RuntimeError("STRIPE_BILLING_ENABLED exige les deux secrets Stripe.")
     if bool(config.stripe_secret_key) != bool(config.stripe_webhook_secret):
         raise RuntimeError("STRIPE_SECRET_KEY et STRIPE_WEBHOOK_SECRET doivent être configurés ensemble.")
     if config.app_env == "production" and config.stripe_secret_key:
