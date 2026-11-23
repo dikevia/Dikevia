@@ -10,6 +10,17 @@ Le fichier `fpt_chatbot_eval_v1.json` contient les questions, l'intention à rec
 
 Ne pas transformer les critères d'intention en conclusions juridiques. Plusieurs questions nécessitent des précisions (statut, délibération locale, date, faits, règlement intérieur).
 
+## Régressions conversationnelles
+
+Le fichier `conversation_regression_v1.json` ajoute 20 scénarios multi-tours couvrant :
+- les relances qui doivent conserver le sujet ;
+- les réponses courtes à une question de clarification ;
+- les nouvelles questions qui ne doivent pas hériter du sujet précédent ;
+- les changements explicites de versant FPT/FPE/FPH ;
+- les chaînes de plusieurs relances.
+
+Ces scénarios sont exécutés automatiquement par `backend/tests/test_conversation_regression_benchmark.py`. Ils vérifient la construction du contexte, pas la justesse d'une réponse juridique complète. Ils ne remplacent donc pas les 100 cas FPT évalués sur les réponses produites par le moteur.
+
 ## Questions générales et situations individuelles
 
 Une question générale sur les droits ou les règles de la FPT ne doit pas déclencher automatiquement une demande de date des faits. Le chatbot peut expliquer le droit actuellement consulté en précisant qu'il s'agit d'une information générale. Une date ou une période est demandée lorsque la formulation décrit une situation personnelle concrète ou un différend dont l'analyse dépend de la temporalité. Cette distinction fait l'objet de tests automatisés dans `backend/tests/test_case_date_clarification.py`.
