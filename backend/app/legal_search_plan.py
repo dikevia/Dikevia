@@ -880,9 +880,22 @@ def build_official_research_axes(question: str) -> list[str]:
             and not independent_working_time_present
         ):
             continue
-        if not any(_contains_trigger(folded, trigger) for trigger in triggers):
+        matched_triggers = [
+            trigger for trigger in triggers
+            if _contains_trigger(folded, trigger)
+        ]
+        if not matched_triggers:
             continue
         if triggers == contract_triggers and other_topic_present:
+            continue
+        # These are compound situations with two legally distinct research
+        # dimensions. Preserve both axes instead of collapsing each tuple to
+        # its first query (which silently discarded the second dimension).
+        if (
+            "convocation par ma hierarchie" in triggers
+            or "agresse par un usager" in triggers
+        ):
+            axes_found.extend(axis[:500] for axis in axes[:2])
             continue
         axes_found.append(axes[0][:500])
     return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
