@@ -115,7 +115,10 @@ def _build_targeted_regulatory_queries(
     # and the local deliberation. Never inject these FPT queries into FPE/FPH.
     overtime = any(marker in folded for marker in (
         "heures supplémentaires", "heures supplementaires",
+        "heures sup", "heures en plus",
         "travaux supplémentaires", "travaux supplementaires",
+        "temps de travail effectif au-delà", "temps de travail effectif au-dela",
+        "dépasser les horaires", "depasser les horaires",
         "ihts", "repos compensateur", "récupérer", "recuperer",
         "récupération", "recuperation",
     ))
