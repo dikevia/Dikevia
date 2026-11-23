@@ -5,6 +5,7 @@ sont refusées : aucune structure supposée n'est transformée en citation jurid
 """
 from __future__ import annotations
 
+import asyncio
 import re
 import time
 from datetime import date, datetime, timezone
@@ -31,6 +32,10 @@ class LegifranceConnector:
         self.transport = transport
         self._token: str | None = None
         self._token_expires_at = 0.0
+        # The orchestrator fans out independent legal research axes. Bound
+        # upstream pressure and ensure concurrent requests share one OAuth refresh.
+        self._token_refresh_lock = asyncio.Lock()
+        self._request_semaphore = asyncio.Semaphore(4)
 
     @property
     def configured(self) -> bool:
@@ -57,63 +62,69 @@ class LegifranceConnector:
             raise LegifranceUnavailable("Identifiants PISTE non configurés.")
         if self._token and time.monotonic() < self._token_expires_at - TOKEN_TTL_SAFETY_SECONDS:
             return self._token
-        try:
-            async with httpx.AsyncClient(timeout=settings.legifrance_timeout_seconds,
-                                         transport=self.transport) as client:
-                response = await client.post(
-                    self.token_url,
-                    data={"grant_type": "client_credentials", "client_id": settings.legifrance_client_id,
-                          "client_secret": settings.legifrance_client_secret, "scope": settings.legifrance_scope},
-                    headers={"Accept": "application/json"},
-                )
-                response.raise_for_status()
-                data = response.json()
-            token = data.get("access_token")
-            expires = int(data.get("expires_in", 0))
-            if not isinstance(token, str) or not token or expires < 1:
-                raise LegifranceUnavailable("Réponse OAuth PISTE incomplète.")
-            self._token = token
-            self._token_expires_at = time.monotonic() + expires
-            return token
-        except httpx.HTTPStatusError as exc:
-            # Log only the HTTP status; never expose OAuth response bodies or credentials.
-            raise LegifranceUnavailable(
-                f"Refus OAuth PISTE (HTTP {exc.response.status_code})."
-            ) from exc
-        except (httpx.HTTPError, ValueError, TypeError) as exc:
-            raise LegifranceUnavailable("Échec réseau ou réponse OAuth PISTE invalide.") from exc
+        async with self._token_refresh_lock:
+            # Re-check after acquiring the lock: another request may have refreshed it.
+            if self._token and time.monotonic() < self._token_expires_at - TOKEN_TTL_SAFETY_SECONDS:
+                return self._token
+            try:
+                async with httpx.AsyncClient(timeout=settings.legifrance_timeout_seconds,
+                                             transport=self.transport) as client:
+                    response = await client.post(
+                        self.token_url,
+                        data={"grant_type": "client_credentials", "client_id": settings.legifrance_client_id,
+                              "client_secret": settings.legifrance_client_secret, "scope": settings.legifrance_scope},
+                        headers={"Accept": "application/json"},
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                token = data.get("access_token")
+                expires = int(data.get("expires_in", 0))
+                if not isinstance(token, str) or not token or expires < 1:
+                    raise LegifranceUnavailable("Réponse OAuth PISTE incomplète.")
+                self._token = token
+                self._token_expires_at = time.monotonic() + expires
+                return token
+            except httpx.HTTPStatusError as exc:
+                # Log only the HTTP status; never expose OAuth response bodies or credentials.
+                raise LegifranceUnavailable(
+                    f"Refus OAuth PISTE (HTTP {exc.response.status_code})."
+                ) from exc
+            except (httpx.HTTPError, ValueError, TypeError) as exc:
+                raise LegifranceUnavailable("Échec réseau ou réponse OAuth PISTE invalide.") from exc
 
     async def _request(self, method: str, path: str, *, json_body: dict | None = None) -> dict:
-        token = await self._get_token()
-        url = urljoin(self.api_base, path.lstrip("/"))
-        try:
-            async with httpx.AsyncClient(timeout=settings.legifrance_timeout_seconds,
-                                         transport=self.transport) as client:
-                response = await client.request(method, url, json=json_body,
-                    headers={"Authorization": f"Bearer {token}", "Accept": "application/json",
-                             "Content-Type": "application/json"})
-                if path.lstrip("/") == "consult/getArticle":
-                    logger.warning(
-                        "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_HTTP status=%d content_type=%s",
-                        response.status_code, response.headers.get("content-type", "unknown"),
-                    )
-                response.raise_for_status()
-                data = response.json()
-                if path.lstrip("/") == "consult/getArticle":
-                    logger.warning(
-                        "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_RESPONSE top_keys=%s",
-                        sorted(data.keys()) if isinstance(data, dict) else type(data).__name__,
-                    )
-            if not isinstance(data, dict):
-                raise LegifranceUnavailable("Réponse Légifrance non conforme : objet JSON attendu.")
-            return data
-        except httpx.HTTPStatusError as exc:
-            # Keep OAuth/API secrets and response bodies out of logs.
-            raise LegifranceUnavailable(
-                f"Refus API Légifrance (HTTP {exc.response.status_code}) sur {path}."
-            ) from exc
-        except (httpx.HTTPError, ValueError) as exc:
-            raise LegifranceUnavailable("Erreur réseau ou réponse API Légifrance invalide.") from exc
+        # Bound concurrent PISTE traffic across all parallel research axes.
+        async with self._request_semaphore:
+            token = await self._get_token()
+            url = urljoin(self.api_base, path.lstrip("/"))
+            try:
+                async with httpx.AsyncClient(timeout=settings.legifrance_timeout_seconds,
+                                             transport=self.transport) as client:
+                    response = await client.request(method, url, json=json_body,
+                        headers={"Authorization": f"Bearer {token}", "Accept": "application/json",
+                                 "Content-Type": "application/json"})
+                    if path.lstrip("/") == "consult/getArticle":
+                        logger.warning(
+                            "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_HTTP status=%d content_type=%s",
+                            response.status_code, response.headers.get("content-type", "unknown"),
+                        )
+                    response.raise_for_status()
+                    data = response.json()
+                    if path.lstrip("/") == "consult/getArticle":
+                        logger.warning(
+                            "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_RESPONSE top_keys=%s",
+                            sorted(data.keys()) if isinstance(data, dict) else type(data).__name__,
+                        )
+                if not isinstance(data, dict):
+                    raise LegifranceUnavailable("Réponse Légifrance non conforme : objet JSON attendu.")
+                return data
+            except httpx.HTTPStatusError as exc:
+                # Keep OAuth/API secrets and response bodies out of logs.
+                raise LegifranceUnavailable(
+                    f"Refus API Légifrance (HTTP {exc.response.status_code}) sur {path}."
+                ) from exc
+            except (httpx.HTTPError, ValueError) as exc:
+                raise LegifranceUnavailable("Erreur réseau ou réponse API Légifrance invalide.") from exc
 
     async def ping_diagnostics(self) -> dict[str, int | str]:
         """Test each documented ping route independently using a fresh OAuth token."""
