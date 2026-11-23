@@ -710,10 +710,17 @@ async def platform_grant_free(organization_id: str, payload: dict,
 @app.get("/api/v1/chat/conversations")
 async def list_chat_conversations(ctx: TenantContext = Depends(get_tenant_context)):
     rows = await ctx.conn.fetch("""SELECT c.id,c.title,c.created_at,c.updated_at,
-        (SELECT count(*) FROM chat_messages m WHERE m.conversation_id=c.id) AS message_count,
-        (SELECT content FROM chat_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
-        (SELECT metadata->>'public_service' FROM chat_messages m WHERE m.conversation_id=c.id AND m.role='user' ORDER BY m.created_at,m.id LIMIT 1) AS public_service
-        FROM chat_conversations c ORDER BY c.updated_at DESC LIMIT 100""")
+        (SELECT count(*) FROM chat_messages m WHERE m.conversation_id=c.id
+            AND m.organization_id=$1::uuid AND m.user_id=$2::uuid) AS message_count,
+        (SELECT content FROM chat_messages m WHERE m.conversation_id=c.id
+            AND m.organization_id=$1::uuid AND m.user_id=$2::uuid
+            ORDER BY m.created_at DESC,m.id DESC LIMIT 1) AS last_message,
+        (SELECT metadata->>'public_service' FROM chat_messages m WHERE m.conversation_id=c.id
+            AND m.organization_id=$1::uuid AND m.user_id=$2::uuid AND m.role='user'
+            ORDER BY m.created_at,m.id LIMIT 1) AS public_service
+        FROM chat_conversations c
+        WHERE c.organization_id=$1::uuid AND c.user_id=$2::uuid
+        ORDER BY c.updated_at DESC LIMIT 100""", ctx.organization_id, ctx.user_id)
     return [{"id": str(r["id"]), "title": r["title"], "created_at": r["created_at"],
         "updated_at": r["updated_at"], "message_count": r["message_count"],
         "last_message": (r["last_message"] or "")[:180], "public_service": r["public_service"] or "FPT"} for r in rows]
@@ -736,7 +743,9 @@ async def get_chat_messages(conversation_id: str, ctx: TenantContext = Depends(g
         raise HTTPException(422, "Identifiant de conversation invalide.")
     rows = await ctx.conn.fetch("""SELECT m.id,m.role,m.content,m.metadata,m.created_at
         FROM chat_messages m JOIN chat_conversations c ON c.id=m.conversation_id
-        WHERE c.id=$1::uuid ORDER BY m.created_at,m.id""", conversation_uuid)
+        WHERE c.id=$1::uuid AND c.organization_id=$2::uuid AND c.user_id=$3::uuid
+          AND m.organization_id=$2::uuid AND m.user_id=$3::uuid
+        ORDER BY m.created_at,m.id""", conversation_uuid, ctx.organization_id, ctx.user_id)
     return [{"id": str(r["id"]), "role": r["role"], "content": r["content"],
         "metadata": r["metadata"], "created_at": r["created_at"]} for r in rows]
 
@@ -747,7 +756,9 @@ async def delete_chat_conversation(conversation_id: str, ctx: TenantContext = De
         conversation_uuid = str(UUID(conversation_id))
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
-    result = await ctx.conn.execute("DELETE FROM chat_conversations WHERE id=$1::uuid", conversation_uuid)
+    result = await ctx.conn.execute("""DELETE FROM chat_conversations
+        WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if result == "DELETE 0":
         raise HTTPException(404, "Conversation introuvable.")
     return None
