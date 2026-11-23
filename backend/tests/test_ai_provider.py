@@ -1140,6 +1140,39 @@ async def test_source_relevance_evaluator_raises_provider_error_on_http_failure(
         )
 
 
+def test_research_plan_normalizes_whitespace_before_matching_verbatim_evidence():
+    plan = _parse_research_plan(
+        json.dumps({
+            "queries": ["régime de remplacement temporaire"],
+            "legal_issues": ["Conditions du remplacement temporaire"],
+            "extracted_facts": [
+                {
+                    "fact": "Remplacement effectué pendant une période prolongée.",
+                    "evidence_quote": "titulaire de la FPT. Je remplace un collègue pendant un an et 11 mois",
+                },
+                {
+                    "fact": "Même fait avec une mise en page différente.",
+                    "evidence_quote": "titulaire de la FPT.\\nJe remplace   un collègue\\tpendant un an et 11 mois",
+                },
+                {
+                    "fact": "Fait non présent dans la question.",
+                    "evidence_quote": "je remplace un collègue depuis trois ans",
+                },
+            ],
+        }, ensure_ascii=False),
+        question=(
+            "Je suis titulaire de la FPT.\\n"
+            "Je remplace   un collègue\\tpendant un an et 11 mois."
+        ),
+    )
+    assert plan is not None
+    assert len(plan.extracted_facts) == 1
+    assert plan.extracted_facts[0]["fact"] == "Remplacement effectué pendant une période prolongée."
+    assert plan.extracted_facts[0]["evidence_quote"] == (
+        "titulaire de la FPT. Je remplace un collègue pendant un an et 11 mois"
+    )
+
+
 def test_research_plan_extracts_only_facts_with_verbatim_question_evidence():
     plan = _parse_research_plan(
         json.dumps({
