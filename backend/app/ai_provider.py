@@ -257,7 +257,7 @@ class AIAnalysisRefusedNoSources(RuntimeError):
     pass
 
 
-def _usable_document_sources(sources):
+def _usable_document_sources(sources, *, allow_local_documents: bool = False):
     """Keep only identified, dated documents with meaningful retrieved text."""
     if not isinstance(sources, (list, tuple)):
         return []
@@ -268,6 +268,10 @@ def _usable_document_sources(sources):
     )
     for source in sources:
         if not isinstance(source, dict):
+            continue
+        # Local employer records are private tenant data: never send them to AI by default.
+        is_local_document = source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+        if is_local_document and not allow_local_documents:
             continue
         # Search hits are metadata, never evidence, even if they carry a date or snippet.
         if (
@@ -552,11 +556,11 @@ def _provider_api_base() -> str:
     return base
 
 
-async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict] | None, conversation_history: list[dict] | None = None, facts_period: dict | None = None, legal_context: dict | None = None) -> AIAnalysisResult | None:
+async def analyze_question(*, question: str, employer: str, facts_date: str | None, sources: list[dict] | None, conversation_history: list[dict] | None = None, facts_period: dict | None = None, legal_context: dict | None = None, allow_local_documents: bool = False) -> AIAnalysisResult | None:
     if not (settings.ai_api_key and settings.ai_model):
         return None
     # Defense in depth: only non-empty retrieved excerpts may reach the provider.
-    sources = _usable_document_sources(sources)
+    sources = _usable_document_sources(sources, allow_local_documents=allow_local_documents)
     if not sources:
         raise AIAnalysisRefusedNoSources("Analyse refusée : aucun extrait documentaire non vide n'est disponible.")
     base = _provider_api_base()
@@ -855,7 +859,7 @@ def validate_entailment_verdicts(payload, claims, sources):
     }
 
 
-async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict], public_service: str = "FPT") -> dict:
+async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict], public_service: str = "FPT", allow_local_documents: bool = False) -> dict:
     """Ask the configured model for a conservative second-stage entailment check.
 
     This is an additional probabilistic safeguard, not a legal certification.
@@ -874,6 +878,8 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
         if len(matches) != 1:
             return {"valid": False, "invalid": [f"claim_{index}:source_missing_or_ambiguous"]}
         source = matches[0]
+        if source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"} and not allow_local_documents:
+            return {"valid": False, "invalid": [f"claim_{index}:local_document_ai_transfer_disabled"]}
         evidence_text = str(source.get("text") or source.get("full_text") or source.get("excerpt") or "")[:12000]
         evidence.append({
             "claim_index": index,
