@@ -10,19 +10,6 @@ on:
         required: false
         default: false
         type: boolean
-  push:
-    branches:
-      - feature/dikevia-v3.38.5-cgfp-chat
-    paths:
-      - scripts/import_service_public_fonction_publique.py
-      - scripts/import_service_public_to_legal_corpus.py
-      - scripts/import_public_guidance_sources.py
-      - scripts/import_cgfp_to_legal_corpus.py
-      - corpus_national/index/CGFP_articles_2026-10-31.json
-      - corpus_national/legislation/CGFP_snapshot_2026-10-31.pdf
-      - backend/app/legal_corpus.py
-      - corpus_national/sources/registry.json
-      - corpus_national/sources/FULL_IMPORT_REQUESTED
 permissions:
   contents: read
   actions: read
