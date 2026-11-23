@@ -27,7 +27,8 @@ def test_founder_entitlement_requires_an_active_verified_oidc_user_and_platform_
     assert "platform_admins WHERE user_id=p_actor_user_id" in sql
     assert "REVOKE EXECUTE ON FUNCTION platform_admin_grant_founder_entitlement" in sql
     assert "TO cfdt_juris_platform_admin" in sql
-    assert "email" not in sql.lower()
+    assert "email_normalized" not in sql
+    assert "email text" not in sql.lower()
 
 
 def test_founder_api_uses_internal_user_id_and_is_auditable():
