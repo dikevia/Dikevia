@@ -1006,6 +1006,28 @@ def test_usable_sources_reject_explicitly_failed_integrity_and_out_of_scope_reco
     out_of_scope = {**base, "analysis_eligible": False, "public_service_scope": "FPH"}
     assert _usable_document_sources([invalid_integrity, out_of_scope]) == []
 
+def test_shared_evidence_normalization_handles_typography_without_erasing_legal_differences():
+    from app.ai_provider import _normalize_entailment_text
+    from app.legal_assurance import _normalized_evidence_text
+
+    source = "L’agent – ne peut pas – bénéficier de « 10 000 euros »…"
+    quote = "L'agent - ne peut pas - bénéficier de \" 10 000 euros \"..."
+    normalized_source = _normalized_evidence_text(source)
+    normalized_quote = _normalize_entailment_text(quote)
+
+    assert normalized_source == normalized_quote
+    assert normalized_quote in normalized_source
+    assert _normalized_evidence_text("1\u00a0000 euros") == "1 000 euros"
+
+    # Typographic normalization must not remove negation, merge references,
+    # or change the numeric value of an amount.
+    assert "L. 1234" not in _normalized_evidence_text("L. 123-4")
+    assert "10000 euros" not in _normalize_entailment_text("10 000 euros")
+    assert "L'agent peut bénéficier" not in _normalized_evidence_text(
+        "L'agent ne peut pas bénéficier"
+    )
+
+
 def test_structured_answer_parser_accepts_only_pure_or_fenced_json_objects():
     from app.ai_provider import parse_structured_answer
 
