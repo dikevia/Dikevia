@@ -118,17 +118,19 @@ async def _run_wallet_founder_scenario():
             assert insufficient["applied"] is False
             assert insufficient["current_balance"] == 70
             with pytest.raises(asyncpg.InvalidParameterValueError):
-                await runtime.fetchrow(
-                    "SELECT * FROM wallet_apply_entry($1,50,'USAGE_DEBIT',$2,'Positive debit forgery')",
-                    org_id, "ci-positive-" + uuid.uuid4().hex,
-                )
+                async with runtime.transaction():
+                    await runtime.fetchrow(
+                        "SELECT * FROM wallet_apply_entry($1,50,'USAGE_DEBIT',$2,'Positive debit forgery')",
+                        org_id, "ci-positive-" + uuid.uuid4().hex,
+                    )
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await runtime.fetchrow(
-                    """SELECT * FROM wallet_admin_grant_entry(
-                        $1,$2,50,'MONTHLY_ALLOCATION',$3,'Forged runtime grant'
-                    )""",
-                    user_id, org_id, "ci-forged-" + uuid.uuid4().hex,
-                )
+                async with runtime.transaction():
+                    await runtime.fetchrow(
+                        """SELECT * FROM wallet_admin_grant_entry(
+                            $1,$2,50,'MONTHLY_ALLOCATION',$3,'Forged runtime grant'
+                        )""",
+                        user_id, org_id, "ci-forged-" + uuid.uuid4().hex,
+                    )
             assert await runtime.fetchval(
                 "SELECT balance FROM credit_accounts WHERE organization_id=$1", org_id
             ) == 70
