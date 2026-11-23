@@ -805,6 +805,15 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
         "excerpt": "Extrait officiel de test suffisamment explicite.",
         "valid_from": "2020-01-01",
         "valid_to": "2999-01-01",
+        "legal_assurance": {
+            "source_family": "CODE",
+            "source_family_label": "Disposition codifiée",
+            "authority_level": "PRIMARY_LEGAL",
+            "authority_label": "Texte juridique primaire",
+            "publisher": "Légifrance",
+            "publisher_type": "PUBLIC_ADMINISTRATION",
+            "normative": True,
+        },
     }
     decision = {
         "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
@@ -831,6 +840,15 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
     assert "LEGIARTI000012345678" in serialized
     assert "2026-11-19" in serialized
     assert "Extrait officiel de test suffisamment explicite." in serialized
+    payload_data = json.loads(serialized)
+    legal_source_payload = next(
+        item for item in payload_data["extraits_documentaires_valides"]
+        if item["identifiant_source"] == "LEGIARTI000012345678"
+    )
+    assert legal_source_payload["niveau_autorite"] == "PRIMARY_LEGAL"
+    assert legal_source_payload["libelle_autorite"] == "Texte juridique primaire"
+    assert legal_source_payload["editeur"] == "Légifrance"
+    assert legal_source_payload["source_normative"] is True
     assert "CETATEXT000012345678" in serialized
     assert '"date_decision": "2024-05-10"' in serialized
     assert '"qualification_juridique_pre_recherche": {"topic": "UNION_RIGHTS", "agent_status": "NOT_SPECIFIED"}' in serialized
