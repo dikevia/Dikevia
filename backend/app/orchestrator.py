@@ -26,7 +26,7 @@ from .legal_search_plan import (
     clarification_for_union_assistance_summons,
 )
 from .legal_qualification import (
-    qualify_legal_question, build_contextual_research_question,
+    qualify_legal_question, build_contextual_research_context,
     CONVERSATION_HISTORY_MESSAGE_LIMIT,
 )
 
@@ -620,9 +620,11 @@ class LegalOrchestrator:
         prior_assistant_messages = [
             str(m.get("content", ""))[:1200] for m in history if m.get("role") == "assistant"
         ]
-        contextual_question = build_contextual_research_question(
+        contextual_research_context = build_contextual_research_context(
             current_question, prior_user_questions, prior_assistant_messages,
         )
+        contextual_question = contextual_research_context.question
+        is_followup = contextual_research_context.is_followup
         targeted_clarification = clarification_for_union_assistance_summons(contextual_question)
         if targeted_clarification:
             return AskResponse(
@@ -636,7 +638,6 @@ class LegalOrchestrator:
         # A genuine short follow-up inherits the immediate prior referent and,
         # where relevant, the personal-case classification. Independent new
         # questions never inherit unrelated topics or facts.
-        is_followup = "\n" in contextual_question
         if is_followup and prior_user_questions:
             inherited_question = contextual_question.split("\n", 1)[1]
             if question_intent != "PERSONAL_CASE" and classify_question_intent(inherited_question) == "PERSONAL_CASE":
