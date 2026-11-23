@@ -496,6 +496,30 @@
         "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
         "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
       }
+    },
+    {
+      "id": "justice-administrative-opendata",
+      "name": "Conseil d'État — Données ouvertes de la justice administrative",
+      "publisher": "Conseil d'État",
+      "authority_level": "PRIMARY_LEGAL",
+      "status": "CANDIDATE",
+      "collection_mode": "Archives XML ZIP mensuelles par juridiction, année et mois ; aucun endpoint API documenté",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Licence Ouverte 2.0 et CGU propres à la plateforme. Préserver l'intégrité de chaque décision et son contexte. Toute citation doit conserver le numéro, la juridiction, la formation, le siège et la date. Le commentaire éditorial doit être distinct du texte de la décision. Aucune réutilisation à des fins de profilage des magistrats ou personnels de greffe.",
+      "dataset_url": "https://opendata.justice-administrative.fr/index.html",
+      "help_url": "https://opendata.justice-administrative.fr/aide.html",
+      "terms_url": "https://opendata.justice-administrative.fr/cgu.html",
+      "collection": "Décisions du Conseil d'État depuis le 30 septembre 2021, des CAA depuis le 31 mars 2022 et des TA depuis le 30 juin 2022. Ciblage des décisions concernant les agents publics et leurs droits statutaires ; ne pas aspirer les archives intégralement sans filtre.",
+      "ingestion": "Importer comme ADMIN_CASELAW après extraction XML, contrôle des métadonnées, filtrage thématique et vérification de l'intégrité. Conserver ECLI, numéro de dossier, juridiction, siège, formation, dates, code de publication, nom du ZIP et empreinte.",
+      "priority": 2,
+      "domains": [
+        "opendata.justice-administrative.fr"
+      ]
     }
   ],
   "rules": [
@@ -504,7 +528,8 @@
     "Ne jamais déduire le versant applicable par simple détection lexicale ; le conserver comme indice non validé.",
     "Les guides et fiches professionnelles n'ont pas priorité sur le texte normatif applicable.",
     "Une référence juridique extraite d'une fiche reste une piste jusqu'à vérification sur la source primaire.",
-    "Ne pas collecter les espaces privés, extranet ou contenus soumis à abonnement sans autorisation explicite."
+    "Ne pas collecter les espaces privés, extranet ou contenus soumis à abonnement sans autorisation explicite.",
+    "Pour les décisions de justice administrative, conserver le texte intégral sans altération et citer les identifiants complets imposés par les CGU ; séparer explicitement l'extrait, le commentaire et la décision originale."
   ],
   "document_seeds": [
     {
