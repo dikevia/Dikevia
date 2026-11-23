@@ -334,7 +334,8 @@ async def test_search_prioritizes_original_terms_over_fpt_expansions():
     assert "c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query" in conn.query
     assert conn.args[0] == original
     assert "IHTS" in conn.args[1]
-    assert len(conn.args) == 3
+    assert len(conn.args) == 4
+    assert conn.args[3] is None
 
 
 def test_incomplete_dates_allow_general_information_but_not_verified_conclusion():
@@ -373,3 +374,40 @@ def test_query_expansion_rejects_invalid_limits():
     with pytest.raises(ValueError):
         expand_legal_query("CITIS", max_variants=0)
     assert expand_legal_query("CITIS", max_variants=1) == ["CITIS"]
+
+
+@pytest.mark.asyncio
+async def test_search_uses_vector_candidates_only_when_a_valid_query_embedding_is_supplied():
+    from app.legal_corpus import search_legal_corpus
+
+    class FakeConn:
+        query = ""
+        args = ()
+        async def fetch(self, sql, *args):
+            self.query = sql
+            self.args = args
+            return []
+
+    conn = FakeConn()
+    vector = [1.0] + [0.0] * 383
+    await search_legal_corpus(conn, "temps partiel thérapeutique", date(2026, 11, 23),
+                              limit=6, query_embedding=vector)
+    assert "vector_ranked AS" in conn.query
+    assert "c.embedding_384 <=> $4::vector" in conn.query
+    assert conn.args[3].startswith("[1.00000000,")
+    assert len(conn.args[3].split(",")) == 384
+
+
+@pytest.mark.asyncio
+async def test_search_rejects_invalid_query_embedding_dimensions_and_non_finite_values():
+    from app.legal_corpus import search_legal_corpus
+
+    class FakeConn:
+        async def fetch(self, sql, *args):
+            raise AssertionError("SQL ne doit pas être exécuté avec un vecteur invalide")
+
+    with pytest.raises(ValueError, match="384 valeurs finies"):
+        await search_legal_corpus(FakeConn(), "question juridique", date(2026, 11, 23), query_embedding=[0.1])
+    with pytest.raises(ValueError, match="384 valeurs finies"):
+        await search_legal_corpus(FakeConn(), "question juridique", date(2026, 11, 23),
+                                  query_embedding=[float("nan")] + [0.0] * 383)
