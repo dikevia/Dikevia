@@ -5,6 +5,7 @@ corpus validés par le backend et ne peut pas créer de citations exposées.
 """
 from __future__ import annotations
 import json
+import logging
 from datetime import date
 import re
 import unicodedata
@@ -13,6 +14,29 @@ from dataclasses import dataclass
 import httpx
 from .config import settings
 from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
+
+logger = logging.getLogger(__name__)
+
+
+def _log_provider_failure(operation: str, exc: Exception) -> None:
+    """Log actionable provider diagnostics without logging credentials or request payloads."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        response = exc.response
+        detail = response.text or ""
+        if settings.ai_api_key:
+            detail = detail.replace(settings.ai_api_key, "[REDACTED]")
+        detail = detail[:400]
+        logger.warning(
+            "AI_PROVIDER_REQUEST_FAILED provider=%s operation=%s http_status=%s detail=%s",
+            "gemini" if _is_gemini_provider() else "openai_compatible",
+            operation, response.status_code, detail,
+        )
+        return
+    logger.warning(
+        "AI_PROVIDER_REQUEST_FAILED provider=%s operation=%s error_type=%s",
+        "gemini" if _is_gemini_provider() else "openai_compatible",
+        operation, type(exc).__name__,
+    )
 
 SYSTEM_PROMPT = """Tu es Dikevia, un assistant juridique spécialisé en droit de la fonction publique territoriale française. Tu aides à comprendre les documents officiels ; tu ne remplaces ni un avocat, ni un juriste, ni une autorité administrative.
 
@@ -444,6 +468,7 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
         parsed = json.loads(content) if isinstance(content, str) else None
         return validate_source_relevance_verdicts(parsed, candidates)
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+        _log_provider_failure("source_relevance", exc)
         raise AIProviderUnavailable("L'évaluation sémantique des sources est indisponible.") from exc
 
 
@@ -505,6 +530,7 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
             raise AIProviderUnavailable("Le plan de recherche juridique généré est invalide.")
         return plan
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+        _log_provider_failure("research_planning", exc)
         raise AIProviderUnavailable("La planification IA de la recherche juridique est indisponible.") from exc
 
 def _provider_api_base() -> str:
@@ -603,6 +629,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
             total_tokens=total_tokens,
         )
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+        _log_provider_failure("answer_generation", exc)
         raise AIProviderUnavailable("Le fournisseur IA est temporairement indisponible.") from exc
 
 
@@ -654,11 +681,15 @@ async def check_provider_availability(*, transport: httpx.AsyncBaseTransport | N
             return {"status": "AVAILABLE"}
         return {"status": "MODEL_STATUS_UNKNOWN"}
     except httpx.HTTPStatusError as exc:
+        _log_provider_failure("availability_check", exc)
         if _is_gemini_provider() and exc.response.status_code in (401, 403):
             return {"status": "AUTH_ERROR", "http_status": exc.response.status_code}
+        if exc.response.status_code == 429:
+            return {"status": "QUOTA_OR_RATE_LIMIT", "http_status": 429}
         return {"status": "HTTP_ERROR", "http_status": exc.response.status_code}
-    except (httpx.HTTPError, ValueError, TypeError):
-        return {"status": "UNAVAILABLE"}
+    except (httpx.HTTPError, ValueError, TypeError) as exc:
+        _log_provider_failure("availability_check", exc)
+        return {"status": "UNAVAILABLE", "error_type": type(exc).__name__}
 
 
 def extract_analysis_content(result):
@@ -867,4 +898,5 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
         parsed = json.loads(content) if isinstance(content, str) else None
         return validate_entailment_verdicts(parsed, claims, sources)
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+        _log_provider_failure("claim_entailment", exc)
         raise AIProviderUnavailable("Le contrôle contradictoire des affirmations a échoué.") from exc
