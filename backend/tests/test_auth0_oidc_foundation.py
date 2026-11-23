@@ -123,6 +123,57 @@ def test_auth0_runtime_configuration_is_server_supplied_and_has_no_secret():
     assert "client_secret" not in main[main.index('@app.get("/auth-config.js"'):main.index("orchestrator = LegalOrchestrator()")].lower()
 
 
+def test_auth0_does_not_strip_unrelated_subjects(monkeypatch):
+    issuer = "https://tenant.eu.auth0.com/"
+    audience = "urn:dikevia:api"
+    settings = SimpleNamespace(
+        oidc_issuer=issuer,
+        oidc_audience=audience,
+        oidc_jwks_url="https://tenant.eu.auth0.com/.well-known/jwks.json",
+        oidc_algorithms="RS256",
+        oidc_email_claim="email",
+        oidc_email_verified_claim="email_verified",
+        oidc_identity_compat_issuer="https://legacy.example/realms/cfdt",
+        oidc_identity_subject_prefix="auth0|",
+    )
+    monkeypatch.setattr(security, "settings", settings)
+    monkeypatch.setattr(security, "jwks_client", lambda _url: FakeJwks())
+
+    now = int(time.time())
+    token = jwt.encode(
+        {"iss": issuer, "aud": audience, "sub": "google-oauth2|unrelated",
+         "iat": now, "exp": now + 300},
+        KEY, algorithm="RS256",
+    )
+    with pytest.raises(Exception):
+        security.verify_access_token(token)
+
+
+def test_auth0_without_legacy_mapping_keeps_native_auth0_subject(monkeypatch):
+    issuer = "https://tenant.eu.auth0.com/"
+    settings = SimpleNamespace(
+        oidc_issuer=issuer,
+        oidc_audience="urn:dikevia:api",
+        oidc_jwks_url="https://tenant.eu.auth0.com/.well-known/jwks.json",
+        oidc_algorithms="RS256",
+        oidc_email_claim="email",
+        oidc_email_verified_claim="email_verified",
+        oidc_identity_compat_issuer="",
+        oidc_identity_subject_prefix="",
+    )
+    monkeypatch.setattr(security, "settings", settings)
+    monkeypatch.setattr(security, "jwks_client", lambda _url: FakeJwks())
+    now = int(time.time())
+    token = jwt.encode(
+        {"iss": issuer, "aud": "urn:dikevia:api", "sub": "auth0|new-user",
+         "iat": now, "exp": now + 300},
+        KEY, algorithm="RS256",
+    )
+    principal = security.verify_access_token(token)
+    assert principal.issuer == issuer
+    assert principal.subject == "auth0|new-user"
+
+
 def test_auth0_migration_keeps_database_roles_and_org_memberships_out_of_auth0():
     config = (ROOT / "backend/app/config.py").read_text()
     security_source = (ROOT / "backend/app/security.py").read_text()
