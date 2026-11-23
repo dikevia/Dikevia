@@ -530,18 +530,28 @@ def test_personal_convenience_availability_does_not_get_diluted_by_generic_mobil
     assert all("suivi conjoint" not in item for item in queries)
 
 
-def test_hierarchical_convocation_with_union_support_keeps_interview_and_disciplinary_axes_distinct():
+def test_ambiguous_hierarchical_convocation_with_union_support_does_not_assume_procedure():
     question = (
         "Je suis titulaire de la fonction publique territoriale, "
         "puis-je être accompagné d'un syndicat lors d'une convocation par ma hiérarchie ?"
     )
+
+    # The question does not establish whether this is an ordinary interview,
+    # an administrative inquiry or disciplinary proceedings. Ask for context
+    # before selecting competing legal research routes.
+    assert build_official_research_axes(question) == []
+
+
+def test_explicit_disciplinary_convocation_keeps_defence_rights_research():
+    question = (
+        "Je suis titulaire de la fonction publique territoriale et convoqué "
+        "à un entretien disciplinaire avec assistance syndicale."
+    )
     axes = build_official_research_axes(question)
     joined = " ".join(axes).casefold()
 
-    assert any("entretien hiérarchique ordinaire" in axis for axis in axes)
-    assert any("procédure disciplinaire" in axis for axis in axes)
-    assert "droits de la défense" in joined
-    assert len(axes) >= 2
+    assert axes
+    assert "procédure disciplinaire" in joined or "entretien disciplinaire" in joined
 
 
 def test_agent_assaulted_by_service_user_retrieves_protection_and_workplace_safety_axes():
