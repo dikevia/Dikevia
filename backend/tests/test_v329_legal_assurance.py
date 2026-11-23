@@ -1,3 +1,5 @@
+import pytest
+
 from app.legal_assurance import classify_legal_source, assess_source_set
 
 
