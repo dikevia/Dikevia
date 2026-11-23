@@ -30,7 +30,7 @@ def test_render_blueprint_uses_free_frankfurt_services_and_no_committed_secrets(
     assert blueprint.count("region: frankfurt") == 2
     for key in ("DATABASE_URL", "LEGAL_CORPUS_INGEST_DATABASE_URL", "PLATFORM_ADMIN_DATABASE_URL",
                 "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AI_API_KEY", "KC_DB_URL", "KC_DB_PASSWORD"):
-        assert f"key: {key}\\n        sync: false" in blueprint
+        assert f"key: {key}\n        sync: false" in blueprint
     assert "generateValue: true" in blueprint
     assert "CHANGE_ME" not in blueprint
 
