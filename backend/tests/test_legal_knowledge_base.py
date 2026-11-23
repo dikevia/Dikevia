@@ -503,3 +503,43 @@ def test_institutional_guidance_source_type_cannot_be_promoted_by_document_kind(
     assert result["source_family"] == "PROFESSIONAL_GUIDANCE"
     assert result["normative"] is False
     assert result["claim_eligible"] is False
+
+
+@pytest.mark.parametrize(
+    ("document_kind", "expected_authority"),
+    [
+        ("CODE", "PRIMARY_LEGAL"),
+        ("LAW", "PRIMARY_LEGAL"),
+        ("DECREE", "PRIMARY_LEGAL"),
+        ("DECRET", "PRIMARY_LEGAL"),
+        ("ORDER", "PRIMARY_LEGAL"),
+        ("ARRETE", "PRIMARY_LEGAL"),
+        ("ADMIN_CASELAW", "JURISPRUDENCE"),
+        ("CIRCULAR", "OFFICIAL_INTERPRETIVE"),
+        ("LOCAL_DELIBERATION", "LOCAL_NORMATIVE"),
+        ("LOCAL_REGULATION", "LOCAL_NORMATIVE"),
+    ],
+)
+def test_known_legal_document_kinds_receive_correct_authority_level(
+    document_kind, expected_authority,
+):
+    result = classify_legal_source({
+        "source_type": "LEGIFRANCE_API" if document_kind in {"CODE", "LAW", "DECREE", "DECRET", "ORDER", "ARRETE"} else "OTHER",
+        "document_kind": document_kind,
+        "source_id": "authority-test-001",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == expected_authority
+    assert result["claim_eligible"] is True
+    assert result["normative"] is True
+
+
+def test_unknown_document_kind_remains_unclassified_and_not_claim_eligible():
+    result = classify_legal_source({
+        "source_type": "UNRECOGNIZED_SOURCE",
+        "document_kind": "UNKNOWN_DOCUMENT_KIND",
+        "source_id": "unknown-authority-test",
+    })
+    assert result["authority_level"] == "UNCLASSIFIED"
+    assert result["claim_eligible"] is False
+    assert result["normative"] is False
