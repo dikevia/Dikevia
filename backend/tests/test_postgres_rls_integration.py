@@ -418,3 +418,47 @@ async def _run_service_public_guidance_corpus_scenario():
 
 def test_postgresql_indexes_service_public_guidance_without_promoting_it_to_law():
     asyncio.run(_run_service_public_guidance_corpus_scenario())
+
+async def _run_transaction_local_context_reset_scenario():
+    """Tenant GUCs must not survive a transaction when a pooled connection is reused."""
+    import asyncpg
+
+    org_a, org_b = str(uuid.uuid4()), str(uuid.uuid4())
+    user_a, user_b = str(uuid.uuid4()), str(uuid.uuid4())
+    conn = await asyncpg.connect(RUNTIME_URL)
+    try:
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_a)
+            await conn.execute("SELECT set_config('app.current_user_id',$1,true)", user_a)
+            assert await conn.fetchval("SELECT current_setting('app.current_org_id',true)") == org_a
+            assert await conn.fetchval("SELECT current_setting('app.current_user_id',true)") == user_a
+
+        # The same physical connection is now outside the first transaction.
+        # A previous tenant context must not remain visible to the next borrower.
+        org_after_commit = await conn.fetchval(
+            "SELECT NULLIF(current_setting('app.current_org_id',true),'')"
+        )
+        user_after_commit = await conn.fetchval(
+            "SELECT NULLIF(current_setting('app.current_user_id',true),'')"
+        )
+        assert org_after_commit is None
+        assert user_after_commit is None
+
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_b)
+            await conn.execute("SELECT set_config('app.current_user_id',$1,true)", user_b)
+            assert await conn.fetchval("SELECT current_setting('app.current_org_id',true)") == org_b
+            assert await conn.fetchval("SELECT current_setting('app.current_user_id',true)") == user_b
+
+        assert await conn.fetchval(
+            "SELECT NULLIF(current_setting('app.current_org_id',true),'')"
+        ) is None
+        assert await conn.fetchval(
+            "SELECT NULLIF(current_setting('app.current_user_id',true),'')"
+        ) is None
+    finally:
+        await conn.close()
+
+
+def test_postgresql_transaction_local_tenant_context_is_cleared_on_connection_reuse():
+    asyncio.run(_run_transaction_local_context_reset_scenario())
