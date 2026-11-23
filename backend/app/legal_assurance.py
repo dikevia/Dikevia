@@ -81,7 +81,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         source_key = str(raw_metadata.get("source_id") or "").casefold()
         if any(name in source_key for name in ("cfdt", "cgt", "fo-", "cftc", "unsa", "solidaires")):
             publisher_type = "TRADE_UNION"
-        elif kind == "ADMIN_GUIDANCE":
+        elif kind == "ADMIN_GUIDANCE" or authority_level == "OFFICIAL_ADMIN_GUIDANCE":
             publisher_type = "PUBLIC_ADMINISTRATION"
         elif kind == "PROFESSIONAL_GUIDANCE":
             publisher_type = "PROFESSIONAL_BODY"
@@ -126,8 +126,12 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "publisher_type": publisher_type,
         "review_priority": rank,
         "temporal_or_validation_status": status,
-        "normative": not non_normative,
-        "claim_eligible": not non_normative and source.get("claim_eligible", True) is not False,
+        "normative": not non_normative and authority_level != "UNCLASSIFIED",
+        "claim_eligible": (
+            not non_normative
+            and authority_level != "UNCLASSIFIED"
+            and source.get("claim_eligible", True) is not False
+        ),
         "reference_role": "NON_NORMATIVE_CONTEXT_ONLY" if non_normative else source.get("reference_role"),
         "usable_for_conclusion": usable and not post_facts_decision and not non_normative,
         "usable_for_general_information": general_information_only,
