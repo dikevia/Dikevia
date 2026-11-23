@@ -1254,7 +1254,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, item)
+            item["research_axis_relevant"] = _source_relevant_for_target(research_queries, item, request.public_service)
             sources.append({
                 **item,
                 "excerpt": item.get("excerpt") or full_text[:1800],
