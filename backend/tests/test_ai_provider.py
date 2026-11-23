@@ -1006,6 +1006,26 @@ def test_usable_sources_reject_explicitly_failed_integrity_and_out_of_scope_reco
     out_of_scope = {**base, "analysis_eligible": False, "public_service_scope": "FPH"}
     assert _usable_document_sources([invalid_integrity, out_of_scope]) == []
 
+def test_structured_answer_parser_accepts_only_pure_or_fenced_json_objects():
+    from app.ai_provider import parse_structured_answer
+
+    valid = '{"claims": []}'
+    assert parse_structured_answer(valid) == {"claims": []}
+    assert parse_structured_answer("```json\\n" + valid + "\\n```") == {"claims": []}
+    assert parse_structured_answer("```\\n" + valid + "\\n```") == {"claims": []}
+
+    for invalid in (
+        "Voici la réponse : " + valid,
+        valid + "\\nVoici la réponse.",
+        "```json\\n" + valid,
+        "[1, 2, 3]",
+        "{claims: []}",
+        "",
+        None,
+    ):
+        assert parse_structured_answer(invalid) is None
+
+
 def test_research_plan_parser_accepts_bounded_dynamic_queries_and_subquestions():
     plan = _parse_research_plan("""{
         "queries": [
