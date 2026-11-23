@@ -12,9 +12,9 @@ Ne pas transformer les critères d'intention en conclusions juridiques. Plusieur
 
 ## Références candidates pour les réponses de référence
 
-Les cas FPT-001 à FPT-010 disposent désormais d'une première cartographie de textes officiels candidats et de notes de portée juridique. Ces références ne constituent pas encore des réponses de référence certifiées : le régime applicable doit être contrôlé à la date de chaque cas, les règles de référence de l'État doivent être articulées avec leur transposition territoriale et les délibérations locales doivent être examinées lorsque nécessaire.
+Les cas FPT-001 à FPT-020 disposent désormais d'une première cartographie de textes officiels candidats et de notes de portée juridique. Les cas FPT-011 à FPT-020 portent sur les congés annuels, le report après maladie ou maternité, le départ de la collectivité, les jours fériés, les congés pour convenances personnelles et le CET. La cartographie intègre notamment la décision du Conseil d'État n° 506127 du 16 juin 2026 et les modifications réglementaires entrées en vigueur en août 2026. Ces références ne constituent pas encore des réponses de référence certifiées : le régime applicable doit être contrôlé à la date de chaque cas et les délibérations locales doivent être examinées lorsque nécessaire. Certaines questions (notamment le décompte d'un jour férié pendant les congés et le rappel pendant les congés) restent signalées comme insuffisamment documentées par une règle nationale explicite.
 
-Le script `scripts/fpt_benchmark.py prepare-review` reporte ces références candidates et les avertissements de portée dans la grille de revue humaine. Le statut reste explicitement « validation juridique humaine requise ». Les 90 autres cas restent à documenter de la même manière.
+Le script `scripts/fpt_benchmark.py prepare-review` reporte ces références candidates et les avertissements de portée dans la grille de revue humaine. Le statut reste explicitement « validation juridique humaine requise ». Les 80 autres cas restent à documenter de la même manière.
 
 ## Régressions conversationnelles
 
