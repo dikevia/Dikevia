@@ -491,3 +491,15 @@ def test_official_guidance_keeps_public_administration_publisher_type():
     assert result["claim_eligible"] is False
 
 
+
+def test_institutional_guidance_source_type_cannot_be_promoted_by_document_kind():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "CODE",
+        "source_id": "cnfpt-resource-001",
+    })
+    assert result["source_family"] == "PROFESSIONAL_GUIDANCE"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
