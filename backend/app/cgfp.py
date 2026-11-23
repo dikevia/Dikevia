@@ -19,13 +19,13 @@ ARTICLE_REF = re.compile(r"\b([LDR]\s*\d+(?:-\d+)*)\b", re.I)
 TOKEN = re.compile(r"[a-z0-9]{2,}")
 
 _PAGE_BANNER_RE = re.compile(
-    r"^Code général de la fonction publique\\s*[-–—]\\s*Dernière modification\\b.*\\bDocument généré\\b.*$",
+    r"^Code général de la fonction publique\s*[-–—]\s*Dernière modification\b.*\bDocument généré\b.*$",
     re.IGNORECASE,
 )
 _STRUCTURAL_HEADING_RE = re.compile(
-    r"^(?:PARTIE\\s+(?:LÉGISLATIVE|RÉGLEMENTAIRE)|"
-    r"(?:LIVRE|TITRE|CHAPITRE|SECTION|SOUS-SECTION|PARAGRAPHE)\\s+"
-    r"(?:[IVXLCDM]+(?:er|e)?|\\d+(?:er|e)?)(?:\\s*[:：-].*)?)$",
+    r"^(?:PARTIE\s+(?:LÉGISLATIVE|RÉGLEMENTAIRE)|"
+    r"(?:LIVRE|TITRE|CHAPITRE|SECTION|SOUS-SECTION|PARAGRAPHE)\s+"
+    r"(?:[IVXLCDM]+(?:er|e)?|\d+(?:er|e)?)(?:\s*[:：-].*)?)$",
     re.IGNORECASE,
 )
 
@@ -44,8 +44,7 @@ def clean_cgfp_article_text(value: str) -> str:
     # headings that introduce substantive text inside an article.
     while lines and _STRUCTURAL_HEADING_RE.match(lines[-1]):
         lines.pop()
-    return "\\n".join(lines).strip()
-
+    return "\n".join(lines).strip()
 
 
 
