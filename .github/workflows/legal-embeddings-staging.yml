@@ -1,5 +1,11 @@
 name: Legal embeddings — staging only
 on:
+  push:
+    branches:
+      - feature/dikevia-free-vector-search-poc
+    paths:
+      - scripts/generate_legal_embeddings.py
+      - .github/workflows/legal-embeddings-staging.yml
   workflow_dispatch:
     inputs:
       max_chunks:
@@ -12,6 +18,7 @@ on:
         default: "16"
 permissions:
   contents: read
+  actions: read
 jobs:
   embed-staging:
     if: github.ref == 'refs/heads/feature/dikevia-free-vector-search-poc'
@@ -36,6 +43,10 @@ jobs:
           assert "billowing-haze" in (url.hostname or ""), "This workflow is restricted to the staging Neon branch"
           print("Dedicated staging database credential verified; secret value is not displayed.")
           PY
+      - name: Wait for CI to pass on this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/wait_for_ci_commit.sh
       - name: Install CPU-only embedding dependencies
         run: |
           python -m pip install --upgrade pip
@@ -61,6 +72,6 @@ jobs:
           PY
       - name: Generate local embeddings (no paid API)
         run: |
-          python scripts/generate_legal_embeddings.py \
+          /usr/bin/time -v python scripts/generate_legal_embeddings.py \
             --batch-size "${{ inputs.batch_size }}" \
             --max-chunks "${{ inputs.max_chunks }}"
