@@ -130,6 +130,12 @@ _TOPIC_MARKERS = (
                       "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
                       "travail de nuit", "travail le dimanche", "venir le dimanche",
                       "travailler le dimanche", "venir travailler le dimanche")),
+    ("WORKPLACE_INCIDENT_AND_AGENT_PROTECTION", (
+        "agresse par un usager", "agressee par un usager", "agression par un usager",
+        "agression d un usager", "agression au travail", "agent victime d une agression",
+        "violence d un usager", "menace d un usager", "usager m a frappe",
+        "refuse que je fasse un rapport", "refuse de faire un rapport",
+    )),
     ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "citis", "accident de service",
                                        "maladie professionnelle", "conge longue maladie",
                                        "conge longue duree")),

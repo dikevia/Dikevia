@@ -233,3 +233,12 @@ def test_qualification_uses_selected_versant_and_flags_cross_versant_cases():
         public_service="FPE",
     )
     assert wrong_branch["scope_status"] == "OUT_OF_SCOPE_FPT"
+
+
+def test_aggression_by_service_user_is_qualified_as_workplace_incident():
+    result = qualify_legal_question(
+        "Je suis titulaire de la FPT. J'ai été agressé par un usager et mon chef refuse que je fasse un rapport."
+    )
+    assert result["topic"] == "WORKPLACE_INCIDENT_AND_AGENT_PROTECTION"
+    assert result["agent_status"] == "TITULAIRE_EXPLICIT"
+    assert result["public_service"] == "FPT"

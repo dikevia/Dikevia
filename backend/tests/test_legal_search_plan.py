@@ -528,3 +528,43 @@ def test_personal_convenience_availability_does_not_get_diluted_by_generic_mobil
     assert "décret 86-68" in queries[1]
     assert "CGFP positions statutaires" in queries[2]
     assert all("suivi conjoint" not in item for item in queries)
+
+
+def test_ambiguous_hierarchical_convocation_with_union_support_does_not_assume_procedure():
+    question = (
+        "Je suis titulaire de la fonction publique territoriale, "
+        "puis-je être accompagné d'un syndicat lors d'une convocation par ma hiérarchie ?"
+    )
+
+    # The question does not establish whether this is an ordinary interview,
+    # an administrative inquiry or disciplinary proceedings. Ask for context
+    # before selecting competing legal research routes.
+    assert build_official_research_axes(question) == []
+
+
+def test_explicit_disciplinary_hierarchical_convocation_keeps_both_research_axes():
+    question = (
+        "Je suis titulaire de la fonction publique territoriale. "
+        "Puis-je être accompagné d'un syndicat lors d'une convocation "
+        "par ma hiérarchie pour un entretien disciplinaire ?"
+    )
+    axes = build_official_research_axes(question)
+    joined = " ".join(axes).casefold()
+
+    assert any("entretien hiérarchique ordinaire" in axis for axis in axes)
+    assert any("procédure disciplinaire" in axis for axis in axes)
+    assert "droits de la défense" in joined
+
+
+def test_agent_assaulted_by_service_user_retrieves_protection_and_workplace_safety_axes():
+    question = (
+        "Je suis titulaire de la FPT. J'ai été agressé par un usager "
+        "et mon chef ne veut pas que je fasse de rapport car il connaît l'usager."
+    )
+    axes = build_official_research_axes(question)
+    joined = " ".join(axes).casefold()
+
+    assert any("protection fonctionnelle" in axis for axis in axes)
+    assert any("santé sécurité travail" in axis for axis in axes)
+    assert any("rapport circonstancié" in axis for axis in axes)
+    assert len(axes) >= 2

@@ -408,6 +408,29 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
+        ("convocation par ma hierarchie", "convocation par mon chef",
+         "convocation par la hierarchie", "entretien avec ma hierarchie",
+         "entretien hierarchique", "accompagne d un syndicat",
+         "accompagne par un representant syndical",
+         "accompagne par un representant du personnel"),
+        (
+            "agent public convocation entretien hiérarchique ordinaire accompagnement syndical présence représentant syndical conditions",
+            "fonction publique territoriale procédure disciplinaire convocation audition droits de la défense assistance conseil représentant syndical décret 89-677",
+        ),
+    ),
+    (
+        ("agresse par un usager", "agressee par un usager",
+         "agression par un usager", "agression d un usager",
+         "agent victime d une agression", "violence d un usager",
+         "menace d un usager", "usager m a frappe",
+         "refuse que je fasse un rapport", "refuse de faire un rapport",
+         "rapport d incident agent public"),
+        (
+            "agent public territorial victime agression usager protection fonctionnelle collectivité territoriale obligation de protection violences",
+            "fonction publique territoriale santé sécurité travail signalement écrit incident agression usager rapport circonstancié déclaration accident service prévention employeur décret 85-603",
+        ),
+    ),
+    (
         ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
          "indemnites horaires pour travaux supplementaires", "travaux supplementaires",
          "rester apres mon horaire",
@@ -506,7 +529,7 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service", "agression au travail", "poursuivi penalement", "poursuites penales", "agent victime de harcelement", "signalement de harcelement"),
+        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service", "agression au travail", "agresse par un usager", "agressee par un usager", "agression par un usager", "agression d un usager", "violence d un usager", "refuse que je fasse un rapport", "refuse de faire un rapport", "poursuivi penalement", "poursuites penales", "agent victime de harcelement", "signalement de harcelement"),
         (
             "protection fonctionnelle agent territorial CGFP obligation collectivité territoriale",
             "jurisprudence Conseil d'État protection fonctionnelle agents publics territoriaux conditions refus",
@@ -877,6 +900,34 @@ def build_official_research_axes(question: str) -> list[str]:
     ):
         return []
     folded = _fold(original)
+    # An invitation to bring a union representative to an unspecified
+    # hierarchical summons is not enough to classify the procedure. The
+    # chatbot asks for clarification first; do not turn the competing
+    # ordinary-interview and disciplinary routes into mandatory answer axes.
+    union_assistance_markers = (
+        "accompagne d un syndicat",
+        "accompagne par un syndicat",
+        "accompagne d un representant syndical",
+        "accompagne par un representant syndical",
+        "assiste par un representant syndical",
+        "venir avec mon syndicat",
+        "venir avec un syndicat",
+        "assistance syndicale lors d une convocation",
+        "accompagnement syndical lors d une convocation",
+    )
+    explicit_procedure_markers = (
+        "procedure disciplinaire",
+        "entretien disciplinaire",
+        "entretien ordinaire",
+        "simple entretien",
+        "enquete administrative",
+        "audition disciplinaire",
+    )
+    if (
+        any(_contains_trigger(folded, marker) for marker in union_assistance_markers)
+        and not any(_contains_trigger(folded, marker) for marker in explicit_procedure_markers)
+    ):
+        return []
     if _is_contractual_evaluation_question(original):
         return [
             "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations révision CCP"
@@ -933,9 +984,22 @@ def build_official_research_axes(question: str) -> list[str]:
             and not independent_working_time_present
         ):
             continue
-        if not any(_contains_trigger(folded, trigger) for trigger in triggers):
+        matched_triggers = [
+            trigger for trigger in triggers
+            if _contains_trigger(folded, trigger)
+        ]
+        if not matched_triggers:
             continue
         if triggers == contract_triggers and other_topic_present:
+            continue
+        # These are compound situations with two legally distinct research
+        # dimensions. Preserve both axes instead of collapsing each tuple to
+        # its first query (which silently discarded the second dimension).
+        if (
+            "convocation par ma hierarchie" in triggers
+            or "agresse par un usager" in triggers
+        ):
+            axes_found.extend(axis[:500] for axis in axes[:2])
             continue
         axes_found.append(axes[0][:500])
     return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
