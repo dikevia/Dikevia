@@ -1033,13 +1033,13 @@ def test_structured_answer_parser_accepts_only_pure_or_fenced_json_objects():
 
     valid = '{"claims": []}'
     assert parse_structured_answer(valid) == {"claims": []}
-    assert parse_structured_answer("```json\\n" + valid + "\\n```") == {"claims": []}
-    assert parse_structured_answer("```\\n" + valid + "\\n```") == {"claims": []}
+    assert parse_structured_answer("```json\n" + valid + "\n```") == {"claims": []}
+    assert parse_structured_answer("```\n" + valid + "\n```") == {"claims": []}
 
     for invalid in (
         "Voici la réponse : " + valid,
-        valid + "\\nVoici la réponse.",
-        "```json\\n" + valid,
+        valid + "\nVoici la réponse.",
+        "```json\n" + valid,
         "[1, 2, 3]",
         "{claims: []}",
         "",
@@ -1194,7 +1194,7 @@ def test_research_plan_normalizes_whitespace_before_matching_verbatim_evidence()
                 },
                 {
                     "fact": "Même fait avec une mise en page différente.",
-                    "evidence_quote": "titulaire de la FPT.\\nJe remplace   un collègue\\tpendant un an et 11 mois",
+                    "evidence_quote": "titulaire de la FPT.\nJe remplace   un collègue\tpendant un an et 11 mois",
                 },
                 {
                     "fact": "Fait non présent dans la question.",
@@ -1203,8 +1203,8 @@ def test_research_plan_normalizes_whitespace_before_matching_verbatim_evidence()
             ],
         }, ensure_ascii=False),
         question=(
-            "Je suis titulaire de la FPT.\\n"
-            "Je remplace   un collègue\\tpendant un an et 11 mois."
+            "Je suis titulaire de la FPT.\n"
+            "Je remplace   un collègue\tpendant un an et 11 mois."
         ),
     )
     assert plan is not None
