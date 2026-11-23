@@ -189,16 +189,25 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements-embeddings.txt
-      - name: Require the dedicated staging ingestion credential
+      - name: Verify dedicated staging database identity
         run: |
           test -n "$LEGAL_CORPUS_INGEST_DATABASE_URL"
           python - <<'PY'
-          import os
-          from urllib.parse import urlparse
-          url = urlparse(os.environ["LEGAL_CORPUS_INGEST_DATABASE_URL"])
-          assert url.username == "cfdt_juris_ingest", "Dedicated ingestion role required"
-          assert "billowing-haze" in (url.hostname or ""), "This job is restricted to Neon staging"
-          print("Dedicated staging database credential verified; secret value is not displayed.")
+          import os, asyncio, asyncpg
+          async def main():
+              conn = await asyncpg.connect(os.environ["LEGAL_CORPUS_INGEST_DATABASE_URL"])
+              try:
+                  identity = await conn.fetchval("SELECT current_user")
+                  marker = await conn.fetchval(
+                      "SELECT marker FROM public.dikevia_staging_guard WHERE marker=$1",
+                      "br-billowing-haze-bd5a1cns",
+                  )
+                  assert identity == "cfdt_juris_ingest", "Dedicated ingestion role required"
+                  assert marker == "br-billowing-haze-bd5a1cns", "This job is restricted to Neon staging"
+                  print("Dedicated staging database identity verified; secret value is not displayed.")
+              finally:
+                  await conn.close()
+          asyncio.run(main())
           PY
       - name: Install local CPU embedding dependencies
         run: |
