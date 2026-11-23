@@ -146,6 +146,7 @@ MÉTHODE DE COMPRÉHENSION ET DE RESTITUTION DES SOURCES :
 - Distingue la période de la situation (début, fin, situation toujours en cours) de la date d’entrée en vigueur des textes. La première vient des faits déclarés ; la seconde doit être vérifiée dans les métadonnées et versions officielles fournies.
 - Pour une situation continue ou couvrant plusieurs dates, compare explicitement les sources datées du début et de la fin lorsqu'elles sont fournies. Distingue une rédaction identique d'une rédaction différente et cite la version correspondant à chaque borne.
 - Un résultat retrouvé à une seule borne ne prouve ni l'abrogation ni l'inapplicabilité à l'autre borne.
+- Si une source est marquée version_endpoint=START ou END, toute proposition qui s'appuie sur elle doit être explicitement datée à la borne correspondante ; ne transforme jamais cette preuve ponctuelle en règle valable pendant toute la période.
 - Une comparaison aux deux bornes ne prouve pas l'absence de modification intermédiaire : ne conclus jamais sur toute la période si les dates d'effet ou les versions intermédiaires ne sont pas documentées.
 - La date des faits n'est pas un préalable à la recherche ni à une première explication utile. Si elle manque, réponds à partir du droit actuel et ne demande cette précision que si elle est réellement nécessaire pour conclure sur la situation individuelle.
 - En cas de divergence entre sources, expose précisément les deux rédactions et leur date ; ne tranche pas et n'émets pas d'avis sur la situation individuelle.
@@ -740,6 +741,7 @@ Tu ne réponds pas à la question juridique et tu n'utilises aucune connaissance
 Tu dois vérifier deux conditions indépendantes : (1) la proposition est entièrement et directement impliquée par le texte fourni ; (2) elle répond réellement à la question actuelle de l'agent. Pour une source dont source_type vaut CGFP_SNAPSHOT et reference_role vaut CGFP_SNAPSHOT_FALLBACK_EVIDENCE, vérifie uniquement que la proposition décrit exactement la rédaction reproduite ; rejette toute affirmation qui prétend que cette rédaction est actuellement en vigueur ou applicable à une date historique. Une proposition peut être exacte au regard d'un texte mais hors sujet par rapport à la question : dans ce cas, réponds INSUFFICIENT.
 Le champ versant_selectionne du message utilisateur fixe le contexte de portée. Une source propre à un autre versant ne peut pas soutenir une affirmation, même si son texte semble l'étayer ; une disposition commune exige une preuve explicite de cette portée dans le texte.
 Contrôle notamment : correspondance entre la question actuelle et le sujet précis de la proposition, même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
+Pour une période de faits couvrant plusieurs dates, une version récupérée uniquement au début (version_endpoint=START) ou à la fin (version_endpoint=END) ne prouve que son état à cette date précise. La proposition doit nommer explicitement la date ISO correspondante et ne peut pas généraliser à toute la période. Une date de début ou de fin ne doit jamais être présentée comme une vérification continue entre les deux bornes.
 Une simple proximité de vocabulaire, un thème commun ou une citation exacte ne suffisent jamais.
 Si un élément de la proposition n'est pas expressément établi, si le texte est ambigu, incomplet, contradictoire, ou si une condition/exception empêche une conclusion certaine, réponds INSUFFICIENT.
 Si le texte contredit la proposition, réponds CONTRADICTED.
@@ -784,8 +786,13 @@ def _entailment_tokens(value):
     return tokens - _ENTAILMENT_STOPWORDS
 
 
-def _claim_facts_missing_from_quote(claim_text, quote):
+def _claim_facts_missing_from_quote(claim_text, quote, allowed_dates=None):
     quote_folded = _normalize_entailment_text(quote).casefold()
+    allowed = {
+        _normalize_entailment_text(str(value)).casefold()
+        for value in (allowed_dates or [])
+        if value
+    }
     missing_numbers = [
         item for item in _ENTAILMENT_NUMBER_RE.findall(claim_text)
         if _normalize_entailment_text(item).casefold() not in quote_folded
@@ -793,6 +800,7 @@ def _claim_facts_missing_from_quote(claim_text, quote):
     missing_dates = [
         item for item in _ENTAILMENT_DATE_RE.findall(claim_text)
         if _normalize_entailment_text(item).casefold() not in quote_folded
+        and _normalize_entailment_text(item).casefold() not in allowed
     ]
     return missing_numbers, missing_dates
 
@@ -832,7 +840,9 @@ def validate_entailment_verdicts(payload, claims, sources):
         if not isinstance(support_quote, str) or len(support_quote.strip()) < 20:
             invalid.append(f"verdict_{index}:support_quote_missing")
             continue
-        source_text = str(matched[0].get("text") or matched[0].get("full_text") or matched[0].get("excerpt") or "")
+        source_text = str(matched[0].get("excerpt") or matched[0].get("text") or "")[:1800]
+        if not source_text:
+            source_text = str(matched[0].get("full_text") or "")[:1800]
         normalized_quote = _normalize_entailment_text(support_quote)
         if normalized_quote not in _normalize_entailment_text(source_text):
             invalid.append(f"verdict_{index}:support_quote_not_in_source")
@@ -844,8 +854,12 @@ def validate_entailment_verdicts(payload, claims, sources):
         if len(claim_tokens) < 2 or overlap < 0.25:
             invalid.append(f"verdict_{index}:support_quote_not_relevantly_aligned")
             continue
+        endpoint_dates = (
+            [matched[0].get("requested_effective_date")]
+            if matched[0].get("version_endpoint") in {"START", "END"} else []
+        )
         missing_numbers, missing_dates = _claim_facts_missing_from_quote(
-            str(claim.get("text") or ""), normalized_quote
+            str(claim.get("text") or ""), normalized_quote, endpoint_dates
         )
         if missing_numbers or missing_dates:
             invalid.append(f"verdict_{index}:support_quote_missing_claim_facts")
@@ -859,7 +873,7 @@ def validate_entailment_verdicts(payload, claims, sources):
     }
 
 
-async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict], public_service: str = "FPT", allow_local_documents: bool = False) -> dict:
+async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict], public_service: str = "FPT", allow_local_documents: bool = False, facts_period: dict | None = None) -> dict:
     """Ask the configured model for a conservative second-stage entailment check.
 
     This is an additional probabilistic safeguard, not a legal certification.
@@ -880,7 +894,16 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
         source = matches[0]
         if source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"} and not allow_local_documents:
             return {"valid": False, "invalid": [f"claim_{index}:local_document_ai_transfer_disabled"]}
-        evidence_text = str(source.get("text") or source.get("full_text") or source.get("excerpt") or "")[:12000]
+        evidence_text = str(source.get("excerpt") or source.get("text") or "")[:12000]
+        if not evidence_text:
+            evidence_text = str(source.get("full_text") or "")[:1800]
+        period = facts_period or {}
+        if source.get("version_endpoint") == "START":
+            requested_effective_date = period.get("period_start") or period.get("facts_reference_date")
+        elif source.get("version_endpoint") == "END":
+            requested_effective_date = period.get("period_end") or period.get("reference_date_for_retrieval") or period.get("facts_reference_date")
+        else:
+            requested_effective_date = period.get("facts_reference_date")
         evidence.append({
             "claim_index": index,
             "source_id": claim.get("source_id"),
@@ -891,6 +914,11 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             "source_status": source.get("source_status"),
             "snapshot_modified_at": source.get("snapshot_modified_at"),
             "temporal_status": source.get("temporal_status"),
+            "facts_period": period,
+            "requested_effective_date": requested_effective_date,
+            "version_endpoint": source.get("version_endpoint"),
+            "valid_from": source.get("valid_from"),
+            "valid_to": source.get("valid_to"),
             **({"research_axis": claim.get("axis")} if claim.get("axis") else {}),
             "official_text": evidence_text,
         })

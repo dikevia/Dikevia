@@ -534,3 +534,23 @@ def test_explicit_common_scope_is_eligible_for_all_three_versants():
         assert result["scope"] == "COMMON_PUBLIC_SERVICE"
         assert result["analysis_eligible"] is True
         assert result["claim_eligible"] is True
+
+
+def test_mixed_fpt_and_fpe_instrument_is_not_classified_as_fpt_proof():
+    result = classify_public_service_scope({
+        "title": "Décret relatif aux agents territoriaux et aux agents de l'État",
+        "text": "Les agents territoriaux et les agents de l'État sont concernés.",
+    })
+    assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+    assert result["analysis_eligible"] is False
+    assert result["claim_eligible"] is False
+
+
+def test_scope_classification_uses_relevant_excerpt_before_unrelated_full_text():
+    result = classify_public_service_scope({
+        "title": "Dispositions statutaires des agents",
+        "excerpt": "Les agents territoriaux et les collectivités territoriales sont concernés.",
+        "full_text": "Les agents de l'État et les administrations centrales sont concernés.",
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True
