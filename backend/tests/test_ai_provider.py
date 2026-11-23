@@ -1304,3 +1304,55 @@ async def test_gemini_availability_check_distinguishes_quota_from_generic_http_e
 
     result = await check_provider_availability(transport=httpx.MockTransport(handler))
     assert result == {"status": "QUOTA_OR_RATE_LIMIT", "http_status": 429}
+
+
+@pytest.mark.asyncio
+async def test_chat_completion_retries_once_after_transient_503(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    calls = {"count": 0}
+
+    def handler(request):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return httpx.Response(503, request=request, json={"error": {"message": "temporarily overloaded"}})
+        return httpx.Response(200, request=request, json={"choices": [{"message": {"content": "ok"}}]})
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client, "https://example.test/v1/chat/completions",
+            headers={"Authorization": "Bearer test"}, payload={"model": "test"},
+        )
+
+    assert response.status_code == 200
+    assert calls["count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_chat_completion_does_not_retry_auth_or_quota_errors(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    calls = {"count": 0}
+
+    def handler(request):
+        calls["count"] += 1
+        return httpx.Response(429, request=request, json={"error": {"message": "quota exceeded"}})
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(httpx.HTTPStatusError):
+            await ai_provider._post_chat_completion(
+                client, "https://example.test/v1/chat/completions",
+                headers={"Authorization": "Bearer test"}, payload={"model": "test"},
+            )
+
+    assert calls["count"] == 1
