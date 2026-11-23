@@ -97,3 +97,27 @@ def test_validate_repository_quality_benchmark_schema():
     assert questions[0]["id"] == "FPT-001"
     assert questions[0]["expected_failure_modes"]
     assert "Intention attendue" in questions[0]["expected_criteria"][0]
+
+
+def test_canonical_benchmark_review_uses_its_declared_five_dimension_release_gate(tmp_path):
+    dataset_path = ROOT / "docs" / "quality" / "fpt_chatbot_eval_v1.json"
+    responses_path = tmp_path / "responses.json"
+    review_path = tmp_path / "review.json"
+    results_path = tmp_path / "results.json"
+    responses = [
+        {"id": f"FPT-{i:03d}", "answer": f"Answer {i}", "sources": [], "verification_status": "PARTIELLEMENT_VERIFIE"}
+        for i in range(1, 101)
+    ]
+    responses_path.write_text(json.dumps({"responses": responses}), encoding="utf-8")
+    benchmark.prepare_review(str(dataset_path), str(responses_path), str(review_path))
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert set(review[0]["evaluations"]) == set(benchmark.CANONICAL_DIMENSIONS)
+    for item in review:
+        item["evaluations"] = {dimension: 2 for dimension in benchmark.CANONICAL_DIMENSIONS}
+        item["question_relevance"] = True
+        item["source_support"] = True
+        item["severite"] = "conforme"
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    result = benchmark.score(str(dataset_path), str(responses_path), str(review_path), str(results_path))
+    assert result["score_global_sur_max"] == 10.0
+    assert result["release_gate"]["status"] == "PASS"
