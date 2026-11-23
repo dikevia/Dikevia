@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     document_storage_bucket: str = ""
     cgfp_index_path: str = ""
     cgfp_enabled: bool = True
+    vector_search_enabled: bool = False
     ai_api_base_url: str = ""
     ai_api_key: str = ""
     ai_model: str = ""
