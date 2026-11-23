@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote, urlparse
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool, assert_runtime_role_is_safe
-from .dependencies import get_principal, get_tenant_context, get_tenant_identity, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
+from .dependencies import get_principal, get_tenant_context, get_tenant_identity, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_org_admin_for_external, require_legal_editor_for_external, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
@@ -49,7 +49,7 @@ logger.setLevel(logging.INFO)
 
 async def _startup_external_diagnostics() -> None:
     """Non-billable startup checks: PISTE ping/search and AI model catalog only."""
-    if settings.app_env != "production":
+    if settings.app_env != "production" or not settings.startup_external_diagnostics_enabled:
         return
 
     logger.warning(
@@ -245,15 +245,20 @@ async def lifespan(app: FastAPI):
     await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
     if settings.database_url:
         await assert_runtime_role_is_safe()
-    external_diagnostic_task = asyncio.create_task(_startup_external_diagnostics())
-    ai_diagnostic_task = asyncio.create_task(_startup_ai_provider_diagnostic())
+    diagnostics_enabled = settings.app_env == "production" and settings.startup_external_diagnostics_enabled
+    diagnostic_tasks = (
+        [asyncio.create_task(_startup_external_diagnostics()),
+         asyncio.create_task(_startup_ai_provider_diagnostic())]
+        if diagnostics_enabled else []
+    )
     try:
         yield
     finally:
-        for task in (external_diagnostic_task, ai_diagnostic_task):
+        for task in diagnostic_tasks:
             if not task.done():
                 task.cancel()
-        await asyncio.gather(external_diagnostic_task, ai_diagnostic_task, return_exceptions=True)
+        if diagnostic_tasks:
+            await asyncio.gather(*diagnostic_tasks, return_exceptions=True)
         await close_pool()
 
 app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifespan=lifespan,
@@ -529,9 +534,9 @@ async def platform_commercial_organizations(platform=Depends(require_platform_ad
 
 
 @app.post("/api/v1/billing/checkout")
-async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin)):
-    if settings.private_instance_mode:
-        raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
+async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin_for_external)):
+    if settings.private_instance_mode or not settings.stripe_billing_enabled:
+        raise HTTPException(404, "Les paiements sont désactivés.")
     # Do not accept payments until the monthly credit ledger and enforcement are live.
     raise HTTPException(
         503,
@@ -540,9 +545,9 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
 
 
 @app.post("/api/v1/billing/portal")
-async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
-    if settings.private_instance_mode:
-        raise HTTPException(404, "La facturation est désactivée sur cette instance privée.")
+async def billing_portal(ctx: TenantContext = Depends(require_org_admin_for_external)):
+    if settings.private_instance_mode or not settings.stripe_billing_enabled:
+        raise HTTPException(404, "La facturation est désactivée.")
     if not settings.stripe_secret_key:
         raise HTTPException(503, "Le portail de facturation n'est pas encore configuré.")
     customer_id = await ctx.conn.fetchval("SELECT provider_customer_id FROM subscriptions WHERE organization_id=$1::uuid", ctx.organization_id)
@@ -562,8 +567,8 @@ async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
 
 @app.post("/api/v1/billing/stripe/webhook")
 async def stripe_webhook(request: Request):
-    if settings.private_instance_mode:
-        raise HTTPException(404, "Les webhooks de paiement sont désactivés sur cette instance privée.")
+    if settings.private_instance_mode or not settings.stripe_billing_enabled:
+        raise HTTPException(404, "Les webhooks de paiement sont désactivés.")
     raw = await request.body()
     signature = request.headers.get("stripe-signature")
     if not verify_stripe_signature(raw, signature, settings.stripe_webhook_secret):
