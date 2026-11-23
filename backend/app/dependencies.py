@@ -57,6 +57,33 @@ async def get_tenant_context(
             yield TenantContext(principal, org_id, str(row["user_id"]), row["role"], conn)
 
 
+async def get_tenant_identity(
+    principal: Principal = Depends(get_principal),
+    x_organization_id: str | None = Header(default=None, alias="X-Organization-ID"),
+):
+    """Resolve tenant membership without holding a connection during downstream work."""
+    if not x_organization_id:
+        raise HTTPException(400, "Sélectionnez une organisation.")
+    try:
+        org_id = str(UUID(x_organization_id))
+    except ValueError:
+        raise HTTPException(400, "Identifiant d'organisation invalide.")
+    async with get_pool().acquire() as conn:
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", principal.issuer)
+            await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", principal.subject)
+            row = await conn.fetchrow("""
+                SELECT u.id user_id, m.role FROM users u
+                JOIN memberships m ON m.user_id=u.id
+                JOIN organizations o ON o.id=m.organization_id
+                WHERE u.oidc_issuer=$1 AND u.oidc_subject=$2 AND u.status='ACTIVE'
+                AND m.status='ACTIVE' AND o.status='ACTIVE' AND o.id=$3::uuid
+            """, principal.issuer, principal.subject, org_id)
+    if not row:
+        raise HTTPException(403, "Accès à cette organisation refusé.")
+    return TenantContext(principal, org_id, str(row["user_id"]), row["role"], None)
+
+
 async def require_org_admin(ctx: TenantContext = Depends(get_tenant_context)):
     if ctx.role != "ORG_ADMIN":
         raise HTTPException(403, "Permission insuffisante.")
