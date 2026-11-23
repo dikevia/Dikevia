@@ -276,7 +276,7 @@ app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
 @app.get("/auth-config.js", include_in_schema=False)
 async def browser_oidc_configuration():
     """Expose only public OIDC client settings; never return provider secrets."""
-    if not settings.oidc_client_id:
+    if not settings.oidc_client_id or not settings.oidc_issuer:
         return Response(
             "/* Runtime OIDC override not configured; use the static fallback. */",
             media_type="application/javascript",
