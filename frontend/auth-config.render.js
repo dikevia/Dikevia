@@ -6,5 +6,5 @@ window.CFDT_JURIS_OIDC = {
   "client_id": "cfdt-juris-web",
   "redirect_uri": appOrigin + "/",
   "silent_redirect_uri": appOrigin + "/static/silent-check-sso.html",
-  "scopes": "openid profile email"
+  "scopes": "openid"
 };
