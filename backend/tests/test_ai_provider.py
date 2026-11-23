@@ -1255,3 +1255,52 @@ def test_undated_non_normative_guidance_can_reach_ai_as_context_only():
         "legal_assurance": {"reference_role": "NON_NORMATIVE_CONTEXT_ONLY"},
     }
     assert _usable_document_sources([unsafe]) == []
+
+
+@pytest.mark.asyncio
+async def test_gemini_availability_check_reports_http_failure_without_exposing_api_key(monkeypatch, caplog):
+    import httpx
+    import logging
+    from app.ai_provider import check_provider_availability
+
+    secret = "test-gemini-secret-never-log"
+    monkeypatch.setattr(settings, "ai_api_key", secret)
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
+    monkeypatch.setattr(
+        settings, "ai_api_base_url",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+
+    def handler(request):
+        assert request.url.path.endswith("/v1beta/models/gemini-2.5-flash")
+        return httpx.Response(
+            403, request=request,
+            json={"error": {"message": "API key not authorized"}},
+        )
+
+    caplog.set_level(logging.WARNING, logger="app.ai_provider")
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+
+    assert result == {"status": "AUTH_ERROR", "http_status": 403}
+    assert "AI_PROVIDER_REQUEST_FAILED" in caplog.text
+    assert "http_status=403" in caplog.text
+    assert secret not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_gemini_availability_check_distinguishes_quota_from_generic_http_error(monkeypatch):
+    import httpx
+    from app.ai_provider import check_provider_availability
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
+    monkeypatch.setattr(
+        settings, "ai_api_base_url",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+
+    def handler(request):
+        return httpx.Response(429, request=request, json={"error": {"message": "quota exceeded"}})
+
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+    assert result == {"status": "QUOTA_OR_RATE_LIMIT", "http_status": 429}
