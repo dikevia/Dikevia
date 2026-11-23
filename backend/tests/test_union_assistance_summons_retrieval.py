@@ -48,3 +48,18 @@ def test_corpus_query_expansion_targets_assistance_and_defence_not_union_facilit
     assert "représentant syndical" in joined
     assert "défenseur de son choix" in joined
     assert "autorisations spéciales d'absence" not in joined
+
+def test_ambiguous_union_assistance_summons_asks_for_procedure_type():
+    from app.legal_search_plan import clarification_for_union_assistance_summons
+
+    assert clarification_for_union_assistance_summons(QUESTION) == (
+        "Pour identifier les règles applicables, votre convocation concerne-t-elle "
+        "un entretien hiérarchique ordinaire, une procédure disciplinaire, ou une autre "
+        "procédure (par exemple une enquête administrative) ?"
+    )
+    assert clarification_for_union_assistance_summons(
+        QUESTION + " Il s'agit d'une procédure disciplinaire."
+    ) is None
+    assert clarification_for_union_assistance_summons(
+        QUESTION + " C'est un simple entretien ordinaire."
+    ) is None
