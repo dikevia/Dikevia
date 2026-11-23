@@ -111,13 +111,20 @@ def verify_access_token(token: str) -> Principal:
         if expires_at - issued_at > MAX_ACCESS_TOKEN_LIFETIME_SECONDS:
             raise reject("lifetime_excessive")
 
-        email = claims.get("email")
+        email = claims.get(settings.oidc_email_claim)
         if email is not None and (not isinstance(email, str) or len(email) > 320):
             email = None
-        verified = claims.get("email_verified") is True
+        verified = claims.get(settings.oidc_email_verified_claim) is True
+        canonical_subject = subject
+        if settings.oidc_identity_subject_prefix:
+            if canonical_subject.startswith(settings.oidc_identity_subject_prefix):
+                canonical_subject = canonical_subject[len(settings.oidc_identity_subject_prefix):]
+            if not canonical_subject:
+                raise reject("sub_compat_mapping_invalid")
+        canonical_issuer = settings.oidc_identity_compat_issuer or issuer
         return Principal(
-            subject=subject,
-            issuer=issuer,
+            subject=canonical_subject,
+            issuer=canonical_issuer,
             email=email,
             email_verified=verified,
         )
