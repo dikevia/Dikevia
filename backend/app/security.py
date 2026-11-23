@@ -117,12 +117,17 @@ def verify_access_token(token: str) -> Principal:
         verified = claims.get(getattr(settings, "oidc_email_verified_claim", "email_verified")) is True
         canonical_subject = subject
         compat_prefix = getattr(settings, "oidc_identity_subject_prefix", "")
+        compat_issuer = getattr(settings, "oidc_identity_compat_issuer", "")
+        if bool(compat_prefix) != bool(compat_issuer):
+            raise reject("sub_compat_mapping_incomplete", 503, "La correspondance d'identité est incomplète.")
+        canonical_issuer = issuer
         if compat_prefix:
-            if canonical_subject.startswith(compat_prefix):
-                canonical_subject = canonical_subject[len(compat_prefix):]
+            if not canonical_subject.startswith(compat_prefix):
+                raise reject("sub_compat_prefix_missing")
+            canonical_subject = canonical_subject[len(compat_prefix):]
             if not canonical_subject:
                 raise reject("sub_compat_mapping_invalid")
-        canonical_issuer = getattr(settings, "oidc_identity_compat_issuer", "") or issuer
+            canonical_issuer = compat_issuer
         return Principal(
             subject=canonical_subject,
             issuer=canonical_issuer,
