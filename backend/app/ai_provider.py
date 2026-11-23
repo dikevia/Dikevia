@@ -490,7 +490,7 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
-            response = await _post_chat_completion(client, _provider_api_base() + "/chat/completions", headers=headers, json=payload)
+            response = await _post_chat_completion(client, _provider_api_base() + "/chat/completions", headers=headers, payload=payload)
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
@@ -548,7 +548,7 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
-            response = await _post_chat_completion(client, base + "/chat/completions", headers=headers, json=payload)
+            response = await _post_chat_completion(client, base + "/chat/completions", headers=headers, payload=payload)
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
@@ -638,7 +638,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
-            response = await _post_chat_completion(client, base + "/chat/completions", headers=headers, json=payload)
+            response = await _post_chat_completion(client, base + "/chat/completions", headers=headers, payload=payload)
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
@@ -949,7 +949,7 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
             response = await _post_chat_completion(client, _provider_api_base() + "/chat/completions",
-                                         headers=headers, json=payload)
+                                         headers=headers, payload=payload)
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
