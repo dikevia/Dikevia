@@ -33,6 +33,7 @@ jobs:
           cache-dependency-path: |
             backend/requirements.txt
             backend/requirements-dev.txt
+            backend/requirements-embeddings.txt
       - name: Configure PostgreSQL client from the disposable service container
         run: |
           mkdir -p "$RUNNER_TEMP/pg-client"
