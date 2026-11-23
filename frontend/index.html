@@ -525,6 +525,34 @@ const auth=window.CFDT_JURIS_AUTH||null;
 const msg=(id,text,error=false)=>{const el=$(id);el.className='message'+(error?' error':'');el.textContent=text;};
 async function accessToken(){if(!auth||typeof auth.getAccessToken!=='function')throw new Error('Le module OIDC navigateur n’est pas configuré. Copiez auth-config.example.js en auth-config.js et renseignez le fournisseur.');if(auth.ready)await auth.ready;const value=await auth.getAccessToken();if(!value)throw new Error('Aucun jeton OIDC actif. Veuillez vous connecter.');return value;}
 async function api(path,options={}){token=await accessToken();const headers=new Headers(options.headers||{});headers.set('Authorization','Bearer '+token);if(activeOrg)headers.set('X-Organization-ID',activeOrg);if(options.body&&!(options.body instanceof FormData))headers.set('Content-Type','application/json');const response=await fetch(path,{...options,headers,cache:'no-store'});if(response.status===204)return null;const data=await response.json().catch(()=>({detail:'Réponse serveur illisible.'}));if(!response.ok){if(response.status===401){token=null;throw new Error('Session expirée. Reconnectez-vous.');}const error=new Error(data.detail||'Erreur API ('+response.status+').');error.status=response.status;throw error;}return data;}
+let legalEmbeddingWorker=null;
+let legalEmbeddingRequestId=0;
+const pendingLegalEmbeddings=new Map();
+function requestLegalQueryEmbedding(text){
+ if(window.DIKEVIA_VECTOR_SEARCH_ENABLED!==true)return Promise.resolve(null);
+ if(!('Worker' in window))return Promise.resolve(null);
+ if(!legalEmbeddingWorker){
+  try{
+   legalEmbeddingWorker=new Worker('/static/legal-embedding-worker.js',{type:'module'});
+   legalEmbeddingWorker.onmessage=e=>{
+    const data=e.data||{};const resolve=pendingLegalEmbeddings.get(data.id);
+    if(!resolve)return;
+    pendingLegalEmbeddings.delete(data.id);
+    resolve(Array.isArray(data.embedding)&&data.embedding.length===384?data.embedding:null);
+   };
+   legalEmbeddingWorker.onerror=()=>{
+    for(const resolve of pendingLegalEmbeddings.values())resolve(null);
+    pendingLegalEmbeddings.clear();
+    legalEmbeddingWorker.terminate();legalEmbeddingWorker=null;
+   };
+  }catch(_){return Promise.resolve(null);}
+ }
+ return new Promise(resolve=>{
+  const id=++legalEmbeddingRequestId;
+  pendingLegalEmbeddings.set(id,resolve);
+  legalEmbeddingWorker.postMessage({id,text});
+ });
+}
 function ensurePublicServiceSelection(){return new Promise(resolve=>{const old=document.getElementById('publicServicePicker');if(old)old.remove();const overlay=document.createElement('div');overlay.id='publicServicePicker';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','publicServiceTitle');overlay.innerHTML='<div class="public-service-dialog"><div class="public-service-eyebrow">DIKÉVIA · ASSISTANCE JURIDIQUE</div><h2 id="publicServiceTitle">Choisissez votre versant</h2><p>Le choix oriente la recherche juridique. Les règles communes aux trois versants restent accessibles.</p><div class="public-service-options"><button type="button" data-public-service="FPT"><strong>Fonction publique territoriale</strong><span>Communes, départements, régions et établissements territoriaux</span></button><button type="button" data-public-service="FPE"><strong>Fonction publique de l’État</strong><span>Ministères et administrations de l’État</span></button><button type="button" data-public-service="FPH"><strong>Fonction publique hospitalière</strong><span>Établissements publics de santé et établissements hospitaliers</span></button></div><div class="public-service-foot">Vous pourrez changer de versant en démarrant une nouvelle conversation.</div></div>';if(!document.getElementById('publicServicePickerStyles')){const style=document.createElement('style');style.id='publicServicePickerStyles';style.textContent='#publicServicePicker{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:20px;background:rgba(9,29,22,.72);backdrop-filter:blur(5px)}.public-service-dialog{width:min(100%,620px);padding:30px;border-radius:20px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.24)}.public-service-eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;color:#9a7a3e}.public-service-dialog h2{margin:10px 0;font-size:26px;color:#173b2e}.public-service-dialog p{margin:0 0 20px;color:#64746b;font-size:13px;line-height:1.6}.public-service-options{display:grid;gap:10px}.public-service-options button{display:grid;gap:5px;text-align:left;padding:15px 17px;border:1px solid #dce7df;border-radius:12px;background:#f9fbf9;color:#173b2e}.public-service-options button:hover{border-color:#54816b;background:#edf4ef}.public-service-options strong{font-size:14px}.public-service-options span{font-size:12px;font-weight:400;color:#68786f}.public-service-foot{margin-top:16px;font-size:11px;color:#7b887f}@media(max-width:520px){.public-service-dialog{padding:22px 17px}.public-service-dialog h2{font-size:22px}}';document.head.appendChild(style);}overlay.querySelectorAll('[data-public-service]').forEach(b=>b.addEventListener('click',()=>{selectedPublicService=b.dataset.publicService;overlay.remove();const label={FPT:'Fonction publique territoriale',FPE:'Fonction publique de l’État',FPH:'Fonction publique hospitalière'}[selectedPublicService];const sub=document.querySelector('.juris-chat-head .muted');if(sub)sub.textContent=label+' · Référentiel juridique adapté';applyPublicServiceInterface();resolve(selectedPublicService);}));document.body.appendChild(overlay);overlay.querySelector('[data-public-service="FPT"]').focus();});}
 function applyPublicServiceInterface(){
   const names={FPT:'fonction publique territoriale',FPE:'fonction publique de l’État',FPH:'fonction publique hospitalière'};
@@ -641,7 +669,7 @@ $('#askForm').addEventListener('submit',async e=>{
  const employer=$('#askEmployer').value;const factsStartDate=$('#askFactsStartDate').value||null;const factsEndDate=$('#askFactsEndDate').value||null;const situationOngoing=$('#askSituationOngoing').checked;const submit=$('#askSubmit');chatBusy=true;submit.disabled=true;submit.textContent='…';$('#askMessage').classList.add('hidden');
  addJurisMessage('user',question,{employer,factsStartDate,factsEndDate,situationOngoing});$('#askQuestion').value='';$('#askCharCount').textContent='0 / 5000';
  const typing=addJurisMessage('assistant','Analyse juridique en cours…');typing.querySelector('.juris-bubble').classList.add('juris-typing');
- try{const result=await api('/api/v1/chat/ask',{method:'POST',body:JSON.stringify({employer,public_service:selectedPublicService,facts_start_date:factsStartDate,facts_end_date:factsEndDate,situation_ongoing:situationOngoing,question,conversation_id:activeConversationId})});activeConversationId=result.conversation_id||activeConversationId;typing.remove();addJurisMessage('assistant',result.answer,{status:result.verification_status,missing:result.missing_information||[],disclaimer:result.disclaimer,clarificationQuestion:result.clarification_question,sources:result.sources||[]});await loadChatConversations();}
+ try{let queryEmbedding=null;if(window.DIKEVIA_VECTOR_SEARCH_ENABLED===true){typing.querySelector('.juris-bubble').textContent='Préparation de la recherche sémantique locale…';queryEmbedding=await requestLegalQueryEmbedding(question);}typing.querySelector('.juris-bubble').textContent='Analyse juridique en cours…';const result=await api('/api/v1/chat/ask',{method:'POST',body:JSON.stringify({employer,public_service:selectedPublicService,facts_start_date:factsStartDate,facts_end_date:factsEndDate,situation_ongoing:situationOngoing,question,query_embedding:queryEmbedding,conversation_id:activeConversationId})});activeConversationId=result.conversation_id||activeConversationId;typing.remove();addJurisMessage('assistant',result.answer,{status:result.verification_status,missing:result.missing_information||[],disclaimer:result.disclaimer,clarificationQuestion:result.clarification_question,sources:result.sources||[]});await loadChatConversations();}
  catch(err){typing.remove();addJurisMessage('assistant','La demande n’a pas pu être traitée : '+err.message+' Aucune réponse juridique de démonstration n’est générée.',{status:'NON_VERIFIE'});}
  finally{chatBusy=false;submit.disabled=false;submit.textContent='➤';$('#askQuestion').focus();}
 });
