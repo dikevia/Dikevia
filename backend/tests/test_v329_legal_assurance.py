@@ -406,6 +406,35 @@ def test_claim_may_be_scoped_to_the_verified_start_endpoint():
     assert result["valid"] is True
 
 
+@pytest.mark.parametrize("date_text", ["1er janvier 2024", "01/01/2024", "01-01-2024"])
+def test_start_endpoint_accepts_equivalent_french_and_numeric_date_formats(date_text):
+    from app.legal_assurance import validate_claim_evidence
+
+    result = validate_claim_evidence(
+        _period_claim(f"Au {date_text}, les agents territoriaux bénéficient d'une protection statutaire."),
+        [_period_source("START")],
+        facts_period={
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "reference_date_for_retrieval": "2024-12-31",
+            "ongoing": False,
+        },
+    )
+    assert result["valid"] is True
+
+
+def test_start_endpoint_still_rejects_a_different_french_date():
+    from app.legal_assurance import validate_claim_evidence
+
+    result = validate_claim_evidence(
+        _period_claim("Au 02/01/2024, les agents territoriaux bénéficient d'une protection statutaire."),
+        [_period_source("START")],
+        facts_period={"period_start": "2024-01-01", "period_end": "2024-12-31"},
+    )
+    assert result["valid"] is False
+    assert "claim_0:period_endpoint_not_date_scoped" in result["invalid_claims"]
+
+
 def test_start_endpoint_cannot_support_a_whole_period_assertion():
     from app.legal_assurance import validate_claim_evidence
 
