@@ -423,8 +423,12 @@ async def search_legal_corpus(
             item["snapshot_verification_status"] = item["raw_metadata"].get("verification_status")
         item["excerpt"] = item.pop("content")[:8500]
         item["retrieval_scope"] = (
-            "HYBRID_LEXICAL_VECTOR_SELECTED_PASSAGES"
+            "HYBRID_LEXICAL_VECTOR_TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK"
+            if vector_literal is not None and item.get("document_kind") == "ADMIN_CASELAW"
+            else "HYBRID_LEXICAL_VECTOR_SELECTED_PASSAGES"
             if vector_literal is not None
+            else "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            if item.get("document_kind") == "ADMIN_CASELAW"
             else "SELECTED_RELEVANT_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
         item["retrieval_mode"] = "HYBRID_LEXICAL_VECTOR" if vector_literal is not None else "LEXICAL_ONLY"
