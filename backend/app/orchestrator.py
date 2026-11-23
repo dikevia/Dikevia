@@ -577,6 +577,17 @@ class LegalOrchestrator:
             )
         except AIProviderUnavailable:
             logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
+        if research_plan is not None and research_plan.clarification_needed:
+            clarification = research_plan.clarification_needed
+            logger.info("Clarification juridique demandée avant recherche documentaire (request_id=%s).", request_id)
+            return AskResponse(
+                request_id=request_id,
+                verification_status="NON_VERIFIE",
+                answer=clarification,
+                clarification_question=clarification,
+                sources=[],
+                missing_information=[],
+            )
         if research_plan is not None:
             research_queries = merge_ai_and_fallback_research_queries(
                 research_plan.queries, fallback_queries, fallback_axes, max_queries=5,
@@ -1103,11 +1114,11 @@ class LegalOrchestrator:
                             stored_search_failed = True
                 # The client computes the user's original-question embedding locally.
                 # Generated research axes remain lexical so no server-side model is loaded.
-                if settings.vector_search_enabled and payload.query_embedding is not None:
+                if settings.vector_search_enabled and request.query_embedding is not None:
                     try:
                         vector_results = await search_legal_corpus(
-                            conn, payload.question, effective_date, limit=6,
-                            query_embedding=payload.query_embedding,
+                            conn, request.question, effective_date, limit=6,
+                            query_embedding=request.query_embedding,
                         )
                     except Exception as exc:
                         logger.warning("Recherche vectorielle indisponible ; maintien du repli lexical : %r", exc)
