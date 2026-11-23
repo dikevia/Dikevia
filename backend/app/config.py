@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 import re
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,8 +41,15 @@ class Settings(BaseSettings):
     ai_timeout_seconds: float = 25.0
     chat_rate_limit_per_minute: int = 10
     legifrance_environment: str = "sandbox"
-    legifrance_client_id: str = ""
-    legifrance_client_secret: str = ""
+    # Accept both documented LEGIFRANCE_* names and the common PISTE_* aliases.
+    # This prevents valid credentials configured under the provider name from
+    # being silently treated as absent by the staging runtime.
+    legifrance_client_id: str = Field(
+        default="", validation_alias=AliasChoices("LEGIFRANCE_CLIENT_ID", "PISTE_CLIENT_ID")
+    )
+    legifrance_client_secret: str = Field(
+        default="", validation_alias=AliasChoices("LEGIFRANCE_CLIENT_SECRET", "PISTE_CLIENT_SECRET")
+    )
     legifrance_scope: str = "openid"
     legifrance_timeout_seconds: float = 20.0
     legifrance_code_name: str = "Code général de la fonction publique"

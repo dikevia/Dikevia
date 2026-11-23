@@ -19,7 +19,12 @@ from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
-from .legal_search_plan import build_official_search_queries, build_official_research_axes, merge_ai_and_fallback_research_queries
+from .legal_search_plan import (
+    build_official_search_queries,
+    build_official_research_axes,
+    merge_ai_and_fallback_research_queries,
+    clarification_for_union_assistance_summons,
+)
 from .legal_qualification import (
     qualify_legal_question, build_contextual_research_question,
     CONVERSATION_HISTORY_MESSAGE_LIMIT,
@@ -588,6 +593,16 @@ class LegalOrchestrator:
         contextual_question = build_contextual_research_question(
             current_question, prior_user_questions, prior_assistant_messages,
         )
+        targeted_clarification = clarification_for_union_assistance_summons(contextual_question)
+        if targeted_clarification:
+            return AskResponse(
+                request_id=request_id,
+                verification_status="NON_VERIFIE",
+                answer=targeted_clarification,
+                clarification_question=targeted_clarification,
+                sources=[],
+                missing_information=[],
+            )
         # A genuine short follow-up inherits the immediate prior referent and,
         # where relevant, the personal-case classification. Independent new
         # questions never inherit unrelated topics or facts.
@@ -1625,7 +1640,7 @@ class LegalOrchestrator:
                 if provider_status.get("status") == "MODEL_DISABLED" and provider_status.get("reason") == "paid_plan_required":
                     missing.insert(
                         0,
-                        "Le modèle IA configuré est désactivé par le fournisseur : son activation exige une offre payante. Aucune inférence n'a été envoyée ; la réponse reste documentaire.",
+                        "Le fournisseur IA configuré refuse actuellement l'accès au modèle (accès ou crédits non activés sur le compte). Aucune inférence n'a été envoyée ; la réponse reste documentaire. Vérifiez l'accès au fournisseur ou configurez un endpoint IA autorisé.",
                     )
                 else:
                     status_label = str(provider_status.get("status") or "UNKNOWN")[:60]

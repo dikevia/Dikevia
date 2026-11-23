@@ -201,6 +201,25 @@ _LEGAL_QUERY_EXPANSIONS = {
     "cet": ("compte épargne temps", "compte épargne-temps"),
     "congé maladie": ("congé de maladie", "maladie ordinaire", "CMO"),
     "maladie ordinaire": ("congé de maladie", "CMO"),
+    "accompagné d'un syndicat": (
+        "convocation agent territorial entretien hiérarchique assistance représentant syndical",
+        "procédure disciplinaire fonction publique territoriale droits de la défense défenseur de son choix",
+        "entretien hiérarchique ordinaire accompagnement syndical conditions applicables",
+    ),
+    "accompagné d’un syndicat": (
+        "convocation agent territorial entretien hiérarchique assistance représentant syndical",
+        "procédure disciplinaire fonction publique territoriale droits de la défense défenseur de son choix",
+        "entretien hiérarchique ordinaire accompagnement syndical conditions applicables",
+    ),
+    "accompagné par un syndicat": (
+        "convocation agent territorial entretien hiérarchique assistance représentant syndical",
+        "procédure disciplinaire fonction publique territoriale droits de la défense défenseur de son choix",
+        "entretien hiérarchique ordinaire accompagnement syndical conditions applicables",
+    ),
+    "assistance syndicale lors d'une convocation": (
+        "convocation agent territorial entretien hiérarchique assistance représentant syndical",
+        "procédure disciplinaire fonction publique territoriale droits de la défense défenseur de son choix",
+    ),
     "protection fonctionnelle": ("protection juridique de l'agent", "assistance de la collectivité"),
     "harcèlement moral": ("agissements répétés", "dégradation des conditions de travail"),
     "temps de travail": ("durée du travail", "cycle de travail", "décompte du temps de travail"),
