@@ -1431,3 +1431,98 @@ async def test_chat_completion_does_not_retry_auth_or_quota_errors(monkeypatch):
             )
 
     assert calls["count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_provider_availability_caches_successful_read_only_probe(monkeypatch):
+    from types import SimpleNamespace
+    import app.ai_provider as ai_provider
+
+    monkeypatch.setattr(
+        ai_provider,
+        "settings",
+        SimpleNamespace(
+            ai_api_base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            ai_model="gemini-3.8-flash",
+            ai_api_key="test-key",
+        ),
+    )
+    calls = 0
+
+    async def fake_probe(*, transport=None):
+        nonlocal calls
+        calls += 1
+        return {"status": "AVAILABLE"}
+
+    monkeypatch.setattr(ai_provider, "_check_provider_availability_uncached", fake_probe)
+    ai_provider._clear_provider_availability_cache()
+
+    first = await ai_provider.check_provider_availability()
+    second = await ai_provider.check_provider_availability()
+
+    assert first == second == {"status": "AVAILABLE"}
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_provider_availability_cache_expires_after_success_ttl(monkeypatch):
+    from types import SimpleNamespace
+    import app.ai_provider as ai_provider
+
+    monkeypatch.setattr(
+        ai_provider,
+        "settings",
+        SimpleNamespace(
+            ai_api_base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            ai_model="gemini-3.8-flash",
+            ai_api_key="test-key",
+        ),
+    )
+    now = [100.0]
+    monkeypatch.setattr(ai_provider, "_provider_cache_now", lambda: now[0])
+    calls = 0
+
+    async def fake_probe(*, transport=None):
+        nonlocal calls
+        calls += 1
+        return {"status": "AVAILABLE"}
+
+    monkeypatch.setattr(ai_provider, "_check_provider_availability_uncached", fake_probe)
+    ai_provider._clear_provider_availability_cache()
+
+    await ai_provider.check_provider_availability()
+    await ai_provider.check_provider_availability()
+    now[0] += 61.0
+    await ai_provider.check_provider_availability()
+
+    assert calls == 2
+
+
+@pytest.mark.asyncio
+async def test_provider_availability_explicit_transport_bypasses_cache(monkeypatch):
+    from types import SimpleNamespace
+    import app.ai_provider as ai_provider
+
+    monkeypatch.setattr(
+        ai_provider,
+        "settings",
+        SimpleNamespace(
+            ai_api_base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            ai_model="gemini-3.8-flash",
+            ai_api_key="test-key",
+        ),
+    )
+    calls = 0
+
+    async def fake_probe(*, transport=None):
+        nonlocal calls
+        calls += 1
+        return {"status": "AVAILABLE"}
+
+    monkeypatch.setattr(ai_provider, "_check_provider_availability_uncached", fake_probe)
+    ai_provider._clear_provider_availability_cache()
+
+    await ai_provider.check_provider_availability(transport=object())
+    await ai_provider.check_provider_availability(transport=object())
+
+    assert calls == 2
