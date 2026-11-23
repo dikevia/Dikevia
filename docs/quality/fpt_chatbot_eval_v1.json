@@ -1009,7 +1009,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique, article L. 822-1 — droit au congé de maladie lorsque la maladie empêche l'exercice des fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424601",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, article L. 822-3 — rémunération du fonctionnaire : 90 % pendant trois mois puis 50 % pendant neuf mois, régime applicable depuis le 1er mars 2025",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051201136",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987, articles 14 et 15 — congé maladie et transmission de l'avis d'arrêt dans les 48 heures, version applicable depuis août 2026",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, articles 7 et 12 — droits à congé maladie des contractuels, ancienneté, maintien de traitement et déduction des prestations sociales",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "La réponse dépend d'abord du statut. Le fonctionnaire territorial relève des articles L. 822-1 et L. 822-3 du CGFP, avec décompte des droits sur la période de référence et prise en compte du jour de carence. Le contractuel relève notamment de l'article 7 du décret 88-145, avec des seuils d'ancienneté et des durées distinctes, applicables dans leur rédaction issue du décret 2026-705 aux arrêts débutant ou prolongés à compter du 1er septembre 2026. Les primes, la NBI, le SFT, l'indemnité de résidence, les IJSS et la prévoyance doivent être examinés séparément."
     },
     {
       "id": "FPT-022",
@@ -1036,7 +1064,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique, article L. 822-6 — critères légaux du congé de longue maladie",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424589",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987, articles 18 et 19 — CLM territorial et liste indicative des maladies, y compris possibilité d'examen d'une affection hors liste",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Congé de longue maladie du fonctionnaire, fiche vérifiée le 1er septembre 2026",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F18089",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Aucun diagnostic ni classement automatique par nom de pathologie. Il faut vérifier l'impossibilité d'exercer, le besoin de soins prolongés, le caractère invalidant et la gravité confirmée. La liste réglementaire est indicative ; une affection non listée peut être examinée par le conseil médical. Distinguer le CLM du fonctionnaire territorial du congé de grave maladie du contractuel (article 8 du décret 88-145)."
     },
     {
       "id": "FPT-023",
@@ -1063,7 +1113,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code de la santé publique, article L. 1110-4 — secret des informations concernant la personne prise en charge",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000043895798",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Dossier administratif d'un agent public : seules les suites administratives de l'état de santé figurent au dossier individuel",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F31546",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "CNIL — Données sur la santé : mon employeur peut-il les connaître ?",
+          "url": "https://www.cnil.fr/fr/cnil-direct/question/donnees-sur-votre-sante-mon-employeur-peut-il-les-connaitre",
+          "source_type": "autorite_independante",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer les informations administratives nécessaires à la gestion de l'absence (dates, justificatif, décision de congé) des informations diagnostiques couvertes par le secret médical. Ne pas confondre l'avis d'arrêt transmis à l'employeur avec le volet médical destiné à l'organisme d'assurance maladie. Vérifier le statut et le circuit de transmission applicable."
     },
     {
       "id": "FPT-024",
@@ -1090,7 +1162,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987, article 15 — délai de 48 heures et conséquences d'un nouvel envoi tardif après information écrite de l'agent",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2026-705 du 29 juillet 2026 — réforme des congés pour raisons de santé des agents publics, notamment transmission des arrêts et contrôle",
+          "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054641660",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, article 7 — renvoi aux modalités de transmission de l'article 15 du décret 87-602 pour les contractuels territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas affirmer qu'un premier retard entraîne automatiquement une retenue de moitié. Depuis août 2026, l'autorité informe d'abord l'agent par courrier du retard et du risque encouru ; c'est un nouvel envoi tardif dans les 24 mois suivant le premier arrêt considéré qui entraîne une réduction de moitié de la rémunération pour la période entre l'établissement et l'envoi. Vérifier la date de début/prolongation de l'arrêt, la preuve d'envoi et les éventuelles circonstances particulières."
     },
     {
       "id": "FPT-025",
@@ -1117,7 +1211,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987, article 7 — information de l'agent, accès au dossier et voies de contestation possibles devant le conseil médical supérieur en formation restreinte",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987, article 8 — saisine du conseil médical supérieur dans les conditions prévues par l'article 17 du décret n° 86-442",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 86-442 du 14 mars 1986, article 17 — conditions de saisine du conseil médical supérieur",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000884830",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Identifier si l'avis provient de la formation restreinte ou plénière, la nature de la question médicale et la décision administrative finalement prise. La contestation devant le conseil médical supérieur n'est pas un recours général contre tout avis : vérifier les conditions réglementaires et les délais de la procédure concernée. Distinguer contestation de l'avis médical et recours contre la décision de l'autorité territoriale."
     },
     {
       "id": "FPT-026",
@@ -1144,7 +1260,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique, article L. 822-18 — présomption d'imputabilité au service pour un accident survenu dans le temps et le lieu du service, dans l'exercice ou à l'occasion des fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424561",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, article L. 822-21 — droit au CITIS lorsque l'incapacité temporaire résulte d'un accident reconnu imputable au service, d'un accident de trajet ou d'une maladie contractée en service",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424555",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987 — procédure territoriale de déclaration, instruction et reconnaissance du CITIS",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le télétravail ne rend pas tout accident survenu au domicile automatiquement imputable au service. Vérifier le lieu, les horaires autorisés, l'activité exercée au moment des faits, le lien avec les fonctions, les circonstances et les éléments de preuve. La présomption de l'article L. 822-18 concerne le fonctionnaire et peut être écartée par une faute personnelle ou une circonstance particulière détachant l'accident du service. Vérifier le régime propre des contractuels."
     },
     {
       "id": "FPT-027",
@@ -1171,7 +1309,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique, article L. 822-1 — congé de maladie lorsque l'état de santé empêche l'exercice des fonctions",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424601",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987, article 26-1 — contrôle administratif pendant certains congés de maladie et conséquences de l'absence injustifiée ou du refus de contrôle",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Congé de maladie du fonctionnaire : obligations pendant le congé et distinction entre activité et réadaptation médicalement encadrée",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F490",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas assimiler une sollicitation ponctuelle, une demande de renseignement, une reprise anticipée autorisée et l'exercice effectif des fonctions pendant un arrêt. La réponse doit distinguer fonctionnaire et contractuel, vérifier la prescription, la date de fin de l'arrêt, les règles de contrôle et les éventuelles activités de réadaptation médicalement ordonnées. La source Service-Public doit être contrôlée dans son volet FPT avant d'en tirer une règle détaillée."
     },
     {
       "id": "FPT-028",
@@ -1198,7 +1358,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique, article L. 822-1 — congé de maladie ordinaire du fonctionnaire",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424601",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, article L. 822-18 — définition de l'accident présumé imputable au service",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424561",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, article L. 822-21 — ouverture du CITIS en cas d'accident de service, accident de trajet ou maladie contractée en service",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424555",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987 — procédure territoriale de reconnaissance et de gestion du CITIS",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Le congé de maladie ordinaire répond à l'incapacité médicale d'exercer sans reconnaissance nécessaire d'un lien au service ; le CITIS suppose une incapacité consécutive à un accident reconnu imputable, un accident de trajet ou une maladie contractée en service. Ne pas transposer automatiquement le régime du fonctionnaire au contractuel, qui relève notamment du régime général et des dispositions du décret 88-145."
     },
     {
       "id": "FPT-029",
@@ -1225,7 +1413,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, article 7 — maintien du traitement des contractuels territoriaux selon l'ancienneté : 90 % puis demi-traitement, dans les limites prévues",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054641799",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, article 12 — déduction des prestations en espèces de sécurité sociale du traitement maintenu par la collectivité",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000054175614",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, article 8 — congé de grave maladie à partir de trois ans de services, conditions et rémunération",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054641802",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "L'ancienneté et la nature du congé déterminent le maintien employeur. Dans la rédaction applicable aux congés débutant ou prolongés à compter du 1er septembre 2026 : après quatre mois de services, un mois à 90 % puis un mois à demi-traitement ; après deux ans, deux mois à chaque taux ; après trois ans, trois mois à chaque taux. Les prestations en espèces du régime général sont déduites selon l'article 12. Examiner également les IJSS, la prévoyance, le temps non complet et les dispositions transitoires."
     },
     {
       "id": "FPT-030",
@@ -1252,7 +1462,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Code général de la fonction publique, article L. 823-1 — conditions du temps partiel thérapeutique du fonctionnaire",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044424529",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 87-602 du 30 juillet 1987, articles 13-1 à 13-3, 13-5 et 13-7 — demande, quotité, décision, contrôle et contestation du temps partiel thérapeutique territorial",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000521836",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, article 9-1 — temps partiel pour raison thérapeutique des contractuels territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000049429022",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Service-Public — Temps partiel pour raison thérapeutique, fiche vérifiée le 6 août 2026, volet FPT",
+          "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F12788",
+          "source_type": "source_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer fonctionnaire et contractuel. Pour le fonctionnaire, le fondement est l'article L. 823-1 et la demande est accompagnée d'un certificat précisant quotité, durée et modalités. Depuis le 1er août 2026, les délais de décision et conditions de refus ont évolué (décret 2026-705, notamment article 13-2 du décret 87-602). Pour le contractuel, examiner l'article 9-1 du décret 88-145 et les critères du régime général. Ne pas présenter le TPT comme une reprise automatique ni confondre prescription médicale et autorisation administrative."
     },
     {
       "id": "FPT-031",
