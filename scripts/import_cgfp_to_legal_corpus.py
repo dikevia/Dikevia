@@ -21,6 +21,8 @@ from typing import Any
 
 ARTICLE_RE = re.compile(r"^[LDR]\d+(?:-\d+)*$")
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "backend"))
+from app.cgfp import clean_cgfp_article_text  # noqa: E402
 DEFAULT_INDEX = ROOT / "corpus_national/index/CGFP_articles_2026-10-31.json"
 
 
@@ -132,7 +134,9 @@ async def import_snapshot(dsn: str, metadata: dict[str, Any], articles: list[dic
                 ref = article["article"]
                 source_id = f'{metadata["source_id"]}:{ref}'
                 title = f"Code général de la fonction publique — article {ref}"
-                text = article["text"]
+                text = clean_cgfp_article_text(article["text"])
+                if not text:
+                    raise ValueError("Texte vide après nettoyage pour l'article " + ref + ".")
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 version_key = f'{metadata["source_id"]}:{metadata["source_sha256"][:16]}:{ref}'
                 # Official CGFP code landing page; the exact article reference is stored separately in official_number.
