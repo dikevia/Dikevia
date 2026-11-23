@@ -551,7 +551,7 @@ async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_o
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
     if not settings.stripe_billing_enabled:
-        raise HTTPException(503, "Les paiements sont désactivés tant que la facturation n'est pas validée.")
+        raise HTTPException(503, "Les paiements sont désactivés tant que le compteur de crédits mensuels et la facturation ne sont pas validés.")
     # Do not accept payments until the monthly credit ledger and enforcement are live.
     raise HTTPException(
         503,
