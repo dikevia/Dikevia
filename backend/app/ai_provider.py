@@ -15,6 +15,7 @@ from dataclasses import dataclass
 import httpx
 from .config import settings
 from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
+from .evidence_text import normalize_evidence_text
 
 logger = logging.getLogger(__name__)
 
@@ -800,7 +801,7 @@ Aucun texte hors JSON.
 
 
 def _normalize_entailment_text(value):
-    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
+    return normalize_evidence_text(value)
 
 
 _ENTAILMENT_STOPWORDS = {
