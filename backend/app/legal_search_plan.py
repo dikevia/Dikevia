@@ -338,6 +338,29 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
+        ("convocation par ma hierarchie", "convocation par mon chef",
+         "convocation par la hierarchie", "entretien avec ma hierarchie",
+         "entretien hierarchique", "accompagne d un syndicat",
+         "accompagne par un representant syndical",
+         "accompagne par un representant du personnel"),
+        (
+            "agent public convocation entretien hiérarchique ordinaire accompagnement syndical présence représentant syndical conditions",
+            "fonction publique territoriale procédure disciplinaire convocation audition droits de la défense assistance conseil représentant syndical décret 89-677",
+        ),
+    ),
+    (
+        ("agresse par un usager", "agressee par un usager",
+         "agression par un usager", "agression d un usager",
+         "agent victime d une agression", "violence d un usager",
+         "menace d un usager", "usager m a frappe",
+         "refuse que je fasse un rapport", "refuse de faire un rapport",
+         "rapport d incident agent public"),
+        (
+            "agent public territorial victime agression usager protection fonctionnelle collectivité territoriale obligation de protection violences",
+            "fonction publique territoriale santé sécurité travail signalement écrit incident agression usager rapport circonstancié déclaration accident service prévention employeur décret 85-603",
+        ),
+    ),
+    (
         ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
          "indemnites horaires pour travaux supplementaires", "travaux supplementaires",
          "rester apres mon horaire",
@@ -436,7 +459,7 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service", "agression au travail", "poursuivi penalement", "poursuites penales", "agent victime de harcelement", "signalement de harcelement"),
+        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service", "agression au travail", "agresse par un usager", "agressee par un usager", "agression par un usager", "agression d un usager", "violence d un usager", "refuse que je fasse un rapport", "refuse de faire un rapport", "poursuivi penalement", "poursuites penales", "agent victime de harcelement", "signalement de harcelement"),
         (
             "protection fonctionnelle agent territorial CGFP obligation collectivité territoriale",
             "jurisprudence Conseil d'État protection fonctionnelle agents publics territoriaux conditions refus",
