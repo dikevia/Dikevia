@@ -282,12 +282,18 @@ async def browser_oidc_configuration():
             media_type="application/javascript",
             headers={"Cache-Control": "no-store"},
         )
+    redirect_origin = settings.invitation_base_url.rstrip("/") if settings.invitation_base_url else ""
+    redirect_uri = json.dumps(redirect_origin + "/") if redirect_origin else "window.location.origin + '/'"
+    silent_redirect_uri = (
+        json.dumps(redirect_origin + "/static/silent-check-sso.html")
+        if redirect_origin else "window.location.origin + '/static/silent-check-sso.html'"
+    )
     script = (
         "window.CFDT_JURIS_OIDC = Object.freeze({"
         f"issuer:{json.dumps(settings.oidc_issuer)},"
         f"client_id:{json.dumps(settings.oidc_client_id)},"
-        f"redirect_uri:{json.dumps(settings.invitation_base_url.rstrip('/') + '/') if settings.invitation_base_url else 'window.location.origin + \'/\''},"
-        f"silent_redirect_uri:{json.dumps(settings.invitation_base_url.rstrip('/') + '/static/silent-check-sso.html') if settings.invitation_base_url else 'window.location.origin + \'/static/silent-check-sso.html\''},"
+        f"redirect_uri:{redirect_uri},"
+        f"silent_redirect_uri:{silent_redirect_uri},"
         f"scopes:{json.dumps(settings.oidc_scopes)},"
         f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)}"
         "});"
