@@ -503,19 +503,21 @@ def is_topic_relevant_source(
         and "NON_COMPLETE_TIME" not in source_topics
     ):
         return False
+    # The six-year CDI route is a specific legal mechanism. Apply this
+    # guard before the generic CONTRACTUAL_STATUS intersection below: a
+    # provision about contract agents (e.g. end-of-contract compensation or
+    # retirement) is not evidence of the six-year conversion mechanism.
+    if "CONTRACT_CDI_SIX_YEARS" in question_topics and (
+        "CONTRACT_CDI_SIX_YEARS" not in source_topics
+    ):
+        return False
+
     if question_topics & source_topics:
         return True
 
     # Strict question families reject generic keyword hits that cannot be
     # tied to the requested legal mechanism. Annual-appraisal questions retain
     # unclassified cross-cutting procedural sources as a narrow exception.
-    # The six-year CDI route is a specific legal mechanism. A generic
-    # mention of contract agents must not make unrelated contract provisions
-    # eligible evidence for that question.
-    if "CONTRACT_CDI_SIX_YEARS" in question_topics and (
-        "CONTRACT_CDI_SIX_YEARS" not in source_topics
-    ):
-        return False
 
     strict_topics = {
         "TERMINATION_OF_TITULAR",
