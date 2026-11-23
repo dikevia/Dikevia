@@ -135,6 +135,7 @@ async def import_snapshot(dsn: str, metadata: dict[str, Any], articles: list[dic
                 text = article["text"]
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 version_key = f'{metadata["source_id"]}:{metadata["source_sha256"][:16]}:{ref}'
+                # Official CGFP code landing page; the exact article reference is stored separately in official_number.
                 official_url = "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000044416551/"
                 raw_metadata = {
                     "source_id": metadata["source_id"],
