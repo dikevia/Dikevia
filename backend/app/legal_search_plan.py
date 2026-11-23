@@ -27,6 +27,16 @@ _TOPIC_EXPANSIONS = (
         "superieur hierarchique direct autorite territoriale commission administrative paritaire",
     ),
     (
+        ("disponibilite pour convenances personnelles",
+         "disponibilité pour convenances personnelles",
+         "mise en disponibilite pour convenances personnelles",
+         "mise en disponibilité pour convenances personnelles",
+         "convenances personnelles"),
+        "décret 86-68 du 13 janvier 1986 article 21 disponibilité pour convenances personnelles "
+        "fonctionnaire territorial titulaire durée maximale cinq ans renouvellement dix ans "
+        "nécessités du service demande de l'intéressé",
+    ),
+    (
         ("peut me virer", "me virer", "me mettre dehors", "mettre dehors", "me licencier",
          "peut me licencier", "mettre fin a mes fonctions", "fin de mes fonctions",
          "licenciement fonctionnaire", "radiation des cadres",
@@ -199,16 +209,6 @@ _TOPIC_EXPANSIONS = (
          "represailles apres signalement d un danger", "risques psychosociaux"),
         "fonction publique territoriale santé sécurité travail décret 85-603 "
         "droit de retrait danger grave imminent document unique médecin du travail",
-    ),
-    (
-        ("disponibilite pour convenances personnelles",
-         "disponibilité pour convenances personnelles",
-         "mise en disponibilite pour convenances personnelles",
-         "mise en disponibilité pour convenances personnelles",
-         "convenances personnelles"),
-        "décret 86-68 du 13 janvier 1986 article 21 disponibilité pour convenances personnelles "
-        "fonctionnaire territorial titulaire durée maximale cinq ans renouvellement dix ans "
-        "nécessités du service demande de l'intéressé",
     ),
     (
         ("mutation dans l interet du service", "mutation dans l'intérêt du service",
