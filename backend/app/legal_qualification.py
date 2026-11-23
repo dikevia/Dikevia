@@ -29,8 +29,10 @@ _CLARIFICATION_REPLY = re.compile(
 
 
 _CONTEXTUAL_FOLLOWUP = re.compile(
-    r"^(?:et\s+(?:pour|si|dans|concernant|les|la|le)\b|"
-    r"et\s+l['’]\s*\w+|dans ce cas\b|pour les\b|pour la\b|pour le\b|"
+    r"^(?:et\s+(?:pour|si|dans|concernant)\b|"
+    r"et\s+(?:les|la|le)\s+(?:agents?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"titulaires?|fonctionnaires?)\b|"
+    r"dans ce cas\b|pour les\b|pour la\b|pour le\b|"
     r"qu['’]en est-il\b|quid\b|même chose\b|cela\b|ça\b)",
     re.IGNORECASE,
 )
