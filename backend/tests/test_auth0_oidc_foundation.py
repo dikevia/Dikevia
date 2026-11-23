@@ -31,8 +31,6 @@ def production_base():
         oidc_email_verified_claim="https://dikevia.invalid/claims/email_verified",
         oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
         oidc_identity_subject_prefix="auth0|",
-        oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
-        oidc_identity_subject_prefix="auth0|",
         cors_origins="https://dikevia.example",
         aws_endpoint_url_s3="https://storage.example",
         aws_region="us-east-2",
@@ -147,8 +145,10 @@ def test_auth0_does_not_strip_unrelated_subjects(monkeypatch):
          "iat": now, "exp": now + 300},
         KEY, algorithm="RS256",
     )
-    with pytest.raises(Exception):
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException) as exc:
         security.verify_access_token(token)
+    assert exc.value.status_code == 401
 
 
 def test_auth0_without_legacy_mapping_keeps_native_auth0_subject(monkeypatch):
