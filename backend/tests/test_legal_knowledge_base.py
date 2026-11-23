@@ -356,3 +356,19 @@ def test_incomplete_dates_allow_general_information_but_not_verified_conclusion(
 
     repealed = {**source, "version_status": "REPEALED"}
     assert classify_legal_source(repealed)["usable_for_general_information"] is False
+
+
+def test_query_expansion_uses_curated_fpt_referential_without_promoting_reference_leads():
+    citis = expand_legal_query("CITIS")
+    assert citis[0] == "CITIS"
+    assert "congé pour invalidité temporaire imputable au service" in citis
+    tpt = expand_legal_query("ma demande de TPT")
+    assert tpt[0] == "ma demande de TPT"
+    assert any("temps partiel pour raison thérapeutique" in item for item in tpt)
+    assert len(tpt) <= 8
+    assert all("L823-" not in item and "2026-705" not in item for item in tpt)
+
+
+def test_query_expansion_rejects_invalid_limits():
+    with pytest.raises(ValueError):
+        expand_legal_query("CITIS", max_variants=0)
