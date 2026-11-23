@@ -44,12 +44,20 @@ def split_for_embedding(text: str) -> list[str]:
 def normalized_mean(vectors) -> list[float]:
     import math
 
-    values = [float(x) for x in vectors]
-    norm = math.sqrt(sum(x * x for x in values))
+    vectors = list(vectors)
+    if not vectors:
+        raise ValueError("Aucun segment vectorisé.")
+    dimensions = len(vectors[0])
+    if dimensions < 1 or any(len(vector) != dimensions for vector in vectors):
+        raise ValueError("Dimensions incohérentes entre les segments.")
+    values = [
+        sum(float(vector[index]) for vector in vectors) / len(vectors)
+        for index in range(dimensions)
+    ]
+    norm = math.sqrt(sum(value * value for value in values))
     if not norm:
         raise ValueError("Le modèle a produit un vecteur nul.")
-    return [x / norm for x in values]
-
+    return [value / norm for value in values]
 
 async def run(args: argparse.Namespace) -> int:
     database_url = os.environ.get("LEGAL_CORPUS_INGEST_DATABASE_URL", "")
