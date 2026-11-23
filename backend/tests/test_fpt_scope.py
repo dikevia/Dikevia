@@ -331,3 +331,206 @@ def test_cgfp_article_l521_3_is_classified_as_territorial():
     scope = classify_public_service_scope(source)
     assert scope["scope"] == "FPT"
     assert scope["analysis_eligible"] is True
+
+
+def test_cgfp_permanent_contractual_employment_articles_are_classified_as_fpt():
+    for article in ("L332-8", "L332-9", "L332-10", "L332-11", "L332-12", "L332-13", "L332-14"):
+        result = classify_public_service_scope({
+            "title": f"Code général de la fonction publique — article {article}",
+            "article": article,
+            "text": "Dispositions relatives aux agents contractuels recrutés sur un emploi permanent.",
+            "document_kind": "CODE",
+        })
+        assert result["scope"] == "FPT"
+        assert result["analysis_eligible"] is True
+
+
+
+def test_citis_articles_remain_context_only_without_branch_implementation_proof():
+    for number in range(18, 24):
+        article = f"L822-{number}"
+        result = classify_public_service_scope({
+            "title": f"Code général de la fonction publique — article {article}",
+            "article": article,
+            "text": "Le fonctionnaire bénéficie des dispositions prévues au présent chapitre.",
+            "document_kind": "CODE",
+        })
+        assert result["scope"] == "GENERAL_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is False
+
+
+def test_live_cgfp_tpt_articles_are_common_claim_evidence_but_snapshot_is_not():
+    for number in range(1, 7):
+        article = f"L823-{number}"
+        common = {
+            "title": f"Code général de la fonction publique — article {article}",
+            "article": article,
+            "text": "Le fonctionnaire bénéficie des dispositions prévues au présent chapitre.",
+            "document_kind": "CODE",
+        }
+        snapshot = classify_public_service_scope({
+            **common, "source_type": "CGFP_SNAPSHOT",
+        }, target_versant="FPT")
+        assert snapshot["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert snapshot["analysis_eligible"] is True
+        assert snapshot["claim_eligible"] is False
+
+        for versant in ("FPT", "FPE", "FPH"):
+            live = classify_public_service_scope({
+                **common, "source_type": "LEGIFRANCE_API",
+            }, target_versant=versant)
+            assert live["scope"] == "COMMON_PUBLIC_SERVICE"
+            assert live["analysis_eligible"] is True
+            assert live["claim_eligible"] is True
+
+
+def test_public_service_scope_is_eligible_only_for_the_selected_versant():
+    fpe = {
+        "title": "Décret relatif à la fonction publique de l'État",
+        "text": "Les agents de la fonction publique de l'État sont concernés.",
+    }
+    fph = {
+        "title": "Décret relatif à la fonction publique hospitalière",
+        "text": "Les personnels de la fonction publique hospitalière sont concernés.",
+    }
+    for target in ("FPT", "FPH"):
+        assert classify_public_service_scope(fpe, target_versant=target)["analysis_eligible"] is False
+    assert classify_public_service_scope(fpe, target_versant="FPE")["analysis_eligible"] is True
+    for target in ("FPT", "FPE"):
+        assert classify_public_service_scope(fph, target_versant=target)["analysis_eligible"] is False
+    assert classify_public_service_scope(fph, target_versant="FPH")["analysis_eligible"] is True
+
+
+def test_explicitly_common_public_service_rule_remains_available_to_each_versant():
+    source = {
+        "title": "Dispositions communes aux trois versants de la fonction publique",
+        "text": "Les agents des trois versants de la fonction publique bénéficient de cette garantie.",
+    }
+    for target in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=target)
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True
+
+
+def test_official_fpe_and_fph_contractual_decrees_are_classified_by_their_own_scope():
+    fpe_decree = {
+        "title": "Décret n° 86-83 du 17 janvier 1986 relatif aux dispositions générales applicables aux agents contractuels de l'État",
+        "text": "Les dispositions du présent décret s'appliquent aux agents contractuels de l'État.",
+    }
+    fph_decree = {
+        "title": "Décret n° 91-155 du 6 février 1991 relatif aux agents contractuels des établissements mentionnés à l'article 2 de la loi n° 86-33",
+        "text": "Le présent décret concerne les agents contractuels hospitaliers.",
+    }
+    assert classify_public_service_scope(fpe_decree, target_versant="FPE")["analysis_eligible"] is True
+    assert classify_public_service_scope(fpe_decree, target_versant="FPT")["analysis_eligible"] is False
+    assert classify_public_service_scope(fph_decree, target_versant="FPH")["analysis_eligible"] is True
+    assert classify_public_service_scope(fph_decree, target_versant="FPE")["analysis_eligible"] is False
+
+def test_fpt_ihts_reference_marker_cannot_override_an_fpe_or_fph_title():
+    fpe_source = {
+        "title": "Décret relatif aux agents de la fonction publique de l'État",
+        "text": (
+            "Les agents de l'État sont concernés. Le texte cite le décret n° 2002-60 "
+            "relatif aux indemnités horaires pour travaux supplémentaires à titre de comparaison."
+        ),
+    }
+    fph_source = {
+        "title": "Décret relatif aux personnels de la fonction publique hospitalière",
+        "text": (
+            "Les personnels hospitaliers sont concernés. Le texte cite le décret n° 2002-60 "
+            "relatif aux indemnités horaires pour travaux supplémentaires à titre de comparaison."
+        ),
+    }
+
+    assert classify_public_service_scope(fpe_source, "FPE")["scope"] == "FPE"
+    assert classify_public_service_scope(fpe_source, "FPE")["analysis_eligible"] is True
+    assert classify_public_service_scope(fpe_source, "FPT")["analysis_eligible"] is False
+
+    assert classify_public_service_scope(fph_source, "FPH")["scope"] == "FPH"
+    assert classify_public_service_scope(fph_source, "FPH")["analysis_eligible"] is True
+    assert classify_public_service_scope(fph_source, "FPT")["analysis_eligible"] is False
+
+
+def test_ihts_reference_remains_fpt_only_after_title_scope_precedence():
+    source = {
+        "title": "Décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires",
+        "text": "Le régime est utilisé dans le cadre indemnitaire territorial.",
+    }
+    fpt = classify_public_service_scope(source, "FPT")
+    fpe = classify_public_service_scope(source, "FPE")
+    fph = classify_public_service_scope(source, "FPH")
+
+    assert fpt["scope"] == "FPT_REFERENCE"
+    assert fpt["analysis_eligible"] is True
+    assert fpe["analysis_eligible"] is False
+    assert fph["analysis_eligible"] is False
+
+def test_incidental_ihts_citation_does_not_reclassify_a_mixed_scope_source():
+    result = classify_public_service_scope({
+        "title": "Note de service sur les régimes indemnitaires des agents publics",
+        "text": (
+            "Le décret n° 2002-60 relatif aux indemnités horaires pour travaux supplémentaires "
+            "est cité à titre de comparaison. Le document mentionne les agents territoriaux "
+            "et les agents de l'État dans des parties distinctes."
+        ),
+    })
+    assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
+    assert result["analysis_eligible"] is False
+
+def test_unrelated_source_cannot_claim_common_tpt_scope_from_article_number_alone():
+    result = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_API",
+        "title": "Décret relatif à un régime de santé particulier",
+        "article": "L823-4",
+        "text": "Le fonctionnaire perçoit sa rémunération dans les conditions prévues.",
+    }, target_versant="FPT")
+    assert result["scope"] != "COMMON_PUBLIC_SERVICE"
+    assert result.get("claim_eligible") is not True
+
+
+
+def test_fpe_source_is_eligible_only_for_fpe_target():
+    source = {
+        "title": "Décret relatif à la fonction publique de l'État",
+        "text": "Les agents de l'État et les administrations centrales sont concernés.",
+    }
+    fpe = classify_public_service_scope(source, target_versant="FPE")
+    fpt = classify_public_service_scope(source, target_versant="FPT")
+    fph = classify_public_service_scope(source, target_versant="FPH")
+
+    assert fpe["scope"] == "FPE"
+    assert fpe["analysis_eligible"] is True
+    assert fpt["analysis_eligible"] is False
+    assert fph["analysis_eligible"] is False
+
+
+def test_fph_source_is_eligible_only_for_fph_target():
+    source = {
+        "title": "Dispositions relatives à la fonction publique hospitalière",
+        "text": "Les personnels hospitaliers des établissements publics de santé sont concernés.",
+    }
+    fph = classify_public_service_scope(source, target_versant="FPH")
+    fpt = classify_public_service_scope(source, target_versant="FPT")
+    fpe = classify_public_service_scope(source, target_versant="FPE")
+
+    assert fph["scope"] == "FPH"
+    assert fph["analysis_eligible"] is True
+    assert fpt["analysis_eligible"] is False
+    assert fpe["analysis_eligible"] is False
+
+
+def test_explicit_common_scope_is_eligible_for_all_three_versants():
+    source = {
+        "title": "Dispositions communes aux trois versants",
+        "text": (
+            "Les règles concernent les trois versants de la fonction publique : "
+            "la fonction publique de l'État, territoriale et hospitalière."
+        ),
+    }
+    for versant in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=versant)
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True

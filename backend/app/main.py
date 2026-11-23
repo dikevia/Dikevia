@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 import asyncio
 import logging
+import os
 from uuid import uuid4, UUID
 import hashlib
 import json
@@ -18,10 +19,10 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from zoneinfo import ZoneInfo
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 from .config import settings, validate_runtime_configuration
-from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool
-from .dependencies import get_principal, get_tenant_context, require_org_admin, require_legal_editor, require_platform_admin, TenantContext
+from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool, assert_runtime_role_is_safe
+from .dependencies import get_principal, get_tenant_context, get_tenant_identity, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_org_admin_for_external, require_legal_editor_for_external, require_platform_admin, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
@@ -38,6 +39,7 @@ from .legal_assurance import assess_source_set
 from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
 from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip
 from .dossiers import build_dossier_content, validate_dossier_content
+from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
 import httpx
 
@@ -47,7 +49,7 @@ logger.setLevel(logging.INFO)
 
 async def _startup_external_diagnostics() -> None:
     """Non-billable startup checks: PISTE ping/search and AI model catalog only."""
-    if settings.app_env != "production":
+    if settings.app_env != "production" or not settings.startup_external_diagnostics_enabled:
         return
 
     logger.warning(
@@ -208,17 +210,55 @@ async def _startup_external_diagnostics() -> None:
         )
 
 
+async def _startup_ai_provider_diagnostic() -> None:
+    """Run a read-only AI provider/model availability check in staging and production."""
+    configured = bool(settings.ai_api_base_url and settings.ai_api_key and settings.ai_model)
+    parsed = urlparse(settings.ai_api_base_url) if settings.ai_api_base_url else None
+    provider = "gemini" if (
+        parsed and parsed.hostname == "generativelanguage.googleapis.com"
+        and parsed.path.rstrip("/") == "/v1beta/openai"
+    ) else ("openai_compatible" if configured else "not_configured")
+    logger.warning(
+        "DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_START environment=%s provider=%s configured=%s model=%s",
+        settings.app_env, provider, configured, settings.ai_model or "not-configured",
+    )
+    try:
+        status = await asyncio.wait_for(check_provider_availability(), timeout=12.0)
+    except asyncio.TimeoutError:
+        logger.warning("DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_RESULT status=TIMEOUT")
+    except Exception as exc:
+        logger.warning(
+            "DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_RESULT status=FAILED error_type=%s",
+            type(exc).__name__,
+        )
+    else:
+        logger.warning(
+            "DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_RESULT provider=%s model=%s status=%s http_status=%s",
+            provider, settings.ai_model or "not-configured",
+            status.get("status"), status.get("http_status", "-"),
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_runtime_configuration(settings)
     await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
-    diagnostic_task = asyncio.create_task(_startup_external_diagnostics())
+    if settings.database_url:
+        await assert_runtime_role_is_safe()
+    diagnostics_enabled = settings.app_env == "production" and settings.startup_external_diagnostics_enabled
+    diagnostic_tasks = (
+        [asyncio.create_task(_startup_external_diagnostics()),
+         asyncio.create_task(_startup_ai_provider_diagnostic())]
+        if diagnostics_enabled else []
+    )
     try:
         yield
     finally:
-        if not diagnostic_task.done():
-            diagnostic_task.cancel()
-        await asyncio.gather(diagnostic_task, return_exceptions=True)
+        for task in diagnostic_tasks:
+            if not task.done():
+                task.cancel()
+        if diagnostic_tasks:
+            await asyncio.gather(*diagnostic_tasks, return_exceptions=True)
         await close_pool()
 
 app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifespan=lifespan,
@@ -236,13 +276,25 @@ case_law_connector = AdministrativeCaseLawConnector(legifrance)
 
 
 async def record_ai_usage_event(conn, organization_id, user_id, request_id, usage):
-    """Append privacy-minimal provider usage metadata for one tenant-scoped AI call."""
-    await conn.execute("""INSERT INTO ai_usage_events(
-        organization_id,user_id,request_id,provider,model,prompt_tokens,
-        completion_tokens,total_tokens,outcome)
-        VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
-    """, organization_id, user_id, request_id, usage["provider"], usage["model"],
-        usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
+    """Append usage metadata without allowing telemetry failure to abort a user operation.
+
+    The nested transaction creates a savepoint when called inside a request
+    transaction. If the metering table is unavailable or rejects a state, the
+    savepoint is rolled back and the legal response can still be persisted.
+    """
+    try:
+        async with conn.transaction():
+            await conn.execute("""INSERT INTO ai_usage_events(
+                organization_id,user_id,request_id,provider,model,prompt_tokens,
+                completion_tokens,total_tokens,outcome)
+                VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
+            """, organization_id, user_id, request_id, usage["provider"], usage["model"],
+                usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+            "AI usage metering write failed; request processing continues (error_type=%s)",
+            type(exc).__name__,
+        )
 
 
 async def enforce_legal_connector_rate_limit(ctx: TenantContext) -> None:
@@ -256,6 +308,86 @@ async def enforce_legal_connector_rate_limit(ctx: TenantContext) -> None:
             detail="Limite de requêtes juridiques atteinte. Réessayez dans quelques instants.",
             headers={"Retry-After": str(decision.retry_after_seconds)},
         )
+
+
+
+async def _set_tenant_rls_context(conn, ctx: TenantContext) -> None:
+    """Set transaction-local identity and tenant GUCs before every protected DB unit."""
+    await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", ctx.principal.issuer)
+    await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", ctx.principal.subject)
+    await conn.execute("SELECT set_config('app.current_org_id',$1,true)", ctx.organization_id)
+    await conn.execute("SELECT set_config('app.current_user_id',$1,true)", ctx.user_id)
+
+
+class _TenantScopedReadConnection:
+    """Short-lived, tenant-scoped read adapter for orchestrator corpus lookups.
+
+    The orchestrator uses this adapter only for fetch() calls against the local
+    and permanent legal corpora. Each call owns a pool connection and a short
+    transaction; no database connection remains checked out during AI/network
+    work between searches.
+    """
+    def __init__(self, pool, ctx: TenantContext):
+        self._pool = pool
+        self._ctx = ctx
+
+    async def fetch(self, query: str, *args):
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                await _set_tenant_rls_context(conn, self._ctx)
+                return await conn.fetch(query, *args)
+
+
+def _chat_orchestration_failure(conversation_id: UUID) -> AskResponse:
+    """Return a safe, non-technical answer when legal orchestration is unavailable."""
+    return AskResponse(
+        request_id=str(uuid4()),
+        conversation_id=conversation_id,
+        verification_status="NON_VERIFIE",
+        answer=(
+            "Je n’ai pas pu terminer l’analyse de votre question en raison d’un "
+            "incident temporaire. Votre message a été conservé dans la conversation. "
+            "Aucune conclusion juridique ne peut être donnée pour le moment. "
+            "Vous pouvez réessayer dans quelques instants."
+        ),
+        sources=[],
+        missing_information=["Analyse juridique indisponible temporairement."],
+        disclaimer="Aucune réponse juridique n’a pu être établie pour cette demande.",
+    )
+
+
+
+def _ai_safe_conversation_history(rows):
+    """Exclude assistant turns that may contain private local-document text.
+
+    Consent is per request. Historical assistant turns with local sources or
+    missing provenance metadata are not sent back to an external model.
+    """
+    safe = []
+    for row in reversed(rows):
+        role = row["role"]
+        if role == "assistant":
+            metadata = row["metadata"]
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except (TypeError, ValueError):
+                    metadata = None
+            if not isinstance(metadata, dict):
+                continue
+            if metadata.get("contains_local_documents") is True:
+                continue
+            sources = metadata.get("sources")
+            if not isinstance(sources, list):
+                continue
+            if any(
+                isinstance(source, dict)
+                and source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                for source in sources
+            ):
+                continue
+        safe.append({"role": role, "content": row["content"]})
+    return safe
 
 
 def decode_jsonb(value):
@@ -291,13 +423,14 @@ async def readiness():
         await get_pool().fetchval("SELECT 1")
     except Exception:
         raise HTTPException(503, "Service temporairement indisponible.")
-    return {"status": "ready"}
+    return {"status": "ready", "revision": os.getenv("RENDER_GIT_COMMIT", "unknown")}
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
     html = (FRONTEND/"index.html").read_text(encoding="utf-8")
     flag = "true" if settings.private_instance_mode else "false"
-    return html.replace("</head>", f"<script>window.PRIVATE_INSTANCE_MODE={flag};</script></head>")
+    vector_flag = "true" if settings.vector_search_enabled else "false"
+    return html.replace("</head>", f"<script>window.PRIVATE_INSTANCE_MODE={flag};window.DIKEVIA_VECTOR_SEARCH_ENABLED={vector_flag};</script></head>")
 
 @app.get("/api/v1/auth/me")
 async def auth_me(principal: Principal = Depends(get_principal)):
@@ -310,6 +443,12 @@ async def auth_me(principal: Principal = Depends(get_principal)):
     if not row or row["status"] != "ACTIVE":
         raise HTTPException(403,"Compte désactivé ou non provisionné.")
     return {"id":str(row["id"]),"email":row["email"],"display_name":row["display_name"]}
+
+@app.get("/api/v1/account/identity")
+async def account_identity(ctx: TenantContext = Depends(get_tenant_context)):
+    # Return only the authenticated account's internal ID; never expose raw OIDC subject.
+    return {"user_id": str(ctx.user_id), "oidc_identity_verified": True}
+
 
 @app.get("/api/v1/organizations")
 async def organizations(principal: Principal = Depends(get_principal)):
@@ -330,11 +469,15 @@ async def billing_plans():
     """Public catalogue; hidden entirely for private instances."""
     if settings.private_instance_mode:
         raise HTTPException(404, "La facturation n'est pas disponible sur cette instance privée.")
-    return {"plans": public_plans(), "billing_provider": "stripe", "currency": "EUR"}
+    return {"plans": public_plans(), "billing_provider": None, "billing_enabled": False, "currency": "EUR", "notice": "Catalogue officiel ; souscription désactivée jusqu’à la mise en service du compteur de crédits mensuels."}
 
 
 @app.get("/api/v1/billing/subscription")
 async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context)):
+    founder_entitlement = await ctx.conn.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements WHERE user_id=$1::uuid AND revoked_at IS NULL)",
+        ctx.user_id,
+    )
     if settings.private_instance_mode:
         active = await ctx.conn.fetchval(
             "SELECT count(*) FROM memberships WHERE organization_id=$1::uuid AND status='ACTIVE'",
@@ -342,6 +485,7 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
         return {"plan_code": "PRIVATE_PREMIUM_10", "status": "FOUNDING_FREE",
                 "provider": None, "max_users": 10, "active_users": active,
                 "paid_active_users": 0, "free_active_users": active,
+                "founder_entitlement": bool(founder_entitlement), "premium_access": True,
                 "billing_enabled": False}
     row = await ctx.conn.fetchrow("""SELECT plan_code,status,provider,current_period_end,
         cancel_at_period_end,free_access_until,updated_at FROM subscriptions
@@ -359,6 +503,8 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
             "current_period_end": row["current_period_end"] if row else None,
             "cancel_at_period_end": row["cancel_at_period_end"] if row else False,
             "free_access_until": row["free_access_until"] if row else None,
+            "founder_entitlement": bool(founder_entitlement),
+            "premium_access": bool(founder_entitlement or plan_status in {"ACTIVE", "TRIALING"}),
             "updated_at": row["updated_at"] if row else None}
 
 
@@ -401,57 +547,22 @@ async def platform_commercial_organizations(platform=Depends(require_platform_ad
 
 
 @app.post("/api/v1/billing/checkout")
-async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin)):
+async def billing_checkout(payload: dict, ctx: TenantContext = Depends(require_org_admin_for_external)):
     if settings.private_instance_mode:
         raise HTTPException(404, "Les paiements sont désactivés sur cette instance privée.")
-    plan_code = payload.get("plan_code") if isinstance(payload, dict) else None
-    if plan_code not in ("INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50"):
-        raise HTTPException(422, "Offre inconnue.")
-    if not settings.stripe_secret_key:
-        raise HTTPException(503, "Le paiement en ligne n'est pas encore configuré.")
-    plan = PLANS[plan_code]
-    current_subscription = await ctx.conn.fetchrow("SELECT provider_subscription_id,status FROM subscriptions WHERE organization_id=$1::uuid", ctx.organization_id)
-    if current_subscription and current_subscription["provider_subscription_id"] and current_subscription["status"] in ("ACTIVE", "TRIAL", "PAST_DUE", "SUSPENDED"):
-        raise HTTPException(409, "Un abonnement Stripe existe déjà pour cet espace. Utilisez le portail de facturation pour le gérer afin d'éviter une double facturation.")
-    user_email = await ctx.conn.fetchval("SELECT email FROM users WHERE id=$1::uuid", ctx.user_id)
-    form = {
-        "mode": "subscription", "success_url": settings.billing_success_url,
-        "cancel_url": settings.billing_cancel_url, "client_reference_id": ctx.organization_id,
-        "line_items[0][quantity]": "1",
-        "line_items[0][price_data][currency]": "eur",
-        "line_items[0][price_data][unit_amount]": str(plan["amount"]),
-        "line_items[0][price_data][recurring][interval]": "month",
-        "line_items[0][price_data][tax_behavior]": "inclusive",
-        "line_items[0][price_data][product_data][name]": "JURIS — " + plan["name"],
-        "automatic_tax[enabled]": str(settings.stripe_automatic_tax_enabled).lower(),
-        "billing_address_collection": "required",
-        "tax_id_collection[enabled]": "true",
-        "metadata[organization_id]": ctx.organization_id, "metadata[plan_code]": plan_code,
-        "subscription_data[metadata][organization_id]": ctx.organization_id,
-        "subscription_data[metadata][plan_code]": plan_code,
-    }
-    if user_email:
-        form["customer_email"] = user_email
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            response = await client.post("https://api.stripe.com/v1/checkout/sessions",
-                data=form, auth=(settings.stripe_secret_key, ""))
-        response.raise_for_status()
-        session = response.json()
-    except Exception:
-        raise HTTPException(502, "Impossible de créer la session de paiement. Réessayez ultérieurement.")
-    if not session.get("url"):
-        raise HTTPException(502, "Le prestataire de paiement n'a pas retourné de lien de paiement.")
-    await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,metadata)
-        VALUES($1::uuid,$2::uuid,'BILLING_CHECKOUT_CREATED','subscription',jsonb_build_object('plan_code',$3))""",
-        ctx.organization_id, ctx.user_id, plan_code)
-    return {"checkout_url": session["url"], "session_id": session.get("id"), "plan_code": plan_code}
+    if not settings.stripe_billing_enabled:
+        raise HTTPException(503, "Les paiements sont désactivés tant que le compteur de crédits mensuels et la facturation ne sont pas validés.")
+    # Do not accept payments until the monthly credit ledger and enforcement are live.
+    raise HTTPException(
+        503,
+        "La souscription en ligne reste désactivée jusqu’à la mise en service du compteur de crédits mensuels.",
+    )
 
 
 @app.post("/api/v1/billing/portal")
-async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
-    if settings.private_instance_mode:
-        raise HTTPException(404, "La facturation est désactivée sur cette instance privée.")
+async def billing_portal(ctx: TenantContext = Depends(require_org_admin_for_external)):
+    if settings.private_instance_mode or not settings.stripe_billing_enabled:
+        raise HTTPException(404, "La facturation est désactivée.")
     if not settings.stripe_secret_key:
         raise HTTPException(503, "Le portail de facturation n'est pas encore configuré.")
     customer_id = await ctx.conn.fetchval("SELECT provider_customer_id FROM subscriptions WHERE organization_id=$1::uuid", ctx.organization_id)
@@ -471,8 +582,8 @@ async def billing_portal(ctx: TenantContext = Depends(require_org_admin)):
 
 @app.post("/api/v1/billing/stripe/webhook")
 async def stripe_webhook(request: Request):
-    if settings.private_instance_mode:
-        raise HTTPException(404, "Les webhooks de paiement sont désactivés sur cette instance privée.")
+    if settings.private_instance_mode or not settings.stripe_billing_enabled:
+        raise HTTPException(404, "Les webhooks de paiement sont désactivés.")
     raw = await request.body()
     signature = request.headers.get("stripe-signature")
     if not verify_stripe_signature(raw, signature, settings.stripe_webhook_secret):
@@ -630,6 +741,55 @@ async def platform_revoke_free_email_access(access_id: str, platform=Depends(req
     return {"id": str(row["id"]), "email": row["email_normalized"], "active": False}
 
 
+
+@app.get("/api/v1/platform/founder-entitlements")
+async def platform_list_founder_entitlements(platform=Depends(require_platform_admin)):
+    rows = await get_platform_admin_pool().fetch(
+        "SELECT * FROM platform_admin_list_founder_entitlements($1::uuid)",
+        platform["user_id"],
+    )
+    return {"entitlements": [
+        {"user_id": str(row["user_id"]), "note": row["note"],
+         "granted_at": row["granted_at"], "revoked_at": row["revoked_at"],
+         "active": row["revoked_at"] is None}
+        for row in rows
+    ]}
+
+
+@app.post("/api/v1/platform/founder-entitlements", status_code=201)
+async def platform_grant_founder_entitlement(payload: dict, platform=Depends(require_platform_admin)):
+    user_id = str(payload.get("user_id", "")).strip() if isinstance(payload, dict) else ""
+    note = str(payload.get("note", "")).strip()[:500] if isinstance(payload, dict) else ""
+    try:
+        target_user_id = UUID(user_id)
+    except ValueError:
+        raise HTTPException(422, "Identifiant de compte invalide.")
+    if len(note) < 8:
+        raise HTTPException(422, "Le motif d'attribution doit contenir au moins 8 caractères.")
+    granted = await get_platform_admin_pool().fetchval(
+        "SELECT platform_admin_grant_founder_entitlement($1::uuid,$2::uuid,$3)",
+        platform["user_id"], target_user_id, note,
+    )
+    if not granted:
+        raise HTTPException(404, "Compte actif authentifié introuvable. Aucun accès n'a été attribué.")
+    return {"user_id": str(granted), "active": True}
+
+
+@app.delete("/api/v1/platform/founder-entitlements/{user_id}")
+async def platform_revoke_founder_entitlement(user_id: str, platform=Depends(require_platform_admin)):
+    try:
+        target_user_id = UUID(user_id)
+    except ValueError:
+        raise HTTPException(422, "Identifiant de compte invalide.")
+    revoked = await get_platform_admin_pool().fetchval(
+        "SELECT platform_admin_revoke_founder_entitlement($1::uuid,$2::uuid)",
+        platform["user_id"], target_user_id,
+    )
+    if not revoked:
+        raise HTTPException(404, "Aucun accès fondateur actif pour ce compte.")
+    return {"user_id": str(target_user_id), "active": False}
+
+
 @app.post("/api/v1/platform/organizations/{organization_id}/grant-free")
 async def platform_grant_free(organization_id: str, payload: dict,
         admin: dict = Depends(require_platform_admin)):
@@ -653,12 +813,20 @@ async def platform_grant_free(organization_id: str, payload: dict,
 @app.get("/api/v1/chat/conversations")
 async def list_chat_conversations(ctx: TenantContext = Depends(get_tenant_context)):
     rows = await ctx.conn.fetch("""SELECT c.id,c.title,c.created_at,c.updated_at,
-        (SELECT count(*) FROM chat_messages m WHERE m.conversation_id=c.id) AS message_count,
-        (SELECT content FROM chat_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message
-        FROM chat_conversations c ORDER BY c.updated_at DESC LIMIT 100""")
+        (SELECT count(*) FROM chat_messages m WHERE m.conversation_id=c.id
+            AND m.organization_id=$1::uuid AND m.user_id=$2::uuid) AS message_count,
+        (SELECT content FROM chat_messages m WHERE m.conversation_id=c.id
+            AND m.organization_id=$1::uuid AND m.user_id=$2::uuid
+            ORDER BY m.created_at DESC,m.id DESC LIMIT 1) AS last_message,
+        (SELECT metadata->>'public_service' FROM chat_messages m WHERE m.conversation_id=c.id
+            AND m.organization_id=$1::uuid AND m.user_id=$2::uuid AND m.role='user'
+            ORDER BY m.created_at,m.id LIMIT 1) AS public_service
+        FROM chat_conversations c
+        WHERE c.organization_id=$1::uuid AND c.user_id=$2::uuid
+        ORDER BY c.updated_at DESC LIMIT 100""", ctx.organization_id, ctx.user_id)
     return [{"id": str(r["id"]), "title": r["title"], "created_at": r["created_at"],
         "updated_at": r["updated_at"], "message_count": r["message_count"],
-        "last_message": (r["last_message"] or "")[:180]} for r in rows]
+        "last_message": (r["last_message"] or "")[:180], "public_service": r["public_service"] or "FPT"} for r in rows]
 
 
 @app.post("/api/v1/chat/conversations", status_code=201)
@@ -678,7 +846,9 @@ async def get_chat_messages(conversation_id: str, ctx: TenantContext = Depends(g
         raise HTTPException(422, "Identifiant de conversation invalide.")
     rows = await ctx.conn.fetch("""SELECT m.id,m.role,m.content,m.metadata,m.created_at
         FROM chat_messages m JOIN chat_conversations c ON c.id=m.conversation_id
-        WHERE c.id=$1::uuid ORDER BY m.created_at,m.id""", conversation_uuid)
+        WHERE c.id=$1::uuid AND c.organization_id=$2::uuid AND c.user_id=$3::uuid
+          AND m.organization_id=$2::uuid AND m.user_id=$3::uuid
+        ORDER BY m.created_at,m.id""", conversation_uuid, ctx.organization_id, ctx.user_id)
     return [{"id": str(r["id"]), "role": r["role"], "content": r["content"],
         "metadata": r["metadata"], "created_at": r["created_at"]} for r in rows]
 
@@ -689,7 +859,9 @@ async def delete_chat_conversation(conversation_id: str, ctx: TenantContext = De
         conversation_uuid = str(UUID(conversation_id))
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
-    result = await ctx.conn.execute("DELETE FROM chat_conversations WHERE id=$1::uuid", conversation_uuid)
+    result = await ctx.conn.execute("""DELETE FROM chat_conversations
+        WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if result == "DELETE 0":
         raise HTTPException(404, "Conversation introuvable.")
     return None
@@ -703,17 +875,21 @@ async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
     conversation = await ctx.conn.fetchrow(
-        "SELECT id,title FROM chat_conversations WHERE id=$1::uuid", conversation_uuid)
+        """SELECT id,title FROM chat_conversations
+           WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if not conversation:
         raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
     existing = await ctx.conn.fetchrow(
-        "SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-        conversation_uuid)
+        """SELECT id,content,created_at,updated_at FROM legal_dossiers
+           WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if existing:
         return {"id": str(existing["id"]), "content": decode_jsonb(existing["content"]),
                 "created_at": existing["created_at"], "updated_at": existing["updated_at"], "created": False}
     messages = await ctx.conn.fetch("""SELECT id,role,content,metadata,created_at FROM chat_messages
-        WHERE conversation_id=$1::uuid ORDER BY created_at,id""", conversation_uuid)
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid
+        ORDER BY created_at,id""", conversation_uuid, ctx.organization_id, ctx.user_id)
     if not messages:
         raise HTTPException(409, "Ajoutez au moins un échange avant de constituer un dossier.")
     content = build_dossier_content(dict(conversation), [dict(row) for row in messages])
@@ -723,8 +899,9 @@ async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends
         RETURNING id,content,created_at,updated_at""",
         ctx.organization_id, conversation_uuid, ctx.user_id, json.dumps(content, ensure_ascii=False, default=str))
     if not row:
-        row = await ctx.conn.fetchrow("SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-                                      conversation_uuid)
+        row = await ctx.conn.fetchrow("""SELECT id,content,created_at,updated_at FROM legal_dossiers
+            WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                                      conversation_uuid, ctx.organization_id, ctx.user_id)
         created = False
     else:
         created = True
@@ -738,8 +915,9 @@ async def get_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(g
         conversation_uuid = str(UUID(conversation_id))
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
-    row = await ctx.conn.fetchrow("SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-                                  conversation_uuid)
+    row = await ctx.conn.fetchrow("""SELECT id,content,created_at,updated_at FROM legal_dossiers
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                                  conversation_uuid, ctx.organization_id, ctx.user_id)
     if not row:
         raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
@@ -752,7 +930,9 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
         content = validate_dossier_content(payload.get("content"))
     except ValueError as exc:
         raise HTTPException(422, str(exc))
-    existing = await ctx.conn.fetchrow("SELECT id,content FROM legal_dossiers WHERE conversation_id=$1::uuid", conversation_uuid)
+    existing = await ctx.conn.fetchrow("""SELECT id,content FROM legal_dossiers
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if not existing:
         raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
     stored = decode_jsonb(existing["content"])
@@ -770,59 +950,106 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
         if key in content:
             stored[key] = content[key]
     row = await ctx.conn.fetchrow("""UPDATE legal_dossiers SET content=$2::jsonb,updated_at=now()
-        WHERE conversation_id=$1::uuid RETURNING id,content,created_at,updated_at""",
-        conversation_uuid, json.dumps(stored, ensure_ascii=False, default=str))
+        WHERE conversation_id=$1::uuid AND organization_id=$3::uuid AND user_id=$4::uuid
+        RETURNING id,content,created_at,updated_at""",
+        conversation_uuid, json.dumps(stored, ensure_ascii=False, default=str),
+        ctx.organization_id, ctx.user_id)
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
 
 
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
-async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_context)):
-    rate = await consume_chat_request(
-        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
-    )
-    if not rate.allowed:
-        return JSONResponse(
-            status_code=429,
-            content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
-            headers={"Retry-After": str(rate.retry_after_seconds)},
+async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity)):
+    pool = get_pool()
+    # Persist and rate-limit the incoming message in one short tenant transaction.
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant_rls_context(conn, ctx)
+            rate = await consume_chat_request(
+                conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+            )
+            if not rate.allowed:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
+                    headers={"Retry-After": str(rate.retry_after_seconds)},
+                )
+            conversation_id = payload.conversation_id
+            if conversation_id is None:
+                row = await conn.fetchrow("""INSERT INTO chat_conversations(organization_id,user_id,title)
+                    VALUES($1::uuid,$2::uuid,$3) RETURNING id""", ctx.organization_id, ctx.user_id,
+                    payload.question[:157] + ("…" if len(payload.question) > 157 else ""))
+                conversation_id = row["id"]
+            else:
+                exists = await conn.fetchval(
+                    """SELECT id FROM chat_conversations
+                    WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                    str(conversation_id), ctx.organization_id, ctx.user_id,
+                )
+                if not exists:
+                    raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
+            current_message_id = await conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
+                VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
+                str(conversation_id), ctx.user_id, payload.question,
+                json.dumps({"employer": payload.employer, "public_service": payload.public_service,
+                    "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date,
+                    "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing,
+                    "confirm_local_document_ai_transfer": payload.confirm_local_document_ai_transfer}, ensure_ascii=False))
+            history_rows = await conn.fetch("""SELECT role,content,metadata FROM chat_messages
+                WHERE conversation_id=$1::uuid AND organization_id=$4::uuid AND user_id=$5::uuid
+                  AND id<>$2::uuid AND role IN ('user','assistant')
+                ORDER BY created_at DESC,id DESC LIMIT $3""", str(conversation_id), current_message_id,
+                CONVERSATION_HISTORY_MESSAGE_LIMIT, ctx.organization_id, ctx.user_id)
+            history = _ai_safe_conversation_history(history_rows)
+
+    # No connection or transaction is held while the orchestrator plans or calls providers.
+    scoped_reader = _TenantScopedReadConnection(pool, ctx)
+    try:
+        result = await orchestrator.ask(
+            payload, ctx.organization_id, conn=scoped_reader, conversation_history=history,
+            allow_local_documents=(
+                payload.confirm_local_document_ai_transfer
+                and settings.ai_local_documents_in_chat_enabled
+            ),
         )
-    conversation_id = payload.conversation_id
-    if conversation_id is None:
-        row = await ctx.conn.fetchrow("""INSERT INTO chat_conversations(organization_id,user_id,title)
-            VALUES($1::uuid,$2::uuid,$3) RETURNING id""", ctx.organization_id, ctx.user_id,
-            payload.question[:157] + ("…" if len(payload.question) > 157 else ""))
-        conversation_id = row["id"]
-    else:
-        exists = await ctx.conn.fetchval("SELECT id FROM chat_conversations WHERE id=$1::uuid", str(conversation_id))
-        if not exists:
-            raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
-    current_message_id = await ctx.conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
-        VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
-        str(conversation_id), ctx.user_id, payload.question,
-        json.dumps({"employer": payload.employer, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
-    history_rows = await ctx.conn.fetch("""SELECT role,content FROM chat_messages
-        WHERE conversation_id=$1::uuid AND id<>$2::uuid AND role IN ('user','assistant')
-        ORDER BY created_at DESC,id DESC LIMIT 12""", str(conversation_id), current_message_id)
-    history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
-    result = await orchestrator.ask(payload,ctx.organization_id,conn=ctx.conn,conversation_history=history)
+    except Exception:
+        failure = _chat_orchestration_failure(conversation_id)
+        logger.exception(
+            "Chat orchestration failed; a controlled response will be persisted (request_id=%s)",
+            failure.request_id,
+        )
+        result = failure
     result.conversation_id = conversation_id
-    if result.ai_usage is not None:
-        usage = result.ai_usage
-        await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, result.request_id, usage)
-    await ctx.conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
-        VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
-        str(conversation_id), ctx.user_id, result.answer,
-        json.dumps({"verification_status": result.verification_status,
-            "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
-                if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
-                    "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
-                    "article", "page_start", "page_end", "citation_integrity", "collectivity",
-                    "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
-                for source in result.sources[:30]],
-            "missing_information": result.missing_information, "disclaimer": result.disclaimer,
-            "clarification_question": result.clarification_question},
-            ensure_ascii=False, default=str))
-    await ctx.conn.execute("UPDATE chat_conversations SET updated_at=now() WHERE id=$1::uuid", str(conversation_id))
+
+    # Persist the generated answer and usage in a second short transaction.
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant_rls_context(conn, ctx)
+            if result.ai_usage is not None:
+                await record_ai_usage_event(
+                    conn, ctx.organization_id, ctx.user_id, result.request_id, result.ai_usage
+                )
+            await conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
+                VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
+                str(conversation_id), ctx.user_id, result.answer,
+                json.dumps({"verification_status": result.verification_status,
+                    "contains_local_documents": any(
+                        source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                        for source in result.sources
+                    ),
+                    "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
+                        if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
+                            "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
+                            "article", "page_start", "page_end", "citation_integrity", "collectivity",
+                            "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
+                        for source in result.sources[:30]],
+                    "missing_information": result.missing_information, "disclaimer": result.disclaimer,
+                    "clarification_question": result.clarification_question, "public_service": payload.public_service},
+                    ensure_ascii=False, default=str))
+            await conn.execute(
+                """UPDATE chat_conversations SET updated_at=now()
+                WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                str(conversation_id), ctx.organization_id, ctx.user_id,
+            )
     return result
 
 @app.get("/api/v1/integrations/legifrance/status")
@@ -833,7 +1060,7 @@ async def legifrance_status(ctx: TenantContext = Depends(get_tenant_context)):
             "credentials_exposed": False}
 
 @app.post("/api/v1/integrations/legifrance/check")
-async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context)):
+async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     await enforce_legal_connector_rate_limit(ctx)
@@ -846,7 +1073,7 @@ async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context)):
 
 @app.get("/api/v1/legal/legifrance/search")
 async def search_legifrance(q: str, effective_date: date | None = None,
-        ctx: TenantContext = Depends(get_tenant_context)):
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
     if not isinstance(q, str) or len(q.strip()) < 2 or len(q) > 500:
@@ -921,7 +1148,8 @@ async def search_permanent_legal_knowledge(q: str, effective_date: date | None =
 
 @app.post("/api/v1/legal/compliance/review/{document_id}")
 async def review_local_rule_compliance(document_id: str, q: str,
-        effective_date: date | None = None, ctx: TenantContext = Depends(get_tenant_context)):
+        effective_date: date | None = None, confirm_local_document_ai_transfer: bool = False,
+        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     """Prepare a sourced comparison of one tenant-local document with national sources.
 
     This endpoint flags review needs; it never declares a local act illegal.
@@ -933,9 +1161,10 @@ async def review_local_rule_compliance(document_id: str, q: str,
     query = q.strip()
     if len(query) < 8 or len(query) > 500:
         raise HTTPException(422, "La question de contrôle doit contenir entre 8 et 500 caractères.")
-    rate = await consume_chat_request(
-        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
-    )
+    async with ctx.conn.transaction():
+        rate = await consume_chat_request(
+            ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+        )
     if not rate.allowed:
         return JSONResponse(
             status_code=429,
@@ -986,7 +1215,8 @@ async def review_local_rule_compliance(document_id: str, q: str,
     usable_national = [item for item in national_sources if item.get("temporal_status") in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}]
     ai_review = None
-    if usable_national and settings.ai_api_key and settings.ai_model:
+    if (usable_national and settings.ai_api_key and settings.ai_model
+            and settings.ai_local_document_review_enabled and confirm_local_document_ai_transfer):
         review_question = (
             "CONTROLE DE COHERENCE D'UNE REGLE LOCALE. Question de contrôle : " + query +
             "\nCompare uniquement le document local fourni avec les textes nationaux intégraux et temporellement exploitables. "
@@ -998,7 +1228,8 @@ async def review_local_rule_compliance(document_id: str, q: str,
         try:
             candidate_result = await analyze_question(
                 question=review_question, employer="NATIONAL", facts_date=requested_date.isoformat(),
-                sources=[local_source] + usable_national, conversation_history=None)
+                sources=[local_source] + usable_national, conversation_history=None,
+                allow_local_documents=True)
             candidate = extract_analysis_content(candidate_result)
             usage = None
             if isinstance(candidate_result, AIAnalysisResult):
@@ -1016,19 +1247,25 @@ async def review_local_rule_compliance(document_id: str, q: str,
             elif usage is not None:
                 usage["outcome"] = "REJECTED_UNGROUNDED"
             if usage is not None:
-                await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
+                async with ctx.conn.transaction():
+                    await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
         except AIProviderUnavailable:
-            await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, {
-                "provider": "openai_compatible", "model": settings.ai_model[:160],
-                "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
-                "outcome": "PROVIDER_ERROR",
-            })
+            async with ctx.conn.transaction():
+                await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, {
+                    "provider": "openai_compatible", "model": settings.ai_model[:160],
+                    "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
+                    "outcome": "PROVIDER_ERROR",
+                })
         except Exception:
             ai_review = None
-    await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
-      VALUES($1::uuid,$2::uuid,'LOCAL_RULE_COMPLIANCE_REVIEWED','document',$3::uuid,$4::jsonb)""",
-      ctx.organization_id, ctx.user_id, document_id,
-      json.dumps({"query": query, "effective_date": requested_date.isoformat(), "national_sources": len(national_sources)}, ensure_ascii=False))
+    async with ctx.conn.transaction():
+        await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
+          VALUES($1::uuid,$2::uuid,'LOCAL_RULE_COMPLIANCE_REVIEWED','document',$3::uuid,$4::jsonb)""",
+          ctx.organization_id, ctx.user_id, document_id,
+          json.dumps({"query": query, "effective_date": requested_date.isoformat(),
+            "national_sources": len(national_sources),
+            "local_document_ai_transfer_confirmed": confirm_local_document_ai_transfer,
+            "ai_review_enabled": ai_review is not None}, ensure_ascii=False))
     return {
       "status": "COMPARISON_REQUIRED" if national_sources else "NATIONAL_SOURCES_NOT_FOUND",
       "requested_date": requested_date.isoformat(),
@@ -1447,7 +1684,7 @@ async def upload_document(
     official_number: str | None = Form(default=None), official_url: str | None = Form(default=None),
     adopted_at: date | None = Form(default=None), published_at: date | None = Form(default=None),
     effective_from: date | None = Form(default=None), effective_to: date | None = Form(default=None),
-    file: UploadFile = File(...), ctx: TenantContext = Depends(require_legal_editor)):
+    file: UploadFile = File(...), ctx: TenantContext = Depends(require_legal_editor_for_external)):
     if not title.strip() or len(title)>300 or not document_type.strip() or len(document_type)>80:
         raise HTTPException(422,"Titre ou type de document invalide.")
     try:
@@ -1657,7 +1894,7 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
 
 
 @app.get("/api/v1/documents/{document_id}/download")
-async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context)):
+async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid",document_id,ctx.organization_id)
     if not row or not row["storage_key"]:
         raise HTTPException(404,"Fichier introuvable.")
@@ -1672,7 +1909,7 @@ async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant
         "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
 @app.get("/api/v1/documents/{document_id}/versions/{version_number}/download")
-async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context)):
+async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("""SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM document_versions
       WHERE organization_id=$1::uuid AND document_id=$2::uuid AND version_number=$3""",ctx.organization_id,document_id,version_number)
     if not row or not row["storage_key"]:

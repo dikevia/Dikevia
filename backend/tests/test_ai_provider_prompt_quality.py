@@ -102,7 +102,8 @@ def test_personal_case_without_date_does_not_authorize_individual_conclusions():
 def test_prompt_requires_coverage_of_each_retrieval_axis():
     assert "axes_recherche_documentaire" in SYSTEM_PROMPT
     assert "n'en omets aucun silencieusement" in SYSTEM_PROMPT
-    assert "indique explicitement qu'aucune source suffisamment pertinente n'a été retrouvée" in SYSTEM_PROMPT
+    assert "indique-le dans uncovered_axes" in SYSTEM_PROMPT
+    assert "conserve néanmoins les affirmations indépendantes" in SYSTEM_PROMPT
 
 def test_prompt_distinguishes_current_general_information_from_undated_personal_cases():
     assert "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
@@ -139,3 +140,29 @@ def test_entailment_prompt_checks_that_a_claim_answers_its_assigned_axis():
 
 def test_prompt_allows_single_topic_questions_without_synthetic_axes():
     assert "Lorsque la liste est vide, mets axis à une chaîne vide" in SYSTEM_PROMPT
+
+
+def test_ai_analysis_prompt_changes_with_the_selected_public_service():
+    from app.ai_provider import _system_prompt_for_versant
+
+    fpt = _system_prompt_for_versant("FPT")
+    fpe = _system_prompt_for_versant("FPE")
+    fph = _system_prompt_for_versant("FPH")
+    assert "exclusivement FPE" in fpe
+    assert "exclusivement FPH" in fph
+    assert "fonction publique de l'État" in fpe
+    assert "fonction publique hospitalière" in fph
+    assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" not in fpe
+    assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" not in fph
+    assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" in fpt
+
+
+def test_non_fpt_prompt_requires_explicit_scope_and_blocks_context_only_sources():
+    from app.ai_provider import _system_prompt_for_versant, ENTAILMENT_SYSTEM_PROMPT
+
+    prompt = _system_prompt_for_versant("FPH")
+    assert "OUT_OF_SCOPE_FPT" in prompt
+    assert "GENERAL_PUBLIC_SERVICE" in prompt
+    assert "portée commune" in prompt
+    assert "versant_selectionne" in ENTAILMENT_SYSTEM_PROMPT
+    assert "Une source propre à un autre versant ne peut pas soutenir une affirmation" in ENTAILMENT_SYSTEM_PROMPT

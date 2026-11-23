@@ -1,9 +1,10 @@
-// Configuration OIDC de la beta Render Dikévia.
-// Seul le scope OIDC obligatoire est demandé : profile/email ne sont pas encore
-// provisionnés dans le realm cfdt et provoquaient invalid_scope côté Keycloak.
+// OIDC Render configuration shared by production and isolated staging deployments.
+// Redirects are scoped to the current application origin; no client secret is exposed.
+const appOrigin = window.location.origin;
 window.CFDT_JURIS_OIDC = {
   "issuer": "https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
   "client_id": "cfdt-juris-web",
-  "redirect_uri": "https://dikevia-commercial-api-l2r8.onrender.com/",
+  "redirect_uri": appOrigin + "/",
+  "silent_redirect_uri": appOrigin + "/static/silent-check-sso.html",
   "scopes": "openid"
 };

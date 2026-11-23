@@ -18,6 +18,16 @@ _DIRECT_ARTICLE_LOOKUP = re.compile(
 # territorial public-service source families and their implementing texts.
 _TOPIC_EXPANSIONS = (
     (
+        ("accompagne d un syndicat", "accompagne par un syndicat",
+         "accompagne d un representant syndical", "accompagne par un representant syndical",
+         "assiste par un representant syndical", "venir avec mon syndicat",
+         "venir avec un syndicat", "assistance syndicale lors d une convocation",
+         "accompagnement syndical lors d une convocation"),
+        "agent territorial convocation hierarchie entretien accompagnement assistance representant syndical "
+        "procedure disciplinaire garanties droits de la defense defenseur de son choix CGFP "
+        "distinguer entretien hierarchique ordinaire et procedure disciplinaire",
+    ),
+    (
         ("evaluation annuelle", "évaluation annuelle", "evaluation a charge", "évaluation à charge",
          "contester mon evaluation", "contester mon évaluation", "contestation evaluation",
          "contestation de l evaluation", "compte rendu d evaluation", "compte rendu d'évaluation",
@@ -25,6 +35,16 @@ _TOPIC_EXPANSIONS = (
         "CGFP articles L521-1 L521-3 L521-5 appréciation valeur professionnelle fonctionnaire territorial "
         "entretien professionnel annuel compte rendu contestation révision décret 2014-1526 articles 2 3 4 5 6 7 "
         "superieur hierarchique direct autorite territoriale commission administrative paritaire",
+    ),
+    (
+        ("disponibilite pour convenances personnelles",
+         "disponibilité pour convenances personnelles",
+         "mise en disponibilite pour convenances personnelles",
+         "mise en disponibilité pour convenances personnelles",
+         "convenances personnelles"),
+        "décret 86-68 du 13 janvier 1986 article 21 disponibilité pour convenances personnelles "
+        "fonctionnaire territorial titulaire durée maximale cinq ans renouvellement dix ans "
+        "nécessités du service demande de l'intéressé",
     ),
     (
         ("peut me virer", "me virer", "me mettre dehors", "mettre dehors", "me licencier",
@@ -107,6 +127,13 @@ _TOPIC_EXPANSIONS = (
         "licenciement garanties procédure jurisprudence administrative",
     ),
     (
+        ("temps partiel pour raison therapeutique", "temps partiel therapeutique",
+         "mi temps therapeutique", "mi-temps therapeutique", "tpt"),
+        "CGFP articles L823-1 a L823-6 temps partiel pour raison therapeutique maintien retour emploi "
+        "rééducation réadaptation mi-temps intégralité traitement supplément familial indemnité résidence "
+        "décret 87-602 articles 13-1 13-2 13-3 13-5 13-7 13-9 13-11 13-13 CITIS reprise après congé imputable au service",
+    ),
+    (
         ("temps de travail", "duree du travail", "annualisation", "astreinte",
          "temps partiel", "temps non complet", "cycle de travail", "rtt",
          "compteur d heures", "compteur d heures remis a zero",
@@ -117,7 +144,7 @@ _TOPIC_EXPANSIONS = (
         "compteur temps de travail délibération locale",
     ),
     (
-        ("accident de service", "maladie professionnelle", "citis"),
+        ("accident de service", "accident sur mon lieu de travail", "imputable au service", "imputabilité au service", "maladie professionnelle", "citis"),
         "congé pour invalidité temporaire imputable au service CITIS agents territoriaux "
         "accident de service maladie professionnelle CGFP décret 87-602",
     ),
@@ -241,6 +268,63 @@ def _contains_trigger(text: str, trigger: str) -> bool:
     return normalized_trigger in normalized_text
 
 
+
+def _is_union_assistance_convocation_question(question: str) -> bool:
+    """Recognize a request about bringing union assistance to a hierarchical summons."""
+    folded = _fold(str(question or ""))
+    assistance = (
+        "accompagne d un syndicat",
+        "accompagne par un syndicat",
+        "accompagne d un representant syndical",
+        "accompagne par un representant syndical",
+        "assiste par un representant syndical",
+        "venir avec mon syndicat",
+        "venir avec un syndicat",
+        "etre accompagne par un syndicat",
+        "etre accompagne d un syndicat",
+        "assistance syndicale lors d une convocation",
+        "accompagnement syndical lors d une convocation",
+    )
+    has_assistance = any(_contains_trigger(folded, trigger) for trigger in assistance)
+    has_summons = any(_contains_trigger(folded, trigger) for trigger in (
+        "convocation", "entretien avec ma hierarchie", "entretien hierarchique",
+    ))
+    return has_assistance and has_summons
+
+
+def clarification_for_union_assistance_summons(question: str) -> str | None:
+    """Ask for the type of summons before researching an ambiguous assistance question."""
+    if not _is_union_assistance_convocation_question(question):
+        return None
+    folded = _fold(str(question or ""))
+    procedure_is_specified = any(_contains_trigger(folded, marker) for marker in (
+        "procedure disciplinaire", "entretien disciplinaire", "sanction disciplinaire",
+        "simple entretien", "entretien ordinaire", "entretien non disciplinaire",
+        "enquete administrative", "enquete interne", "entretien professionnel",
+        "audition administrative", "entretien de recadrage",
+    ))
+    if procedure_is_specified:
+        return None
+    return (
+        "Pour identifier les règles applicables, votre convocation concerne-t-elle "
+        "un entretien hiérarchique ordinaire, une procédure disciplinaire, ou une autre "
+        "procédure (par exemple une enquête administrative) ?"
+    )
+
+def _is_therapeutic_part_time_question(question: str) -> bool:
+    folded = _fold(str(question or ""))
+    return any(
+        _contains_trigger(folded, trigger)
+        for trigger in (
+            "temps partiel pour raison therapeutique",
+            "temps partiel therapeutique",
+            "mi temps therapeutique",
+            "mi-temps therapeutique",
+            "tpt",
+        )
+    )
+
+
 def build_official_search_query(question: str, max_length: int = 500) -> str:
     """Keep the user's wording first, then append one narrowly matched FPT expansion."""
     original = str(question or "").strip()
@@ -259,6 +343,12 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
             "agent contractuel territorial entretien professionnel annuel décret 88-145 "
             "article 1-3 emploi permanent CDI CDD supérieur à un an contrat de projet "
             "compte rendu appréciation professionnelle observations demande de révision CCP"
+        )
+    elif _is_union_assistance_convocation_question(original):
+        expansion = (
+            "agent territorial convocation hiérarchie entretien accompagnement syndical "
+            "assistance représentant syndical procédure disciplinaire droits de la défense "
+            "défenseur de son choix entretien ordinaire"
         )
     else:
         expansion = next(
@@ -292,6 +382,17 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
 # and provider load while avoiding a single overloaded keyword string.
 _TOPIC_RESEARCH_AXES = (
     (
+        ("accompagne d un syndicat", "accompagne par un syndicat",
+         "accompagne d un representant syndical", "accompagne par un representant syndical",
+         "assiste par un representant syndical", "venir avec mon syndicat",
+         "venir avec un syndicat", "assistance syndicale lors d une convocation",
+         "accompagnement syndical lors d une convocation"),
+        (
+            "agent territorial convocation hierarchie entretien ordinaire accompagnement representant syndical assistance entretien conditions applicables",
+            "fonction publique territoriale procedure disciplinaire droits de la defense droit etre assiste defenseur de son choix CGFP decret 89-677",
+        ),
+    ),
+    (
         ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
          "representants du personnel", "representant syndical", "representants syndicaux",
          "local syndical", "locaux syndicaux", "decharge d activite", "decharges d activite",
@@ -307,6 +408,29 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
+        ("convocation par ma hierarchie", "convocation par mon chef",
+         "convocation par la hierarchie", "entretien avec ma hierarchie",
+         "entretien hierarchique", "accompagne d un syndicat",
+         "accompagne par un representant syndical",
+         "accompagne par un representant du personnel"),
+        (
+            "agent public convocation entretien hiérarchique ordinaire accompagnement syndical présence représentant syndical conditions",
+            "fonction publique territoriale procédure disciplinaire convocation audition droits de la défense assistance conseil représentant syndical décret 89-677",
+        ),
+    ),
+    (
+        ("agresse par un usager", "agressee par un usager",
+         "agression par un usager", "agression d un usager",
+         "agent victime d une agression", "violence d un usager",
+         "menace d un usager", "usager m a frappe",
+         "refuse que je fasse un rapport", "refuse de faire un rapport",
+         "rapport d incident agent public"),
+        (
+            "agent public territorial victime agression usager protection fonctionnelle collectivité territoriale obligation de protection violences",
+            "fonction publique territoriale santé sécurité travail signalement écrit incident agression usager rapport circonstancié déclaration accident service prévention employeur décret 85-603",
+        ),
+    ),
+    (
         ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
          "indemnites horaires pour travaux supplementaires", "travaux supplementaires",
          "rester apres mon horaire",
@@ -314,6 +438,14 @@ _TOPIC_RESEARCH_AXES = (
         (
             "IHTS fonction publique territoriale décret 2002-60 décret 91-875 indemnités horaires travaux supplémentaires",
             "FPT décret 2001-623 temps de travail cycle décompte heures supplémentaires délibération assemblée délibérante repos compensateur",
+        ),
+    ),
+    (
+        ("temps partiel therapeutique", "temps partiel pour raison therapeutique",
+         "mi temps therapeutique", "mi-temps therapeutique", "tpt"),
+        (
+            "CGFP L823-1 L823-2 L823-3 L823-4 L823-5 L823-6 fonctionnaire territorial temps partiel pour raison therapeutique conditions maintien retour emploi mi temps remuneration integrale traitement SFT indemnite residence decret 87-602",
+            "decret 87-602 articles 13-1 13-2 13-3 13-5 13-7 13-9 13-11 13-13 decret 2026-705 CITIS reprise apres conge imputable au service autorisation temps partiel therapeutique",
         ),
     ),
     (
@@ -397,7 +529,7 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service", "agression au travail", "poursuivi penalement", "poursuites penales", "agent victime de harcelement", "signalement de harcelement"),
+        ("protection fonctionnelle", "proteger par la collectivite", "menaces contre un agent", "menacé au travail", "un usager m a menace", "menace pendant mon service", "agression pendant le service", "agression au travail", "agresse par un usager", "agressee par un usager", "agression par un usager", "agression d un usager", "violence d un usager", "refuse que je fasse un rapport", "refuse de faire un rapport", "poursuivi penalement", "poursuites penales", "agent victime de harcelement", "signalement de harcelement"),
         (
             "protection fonctionnelle agent territorial CGFP obligation collectivité territoriale",
             "jurisprudence Conseil d'État protection fonctionnelle agents publics territoriaux conditions refus",
@@ -501,6 +633,17 @@ _TOPIC_RESEARCH_AXES = (
         (
             "FPT santé sécurité travail décret 85-603 droit de retrait danger grave imminent",
             "fonction publique territoriale document unique médecin du travail prévention risques professionnels",
+        ),
+    ),
+    (
+        ("disponibilite pour convenances personnelles",
+         "disponibilité pour convenances personnelles",
+         "mise en disponibilite pour convenances personnelles",
+         "mise en disponibilité pour convenances personnelles",
+         "convenances personnelles"),
+        (
+            "décret 86-68 du 13 janvier 1986 article 21 disponibilité pour convenances personnelles fonctionnaire territorial titulaire durée renouvellement nécessités du service",
+            "CGFP positions statutaires disponibilité fonctionnaire territorial convenances personnelles réintégration",
         ),
     ),
     (
@@ -629,7 +772,30 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         _contains_trigger(folded, trigger)
         for trigger in independent_working_time_triggers
     )
+    therapeutic_part_time_present = _is_therapeutic_part_time_question(original)
+    personal_convenience_availability = any(
+        _contains_trigger(folded, trigger)
+        for trigger in (
+            "disponibilite pour convenances personnelles",
+            "mise en disponibilite pour convenances personnelles",
+            "convenances personnelles",
+        )
+    )
+    union_assistance_convocation = _is_union_assistance_convocation_question(original)
     for triggers, axes in _TOPIC_RESEARCH_AXES:
+        if union_assistance_convocation and "CGFP livre II droit syndical" in axes[0]:
+            continue
+        # A personal-convenience availability request has its own implementing
+        # decree; do not dilute it with the broader mutation/following-spouse route.
+        if personal_convenience_availability and (
+            "mutation dans l interet du service" in triggers
+            or "titulaire peut il" in triggers
+        ):
+            continue
+        # A therapeutic return is not ordinary part-time work. Keep its
+        # dedicated CGFP/decree axis and suppress the generic IHTS expansion.
+        if therapeutic_part_time_present and "temps partiel heures supplémentaires IHTS" in axes[0]:
+            continue
         # Overtime/IHTS is already a dedicated legal topic. Do not count the
         # generic time-work axis as a second issue unless the wording also
         # raises an independent cycle, annualisation, on-call or counter issue.
@@ -643,7 +809,9 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             continue
         # "Je suis contractuel" identifies status, not the legal topic. Do not
         # let it displace a substantive topic such as IHTS or union rights.
-        if triggers == contract_triggers and other_topic_present:
+        if triggers == contract_triggers and (
+            other_topic_present
+        ):
             continue
         matched_axes.append(axes)
 
@@ -732,6 +900,34 @@ def build_official_research_axes(question: str) -> list[str]:
     ):
         return []
     folded = _fold(original)
+    # An invitation to bring a union representative to an unspecified
+    # hierarchical summons is not enough to classify the procedure. The
+    # chatbot asks for clarification first; do not turn the competing
+    # ordinary-interview and disciplinary routes into mandatory answer axes.
+    union_assistance_markers = (
+        "accompagne d un syndicat",
+        "accompagne par un syndicat",
+        "accompagne d un representant syndical",
+        "accompagne par un representant syndical",
+        "assiste par un representant syndical",
+        "venir avec mon syndicat",
+        "venir avec un syndicat",
+        "assistance syndicale lors d une convocation",
+        "accompagnement syndical lors d une convocation",
+    )
+    explicit_procedure_markers = (
+        "procedure disciplinaire",
+        "entretien disciplinaire",
+        "entretien ordinaire",
+        "simple entretien",
+        "enquete administrative",
+        "audition disciplinaire",
+    )
+    if (
+        any(_contains_trigger(folded, marker) for marker in union_assistance_markers)
+        and not any(_contains_trigger(folded, marker) for marker in explicit_procedure_markers)
+    ):
+        return []
     if _is_contractual_evaluation_question(original):
         return [
             "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations révision CCP"
@@ -775,16 +971,84 @@ def build_official_research_axes(question: str) -> list[str]:
         for trigger in independent_working_time_triggers
     )
     axes_found = []
+    therapeutic_part_time_present = _is_therapeutic_part_time_question(original)
+    union_assistance_convocation = _is_union_assistance_convocation_question(original)
     for triggers, axes in _TOPIC_RESEARCH_AXES:
+        if union_assistance_convocation and "CGFP livre II droit syndical" in axes[0]:
+            continue
+        if therapeutic_part_time_present and "temps partiel heures supplémentaires IHTS" in axes[0]:
+            continue
         if (
             "annualisation" in triggers
             and ihts_topic_present
             and not independent_working_time_present
         ):
             continue
-        if not any(_contains_trigger(folded, trigger) for trigger in triggers):
+        matched_triggers = [
+            trigger for trigger in triggers
+            if _contains_trigger(folded, trigger)
+        ]
+        if not matched_triggers:
             continue
         if triggers == contract_triggers and other_topic_present:
             continue
+        # These are compound situations with two legally distinct research
+        # dimensions. Preserve both axes instead of collapsing each tuple to
+        # its first query (which silently discarded the second dimension).
+        if (
+            "convocation par ma hierarchie" in triggers
+            or "agresse par un usager" in triggers
+        ):
+            axes_found.extend(axis[:500] for axis in axes[:2])
+            continue
         axes_found.append(axes[0][:500])
     return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
+
+
+def merge_ai_and_fallback_research_queries(
+    ai_queries: list[str],
+    fallback_queries: list[str],
+    fallback_axes: list[str],
+    *,
+    max_queries: int = 5,
+) -> list[str]:
+    """Preserve model-led research while retaining independent fallback axes for compound cases.
+
+    The fallback planner is not treated as legal authority. Its independent retrieval
+    queries provide recall insurance when the model planner omits one of the explicit
+    topics in a compound question. Keep a bounded fan-out and give the model's first
+    queries priority.
+    """
+    limit = max(1, min(int(max_queries), 8))
+    primary = list(dict.fromkeys(
+        " ".join(str(query or "").split())[:500]
+        for query in (ai_queries or [])
+        if isinstance(query, str) and query.strip()
+    ))
+    fallback = list(dict.fromkeys(
+        " ".join(str(query or "").split())[:500]
+        for query in (fallback_queries or [])
+        if isinstance(query, str) and query.strip()
+    ))
+    # Always retain one bounded fallback retrieval query: even a single-topic
+    # model plan can omit the central mechanism. Compound questions reserve a
+    # second focused fallback axis. The first fallback query is the broad user
+    # query; only subsequent focused queries are eligible for this reserve.
+    if len(fallback) < 2:
+        return primary[:limit] or fallback[:limit]
+
+    reserve_count = 2 if len(fallback_axes or []) >= 2 else 1
+    reserved = fallback[1:1 + min(reserve_count, limit - 1)]
+    primary_budget = max(0, limit - len(reserved))
+    ordered = [*primary[:primary_budget], *reserved, *primary[primary_budget:]]
+    merged: list[str] = []
+    seen: set[str] = set()
+    for query in ordered:
+        key = query.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(query)
+        if len(merged) >= limit:
+            break
+    return merged or fallback[:limit]

@@ -592,3 +592,45 @@ html.dikevia-standard-app .standard-drawer::-webkit-scrollbar-thumb {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Mobile touch scrolling: keep the document as the single vertical scroll
+   container. Nested flex scrolling + sticky composer was trapping touch
+   gestures in Android WebView on long conversations. */
+@media (max-width: 760px) {
+  html.dikevia-standard-app,
+  html.dikevia-standard-app body {
+    min-height: 100%;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  html.dikevia-standard-app .shell,
+  html.dikevia-standard-app #workspace,
+  html.dikevia-standard-app #view-ask,
+  html.dikevia-standard-app .juris-chat {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  html.dikevia-standard-app .juris-messages {
+    display: flex;
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    touch-action: pan-y;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: auto;
+  }
+  html.dikevia-standard-app .juris-composer {
+    position: relative;
+    bottom: auto;
+    z-index: 2;
+  }
+  html.dikevia-standard-app.drawer-open body {
+    overflow: hidden !important;
+  }
+}

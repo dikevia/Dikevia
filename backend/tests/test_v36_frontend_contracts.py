@@ -19,7 +19,27 @@ def test_frontend_uses_oidc_pkce_and_does_not_persist_access_token():
     assert "code_challenge_method:'S256'" in auth
     assert "code_verifier:verifier" in auth
     assert "sessionStorage.setItem('cfdt_oidc_state'" in auth
-    assert "accessToken = data.access_token" in auth
+    assert "accessToken=data.access_token" in auth
+    assert "localStorage" not in auth
+    assert "refresh_token" not in auth
+
+
+def test_oidc_renews_expired_access_tokens_without_persisting_them():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "silentCheckSso(true)" in auth
+    assert "cfdt_oidc_silent_failed" in auth
+    assert "token=await accessToken()" in html
+    assert "localStorage" not in auth
+    assert "refresh_token" not in auth
+
+
+def test_oidc_renews_expired_access_tokens_without_persisting_them():
+    auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "silentCheckSso(true)" in auth
+    assert "cfdt_oidc_silent_failed" in auth
+    assert "token=await accessToken()" in html
     assert "localStorage" not in auth
     assert "refresh_token" not in auth
 
@@ -109,14 +129,45 @@ def test_commercial_workspace_has_polished_responsive_tables_and_forms():
     assert "@media(hover:none)" in html
 
 
-def test_billing_screen_uses_validated_commercial_reference_prices():
+def test_billing_screen_uses_official_ttc_catalogue_and_monthly_credit_rules():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "15 €" in html and "HT / mois" in html
-    assert "170 €" in html and "HT / an" in html
-    assert "790 €" in html and "5 accès" in html
-    assert "19 € HT / mois" in html
-    assert "9 à 15 € HT / mois / section" in html
-    assert "20 questions par accès et par jour" in html
-    assert "100 questions par section et par jour" in html
-    assert "souscription en ligne sera activée après alignement" in html
-    assert 'data-checkout="SYNDICAT_10"' not in html
+    for expected in (
+        "14,90 €", "149 € TTC / an", "125 crédits par mois",
+        "29 €", "290 € TTC / an", "248 crédits par mois",
+        "119 €", "1 190 € TTC / an", "1 000 crédits par mois",
+        "299 €", "2 990 € TTC / an", "2 450 crédits par mois",
+        "1 crédit par question juridique standard",
+        "2 crédits pour une analyse approfondie d’un résumé",
+        "4 crédits pour le résumé intégral d’un rapport de commission jusqu’à 50 pages",
+        "Gratuit, illimité et sans consommation de crédits : 0 crédit",
+        "Aucun quota journalier contraignant n’est appliqué",
+        "souscription en ligne reste désactivée",
+    ):
+        assert expected in html
+    assert "15 €" not in html and "HT / mois" not in html
+
+def test_readiness_exposes_render_revision_for_post_deploy_verification():
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    assert 'os.getenv("RENDER_GIT_COMMIT", "unknown")' in main
+
+
+def test_public_service_picker_routes_each_chat_and_keeps_conversation_history_scoped():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    schemas = (ROOT / "backend/app/schemas.py").read_text(encoding="utf-8")
+    assert 'data-public-service="FPT"' in html
+    assert 'data-public-service="FPE"' in html
+    assert 'data-public-service="FPH"' in html
+    assert "await ensurePublicServiceSelection()" in html
+    assert "public_service:selectedPublicService" in html
+    assert "conversationScope!==selectedPublicService" in html
+    assert "metadata->>'public_service'" in main
+    assert '"public_service": r["public_service"] or "FPT"' in main
+    assert 'public_service: Literal["FPT", "FPE", "FPH"] = "FPT"' in schemas
+
+
+def test_chat_source_cards_show_authority_family_and_publisher():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "src.legal_assurance?.source_family_label" in html
+    assert "src.legal_assurance?.authority_label" in html
+    assert "src.legal_assurance?.publisher||src.publisher" in html

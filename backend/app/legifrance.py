@@ -176,7 +176,20 @@ class LegifranceConnector:
     def _date_epoch_ms(value: date) -> int:
         return int(datetime(value.year, value.month, value.day, tzinfo=timezone.utc).timestamp() * 1000)
 
-    def _search_payload(self, query: str, effective_date: date, code_name: str | None = None) -> dict:
+    @staticmethod
+    def _keyword_criterion(query: str, *, precise: bool) -> dict:
+        """Build a documented PISTE keyword criterion; precise mode requires all words."""
+        return {
+            "typeRecherche": "TOUS_LES_MOTS_DANS_UN_CHAMP" if precise else "UN_DES_MOTS",
+            "valeur": query[:250],
+            "proximite": 5,
+            "operateur": "ET",
+        }
+
+    def _search_payload(
+        self, query: str, effective_date: date, code_name: str | None = None,
+        *, precise: bool = False,
+    ) -> dict:
         ref = re.search(r"\b([LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b", query, re.I)
         if ref is None:
             ref = re.search(r"\barticle\s+(\d+(?:-\d+)*)\b", query, re.I)
@@ -184,8 +197,9 @@ class LegifranceConnector:
             field = {"typeChamp": "NUM_ARTICLE", "criteres": [{
                 "typeRecherche": "EXACTE", "valeur": re.sub(r"[.\s]+", "", ref.group(1)).upper(), "operateur": "ET"}], "operateur": "ET"}
         else:
-            field = {"typeChamp": "ARTICLE", "criteres": [{
-                "typeRecherche": "UN_DES_MOTS", "valeur": query[:250], "operateur": "ET"}], "operateur": "ET"}
+            field = {"typeChamp": "ARTICLE", "criteres": [
+                self._keyword_criterion(query, precise=precise)
+            ], "operateur": "ET"}
         return {"fond": "CODE_DATE", "recherche": {
             "champs": [field],
             "filtres": [
@@ -212,7 +226,7 @@ class LegifranceConnector:
                 for child in node:
                     walk(child)
         walk(value)
-        return list(dict.fromkeys(found))[:5]
+        return list(dict.fromkeys(found))[:10]
 
     @staticmethod
     def _relevant_excerpt(text: str, query: str, max_chars: int = 1800) -> str:
@@ -258,38 +272,120 @@ class LegifranceConnector:
         return " … ".join(sentence for _, sentence in chosen)[:max_chars]
 
     @staticmethod
+    @staticmethod
+    @staticmethod
+    def _requested_article_excerpt(text: str, query: str, max_chars: int = 10000) -> str:
+        """Prefer exact requested articles or amendment clauses over a truncated whole decree."""
+        article_clause = re.search(r"\barticles?\b(.*)", query, re.IGNORECASE)
+        if not article_clause:
+            return ""
+        requested_refs = list(dict.fromkeys(
+            re.findall(r"\b\d{1,2}(?:-\d{1,2})?\b", article_clause.group(1))
+        ))
+        if not requested_refs:
+            return ""
+
+        headings = list(re.finditer(
+            r"(?im)^[ \t]*(?:«\s*)?Article\s*(\d{1,2}(?:-\d{1,2})?)\b",
+            text,
+        ))
+        modified_refs = [ref for ref in requested_refs if "-" in ref]
+
+        # If the retrieved document is the consolidated decree itself, use its
+        # complete requested article sections rather than amendment references.
+        if modified_refs:
+            heading_sections = []
+            for index, heading in enumerate(headings):
+                if heading.group(1) not in modified_refs:
+                    continue
+                section_end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+                section = text[heading.start():section_end].strip()
+                if section:
+                    heading_sections.append(section)
+            if heading_sections:
+                return "\n\n".join(heading_sections)[:max_chars].strip()
+
+            # If the retrieved document is an amending decree, extract only
+            # the numbered clauses that amend the requested articles.
+            amendment_sections = []
+            for ref in modified_refs:
+                mention = re.compile(
+                    rf"\b(?:articles?|art\.)\s*{re.escape(ref)}\b",
+                    re.IGNORECASE,
+                )
+                match = mention.search(text)
+                if not match:
+                    continue
+                prefix_items = list(re.finditer(r"(?m)^[ \t]*\d+\s*°", text[:match.start()]))
+                section_start = prefix_items[-1].start() if prefix_items else max(0, text.rfind("\n", 0, match.start()))
+                next_item = re.search(r"(?m)^[ \t]*\d+\s*°", text[match.end():])
+                section_end = match.end() + next_item.start() if next_item else min(len(text), match.end() + 2200)
+                section = text[section_start:section_end].strip()
+                if section and section not in amendment_sections:
+                    amendment_sections.append(section)
+            if amendment_sections:
+                return "\n\n".join(amendment_sections)[:max_chars].strip()
+
+        selected = []
+        for index, heading in enumerate(headings):
+            if heading.group(1) not in requested_refs:
+                continue
+            section_end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+            section = text[heading.start():section_end].strip()
+            if section:
+                selected.append(section)
+        return "\n\n".join(selected)[:max_chars].strip()
+
+
+
+    @staticmethod
     def _extract_text(value: Any) -> str:
-        candidates: list[str] = []
-        keys = {"texte", "text", "contenu", "content", "textehtml", "textHtml".lower(), "contenuhtml"}
-        def walk(node: Any):
+        """Extract every distinct text segment without duplicating nested payload fields."""
+        candidates: list[tuple[int, str]] = []
+        keys = {"texte", "text", "contenu", "content", "textehtml", "contenuhtml"}
+
+        def clean(raw: str) -> str:
+            raw = re.sub(r"<br\s*/?>", "\n", raw, flags=re.I)
+            raw = re.sub(r"<li\b[^>]*>", "\n- ", raw, flags=re.I)
+            raw = re.sub(r"</li\s*>", "\n", raw, flags=re.I)
+            raw = re.sub(r"</(?:p|div|h[1-6]|ul|ol)\s*>", "\n", raw, flags=re.I)
+            raw = re.sub(r"<(?:p|div|ul|ol)\b[^>]*>", "\n", raw, flags=re.I)
+            raw = re.sub(r"<[^>]+>", " ", raw)
+            raw = re.sub(r"&nbsp;", " ", raw, flags=re.I)
+            raw = re.sub(r"&amp;", "&", raw, flags=re.I)
+            raw = re.sub(r"&lt;", "<", raw, flags=re.I)
+            raw = re.sub(r"&gt;", ">", raw, flags=re.I)
+            raw = re.sub(r"&quot;", '"', raw, flags=re.I)
+            lines = [re.sub(r"[ \t]+", " ", line).strip() for line in raw.splitlines()]
+            return "\n".join(line for line in lines if line).strip()
+
+        def walk(node: Any) -> None:
             if isinstance(node, dict):
                 for key, child in node.items():
                     if key.lower() in keys and isinstance(child, str) and child.strip():
-                        candidates.append(child)
+                        text = clean(child)
+                        if text:
+                            candidates.append((len(candidates), text))
                     else:
                         walk(child)
             elif isinstance(node, list):
                 for child in node:
                     walk(child)
+
         walk(value)
         if not candidates:
             return ""
-        # Prefer the longest text-like field; HTML remains source text and is not rendered as HTML.
-        raw = max(candidates, key=len)
-        raw = re.sub(r"<br\s*/?>", "\n", raw, flags=re.I)
-        raw = re.sub(r"<li\b[^>]*>", "\n- ", raw, flags=re.I)
-        raw = re.sub(r"</li\s*>", "\n", raw, flags=re.I)
-        raw = re.sub(r"</(?:p|div|h[1-6]|ul|ol)\s*>", "\n", raw, flags=re.I)
-        raw = re.sub(r"<(?:p|div|ul|ol)\b[^>]*>", "\n", raw, flags=re.I)
-        raw = re.sub(r"<[^>]+>", " ", raw)
-        raw = re.sub(r"&nbsp;", " ", raw, flags=re.I)
-        raw = re.sub(r"&amp;", "&", raw, flags=re.I)
-        raw = re.sub(r"&lt;", "<", raw, flags=re.I)
-        raw = re.sub(r"&gt;", ">", raw, flags=re.I)
-        raw = re.sub(r"&quot;", '"', raw, flags=re.I)
-        lines = [re.sub(r"[ \t]+", " ", line).strip() for line in raw.splitlines()]
-        return "\n".join(line for line in lines if line).strip()
 
+        # Parent fields can contain the complete nested text. Discard only
+        # segments already contained in a longer representation.
+        selected: list[tuple[int, str]] = []
+        for position, candidate in sorted(candidates, key=lambda item: len(item[1]), reverse=True):
+            folded = re.sub(r"\s+", " ", candidate).casefold()
+            if any(folded in re.sub(r"\s+", " ", existing).casefold() for _, existing in selected):
+                continue
+            selected.append((position, candidate))
+        selected.sort(key=lambda item: item[0])
+        return "\n\n".join(text for _, text in selected)
 
     @staticmethod
     def _walk_dicts(value: Any):
@@ -350,12 +446,7 @@ class LegifranceConnector:
         else:
             search_field = {
                 "typeChamp": "ALL",
-                "criteres": [{
-                    "typeRecherche": "UN_DES_MOTS",
-                    "valeur": query.strip()[:250],
-                    "proximite": 5,
-                    "operateur": "ET",
-                }],
+                "criteres": [self._keyword_criterion(query.strip(), precise=True)],
                 "operateur": "ET",
             }
         payload = {"fond": "LODA_DATE", "recherche": {
@@ -365,6 +456,22 @@ class LegifranceConnector:
             "operateur": "ET", "sort": "PERTINENCE", "secondSort": "SIGNATURE_DATE_DESC",
             "typePagination": "DEFAUT"}}
         found = await self._request("POST", "/search", json_body=payload)
+        has_legal_text_id = any(
+            isinstance(node.get(key), (str, int))
+            and re.fullmatch(r"LEGITEXT\d{12}", str(node[key]).split("_", 1)[0])
+            for node in self._walk_dicts(found)
+            for key in ("id", "idTexte", "id_text", "textId")
+        )
+        if not has_legal_text_id and not number_match:
+            # Precision-first retrieval protects relevance; the documented broad
+            # mode is a recall fallback only when the precise pass found no text.
+            broad_field = {
+                "typeChamp": "ALL",
+                "criteres": [self._keyword_criterion(query.strip(), precise=False)],
+                "operateur": "ET",
+            }
+            broad_payload = {**payload, "recherche": {**payload["recherche"], "champs": [broad_field]}}
+            found = await self._request("POST", "/search", json_body=broad_payload)
         nodes = list(self._walk_dicts(found))
         records: list[dict] = []
         seen: set[str] = set()
@@ -466,12 +573,12 @@ class LegifranceConnector:
                 "official_url": f"https://www.legifrance.gouv.fr/loda/id/{identifier}",
                 "signature_date": signature, "publication_date": publication,
                 "status": status, "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
-                "excerpt": self._relevant_excerpt(text, query.strip()),
+                "excerpt": self._requested_article_excerpt(text, query.strip()) or self._relevant_excerpt(text, query.strip()),
                 "valid_from": valid_from, "valid_to": valid_to,
-                # LODA_DATE + DATE_VERSION and the dated consultation select
-                # the version applicable to the requested date even when the
-                # search metadata omits a separate status label.
-                "version_status": status if status != "UNKNOWN" else "IN_FORCE",
+                # Keep the legal status unknown when Légifrance metadata omits it.
+                # The verified DATE_VERSION search + matching dated consultation
+                # is recorded separately as temporal retrieval evidence below.
+                "version_status": status,
                 "version_key": f"{identifier}:{effective_date.isoformat()}",
                 "source_version_id": identifier, "full_text": text[:500000],
                 "raw_metadata": record, "raw_version_payload": {
@@ -484,13 +591,25 @@ class LegifranceConnector:
     async def search_code_articles(self, query: str, effective_date: date, *, code_name: str | None = None) -> list[dict]:
         if not query or len(query.strip()) < 2 or len(query) > 500:
             raise ValueError("La recherche Légifrance doit contenir entre 2 et 500 caractères.")
-        payload = self._search_payload(query.strip(), effective_date, code_name)
+        payload = self._search_payload(query.strip(), effective_date, code_name, precise=True)
         result = await self._request("POST", "/search", json_body=payload)
+        article_ids = self._find_article_ids(result)
+        requested_ref_hint = re.search(
+            r"\b(?:article\s+)?(?:[LDR]\.\s*\d+(?:-\d+)*|[LDR]\s*\d+(?:-\d+)*)\b",
+            query, re.I,
+        )
+        if requested_ref_hint is None:
+            requested_ref_hint = re.search(r"\barticle\s+\d+(?:-\d+)*\b", query, re.I)
+        if not article_ids and not requested_ref_hint:
+            # Preserve recall without letting an OR-style query dominate the
+            # normal path: broad PISTE search is a fallback only on zero hits.
+            broad_payload = self._search_payload(query.strip(), effective_date, code_name, precise=False)
+            result = await self._request("POST", "/search", json_body=broad_payload)
+            article_ids = self._find_article_ids(result)
         logger.warning(
             "DIKEVIA_DIAGNOSTIC PISTE_CODE_SEARCH_SUMMARY result_count=%d",
-            len(self._find_article_ids(result)),
+            len(article_ids),
         )
-        article_ids = self._find_article_ids(result)
         if not article_ids:
             # No result IDs means getArticle is deliberately never called.
             logger.warning(

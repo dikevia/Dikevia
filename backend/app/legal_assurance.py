@@ -11,6 +11,8 @@ from typing import Any
 
 # This is a review order, not a universal rule for resolving every conflict.
 _SOURCE_CLASS = {
+    "ADMIN_GUIDANCE": (25, "Information administrative officielle — non normative"),
+    "PROFESSIONAL_GUIDANCE": (20, "Ressource professionnelle ou syndicale — non normative"),
     "CONSTITUTIONAL": (100, "Norme constitutionnelle"),
     "EUROPEAN_TREATY": (95, "Droit de l'Union / convention internationale"),
     "LAW": (80, "Loi / ordonnance ratifiée selon son régime"),
@@ -29,7 +31,14 @@ _SOURCE_CLASS = {
 
 def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     kind = str(source.get("document_kind") or source.get("source_type") or "OTHER").upper()
-    if kind == "CGFP_SNAPSHOT":
+    source_type = str(source.get("source_type") or "").upper()
+    if source_type == "SERVICE_PUBLIC_PART" or kind == "ADMIN_GUIDANCE":
+        kind = "ADMIN_GUIDANCE"
+    elif source_type == "INSTITUTIONAL_GUIDANCE":
+        # This source_type is reserved for non-normative professional,
+        # institutional and union material; document_kind must not promote it.
+        kind = "PROFESSIONAL_GUIDANCE"
+    elif kind == "CGFP_SNAPSHOT":
         kind = "CODE"
     elif kind in {"LEGIFRANCE_CETAT_SEARCH", "LEGIFRANCE_CETAT_FULL_TEXT"}:
         kind = "ADMIN_CASELAW"
@@ -48,6 +57,65 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         else:
             kind = "LOCAL_REGULATION"
     rank, label = _SOURCE_CLASS.get(kind, _SOURCE_CLASS["OTHER"])
+    raw_metadata = source.get("raw_metadata")
+    if isinstance(raw_metadata, str):
+        try:
+            import json
+            raw_metadata = json.loads(raw_metadata)
+        except (TypeError, ValueError):
+            raw_metadata = {}
+    if not isinstance(raw_metadata, dict):
+        raw_metadata = {}
+    publisher = str(source.get("publisher") or raw_metadata.get("source_name") or "").strip()[:240] or None
+    publisher_type = str(source.get("publisher_type") or raw_metadata.get("publisher_type") or "").upper() or None
+    authority_level = str(source.get("authority_level") or raw_metadata.get("authority_level") or "").upper()
+    if authority_level not in {
+        "PRIMARY_LEGAL", "OFFICIAL_ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE",
+        "JURISPRUDENCE", "OFFICIAL_INTERPRETIVE", "LOCAL_NORMATIVE",
+    }:
+        authority_level = {
+            "ADMIN_GUIDANCE": "OFFICIAL_ADMIN_GUIDANCE",
+            "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
+            "ADMIN_CASELAW": "JURISPRUDENCE",
+            "CIRCULAR": "OFFICIAL_INTERPRETIVE",
+            "CONSTITUTIONAL": "PRIMARY_LEGAL",
+            "EUROPEAN_TREATY": "PRIMARY_LEGAL",
+            "LAW": "PRIMARY_LEGAL",
+            "CODE": "PRIMARY_LEGAL",
+            "ORDONNANCE": "PRIMARY_LEGAL",
+            "DECREE": "PRIMARY_LEGAL",
+            "DECRET": "PRIMARY_LEGAL",
+            "ORDER": "PRIMARY_LEGAL",
+            "ARRETE": "PRIMARY_LEGAL",
+            "LOCAL_DELIBERATION": "LOCAL_NORMATIVE",
+            "LOCAL_REGULATION": "LOCAL_NORMATIVE",
+            "LOCAL_PROTOCOL": "LOCAL_NORMATIVE",
+        }.get(kind, "UNCLASSIFIED")
+    if publisher_type is None:
+        source_key = str(raw_metadata.get("source_id") or "").casefold()
+        if any(name in source_key for name in ("cfdt", "cgt", "fo-", "cftc", "unsa", "solidaires")):
+            publisher_type = "TRADE_UNION"
+        elif kind == "ADMIN_GUIDANCE" or authority_level == "OFFICIAL_ADMIN_GUIDANCE":
+            publisher_type = "PUBLIC_ADMINISTRATION"
+        elif kind == "PROFESSIONAL_GUIDANCE":
+            publisher_type = "PROFESSIONAL_BODY"
+    # Source provenance is stronger than an untrusted or stale raw metadata
+    # authority label: guidance corpora must never be promoted to primary law.
+    if source_type == "SERVICE_PUBLIC_PART":
+        authority_level = "OFFICIAL_ADMIN_GUIDANCE"
+    elif source_type == "INSTITUTIONAL_GUIDANCE":
+        authority_level = (
+            "OFFICIAL_ADMIN_GUIDANCE"
+            if publisher_type == "PUBLIC_ADMINISTRATION"
+            else "PROFESSIONAL_GUIDANCE"
+        )
+    if publisher_type == "TRADE_UNION":
+        label = "Doctrine syndicale — non normative"
+    elif authority_level == "OFFICIAL_ADMIN_GUIDANCE":
+        label = "Information administrative officielle — non normative"
+    elif kind == "PROFESSIONAL_GUIDANCE":
+        label = "Ressource institutionnelle ou professionnelle — non normative"
+    non_normative = kind in {"ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE"}
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
@@ -56,6 +124,14 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
         "VERIFIED_APPLICABLE",
     }
+    # Missing validity dates no longer block current-law general information
+    # when the caller explicitly marks the source eligible and no repeal is known.
+    # This is deliberately distinct from a verified, date-specific conclusion.
+    general_information_only = (
+        status == "TEMPORAL_SCOPE_INCOMPLETE"
+        and source.get("general_info_eligible") is True
+        and source.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
+    )
     # A decision issued after the facts may help interpret the law, but it
     # cannot by itself establish which rule was applicable on the facts date.
     # Keep these two uses separate instead of exposing one ambiguous boolean.
@@ -63,11 +139,31 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     return {
         "source_family": kind,
         "source_family_label": label,
+        "authority_level": authority_level,
+        "authority_label": {
+            "PRIMARY_LEGAL": "Texte juridique primaire",
+            "JURISPRUDENCE": "Jurisprudence administrative",
+            "OFFICIAL_ADMIN_GUIDANCE": "Information administrative officielle, non normative",
+            "PROFESSIONAL_GUIDANCE": "Ressource professionnelle ou syndicale, non normative",
+            "OFFICIAL_INTERPRETIVE": "Circulaire ou instruction administrative, portée à vérifier",
+            "UNCLASSIFIED": "Nature et autorité de la source à qualifier",
+            "LOCAL_NORMATIVE": "Acte ou accord local — portée et opposabilité à vérifier",
+        }.get(authority_level, "Niveau d'autorité à qualifier"),
+        "publisher": publisher,
+        "publisher_type": publisher_type,
         "review_priority": rank,
         "temporal_or_validation_status": status,
-        "usable_for_conclusion": usable and not post_facts_decision,
-        "usable_for_interpretation": (usable or post_facts_decision) and kind == "ADMIN_CASELAW",
-        "usable_for_facts_date_conclusion": usable and not post_facts_decision,
+        "normative": not non_normative and authority_level != "UNCLASSIFIED",
+        "claim_eligible": (
+            not non_normative
+            and authority_level != "UNCLASSIFIED"
+            and source.get("claim_eligible", True) is not False
+        ),
+        "reference_role": "NON_NORMATIVE_CONTEXT_ONLY" if non_normative else source.get("reference_role"),
+        "usable_for_conclusion": usable and not post_facts_decision and not non_normative,
+        "usable_for_general_information": general_information_only,
+        "usable_for_interpretation": non_normative or ((usable or post_facts_decision) and kind == "ADMIN_CASELAW"),
+        "usable_for_facts_date_conclusion": usable and not post_facts_decision and not non_normative,
         "temporal_limit": (
             "Décision postérieure aux faits : utilisable comme éclairage interprétatif, "
             "mais pas comme preuve autonome de la règle applicable à la date des faits."
@@ -84,7 +180,12 @@ def assess_source_set(sources: list[dict[str, Any]]) -> dict[str, Any]:
     warnings: list[str] = []
     if local and national:
         warnings.append("Des sources nationales et locales sont présentes : comparer leur champ d'application, leur date d'effet et leur compatibilité. Leur coexistence ne prouve pas une contradiction.")
-    if any(not s["legal_assurance"]["usable_for_conclusion"] for s in classified):
+    if any(
+        not s["legal_assurance"]["usable_for_conclusion"]
+        and not s["legal_assurance"].get("usable_for_general_information")
+        and not s["legal_assurance"]["usable_for_interpretation"]
+        for s in classified
+    ):
         warnings.append("Au moins une source a un statut temporel ou de validation incomplet : ne pas l'utiliser seule pour établir une règle applicable.")
     if any(s["legal_assurance"]["source_family"] in {"CIRCULAR", "ADMIN_CASELAW"} for s in classified):
         warnings.append("Les circulaires et décisions juridictionnelles exigent une analyse de leur portée, de leur contexte et de leur état jurisprudentiel ; le rang indicatif ne suffit pas.")
@@ -308,7 +409,14 @@ def validate_claim_evidence(
             source_type == "CGFP_SNAPSHOT"
             and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
             and bool(source.get("snapshot_modified_at"))
-            and source.get("source_status") == "SNAPSHOT_NOT_LIVE_VERIFIED"
+            and source.get("general_info_eligible") is True
+            and (
+                source.get("source_status") == "SNAPSHOT_NOT_LIVE_VERIFIED"
+                or (
+                    source.get("source_status") == "IMPORTED_UNVERIFIED"
+                    and source.get("snapshot_verification_status") == "SNAPSHOT_NOT_LIVE_VERIFIED"
+                )
+            )
         )
         if source_type == "LEGIFRANCE_CETAT_SEARCH":
             continue
@@ -319,7 +427,7 @@ def validate_claim_evidence(
         if source.get("reference_role") in {
             "BASELINE_CONTEXT_ONLY", "INTERPRETIVE_CONTEXT_ONLY",
             "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY",
-        } or source.get("claim_eligible") is False:
+        } or source.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY" or source.get("claim_eligible") is False:
             continue
         if (
             source.get("analysis_eligible") is False
@@ -421,26 +529,37 @@ def validate_claim_evidence(
             **({"axis": axis} if required_axes else {}),
         })
 
+    uncovered_axes: list[str] = []
     if required_axes:
         covered_axes = {claim.get("axis") for claim in validated}
-        uncovered_axes = payload.get("uncovered_axes", [])
-        if not isinstance(uncovered_axes, list) or any(
-            not isinstance(axis, str) or axis not in required_axes for axis in uncovered_axes
-        ) or len(set(uncovered_axes)) != len(uncovered_axes):
+        declared_uncovered = payload.get("uncovered_axes", [])
+        if not isinstance(declared_uncovered, list):
             invalid.append("invalid_uncovered_research_axes")
-            uncovered_axes = []
-        overlap_axes = covered_axes & set(uncovered_axes)
+            declared_uncovered = []
+        else:
+            declared_uncovered = [
+                axis for axis in declared_uncovered
+                if isinstance(axis, str) and axis in required_axes
+            ]
+        overlap_axes = covered_axes & set(declared_uncovered)
         if overlap_axes:
-            invalid.extend(f"research_axis_marked_both_covered_and_uncovered:{axis}" for axis in sorted(overlap_axes))
-        unresolved_axes = set(required_axes) - covered_axes - set(uncovered_axes)
-        if unresolved_axes:
-            invalid.extend(f"research_axis_not_covered:{axis}" for axis in sorted(unresolved_axes))
+            invalid.extend(
+                f"research_axis_marked_both_covered_and_uncovered:{axis}"
+                for axis in sorted(overlap_axes)
+            )
+        # Missing axes are a coverage limitation, not a reason to discard
+        # independently validated claims from other axes. Compute coverage
+        # from the claims that actually survived exact-source validation.
+        uncovered_axes = sorted(set(required_axes) - covered_axes)
 
     return {
-        "valid": not invalid,
+        # Reject the whole answer only when no claim survives. Each accepted
+        # claim has already passed its own source, quote, scope and date checks.
+        "valid": bool(validated),
+        "partial": bool(invalid or uncovered_axes),
         "claims": validated,
         "invalid_claims": invalid,
         "claim_count": len(validated),
-        "uncovered_axes": list(payload.get("uncovered_axes", [])) if required_axes and isinstance(payload.get("uncovered_axes", []), list) else [],
-        "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS_NOT_SEMANTIC_ENTAILMENT",
+        "uncovered_axes": uncovered_axes,
+        "verification_scope": "PER_CLAIM_EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS_NOT_SEMANTIC_ENTAILMENT",
     }

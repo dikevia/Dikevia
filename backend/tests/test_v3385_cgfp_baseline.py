@@ -86,7 +86,7 @@ async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(m
     monkeypatch.setattr(module, "verify_claim_entailment", supported_entailment)
     response = await LegalOrchestrator().ask(
         AskRequest(
-            employer="NATIONAL", facts_date="2024-06-01",
+            employer="NATIONAL",
             question="Quels sont les droits des agents ?",
         ),
         "00000000-0000-0000-0000-000000000001",
@@ -153,7 +153,7 @@ async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallbac
     monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
     monkeypatch.setattr(module, "search_cgfp", snapshot_search)
     monkeypatch.setattr(module, "get_cgfp_article", lambda ref: {
-        "text": "Le présent article concerne les agents publics et les fonctionnaires."
+        "text": "Le présent article concerne les agents territoriaux et la fonction publique territoriale."
     })
     monkeypatch.setattr(
         module, "validate_snapshot_citation",
@@ -176,7 +176,7 @@ async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallbac
 
     response = await LegalOrchestrator().ask(
         AskRequest(
-            employer="NATIONAL", facts_date="2024-06-01",
+            employer="NATIONAL",
             question="Quels sont les droits des agents ?",
         ),
         "00000000-0000-0000-0000-000000000001",
@@ -190,6 +190,7 @@ async def test_cgfp_snapshot_article_leads_are_verified_live_and_used_as_fallbac
     assert any(
         source.get("source_type") == "CGFP_SNAPSHOT"
         and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+        and source.get("general_info_eligible") is True
         for source in captured["sources"]
     )
     assert any("Mode de secours CGFP activé" in item for item in response.missing_information)
@@ -254,6 +255,7 @@ def test_cgfp_snapshot_fallback_can_support_only_snapshot_scoped_claims():
         "content_kind": "SNAPSHOT_EXCERPT",
         "snapshot_modified_at": "2026-10-31",
         "source_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
+        "general_info_eligible": True,
         "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
         "temporal_status": "SNAPSHOT_ONLY_NOT_TEMPORALLY_VERIFIED",
         "public_service_scope": "FPT",
@@ -293,3 +295,34 @@ def test_cgfp_snapshot_date_is_accepted_as_document_date_for_ai_input():
     assert _usable_document_sources([source]) == [
         {**source, "excerpt": "Un extrait de texte du CGFP suffisamment long pour être transmis."}
     ]
+
+
+@pytest.mark.parametrize(
+    ("versant", "expected"),
+    [
+        ("FPT", "décret n° 86-68 du 13 janvier 1986 article 21"),
+        ("FPE", "décret n° 85-986 du 16 septembre 1985 article 44"),
+        ("FPH", "décret n° 88-976 du 13 octobre 1988 article 31"),
+    ],
+)
+def test_availability_research_targets_the_selected_versant_decree(versant, expected):
+    import app.orchestrator as module
+
+    queries = module._build_targeted_regulatory_queries(
+        "Un fonctionnaire titulaire peut-il demander une disponibilité pour convenances personnelles ?",
+        versant,
+    )
+
+    assert len(queries) == 1
+    assert expected in queries[0]
+
+
+def test_territorial_health_regulatory_queries_do_not_leak_to_other_versants():
+    import app.orchestrator as module
+
+    for versant in ("FPE", "FPH"):
+        queries = module._build_targeted_regulatory_queries(
+            "Un agent demande un temps partiel thérapeutique après un accident de service.",
+            versant,
+        )
+        assert queries == []

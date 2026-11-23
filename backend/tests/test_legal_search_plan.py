@@ -2,6 +2,7 @@ from app.legal_search_plan import (
     build_official_research_axes,
     build_official_search_query,
     build_official_search_queries,
+    merge_ai_and_fallback_research_queries,
 )
 
 
@@ -381,3 +382,189 @@ def test_titular_evaluation_does_not_create_a_contractual_axis():
     assert "décret 88-145" not in axes[0]
     assert all("décret 88-145" not in query for query in queries)
     assert any("jurisprudence administrative" in query for query in queries)
+
+
+def test_six_year_contract_question_does_not_inject_preselected_article_numbers():
+    question = (
+        "Un agent contractuel de la fonction publique territoriale en CDD peut-il "
+        "bénéficier d’un renouvellement au-delà de 6 ans et obtenir un CDI ? "
+        "Précise les conditions, l’ancienneté et les interruptions entre contrats."
+    )
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+
+    # The deterministic fallback may preserve the subject and broad legal field,
+    # but the article selection must come from the live AI research planner and
+    # verified official retrieval, not a problem-specific hardcoded article list.
+    for article in ("L332-9", "L332-10", "L332-11", "L332-23", "L452-44"):
+        assert article not in query
+        assert all(article not in item for item in queries)
+        assert all(article not in item for item in axes)
+    assert "contractuel" in query.casefold()
+    assert "CDI" in query
+
+
+
+def test_gemini_plan_keeps_independent_fallback_axes_for_compound_health_case():
+    question = (
+        "Je suis fonctionnaire territorial titulaire dans une mairie. "
+        "J’ai été victime d’un accident sur mon lieu de travail, reconnu comme imputable au service. "
+        "Après plusieurs mois d’arrêt, le médecin estime que mon état nécessite une reprise "
+        "à temps partiel thérapeutique. Mon employeur envisage une disponibilité d’office "
+        "et je m’interroge aussi sur le maintien dans l’emploi, le reclassement et les recours."
+    )
+    fallback_queries = build_official_search_queries(question)
+    fallback_axes = build_official_research_axes(question)
+    assert len(fallback_axes) >= 2
+    assert len(fallback_queries) >= 3
+
+    # Simulate a plausible Gemini plan that identifies the return-to-work and
+    # availability issues but omits one of the explicit legal mechanisms.
+    ai_queries = [
+        "temps partiel thérapeutique fonctionnaire territorial",
+        "disponibilité d’office raison de santé fonction publique territoriale",
+        "reclassement inaptitude physique agent territorial",
+        "recours décision administrative agent public",
+        "maintien dans l’emploi collectivité territoriale",
+    ]
+    merged = merge_ai_and_fallback_research_queries(
+        ai_queries, fallback_queries, fallback_axes, max_queries=5,
+    )
+
+    assert len(merged) == 5
+    assert len(merged) == len(set(merged))
+    # Both independent fallback axes survive even when Gemini already
+    # supplied the maximum number of queries.
+    assert fallback_queries[1] in merged
+    assert fallback_queries[2] in merged
+    assert merged[:3] == ai_queries[:3]
+
+
+def test_gemini_plan_is_not_replaced_by_fallback_for_single_topic():
+    question = "Ma demande de CITIS après un accident de service est refusée."
+    fallback_queries = build_official_search_queries(question)
+    fallback_axes = build_official_research_axes(question)
+    assert fallback_axes == []
+
+    ai_queries = [
+        "CITIS imputabilité au service fonctionnaire territorial",
+        "congé invalidité temporaire accident de service",
+    ]
+    merged = merge_ai_and_fallback_research_queries(
+        ai_queries, fallback_queries, fallback_axes, max_queries=5,
+    )
+    assert merged[:len(ai_queries)] == ai_queries
+    assert fallback_queries[1] in merged
+    assert len(merged) <= 5
+
+
+def test_merged_research_queries_respect_the_five_query_budget():
+    merged = merge_ai_and_fallback_research_queries(
+        [f"axe IA {index}" for index in range(1, 8)],
+        [f"recherche de secours {index}" for index in range(1, 5)],
+        ["axe de secours A", "axe de secours B", "axe de secours C"],
+        max_queries=5,
+    )
+    assert len(merged) == 5
+    assert merged[:3] == ["axe IA 1", "axe IA 2", "axe IA 3"]
+    assert "recherche de secours 2" in merged
+    assert "recherche de secours 3" in merged
+
+def test_therapeutic_part_time_after_citis_has_a_dedicated_cgfp_and_fpt_decree_axis():
+    question = (
+        "Je suis fonctionnaire territorial titulaire. Après un CITIS pour accident de service, "
+        "je souhaite reprendre à temps partiel pour raison thérapeutique. "
+        "Quelles conditions et quelles conséquences sur ma rémunération ?"
+    )
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+
+    # The TPT route must retrieve its own CGFP chapter and FPT implementing
+    # decree; it must not be diluted into ordinary part-time/IHTS research.
+    assert "L823-1" in query
+    assert "L823-6" in query
+    assert "décret 87-602" in query
+    assert any("L823-1" in item and "décret 87-602" in item for item in queries)
+    assert any("CITIS" in item and "décret 87-602" in item for item in queries)
+    assert not any("heures supplémentaires IHTS" in item for item in queries)
+    assert any("L823-1" in item for item in axes)
+    assert any("CITIS" in item for item in axes)
+
+
+def test_plain_language_mi_temps_therapeutique_uses_the_specific_tpt_axis():
+    question = "Après mon accident de service, je peux reprendre à mi-temps thérapeutique ?"
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+    assert "L823-1" in query
+    assert any("L823-1" in item for item in queries)
+    assert not any("heures supplémentaires IHTS" in item for item in queries)
+
+
+
+def test_personal_convenience_availability_targets_decree_86_68_article_21():
+    question = "Un agent titulaire peut-il demander une disponibilité pour convenances personnelles ?"
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+
+    assert "décret 86-68" in query
+    assert "article 21" in query
+    assert "convenances personnelles" in query
+    assert len(queries) == 3
+    assert "décret 86-68" in queries[1]
+    assert "article 21" in queries[1]
+    assert "réintégration" in queries[2]
+    assert all("radiation des cadres" not in item for item in queries)
+    assert all("suivi conjoint" not in item for item in queries)
+    assert all(len(item) <= 500 for item in queries)
+
+
+def test_personal_convenience_availability_does_not_get_diluted_by_generic_mobility_route():
+    question = "Je souhaite une disponibilité pour convenances personnelles."
+    queries = build_official_search_queries(question)
+    assert len(queries) == 3
+    assert "décret 86-68" in queries[0]
+    assert "décret 86-68" in queries[1]
+    assert "CGFP positions statutaires" in queries[2]
+    assert all("suivi conjoint" not in item for item in queries)
+
+
+def test_ambiguous_hierarchical_convocation_with_union_support_does_not_assume_procedure():
+    question = (
+        "Je suis titulaire de la fonction publique territoriale, "
+        "puis-je être accompagné d'un syndicat lors d'une convocation par ma hiérarchie ?"
+    )
+
+    # The question does not establish whether this is an ordinary interview,
+    # an administrative inquiry or disciplinary proceedings. Ask for context
+    # before selecting competing legal research routes.
+    assert build_official_research_axes(question) == []
+
+
+def test_explicit_disciplinary_hierarchical_convocation_keeps_both_research_axes():
+    question = (
+        "Je suis titulaire de la fonction publique territoriale. "
+        "Puis-je être accompagné d'un syndicat lors d'une convocation "
+        "par ma hiérarchie pour un entretien disciplinaire ?"
+    )
+    axes = build_official_research_axes(question)
+    joined = " ".join(axes).casefold()
+
+    assert any("entretien hiérarchique ordinaire" in axis for axis in axes)
+    assert any("procédure disciplinaire" in axis for axis in axes)
+    assert "droits de la défense" in joined
+
+
+def test_agent_assaulted_by_service_user_retrieves_protection_and_workplace_safety_axes():
+    question = (
+        "Je suis titulaire de la FPT. J'ai été agressé par un usager "
+        "et mon chef ne veut pas que je fasse de rapport car il connaît l'usager."
+    )
+    axes = build_official_research_axes(question)
+    joined = " ".join(axes).casefold()
+
+    assert any("protection fonctionnelle" in axis for axis in axes)
+    assert any("santé sécurité travail" in axis for axis in axes)
+    assert any("rapport circonstancié" in axis for axis in axes)
+    assert len(axes) >= 2

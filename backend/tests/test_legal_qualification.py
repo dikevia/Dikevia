@@ -211,3 +211,34 @@ def test_chained_followups_keep_the_last_substantive_legal_topic():
     assert "heures supplémentaires" in resolved
     assert "contractuels" not in resolved
 
+
+
+def test_qualification_uses_selected_versant_and_flags_cross_versant_cases():
+    fpe = qualify_legal_question(
+        "Je suis fonctionnaire de l'État, quels sont mes droits ?",
+        public_service="FPE",
+    )
+    fph = qualify_legal_question(
+        "Je suis agent hospitalier, quels sont mes droits ?",
+        public_service="FPH",
+    )
+    assert fpe["target_legal_field"] == "FRENCH_STATE_PUBLIC_SERVICE"
+    assert fpe["scope_status"] == "FPE_PRODUCT_SCOPE"
+    assert "FPE_IMPLEMENTING_LAWS_DECREES_AND_ORDERS" in fpe["research_priorities"]
+    assert fph["target_legal_field"] == "FRENCH_HOSPITAL_PUBLIC_SERVICE"
+    assert fph["scope_status"] == "FPH_PRODUCT_SCOPE"
+    assert "FPH_IMPLEMENTING_LAWS_DECREES_AND_ORDERS" in fph["research_priorities"]
+    wrong_branch = qualify_legal_question(
+        "Je suis agent territorial, quels sont mes droits ?",
+        public_service="FPE",
+    )
+    assert wrong_branch["scope_status"] == "OUT_OF_SCOPE_FPT"
+
+
+def test_aggression_by_service_user_is_qualified_as_workplace_incident():
+    result = qualify_legal_question(
+        "Je suis titulaire de la FPT. J'ai été agressé par un usager et mon chef refuse que je fasse un rapport."
+    )
+    assert result["topic"] == "WORKPLACE_INCIDENT_AND_AGENT_PROTECTION"
+    assert result["agent_status"] == "TITULAIRE_EXPLICIT"
+    assert result["public_service"] == "FPT"

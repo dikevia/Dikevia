@@ -1,9 +1,12 @@
 name: CI
+concurrency:
+  group: dikevia-ci-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feat/chatbot-p0-legal-qualification, fix/chatbot-legal-reliability, feat/chatbot-query-planning-safe, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feat/chatbot-p0-legal-qualification, fix/chatbot-legal-reliability, feat/chatbot-query-planning-safe, feature/dikevia-v3.38.5-cgfp-chat, feature/dikevia-free-vector-search-poc, fix/chat-orchestration-lot1]
   pull_request:
-    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, feature/dikevia-v3.38.5-cgfp-chat, feature/dikevia-free-vector-search-poc]
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -33,13 +36,14 @@ jobs:
           cache-dependency-path: |
             backend/requirements.txt
             backend/requirements-dev.txt
+            backend/requirements-embeddings.txt
       - name: Configure PostgreSQL client from the disposable service container
         run: |
           mkdir -p "$RUNNER_TEMP/pg-client"
           cat > "$RUNNER_TEMP/pg-client/psql" <<'SH'
           #!/usr/bin/env bash
           set -euo pipefail
-          container_id="$(docker ps --filter 'ancestor=postgres:16-alpine' --format '{{.ID}}' | head -n1)"
+          container_id="$(docker ps --filter 'ancestor=pgvector/pgvector:pg16' --format '{{.ID}}' | head -n1)"
           if [[ -z "$container_id" ]]; then
             echo "The disposable PostgreSQL service container is not running." >&2
             exit 1
@@ -78,6 +82,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements-dev.txt
           python -m pip check
+      - name: Validate browser-side embedding worker syntax
+        run: node --input-type=module --check < frontend/legal-embedding-worker.js
       - name: Compile Python and audit environment template
         run: |
           python -m compileall -q backend/app scripts
@@ -100,7 +106,9 @@ jobs:
       - name: Security static analysis
         run: bandit -q -r backend/app -ll
       - name: Dependency vulnerability audit
-        run: pip-audit -r backend/requirements-dev.txt
+        run: |
+          pip-audit -r backend/requirements-dev.txt
+          pip-audit -r backend/requirements-embeddings.txt
       - name: Prepare disposable PostgreSQL database and least-privilege roles
         env:
           PGHOST: 127.0.0.1
@@ -131,6 +139,13 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f database/migrations/017_chat_rate_limits.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/018_ai_usage_metering.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/019_temporary_beta_user_cap.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/020_ai_usage_outcome_contract.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/021_official_commercial_catalog.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/022_public_and_professional_guidance.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/023_pgvector_legal_embeddings.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/024_legal_embeddings_multilingual_384.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/025_credit_wallet_foundation.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/026_platform_founder_entitlements.sql
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend
@@ -162,6 +177,99 @@ jobs:
           path: dist/CFDT_JURIS_V3_38_Kit_Developpeur.zip
           if-no-files-found: error
           retention-days: 30
+
+  embed-staging:
+    name: Generate local legal embeddings (staging only)
+    if: github.ref == 'refs/heads/feature/dikevia-free-vector-search-poc'
+    needs: test-and-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ secrets.LEGAL_CORPUS_INGEST_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-embeddings.txt
+      - name: Verify dedicated staging database identity
+        run: |
+          test -n "$LEGAL_CORPUS_INGEST_DATABASE_URL"
+          python -m pip install asyncpg
+          python - <<'PY'
+          import os, asyncio, asyncpg
+          async def main():
+              conn = await asyncpg.connect(os.environ["LEGAL_CORPUS_INGEST_DATABASE_URL"])
+              try:
+                  identity = await conn.fetchval("SELECT current_user")
+                  marker = await conn.fetchval(
+                      "SELECT marker FROM public.dikevia_staging_guard WHERE marker=$1",
+                      "br-billowing-haze-bd5a1cns",
+                  )
+                  assert identity == "cfdt_juris_ingest", "Dedicated ingestion role required"
+                  assert marker == "br-billowing-haze-bd5a1cns", "This job is restricted to Neon staging"
+                  print("Dedicated staging database identity verified; secret value is not displayed.")
+              finally:
+                  await conn.close()
+          asyncio.run(main())
+          PY
+      - name: Install local CPU embedding dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install asyncpg -r backend/requirements-embeddings.txt
+      - name: Verify the staging vector schema
+        run: |
+          python - <<'PY'
+          import os, asyncio, asyncpg
+          async def main():
+              conn = await asyncpg.connect(os.environ["LEGAL_CORPUS_INGEST_DATABASE_URL"])
+              try:
+                  identity = await conn.fetchval("SELECT current_user")
+                  vector_type = await conn.fetchval("""
+                    SELECT format_type(a.atttypid,a.atttypmod)
+                    FROM pg_attribute a
+                    WHERE a.attrelid='public.legal_chunks'::regclass
+                      AND a.attname='embedding_384'
+                  """)
+                  assert identity == "cfdt_juris_ingest", identity
+                  assert vector_type == "vector(384)", vector_type
+                  print("Staging schema and ingestion role verified.")
+              finally:
+                  await conn.close()
+          asyncio.run(main())
+          PY
+      - name: Measure single-query embedding memory for deployment sizing
+        run: |
+          /usr/bin/time -v python scripts/benchmark_embedding_query_memory.py
+      - name: Generate embeddings locally without a paid API
+        run: |
+          /usr/bin/time -v python scripts/generate_legal_embeddings.py --batch-size 64 --max-chunks 10000
+      - name: Verify complete and consistent embedding coverage
+        run: |
+          python - <<'PY'
+          import os, asyncio, asyncpg
+          async def main():
+              conn = await asyncpg.connect(os.environ["LEGAL_CORPUS_INGEST_DATABASE_URL"])
+              try:
+                  row = await conn.fetchrow("""
+                    SELECT count(*) AS total,
+                           count(embedding_384) AS embedded,
+                           count(*) FILTER (
+                             WHERE embedding_384 IS NOT NULL
+                               AND (embedding_384_dimensions <> 384
+                                    OR embedding_384_model <> 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+                           ) AS inconsistent
+                    FROM legal_chunks
+                  """)
+                  print(dict(row))
+                  assert row["total"] > 0
+                  assert row["embedded"] == row["total"], "Embedding coverage is incomplete"
+                  assert row["inconsistent"] == 0, "Embedding metadata mismatch"
+              finally:
+                  await conn.close()
+          asyncio.run(main())
+          PY
 
   live-smoke:
     # These probes contact Render-hosted services and may wake paid compute. Disabled unless explicitly enabled in repository variables.

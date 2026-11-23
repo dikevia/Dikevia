@@ -29,8 +29,8 @@ jobs:
             set -eu
             cd "${{ secrets.STAGING_DEPLOY_PATH }}"
             git fetch --prune origin
-            git checkout develop
-            git pull --ff-only origin develop
+            git checkout main
+            git pull --ff-only origin main
             test -f .env.staging
             python3 scripts/upgrade_env_file.py --staging
             python3 scripts/audit_production_env.py --env-file .env.staging

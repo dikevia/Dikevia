@@ -241,6 +241,92 @@ def test_code_research_budget_never_drops_a_recognized_subquestion():
     ]
 
 
+def test_cgfp_topic_anchors_rank_but_do_not_suppress_lexical_candidates(monkeypatch):
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    monkeypatch.setattr(
+        "app.cgfp_relevance.lexical_search",
+        lambda query, limit=20: {
+            "source": {"source_id": "test"},
+            "results": [
+                {"article": "L714-4", "score": 2.0, "excerpt": "Régime indemnitaire des agents territoriaux."},
+                {"article": "L714-5", "score": 1.5, "excerpt": "Conditions d'exercice des fonctions."},
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        "app.cgfp_relevance.get_cgfp_article",
+        lambda ref: {
+            "text": (
+                "Régime indemnitaire des agents territoriaux."
+                if ref == "L714-4" else "Conditions d'exercice des fonctions."
+            )
+        },
+    )
+
+    result = search_ranked_cgfp("Je remplace un collègue et demande ses primes")
+
+    assert {item["article"] for item in result["results"]} == {"L714-4", "L714-5"}
+    contextual = next(item for item in result["results"] if item["article"] == "L714-5")
+    assert contextual["relevance_label"].startswith("Correspondance lexicale")
+
+
+
+def test_citis_query_uses_focused_health_topic():
+    from app.cgfp_relevance import _matching_topics
+
+    topics = {item["key"] for item in _matching_topics(
+        "Je suis en CITIS après un accident de service reconnu imputable."
+    )}
+    assert topics == {"citis"}
+
+
+def test_therapeutic_part_time_query_uses_focused_health_topic():
+    from app.cgfp_relevance import _matching_topics
+
+    topics = {item["key"] for item in _matching_topics(
+        "Mon médecin préconise un temps partiel thérapeutique après mon arrêt."
+    )}
+    assert topics == {"temps_partiel_therapeutique"}
+
+
+def test_citis_retrieval_surfaces_its_core_cgfp_provisions():
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    result = search_ranked_cgfp(
+        "Je suis en CITIS après un accident reconnu imputable au service. "
+        "Quels sont mes droits au congé, au maintien du traitement et à la reprise ?",
+        limit=20,
+    )
+    refs = {item["article"] for item in result["results"]}
+    assert {"L822-21", "L822-22", "L822-23"} & refs
+
+
+def test_therapeutic_part_time_retrieval_surfaces_its_core_cgfp_provisions():
+    from app.cgfp_relevance import search_cgfp as search_ranked_cgfp
+
+    result = search_ranked_cgfp(
+        "Après un arrêt maladie, mon médecin préconise un temps partiel "
+        "pour raison thérapeutique. Quels sont les droits au maintien de l'emploi "
+        "et à la rémunération ?",
+        limit=20,
+    )
+    refs = {item["article"] for item in result["results"]}
+    assert {"L823-1", "L823-2", "L823-4", "L823-5"} & refs
+
+
+
+def test_code_research_budget_preserves_axes_and_reserves_three_exact_article_lookups():
+    from app.orchestrator import _build_code_research_queries
+
+    axes = [f"axe juridique {number}" for number in range(1, 6)]
+    exact_articles = [f"article L823-{number}" for number in range(1, 7)]
+    result = _build_code_research_queries(
+        axes, exact_articles, max_queries=8
+    )
+    assert result == [*axes, *exact_articles[:3]]
+
+
 def test_cgfp_tokenizer_normalizes_french_plural_forms_without_corrupting_invariants():
     from app.cgfp import tokenize
 
@@ -252,3 +338,194 @@ def test_cgfp_tokenizer_normalizes_french_plural_forms_without_corrupting_invari
     ]
     assert "temps" in tokenize("temps de travail")
     assert "prix" in tokenize("prix des prestations")
+
+
+def test_cgfp_article_discovery_can_be_scoped_to_fpe(monkeypatch):
+    from app import orchestrator
+
+    monkeypatch.setattr(
+        orchestrator,
+        "get_cgfp_article",
+        lambda _article: {
+            "text": "Les agents de la fonction publique de l'État bénéficient de cette disposition."
+        },
+    )
+    assert orchestrator._cgfp_article_fpt_eligible("L123-4", "FPE") is True
+    assert orchestrator._cgfp_article_fpt_eligible("L123-4", "FPT") is False
+
+def test_cgfp_article_discovery_forwards_the_selected_versant(monkeypatch):
+    from app import orchestrator
+
+    seen = []
+    def eligible(article_ref, target_versant="FPT"):
+        seen.append((article_ref, target_versant))
+        return True
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", eligible)
+    found = {"results": [
+        {"article": "L823-1", "matched_concepts": ["temps partiel thérapeutique"]}
+    ]}
+
+    assert orchestrator._cgfp_article_discovery_queries(found, "FPE") == ["article L823-1"]
+    assert seen == [("L823-1", "FPE")]
+
+    seen.clear()
+    assert orchestrator._cgfp_article_discovery_queries(found, "FPH") == ["article L823-1"]
+    assert seen == [("L823-1", "FPH")]
+
+
+def test_snapshot_fallback_is_used_when_live_cgfp_hits_are_off_topic(monkeypatch):
+    from app import orchestrator
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", lambda *_args: True)
+    monkeypatch.setattr(
+        orchestrator, "_source_relevant_to_any_research_axis",
+        lambda _queries, source: source.get("relevant") is True,
+    )
+    found = {"results": [{"article": "L822-21", "relevant": True}]}
+
+    assert orchestrator.should_use_cgfp_snapshot_fallback(
+        None, found, ["axe CITIS"], target_versant="FPT",
+        live_sources=[{"relevant": False, "analysis_eligible": True}],
+    )
+
+
+def test_snapshot_fallback_is_not_used_when_live_cgfp_covers_an_axis(monkeypatch):
+    from app import orchestrator
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", lambda *_args: True)
+    monkeypatch.setattr(
+        orchestrator, "_source_relevant_to_any_research_axis",
+        lambda _queries, source: source.get("relevant") is True,
+    )
+    found = {"results": [{"article": "L822-21", "relevant": True}]}
+
+    assert not orchestrator.should_use_cgfp_snapshot_fallback(
+        None, found, ["axe CITIS"], target_versant="FPT",
+        live_sources=[{"relevant": True, "analysis_eligible": True}],
+    )
+
+
+@pytest.mark.parametrize(
+    ("versant", "expected"),
+    [
+        ("FPE", "fonction publique de l'État"),
+        ("FPH", "fonction publique hospitalière"),
+    ],
+)
+def test_non_fpt_fallback_search_does_not_inherit_fpt_templates(versant, expected):
+    from app.orchestrator import _build_versant_fallback_research
+
+    queries, axes = _build_versant_fallback_research(
+        "Quelles sont les règles de congés annuels ?", versant,
+    )
+    assert queries == [f"Quelles sont les règles de congés annuels ? {expected}"]
+    assert axes == queries
+    assert all("décret 85-1250" not in query for query in queries)
+    assert all("fonction publique territoriale" not in query for query in queries)
+
+
+def test_fpt_fallback_search_keeps_territorial_topic_expansion():
+    from app.orchestrator import _build_versant_fallback_research
+
+    queries, axes = _build_versant_fallback_research(
+        "Quelles sont les règles de congés annuels ?", "FPT",
+    )
+    assert queries
+    # One focused topic does not create a mandatory multi-axis evidence contract.
+    assert axes == []
+    assert any("décret 85-1250" in query for query in queries)
+
+
+def test_cgfp_retrieval_expands_common_health_terms_without_reclassifying_them():
+    from app.cgfp_relevance import _expand_legal_query, _matching_topics
+
+    question = "Je voudrais reprendre à mi-temps après un accident du travail."
+    expanded = _expand_legal_query(question)
+    assert "temps partiel pour raison therapeutique" in expanded
+    assert "accident de service" in expanded
+
+    topics = {item["key"] for item in _matching_topics(question)}
+    assert topics == {"citis", "temps_partiel_therapeutique"}
+
+
+def test_cgfp_retrieval_alias_preserves_original_user_wording():
+    from app.cgfp_relevance import _expand_legal_query
+
+    question = "Mon médecin parle de mi-temps thérapeutique."
+    expanded = _expand_legal_query(question)
+    assert question in expanded
+    assert "temps partiel pour raison therapeutique" in expanded
+
+
+def test_accident_du_travail_alias_is_only_a_search_route():
+    from app.cgfp_relevance import _expand_legal_query, _matching_topics
+
+    question = "Mon accident du travail est-il reconnu ?"
+    assert "accident de service" in _expand_legal_query(question)
+    assert "citis" in {item["key"] for item in _matching_topics(question)}
+
+def test_cgfp_article_discovery_verifies_unanchored_lexical_candidates_live(monkeypatch):
+    from app import orchestrator
+
+    monkeypatch.setattr(orchestrator, "_cgfp_article_fpt_eligible", lambda *_args: True)
+    found = {"results": [{
+        "article": "L823-1",
+        "matched_concepts": [],
+        "relevance_label": "Correspondance lexicale — pertinence à vérifier",
+    }]}
+
+    assert orchestrator._cgfp_article_discovery_queries(found) == ["article L823-1"]
+
+
+
+def test_public_service_referentiel_expands_agent_vocabulary_without_activating_citations():
+    from app.cgfp_relevance import _expand_legal_query
+
+    citis = _expand_legal_query("Mon accident du travail et mon CITIS")
+    assert "congé pour invalidité temporaire imputable au service" in citis
+    assert "accident de trajet" in citis
+    assert "L822-21" not in citis
+    assert "87-602" not in citis
+
+    cnfpt = _expand_legal_query("Je souhaite faire évoluer mon emploi-type et ma fiche de poste")
+    assert "métier" in cnfpt
+    assert "compétence" in cnfpt
+    assert "poste de travail" in cnfpt
+
+    tpt = _expand_legal_query("Mon médecin recommande un TPT")
+    assert "quotité de travail thérapeutique" in tpt
+    assert "réadaptation professionnelle" in tpt
+
+
+def test_public_service_referentiel_has_provenance_and_unverified_reference_leads():
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "app" / "fp_lexical_referentiel.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    source_ids = {item["id"] for item in payload["sources"]}
+    assert {"service_public_fp", "dgafp_tpt_2026", "cnfpt_glossaire_metiers_2026",
+            "cnfpt_repertoire", "dgcl_portail", "cig_pc", "legifrance_cgfp"} <= source_ids
+    assert len(payload["entries"]) >= 20
+    assert all(entry["reference_validation"] == "UNVERIFIED_LEAD_ONLY"
+               for entry in payload["entries"])
+
+
+
+def test_cgfp_text_cleanup_removes_running_headers_and_only_trailing_navigation():
+    from app.cgfp import clean_cgfp_article_text
+
+    raw = (
+        "Premier alinéa juridique.\n"
+        "Code général de la fonction publique - Dernière modification le 31 octobre 2026 - Document généré le 13 novembre 2026\n"
+        "Chapitre Ier : Dispositions générales\n"
+        "Deuxième alinéa juridique.\n"
+        "Titre II : Dispositions suivantes"
+    )
+    cleaned = clean_cgfp_article_text(raw)
+    assert "Premier alinéa juridique." in cleaned
+    assert "Deuxième alinéa juridique." in cleaned
+    assert "Dernière modification" not in cleaned
+    assert "Titre II : Dispositions suivantes" not in cleaned
+    assert "Chapitre Ier : Dispositions générales" in cleaned

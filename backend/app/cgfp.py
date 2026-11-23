@@ -18,6 +18,35 @@ STOPWORDS = {"dans", "avec", "pour", "par", "sur", "une", "des", "les", "aux", "
 ARTICLE_REF = re.compile(r"\b([LDR]\s*\d+(?:-\d+)*)\b", re.I)
 TOKEN = re.compile(r"[a-z0-9]{2,}")
 
+_PAGE_BANNER_RE = re.compile(
+    r"^Code général de la fonction publique\s*[-–—]\s*Dernière modification\b.*\bDocument généré\b.*$",
+    re.IGNORECASE,
+)
+_STRUCTURAL_HEADING_RE = re.compile(
+    r"^(?:PARTIE\s+(?:LÉGISLATIVE|RÉGLEMENTAIRE)|"
+    r"(?:LIVRE|TITRE|CHAPITRE|SECTION|SOUS-SECTION|PARAGRAPHE)\s+"
+    r"(?:[IVXLCDM]+(?:er|e)?|\d+(?:er|e)?)(?:\s*[:：-].*)?)$",
+    re.IGNORECASE,
+)
+
+
+def clean_cgfp_article_text(value: str) -> str:
+    """Remove PDF running headers and trailing navigation headings, not legal paragraphs."""
+    lines = [line.strip() for line in str(value or "").splitlines()]
+    lines = [
+        line for line in lines
+        if line
+        and not _PAGE_BANNER_RE.match(line)
+        and line.casefold() != "code général de la fonction publique"
+    ]
+    # The PDF extractor carries the next chapter/section heading into the
+    # preceding article. Remove only terminal structural headings; retain
+    # headings that introduce substantive text inside an article.
+    while lines and _STRUCTURAL_HEADING_RE.match(lines[-1]):
+        lines.pop()
+    return "\n".join(lines).strip()
+
+
 
 def normalize(value: str) -> str:
     value = unicodedata.normalize("NFKD", value.lower())
@@ -25,7 +54,7 @@ def normalize(value: str) -> str:
 
 
 def tokenize(value: str) -> list[str]:
-    """Normalize common French plural forms so queries match legal-text wording."""
+    """Normalize common French plural forms without changing invariant words."""
     tokens = []
     invariant_or_ambiguous = {
         "apres", "assez", "aussi", "bas", "bois", "bras", "cas", "corps",
@@ -36,7 +65,11 @@ def tokenize(value: str) -> list[str]:
     for token in TOKEN.findall(normalize(value)):
         if token in STOPWORDS:
             continue
-        singular = token[:-1] if len(token) > 4 and token.endswith("s") and token not in invariant_or_ambiguous else token
+        singular = (
+            token[:-1]
+            if len(token) > 4 and token.endswith("s") and token not in invariant_or_ambiguous
+            else token
+        )
         if singular not in STOPWORDS:
             tokens.append(singular)
     return tokens
@@ -65,13 +98,14 @@ def _search_corpus() -> dict:
         ref = re.sub(r"\s+", "", str(article.get("article", ""))).upper()
         if not re.fullmatch(r"[LDR]\d+(?:-\d+)*", ref):
             continue
-        terms = tokenize(article.get("text", ""))
+        cleaned_text = clean_cgfp_article_text(article.get("text", ""))
+        terms = tokenize(cleaned_text)
         counts = Counter(terms)
         for term in counts:
             df[term] += 1
         total_length += len(terms)
         item = {"article": ref, "page_start": int(article["page_start"]),
-                "page_end": int(article["page_end"]), "text": str(article.get("text", "")),
+                "page_end": int(article["page_end"]), "text": cleaned_text,
                 "terms": counts, "length": len(terms)}
         docs.append(item)
         by_ref[ref] = item

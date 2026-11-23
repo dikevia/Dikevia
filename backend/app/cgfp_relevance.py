@@ -7,7 +7,9 @@ uniquement à ordonner les documents à examiner. Aucun statut juridique n'est d
 from __future__ import annotations
 
 from typing import Any
+import json
 import re
+from pathlib import Path
 
 from .cgfp import get_cgfp_article, normalize, search_cgfp as lexical_search
 
@@ -88,6 +90,59 @@ _TOPICS: tuple[dict[str, Any], ...] = (
             "blame", "exclusion temporaire", "revocation", "conseil de discipline",
         ),
         "boosts": {"sanction disciplinaire": 12.0, "procedure disciplinaire": 9.0},
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "citis",
+        "triggers": (
+            "citis", "conge pour invalidite temporaire imputable au service",
+            "invalidite temporaire imputable au service", "accident de service",
+        ),
+        "expansion": (
+            "congé pour invalidité temporaire imputable au service accident reconnu imputable "
+            "accident de trajet maladie contractée en service incapacité temporaire de travail "
+            "intégralité du traitement reprise du service retraite période de service effectif "
+            "déclaration expertise médicale imputabilité au service"
+        ),
+        "anchors": (
+            "conge pour invalidite temporaire imputable au service",
+            "accident reconnu imputable au service", "accident de trajet",
+            "maladie contractee en service", "integralite du traitement",
+            "periode de service effectif",
+        ),
+        "boosts": {
+            "conge pour invalidite temporaire imputable au service": 18.0,
+            "accident reconnu imputable au service": 12.0,
+            "integralite du traitement": 10.0,
+            "accident de trajet": 8.0,
+        },
+        "exclude_unless_anchor": (),
+    },
+    {
+        "key": "temps_partiel_therapeutique",
+        "triggers": (
+            "temps partiel therapeutique", "temps partiel pour raison therapeutique",
+            "tpt",
+        ),
+        "expansion": (
+            "temps partiel pour raison thérapeutique maintien retour emploi amélioration état santé "
+            "rééducation réadaptation professionnelle quotité mi temps traitement intégral "
+            "supplément familial traitement indemnité résidence durée continue discontinue "
+            "autorisation nouvelle période"
+        ),
+        "anchors": (
+            "temps partiel pour raison therapeutique", "maintien ou le retour a l emploi",
+            "reeducation", "readaptation professionnelle", "ne peut pas etre inferieur au mi temps",
+            "integralite de son traitement", "supplement familial de traitement",
+            "indemnite de residence", "continue ou discontinue",
+        ),
+        "boosts": {
+            "temps partiel pour raison therapeutique": 18.0,
+            "maintien ou le retour a l emploi": 10.0,
+            "integralite de son traitement": 10.0,
+            "reeducation": 7.0,
+            "readaptation professionnelle": 7.0,
+        },
         "exclude_unless_anchor": (),
     },
     {
@@ -456,12 +511,103 @@ _TOPICS: tuple[dict[str, Any], ...] = (
 )
 
 
+_LEGAL_QUERY_ALIASES: tuple[tuple[str, str], ...] = (
+    # These are retrieval synonyms only. They do not establish a legal
+    # qualification (for example, an "accident du travail" must still be
+    # qualified against the user's public-service status and the official text).
+    ("mi temps therapeutique", "temps partiel pour raison therapeutique"),
+    ("mi-temps therapeutique", "temps partiel pour raison therapeutique"),
+    ("reprise a mi temps", "temps partiel pour raison therapeutique"),
+    ("reprendre a mi temps", "temps partiel pour raison therapeutique"),
+    ("reprendre a mi-temps", "temps partiel pour raison therapeutique"),
+    ("reprise a mi-temps", "temps partiel pour raison therapeutique"),
+    ("accident du travail", "accident de service"),
+    ("arret apres accident", "accident de service citis"),
+)
+
+
+
+_FP_LEXICAL_REFERENTIEL_PATH = Path(__file__).with_name("fp_lexical_referentiel.json")
+
+
+def _load_fp_lexical_referentiel() -> tuple[dict[str, Any], ...]:
+    """Load curated public-service query vocabulary; legal references stay inert."""
+    try:
+        payload = json.loads(_FP_LEXICAL_REFERENTIEL_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ()
+    if payload.get("schema_version") != "1.0.0" or not isinstance(payload.get("entries"), list):
+        return ()
+    valid: list[dict[str, Any]] = []
+    for entry in payload["entries"]:
+        if not isinstance(entry, dict):
+            continue
+        triggers = entry.get("triggers")
+        legal_terms = entry.get("legal_terms")
+        if (
+            isinstance(entry.get("id"), str)
+            and isinstance(triggers, list) and all(isinstance(x, str) for x in triggers)
+            and isinstance(legal_terms, list) and all(isinstance(x, str) for x in legal_terms)
+        ):
+            valid.append(entry)
+    return tuple(valid)
+
+
+_FP_LEXICAL_ENTRIES = _load_fp_lexical_referentiel()
+
+
+def _trigger_matches(query: str, trigger: str) -> bool:
+    folded_trigger = normalize(trigger)
+    if not folded_trigger:
+        return False
+    if len(folded_trigger) <= 3 or any(char.isdigit() for char in folded_trigger):
+        return bool(re.search(
+            r"(?<![a-z0-9])" + re.escape(folded_trigger) + r"(?![a-z0-9])",
+            query,
+        ))
+    return folded_trigger in query
+
+
+def _expand_from_public_service_referentiel(query: str) -> list[str]:
+    """Return lexical expansions only; never promote candidate citations to law."""
+    folded = normalize(query)
+    additions: list[str] = []
+    for entry in _FP_LEXICAL_ENTRIES:
+        if any(_trigger_matches(folded, trigger) for trigger in entry["triggers"]):
+            additions.extend(entry["legal_terms"])
+    return list(dict.fromkeys(additions))[:36]
+
+
+def _expand_legal_query(query: str) -> str:
+    """Append controlled legal equivalents while preserving the user's wording."""
+    folded = normalize(query)
+    additions: list[str] = []
+    for colloquial, legal in _LEGAL_QUERY_ALIASES:
+        if re.search(r"(?<![a-z0-9])" + re.escape(normalize(colloquial)) + r"(?![a-z0-9])", folded):
+            additions.append(legal)
+    # Public-service vocabulary expands retrieval but never establishes scope,
+    # legal applicability, or the validity of the reference_leads in the JSON.
+    additions.extend(_expand_from_public_service_referentiel(folded))
+    return " ".join(dict.fromkeys([query.strip(), *additions])).strip()
+
+
 def _matching_topics(query: str) -> list[dict[str, Any]]:
+    query = _expand_legal_query(query)
     folded = normalize(query)
     matched = [
         topic for topic in _TOPICS
         if any(normalize(trigger) in folded for trigger in topic["triggers"])
     ]
+    # Health-related routes are intentionally specific. If the question
+    # explicitly names CITIS or therapeutic part-time, do not dilute retrieval
+    # with generic leave, working-time or sick-leave expansions.
+    focused_health = [
+        topic for topic in matched
+        if topic["key"] in {"citis", "temps_partiel_therapeutique"}
+    ]
+    if focused_health:
+        return focused_health
+
     # Overtime/IHTS is a specific compensation topic. Do not also activate
     # generic remuneration and working-time topics for the same phrase,
     # otherwise their broad anchors reintroduce unrelated CGFP articles.
@@ -472,7 +618,8 @@ def _matching_topics(query: str) -> list[dict[str, Any]]:
 def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
     """Return ranked CGFP leads, with domain-specific precision safeguards."""
     safe_limit = max(1, min(int(limit), 20))
-    base = lexical_search(query, limit=20)
+    search_query = _expand_legal_query(query)
+    base = lexical_search(search_query, limit=20)
     # An explicit article number is a direct lookup, never a lexical search.
     # The BM25 engine also scores ordinary words in the question; returning its
     # top hits when the requested reference is absent creates convincing but
@@ -492,7 +639,7 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
             "reference_found_in_snapshot": bool(exact_results),
         }
 
-    topics = _matching_topics(query)
+    topics = _matching_topics(search_query)
     if not topics:
         # A generic word such as "travail" must not make dozens of unrelated
         # CGFP articles look relevant. Keep only meaningful lexical matches;
@@ -538,7 +685,7 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
         }
 
     expansion = " ".join(topic["expansion"] for topic in topics)
-    enriched = lexical_search((query[:350] + " " + expansion)[:500], limit=20)
+    enriched = lexical_search((search_query[:350] + " " + expansion)[:500], limit=20)
     merged: dict[str, dict[str, Any]] = {}
     for item in base.get("results", []):
         merged[item["article"]] = {**item, "_original_score": float(item.get("score", 0.0))}
@@ -570,8 +717,8 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
                 if normalize(phrase) in body:
                     score += boost
         # Topic anchors and exclusions may improve ordering, but must not
-        # suppress lexical candidates: an applicable general CGFP provision
-        # can lack the vocabulary used in the question or in this taxonomy.
+        # suppress lexical candidates: applicable general provisions may use
+        # different vocabulary from the question and this topic taxonomy.
         unique_anchors = list(dict.fromkeys(matched_anchors))
         if excluded:
             score *= 0.35
@@ -596,7 +743,7 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
         "prefet", "sous-prefet", "administration penitentiaire",
         "agent penitentiaire", "douanes", "douanier",
     )
-    if not any(normalize(term) in normalize(query) for term in special_categories):
+    if not any(normalize(term) in normalize(search_query) for term in special_categories):
         ranked = [item for item in ranked if item.get("article") != "L134-10"]
 
     ranked.sort(key=lambda item: (-float(item["score"]), item["article"]))

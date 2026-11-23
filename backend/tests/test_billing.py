@@ -1,19 +1,36 @@
 import hashlib
 import hmac
 import json
+
+import pytest
+from fastapi import HTTPException
+from app.config import settings
+from app.main import billing_checkout
 from app.billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
 
 
-def test_offers_have_expected_server_side_prices_and_limits():
-    assert PLANS["INDIVIDUAL_1"]["amount"] == 1500
-    assert PLANS["INDIVIDUAL_1"]["max_users"] == 1
-    assert PLANS["SYNDICAT_10"]["amount"] == 8000
-    assert PLANS["SYNDICAT_10"]["max_users"] == 10
-    assert PLANS["SYNDICAT_50"]["amount"] == 30000
-    assert PLANS["SYNDICAT_50"]["max_users"] == 50
-    assert all(p["amount_cents"] in (1500,8000,30000) for p in public_plans())
-    assert len(public_plans()) == 3
-    assert "LEGACY_SYNDICAT_10" not in {p["code"] for p in public_plans()}
+def test_official_offers_have_exact_ttc_prices_seats_and_monthly_credits():
+    expected = {
+        "ESSENTIEL": (1490, 14900, 1, 125),
+        "PRO": (2900, 29000, 1, 248),
+        "EQUIPE_INSTANCES": (11900, 119000, 5, 1000),
+        "COLLECTIVITE_SYNDICATS": (29900, 299000, 15, 2450),
+    }
+    plans = {plan["code"]: plan for plan in public_plans()}
+    assert set(plans) == set(expected)
+    for code, (monthly, annual, seats, credits) in expected.items():
+        assert PLANS[code]["amount"] == monthly
+        assert PLANS[code]["annual_amount"] == annual
+        assert PLANS[code]["max_users"] == seats
+        assert PLANS[code]["monthly_credits"] == credits
+        assert PLANS[code]["tax_inclusive"] is True
+        assert plans[code]["amount_cents"] == monthly
+        assert plans[code]["annual_amount_cents"] == annual
+        assert plans[code]["monthly_credits"] == credits
+        assert "TTC" in plans[code]["price"]
+    assert len(public_plans()) == 4
+    assert "INDIVIDUAL_1" not in plans
+    assert PLANS["INDIVIDUAL_1"]["public"] is False
 
 
 def test_stripe_signature_valid_and_tampered_payload_rejected():
@@ -40,11 +57,10 @@ def test_checkout_event_maps_org_and_plan():
 def test_unrecognized_event_is_ignored():
     assert extract_subscription_state({"type": "customer.created", "data": {"object": {}}}) is None
 
-
-def test_public_prices_are_ttc_inclusive_and_server_side():
-    plans = {p["code"]: p for p in public_plans()}
-    assert plans["INDIVIDUAL_1"]["amount_cents"] == 1500
-    assert plans["SYNDICAT_10"]["amount_cents"] == 8000
-    assert plans["SYNDICAT_50"]["amount_cents"] == 30000
-    assert set(plans) == {"INDIVIDUAL_1", "SYNDICAT_10", "SYNDICAT_50"}
-    assert all(PLANS[code]["tax_inclusive"] for code in plans)
+@pytest.mark.asyncio
+async def test_checkout_is_blocked_until_monthly_credit_enforcement_is_live(monkeypatch):
+    monkeypatch.setattr(settings, "private_instance_mode", False)
+    with pytest.raises(HTTPException) as exc:
+        await billing_checkout({"plan_code": "ESSENTIEL"})
+    assert exc.value.status_code == 503
+    assert "compteur de crédits mensuels" in exc.value.detail

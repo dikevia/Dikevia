@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vérification de session Dikévia</title></head>
+<body>
+<script>
+(() => {
+  if (window.parent === window) return;
+  window.parent.postMessage({
+    type: 'cfdt-oidc-silent-callback',
+    url: window.location.href
+  }, window.location.origin);
+})();
+</script>
+</body>
+</html>

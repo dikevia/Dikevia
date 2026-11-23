@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 import re
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,14 +34,25 @@ class Settings(BaseSettings):
     document_storage_bucket: str = ""
     cgfp_index_path: str = ""
     cgfp_enabled: bool = True
+    vector_search_enabled: bool = False
     ai_api_base_url: str = ""
     ai_api_key: str = ""
     ai_model: str = ""
     ai_timeout_seconds: float = 25.0
+    ai_local_document_review_enabled: bool = False
+    ai_local_documents_in_chat_enabled: bool = False
+    startup_external_diagnostics_enabled: bool = False
     chat_rate_limit_per_minute: int = 10
     legifrance_environment: str = "sandbox"
-    legifrance_client_id: str = ""
-    legifrance_client_secret: str = ""
+    # Accept both documented LEGIFRANCE_* names and the common PISTE_* aliases.
+    # This prevents valid credentials configured under the provider name from
+    # being silently treated as absent by the staging runtime.
+    legifrance_client_id: str = Field(
+        default="", validation_alias=AliasChoices("LEGIFRANCE_CLIENT_ID", "PISTE_CLIENT_ID")
+    )
+    legifrance_client_secret: str = Field(
+        default="", validation_alias=AliasChoices("LEGIFRANCE_CLIENT_SECRET", "PISTE_CLIENT_SECRET")
+    )
     legifrance_scope: str = "openid"
     legifrance_timeout_seconds: float = 20.0
     legifrance_code_name: str = "Code général de la fonction publique"
@@ -52,6 +64,7 @@ class Settings(BaseSettings):
     private_instance_mode: bool = False
     private_instance_max_users: int = 10
     beta_max_users: int = 1
+    stripe_billing_enabled: bool = False
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_automatic_tax_enabled: bool = True
@@ -87,6 +100,10 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("BETA_MAX_USERS doit être compris entre 0 (désactivé) et 1000.")
     if config.private_instance_mode and (config.stripe_secret_key or config.stripe_webhook_secret):
         raise RuntimeError("Stripe doit être entièrement désactivé en mode instance privée.")
+    if config.stripe_billing_enabled and not (config.stripe_secret_key and config.stripe_webhook_secret):
+        raise RuntimeError("STRIPE_BILLING_ENABLED exige les deux secrets Stripe.")
+    if config.stripe_billing_enabled and not (config.stripe_secret_key and config.stripe_webhook_secret):
+        raise RuntimeError("STRIPE_BILLING_ENABLED exige les deux secrets Stripe.")
     if bool(config.stripe_secret_key) != bool(config.stripe_webhook_secret):
         raise RuntimeError("STRIPE_SECRET_KEY et STRIPE_WEBHOOK_SECRET doivent être configurés ensemble.")
     if config.app_env == "production" and config.stripe_secret_key:

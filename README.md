@@ -232,7 +232,7 @@ Voir `docs/33_V3_25_PRODUCTION_SECURITY.md` : audit bloquant des secrets et vari
 - Les recherches documentaires utilisent les questions précédentes de l'utilisateur et la question courante pour mieux résoudre les références implicites.
 - Consultation, reprise et suppression des conversations depuis l'interface ; suppression en cascade des messages.
 - Migrations `012_persistent_chat_conversations.sql` et `013_legal_dossiers.sql` et leurs rollbacks associés.
-- La conversation fournit un contexte limité aux 12 derniers messages ; elle ne remplace pas la vérification des textes, dates d'effet, sources et actes locaux.
+- La conversation conserve jusqu’à 20 messages (10 échanges) pour les questions de suivi et les réponses brèves aux demandes de clarification. Ce contexte sert à comprendre la demande ; il ne remplace pas la vérification des textes, dates d’effet, sources et actes locaux.
 
 
 ## V3.28 — Dossiers juridiques constitués à partir des échanges
@@ -300,3 +300,11 @@ Le quota PostgreSQL existant est désormais partagé entre les questions du chat
 
 ## V3.35 — Sécurisation des imports PISTE
 Les routes d'administration qui importent les textes réglementaires et la jurisprudence contrôlent désormais les recherches et limitent chaque import à 20 résultats maximum avant tout accès à la base d'ingestion ou à l'API PISTE. Cette protection évite les imports involontairement trop volumineux et borne les consultations de décisions intégrales.
+
+
+## V3.40 — Portefeuille de crédits, accès fondateur et confidentialité
+
+Les migrations `025_credit_wallet_foundation.sql` et `026_platform_founder_entitlements.sql` préparent un portefeuille de crédits atomique et un accès fondateur lié à une identité OIDC déjà authentifiée. Les allocations de crédits et l'activation réelle des droits restent réservées à l'administration plateforme ; aucun crédit automatique ni accès fondateur n'est attribué par défaut.
+
+Les documents locaux ne peuvent être transmis à un fournisseur IA que si une option serveur est activée **et** si l'utilisateur confirme le transfert pour la demande courante. Les diagnostics externes au démarrage et Stripe sont désactivés par défaut. Voir [la note technique V3.40](docs/45_V3_40_WALLET_FOUNDER_ENTITLEMENTS_AND_PRIVACY.md).
+

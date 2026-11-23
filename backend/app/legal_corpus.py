@@ -66,11 +66,28 @@ def temporal_status(valid_from: date | None, valid_to: date | None, requested: d
                 raw_payload = json.loads(raw_payload)
             except (ValueError, TypeError):
                 raw_payload = {}
+        # An explicit repeal status always excludes a text from current-law answers.
+        # Historical applicability still requires an independently verified version.
+        if version_status in {"REPEALED", "NOT_IN_FORCE"}:
+            return "NO_LONGER_IN_FORCE"
+        if (raw_payload or {}).get("temporal_scope") == "CURRENT_CODE_SNAPSHOT":
+            return "TEMPORAL_SCOPE_INCOMPLETE"
         imported_for_date = (raw_payload or {}).get("requested_date") == requested.isoformat()
         if imported_for_date and version_status == "IN_FORCE":
             return "IN_FORCE_ON_REQUESTED_DATE"
         if imported_for_date and version_status in {"REPEALED", "NOT_IN_FORCE"}:
             return "NO_LONGER_IN_FORCE"
+        # A date-filtered LODA search followed by a consultation returning the
+        # same official text ID proves which version was retrieved for that date.
+        # It does not prove the instrument's separate legal status when metadata
+        # omits that status; preserve this weaker, explicit temporal state.
+        if (
+            imported_for_date
+            and version_status == "UNKNOWN"
+            and (raw_payload or {}).get("date_filter") == "DATE_VERSION"
+            and (raw_payload or {}).get("matching_consulted_id")
+        ):
+            return "VERSION_RETRIEVED_AT_REQUESTED_DATE"
     if valid_from and requested < valid_from:
         return "NOT_YET_EFFECTIVE"
     if valid_to and requested > valid_to:
@@ -81,10 +98,36 @@ def temporal_status(valid_from: date | None, valid_to: date | None, requested: d
 
 
 def safe_official_url(value: str | None) -> str | None:
+    """Keep HTTPS links only for explicitly trusted public legal/institutional domains."""
     if not value:
         return None
     parsed = urlparse(value)
-    if parsed.scheme == "https" and parsed.hostname in {"www.legifrance.gouv.fr", "legifrance.gouv.fr", "opendata.justice-administrative.fr"}:
+    host = (parsed.hostname or "").lower().rstrip(".")
+    exact_hosts = {
+        "www.legifrance.gouv.fr", "legifrance.gouv.fr",
+        "opendata.justice-administrative.fr",
+        "service-public.gouv.fr", "www.service-public.gouv.fr",
+        "lecomarquage.service-public.gouv.fr",
+        "data.gouv.fr", "www.data.gouv.fr",
+        "cnfpt.fr", "www.cnfpt.fr", "wikiterritorial.cnfpt.fr",
+        "cig929394.fr", "www.cig929394.fr",
+        "cigversailles.fr", "www.cigversailles.fr",
+        # Exact HTTPS hosts of the explicitly selected and approved guidance corpus.
+        "cdg35.bzh", "www.cdg35.bzh",
+        "uffa.cfdt.fr",
+        "cfdt-interco31.fr", "www.cfdt-interco31.fr",
+        "cfdtinterco35.fr", "www.cfdtinterco35.fr",
+        "cgtservicespublics.fr", "www.cgtservicespublics.fr",
+        "fo-fonctionnaires.fr", "www.fo-fonctionnaires.fr",
+        "cftc.fr", "www.cftc.fr", "ledecodeur.cftc.fr",
+        "unsa-fp.org", "www.unsa-fp.org",
+        "fonctionpublique.solidaires.org",
+    }
+    is_cdg_domain = bool(re.fullmatch(r"(?:www\.)?cdg\d{2,3}\.fr", host))
+    is_gouv_domain = host == "gouv.fr" or host.endswith(".gouv.fr")
+    if parsed.scheme == "https" and (host in exact_hosts or is_cdg_domain or is_gouv_domain):
+        if parsed.username or parsed.password or parsed.port:
+            return None
         return value[:1500]
     return None
 
@@ -158,6 +201,25 @@ _LEGAL_QUERY_EXPANSIONS = {
     "cet": ("compte épargne temps", "compte épargne-temps"),
     "congé maladie": ("congé de maladie", "maladie ordinaire", "CMO"),
     "maladie ordinaire": ("congé de maladie", "CMO"),
+    "accompagné d'un syndicat": (
+        "convocation agent territorial entretien hiérarchique assistance représentant syndical",
+        "procédure disciplinaire fonction publique territoriale droits de la défense défenseur de son choix",
+        "entretien hiérarchique ordinaire accompagnement syndical conditions applicables",
+    ),
+    "accompagné d’un syndicat": (
+        "convocation agent territorial entretien hiérarchique assistance représentant syndical",
+        "procédure disciplinaire fonction publique territoriale droits de la défense défenseur de son choix",
+        "entretien hiérarchique ordinaire accompagnement syndical conditions applicables",
+    ),
+    "accompagné par un syndicat": (
+        "convocation agent territorial entretien hiérarchique assistance représentant syndical",
+        "procédure disciplinaire fonction publique territoriale droits de la défense défenseur de son choix",
+        "entretien hiérarchique ordinaire accompagnement syndical conditions applicables",
+    ),
+    "assistance syndicale lors d'une convocation": (
+        "convocation agent territorial entretien hiérarchique assistance représentant syndical",
+        "procédure disciplinaire fonction publique territoriale droits de la défense défenseur de son choix",
+    ),
     "protection fonctionnelle": ("protection juridique de l'agent", "assistance de la collectivité"),
     "harcèlement moral": ("agissements répétés", "dégradation des conditions de travail"),
     "temps de travail": ("durée du travail", "cycle de travail", "décompte du temps de travail"),
@@ -165,28 +227,77 @@ _LEGAL_QUERY_EXPANSIONS = {
 }
 
 
-def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
-    """Ajoute quelques formulations FPT proches sans remplacer la requête d'origine."""
+def _normalize_legal_phrase(value: str) -> str:
     import unicodedata
+    folded = unicodedata.normalize("NFKD", value.casefold())
+    return re.sub(r"\s+", " ", "".join(ch for ch in folded if not unicodedata.combining(ch))).strip()
 
-    def normalize(value: str) -> str:
-        folded = unicodedata.normalize("NFKD", value.casefold())
-        return re.sub(r"\s+", " ", "".join(ch for ch in folded if not unicodedata.combining(ch))).strip()
 
+def _referential_query_expansions() -> list[tuple[tuple[str, ...], tuple[str, ...]]]:
+    """Load only lexical triggers and legal wording; reference leads remain non-authoritative."""
+    try:
+        with ( __import__("pathlib").Path(__file__).with_name("fp_lexical_referentiel.json")).open(encoding="utf-8") as stream:
+            payload = json.load(stream)
+    except (OSError, ValueError, TypeError):
+        return []
+    entries = payload.get("entries", []) if isinstance(payload, dict) else []
+    expansions = []
+    if not isinstance(entries, list):
+        return []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        triggers = entry.get("triggers")
+        terms = entry.get("legal_terms")
+        if not isinstance(triggers, list) or not isinstance(terms, list):
+            continue
+        clean_triggers = tuple(x.strip() for x in triggers if isinstance(x, str) and x.strip())
+        clean_terms = tuple(x.strip() for x in terms if isinstance(x, str) and x.strip())
+        if clean_triggers and clean_terms:
+            expansions.append((clean_triggers, clean_terms))
+    return expansions
+
+
+_REFERENTIAL_QUERY_EXPANSIONS = _referential_query_expansions()
+
+
+def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
+    """Expand user wording with curated synonyms while keeping the original query first."""
+    if not isinstance(query, str) or not query.strip() or not 1 <= max_variants <= 20:
+        raise ValueError("La requête doit être non vide et max_variants compris entre 1 et 20.")
     original = re.sub(r"\s+", " ", query).strip()
-    normalized = normalize(original)
+    normalized = _normalize_legal_phrase(original)
     variants = [original]
     seen = {normalized}
+    if max_variants == 1:
+        return variants
+
+    def append_terms(terms: tuple[str, ...]) -> bool:
+        for term in terms:
+            candidate = _normalize_legal_phrase(term)
+            if candidate and candidate not in seen:
+                variants.append(term)
+                seen.add(candidate)
+                if len(variants) >= max_variants:
+                    return True
+        return False
+
+    # Explicit, reviewed phrase mappings retain precedence.
     for phrase, expansions in _LEGAL_QUERY_EXPANSIONS.items():
-        key = normalize(phrase)
+        key = _normalize_legal_phrase(phrase)
         if re.search(r"(?<!\w)" + re.escape(key) + r"(?!\w)", normalized):
-            for expansion in expansions:
-                candidate = normalize(expansion)
-                if candidate not in seen:
-                    variants.append(expansion)
-                    seen.add(candidate)
-                    if len(variants) >= max_variants:
-                        return variants
+            if append_terms(expansions):
+                return variants
+
+    # The JSON referential is used strictly for query recall. Its historical
+    # article/decree leads are deliberately never injected as legal evidence.
+    for triggers, legal_terms in _REFERENTIAL_QUERY_EXPANSIONS:
+        if any(
+            re.search(r"(?<!\w)" + re.escape(_normalize_legal_phrase(trigger)) + r"(?!\w)", normalized)
+            for trigger in triggers
+        ):
+            if append_terms(legal_terms):
+                return variants
     return variants
 
 
@@ -212,53 +323,78 @@ def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: i
     return selected
 
 
-async def search_legal_corpus(conn, query: str, requested_date: date, limit: int = 12) -> list[dict]:
+async def search_legal_corpus(
+    conn, query: str, requested_date: date, limit: int = 12,
+    query_embedding: list[float] | None = None,
+) -> list[dict]:
     if not isinstance(query, str) or len(query.strip()) < 2 or len(query) > 500:
         raise ValueError("La recherche documentaire doit contenir entre 2 et 500 caractères.")
     if not 1 <= limit <= 30:
         raise ValueError("La limite doit être comprise entre 1 et 30.")
+    vector_literal = None
+    if query_embedding is not None:
+        import math
+        if len(query_embedding) != 384 or any(not math.isfinite(float(value)) for value in query_embedding):
+            raise ValueError("Le vecteur de requête doit contenir exactement 384 valeurs finies.")
+        norm = math.sqrt(sum(float(value) ** 2 for value in query_embedding))
+        if norm <= 0:
+            raise ValueError("Le vecteur de requête ne peut pas être nul.")
+        vector_literal = "[" + ",".join(f"{float(value) / norm:.8f}" for value in query_embedding) + "]"
+
     variants = expand_legal_query(query.strip())
-    # La requête d'origine reste prioritaire ; les variantes élargissent le rappel
-    # sans pouvoir dépasser un passage qui répond directement aux termes initiaux.
+    # The original wording keeps twice the lexical weight; curated variants widen recall.
     expansion_expression = " OR ".join(variants[1:])
     rows = await conn.fetch("""
       WITH search_terms AS (
         SELECT websearch_to_tsquery('french',$1) AS original_query,
                websearch_to_tsquery('french',$2) AS expansion_query
+      ), lexical_candidates AS (
+        SELECT c.id chunk_id,c.version_id,c.ordinal,
+          (2.0 * ts_rank_cd(c.search_vector,st.original_query)
+             + ts_rank_cd(c.search_vector,st.expansion_query)) lexical_score
+        FROM legal_chunks c CROSS JOIN search_terms st
+        WHERE c.content_kind='FULL_TEXT'
+          AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
+      ), lexical_ranked AS (
+        SELECT chunk_id,version_id,ordinal,
+          row_number() OVER(ORDER BY lexical_score DESC,ordinal) candidate_rank
+        FROM lexical_candidates
+      ), vector_ranked AS (
+        SELECT c.id chunk_id,c.version_id,c.ordinal,
+          row_number() OVER(ORDER BY c.embedding_384 <=> $4::vector) candidate_rank
+        FROM legal_chunks c
+        WHERE $4::vector IS NOT NULL
+          AND c.embedding_384 IS NOT NULL
+          AND c.content_kind='FULL_TEXT'
+        ORDER BY c.embedding_384 <=> $4::vector
+        LIMIT 120
+      ), candidate_scores AS (
+        SELECT chunk_id,version_id,ordinal,sum(score) AS rank
+        FROM (
+          SELECT chunk_id,version_id,ordinal,2.0/(60.0+candidate_rank) AS score
+          FROM lexical_ranked WHERE candidate_rank<=120
+          UNION ALL
+          SELECT chunk_id,version_id,ordinal,1.0/(60.0+candidate_rank) AS score
+          FROM vector_ranked
+        ) candidates
+        GROUP BY chunk_id,version_id,ordinal
       ), ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
           d.source_status,d.raw_metadata,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
-          c.anchor,c.content content_chunk,c.content_kind,c.ordinal,
-          (2.0 * ts_rank_cd(c.search_vector,st.original_query)
-             + ts_rank_cd(c.search_vector,st.expansion_query)) rank,
-          row_number() OVER(PARTITION BY v.id ORDER BY
-            (2.0 * ts_rank_cd(c.search_vector,st.original_query)
-             + ts_rank_cd(c.search_vector,st.expansion_query)) DESC,c.ordinal) rn
-        FROM legal_chunks c JOIN legal_document_versions v ON v.id=c.version_id
+          c.anchor,c.content content_chunk,c.content_kind,c.ordinal,candidate_scores.rank,
+          row_number() OVER(PARTITION BY v.id ORDER BY candidate_scores.rank DESC,c.ordinal) rn
+        FROM candidate_scores
+        JOIN legal_chunks c ON c.id=candidate_scores.chunk_id
+        JOIN legal_document_versions v ON v.id=c.version_id
         JOIN legal_documents d ON d.id=v.document_id
-        CROSS JOIN search_terms st
-        WHERE c.content_kind='FULL_TEXT'
-          AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
       ), selected_chunks AS (
-        SELECT version_id, string_agg(content_chunk, E'\n\n' ORDER BY chunk_order) AS content, max(rank) AS rank
+        -- Keep only passages selected by lexical/vector relevance. Never append
+        -- the document's final chunk: it is often unrelated to the user's question.
+        SELECT version_id,string_agg(content_chunk,E'\n\n' ORDER BY chunk_order) AS content,max(rank) AS rank
         FROM (
           SELECT version_id,content_chunk,rn AS chunk_order,rank
-          FROM ranked WHERE rn <= CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
-          UNION ALL
-          SELECT final_chunk.version_id,final_chunk.content_chunk,999999 AS chunk_order,0.0 AS rank
-          FROM (
-            SELECT c.version_id,c.content AS content_chunk,c.ordinal
-            FROM legal_chunks c
-            JOIN (SELECT DISTINCT version_id FROM ranked) matched USING(version_id)
-            WHERE c.content_kind='FULL_TEXT'
-              AND c.ordinal=(SELECT max(c2.ordinal) FROM legal_chunks c2
-                             WHERE c2.version_id=c.version_id AND c2.content_kind='FULL_TEXT')
-          ) final_chunk
-          WHERE NOT EXISTS (
-            SELECT 1 FROM ranked r
-            WHERE r.version_id=final_chunk.version_id AND r.ordinal=final_chunk.ordinal AND r.rn <= CASE WHEN r.document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
-          )
+          FROM ranked WHERE rn<=CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
         ) selected_passages
         GROUP BY version_id
       ), document_metadata AS (
@@ -271,7 +407,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
       SELECT metadata.*,selected_chunks.content,selected_chunks.rank
       FROM document_metadata metadata JOIN selected_chunks USING(version_id)
       ORDER BY selected_chunks.rank DESC,metadata.publication_date DESC NULLS LAST LIMIT $3
-    """, query.strip(), expansion_expression, limit)
+    """, query.strip(), expansion_expression, limit, vector_literal)
     results = []
     for row in rows:
         item = dict(row)
@@ -285,15 +421,23 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
             except (ValueError, TypeError):
                 metadata = {}
         item["raw_metadata"] = metadata if isinstance(metadata, dict) else {}
-        item["source_id"] = item.pop("source_id")
-        item["source_type"] = item.pop("source_type")
+        if item.get("source_type") == "CGFP_SNAPSHOT":
+            item["snapshot_modified_at"] = (
+                item["raw_metadata"].get("snapshot_modified_at")
+                or item["raw_metadata"].get("generated_at")
+            )
+            item["snapshot_verification_status"] = item["raw_metadata"].get("verification_status")
         item["excerpt"] = item.pop("content")[:8500]
         item["retrieval_scope"] = (
-            "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            "HYBRID_LEXICAL_VECTOR_RELEVANCE_SELECTED_PASSAGES"
+            if vector_literal is not None and item.get("document_kind") == "ADMIN_CASELAW"
+            else "HYBRID_LEXICAL_VECTOR_SELECTED_PASSAGES"
+            if vector_literal is not None
+            else "RELEVANCE_SELECTED_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
             if item.get("document_kind") == "ADMIN_CASELAW"
             else "SELECTED_RELEVANT_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
-        item["content_kind"] = item.get("content_kind")
+        item["retrieval_mode"] = "HYBRID_LEXICAL_VECTOR" if vector_literal is not None else "LEXICAL_ONLY"
         full_text = item.pop("full_text")
         expected_hash = item.pop("text_sha256")
         actual_hash = sha256_text(full_text) if full_text else None

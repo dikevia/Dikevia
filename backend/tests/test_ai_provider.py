@@ -1,5 +1,7 @@
+import json
+
 import pytest
-from app.ai_provider import analyze_question, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count, check_provider_availability, AIAnalysisRefusedNoSources
+from app.ai_provider import analyze_question, plan_legal_research, _parse_research_plan, SYSTEM_PROMPT, answer_references_are_grounded, _nonnegative_token_count, check_provider_availability, AIAnalysisRefusedNoSources
 from app.config import settings
 
 @pytest.mark.asyncio
@@ -8,6 +10,32 @@ async def test_ai_provider_is_disabled_without_credentials(monkeypatch):
     monkeypatch.setattr(settings, "ai_model", "")
     assert await analyze_question(question="Question suffisamment longue", employer="NATIONAL",
         facts_date=None, sources=[]) is None
+
+def test_source_relevance_verdict_validation_accepts_only_known_ids_and_labels():
+    from app.ai_provider import validate_source_relevance_verdicts
+
+    sources = [{"source_id": "a"}, {"source_id": "b"}]
+    parsed = {"items": [
+        {"source_id": "a", "verdict": "DIRECT"},
+        {"source_id": "b", "verdict": "IRRELEVANT"},
+        {"source_id": "invented", "verdict": "DIRECT"},
+        {"source_id": "a", "verdict": "IRRELEVANT"},
+        {"source_id": "b", "verdict": "APPLICABLE"},
+    ]}
+    assert validate_source_relevance_verdicts(parsed, sources) == {
+        "a": "DIRECT", "b": "IRRELEVANT"
+    }
+
+
+def test_source_relevance_verdict_validation_rejects_malformed_payloads():
+    from app.ai_provider import validate_source_relevance_verdicts
+
+    assert validate_source_relevance_verdicts(None, [{"source_id": "a"}]) == {}
+    assert validate_source_relevance_verdicts(
+        {"items": [{"source_id": "a", "verdict": "APPLICABLE"}]},
+        [{"source_id": "a"}],
+    ) == {}
+
 
 def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense():
     assert "POLITIQUE STRICTE DE FENÊTRE FERMÉE" in SYSTEM_PROMPT
@@ -21,6 +49,8 @@ def test_system_prompt_enforces_closed_book_sources_and_prompt_injection_defense
     assert "MODE D'INFORMATION GÉNÉRALE" in SYSTEM_PROMPT
     assert "Ne bloque pas la recherche au seul motif que la date des faits manque" in SYSTEM_PROMPT
     assert "source_id" in SYSTEM_PROMPT and "quote" in SYSTEM_PROMPT
+    assert "issues du plan de recherche IA ou du plan de secours" in SYSTEM_PROMPT
+    assert "conserve néanmoins les affirmations indépendantes" in SYSTEM_PROMPT
 
 def test_ai_generated_article_references_must_exist_in_sources():
     assert answer_references_are_grounded("L'article L. 123-4 prévoit…", {"L123-4"})
@@ -775,6 +805,15 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
         "excerpt": "Extrait officiel de test suffisamment explicite.",
         "valid_from": "2020-01-01",
         "valid_to": "2999-01-01",
+        "legal_assurance": {
+            "source_family": "CODE",
+            "source_family_label": "Disposition codifiée",
+            "authority_level": "PRIMARY_LEGAL",
+            "authority_label": "Texte juridique primaire",
+            "publisher": "Légifrance",
+            "publisher_type": "PUBLIC_ADMINISTRATION",
+            "normative": True,
+        },
     }
     decision = {
         "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
@@ -801,6 +840,15 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
     assert "LEGIARTI000012345678" in serialized
     assert "2026-11-19" in serialized
     assert "Extrait officiel de test suffisamment explicite." in serialized
+    payload_data = json.loads(serialized)
+    legal_source_payload = next(
+        item for item in payload_data["extraits_documentaires_valides"]
+        if item["identifiant_source"] == "LEGIARTI000012345678"
+    )
+    assert legal_source_payload["niveau_autorite"] == "PRIMARY_LEGAL"
+    assert legal_source_payload["libelle_autorite"] == "Texte juridique primaire"
+    assert legal_source_payload["editeur"] == "Légifrance"
+    assert legal_source_payload["source_normative"] is True
     assert "CETATEXT000012345678" in serialized
     assert '"date_decision": "2024-05-10"' in serialized
     assert '"qualification_juridique_pre_recherche": {"topic": "UNION_RIGHTS", "agent_status": "NOT_SPECIFIED"}' in serialized
@@ -957,3 +1005,302 @@ def test_usable_sources_reject_explicitly_failed_integrity_and_out_of_scope_reco
     invalid_integrity = {**base, "citation_integrity": {"valid": False}}
     out_of_scope = {**base, "analysis_eligible": False, "public_service_scope": "FPH"}
     assert _usable_document_sources([invalid_integrity, out_of_scope]) == []
+
+def test_research_plan_parser_accepts_bounded_dynamic_queries_and_subquestions():
+    plan = _parse_research_plan("""{
+        "queries": [
+            "régime juridique des autorisations spéciales d'absence des agents territoriaux",
+            "conditions et procédure de refus d'une autorisation spéciale d'absence syndicale"
+        ],
+        "legal_issues": ["Fondement juridique et champ des ASA syndicales", "Conditions de refus et voies de contestation"],
+        "clarification_needed": null
+    }""")
+    assert plan is not None
+    assert len(plan.queries) == 2
+    assert "autorisations spéciales d'absence" in plan.queries[0]
+    assert len(plan.legal_issues) == 2
+
+
+def test_research_plan_parser_rejects_empty_or_malformed_model_output():
+    assert _parse_research_plan("not json") is None
+    assert _parse_research_plan('{"queries": [], "legal_issues": []}') is None
+    assert _parse_research_plan('{"queries": ["x"], "legal_issues": []}') is None
+
+
+@pytest.mark.asyncio
+async def test_research_planner_is_disabled_without_provider_credentials(monkeypatch):
+    monkeypatch.setattr(settings, "ai_api_key", "")
+    monkeypatch.setattr(settings, "ai_model", "")
+    monkeypatch.setattr(settings, "ai_api_base_url", "")
+    assert await plan_legal_research(
+        question="Question juridique inédite",
+        employer="NATIONAL",
+    ) is None
+
+
+def test_research_planner_is_not_an_article_or_problem_template_catalog():
+    from app.ai_provider import plan_legal_research
+    import inspect
+
+    source = inspect.getsource(plan_legal_research)
+    assert "Ne pars d'aucune liste prédéfinie" in source
+    assert "N'invente pas de références" in source
+    assert "3 à 5 axes de recherche réellement distincts" in source
+    assert "2 à 6 termes juridiques ou factuels discriminants" in source
+
+
+@pytest.mark.parametrize("versant", ["FPT", "FPE", "FPH"])
+def test_research_planner_system_prompt_forbids_cross_branch_transposition(versant):
+    from app.ai_provider import _PUBLIC_SERVICE_LABELS, plan_legal_research
+    import inspect
+    selected_label = _PUBLIC_SERVICE_LABELS[versant]
+    source = inspect.getsource(plan_legal_research)
+    assert "CONTRAINTE DE VERSANT" in source
+    assert "N'utilise aucune requête-type" in source
+    assert "({selected_label})" in source
+    assert selected_label in _PUBLIC_SERVICE_LABELS.values()
+
+def test_research_plan_parser_accepts_empty_queries_only_for_refinement():
+    assert _parse_research_plan('{"queries": [], "legal_issues": []}') is None
+    refined = _parse_research_plan('{"queries": [], "legal_issues": ["Question juridique couverte"]}', allow_empty=True)
+    assert refined is not None
+    assert refined.queries == []
+    assert refined.legal_issues == ["Question juridique couverte"]
+
+
+@pytest.mark.asyncio
+async def test_source_relevance_evaluator_sends_document_text_and_validates_ids(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import evaluate_source_relevance
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{
+            "message": {"content": json.dumps({"items": [
+                {"source_id": "DOC-1", "verdict": "DIRECT"},
+                {"source_id": "FORGED", "verdict": "IRRELEVANT"},
+                {"source_id": "META-1", "verdict": "IRRELEVANT"},
+            ]})}
+        }]})
+
+    real_async_client = httpx.AsyncClient
+
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+    result = await evaluate_source_relevance(
+        question="Puis-je percevoir une indemnité pour les fonctions supplémentaires ?",
+        research_axes=["régime indemnitaire et fonctions exercées"],
+        sources=[
+            {"source_id": "DOC-1", "source_type": "LEGIFRANCE_API",
+             "title": "Régime indemnitaire", "excerpt": "Le régime indemnitaire tient compte des fonctions exercées."},
+            {"source_id": "META-1", "content_kind": "METADATA",
+             "excerpt": "Simple résultat de recherche sans texte intégral."},
+        ],
+    )
+
+    documents = json.loads(captured["payload"]["messages"][1]["content"])["documents"]
+    assert [item["source_id"] for item in documents] == ["DOC-1"]
+    assert "fonctions exercées" in documents[0]["body"]
+    assert result == {"DOC-1": "DIRECT"}
+
+
+@pytest.mark.asyncio
+async def test_source_relevance_evaluator_raises_provider_error_on_http_failure(monkeypatch):
+    import httpx
+    from app.ai_provider import evaluate_source_relevance, AIProviderUnavailable
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(503, request=request)
+
+    real_async_client = httpx.AsyncClient
+
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+    with pytest.raises(AIProviderUnavailable):
+        await evaluate_source_relevance(
+            question="Question juridique",
+            research_axes=["axe"],
+            sources=[{"source_id": "DOC-1", "excerpt": "Texte officiel suffisamment renseigné."}],
+        )
+
+
+def test_research_plan_extracts_only_facts_with_verbatim_question_evidence():
+    plan = _parse_research_plan(
+        json.dumps({
+            "queries": ["régime indemnitaire territorial fonctions supplémentaires"],
+            "legal_issues": ["Conditions de réexamen du régime indemnitaire"],
+            "extracted_facts": [
+                {"fact": "L'agent est titulaire.", "evidence_quote": "je suis titulaire"},
+                {"fact": "Le remplacement a duré 23 mois.", "evidence_quote": "pendant un an et 11 mois"},
+                {"fact": "L'agent a travaillé la nuit.", "evidence_quote": "travail de nuit"},
+                {"fact": "L'agent est titulaire.", "evidence_quote": "je suis titulaire"},
+            ],
+            "clarification_needed": None,
+        }, ensure_ascii=False),
+        question=(
+            "Je suis titulaire de la fonction publique territoriale, "
+            "suite à l'absence d'un collègue pendant un an et 11 mois "
+            "j'ai dû prendre en charge ses fonctions en plus des miennes."
+        ),
+    )
+    assert plan is not None
+    assert len(plan.extracted_facts) == 2
+    assert plan.extracted_facts[0]["evidence_quote"] == "je suis titulaire"
+    assert plan.extracted_facts[1]["evidence_quote"] == "pendant un an et 11 mois"
+
+
+def test_research_plan_facts_are_empty_without_verbatim_evidence():
+    plan = _parse_research_plan(
+        json.dumps({
+            "queries": ["régime indemnitaire territorial"],
+            "legal_issues": ["Régime indemnitaire"],
+            "extracted_facts": [
+                {"fact": "La durée est de deux ans.", "evidence_quote": "deux ans"},
+                {"fact": "L'agent est titulaire.", "evidence_quote": "titulaire"},
+            ],
+        }, ensure_ascii=False),
+        question="Je remplace un collègue depuis plusieurs mois.",
+    )
+    assert plan is not None
+    assert plan.extracted_facts == []
+
+
+
+def test_entailment_verifier_keeps_individually_supported_claim_indices():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claims = [
+        {
+            "source_id": "LEGIARTI000000000001",
+            "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions prévues.",
+        },
+        {
+            "source_id": "LEGIARTI000000000002",
+            "text": "La collectivité doit verser une indemnité supplémentaire.",
+        },
+    ]
+    sources = [
+        {
+            "source_id": claims[0]["source_id"],
+            "text": "L'agent peut bénéficier d'un repos compensateur selon les conditions prévues.",
+        },
+        {
+            "source_id": claims[1]["source_id"],
+            "text": "La collectivité organise le service et veille à la santé des agents.",
+        },
+    ]
+    result = validate_entailment_verdicts({
+        "verdicts": [
+            {
+                "claim_index": 0,
+                "source_id": claims[0]["source_id"],
+                "verdict": "SUPPORTED",
+                "support_quote": sources[0]["text"],
+            },
+            {
+                "claim_index": 1,
+                "source_id": claims[1]["source_id"],
+                "verdict": "INSUFFICIENT",
+                "support_quote": "",
+            },
+        ]
+    }, claims, sources)
+
+    assert result["valid"] is False
+    assert result["supported_claim_indices"] == [0]
+    assert "verdict_1:not_supported" in result["invalid"]
+
+
+
+def test_undated_non_normative_guidance_can_reach_ai_as_context_only():
+    from app.ai_provider import _usable_document_sources
+
+    guidance = {
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "source_id": "cfdt-guide-2026",
+        "title": "Guide syndical",
+        "publisher": "CFDT",
+        "excerpt": "Les agents peuvent consulter les représentants du personnel.",
+        "content_kind": "FULL_TEXT",
+        "claim_eligible": False,
+        "reference_role": "NON_NORMATIVE_CONTEXT_ONLY",
+        "legal_assurance": {
+            "reference_role": "NON_NORMATIVE_CONTEXT_ONLY",
+            "usable_for_interpretation": True,
+            "authority_level": "PROFESSIONAL_GUIDANCE",
+            "publisher_type": "TRADE_UNION",
+        },
+        "citation_integrity": {"valid": True},
+    }
+    assert _usable_document_sources([guidance]) == [{**guidance, "excerpt": guidance["excerpt"]}]
+
+    unsafe = {
+        **guidance,
+        "legal_assurance": {"reference_role": "NON_NORMATIVE_CONTEXT_ONLY"},
+    }
+    assert _usable_document_sources([unsafe]) == []
+
+
+@pytest.mark.asyncio
+async def test_gemini_availability_check_reports_http_failure_without_exposing_api_key(monkeypatch, caplog):
+    import httpx
+    import logging
+    from app.ai_provider import check_provider_availability
+
+    secret = "test-gemini-secret-never-log"
+    monkeypatch.setattr(settings, "ai_api_key", secret)
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
+    monkeypatch.setattr(
+        settings, "ai_api_base_url",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+
+    def handler(request):
+        assert request.url.path.endswith("/v1beta/models/gemini-2.5-flash")
+        return httpx.Response(
+            403, request=request,
+            json={"error": {"message": "API key not authorized"}},
+        )
+
+    caplog.set_level(logging.WARNING, logger="app.ai_provider")
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+
+    assert result == {"status": "AUTH_ERROR", "http_status": 403}
+    assert "AI_PROVIDER_REQUEST_FAILED" in caplog.text
+    assert "http_status=403" in caplog.text
+    assert secret not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_gemini_availability_check_distinguishes_quota_from_generic_http_error(monkeypatch):
+    import httpx
+    from app.ai_provider import check_provider_availability
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
+    monkeypatch.setattr(
+        settings, "ai_api_base_url",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+
+    def handler(request):
+        return httpx.Response(429, request=request, json={"error": {"message": "quota exceeded"}})
+
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+    assert result == {"status": "QUOTA_OR_RATE_LIMIT", "http_status": 429}

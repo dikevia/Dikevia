@@ -4,5 +4,6 @@ window.CFDT_JURIS_OIDC = {
   issuer: "http://localhost:8081/realms/cfdt",
   client_id: "cfdt-juris-web",
   redirect_uri: "http://localhost:8000/",
+  silent_redirect_uri: "http://localhost:8000/static/silent-check-sso.html",
   scopes: "openid profile email"
 };

@@ -1,9 +1,9 @@
 """Conservative public-service scope classifier for Légifrance regulatory hits.
 
-A text is eligible for case-specific FPT analysis only when its own content
-supports a territorial or genuinely cross-public-service scope. Ambiguous
-records remain visible as research leads but are not sent to Gemini as applicable
-law. This is a relevance guard, not a legal applicability determination.
+A text is eligible for analysis only when its own content supports the selected
+public-service branch (FPT, FPE or FPH), or an explicitly common rule. Ambiguous
+records remain research leads rather than applicable-law evidence. This is a
+relevance guard, not a legal applicability determination.
 """
 from __future__ import annotations
 
@@ -18,6 +18,8 @@ _FPT_MARKERS = (
     "fonctionnaires territoriaux",
     "agent territorial",
     "agents territoriaux",
+    "agent contractuel territorial",
+    "agents contractuels territoriaux",
     "agents publics territoriaux",
     "collectivites territoriales",
     "collectivite territoriale",
@@ -42,6 +44,11 @@ _FPH_MARKERS = (
     "personnels medicaux",
     "directeur d hopital",
     "centres hospitaliers",
+    "decret n 91 155",
+    "decret 91 155",
+    "loi n 86 33",
+    "loi 86 33",
+    "agents contractuels hospitaliers",
 )
 
 _FPE_MARKERS = (
@@ -51,6 +58,9 @@ _FPE_MARKERS = (
     "administrations centrales",
     "services deconcentres de l etat",
     "ministeres",
+    "agents contractuels de l etat",
+    "decret n 86 83",
+    "decret 86 83",
 )
 
 _LOCAL_EMPLOYER_MARKERS = (
@@ -96,18 +106,66 @@ def _fold(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
 
 
-def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
-    """Return a conservative scope label and whether this hit may reach Gemini."""
+def classify_public_service_scope(
+    source: dict[str, Any], target_versant: str = "FPT",
+) -> dict[str, Any]:
+    """Return a conservative scope label and eligibility for the selected versant."""
+    target_versant = str(target_versant or "FPT").upper()
+    if target_versant not in {"FPT", "FPE", "FPH"}:
+        target_versant = "FPT"
     title = str(source.get("title") or "")
     text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
+    article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     corpus = _fold((title + " " + text)[:500_000])
-    # Dikévia is deliberately limited to French territorial public-service law.
+    title_folded = _fold(title)
+
+    # The CGFP chapter L823-1 to L823-6 states the common statutory TPT
+    # framework for civil servants. Only a live Légifrance article may ground
+    # a claim; a bundled snapshot remains contextual and cannot certify the
+    # current wording. Branch-specific implementing rules must still be checked.
+    if (
+        title_folded.startswith("code general de la fonction publique")
+        and article_ref in {f"l823 {number}" for number in range(1, 7)}
+    ):
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                f"Article {article_ref.upper()} du CGFP : disposition statutaire commune relative au TPT",
+                "Le texte réglementaire propre au versant doit être vérifié pour les modalités d'application",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+    # CITIS provisions remain contextual until their branch-specific scope and
+    # implementing rules have been independently established.
+    if target_versant == "FPT" and article_ref in {
+        f"l822 {number}" for number in range(18, 24)
+    }:
+        return {
+            "scope": "GENERAL_PUBLIC_SERVICE",
+            "evidence": [
+                f"Article {article_ref.upper()} du CGFP : piste de contexte uniquement",
+                "Applicabilité FPT et dispositions réglementaires d'application à vérifier séparément",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": False,
+        }
+    # Articles L. 332-8 to L. 332-14 belong to the CGFP subsection devoted
+    # specifically to permanent contractual employment in the FPT. Their
+    # individual wording does not always repeat the territorial scope.
+    if target_versant == "FPT" and article_ref in {f"l332 {number}" for number in range(8, 15)}:
+        return {
+            "scope": "FPT",
+            "evidence": [f"Article {article_ref.upper()} situé dans la sous-section FPT des emplois permanents contractuels"],
+            "analysis_eligible": True,
+        }
+    # Dikévia handles French public-service law in the selected versant.
     # Exclude EU instruments by structured metadata before looking at generic
     # public-service wording that may also appear in comparative documents.
     european_metadata = _fold(" ".join(str(source.get(key) or "") for key in (
         "jurisdiction", "source_type", "official_source", "document_kind"
     )))
-    title_folded = _fold(title)
     direct_eu_instrument_title = title_folded.startswith((
         "directive ue ", "directive europeenne ", "reglement ue ",
         "reglement europeen ", "decision ue ", "decision europeenne ",
@@ -128,20 +186,6 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in corpus]
     fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in corpus]
 
-    # Narrow FPT bridge: decree n° 2002-60 is the IHTS reference regime
-    # used through the territorial indemnity framework. The prompt still
-    # requires decree n° 91-875 and the local deliberation to be checked.
-    is_ihts_reference = (
-        "2002 60" in corpus
-        and "indemnites horaires pour travaux supplementaires" in corpus
-    )
-    if is_ihts_reference:
-        return {
-            "scope": "FPT_REFERENCE",
-            "evidence": ["Décret 2002-60 : référence IHTS à vérifier avec le décret 91-875 et la délibération locale"],
-            "analysis_eligible": True,
-        }
-
     # A territorial reference buried in the body must not override a source
     # whose title identifies it as an FPE/FPH instrument. Titles are a stronger
     # signal of the document's primary scope than incidental cross-references.
@@ -149,15 +193,32 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     title_fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in title_folded]
     title_fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in title_folded]
     if (title_fpe_hits or title_fph_hits) and not title_fpt_hits:
+        title_scope = "FPH" if title_fph_hits else "FPE"
         return {
-            "scope": "FPH" if title_fph_hits else "FPE",
+            "scope": title_scope,
             "evidence": (title_fph_hits or title_fpe_hits)[:3],
-            "analysis_eligible": False,
+            "analysis_eligible": title_scope == target_versant,
+            "claim_eligible": title_scope == target_versant,
         }
 
-    # A common rule may support FPT analysis only when the source itself
-    # explicitly identifies the three branches. Generic public-service wording
-    # is not sufficient evidence of territorial applicability.
+    # Narrow FPT bridge: decree n° 2002-60 is the IHTS reference regime
+    # used through the territorial indemnity framework. The prompt still
+    # requires decree n° 91-875 and the local deliberation to be checked.
+    is_ihts_reference = (
+        "2002 60" in title_folded
+        and "indemnites horaires pour travaux supplementaires" in title_folded
+    )
+    if is_ihts_reference:
+        return {
+            "scope": "FPT_REFERENCE",
+            "evidence": ["Décret 2002-60 : référence IHTS à vérifier avec le décret 91-875 et la délibération locale"],
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": target_versant == "FPT",
+        }
+
+    # A common rule may support analysis for the selected versant only when
+    # the source itself explicitly identifies all three branches. Generic
+    # public-service wording is not sufficient evidence of cross-branch scope.
     common_scope_hits = [
         marker for marker in _COMMON_PUBLIC_SERVICE_MARKERS
         if _fold(marker) in corpus
@@ -183,19 +244,22 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
         return {
             "scope": "FPT",
             "evidence": fpt_hits[:3],
-            "analysis_eligible": True,
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": target_versant == "FPT",
         }
     if fph_hits:
         return {
             "scope": "FPH",
             "evidence": fph_hits[:3],
-            "analysis_eligible": False,
+            "analysis_eligible": target_versant == "FPH",
+            "claim_eligible": target_versant == "FPH",
         }
     if fpe_hits:
         return {
             "scope": "FPE",
             "evidence": fpe_hits[:3],
-            "analysis_eligible": False,
+            "analysis_eligible": target_versant == "FPE",
+            "claim_eligible": target_versant == "FPE",
         }
 
     # Administrative case law often names the local employer ("commune de…")
@@ -208,7 +272,7 @@ def classify_public_service_scope(source: dict[str, Any]) -> dict[str, Any]:
     employment_context_hits = [
         marker for marker in _EMPLOYMENT_CONTEXT_MARKERS if _fold(marker) in corpus
     ]
-    if local_employer_hits and employment_context_hits:
+    if target_versant == "FPT" and local_employer_hits and employment_context_hits:
         return {
             "scope": "FPT",
             "evidence": (local_employer_hits[:2] + employment_context_hits[:2]),
@@ -264,9 +328,11 @@ def is_ihts_question(question: str) -> bool:
     return any(_fold(marker) in folded_question for marker in _IHTS_QUERY_MARKERS)
 
 
-def is_ihts_relevant_source(question: str, source: dict[str, Any]) -> bool:
-    """Reject generic hour credits and unrelated CGFP hits for IHTS questions."""
-    if not is_ihts_question(question):
+def is_ihts_relevant_source(
+    question: str, source: dict[str, Any], target_versant: str = "FPT",
+) -> bool:
+    """Apply the IHTS-specific FPT guard only to territorial public-service questions."""
+    if str(target_versant or "FPT").upper() != "FPT" or not is_ihts_question(question):
         return True
 
     title = str(source.get("title") or "")
@@ -364,6 +430,20 @@ _TOPIC_FAMILIES = {
         "compte rendu d evaluation", "compte rendu d entretien",
         "valeur professionnelle", "appreciation de la valeur professionnelle",
     ),
+    "AVAILABILITY": (
+        "disponibilite", "mise en disponibilite", "disponibilite pour convenances personnelles",
+        "convenances personnelles", "disponibilite d office", "disponibilite sur demande",
+    ),
+    "CONTRACTUAL_STATUS": (
+        "agent contractuel", "agents contractuels", "contractuel territorial",
+        "contractuelle", "cdd", "cdi", "contrat a duree determinee",
+        "contrat a duree indeterminee",
+    ),
+    "CONTRACT_CDI_SIX_YEARS": (
+        "6 ans", "six ans", "six annees", "l332 8", "l332 9", "l332 10",
+        "l332 11", "l332 12", "l332 23", "l452 44",
+        "interruption entre deux contrats", "meme categorie hierarchique",
+    ),
     # Lexical false positives seen in official search results: these are
     # evaluations of policies, senior ministry jobs or recruitment skills,
     # not annual appraisals of territorial staff.
@@ -391,7 +471,9 @@ def _matched_topic_families(value: str) -> set[str]:
     return matched
 
 
-def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
+def is_topic_relevant_source(
+    question: str, source: dict[str, Any], target_versant: str = "FPT",
+) -> bool:
     """Reject only a source clearly belonging to another recognized topic family.
 
     Sources with no recognized family are retained as potentially cross-cutting
@@ -409,24 +491,34 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
     # decree 2020-592 governs complementary hours for permanent non-complete
     # jobs. A source explicitly limited to the opposite status is not evidence
     # for the user's status unless it also addresses that status.
-    if (
+    if str(target_versant or "FPT").upper() == "FPT" and (
         "PART_TIME" in question_topics
         and "NON_COMPLETE_TIME" in source_topics
         and "PART_TIME" not in source_topics
     ):
         return False
-    if (
+    if str(target_versant or "FPT").upper() == "FPT" and (
         "NON_COMPLETE_TIME" in question_topics
         and "PART_TIME" in source_topics
         and "NON_COMPLETE_TIME" not in source_topics
     ):
         return False
+    # The six-year CDI route is a specific legal mechanism. Apply this
+    # guard before the generic CONTRACTUAL_STATUS intersection below: a
+    # provision about contract agents (e.g. end-of-contract compensation or
+    # retirement) is not evidence of the six-year conversion mechanism.
+    if "CONTRACT_CDI_SIX_YEARS" in question_topics and (
+        "CONTRACT_CDI_SIX_YEARS" not in source_topics
+    ):
+        return False
+
     if question_topics & source_topics:
         return True
 
-    # For these two question families, a source with no identifiable subject
-    # is not useful evidence: generic CGFP keyword hits must not masquerade
-    # as a relevant answer.
+    # Strict question families reject generic keyword hits that cannot be
+    # tied to the requested legal mechanism. Annual-appraisal questions retain
+    # unclassified cross-cutting procedural sources as a narrow exception.
+
     strict_topics = {
         "TERMINATION_OF_TITULAR",
         "STAFFING_AND_WORK_CONDITIONS",
@@ -434,12 +526,14 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         # generic references to evaluating risks, health, senior civil-service
         # jobs or skills are not evidence about the annual FPT appraisal report.
         "PROFESSIONAL_EVALUATION",
+        "CONTRACT_CDI_SIX_YEARS",
+        "AVAILABILITY",
+        "CONTRACTUAL_STATUS",
     }
-    if question_topics & strict_topics:
-        # For annual-appraisal questions, an unclassified procedural source
-        # (for example, a general administrative appeal rule) may still be
-        # relevant. Reject only when the hit is positively classified as a
-        # different legal topic; retain unknown cross-cutting sources.
+    if str(target_versant or "FPT").upper() == "FPT" and question_topics & strict_topics:
+        # For annual-appraisal questions only, an unclassified procedural
+        # source may still be relevant. The CDI six-year mechanism remains
+        # strict: generic or unrelated CGFP provisions are rejected.
         if "PROFESSIONAL_EVALUATION" not in question_topics or source_topics:
             return False
     if not source_topics:

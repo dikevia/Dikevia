@@ -241,10 +241,10 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
         conversation_history=history,
     )
 
-    # The CGFP discovery index may add up to two exact article lookups
-    # to the three broad code searches. Regulatory and case-law budgets remain
-    # unchanged.
-    assert 3 <= len(seen["code"]) <= 5
+    # Preserve all recognized code-research axes, then reserve capacity for
+    # up to three exact article lookups (maximum eight bounded code searches).
+    # Regulatory and case-law budgets remain unchanged.
+    assert 3 <= len(seen["code"]) <= 8
     assert len(seen["regulatory"]) == 3
     assert len(seen["case_law"]) == 3
     all_queries = [query for pillar in seen.values() for query in pillar]
@@ -256,7 +256,7 @@ async def test_live_legal_searches_prioritize_current_question_and_respect_500_c
 
 
 @pytest.mark.asyncio
-async def test_ai_can_use_only_the_dated_cgfp_snapshot_as_a_bounded_fallback(monkeypatch):
+async def test_ai_does_not_use_current_cgfp_snapshot_for_historical_facts(monkeypatch):
     import app.orchestrator as module
 
     captured = {}
@@ -278,13 +278,9 @@ async def test_ai_can_use_only_the_dated_cgfp_snapshot_as_a_bounded_fallback(mon
                    question="Quels sont les droits des agents territoriaux ?"),
         "00000000-0000-0000-0000-000000000001",
     )
-    assert any(
-        source.get("source_type") == "CGFP_SNAPSHOT"
-        and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
-        for source in captured["sources"]
-    )
+    assert captured == {}
+    assert not any(source.get("source_type") == "CGFP_SNAPSHOT" for source in response.sources)
     assert response.verification_status == "NON_VERIFIE"
-    assert any("Mode de secours CGFP activé" in item for item in response.missing_information)
     assert "Aucune conclusion juridique" in response.answer
 
 
@@ -782,7 +778,7 @@ async def test_ihts_query_retrieves_decree_91_875_and_filters_irrelevant_cgfp_hi
         "00000000-0000-0000-0000-000000000001",
     )
 
-    assert any(query == "décret n° 91-875" for query in calls)
+    assert any("91-875" in query for query in calls)
     assert all(source.get("article") != "R431-3" for source in response.sources)
     assert any(source.get("official_number") == "91-875" for source in captured["sources"])
     assert all(source.get("article") != "R431-3" for source in captured["sources"])

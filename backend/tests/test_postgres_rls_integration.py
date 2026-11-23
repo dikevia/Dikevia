@@ -348,9 +348,9 @@ async def _run_administrative_case_law_search_sql_scenario():
         assert item["citation_integrity"]["text_hash_verified"] is True
         assert item["citation_integrity"]["valid"] is True
         assert item["retrieval_scope"] == (
-            "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            "RELEVANCE_SELECTED_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
-        assert "MARQUEUR_FINAL_DECISION_CI" in item["excerpt"]
+        assert "MARQUEUR_FINAL_DECISION_CI" not in item["excerpt"]
     finally:
         await admin.execute(
             "DELETE FROM legal_documents WHERE source_type='OTHER_OFFICIAL' AND source_id=$1",
@@ -361,3 +361,116 @@ async def _run_administrative_case_law_search_sql_scenario():
 
 def test_postgresql_executes_administrative_case_law_search_cte():
     asyncio.run(_run_administrative_case_law_search_sql_scenario())
+
+
+async def _run_service_public_guidance_corpus_scenario():
+    import asyncpg
+    from app.legal_corpus import search_legal_corpus, upsert_legal_document
+
+    source_id = "CI_SERVICE_PUBLIC_" + uuid.uuid4().hex
+    admin = await asyncpg.connect(ADMIN_URL)
+    try:
+        full_text = (
+            "Le temps partiel pour raison thérapeutique permet à un agent public "
+            "de reprendre ou de maintenir son activité dans des conditions adaptées. "
+            "La présente fiche décrit les démarches administratives et les règles "
+            "générales applicables selon le versant de la fonction publique."
+        )
+        await upsert_legal_document(admin, {
+            "source_type": "SERVICE_PUBLIC_PART",
+            "source_id": source_id,
+            "title": "Temps partiel thérapeutique — fiche administrative de test",
+            "document_kind": "ADMIN_GUIDANCE",
+            "publisher": "Service-Public.gouv.fr / DILA",
+            "official_url": "https://www.service-public.gouv.fr/particuliers/vosdroits/F12345",
+            "status": "UNKNOWN",
+            "source_status": "IMPORTED_UNVERIFIED",
+            "raw_metadata": {
+                "corpus_role": "ADMINISTRATIVE_GUIDANCE_NOT_PRIMARY_LEGAL_AUTHORITY",
+                "license": "fr-lo",
+                "attribution": "Service-Public.gouv.fr / DILA",
+            },
+            "full_text": full_text,
+            "version_key": "ci-" + uuid.uuid4().hex,
+            "version_status": "UNKNOWN",
+            "valid_from": None,
+            "valid_to": None,
+            "raw_version_payload": {"integration_test": True},
+        })
+        results = await search_legal_corpus(
+            admin, "temps partiel thérapeutique agent public", date(2026, 11, 22), limit=10,
+        )
+        item = next(result for result in results if result["source_id"] == source_id)
+        assert item["document_kind"] == "ADMIN_GUIDANCE"
+        assert item["source_status"] == "IMPORTED_UNVERIFIED"
+        assert item["official_source"] is False
+        assert item["temporal_status"] == "TEMPORAL_SCOPE_INCOMPLETE"
+        assert item["official_url"].endswith("/F12345")
+        assert item["citation_integrity"]["text_hash_verified"] is True
+        assert item["citation_integrity"]["valid"] is True
+    finally:
+        await admin.execute(
+            "DELETE FROM legal_documents WHERE source_type='SERVICE_PUBLIC_PART' AND source_id=$1",
+            source_id,
+        )
+        await admin.close()
+
+
+def test_postgresql_indexes_service_public_guidance_without_promoting_it_to_law():
+    asyncio.run(_run_service_public_guidance_corpus_scenario())
+
+async def _run_transaction_local_context_reset_scenario():
+    """Tenant GUCs must not survive release/reacquire of a pooled connection."""
+    import asyncpg
+
+    org_a, org_b = str(uuid.uuid4()), str(uuid.uuid4())
+    user_a, user_b = str(uuid.uuid4()), str(uuid.uuid4())
+    issuer_a, issuer_b = "https://issuer-a.test", "https://issuer-b.test"
+    subject_a, subject_b = "subject-a-" + uuid.uuid4().hex, "subject-b-" + uuid.uuid4().hex
+    pool = await asyncpg.create_pool(RUNTIME_URL, min_size=1, max_size=1)
+    try:
+        async with pool.acquire() as conn:
+            backend_pid = await conn.fetchval("SELECT pg_backend_pid()")
+            async with conn.transaction():
+                await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", issuer_a)
+                await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", subject_a)
+                await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_a)
+                await conn.execute("SELECT set_config('app.current_user_id',$1,true)", user_a)
+                assert await conn.fetchval("SELECT current_setting('app.current_org_id',true)") == org_a
+                assert await conn.fetchval("SELECT current_setting('app.current_user_id',true)") == user_a
+
+        # max_size=1 guarantees the next borrower receives the same backend.
+        async with pool.acquire() as conn:
+            assert await conn.fetchval("SELECT pg_backend_pid()") == backend_pid
+            for setting in (
+                "app.oidc_issuer", "app.oidc_subject",
+                "app.current_org_id", "app.current_user_id",
+            ):
+                assert await conn.fetchval(
+                    "SELECT NULLIF(current_setting($1,true),'')", setting
+                ) is None
+
+            async with conn.transaction():
+                await conn.execute("SELECT set_config('app.oidc_issuer',$1,true)", issuer_b)
+                await conn.execute("SELECT set_config('app.oidc_subject',$1,true)", subject_b)
+                await conn.execute("SELECT set_config('app.current_org_id',$1,true)", org_b)
+                await conn.execute("SELECT set_config('app.current_user_id',$1,true)", user_b)
+                assert await conn.fetchval("SELECT current_setting('app.oidc_issuer',true)") == issuer_b
+                assert await conn.fetchval("SELECT current_setting('app.oidc_subject',true)") == subject_b
+                assert await conn.fetchval("SELECT current_setting('app.current_org_id',true)") == org_b
+                assert await conn.fetchval("SELECT current_setting('app.current_user_id',true)") == user_b
+
+        async with pool.acquire() as conn:
+            for setting in (
+                "app.oidc_issuer", "app.oidc_subject",
+                "app.current_org_id", "app.current_user_id",
+            ):
+                assert await conn.fetchval(
+                    "SELECT NULLIF(current_setting($1,true),'')", setting
+                ) is None
+    finally:
+        await pool.close()
+
+
+def test_postgresql_transaction_local_tenant_context_is_cleared_on_connection_reuse():
+    asyncio.run(_run_transaction_local_context_reset_scenario())

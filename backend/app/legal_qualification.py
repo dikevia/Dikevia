@@ -1,4 +1,4 @@
-"""Deterministic routing hints for questions handled by the FPT legal assistant.
+"""Deterministic routing hints for questions handled by the selected public-service branch.
 
 This module classifies the subject and explicit status cues only. It does not
 decide legal applicability, infer missing facts, or create legal evidence.
@@ -15,6 +15,19 @@ def _fold(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", value)).strip()
 
 
+CONVERSATION_HISTORY_MESSAGE_LIMIT = 20
+RECENT_USER_CONTEXT_LIMIT = 10
+
+
+_CLARIFICATION_REPLY = re.compile(
+    r"^(?:oui\b|non\b|exactement\b|c['’]est\s+(?:ça|bien\s+ça)\b|"
+    r"je\s+suis\b|je\s+travaille\b|mon\s+statut\b|"
+    r"depuis\b|à\b|au\b|en\b|titulaire\b|contractuel(?:le)?\b|"
+    r"stagiaire\b|fonctionnaire\b|agent\b|temps\b)",
+    re.IGNORECASE,
+)
+
+
 _CONTEXTUAL_FOLLOWUP = re.compile(
     r"^(?:et\s+(?:pour|si|dans|concernant|les|la|le)\b|"
     r"et\s+l['’]\s*\w+|dans ce cas\b|pour les\b|pour la\b|pour le\b|"
@@ -26,33 +39,60 @@ _CONTEXTUAL_FOLLOWUP = re.compile(
 def build_contextual_research_question(
     current_question: str,
     prior_user_questions: list[str] | None = None,
+    prior_assistant_messages: list[str] | None = None,
 ) -> str:
-    """Resolve an explicit short follow-up without letting old turns replace it."""
+    """Resolve short follow-ups and answers to the assistant's last clarification."""
     current = " ".join(str(current_question or "").split())
     if not current:
         return ""
-    if len(current) >= 220 or not _CONTEXTUAL_FOLLOWUP.match(current):
+    if len(current) >= 220:
         return current[:500]
+
     prior_questions = [
         str(item).strip()
         for item in (prior_user_questions or [])
         if str(item).strip()
     ]
-    if not prior_questions:
-        return current[:500]
+    if _CONTEXTUAL_FOLLOWUP.match(current):
+        if not prior_questions:
+            return current[:500]
+        # A chain of short follow-ups keeps the last substantive user subject.
+        prior = next(
+            (
+                item for item in reversed(prior_questions)
+                if not _CONTEXTUAL_FOLLOWUP.match(item)
+            ),
+            prior_questions[-1],
+        )
+        return f"{current[:300]}\n{prior[:180]}"[:500]
 
-    # A chain of short follow-ups must keep the last substantive subject.
-    # Otherwise "and for contractors?" followed by "and for trainees?"
-    # would make the second follow-up lose the original legal topic.
-    prior = next(
-        (
-            item for item in reversed(prior_questions)
-            if not _CONTEXTUAL_FOLLOWUP.match(item)
-        ),
-        prior_questions[-1],
-    )
-    # Current wording remains first; prior wording supplies only the missing referent.
-    return f"{current[:300]}\n{prior[:180]}"[:500]
+    # A short answer such as "oui", "non" or "contractuel" is meaningful only
+    # when the assistant's immediately preceding turn actually asked a question.
+    if _CLARIFICATION_REPLY.match(current) and prior_questions:
+        assistants = [
+            str(item).strip()
+            for item in (prior_assistant_messages or [])
+            if str(item).strip()
+        ]
+        if assistants:
+            fragments = re.findall(r"[^?]{1,260}\?", assistants[-1][-1200:])
+            if fragments:
+                prior = next(
+                    (
+                        item for item in reversed(prior_questions)
+                        if not _CONTEXTUAL_FOLLOWUP.match(item)
+                    ),
+                    prior_questions[-1],
+                )
+                clarification = " ".join(fragments[-1].split())[-200:]
+                return (
+                    f"{current[:100]}\n{prior[:160]}\n"
+                    f"Question de clarification précédente : {clarification}"
+                )[:500]
+    # Independent questions never inherit unrelated facts or topics.
+    return current[:500]
+
+
 
 
 _TOPIC_MARKERS = (
@@ -90,6 +130,12 @@ _TOPIC_MARKERS = (
                       "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
                       "travail de nuit", "travail le dimanche", "venir le dimanche",
                       "travailler le dimanche", "venir travailler le dimanche")),
+    ("WORKPLACE_INCIDENT_AND_AGENT_PROTECTION", (
+        "agresse par un usager", "agressee par un usager", "agression par un usager",
+        "agression d un usager", "agression au travail", "agent victime d une agression",
+        "violence d un usager", "menace d un usager", "usager m a frappe",
+        "refuse que je fasse un rapport", "refuse de faire un rapport",
+    )),
     ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "citis", "accident de service",
                                        "maladie professionnelle", "conge longue maladie",
                                        "conge longue duree")),
@@ -102,7 +148,9 @@ _TOPIC_MARKERS = (
 )
 
 
-def qualify_legal_question(question: str, employer: str | None = None) -> dict:
+def qualify_legal_question(
+    question: str, employer: str | None = None, public_service: str = "FPT",
+) -> dict:
     """Return conservative pre-research routing hints; never a legal conclusion."""
     folded = _fold(question)
     topic = "UNCLASSIFIED"
@@ -125,26 +173,49 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
     else:
         status = "NOT_SPECIFIED"
 
-    # Explicitly named non-territorial sectors are flagged, never transposed.
-    scope_markers = (
-        ("OUT_OF_SCOPE_FPE", (
+    # Versant selection is routing context only; explicit references to another
+    # branch are flagged so rules are never transposed across public services.
+    public_service = str(public_service or "FPT").upper()
+    if public_service not in {"FPT", "FPE", "FPH"}:
+        public_service = "FPT"
+    branch_markers = {
+        "FPT": ("OUT_OF_SCOPE_FPE", (
             "fonction publique de l etat", "fonction publique d etat",
-            "agent de l etat", "agents de l etat", "fonctionnaire d etat",
-            "fonctionnaires d etat", "fonctionnaire de l etat", "fonctionnaires de l etat",
-        )),
-        ("OUT_OF_SCOPE_FPH", (
+            "agent de l etat", "agents de l etat", "fonctionnaire de l etat",
+            "fonctionnaires de l etat",
+        ), "OUT_OF_SCOPE_FPH", (
             "fonction publique hospitaliere", "agent hospitalier",
             "agents hospitaliers", "fonctionnaire hospitalier",
             "etablissement public de sante", "personnel hospitalier",
         )),
+        "FPE": ("OUT_OF_SCOPE_FPT", (
+            "fonction publique territoriale", "agent territorial", "agents territoriaux",
+            "fonctionnaire territorial", "collectivite territoriale", "collectivites territoriales",
+        ), "OUT_OF_SCOPE_FPH", (
+            "fonction publique hospitaliere", "agent hospitalier",
+            "agents hospitaliers", "fonctionnaire hospitalier",
+            "etablissement public de sante", "personnel hospitalier",
+        )),
+        "FPH": ("OUT_OF_SCOPE_FPT", (
+            "fonction publique territoriale", "agent territorial", "agents territoriaux",
+            "fonctionnaire territorial", "collectivite territoriale", "collectivites territoriales",
+        ), "OUT_OF_SCOPE_FPE", (
+            "fonction publique de l etat", "fonction publique d etat",
+            "agent de l etat", "agents de l etat", "fonctionnaire de l etat",
+            "fonctionnaires de l etat",
+        )),
+    }
+    first_code, first_markers, second_code, second_markers = branch_markers[public_service]
+    scope_status = f"{public_service}_PRODUCT_SCOPE"
+    scope_evidence = []
+    for candidate, markers in (
+        (first_code, first_markers),
+        (second_code, second_markers),
         ("OUT_OF_SCOPE_PRIVATE", (
             "salarie du prive", "salarie dans le prive", "secteur prive",
             "entreprise privee", "employeur prive", "droit prive",
         )),
-    )
-    scope_status = "FPT_PRODUCT_SCOPE"
-    scope_evidence = []
-    for candidate, markers in scope_markers:
+    ):
         matched = [marker for marker in markers if _fold(marker) in folded]
         if matched:
             scope_status = candidate
@@ -154,26 +225,27 @@ def qualify_legal_question(question: str, employer: str | None = None) -> dict:
     local_employer_selected = bool(employer and employer != "NATIONAL")
     priorities = [
         "CODE_GENERAL_FONCTION_PUBLIQUE",
-        "FPT_IMPLEMENTING_LAWS_DECREES_AND_ORDERS",
+        f"{public_service}_IMPLEMENTING_LAWS_DECREES_AND_ORDERS",
         "RELEVANT_ADMINISTRATIVE_CASE_LAW",
     ]
-    if local_employer_selected:
+    if public_service == "FPT" and local_employer_selected:
         priorities.append("VALIDATED_LOCAL_COLLECTIVITY_ACTS_AND_DOCUMENTS")
 
     return {
-        "target_legal_field": "FRENCH_TERRITORIAL_PUBLIC_SERVICE",
+        "target_legal_field": {"FPT": "FRENCH_TERRITORIAL_PUBLIC_SERVICE", "FPE": "FRENCH_STATE_PUBLIC_SERVICE", "FPH": "FRENCH_HOSPITAL_PUBLIC_SERVICE"}[public_service],
         "scope_status": scope_status,
         "scope_evidence": scope_evidence,
         "topic": topic,
         "agent_status": status,
+        "public_service": public_service,
         "employer_document_scope": (
-            "LOCAL_EMPLOYER_SELECTED" if local_employer_selected else "NATIONAL_CORPUS_ONLY"
+            "LOCAL_EMPLOYER_SELECTED" if public_service == "FPT" and local_employer_selected else "NATIONAL_CORPUS_ONLY"
         ),
         "research_priorities": priorities,
         "code_du_travail_rule": "DO_NOT_APPLY_WITHOUT_VERIFIED_EXPRESS_LEGAL_BASIS_OR_REFERRAL",
         "qualification_limits": [
             "Routing hints only; not a determination of legal applicability.",
             "Do not infer agent status, facts, dates, or local rules when not stated.",
-            "Do not transpose private-sector rules to territorial public servants.",
+            "Do not transpose rules between FPT, FPE, FPH or the private sector.",
         ],
     }

@@ -1,8 +1,6 @@
 FROM quay.io/keycloak/keycloak:26.8.2
 
 # Beta deployment target: one Render instance, no distributed JGroups cache.
-# Credential bootstrap is idempotent: existing password credentials are inspected via Keycloak Admin API.
-
 # Realm and OIDC client are already provisioned in Neon; skip realm import on startup.
 COPY deploy/keycloak/realm-cfdt.render.json /opt/keycloak/data/import/realm-cfdt.json
 COPY --chmod=0755 deploy/keycloak/dikevia-entrypoint.sh /opt/keycloak/dikevia-entrypoint.sh
@@ -15,7 +13,8 @@ ENV KC_DB=postgres \
     KC_HTTP_ENABLED=true \
     KC_PROXY_HEADERS=xforwarded \
     KC_HOSTNAME_STRICT=true \
-    JAVA_OPTS_KC_HEAP="-XX:MaxRAMPercentage=20 -XX:InitialRAMPercentage=5"
+    JAVA_OPTS_KC_HEAP="-XX:MaxRAMPercentage=20 -XX:InitialRAMPercentage=5" \
+    JAVA_OPTS_APPEND="-XX:-UseBASE64Intrinsics"
 
 # Build the optimized server image once, rather than augmenting it at every boot.
 RUN /opt/keycloak/bin/kc.sh build --db=postgres --health-enabled=true --metrics-enabled=true --http-enabled=true --proxy-headers=xforwarded --http-management-health-enabled=false --features=stateless --cache=local

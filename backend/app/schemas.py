@@ -2,18 +2,43 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import Literal
 from uuid import UUID
 from datetime import date
+import math
+from pydantic import field_validator
 
 Employer = Literal["NATIONAL", "VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE"]
 
 class AskRequest(BaseModel):
     employer: Employer
+    public_service: Literal["FPT", "FPE", "FPH"] = "FPT"
     # Legacy exact date remains supported for existing clients.
     facts_date: str | None = None
     facts_start_date: str | None = None
     facts_end_date: str | None = None
     situation_ongoing: bool = False
-    question: str = Field(min_length=8, max_length=5000)
+    question: str = Field(min_length=1, max_length=5000)
+    confirm_local_document_ai_transfer: bool = False
+    # Optional client-side embedding; only used when VECTOR_SEARCH_ENABLED is true.
+    query_embedding: list[float] | None = Field(default=None, min_length=384, max_length=384)
     conversation_id: UUID | None = None
+
+    @field_validator("question")
+    @classmethod
+    def validate_question(cls, value):
+        normalized = str(value or "").strip()
+        if not normalized:
+            raise ValueError("La question ne peut pas être vide.")
+        return normalized
+
+    @field_validator("query_embedding")
+    @classmethod
+    def validate_query_embedding(cls, value):
+        if value is None:
+            return value
+        if any(not math.isfinite(float(component)) for component in value):
+            raise ValueError("Le vecteur de recherche contient une valeur non finie.")
+        if sum(float(component) ** 2 for component in value) <= 0:
+            raise ValueError("Le vecteur de recherche ne peut pas être nul.")
+        return value
 
 class AskResponse(BaseModel):
     request_id: str

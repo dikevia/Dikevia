@@ -250,7 +250,7 @@ def test_claim_evidence_rejects_interpretive_context_only_sources():
 
 
 
-def test_claim_evidence_rejects_a_compound_answer_that_silently_omits_an_axis():
+def test_claim_evidence_allows_a_verified_partial_answer_when_an_axis_is_uncovered():
     from app.legal_assurance import validate_claim_evidence
 
     source = _verified_evidence_source()
@@ -264,8 +264,10 @@ def test_claim_evidence_rejects_a_compound_answer_that_silently_omits_an_axis():
     result = validate_claim_evidence(
         payload, [source], required_axes=[axis_overtime, axis_sick_leave],
     )
-    assert result["valid"] is False
-    assert f"research_axis_not_covered:{axis_sick_leave}" in result["invalid_claims"]
+    assert result["valid"] is True
+    assert result["partial"] is True
+    assert result["claim_count"] == 1
+    assert result["uncovered_axes"] == [axis_sick_leave]
 
 
 def test_claim_evidence_accepts_explicit_uncovered_axis_without_inventing_a_claim():
@@ -301,3 +303,61 @@ def test_claim_evidence_rejects_unknown_axis_labels():
     )
     assert result["valid"] is False
     assert "claim_0:missing_or_unknown_research_axis" in result["invalid_claims"]
+
+
+
+def test_claim_evidence_keeps_verified_claims_when_other_research_axes_are_uncovered():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    claim_text = (
+        "L'autorité territoriale organise le service et veille à la protection "
+        "de la santé et de la sécurité des agents dans les conditions prévues par les textes."
+    )
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": claim_text,
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+            "axis": "maintien dans l'emploi",
+        }],
+        "uncovered_axes": [],
+    }, [source], required_axes=["maintien dans l'emploi", "reclassement"])
+
+    assert result["valid"] is True
+    assert result["partial"] is True
+    assert result["claim_count"] == 1
+    assert result["uncovered_axes"] == ["reclassement"]
+
+
+def test_claim_evidence_discards_only_the_unsupported_claim_when_another_is_valid():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    valid_text = (
+        "L'autorité territoriale organise le service et veille à la protection "
+        "de la santé et de la sécurité des agents dans les conditions prévues par les textes."
+    )
+    result = validate_claim_evidence({
+        "claims": [
+            {
+                "text": valid_text,
+                "source_id": source["source_id"],
+                "quote": source["excerpt"],
+                "axis": "santé et sécurité",
+            },
+            {
+                "text": "La collectivité doit verser une indemnité supplémentaire.",
+                "source_id": source["source_id"],
+                "quote": source["excerpt"],
+                "axis": "rémunération",
+            },
+        ],
+        "uncovered_axes": [],
+    }, [source], required_axes=["santé et sécurité", "rémunération"])
+
+    assert result["valid"] is True
+    assert result["claim_count"] == 1
+    assert result["claims"][0]["axis"] == "santé et sécurité"
+    assert result["uncovered_axes"] == ["rémunération"]
+    assert "claim_1:quote_not_relevantly_aligned" in result["invalid_claims"]

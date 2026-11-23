@@ -1,0 +1,1448 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-23",
+  "purpose": "Registre de gouvernance des sources du corpus documentaire national Dikévia. Une source enregistrée n'est pas réputée collectée ni indexée.",
+  "statuses": [
+    "CANDIDATE",
+    "ACCESS_REVIEWED",
+    "REUSE_APPROVED",
+    "IMPORTED",
+    "INDEXED",
+    "RETRIEVAL_VERIFIED",
+    "SUSPENDED"
+  ],
+  "authority_levels": {
+    "PRIMARY_LEGAL": "Textes normatifs et décisions publiés par les autorités compétentes. Fondement juridique prioritaire.",
+    "OFFICIAL_ADMIN_GUIDANCE": "Information administrative officielle. Source d'explication, non substitutive au texte normatif.",
+    "PROFESSIONAL_GUIDANCE": "Guides et analyses d'organismes professionnels. Aide à la compréhension, sans valeur normative propre."
+  },
+  "sources": [
+    {
+      "id": "legifrance-cgfp",
+      "name": "Légifrance — CGFP, lois, décrets, arrêtés et jurisprudence",
+      "publisher": "DILA / autorités publiques compétentes",
+      "authority_level": "PRIMARY_LEGAL",
+      "status": "CANDIDATE",
+      "collection_mode": "API officielle / flux open data selon les conditions de chaque jeu",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "reuse": "Vérifier les conditions propres à chaque flux et conserver les identifiants, versions et dates d'effet.",
+      "priority": 1,
+      "domains": [
+        "legifrance.gouv.fr",
+        "www.legifrance.gouv.fr"
+      ]
+    },
+    {
+      "id": "service-public-part",
+      "name": "Service-Public.gouv.fr — fiches pratiques Particuliers",
+      "publisher": "Service-Public.gouv.fr / DILA",
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Flux XML 3.5 via data.gouv.fr",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "reuse": "Licence Ouverte 2.0 ; attribution Service-Public.gouv.fr / DILA, URL complète de téléchargement, nom du fichier et date du fichier.",
+      "dataset_url": "https://www.data.gouv.fr/datasets/fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers",
+      "download_url": "https://lecomarquage.service-public.gouv.fr/vdd/3.5/part/zip/vosdroits-latest.zip",
+      "ingestion": "Importer comme ADMIN_GUIDANCE / IMPORTED_UNVERIFIED ; les références citées dans les fiches restent à vérifier.",
+      "priority": 2,
+      "domains": [
+        "service-public.gouv.fr",
+        "www.service-public.gouv.fr",
+        "lecomarquage.service-public.gouv.fr",
+        "data.gouv.fr"
+      ]
+    },
+    {
+      "id": "dgafp",
+      "name": "DGAFP — ressources et guides de la fonction publique de l'État",
+      "publisher": "Direction générale de l'administration et de la fonction publique",
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Pages et documents publics à inventorier",
+      "scope": [
+        "FPE",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier la licence et les conditions de réutilisation document par document.",
+      "priority": 2,
+      "domains": [
+        "fonction-publique.gouv.fr",
+        "www.fonction-publique.gouv.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "dgcl",
+      "name": "DGCL — ressources statutaires et territoriales",
+      "publisher": "Direction générale des collectivités locales",
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages et documents publics à inventorier",
+      "scope": [
+        "FPT",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier la licence et les conditions de réutilisation document par document.",
+      "priority": 2,
+      "domains": [
+        "collectivites-locales.gouv.fr",
+        "www.collectivites-locales.gouv.fr"
+      ]
+    },
+    {
+      "id": "info-gouv",
+      "name": "Info.gouv.fr — informations et communications gouvernementales",
+      "publisher": "Services du Premier ministre",
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques à qualifier individuellement",
+      "scope": [
+        "TRANSVERSAL"
+      ],
+      "reuse": "Ne retenir que les contenus ayant un lien utile avec la fonction publique ; vérifier date, auteur et réutilisation.",
+      "domain": "info.gouv.fr",
+      "priority": 4,
+      "domains": [
+        "info.gouv.fr",
+        "www.info.gouv.fr"
+      ]
+    },
+    {
+      "id": "cnfpt",
+      "name": "CNFPT — guides, fiches et ressources statutaires",
+      "publisher": "Centre national de la fonction publique territoriale",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Licence, droits de reproduction et conditions d'accès à contrôler avant collecte et indexation.",
+      "priority": 3,
+      "domains": [
+        "cnfpt.fr",
+        "www.cnfpt.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "wikiterritorial-cnfpt",
+      "name": "WikiTerritorial — base de connaissances territoriale du CNFPT",
+      "publisher": "CNFPT",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Articles et ressources publiques accessibles",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les conditions de réutilisation, la date de mise à jour et l'auteur de chaque article.",
+      "domain": "wikiterritorial.cnfpt.fr",
+      "priority": 3,
+      "domains": [
+        "wikiterritorial.cnfpt.fr"
+      ]
+    },
+    {
+      "id": "cig-petite-couronne",
+      "name": "CIG Petite Couronne — ressources statutaires",
+      "publisher": "Centre interdépartemental de gestion de la petite couronne",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Licence et conditions de réutilisation à contrôler ; exclure les contenus sous accès réservé.",
+      "priority": 3,
+      "domains": [
+        "cig929394.fr",
+        "www.cig929394.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "cig-grande-couronne",
+      "name": "CIG Grande Couronne — ressources statutaires",
+      "publisher": "Centre interdépartemental de gestion de la grande couronne",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Licence et conditions de réutilisation à contrôler ; exclure les contenus sous accès réservé.",
+      "priority": 3,
+      "domains": [
+        "cigversailles.fr",
+        "www.cigversailles.fr"
+      ]
+    },
+    {
+      "id": "cdg-departements",
+      "name": "Centres de gestion départementaux — documentation statutaire",
+      "publisher": "Centres de gestion de la fonction publique territoriale",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Sélection de sites départementaux et documents publics",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier séparément les conditions de chaque CDG ; ne pas crawler les espaces réservés.",
+      "priority": 3,
+      "domains": [
+        "cdg35.fr",
+        "cdg44.fr",
+        "cdg59.fr",
+        "cdg69.fr"
+      ]
+    },
+    {
+      "id": "cdg-35",
+      "name": "CDG 35 — ressources statutaires et RH",
+      "publisher": "Centre de gestion d'Ille-et-Vilaine",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les droits de réutilisation de chaque document.",
+      "domain": "cdg35.fr",
+      "priority": 3,
+      "domains": [
+        "cdg35.fr",
+        "www.cdg35.fr",
+        "cdg35.bzh",
+        "www.cdg35.bzh",
+        "espace-echanges.cdg35.bzh"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "cdg-44",
+      "name": "CDG 44 — ressources statutaires et RH",
+      "publisher": "Centre de gestion de Loire-Atlantique",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les droits de réutilisation de chaque document.",
+      "domain": "cdg44.fr",
+      "priority": 3,
+      "domains": [
+        "cdg44.fr",
+        "www.cdg44.fr"
+      ]
+    },
+    {
+      "id": "cdg-59",
+      "name": "CDG 59 — ressources statutaires et RH",
+      "publisher": "Centre de gestion du Nord",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les droits de réutilisation de chaque document.",
+      "domain": "cdg59.fr",
+      "priority": 3,
+      "domains": [
+        "cdg59.fr",
+        "www.cdg59.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "cdg-69",
+      "name": "CDG 69 — ressources statutaires et RH",
+      "publisher": "Centre de gestion du Rhône et de la Métropole de Lyon",
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Pages publiques et documents téléchargeables autorisés",
+      "scope": [
+        "FPT"
+      ],
+      "reuse": "Vérifier les droits de réutilisation de chaque document.",
+      "domain": "cdg69.fr",
+      "priority": 3,
+      "domains": [
+        "cdg69.fr",
+        "www.cdg69.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "cfdt-fonctions-publiques",
+      "name": "CFDT Fonctions Publiques — UFFA",
+      "publisher": "Union des fédérations de fonctionnaires et assimilés CFDT",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Actualités, analyses, revendications, guides et publications publiques ; conserver l'attribution syndicale.",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; ne pas assimiler les analyses syndicales au droit positif.",
+      "priority": 4,
+      "domains": [
+        "uffa.cfdt.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "cfdt-interco",
+      "name": "CFDT Interco — fonction publique territoriale et services publics",
+      "publisher": "Fédération CFDT Interco",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Guides, fiches pratiques, analyses statutaires, actualités et documents publics.",
+      "scope": [
+        "FPT",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; distinguer analyse syndicale et texte juridique.",
+      "priority": 4,
+      "domains": [
+        "interco.cfdt.fr",
+        "cfdt-interco31.fr",
+        "www.cfdt-interco31.fr",
+        "cfdtinterco35.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "cgt-fonction-publique",
+      "name": "CGT — Fonction publique",
+      "publisher": "CGT, fédérations des services publics, de l'État et de la santé/action sociale",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Publications et analyses des fédérations CGT couvrant les trois versants ; conserver l'identité de la fédération éditrice.",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; positions revendicatives non assimilables au droit positif.",
+      "priority": 4,
+      "domains": [
+        "cgtservicespublics.fr",
+        "www.cgtservicespublics.fr",
+        "cgtetat.fr",
+        "www.cgtetat.fr",
+        "sante.cgt.fr",
+        "www.sante.cgt.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "fo-fonction-publique",
+      "name": "FO Fonction publique — FGF-FO",
+      "publisher": "Fédération générale des fonctionnaires Force ouvrière",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Actualités, publications, droits et services, analyses et revendications publiques.",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; distinguer revendications, commentaires et règles applicables.",
+      "priority": 4,
+      "domains": [
+        "fo-fonctionnaires.fr",
+        "www.fo-fonctionnaires.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "cftc-fonction-publique",
+      "name": "CFTC — Fonction publique",
+      "publisher": "CFTC et fédérations des agents de l'État, des collectivités territoriales et santé-sociaux",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Propositions, analyses, fiches pédagogiques et publications concernant les agents publics.",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; distinguer les positions CFTC du droit positif.",
+      "priority": 4,
+      "domains": [
+        "cftc.fr",
+        "www.cftc.fr",
+        "ledecodeur.cftc.fr"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "unsa-fonction-publique",
+      "name": "UNSA Fonction Publique",
+      "publisher": "UNSA Fonction Publique",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Actualités, analyses, guides, grilles, communiqués et documents publics.",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; conserver date et attribution.",
+      "priority": 4,
+      "domains": [
+        "unsa-fp.org",
+        "www.unsa-fp.org"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "solidaires-fonction-publique",
+      "name": "Solidaires Fonction publique",
+      "publisher": "Union syndicale Solidaires — secteur Fonction publique",
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Actualités, informations, matériel, analyses et publications publiques.",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Vérifier les droits de réutilisation document par document ; distinguer positions syndicales et droit positif.",
+      "priority": 4,
+      "domains": [
+        "fonctionpublique.solidaires.org"
+      ],
+      "reuse_authorization": {
+        "status": "OWNER_CONFIRMED",
+        "confirmed_at": "2026-11-23",
+        "scope": "Ressources explicitement sélectionnées et fournies pour le corpus Dikévia.",
+        "note": "Le responsable du projet confirme avoir vérifié les autorisations de réutilisation pour les ressources sélectionnées. Conserver l'attribution, la provenance, la date et la nature éditoriale de chaque contenu."
+      }
+    },
+    {
+      "id": "justice-administrative-opendata",
+      "name": "Conseil d'État — Données ouvertes de la justice administrative",
+      "publisher": "Conseil d'État",
+      "authority_level": "PRIMARY_LEGAL",
+      "status": "CANDIDATE",
+      "collection_mode": "Archives XML ZIP mensuelles par juridiction, année et mois ; aucun endpoint API documenté",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "reuse": "Licence Ouverte 2.0 et CGU propres à la plateforme. Préserver l'intégrité de chaque décision et son contexte. Toute citation doit conserver le numéro, la juridiction, la formation, le siège et la date. Le commentaire éditorial doit être distinct du texte de la décision. Aucune réutilisation à des fins de profilage des magistrats ou personnels de greffe.",
+      "dataset_url": "https://opendata.justice-administrative.fr/index.html",
+      "help_url": "https://opendata.justice-administrative.fr/aide.html",
+      "terms_url": "https://opendata.justice-administrative.fr/cgu.html",
+      "collection": "Décisions du Conseil d'État depuis le 30 septembre 2021, des CAA depuis le 31 mars 2022 et des TA depuis le 30 juin 2022. Ciblage des décisions concernant les agents publics et leurs droits statutaires ; ne pas aspirer les archives intégralement sans filtre.",
+      "ingestion": "Importer comme ADMIN_CASELAW après extraction XML, contrôle des métadonnées, filtrage thématique et vérification de l'intégrité. Conserver ECLI, numéro de dossier, juridiction, siège, formation, dates, code de publication, nom du ZIP et empreinte.",
+      "priority": 2,
+      "domains": [
+        "opendata.justice-administrative.fr"
+      ]
+    }
+  ],
+  "rules": [
+    "Aucun document n'est considéré importé ou indexé sur la seule base de sa présence dans ce registre.",
+    "Conserver éditeur, URL source, licence, date de collecte, date de mise à jour et empreinte du contenu.",
+    "Ne jamais déduire le versant applicable par simple détection lexicale ; le conserver comme indice non validé.",
+    "Les guides et fiches professionnelles n'ont pas priorité sur le texte normatif applicable.",
+    "Une référence juridique extraite d'une fiche reste une piste jusqu'à vérification sur la source primaire.",
+    "Ne pas collecter les espaces privés, extranet ou contenus soumis à abonnement sans autorisation explicite.",
+    "Pour les décisions de justice administrative, conserver le texte intégral sans altération et citer les identifiants complets imposés par les CGU ; séparer explicitement l'extrait, le commentaire et la décision originale."
+  ],
+  "document_seeds": [
+    {
+      "id": "dgafp-structuration-droit-fp",
+      "source_id": "dgafp",
+      "title": "Les grands principes et la structuration du droit de la fonction publique de l'État",
+      "url": "https://www.fonction-publique.gouv.fr/index.php/toutes-les-publications/parcours-de-professionnalisation-de-la-filiere-rh-les-grands-principes-et-la-structuration-du-droit-de-la-fonction-publique-de-letat",
+      "format": "HTML_WITH_PDF_LINKS",
+      "scope": [
+        "FPE"
+      ],
+      "topics": [
+        "sources du droit",
+        "statut",
+        "carrière",
+        "GRH"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2023-06-08",
+      "notes": "La page renvoie vers trois livrets PDF ; contrôler les liens et leur version avant collecte."
+    },
+    {
+      "id": "dgafp-maintien-emploi-etat",
+      "source_id": "dgafp",
+      "title": "Le maintien dans l'emploi des agents publics de l'État",
+      "url": "https://www.fonction-publique.gouv.fr/toutes-les-publications/le-maintien-dans-lemploi-des-agents-publics-de-letat",
+      "format": "HTML_WITH_PDF_LINK",
+      "scope": [
+        "FPE"
+      ],
+      "topics": [
+        "inaptitude",
+        "PPR",
+        "reclassement",
+        "santé au travail"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2025-01-23"
+    },
+    {
+      "id": "dgafp-repertoire-metiers",
+      "source_id": "dgafp",
+      "title": "Répertoire commun des métiers de la fonction publique",
+      "url": "https://www.fonction-publique.gouv.fr/toutes-les-publications/repertoire-commun-des-metiers-de-la-fonction-publique",
+      "format": "HTML_WITH_PDF_LINK",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "topics": [
+        "métiers",
+        "mobilité",
+        "référentiel lexical"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2023-09-15"
+    },
+    {
+      "id": "dgcl-conges-fpt",
+      "source_id": "dgcl",
+      "title": "Les congés dans la fonction publique territoriale",
+      "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale/le-temps-de-travail-les-conges-et-absences/les-conges",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "congés maladie",
+        "maternité",
+        "reclassement"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "dgcl-ppr-faq",
+      "source_id": "dgcl",
+      "title": "La période de préparation au reclassement (PPR) : foire aux questions",
+      "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale/la-carriere/la-periode-de-preparation-au-reclassement-ppr-foire-aux-questions",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "PPR",
+        "inaptitude",
+        "reclassement",
+        "rémunération"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "dgcl-remuneration",
+      "source_id": "dgcl",
+      "title": "Le traitement et les accessoires obligatoires de la rémunération",
+      "url": "https://www.collectivites-locales.gouv.fr/connaitre-les-acteurs-et-les-institutions/fonction-publique-territoriale/la-remuneration-indiciaire-indemnitaire-et-autres-avantages/le-traitement-et-les-accessoires-obligatoires-de-la-remuneration",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "traitement indiciaire",
+        "indice",
+        "NBI",
+        "SFT"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "cdg59-info-statut",
+      "source_id": "cdg-59",
+      "title": "Fiches Info Statut — documentation statutaire",
+      "url": "https://www.cdg59.fr/carrieres-2/information-statutaire/documentation-statutaire/fiches-info-statut",
+      "format": "HTML_WITH_PDF_LINKS",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés maladie",
+        "carrière",
+        "recrutement",
+        "emplois fonctionnels"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Page indexant plusieurs fiches PDF ; vérifier individuellement leur date et leur droit de réutilisation."
+    },
+    {
+      "id": "cig929394-faq-sante-temps-partiel",
+      "source_id": "cig-petite-couronne",
+      "title": "FAQ statutaire — impact du congé pour raison de santé sur le temps partiel",
+      "url": "https://www.cig929394.fr/sites/default/files/commun/faq_2-tp-situation-fin_2025_04v2.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "temps partiel",
+        "CMO",
+        "CLM",
+        "CLD",
+        "CITIS",
+        "rémunération"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2025-04"
+    },
+    {
+      "id": "cig929394-faq-conges-annuels-tpt",
+      "source_id": "cig-petite-couronne",
+      "title": "FAQ statutaire — congés annuels et temps partiel thérapeutique",
+      "url": "https://www.cig929394.fr/wp-content/uploads/2025/09/faq_ca_2024_12v4.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "TPT"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Date exacte de version à vérifier dans le PDF ; nom de fichier indique une version 2024-12."
+    },
+    {
+      "id": "cdg69-fiches-medecine-statutaire",
+      "source_id": "cdg-69",
+      "title": "Médecine statutaire et de contrôle — fiches pratiques",
+      "url": "https://www.cdg69.fr/sites/default/files/content/ressources/fichiers/2024-11/02_fiches_pratiques.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "TPT",
+        "CITIS",
+        "imputabilité",
+        "aptitude",
+        "CLM",
+        "CLD",
+        "invalidité"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2023-07",
+      "notes": "Le fichier indique une édition juillet 2023 malgré un chemin de publication 2024-11 ; à contrôler, potentiellement obsolète."
+    },
+    {
+      "id": "cdg69-faq-conges-annuels",
+      "source_id": "cdg-69",
+      "title": "FAQ — congés annuels, réforme et report",
+      "url": "https://www.cdg69.fr/le-cdg69/faq/faq-conges-annuels-le-point-sur-la-reforme",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "report",
+        "CITIS",
+        "congés maladie"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "cnfpt-guide-employeur-collectivites",
+      "source_id": "cnfpt",
+      "title": "Guide de l'employeur — collectivités",
+      "url": "https://www.cnfpt.fr/sites/default/files/guide_de_lemployeur_-_collectivites.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "employeur territorial",
+        "formation",
+        "glossaire"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "notes": "Date et actualité juridique à vérifier ; ne pas le traiter comme guide statutaire à jour sans contrôle."
+    },
+    {
+      "id": "dgafp-faq-tpt-2026",
+      "source_id": "dgafp",
+      "title": "FAQ DGAFP — Temps partiel thérapeutique dans la fonction publique (version 2026)",
+      "url": "https://www.fonction-publique.gouv.fr/files/files/Etre%20agent%20public/Protection%20sociale/FAQ_TPT_2026.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "topics": [
+        "TPT",
+        "conditions d'octroi",
+        "renouvellement",
+        "droits",
+        "rémunération",
+        "congés annuels",
+        "RTT"
+      ],
+      "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "publication_date": "2026-11",
+      "notes": "Version signalée comme mise à jour le 18 novembre 2026 ; contrôler directement le PDF, son contenu et les références réglementaires avant intégration.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "f6684fb63d04b1e6144289a7eec8d31dc225d9c5026bb513c0f5efa6bdb45ffe",
+      "text_sha256": "05aa19f3219328a24830646d8c9583d2cc217e72145614de6940229395f7a79a",
+      "page_count": 16,
+      "character_count": 45048,
+      "artifact_name": "dikevia-public-guidance-collected.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cdg44-actualite-faq-tpt-2026",
+      "source_id": "cdg-44",
+      "title": "Actualisation de la FAQ sur le TPT dans la fonction publique",
+      "url": "https://www.cdg44.fr/actualites/actualisation-de-la-faq-sur-le-tpt-dans-la-fonction-publique",
+      "format": "HTML",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "topics": [
+        "TPT",
+        "décret 2026-705",
+        "FAQ DGAFP"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2026-11-18",
+      "notes": "Relais d'information du CDG44 sur la FAQ DGAFP ; utiliser le PDF DGAFP comme ressource principale."
+    },
+    {
+      "id": "cdg35-actualite-conges-2025",
+      "source_id": "cdg-35",
+      "title": "Actualité juridique — congés annuels non pris, report et indemnisation",
+      "url": "https://www.cdg35.fr/beacdf17e90166e1ba64332030865eexy/iedit/1016/507341_527004_2025_09_29_Actus_CNFPT_CDG.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "report",
+        "indemnisation",
+        "décret 2025-564"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "SUSPENDED",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2025-09-29",
+      "notes": "Ancienne URL historique : le domaine redirige vers cdg35.bzh et le serveur renvoie HTTP 418 à la collecte automatisée. Remplacé par les nouvelles ressources directes cdg35.bzh enregistrées dans le registre."
+    },
+    {
+      "id": "cdg35-annualisation",
+      "source_id": "cdg-35",
+      "title": "Fiche pratique — annualisation du temps de travail",
+      "url": "https://www.cdg35.fr/beacdf17e90166e1ba64332030865eexy/iedit/11/449509_466494_WB_Annualisation.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "annualisation",
+        "temps de travail",
+        "congés annuels",
+        "CET"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "SUSPENDED",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2024-06-06",
+      "notes": "Ancienne URL historique : le domaine redirige vers cdg35.bzh et le serveur renvoie HTTP 418 à la collecte automatisée. Remplacé par les nouvelles ressources directes cdg35.bzh enregistrées dans le registre."
+    },
+    {
+      "id": "cdg44-fiche-heures-supplementaires",
+      "source_id": "cdg-44",
+      "title": "Fiche statut — heures supplémentaires et heures complémentaires",
+      "url": "https://preprod.cdg44.fr/sites/default/files/atoms/files/fiche%20statut%20n%C2%B01-heuressup_0.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "IHTS",
+        "heures supplémentaires",
+        "heures complémentaires",
+        "temps non complet"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "CANDIDATE",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REVIEW_REQUIRED",
+      "publication_date": "2021-04",
+      "notes": "URL hébergée sur preprod.cdg44.fr : ne pas intégrer tant qu'une version publique de production n'est pas confirmée."
+    },
+    {
+      "id": "cdg35-annualisation-2025-v2",
+      "source_id": "cdg-35",
+      "title": "Guide du temps de travail — annualisation (juin 2025)",
+      "url": "https://www.cdg35.bzh/app/uploads/13/1/2025/12/GUIDE_T_de_T__Annualisation_2025_derniere_version-1.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "annualisation",
+        "1607 heures",
+        "cycles de travail",
+        "CST",
+        "congés annuels",
+        "temps non complet",
+        "heures complémentaires",
+        "heures supplémentaires"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "publication_date": "2025-06",
+      "notes": "Version publiée sur le domaine actuel cdg35.bzh ; contrôler licence et extraction avant indexation.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "cd2953e6e602eda745d318e05a8decddaa789867fe51681e2853a938c3e791c5",
+      "text_sha256": "29e4fd05653483bd915e9cfbb8e0d2dfe8af87077c9e753e42f6473feda9049c",
+      "page_count": 20,
+      "character_count": 39553,
+      "artifact_name": "dikevia-public-guidance-collected.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cdg35-reglement-temps-travail-cst-2025",
+      "source_id": "cdg-35",
+      "title": "Règlement du temps de travail et modèle CST — congés annuels et cycles (novembre 2025)",
+      "url": "https://www.cdg35.bzh/app/uploads/13/1/2025/11/2025_REGLEMENT_T_de_T_CST_Modele_derniere_version_-1.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "temps de travail",
+        "CST",
+        "temps partiel",
+        "temps non complet",
+        "annualisation"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "publication_date": "2025-11",
+      "notes": "Document statutaire de référence du CDG35 ; licence et réutilisation à contrôler.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "54cf4f343057e18157b34f4d256d8dcd25d7c0d113c39cc8ade9674c8ef91f07",
+      "text_sha256": "0b393a0dadc946c9ac8ce0d65602948e9bc3e81f4c6325b837243c5b0926167c",
+      "page_count": 31,
+      "character_count": 52077,
+      "artifact_name": "dikevia-public-guidance-collected.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cdg35-actualites-statutaires-2026-09",
+      "source_id": "cdg-35",
+      "title": "Support webinaire — actualités statutaires (17 septembre 2026)",
+      "url": "https://www.cdg35.bzh/app/uploads/13/1/2026/09/Support-webinaire-Actualites-statutaires_170926.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "report des congés",
+        "congé pour raison de santé",
+        "période de report de 15 mois",
+        "reprise de fonctions",
+        "quatre semaines"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "publication_date": "2026-09-17",
+      "notes": "Ressource récente avec cas pratiques sur le report des congés après congé de santé ; contrôler licence et portée exacte.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "2b1d45f0cb0316832ba922e7b37564526cc7dac9eb38d27a2718fc8c9960480e",
+      "text_sha256": "24130ffa0deb560c575be9316676dad663a138dbd59919f6a16424dabeba36b5",
+      "page_count": 58,
+      "character_count": 33438,
+      "artifact_name": "dikevia-public-guidance-collected.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cig-pc-guide-temps-travail-2025",
+      "source_id": "cig-petite-couronne",
+      "title": "Guide du temps de travail — CIG Petite Couronne",
+      "url": "https://www.cig929394.fr/wp-content/uploads/2025/07/guide_temps_de_travail_03_21_vd-1.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "temps de travail",
+        "congés annuels",
+        "temps partiel",
+        "cycles de travail",
+        "CET"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "notes": "Guide PDF publié sur le domaine officiel CIG Petite Couronne ; vérifier version, dates de mise à jour et droits de réutilisation.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "ef067871a510105c8230d4c042700e95ee591ce59fe827c814bc7899a1e07b45",
+      "text_sha256": "0a90731dbd8312a615e7db4864cc83bf162b2043cf4d5962d0e4d65b315910a0",
+      "character_count": 130170,
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "page_count": 48,
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cig-pc-faq-clm-cld",
+      "source_id": "cig-petite-couronne",
+      "title": "FAQ — gestion des congés de longue maladie et de longue durée des fonctionnaires territoriaux",
+      "url": "https://www.cig929394.fr/publications/la-gestion-des-conges-de-longue-maladie-et-de-longue-duree-des-fonctionnaires-territoriaux-faq/",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "CLM",
+        "CLD",
+        "congés annuels",
+        "RTT",
+        "report des congés"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "notes": "Page de FAQ ancienne ; contrôler toutes les règles au regard du CGFP et des décrets actuellement en vigueur.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "a5e2e3139e9245a784f19f3978856cfe88d44b2868ce81ddaa5215feead19019",
+      "text_sha256": "3fa3d199da005d65acfa579a1c88f3f400a38167f47e51d2e177881203a93756",
+      "character_count": 22645,
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cdg59-actualite-tpt-citis-2026",
+      "source_id": "cdg-59",
+      "title": "Modifications statutaires — congés pour raison de santé, CITIS et temps partiel thérapeutique (août 2026)",
+      "url": "https://www.cdg59.fr/actualites/page-detaillee/modifications-des-dispositions-relatives-aux-conges-pour-raisons-de-sante-et-au-temps-partiel-therapeutique-nouveau-cdg-info",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "décret 2026-705",
+        "TPT",
+        "CITIS",
+        "CMO",
+        "CLM",
+        "CLD",
+        "conseil médical"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "publication_date": "2026-08-24",
+      "notes": "Actualité récente annonçant le CDG-INFO2026-12 et les mises à jour des fiches statutaires ; les PDF liés ne sont pas automatiquement suivis.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "fab3b8b0d505dfdc143f87c697da993be359277783ce93a4e480452503b2a633",
+      "text_sha256": "58a070a0f0f02067ef0a7abc5da245edacb1887a5b31081d8515bfd477faf454",
+      "character_count": 1788,
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cdg69-faq-conges-annuels-reforme",
+      "source_id": "cdg-69",
+      "title": "FAQ — congés annuels, report et réforme",
+      "url": "https://www.cdg69.fr/le-cdg69/faq/faq-conges-annuels-le-point-sur-la-reforme",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "congés annuels",
+        "report",
+        "CITIS",
+        "CMO",
+        "CLM",
+        "CLD",
+        "CGFP"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "notes": "Ressource d'analyse professionnelle ; contrôler les passages sur l'article 5-1 du décret 85-1250 à la lumière des décisions et textes les plus récents.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "790884fd35d5211a757a41bb74f892951d848405784a97f1a7e86d74b4f7201d",
+      "text_sha256": "b3412c9987e7ec476a437e2729e0289a26bd67b2f1fab95da071b9f2a2b29fcb",
+      "character_count": 29178,
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cnfpt-temps-travail-agents-territoriaux",
+      "source_id": "cnfpt",
+      "title": "Le temps de travail des agent.e.s territoriaux.ales — CNFPT",
+      "url": "https://www.cnfpt.fr/evoluer/carriere/temps-travail-agents-territoriaux/national",
+      "format": "HTML",
+      "scope": [
+        "FPT"
+      ],
+      "topics": [
+        "1607 heures",
+        "temps de travail",
+        "cycles",
+        "CET",
+        "heures supplémentaires"
+      ],
+      "authority_level": "PROFESSIONAL_GUIDANCE",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "notes": "Page pédagogique ancienne ; conserver comme contexte uniquement après vérification des règles et de la date de mise à jour.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "05646d2c058badfa08b4aa20cc106a3e8a7df922cef8e91065345a62395f7a9a",
+      "text_sha256": "bddd8905eb5d0e0330757d1f5a708ceedd822f4df241bc366a022b26a03a7f1b",
+      "character_count": 5414,
+      "artifact_name": "dikevia-expanded-public-guidance.zip",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cfdt-uffa-site",
+      "source_id": "cfdt-fonctions-publiques",
+      "title": "Site officiel CFDT Fonctions Publiques — UFFA",
+      "url": "https://uffa.cfdt.fr/",
+      "format": "HTML",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "droits des agents publics",
+        "rémunération",
+        "carrière",
+        "santé",
+        "dialogue social",
+        "revendications"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "notes": "Site syndical national couvrant les trois versants ; les contenus doivent rester attribués à la CFDT.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "822f5924bfb975e0cf1cd374d2486c4ff5dc562cfe08b2d426d2d573f5b1cf25",
+      "character_count": 1984,
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "822f5924bfb975e0cf1cd374d2486c4ff5dc562cfe08b2d426d2d573f5b1cf25",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cfdt-interco-guide-agent-public-2026",
+      "source_id": "cfdt-interco",
+      "title": "Guide de l'agent public 2026 — CFDT Interco (page de présentation)",
+      "url": "https://www.cfdt-interco31.fr/post/guide-de-l-agent-public-2026-un-outil-cfdt-pour-conna%C3%AEtre-ses-droits-avant-les-%C3%A9lections",
+      "format": "HTML",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH"
+      ],
+      "topics": [
+        "droits des agents publics",
+        "fonctionnaires",
+        "contractuels",
+        "guide pratique",
+        "élections professionnelles"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "publication_date": "2026-10-22",
+      "notes": "La page annonce un PDF de 10,19 Mo intitulé guide_de_l_agent_public_2026_interco-cfdt.pdf. L'URL directe du PDF n'a pas encore été vérifiée ; ne pas la deviner. Le guide devra être extrait et confronté aux textes en vigueur.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "f89c2fde3da1b835a944828658b858724cf89f73d1e964a8ce8b9d2a5d898eb0",
+      "character_count": 1229,
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "f89c2fde3da1b835a944828658b858724cf89f73d1e964a8ce8b9d2a5d898eb0",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cgt-fp-site",
+      "source_id": "cgt-fonction-publique",
+      "title": "Fédération CGT des services publics — dossier Fonction publique",
+      "url": "https://www.cgtservicespublics.fr/societe/la-fonction-publique/",
+      "format": "HTML",
+      "scope": [
+        "FPT",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "statut général",
+        "trois versants",
+        "droits des agents",
+        "revendications"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "5c0aea40f70a2dcbb56c3d6ca25a6bb2fc0077d89f946e5fc895765eda18650b",
+      "character_count": 7432,
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "93d6264ac54b3da9e254a7fccf5367979ab8ed812dae92b6fb9d0d15548632ff",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "fo-fp-site",
+      "source_id": "fo-fonction-publique",
+      "title": "FO Fonction publique — site et publications",
+      "url": "https://www.fo-fonctionnaires.fr/",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "droits des agents",
+        "statut",
+        "carrière",
+        "rémunération",
+        "publications"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "cd00ae9959cf234d43769f05aa8569d7356b3ee99cdbff8fdea74f161ec49060",
+      "character_count": 5853,
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "cd00ae9959cf234d43769f05aa8569d7356b3ee99cdbff8fdea74f161ec49060",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cftc-fp-propositions",
+      "source_id": "cftc-fonction-publique",
+      "title": "Fonction publique — propositions de la CFTC",
+      "url": "https://www.cftc.fr/thematique/fonction-publique-les-propositions-de-la-cftc",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "rémunération",
+        "pouvoir d'achat",
+        "conditions de travail",
+        "reconversion",
+        "formation"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "73639f802eda746ae9850785650af7d7ff0ad12d899dc4750a04f9164c7de522",
+      "character_count": 8663,
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "4c43f68e28c081425576eeb5679c82ca039f82e30ac9c12ece8d47d44ffc5a61",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cftc-decodeur-greve-fp",
+      "source_id": "cftc-fonction-publique",
+      "title": "Le droit de grève dans la fonction publique — CFTC Le Décodeur",
+      "url": "https://ledecodeur.cftc.fr/3-min-pour-comprendre/le-droit-de-greve-dans-la-fonction-publique/",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH"
+      ],
+      "topics": [
+        "droit de grève",
+        "préavis",
+        "négociation",
+        "organisations syndicales"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "notes": "Fiche pédagogique syndicale ; vérifier chaque règle contre le CGFP et les textes applicables.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "df8c9b1d05a53861a86b79b0c96da671defaf35d55dd12c0cceb63b81ae1be85",
+      "character_count": 13710,
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "df8c9b1d05a53861a86b79b0c96da671defaf35d55dd12c0cceb63b81ae1be85",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "unsa-fp-site",
+      "source_id": "unsa-fonction-publique",
+      "title": "UNSA Fonction Publique — site officiel",
+      "url": "https://www.unsa-fp.org/",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "grilles indiciaires",
+        "rémunération",
+        "temps de travail",
+        "santé",
+        "carrière",
+        "dialogue social"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "39b0a8954e82af97ee1c3ac5d0b4cb8795642aeb81725950f7e38437ef8a2d29",
+      "character_count": 10175,
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "39b0a8954e82af97ee1c3ac5d0b4cb8795642aeb81725950f7e38437ef8a2d29",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "solidaires-fp-site",
+      "source_id": "solidaires-fonction-publique",
+      "title": "Solidaires Fonction publique — actualités, informations et matériel",
+      "url": "https://fonctionpublique.solidaires.org/",
+      "format": "HTML",
+      "scope": [
+        "FPE",
+        "FPT",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "droits des agents",
+        "rémunération",
+        "conditions de travail",
+        "santé",
+        "revendications"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "text_sha256": "c9687b3dbfaf1714e6142e23161a7c282462990b0c9c16c9cde6ede14e085003",
+      "character_count": 890,
+      "artifact_name": "service-public-function-public-corpus.zip",
+      "download_sha256": "c9687b3dbfaf1714e6142e23161a7c282462990b0c9c16c9cde6ede14e085003",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "cfdt-interco-guide-agent-public-2026-pdf",
+      "source_id": "cfdt-interco",
+      "title": "Guide de l'agent public 2026 — Fédération CFDT Interco (PDF intégral)",
+      "url": "https://cfdtinterco35.fr/wp-content/uploads/2026/04/Guide-de-lagent-public-2026-PDF.pdf",
+      "format": "PDF",
+      "scope": [
+        "FPT",
+        "FPE",
+        "FPH",
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "droits des agents",
+        "obligations",
+        "rémunération",
+        "carrière",
+        "formation",
+        "positions administratives",
+        "temps de travail",
+        "congés",
+        "discipline",
+        "instances représentatives"
+      ],
+      "authority_level": "TRADE_UNION_POSITION",
+      "status": "REUSE_APPROVED",
+      "content_status": "EXTRACTED_NOT_IMPORTED",
+      "reuse_status": "REUSE_APPROVED",
+      "notes": "PDF intégral téléchargé et extrait avec succès en dry-run le 22/11/2026 : 68 pages, 181 469 caractères. Original et JSON d'extraction conservés dans l'artefact GitHub Actions. Réutilisation toujours REVIEW_REQUIRED ; aucun import PostgreSQL.",
+      "collection_status": "EXTRACTED_IN_AUDIT_ARTIFACT",
+      "collected_at": "2026-11-22",
+      "download_sha256": "077faba42ccbd29874cc7291541e9052ad4399aabe86b2af59153b4ca1085649",
+      "text_sha256": "33b6ffbcd531264862fd0d750383fee474e93da34bd5ec8277e918a150b5e1aa",
+      "page_count": 68,
+      "character_count": 181469,
+      "artifact_name": "service-public-function-public-corpus",
+      "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    }
+  ]
+}

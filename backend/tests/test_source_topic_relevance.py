@@ -201,3 +201,97 @@ def test_annual_professional_evaluation_keeps_the_appraisal_report_rules():
         ),
     }
     assert is_topic_relevant_source(question, source) is True
+
+
+def test_six_year_cdi_question_rejects_unrelated_contract_and_hr_provisions():
+    question = (
+        "Un agent contractuel territorial en CDD peut-il obtenir un CDI "
+        "après 6 ans de services ?"
+    )
+    relevant = {
+        "title": "Code général de la fonction publique — article L332-10",
+        "article": "L332-10",
+        "text": (
+            "Tout contrat établi ou renouvelé pour pourvoir un emploi permanent "
+            "avec un agent contractuel territorial justifiant de six ans de services "
+            "publics sur des fonctions de même catégorie hiérarchique est conclu "
+            "pour une durée indéterminée."
+        ),
+    }
+    unrelated = [
+        {
+            "title": "Code général de la fonction publique — article L554-3",
+            "article": "L554-3",
+            "text": "Indemnité de fin de contrat et plafond de rémunération brute globale.",
+        },
+        {
+            "title": "Code général de la fonction publique — article L556-13",
+            "article": "L556-13",
+            "text": "Prolongation d'activité des agents contractuels avant la retraite.",
+        },
+        {
+            "title": "Code général de la fonction publique — article L422-3",
+            "article": "L422-3",
+            "text": "Formation professionnelle et évolution des agents de catégorie C.",
+        },
+    ]
+
+    assert is_topic_relevant_source(question, relevant) is True
+    assert all(is_topic_relevant_source(question, source) is False for source in unrelated)
+
+
+def test_fpe_overtime_relevance_does_not_require_fpt_ihts_implementing_markers():
+    from app.orchestrator import _source_relevant_to_any_research_axis
+
+    query = "heures supplémentaires des agents de la fonction publique de l'État"
+    source = {
+        "title": "Organisation du temps de travail dans la fonction publique de l'État",
+        "text": (
+            "Les agents de l'État peuvent être amenés à effectuer des heures "
+            "supplémentaires selon les règles propres à leur administration."
+        ),
+    }
+    assert _source_relevant_to_any_research_axis([query], source, "FPE") is True
+    assert _source_relevant_to_any_research_axis([query], source, "FPT") is False
+
+
+def test_fph_overtime_relevance_does_not_require_fpt_ihts_implementing_markers():
+    from app.orchestrator import _source_relevant_to_any_research_axis
+
+    query = "heures supplémentaires des personnels hospitaliers"
+    source = {
+        "title": "Organisation du temps de travail dans les établissements publics de santé",
+        "text": (
+            "Les personnels hospitaliers peuvent effectuer des heures "
+            "supplémentaires selon les dispositions propres à la fonction publique hospitalière."
+        ),
+    }
+    assert _source_relevant_to_any_research_axis([query], source, "FPH") is True
+    assert _source_relevant_to_any_research_axis([query], source, "FPT") is False
+
+
+def test_availability_question_rejects_unrelated_long_term_sick_leave_source():
+    question = "Un fonctionnaire peut-il demander une disponibilité pour convenances personnelles ?"
+    source = {
+        "title": "Congé de longue durée (CLD) du fonctionnaire",
+        "text": "Règles relatives au congé de longue durée et à la reprise après maladie.",
+    }
+    assert is_topic_relevant_source(question, source) is False
+
+
+def test_availability_question_keeps_availability_regulation():
+    question = "Un fonctionnaire peut-il demander une disponibilité pour convenances personnelles ?"
+    source = {
+        "title": "Décret relatif à la disponibilité des fonctionnaires territoriaux",
+        "text": "Disponibilité sur demande pour convenances personnelles.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_contractual_availability_question_rejects_titular_sick_leave_source():
+    question = "Un agent contractuel peut-il être placé en disponibilité ?"
+    source = {
+        "title": "Congé de longue durée du fonctionnaire",
+        "text": "Le congé de longue durée concerne les fonctionnaires titulaires.",
+    }
+    assert is_topic_relevant_source(question, source) is False

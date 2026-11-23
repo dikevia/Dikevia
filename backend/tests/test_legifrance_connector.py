@@ -186,8 +186,97 @@ def test_legifrance_search_payload_uses_code_date_and_article_number(monkeypatch
     assert payload["fond"] == "CODE_DATE"
     assert payload["recherche"]["champs"][0]["criteres"][0]["valeur"] == "L123-4"
     assert payload["recherche"]["typePagination"] == "ARTICLE"
+    free_text = LegifranceConnector()._search_payload(
+        "régime indemnitaire fonctions supplémentaires", date(2025, 1, 1)
+    )
+    criterion = free_text["recherche"]["champs"][0]["criteres"][0]
+    assert criterion["typeRecherche"] == "UN_DES_MOTS"
+    assert criterion["proximite"] == 5
+    precise = LegifranceConnector()._search_payload(
+        "régime indemnitaire fonctions supplémentaires", date(2025, 1, 1), precise=True
+    )
+    precise_criterion = precise["recherche"]["champs"][0]["criteres"][0]
+    assert precise_criterion["typeRecherche"] == "TOUS_LES_MOTS_DANS_UN_CHAMP"
+    assert precise_criterion["proximite"] == 5
+    # Exact article references stay exact regardless of keyword mode.
+    exact = LegifranceConnector()._search_payload(
+        "article L. 123-4", date(2025, 1, 1), precise=True
+    )
+    assert exact["recherche"]["champs"][0]["criteres"][0]["typeRecherche"] == "EXACTE"
     assert payload["recherche"]["filtres"][1]["singleDate"] == LegifranceConnector._date_epoch_ms(date(2025, 1, 1))
 
+
+
+@pytest.mark.asyncio
+async def test_legifrance_regulatory_search_uses_broad_mode_only_after_precise_zero_hits(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    search_payloads = []
+    text_id = "LEGITEXT000012345678"
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            search_payloads.append(payload)
+            if len(search_payloads) == 1:
+                return httpx.Response(200, json={"results": []})
+            return httpx.Response(200, json={"results": [{
+                "id": text_id, "titre": "Décret relatif au régime indemnitaire"
+            }]})
+        if request.url.path.endswith("/consult/legiPart"):
+            return httpx.Response(200, json={
+                "id": text_id,
+                "texte": "Texte réglementaire officiel suffisamment long pour être retenu par le connecteur et son test automatisé."
+            })
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_regulatory_texts(
+        "régime indemnitaire fonctions supplémentaires", date(2025, 1, 1)
+    )
+    assert len(results) == 1
+    assert len(search_payloads) == 2
+    first = search_payloads[0]["recherche"]["champs"][0]["criteres"][0]
+    second = search_payloads[1]["recherche"]["champs"][0]["criteres"][0]
+    assert first["typeRecherche"] == "TOUS_LES_MOTS_DANS_UN_CHAMP"
+    assert second["typeRecherche"] == "UN_DES_MOTS"
+
+
+@pytest.mark.asyncio
+async def test_legifrance_code_search_uses_broad_mode_only_after_precise_zero_hits(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    search_payloads = []
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            search_payloads.append(payload)
+            if len(search_payloads) == 1:
+                return httpx.Response(200, json={"results": []})
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID, "num": "L123-4",
+                "nomCode": "Code général de la fonction publique",
+                "texte": "Disposition officielle suffisamment longue pour être conservée dans le résultat de test."
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles(
+        "régime indemnitaire fonctions supplémentaires", date(2025, 1, 1)
+    )
+    assert len(results) == 1
+    assert len(search_payloads) == 2
+    first = search_payloads[0]["recherche"]["champs"][0]["criteres"][0]
+    second = search_payloads[1]["recherche"]["champs"][0]["criteres"][0]
+    assert first["typeRecherche"] == "TOUS_LES_MOTS_DANS_UN_CHAMP"
+    assert second["typeRecherche"] == "UN_DES_MOTS"
 
 
 @pytest.mark.asyncio
@@ -214,12 +303,24 @@ async def test_legifrance_exact_article_query_rejects_consulted_body_for_another
 
 
 
-def test_legifrance_article_consultation_is_bounded_to_five_ids():
+def test_legifrance_article_consultation_keeps_all_ten_search_hits():
     payload = {"results": [{"titles": [{"id": f"LEGIARTI{i:012d}", "cid": f"LEGIARTI{i:012d}"}]}
                           for i in range(1, 12)]}
     ids = LegifranceConnector._find_article_ids(payload)
-    assert len(ids) == 5
+    assert len(ids) == 10
     assert ids[0] == "LEGIARTI000000000001"
+    assert ids[-1] == "LEGIARTI000000000010"
+
+
+def test_legifrance_text_extraction_keeps_distinct_sibling_segments_without_duplicates():
+    payload = {"article": {"texte": "Article A complet.", "children": [
+        {"texte": "Article B complet."},
+        {"texte": "Article A complet."},
+    ]}}
+    extracted = LegifranceConnector._extract_text(payload)
+    assert "Article A complet." in extracted
+    assert "Article B complet." in extracted
+    assert extracted.count("Article A complet.") == 1
 
 
 
@@ -605,3 +706,78 @@ async def test_loda_exact_91_875_lookup_preserves_territorial_decree_number(monk
     assert results[0]["nor"] == "INTB9100377D"
     assert results[0]["source_id"] == "LEGITEXT000052196548"
     assert results[0]["full_text"] == full_text.strip()
+
+
+@pytest.mark.asyncio
+async def test_regulatory_search_prefers_complete_requested_article_sections(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    text_id = "LEGITEXT000012345678"
+    full_text = (
+        "Préambule sans rapport avec la demande.\n"
+        "Article 37-1\nDisposition antérieure sans rapport.\n"
+        "Article 37-2\nDéclaration d'accident de service et certificat médical requis. "
+        "L'agent adresse les pièces à l'autorité territoriale.\n"
+        "Article 37-5\nL'autorité dispose d'un délai d'un mois pour instruire la déclaration.\n"
+        "Article 37-9\nDisposition postérieure non demandée."
+    )
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            criterion = payload["recherche"]["champs"][0]["criteres"][0]
+            assert criterion["typeRecherche"] == "EXACTE"
+            assert criterion["valeur"] == "87-602"
+            return httpx.Response(200, json={"results": [{
+                "id": text_id, "titre": "Décret n° 87-602 du 30 juillet 1987",
+                "dateTexte": "1987-07-30",
+            }]})
+        if request.url.path.endswith("/consult/legiPart"):
+            return httpx.Response(200, json={"id": text_id, "texte": full_text})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_regulatory_texts(
+        "décret n° 87-602 articles 37-2 37-5 CITIS accident déclaration imputabilité",
+        date(2026, 11, 22),
+    )
+    assert len(results) == 1
+    assert "Article 37-2" in results[0]["excerpt"]
+    assert "Article 37-5" in results[0]["excerpt"]
+    assert "Article 37-1" not in results[0]["excerpt"]
+    assert "Article 37-9" not in results[0]["excerpt"]
+    assert results[0]["full_text"] == full_text
+
+
+def test_requested_excerpt_extracts_targeted_amendments_from_long_decree_article():
+    prefix = "Article 3\n" + ("Disposition générale sans lien avec le CITIS. " * 450)
+    full_text = (
+        prefix
+        + "\n2° L'article 13-2 est remplacé par les dispositions suivantes :\n"
+        + "« Art. 13-2. - La décision relative au temps partiel thérapeutique intervient au plus tard trente jours. »\n"
+        + "3° L'article 13-5 est remplacé par les dispositions suivantes :\n"
+        + "« Art. 13-5. - Les conclusions médicales peuvent être contestées devant le conseil médical. »\n"
+        + "11° Le 2° de l'article 37-2 est remplacé par les dispositions suivantes :\n"
+        + "« Un certificat médical indique la nature et le siège des lésions. »\n"
+        + "12° Après l'article 37-9, il est inséré un article 37-9-1 ainsi rédigé :\n"
+        + "« Art. 37-9-1. - Les dispositions des articles 26-1, 28, 31-2 et 34-1 s'appliquent au CITIS. »\n"
+        + "13° Les articles 13-4, 13-6 et 37-15 sont abrogés."
+    )
+    citis = LegifranceConnector._requested_article_excerpt(
+        full_text,
+        "décret n° 2026-705 article 3 modifie articles 37-2 et 37-9-1 CITIS",
+    )
+    assert "nature et le siège des lésions" in citis
+    assert "s'appliquent au CITIS" in citis
+    assert "temps partiel thérapeutique" not in citis
+    assert len(citis) < 5000
+
+    tpt = LegifranceConnector._requested_article_excerpt(
+        full_text,
+        "décret n° 2026-705 article 3 modifie articles 13-2 et 13-5 temps partiel thérapeutique",
+    )
+    assert "trente jours" in tpt
+    assert "contestées devant le conseil médical" in tpt
+    assert "s'appliquent au CITIS" not in tpt
