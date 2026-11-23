@@ -97,6 +97,16 @@ def test_validate_repository_quality_benchmark_schema():
     assert questions[0]["id"] == "FPT-001"
     assert questions[0]["expected_failure_modes"]
     assert "Intention attendue" in questions[0]["expected_criteria"][0]
+    first_ten = [q for q in questions if q["id"] <= "FPT-010"]
+    assert len(first_ten) == 10
+    assert all(q["candidate_sources"] for q in first_ten)
+    assert all(q["source_scope_warning"] for q in first_ten)
+    assert all(q["source_review_status"] == "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED" for q in first_ten)
+    assert all(
+        source["url"].startswith("https://www.legifrance.gouv.fr/")
+        or source["url"].startswith("https://www.cig929394.fr/")
+        for q in first_ten for source in q["candidate_sources"]
+    )
 
 
 def test_canonical_benchmark_review_uses_its_declared_five_dimension_release_gate(tmp_path):
