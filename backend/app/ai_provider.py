@@ -24,6 +24,8 @@ POLITIQUE STRICTE DE FENÊTRE FERMÉE :
 - Si les sources sont absentes, contradictoires, incomplètes ou insuffisantes pour répondre à un point, écris exactement : « Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. » Puis indique précisément quelle pièce ou vérification manque. N'extrapole pas.
 
 RÈGLES DE SOURCES :
+- Les fiches Service-Public, les guides institutionnels, professionnels et syndicaux sont des sources de contexte non normatives. Elles peuvent aider à comprendre le vocabulaire, les démarches et les points à vérifier, mais ne fondent jamais une affirmation juridique, un délai, un droit ou une obligation.
+- Toute affirmation juridique doit être fondée sur un texte juridique ou une décision juridictionnelle admissible, avec citation exacte. En cas de divergence, le texte juridique applicable prévaut ; signale la divergence au lieu de la masquer.
 RÈGLES DE QUALIFICATION JURIDIQUE FPT — PRIORITÉ ABSOLUE :
 - Le périmètre de Dikévia est exclusivement la fonction publique territoriale (FPT). Même si l'utilisateur ne précise pas son versant, interprète sa question dans ce cadre produit et recherche les règles applicables aux agents territoriaux ; ne lui demande pas de confirmer la FPT par défaut.
 - N'utilise jamais une règle propre à la fonction publique de l'État (FPE), à la fonction publique hospitalière (FPH) ou au secteur privé comme fondement d'une réponse FPT. Si la question révèle explicitement que la personne relève d'un autre versant, signale que la situation sort du périmètre de Dikévia au lieu de transposer ces règles.
@@ -181,6 +183,8 @@ PÉRIMÈTRE JURIDIQUE :
 - Les actes locaux ne peuvent être retenus que si leur champ territorial et leur validation sont établis.
 
 SOURCES ET CITATIONS :
+- Les fiches administratives officielles et les guides professionnels ou syndicaux sont uniquement des éléments de contexte non normatifs ; ils ne peuvent jamais fonder une affirmation juridique, un délai, un droit ou une obligation.
+- Les affirmations juridiques doivent être étayées par les textes applicables ou une décision juridictionnelle admissible, avec citation exacte.
 - Les sources officielles Légifrance/PISTE et les décisions administratives intégrales vérifiées constituent les références ; le modèle n'est jamais une source.
 - Une métadonnée, un résultat de recherche ou un extrait de jurisprudence incomplet ne prouve pas une règle absente du texte fourni.
 - Toute proposition juridique doit être immédiatement suivie d'une référence précise et d'un extrait probant présents dans les sources.
@@ -257,7 +261,19 @@ def _usable_document_sources(sources):
                 break
             except ValueError:
                 continue
-        if not source_id or not has_date:
+        assurance = source.get("legal_assurance") if isinstance(source.get("legal_assurance"), dict) else {}
+        guidance_context_only = (
+            source.get("source_type") in {"SERVICE_PUBLIC_PART", "INSTITUTIONAL_GUIDANCE"}
+            and source.get("claim_eligible") is False
+            and (
+                source.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY"
+                or assurance.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY"
+            )
+            and assurance.get("usable_for_interpretation") is True
+        )
+        # Undated guidance may orient terminology and practical context only.
+        # It remains excluded from claim evidence by validate_claim_evidence.
+        if not source_id or (not has_date and not guidance_context_only):
             continue
         excerpt = source.get("excerpt")
         if not isinstance(excerpt, str) or not excerpt.strip():
@@ -524,6 +540,13 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                 "extraits_documentaires_valides": [{
                     "type_source": s.get("source_type"), "identifiant_source": s.get("source_id"),
                     "titre": s.get("title"), "article": s.get("article"),
+                    "famille_source": (s.get("legal_assurance") or {}).get("source_family"),
+                    "qualification_source": (s.get("legal_assurance") or {}).get("source_family_label"),
+                    "niveau_autorite": (s.get("legal_assurance") or {}).get("authority_level"),
+                    "libelle_autorite": (s.get("legal_assurance") or {}).get("authority_label"),
+                    "editeur": (s.get("legal_assurance") or {}).get("publisher") or s.get("publisher"),
+                    "categorie_editeur": (s.get("legal_assurance") or {}).get("publisher_type"),
+                    "source_normative": (s.get("legal_assurance") or {}).get("normative"),
                     "perimetre_fonction_publique": s.get("public_service_scope"),
                     "indices_perimetre": s.get("scope_evidence"),
                     "numero_officiel": s.get("official_number"), "juridiction": s.get("jurisdiction"),
