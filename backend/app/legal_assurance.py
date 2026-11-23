@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from datetime import date
 from typing import Any
 
 from .evidence_text import normalize_evidence_text
@@ -228,6 +229,55 @@ _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGN
 _SOURCE_ID_CITATION_RE = re.compile(r"\[source:([A-Za-z0-9:_-]{6,128})\]", re.IGNORECASE)
 _NUMERIC_FACT_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)(?!\w)", re.IGNORECASE)
 _DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}(?:er)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})\b", re.IGNORECASE)
+
+_FRENCH_MONTHS = {
+    "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4,
+    "mai": 5, "juin": 6, "juillet": 7, "août": 8, "aout": 8,
+    "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12, "decembre": 12,
+}
+
+
+def _parse_legal_date(value: object) -> date | None:
+    """Parse unambiguous ISO or French day-first dates for endpoint comparison."""
+    candidate = str(value or "").strip()
+    if not candidate:
+        return None
+    try:
+        return date.fromisoformat(candidate)
+    except ValueError:
+        pass
+    numeric = re.fullmatch(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", candidate)
+    if numeric:
+        day, month, year = (int(part) for part in numeric.groups())
+        try:
+            return date(year, month, day)
+        except ValueError:
+            return None
+    french = re.fullmatch(
+        r"(\d{1,2})(?:er)?\s+([A-Za-zÀ-ÿ]+)\s+(\d{4})",
+        candidate,
+        re.IGNORECASE,
+    )
+    if french:
+        day = int(french.group(1))
+        month = _FRENCH_MONTHS.get(french.group(2).casefold())
+        year = int(french.group(3))
+        if month is not None:
+            try:
+                return date(year, month, day)
+            except ValueError:
+                return None
+    return None
+
+
+def _same_legal_date(value: object, expected: object) -> bool:
+    actual_date = _parse_legal_date(value)
+    expected_date = _parse_legal_date(expected)
+    if actual_date is not None and expected_date is not None:
+        return actual_date == expected_date
+    return _normalized_evidence_text(str(value or "")).casefold() == (
+        _normalized_evidence_text(str(expected or "")).casefold()
+    )
 _WHOLE_PERIOD_ASSERTION_RE = re.compile(
     r"\b(?:sur|pendant|pour)\s+(?:toute|l['’]ensemble de la)\s+(?:la\s+)?(?:période|année)\b|"
     r"\b(?:sur|pendant|pour)\s+l['’]ensemble\s+de\s+la\s+période\b|"
@@ -530,13 +580,16 @@ def validate_claim_evidence(
             else period.get("facts_reference_date")
         )
         if is_multi_date_period and endpoint in {"START", "END"}:
-            if endpoint_date and str(endpoint_date) not in claim_text:
+            endpoint_is_stated = any(
+                _same_legal_date(value, endpoint_date)
+                for value in _DATE_FACT_RE.findall(claim_text)
+            )
+            if endpoint_date and not endpoint_is_stated:
                 invalid.append(f"claim_{index}:period_endpoint_not_date_scoped")
                 continue
             if _WHOLE_PERIOD_ASSERTION_RE.search(claim_text):
                 invalid.append(f"claim_{index}:unsupported_whole_period_assertion")
                 continue
-        normalized_requested_date = _normalized_evidence_text(str(endpoint_date or "")).casefold()
         unsupported_numbers = [
             value for value in _NUMERIC_FACT_RE.findall(claim_text)
             if _normalized_evidence_text(value).casefold() not in quote_folded
@@ -544,7 +597,7 @@ def validate_claim_evidence(
         unsupported_dates = [
             value for value in _DATE_FACT_RE.findall(claim_text)
             if _normalized_evidence_text(value).casefold() not in quote_folded
-            and _normalized_evidence_text(value).casefold() != normalized_requested_date
+            and not _same_legal_date(value, endpoint_date)
         ]
         if unsupported_numbers or unsupported_dates:
             invalid.append(f"claim_{index}:unsupported_numeric_or_date_detail")
