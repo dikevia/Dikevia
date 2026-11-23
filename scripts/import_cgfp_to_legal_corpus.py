@@ -135,6 +135,7 @@ async def import_snapshot(dsn: str, metadata: dict[str, Any], articles: list[dic
                 text = article["text"]
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 version_key = f'{metadata["source_id"]}:{metadata["source_sha256"][:16]}:{ref}'
+                official_url = "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000044416551/"
                 raw_metadata = {
                     "source_id": metadata["source_id"],
                     "source_file": metadata["source_file"],
@@ -151,13 +152,16 @@ async def import_snapshot(dsn: str, metadata: dict[str, Any], articles: list[dic
                 version = await conn.fetchrow("""
                     WITH upserted_document AS (
                       INSERT INTO legal_documents(
-                        source_type,source_id,title,document_kind,publisher,official_url,
+                        source_type,source_id,title,document_kind,publisher,official_url,official_number,
                         status,source_status,raw_metadata,content_sha256,last_seen_at
                       )
-                      VALUES('CGFP_SNAPSHOT',$1,$2,'CODE',NULL,
-                        NULL,'UNKNOWN','IMPORTED_UNVERIFIED',$3::jsonb,$4,now())
+                      VALUES('CGFP_SNAPSHOT',$1,$2,'CODE','Légifrance',
+                        $8,$9,'UNKNOWN','IMPORTED_UNVERIFIED',$3::jsonb,$4,now())
                       ON CONFLICT(source_type,source_id) DO UPDATE SET
                         title=EXCLUDED.title,
+                        publisher=EXCLUDED.publisher,
+                        official_url=EXCLUDED.official_url,
+                        official_number=EXCLUDED.official_number,
                         status='UNKNOWN',
                         source_status='IMPORTED_UNVERIFIED',
                         raw_metadata=legal_documents.raw_metadata || EXCLUDED.raw_metadata,
@@ -190,7 +194,7 @@ async def import_snapshot(dsn: str, metadata: dict[str, Any], articles: list[dic
                     WHERE (SELECT count(*) FROM deleted_chunks) >= 0
                 """, source_id, title, json.dumps(raw_metadata, ensure_ascii=False),
                     text_hash, version_key, text,
-                    json.dumps(raw_metadata, ensure_ascii=False))
+                    json.dumps(raw_metadata, ensure_ascii=False), official_url, ref)
                 if not version:
                     raise RuntimeError(f"Échec de l'upsert de l'article {ref}.")
                 chunks = split_text(text)
