@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     oidc_audience: str = ""
     oidc_jwks_url: str = ""
     oidc_algorithms: str = "RS256"
+    oidc_provider: str = "keycloak"
+    oidc_client_id: str = ""
+    oidc_scopes: str = "openid profile email"
+    oidc_authorization_audience: str = ""
+    oidc_identity_compat_issuer: str = ""
+    oidc_identity_subject_prefix: str = ""
+    oidc_email_claim: str = "email"
+    oidc_email_verified_claim: str = "email_verified"
     cors_origins: str = ""
     invitation_base_url: str = ""
     keycloak_admin_base_url: str = ""
@@ -90,6 +98,22 @@ def validate_runtime_configuration(config: Settings) -> None:
     algorithms = [part.strip() for part in config.oidc_algorithms.split(",") if part.strip()]
     if not algorithms or any(alg not in {"RS256", "ES256"} for alg in algorithms):
         raise RuntimeError("OIDC_ALGORITHMS doit contenir uniquement RS256 et/ou ES256.")
+    if config.oidc_provider not in {"keycloak", "auth0"}:
+        raise RuntimeError("OIDC_PROVIDER doit être keycloak ou auth0.")
+    scopes = [scope for scope in config.oidc_scopes.split() if scope]
+    if not scopes or "openid" not in scopes:
+        raise RuntimeError("OIDC_SCOPES doit inclure le scope openid.")
+    if config.oidc_provider == "auth0" and config.app_env == "production":
+        if not config.oidc_client_id or not config.oidc_authorization_audience:
+            raise RuntimeError("Auth0 exige OIDC_CLIENT_ID et OIDC_AUTHORIZATION_AUDIENCE en production.")
+    if bool(config.oidc_identity_compat_issuer) != bool(config.oidc_identity_subject_prefix):
+        raise RuntimeError("OIDC_IDENTITY_COMPAT_ISSUER et OIDC_IDENTITY_SUBJECT_PREFIX doivent être configurés ensemble.")
+    if config.oidc_identity_compat_issuer and not _valid_https_or_local(
+        config.oidc_identity_compat_issuer, config.app_env != "production"
+    ):
+        raise RuntimeError("OIDC_IDENTITY_COMPAT_ISSUER doit être une URL HTTPS valide en production.")
+    if not config.oidc_email_claim or not config.oidc_email_verified_claim:
+        raise RuntimeError("Les noms des claims OIDC d'e-mail ne peuvent pas être vides.")
     oidc_values = (config.oidc_issuer, config.oidc_audience, config.oidc_jwks_url)
     if any(oidc_values) and not all(oidc_values):
         raise RuntimeError("Configuration OIDC incomplète : ISSUER, AUDIENCE et JWKS_URL sont requis ensemble.")
@@ -202,12 +226,14 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("Configuration SMTP incomplète : hôte et adresse expéditeur requis.")
     if not 1 <= config.smtp_port <= 65535:
         raise RuntimeError("SMTP_PORT invalide.")
-    automation_requested = any((config.keycloak_admin_base_url, config.keycloak_admin_client_secret,
-                                config.smtp_host, config.smtp_from))
-    if automation_requested:
-        if not all((config.keycloak_admin_base_url, config.keycloak_admin_client_secret,
-                    config.smtp_host, config.smtp_from, config.invitation_base_url)):
-            raise RuntimeError("Invitations automatisées : Keycloak Admin, SMTP et INVITATION_BASE_URL doivent être configurés ensemble.")
+    smtp_requested = bool(config.smtp_host or config.smtp_from)
+    if smtp_requested:
+        if not all((config.smtp_host, config.smtp_from, config.invitation_base_url)):
+            raise RuntimeError("Invitations par e-mail : SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont requis ensemble.")
+        if config.oidc_provider == "keycloak" and not all((
+            config.keycloak_admin_base_url, config.keycloak_admin_client_secret
+        )):
+            raise RuntimeError("Avec Keycloak, les invitations automatiques exigent également Keycloak Admin.")
         if not _valid_https_or_local(config.invitation_base_url, config.app_env != "production"):
             raise RuntimeError("INVITATION_BASE_URL doit utiliser HTTPS en production (HTTP localhost autorisé en développement).")
 
