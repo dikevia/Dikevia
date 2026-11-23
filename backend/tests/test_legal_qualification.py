@@ -1,4 +1,4 @@
-from app.legal_qualification import qualify_legal_question
+from app.legal_qualification import qualify_legal_question, build_contextual_research_context
 
 
 def test_union_question_is_qualified_before_research_without_inventing_agent_status():
@@ -280,11 +280,11 @@ def test_contextual_research_context_marks_short_followup_explicitly():
         ["Les règles applicables aux titulaires sont..."],
     )
     assert context.is_followup is True
-    assert "\\n" in context.question
+    assert "\n" in context.question
 
 
 def test_contextual_research_context_does_not_confuse_multiline_question_with_followup():
-    question = "Je suis agent titulaire.\\nQuels sont mes droits aux congés annuels ?"
+    question = "Je suis agent titulaire.\nQuels sont mes droits aux congés annuels ?"
     context = build_contextual_research_context(
         question,
         ["Je suis contractuel. Quelle est ma rémunération ?"],
@@ -311,4 +311,4 @@ def test_contextual_research_context_marks_answer_to_clarification_as_followup()
         ["Êtes-vous titulaire ou contractuel dans la fonction publique territoriale ?"],
     )
     assert context.is_followup is True
-    assert "\\n" in context.question
+    assert "\n" in context.question
