@@ -11,8 +11,8 @@ from typing import Any
 
 # This is a review order, not a universal rule for resolving every conflict.
 _SOURCE_CLASS = {
-    "ADMIN_GUIDANCE": (25, "Fiche d'information administrative — non normative"),
-    "PROFESSIONAL_GUIDANCE": (20, "Ressource professionnelle — non normative"),
+    "ADMIN_GUIDANCE": (25, "Information administrative officielle — non normative"),
+    "PROFESSIONAL_GUIDANCE": (20, "Ressource professionnelle ou syndicale — non normative"),
     "CONSTITUTIONAL": (100, "Norme constitutionnelle"),
     "EUROPEAN_TREATY": (95, "Droit de l'Union / convention internationale"),
     "LAW": (80, "Loi / ordonnance ratifiée selon son régime"),
@@ -55,6 +55,40 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         else:
             kind = "LOCAL_REGULATION"
     rank, label = _SOURCE_CLASS.get(kind, _SOURCE_CLASS["OTHER"])
+    raw_metadata = source.get("raw_metadata")
+    if isinstance(raw_metadata, str):
+        try:
+            import json
+            raw_metadata = json.loads(raw_metadata)
+        except (TypeError, ValueError):
+            raw_metadata = {}
+    if not isinstance(raw_metadata, dict):
+        raw_metadata = {}
+    publisher = str(source.get("publisher") or raw_metadata.get("source_name") or "").strip()[:240] or None
+    publisher_type = str(source.get("publisher_type") or raw_metadata.get("publisher_type") or "").upper() or None
+    authority_level = str(source.get("authority_level") or raw_metadata.get("authority_level") or "").upper()
+    if authority_level not in {
+        "PRIMARY_LEGAL", "OFFICIAL_ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE",
+        "JURISPRUDENCE", "OFFICIAL_INTERPRETIVE",
+    }:
+        authority_level = {
+            "ADMIN_GUIDANCE": "OFFICIAL_ADMIN_GUIDANCE",
+            "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
+            "ADMIN_CASELAW": "JURISPRUDENCE",
+            "CIRCULAR": "OFFICIAL_INTERPRETIVE",
+        }.get(kind, "PRIMARY_LEGAL")
+    if publisher_type is None:
+        source_key = str(raw_metadata.get("source_id") or "").casefold()
+        if any(name in source_key for name in ("cfdt", "cgt", "fo-", "cftc", "unsa", "solidaires")):
+            publisher_type = "TRADE_UNION"
+        elif kind == "ADMIN_GUIDANCE":
+            publisher_type = "PUBLIC_ADMINISTRATION"
+        elif kind == "PROFESSIONAL_GUIDANCE":
+            publisher_type = "PROFESSIONAL_BODY"
+    if publisher_type == "TRADE_UNION":
+        label = "Doctrine syndicale — non normative"
+    elif kind == "PROFESSIONAL_GUIDANCE" and publisher_type == "PROFESSIONAL_BODY":
+        label = "Ressource professionnelle — non normative"
     non_normative = kind in {"ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE"}
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
@@ -79,6 +113,16 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     return {
         "source_family": kind,
         "source_family_label": label,
+        "authority_level": authority_level,
+        "authority_label": {
+            "PRIMARY_LEGAL": "Texte juridique primaire",
+            "JURISPRUDENCE": "Jurisprudence administrative",
+            "OFFICIAL_ADMIN_GUIDANCE": "Information administrative officielle, non normative",
+            "PROFESSIONAL_GUIDANCE": "Ressource professionnelle ou syndicale, non normative",
+            "OFFICIAL_INTERPRETIVE": "Circulaire ou instruction administrative, portée à vérifier",
+        }.get(authority_level, "Niveau d'autorité à qualifier"),
+        "publisher": publisher,
+        "publisher_type": publisher_type,
         "review_priority": rank,
         "temporal_or_validation_status": status,
         "normative": not non_normative,
