@@ -152,7 +152,7 @@ def should_use_cgfp_snapshot_fallback(
     # the documentary CGFP snapshot fallback.
     live_covers_an_axis = any(
         source.get("source_type") in {None, "LEGIFRANCE_API"}
-        and _source_relevant_to_any_research_axis(queries, source)
+        and _source_relevant_for_target(queries, source, target_versant)
         and source.get("analysis_eligible") is not False
         for source in (live_sources or [])
     )
@@ -166,7 +166,7 @@ def should_use_cgfp_snapshot_fallback(
     return bool(
         live_unusable and isinstance(found, dict) and found.get("results")
         and any(
-            _source_relevant_to_any_research_axis(queries, hit)
+            _source_relevant_for_target(queries, hit, target_versant)
             and (
                 _cgfp_article_fpt_eligible(str(hit.get("article") or ""))
                 if target_versant == "FPT"
@@ -319,11 +319,12 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
 
 async def apply_semantic_source_relevance(
     *, question: str, research_axes: list[str], sources: list[dict],
+    target_versant: str = "FPT",
 ) -> None:
     """Apply Gemini relevance verdicts while preserving lexical fallback on provider failure."""
     for source in sources:
-        source["research_axis_relevant"] = _source_relevant_to_any_research_axis(
-            research_axes, source,
+        source["research_axis_relevant"] = _source_relevant_for_target(
+            research_axes, source, target_versant,
         )
     try:
         semantic_verdicts = await evaluate_source_relevance(
@@ -347,12 +348,26 @@ async def apply_semantic_source_relevance(
         logger.warning("Semantic source relevance unavailable; using lexical fallback: %s", exc)
 
 
-def _source_relevant_to_any_research_axis(research_queries: list[str], source: dict) -> bool:
-    """Require both topic and specialized guards to pass for the same research axis."""
+def _source_relevant_to_any_research_axis(
+    research_queries: list[str], source: dict, target_versant: str = "FPT",
+) -> bool:
+    """Require topic relevance while applying FPT-only safeguards to FPT questions."""
     return any(
-        is_topic_relevant_source(query, source)
-        and is_ihts_relevant_source(query, source)
+        is_topic_relevant_source(query, source, target_versant=target_versant)
+        and is_ihts_relevant_source(query, source, target_versant=target_versant)
         for query in research_queries
+    )
+
+
+def _source_relevant_for_target(
+    research_queries: list[str], source: dict, target_versant: str,
+) -> bool:
+    # Keep the historical two-argument FPT call contract for existing adapters
+    # and tests; FPE/FPH must not inherit FPT-specific retrieval guards.
+    if str(target_versant or "FPT").upper() == "FPT":
+        return _source_relevant_to_any_research_axis(research_queries, source)
+    return _source_relevant_to_any_research_axis(
+        research_queries, source, target_versant,
     )
 
 
@@ -997,7 +1012,7 @@ class LegalOrchestrator:
                     result["scope_evidence"] = scope["evidence"]
                     result["analysis_eligible"] = scope["analysis_eligible"]
                     result["claim_eligible"] = scope.get("claim_eligible", scope["analysis_eligible"])
-                    if not scope["analysis_eligible"] or not _source_relevant_to_any_research_axis(research_queries, result):
+                    if not scope["analysis_eligible"] or not _source_relevant_for_target(research_queries, result, request.public_service):
                         logger.info(
                             "Décision CETAT écartée du dossier IA : périmètre ou thème non confirmé (source=%s, scope=%s)",
                             result.get("source_id"), scope["scope"],
@@ -1205,7 +1220,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, item)
+            item["research_axis_relevant"] = _source_relevant_for_target(research_queries, item, request.public_service)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
                 "version_matches_facts_date": bool(
@@ -1273,7 +1288,7 @@ class LegalOrchestrator:
             response_source["scope_evidence"] = scope_check["evidence"]
             response_source["analysis_eligible"] = scope_check["analysis_eligible"]
             response_source["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            response_source["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, response_source)
+            response_source["research_axis_relevant"] = _source_relevant_for_target(research_queries, response_source, request.public_service)
             response_source["general_info_eligible"] = (
                 parsed_date is None
                 and response_source.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
@@ -1296,7 +1311,7 @@ class LegalOrchestrator:
 
         if found and cgfp_snapshot_fallback and parsed_date is None:
             for hit in found["results"]:
-                if not _source_relevant_to_any_research_axis(research_queries, hit):
+                if not _source_relevant_for_target(research_queries, hit, request.public_service):
                     continue
                 article = get_cgfp_article(hit["article"])
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
@@ -1357,13 +1372,14 @@ class LegalOrchestrator:
             decision["scope_evidence"] = scope_check["evidence"]
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
             decision["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            decision["research_axis_relevant"] = _source_relevant_to_any_research_axis(research_queries, decision)
+            decision["research_axis_relevant"] = _source_relevant_for_target(research_queries, decision, request.public_service)
             sources.append({**decision, "page_start": None, "page_end": None})
 
         # Gemini assesses document content after the lexical fallback. This is relevance
         # triage only; source, citation, temporal and FPT-scope controls remain authoritative.
         await apply_semantic_source_relevance(
             question=request.question, research_axes=research_queries, sources=sources,
+            target_versant=request.public_service,
         )
 
 
