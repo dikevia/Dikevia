@@ -66,3 +66,47 @@ def test_vector_search_uses_ask_request_not_undefined_payload():
     names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
     assert "payload" not in names
     assert "request" in names
+
+
+
+def test_chat_ask_does_not_hold_a_transaction_during_orchestration():
+    from pathlib import Path
+
+    source = Path(__file__).parents[1].joinpath("app", "main.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    ask_node = next(
+        node for node in tree.body
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == "ask"
+    )
+    ask_source = ast.get_source_segment(source, ask_node)
+    assert "Depends(get_tenant_identity)" in ask_source
+    assert "async with conn.transaction()" in ask_source
+    assert "scoped_reader = _TenantScopedReadConnection(pool, ctx)" in ask_source
+    assert "orchestrator.ask(" in ask_source
+    assert "ctx.conn" not in ask_source
+    # The route has two short DB transactions, with the external orchestration
+    # call strictly between them rather than inside either transaction.
+    first_tx = ask_source.index("async with conn.transaction()")
+    orchestration = ask_source.index("orchestrator.ask(")
+    second_tx = ask_source.rindex("async with conn.transaction()")
+    assert first_tx < orchestration < second_tx
+
+
+def test_orchestrator_read_adapter_reapplies_transaction_local_rls_context():
+    from pathlib import Path
+
+    source = Path(__file__).parents[1].joinpath("app", "main.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    adapter = next(
+        node for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "_TenantScopedReadConnection"
+    )
+    fetch_method = next(
+        node for node in adapter.body
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == "fetch"
+    )
+    fetch_source = ast.get_source_segment(source, fetch_method)
+    assert "self._pool.acquire()" in fetch_source
+    assert "conn.transaction()" in fetch_source
+    assert "_set_tenant_rls_context(conn, self._ctx)" in fetch_source
+    assert "conn.fetch(query, *args)" in fetch_source
