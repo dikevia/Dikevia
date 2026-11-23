@@ -781,3 +781,46 @@ def test_requested_excerpt_extracts_targeted_amendments_from_long_decree_article
     assert "trente jours" in tpt
     assert "contestées devant le conseil médical" in tpt
     assert "s'appliquent au CITIS" not in tpt
+
+
+@pytest.mark.asyncio
+async def test_legifrance_bounds_concurrent_requests_and_refreshes_oauth_once(monkeypatch):
+    import asyncio
+
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+
+    class TrackingTransport(httpx.AsyncBaseTransport):
+        def __init__(self):
+            self.active = 0
+            self.max_active = 0
+            self.token_calls = 0
+
+        async def handle_async_request(self, request):
+            self.active += 1
+            self.max_active = max(self.max_active, self.active)
+            try:
+                await asyncio.sleep(0.005)
+                if request.url.path == "/api/oauth/token":
+                    self.token_calls += 1
+                    return httpx.Response(
+                        200, json={"access_token": "shared-token", "expires_in": 3600},
+                        request=request,
+                    )
+                return httpx.Response(200, json={"ok": True}, request=request)
+            finally:
+                self.active -= 1
+
+        async def aclose(self):
+            return None
+
+    transport = TrackingTransport()
+    connector = LegifranceConnector(transport=transport)
+    results = await asyncio.gather(*[
+        connector._request("GET", "/diagnostic") for _ in range(16)
+    ])
+
+    assert len(results) == 16
+    assert all(result == {"ok": True} for result in results)
+    assert transport.token_calls == 1
+    assert transport.max_active <= 4

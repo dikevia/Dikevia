@@ -7,12 +7,15 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from datetime import date
 from typing import Any
+
+from .evidence_text import normalize_evidence_text
 
 # This is a review order, not a universal rule for resolving every conflict.
 _SOURCE_CLASS = {
-    "ADMIN_GUIDANCE": (25, "Fiche d'information administrative — non normative"),
-    "PROFESSIONAL_GUIDANCE": (20, "Ressource professionnelle — non normative"),
+    "ADMIN_GUIDANCE": (25, "Information administrative officielle — non normative"),
+    "PROFESSIONAL_GUIDANCE": (20, "Ressource professionnelle ou syndicale — non normative"),
     "CONSTITUTIONAL": (100, "Norme constitutionnelle"),
     "EUROPEAN_TREATY": (95, "Droit de l'Union / convention internationale"),
     "LAW": (80, "Loi / ordonnance ratifiée selon son régime"),
@@ -34,7 +37,9 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     source_type = str(source.get("source_type") or "").upper()
     if source_type == "SERVICE_PUBLIC_PART" or kind == "ADMIN_GUIDANCE":
         kind = "ADMIN_GUIDANCE"
-    elif source_type == "INSTITUTIONAL_GUIDANCE" and kind == "PROFESSIONAL_GUIDANCE":
+    elif source_type == "INSTITUTIONAL_GUIDANCE":
+        # This source_type is reserved for non-normative professional,
+        # institutional and union material; document_kind must not promote it.
         kind = "PROFESSIONAL_GUIDANCE"
     elif kind == "CGFP_SNAPSHOT":
         kind = "CODE"
@@ -55,6 +60,64 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         else:
             kind = "LOCAL_REGULATION"
     rank, label = _SOURCE_CLASS.get(kind, _SOURCE_CLASS["OTHER"])
+    raw_metadata = source.get("raw_metadata")
+    if isinstance(raw_metadata, str):
+        try:
+            import json
+            raw_metadata = json.loads(raw_metadata)
+        except (TypeError, ValueError):
+            raw_metadata = {}
+    if not isinstance(raw_metadata, dict):
+        raw_metadata = {}
+    publisher = str(source.get("publisher") or raw_metadata.get("source_name") or "").strip()[:240] or None
+    publisher_type = str(source.get("publisher_type") or raw_metadata.get("publisher_type") or "").upper() or None
+    authority_level = str(source.get("authority_level") or raw_metadata.get("authority_level") or "").upper()
+    if authority_level not in {
+        "PRIMARY_LEGAL", "OFFICIAL_ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE",
+        "JURISPRUDENCE", "OFFICIAL_INTERPRETIVE", "LOCAL_NORMATIVE",
+    }:
+        authority_level = {
+            "ADMIN_GUIDANCE": "OFFICIAL_ADMIN_GUIDANCE",
+            "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
+            "ADMIN_CASELAW": "JURISPRUDENCE",
+            "CIRCULAR": "OFFICIAL_INTERPRETIVE",
+            "CONSTITUTIONAL": "PRIMARY_LEGAL",
+            "EUROPEAN_TREATY": "PRIMARY_LEGAL",
+            "LAW": "PRIMARY_LEGAL",
+            "CODE": "PRIMARY_LEGAL",
+            "ORDONNANCE": "PRIMARY_LEGAL",
+            "DECREE": "PRIMARY_LEGAL",
+            "DECRET": "PRIMARY_LEGAL",
+            "ORDER": "PRIMARY_LEGAL",
+            "ARRETE": "PRIMARY_LEGAL",
+            "LOCAL_DELIBERATION": "LOCAL_NORMATIVE",
+            "LOCAL_REGULATION": "LOCAL_NORMATIVE",
+            "LOCAL_PROTOCOL": "LOCAL_NORMATIVE",
+        }.get(kind, "UNCLASSIFIED")
+    if publisher_type is None:
+        source_key = str(raw_metadata.get("source_id") or "").casefold()
+        if any(name in source_key for name in ("cfdt", "cgt", "fo-", "cftc", "unsa", "solidaires")):
+            publisher_type = "TRADE_UNION"
+        elif kind == "ADMIN_GUIDANCE" or authority_level == "OFFICIAL_ADMIN_GUIDANCE":
+            publisher_type = "PUBLIC_ADMINISTRATION"
+        elif kind == "PROFESSIONAL_GUIDANCE":
+            publisher_type = "PROFESSIONAL_BODY"
+    # Source provenance is stronger than an untrusted or stale raw metadata
+    # authority label: guidance corpora must never be promoted to primary law.
+    if source_type == "SERVICE_PUBLIC_PART":
+        authority_level = "OFFICIAL_ADMIN_GUIDANCE"
+    elif source_type == "INSTITUTIONAL_GUIDANCE":
+        authority_level = (
+            "OFFICIAL_ADMIN_GUIDANCE"
+            if publisher_type == "PUBLIC_ADMINISTRATION"
+            else "PROFESSIONAL_GUIDANCE"
+        )
+    if publisher_type == "TRADE_UNION":
+        label = "Doctrine syndicale — non normative"
+    elif authority_level == "OFFICIAL_ADMIN_GUIDANCE":
+        label = "Information administrative officielle — non normative"
+    elif kind == "PROFESSIONAL_GUIDANCE":
+        label = "Ressource institutionnelle ou professionnelle — non normative"
     non_normative = kind in {"ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE"}
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
@@ -79,10 +142,26 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     return {
         "source_family": kind,
         "source_family_label": label,
+        "authority_level": authority_level,
+        "authority_label": {
+            "PRIMARY_LEGAL": "Texte juridique primaire",
+            "JURISPRUDENCE": "Jurisprudence administrative",
+            "OFFICIAL_ADMIN_GUIDANCE": "Information administrative officielle, non normative",
+            "PROFESSIONAL_GUIDANCE": "Ressource professionnelle ou syndicale, non normative",
+            "OFFICIAL_INTERPRETIVE": "Circulaire ou instruction administrative, portée à vérifier",
+            "UNCLASSIFIED": "Nature et autorité de la source à qualifier",
+            "LOCAL_NORMATIVE": "Acte ou accord local — portée et opposabilité à vérifier",
+        }.get(authority_level, "Niveau d'autorité à qualifier"),
+        "publisher": publisher,
+        "publisher_type": publisher_type,
         "review_priority": rank,
         "temporal_or_validation_status": status,
-        "normative": not non_normative,
-        "claim_eligible": not non_normative and source.get("claim_eligible", True) is not False,
+        "normative": not non_normative and authority_level != "UNCLASSIFIED",
+        "claim_eligible": (
+            not non_normative
+            and authority_level != "UNCLASSIFIED"
+            and source.get("claim_eligible", True) is not False
+        ),
         "reference_role": "NON_NORMATIVE_CONTEXT_ONLY" if non_normative else source.get("reference_role"),
         "usable_for_conclusion": usable and not post_facts_decision and not non_normative,
         "usable_for_general_information": general_information_only,
@@ -149,7 +228,59 @@ _CASE_CITATION_RE = re.compile(
 _OFFICIAL_ID_RE = re.compile(r"\b(?:CETATEXT|LEGIARTI|LEGITEXT)\d{12}\b", re.IGNORECASE)
 _SOURCE_ID_CITATION_RE = re.compile(r"\[source:([A-Za-z0-9:_-]{6,128})\]", re.IGNORECASE)
 _NUMERIC_FACT_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:%|jours?|mois|ans?|heures?|minutes?|euros?|€)(?!\w)", re.IGNORECASE)
-_DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}(?:er)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})\b", re.IGNORECASE)
+_DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}(?:er)?\s+(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|a[oô]ut|septembre|octobre|novembre|d[eé]cembre)\s+\d{4})\b", re.IGNORECASE)
+
+_FRENCH_MONTHS = {
+    "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4,
+    "mai": 5, "juin": 6, "juillet": 7, "août": 8, "aout": 8,
+    "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12, "decembre": 12,
+}
+
+
+def _parse_legal_date(value: object) -> date | None:
+    """Parse unambiguous ISO or French day-first dates for endpoint comparison."""
+    candidate = str(value or "").strip()
+    if not candidate:
+        return None
+    try:
+        return date.fromisoformat(candidate)
+    except ValueError:
+        pass
+    numeric = re.fullmatch(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", candidate)
+    if numeric:
+        day, month, year = (int(part) for part in numeric.groups())
+        try:
+            return date(year, month, day)
+        except ValueError:
+            return None
+    french = re.fullmatch(
+        r"(\d{1,2})(?:er)?\s+([A-Za-zÀ-ÿ]+)\s+(\d{4})",
+        candidate,
+        re.IGNORECASE,
+    )
+    if french:
+        day = int(french.group(1))
+        month = _FRENCH_MONTHS.get(french.group(2).casefold())
+        year = int(french.group(3))
+        if month is not None:
+            try:
+                return date(year, month, day)
+            except ValueError:
+                return None
+    return None
+
+
+def _same_legal_date(value: object, expected: object) -> bool:
+    actual_date = _parse_legal_date(value)
+    expected_date = _parse_legal_date(expected)
+    return actual_date is not None and expected_date is not None and actual_date == expected_date
+_WHOLE_PERIOD_ASSERTION_RE = re.compile(
+    r"\b(?:sur|pendant|pour)\s+(?:toute|l['’]ensemble de la)\s+(?:la\s+)?(?:période|année)\b|"
+    r"\b(?:sur|pendant|pour)\s+l['’]ensemble\s+de\s+la\s+période\b|"
+    r"\bdu\s+\d{4}-\d{2}-\d{2}\s+au\s+\d{4}-\d{2}-\d{2}\b|"
+    r"\b(?:pendant|durant|au cours de|sur|pour)\s+(?:toute\s+)?(?:l['’]année\s+)?\d{4}\b",
+    re.IGNORECASE,
+)
 _EVIDENCE_STOPWORDS = {
     "article", "code", "general", "fonction", "publique", "territoriale", "territorial",
     "agent", "agents", "doit", "doivent", "peut", "peuvent", "est", "sont", "etre",
@@ -276,7 +407,7 @@ def validate_answer_citations(
 
 
 def _normalized_evidence_text(value: Any) -> str:
-    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
+    return normalize_evidence_text(value)
 
 
 def _evidence_tokens(value: Any) -> set[str]:
@@ -288,6 +419,7 @@ def _evidence_tokens(value: Any) -> set[str]:
 
 def validate_claim_evidence(
     payload: Any, sources: list[dict[str, Any]], required_axes: list[str] | None = None,
+    facts_period: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Fail closed unless each generated legal claim quotes its own eligible source.
 
@@ -358,7 +490,7 @@ def validate_claim_evidence(
             or source.get("public_service_scope") in {
                 "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
                 "FPH", "FPE", "OUT_OF_SCOPE_OR_UNCONFIRMED",
-                "OUT_OF_SCOPE_EUROPEAN_LAW",
+                "OUT_OF_SCOPE_EUROPEAN_LAW", "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
             }
         ):
             continue
@@ -426,9 +558,34 @@ def validate_claim_evidence(
         if len(claim_tokens) < 2 or lexical_overlap < 0.25:
             invalid.append(f"claim_{index}:quote_not_relevantly_aligned")
             continue
-        # Dates and quantified rules are high-risk hallucination vectors. Require
-        # every such value in the paraphrase to appear in its exact supporting quote.
+        # Dates and quantified rules are high-risk hallucination vectors. A
+        # requested applicability date may come from the retrieval metadata,
+        # rather than being repeated inside the quoted legal provision.
+        source = matching_sources[0]["source"]
         quote_folded = normalized_quote.casefold()
+        period = facts_period or {}
+        period_start = period.get("period_start")
+        period_end = period.get("period_end")
+        if not period_end and period.get("ongoing"):
+            period_end = period.get("reference_date_for_retrieval")
+        is_multi_date_period = bool(period_start and period_end and period_start != period_end)
+        endpoint = str(source.get("version_endpoint") or "").upper()
+        endpoint_date = (
+            period_start if endpoint == "START"
+            else period_end if endpoint == "END"
+            else period.get("facts_reference_date")
+        )
+        if is_multi_date_period and endpoint in {"START", "END"}:
+            endpoint_is_stated = any(
+                _same_legal_date(value, endpoint_date)
+                for value in _DATE_FACT_RE.findall(claim_text)
+            )
+            if endpoint_date and not endpoint_is_stated:
+                invalid.append(f"claim_{index}:period_endpoint_not_date_scoped")
+                continue
+            if _WHOLE_PERIOD_ASSERTION_RE.search(claim_text):
+                invalid.append(f"claim_{index}:unsupported_whole_period_assertion")
+                continue
         unsupported_numbers = [
             value for value in _NUMERIC_FACT_RE.findall(claim_text)
             if _normalized_evidence_text(value).casefold() not in quote_folded
@@ -436,11 +593,11 @@ def validate_claim_evidence(
         unsupported_dates = [
             value for value in _DATE_FACT_RE.findall(claim_text)
             if _normalized_evidence_text(value).casefold() not in quote_folded
+            and not _same_legal_date(value, endpoint_date)
         ]
         if unsupported_numbers or unsupported_dates:
             invalid.append(f"claim_{index}:unsupported_numeric_or_date_detail")
             continue
-        source = matching_sources[0]["source"]
         source_title = str(source.get("title") or source_id).strip()
         source_reference = source.get("article") or source.get("official_number") or source.get("case_number")
         if source_reference and str(source_reference).casefold() not in source_title.casefold():
@@ -461,10 +618,18 @@ def validate_claim_evidence(
             invalid.append("invalid_uncovered_research_axes")
             declared_uncovered = []
         else:
-            declared_uncovered = [
-                axis for axis in declared_uncovered
-                if isinstance(axis, str) and axis in required_axes
-            ]
+            normalized_uncovered: list[str] = []
+            seen_uncovered: set[str] = set()
+            for axis in declared_uncovered:
+                if not isinstance(axis, str) or axis not in required_axes:
+                    invalid.append("unknown_or_invalid_uncovered_research_axis")
+                    continue
+                if axis in seen_uncovered:
+                    invalid.append("duplicate_uncovered_research_axis")
+                    continue
+                seen_uncovered.add(axis)
+                normalized_uncovered.append(axis)
+            declared_uncovered = normalized_uncovered
         overlap_axes = covered_axes & set(declared_uncovered)
         if overlap_axes:
             invalid.extend(

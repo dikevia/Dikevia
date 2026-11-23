@@ -167,6 +167,35 @@ def test_short_followup_without_prior_question_stays_unchanged():
 
     assert build_contextual_research_question("Et pour les contractuels ?") == "Et pour les contractuels ?"
 
+def test_explicit_status_followup_without_pour_keeps_previous_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    resolved = build_contextual_research_question(
+        "Et les contractuels ?",
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    )
+    assert "heures supplémentaires" in resolved
+
+
+def test_new_legal_topic_starting_with_et_les_does_not_inherit_previous_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    question = "Et les congés annuels, comment ça marche ?"
+    assert build_contextual_research_question(
+        question,
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    ) == question
+
+
+def test_new_legal_topic_starting_with_et_l_does_not_inherit_previous_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    question = "Et l'astreinte, comment est-elle rémunérée ?"
+    assert build_contextual_research_question(
+        question,
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    ) == question
+
 
 
 def test_followup_context_preserves_topic_and_updates_explicit_agent_status():
@@ -233,3 +262,12 @@ def test_qualification_uses_selected_versant_and_flags_cross_versant_cases():
         public_service="FPE",
     )
     assert wrong_branch["scope_status"] == "OUT_OF_SCOPE_FPT"
+
+
+def test_aggression_by_service_user_is_qualified_as_workplace_incident():
+    result = qualify_legal_question(
+        "Je suis titulaire de la FPT. J'ai été agressé par un usager et mon chef refuse que je fasse un rapport."
+    )
+    assert result["topic"] == "WORKPLACE_INCIDENT_AND_AGENT_PROTECTION"
+    assert result["agent_status"] == "TITULAIRE_EXPLICIT"
+    assert result["public_service"] == "FPT"

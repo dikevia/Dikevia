@@ -1,0 +1,78 @@
+from app.legal_search_plan import (
+    build_official_research_axes,
+    build_official_search_queries,
+    build_official_search_query,
+)
+
+
+QUESTION = (
+    "Je suis titulaire de la fonction publique territoriale, je voudrais savoir "
+    "si je peux être accompagné d'un syndicat lors d'une convocation par ma hiérarchie"
+)
+
+
+def test_union_assistance_summons_uses_specific_legal_mechanisms():
+    primary = build_official_search_query(QUESTION)
+    queries = build_official_search_queries(QUESTION)
+    axes = build_official_research_axes(QUESTION)
+
+    assert "droits de la défense" in primary.lower()
+    assert "défenseur de son choix" in primary.lower()
+    assert any("procédure disciplinaire" in query.lower() for query in queries)
+    assert any("entretien ordinaire" in query.lower() for query in queries)
+    assert axes == []  # One ambiguous topic is not a compound question requiring mandatory axis coverage.
+    assert not any("autorisations speciales absence syndicale" in query.lower() for query in queries)
+    assert not any("crédit temps syndical" in query.lower() for query in queries)
+
+
+def test_general_union_rights_question_keeps_union_rights_route():
+    question = "Quels sont les droits syndicaux dans une collectivité territoriale ?"
+    queries = build_official_search_queries(question)
+
+    assert any("CGFP livre II droit syndical" in query for query in queries)
+    assert not any("défenseur de son choix" in query.lower() for query in queries)
+
+
+def test_summons_without_union_assistance_does_not_force_disciplinary_route():
+    question = "Ma hiérarchie me convoque pour faire un point sur mon organisation de travail."
+    primary = build_official_search_query(question)
+
+    assert "droits de la défense" not in primary.lower()
+
+def test_corpus_query_expansion_targets_assistance_and_defence_not_union_facilities():
+    from app.legal_corpus import expand_legal_query
+
+    variants = expand_legal_query(QUESTION)
+
+    joined = " ".join(variants).lower()
+    assert "représentant syndical" in joined
+    assert "défenseur de son choix" in joined
+    assert "autorisations spéciales d'absence" not in joined
+
+def test_ambiguous_union_assistance_summons_asks_for_procedure_type():
+    from app.legal_search_plan import clarification_for_union_assistance_summons
+
+    assert clarification_for_union_assistance_summons(QUESTION) == (
+        "Pour identifier les règles applicables, votre convocation concerne-t-elle "
+        "un entretien hiérarchique ordinaire, une procédure disciplinaire, ou une autre "
+        "procédure (par exemple une enquête administrative) ?"
+    )
+    assert clarification_for_union_assistance_summons(
+        QUESTION + " Il s'agit d'une procédure disciplinaire."
+    ) is None
+    assert clarification_for_union_assistance_summons(
+        QUESTION + " C'est un simple entretien ordinaire."
+    ) is None
+
+def test_piste_credentials_accept_both_environment_variable_prefixes(monkeypatch):
+    from app.config import Settings
+
+    monkeypatch.delenv("LEGIFRANCE_CLIENT_ID", raising=False)
+    monkeypatch.delenv("LEGIFRANCE_CLIENT_SECRET", raising=False)
+    monkeypatch.setenv("PISTE_CLIENT_ID", "sandbox-client")
+    monkeypatch.setenv("PISTE_CLIENT_SECRET", "sandbox-secret")
+
+    settings_from_piste_aliases = Settings(_env_file=None)
+
+    assert settings_from_piste_aliases.legifrance_client_id == "sandbox-client"
+    assert settings_from_piste_aliases.legifrance_client_secret == "sandbox-secret"

@@ -5,12 +5,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_render_api_image_uses_the_render_oidc_configuration():
+def test_render_api_image_uses_origin_scoped_oidc_configuration():
     dockerfile = (ROOT / "Dockerfile").read_text()
     auth = (ROOT / "frontend/auth-config.render.js").read_text()
     assert "COPY frontend/auth-config.render.js /srv/frontend/auth-config.js" in dockerfile
-    assert "https://dikevia-identity-l2r8.onrender.com/realms/cfdt" in auth
-    assert "https://dikevia-commercial-api-l2r8.onrender.com/" in auth
+    assert 'const appOrigin = window.location.origin' in auth
+    assert '"redirect_uri": appOrigin + "/"' in auth
+    assert '"silent_redirect_uri": appOrigin + "/static/silent-check-sso.html"' in auth
+    assert "cfdt-juris-web" in auth
 
 
 def test_render_keycloak_realm_and_api_redirect_origins_match():

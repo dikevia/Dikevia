@@ -1,6 +1,7 @@
 FROM quay.io/keycloak/keycloak:26.8.2
 
 # Beta deployment target: one Render instance, no distributed JGroups cache.
+# Administrator recovery is an explicit offline operation; see ADMIN-RECOVERY.md.
 # Realm and OIDC client are already provisioned in Neon; skip realm import on startup.
 COPY deploy/keycloak/realm-cfdt.render.json /opt/keycloak/data/import/realm-cfdt.json
 COPY --chmod=0755 deploy/keycloak/dikevia-entrypoint.sh /opt/keycloak/dikevia-entrypoint.sh

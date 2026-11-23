@@ -489,3 +489,68 @@ def test_unrelated_source_cannot_claim_common_tpt_scope_from_article_number_alon
     assert result["scope"] != "COMMON_PUBLIC_SERVICE"
     assert result.get("claim_eligible") is not True
 
+
+
+def test_fpe_source_is_eligible_only_for_fpe_target():
+    source = {
+        "title": "Décret relatif à la fonction publique de l'État",
+        "text": "Les agents de l'État et les administrations centrales sont concernés.",
+    }
+    fpe = classify_public_service_scope(source, target_versant="FPE")
+    fpt = classify_public_service_scope(source, target_versant="FPT")
+    fph = classify_public_service_scope(source, target_versant="FPH")
+
+    assert fpe["scope"] == "FPE"
+    assert fpe["analysis_eligible"] is True
+    assert fpt["analysis_eligible"] is False
+    assert fph["analysis_eligible"] is False
+
+
+def test_fph_source_is_eligible_only_for_fph_target():
+    source = {
+        "title": "Dispositions relatives à la fonction publique hospitalière",
+        "text": "Les personnels hospitaliers des établissements publics de santé sont concernés.",
+    }
+    fph = classify_public_service_scope(source, target_versant="FPH")
+    fpt = classify_public_service_scope(source, target_versant="FPT")
+    fpe = classify_public_service_scope(source, target_versant="FPE")
+
+    assert fph["scope"] == "FPH"
+    assert fph["analysis_eligible"] is True
+    assert fpt["analysis_eligible"] is False
+    assert fpe["analysis_eligible"] is False
+
+
+def test_explicit_common_scope_is_eligible_for_all_three_versants():
+    source = {
+        "title": "Dispositions communes aux trois versants",
+        "text": (
+            "Les règles concernent les trois versants de la fonction publique : "
+            "la fonction publique de l'État, territoriale et hospitalière."
+        ),
+    }
+    for versant in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=versant)
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True
+
+
+def test_mixed_fpt_and_fpe_instrument_is_not_classified_as_fpt_proof():
+    result = classify_public_service_scope({
+        "title": "Décret relatif aux agents territoriaux et aux agents de l'État",
+        "text": "Les agents territoriaux et les agents de l'État sont concernés.",
+    })
+    assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+    assert result["analysis_eligible"] is False
+    assert result["claim_eligible"] is False
+
+
+def test_scope_classification_uses_relevant_excerpt_before_unrelated_full_text():
+    result = classify_public_service_scope({
+        "title": "Dispositions statutaires des agents",
+        "excerpt": "Les agents territoriaux et les collectivités territoriales sont concernés.",
+        "full_text": "Les agents de l'État et les administrations centrales sont concernés.",
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True

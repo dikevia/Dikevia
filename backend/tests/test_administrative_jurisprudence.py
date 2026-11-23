@@ -457,11 +457,11 @@ def test_parse_administrative_open_data_zip_rejects_invalid_archive():
 
 
 
-def test_open_data_search_results_mark_top_passages_and_final_chunk():
+def test_open_data_search_results_mark_only_relevance_selected_passages():
     from app.legal_corpus import search_legal_corpus
     import inspect
     source = inspect.getsource(search_legal_corpus)
-    assert "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT" in source
+    assert "RELEVANCE_SELECTED_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT" in source
 
 
 

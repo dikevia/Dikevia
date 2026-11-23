@@ -1,0 +1,228 @@
+{
+  "schema_version": "1.0",
+  "title": "Dikévia — régressions conversationnelles",
+  "purpose": "Vérifier la distinction entre relance, réponse à une clarification et nouvelle question indépendante. Ces tests portent sur la contextualisation, pas sur la validité juridique des réponses.",
+  "cases": [
+    {
+      "id": "CHAT-001",
+      "question": "Et pour les contractuels ?",
+      "prior_user_questions": [
+        "Mon chef me demande de faire des heures supplémentaires après mes horaires."
+      ],
+      "prior_assistant_messages": [],
+      "inherit": true,
+      "topic_fragment": "heures supplémentaires"
+    },
+    {
+      "id": "CHAT-002",
+      "question": "Et les contractuels ?",
+      "prior_user_questions": [
+        "Mon chef me demande de faire des heures supplémentaires après mes horaires."
+      ],
+      "prior_assistant_messages": [],
+      "inherit": true,
+      "topic_fragment": "heures supplémentaires"
+    },
+    {
+      "id": "CHAT-003",
+      "question": "Et si je suis à temps partiel ?",
+      "prior_user_questions": [
+        "Mon chef me demande de faire des heures supplémentaires après mes horaires."
+      ],
+      "prior_assistant_messages": [],
+      "inherit": true,
+      "topic_fragment": "heures supplémentaires"
+    },
+    {
+      "id": "CHAT-004",
+      "question": "Et dans la FPE ?",
+      "prior_user_questions": [
+        "Comment sont rémunérées les heures supplémentaires dans la FPT ?"
+      ],
+      "prior_assistant_messages": [],
+      "inherit": true,
+      "topic_fragment": "heures supplémentaires"
+    },
+    {
+      "id": "CHAT-005",
+      "question": "Et pour la FPH ?",
+      "prior_user_questions": [
+        "Comment sont rémunérées les heures supplémentaires dans la FPT ?"
+      ],
+      "prior_assistant_messages": [],
+      "inherit": true,
+      "topic_fragment": "heures supplémentaires"
+    },
+    {
+      "id": "CHAT-006",
+      "question": "Et les congés annuels, comment ça marche ?",
+      "prior_user_questions": [
+        "Mon chef me demande de faire des heures supplémentaires après mes horaires."
+      ],
+      "prior_assistant_messages": [
+        "Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"
+      ],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-007",
+      "question": "Et la maladie, quelles sont les règles ?",
+      "prior_user_questions": [
+        "Mon chef me demande de faire des heures supplémentaires après mes horaires."
+      ],
+      "prior_assistant_messages": [
+        "Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"
+      ],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-008",
+      "question": "Et l'astreinte, comment est-elle rémunérée ?",
+      "prior_user_questions": [
+        "Mon chef me demande de faire des heures supplémentaires après mes horaires."
+      ],
+      "prior_assistant_messages": [
+        "Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"
+      ],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-009",
+      "question": "À quelle date le CET peut-il être utilisé ?",
+      "prior_user_questions": [
+        "Je suis en CITIS après un accident de service."
+      ],
+      "prior_assistant_messages": [
+        "Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"
+      ],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-010",
+      "question": "En matière de congés annuels, quelles sont les règles ?",
+      "prior_user_questions": [
+        "Je suis en CITIS après un accident de service."
+      ],
+      "prior_assistant_messages": [
+        "Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"
+      ],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-011",
+      "question": "Depuis quand le régime indemnitaire est-il applicable ?",
+      "prior_user_questions": [
+        "Je suis en CITIS après un accident de service."
+      ],
+      "prior_assistant_messages": [
+        "Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"
+      ],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-012",
+      "question": "oui",
+      "prior_user_questions": [
+        "Un agent titulaire peut-il demander une disponibilité ?"
+      ],
+      "prior_assistant_messages": [
+        "Quel est votre statut : titulaire ou contractuel ?"
+      ],
+      "inherit": true,
+      "topic_fragment": "disponibilité"
+    },
+    {
+      "id": "CHAT-013",
+      "question": "Contractuel",
+      "prior_user_questions": [
+        "Je suis en CITIS après un accident de service."
+      ],
+      "prior_assistant_messages": [
+        "Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"
+      ],
+      "inherit": true,
+      "topic_fragment": "CITIS"
+    },
+    {
+      "id": "CHAT-014",
+      "question": "À temps partiel",
+      "prior_user_questions": [
+        "Quels sont mes droits au regard de mon contrat ?"
+      ],
+      "prior_assistant_messages": [
+        "Êtes-vous à temps complet ou à temps partiel ?"
+      ],
+      "inherit": true,
+      "topic_fragment": "droits"
+    },
+    {
+      "id": "CHAT-015",
+      "question": "En CDI",
+      "prior_user_questions": [
+        "Quels sont mes droits au regard de mon contrat ?"
+      ],
+      "prior_assistant_messages": [
+        "Êtes-vous en CDI ou en CDD ?"
+      ],
+      "inherit": true,
+      "topic_fragment": "droits"
+    },
+    {
+      "id": "CHAT-016",
+      "question": "Depuis 2022",
+      "prior_user_questions": [
+        "Quels sont mes droits au regard de mon contrat ?"
+      ],
+      "prior_assistant_messages": [
+        "Depuis quand travaillez-vous dans la collectivité ?"
+      ],
+      "inherit": true,
+      "topic_fragment": "droits"
+    },
+    {
+      "id": "CHAT-017",
+      "question": "oui",
+      "prior_user_questions": [
+        "Mon employeur refuse mes heures supplémentaires."
+      ],
+      "prior_assistant_messages": [
+        "Les heures ont-elles été demandées par votre responsable ?"
+      ],
+      "inherit": true,
+      "topic_fragment": "heures supplémentaires"
+    },
+    {
+      "id": "CHAT-018",
+      "question": "oui",
+      "prior_user_questions": [
+        "Mon employeur refuse mes heures supplémentaires."
+      ],
+      "prior_assistant_messages": [
+        "Les heures supplémentaires sont encadrées par des règles spécifiques."
+      ],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-019",
+      "question": "Contractuel",
+      "prior_user_questions": [
+        "Je suis en CITIS après un accident de service."
+      ],
+      "prior_assistant_messages": [
+        "Le CITIS concerne les accidents de service et maladies professionnelles."
+      ],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-020",
+      "question": "Et si je suis à temps partiel ?",
+      "prior_user_questions": [
+        "Mon chef me demande de faire des heures supplémentaires après mes horaires.",
+        "Et pour les contractuels ?"
+      ],
+      "prior_assistant_messages": [],
+      "inherit": true,
+      "topic_fragment": "heures supplémentaires"
+    }
+  ]
+}

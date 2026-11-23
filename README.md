@@ -300,3 +300,13 @@ Le quota PostgreSQL existant est désormais partagé entre les questions du chat
 
 ## V3.35 — Sécurisation des imports PISTE
 Les routes d'administration qui importent les textes réglementaires et la jurisprudence contrôlent désormais les recherches et limitent chaque import à 20 résultats maximum avant tout accès à la base d'ingestion ou à l'API PISTE. Cette protection évite les imports involontairement trop volumineux et borne les consultations de décisions intégrales.
+
+
+## V3.40 — Portefeuille de crédits, accès fondateur et confidentialité
+
+La préparation opérationnelle de la bêta privée et les contrôles restant à réaliser sont suivis dans [la checklist de mise en service](docs/46_BETA_PRIVEE_CHECKLIST_MISE_EN_SERVICE.md). Cette checklist distingue les validations CI des contrôles live et ne vaut pas déclaration de disponibilité.
+
+Les migrations `025_credit_wallet_foundation.sql` et `026_platform_founder_entitlements.sql` préparent un portefeuille de crédits atomique et un accès fondateur lié à une identité OIDC déjà authentifiée. Les allocations de crédits et l'activation réelle des droits restent réservées à l'administration plateforme ; aucun crédit automatique ni accès fondateur n'est attribué par défaut.
+
+Les documents locaux ne peuvent être transmis à un fournisseur IA que si une option serveur est activée **et** si l'utilisateur confirme le transfert pour la demande courante. Les diagnostics externes au démarrage et Stripe sont désactivés par défaut. Voir [la note technique V3.40](docs/45_V3_40_WALLET_FOUNDER_ENTITLEMENTS_AND_PRIVACY.md).
+

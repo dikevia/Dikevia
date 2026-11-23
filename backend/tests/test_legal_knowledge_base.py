@@ -1,7 +1,8 @@
 from datetime import date
 import pytest
 
-from app.legal_corpus import clean_text, sha256_text, split_text, temporal_status, safe_official_url, expand_legal_query
+from app.legal_corpus import (clean_text, sha256_text, split_text, temporal_status, safe_official_url,
+                              expand_legal_query, select_multi_source_chunks)
 from app.legal_assurance import classify_legal_source, validate_claim_evidence
 from app.legal_ingestion import parse_circulaires_xml
 from app.legifrance import LegifranceConnector
@@ -219,6 +220,8 @@ async def test_search_marks_unknown_temporal_range_as_incomplete():
     conn = FakeConn()
     result = await search_legal_corpus(conn, "decret fonction publique", date(2026, 1, 1))
     assert "c.content_kind='FULL_TEXT'" in conn.query
+    assert "final_chunk" not in conn.query
+    assert "selected_passages" in conn.query
     assert result[0]["temporal_status"] == "TEMPORAL_SCOPE_INCOMPLETE"
     assert result[0]["citation_integrity"]["text_hash_verified"] is True
     assert result[0]["citation_integrity"]["valid"] is True
@@ -334,7 +337,8 @@ async def test_search_prioritizes_original_terms_over_fpt_expansions():
     assert "c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query" in conn.query
     assert conn.args[0] == original
     assert "IHTS" in conn.args[1]
-    assert len(conn.args) == 3
+    assert len(conn.args) == 4
+    assert conn.args[3] is None
 
 
 def test_incomplete_dates_allow_general_information_but_not_verified_conclusion():
@@ -373,3 +377,272 @@ def test_query_expansion_rejects_invalid_limits():
     with pytest.raises(ValueError):
         expand_legal_query("CITIS", max_variants=0)
     assert expand_legal_query("CITIS", max_variants=1) == ["CITIS"]
+
+
+@pytest.mark.asyncio
+async def test_search_uses_vector_candidates_only_when_a_valid_query_embedding_is_supplied():
+    from app.legal_corpus import search_legal_corpus
+
+    class FakeConn:
+        query = ""
+        args = ()
+        async def fetch(self, sql, *args):
+            self.query = sql
+            self.args = args
+            return []
+
+    conn = FakeConn()
+    vector = [1.0] + [0.0] * 383
+    await search_legal_corpus(conn, "temps partiel thérapeutique", date(2026, 11, 23),
+                              limit=6, query_embedding=vector)
+    assert "vector_ranked AS" in conn.query
+    assert "c.embedding_384 <=> $4::vector" in conn.query
+    assert conn.args[3].startswith("[1.00000000,")
+    assert len(conn.args[3].split(",")) == 384
+
+
+@pytest.mark.asyncio
+async def test_search_rejects_invalid_query_embedding_dimensions_and_non_finite_values():
+    from app.legal_corpus import search_legal_corpus
+
+    class FakeConn:
+        async def fetch(self, sql, *args):
+            raise AssertionError("SQL ne doit pas être exécuté avec un vecteur invalide")
+
+    with pytest.raises(ValueError, match="384 valeurs finies"):
+        await search_legal_corpus(FakeConn(), "question juridique", date(2026, 11, 23), query_embedding=[0.1])
+    with pytest.raises(ValueError, match="384 valeurs finies"):
+        await search_legal_corpus(FakeConn(), "question juridique", date(2026, 11, 23),
+                                  query_embedding=[float("nan")] + [0.0] * 383)
+
+
+def test_ask_request_validates_optional_client_embedding_shape_and_values():
+    from app.schemas import AskRequest
+
+    base = {"employer": "NATIONAL", "question": "Question juridique suffisamment longue"}
+    valid = AskRequest(**base, query_embedding=[0.0] * 383 + [1.0])
+    assert len(valid.query_embedding) == 384
+    assert AskRequest(**base).query_embedding is None
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding=[0.0] * 383)
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding=[float("inf")] + [0.0] * 383)
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding=[0.0] * 384)
+
+
+
+def test_source_classification_exposes_authority_publisher_and_union_doctrine():
+    from app.legal_assurance import classify_legal_source
+
+    official = classify_legal_source({
+        "source_type": "SERVICE_PUBLIC_PART",
+        "document_kind": "ADMIN_GUIDANCE",
+        "publisher": "Service-Public.gouv.fr / DILA",
+    })
+    assert official["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert official["publisher"] == "Service-Public.gouv.fr / DILA"
+    assert official["normative"] is False
+
+    union = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "PROFESSIONAL_GUIDANCE",
+        "raw_metadata": {
+            "source_id": "cfdt-fonctions-publiques",
+            "source_name": "CFDT Fonctions publiques",
+            "authority_level": "PROFESSIONAL_GUIDANCE",
+        },
+    })
+    assert union["authority_level"] == "PROFESSIONAL_GUIDANCE"
+    assert union["publisher"] == "CFDT Fonctions publiques"
+    assert union["publisher_type"] == "TRADE_UNION"
+    assert union["source_family_label"] == "Doctrine syndicale — non normative"
+    assert union["claim_eligible"] is False
+    assert union["usable_for_interpretation"] is True
+
+
+def test_unknown_source_is_not_mislabelled_as_primary_legal_authority():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "UNRECOGNIZED_SOURCE",
+        "document_kind": "OTHER",
+        "source_id": "unknown-source-001",
+    })
+    assert result["authority_level"] == "UNCLASSIFIED"
+    assert result["authority_label"] == "Nature et autorité de la source à qualifier"
+    assert result["claim_eligible"] is False
+    assert result["normative"] is False
+
+
+def test_official_guidance_keeps_public_administration_publisher_type():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "PROFESSIONAL_GUIDANCE",
+        "raw_metadata": {
+            "source_id": "dgafp",
+            "source_name": "Direction générale de l'administration et de la fonction publique",
+            "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+        },
+    })
+    assert result["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert result["publisher_type"] == "PUBLIC_ADMINISTRATION"
+    assert result["source_family_label"] == "Information administrative officielle — non normative"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+
+
+
+def test_institutional_guidance_source_type_cannot_be_promoted_by_document_kind():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "CODE",
+        "source_id": "cnfpt-resource-001",
+    })
+    assert result["source_family"] == "PROFESSIONAL_GUIDANCE"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+
+
+@pytest.mark.parametrize(
+    ("document_kind", "expected_authority"),
+    [
+        ("CODE", "PRIMARY_LEGAL"),
+        ("LAW", "PRIMARY_LEGAL"),
+        ("DECREE", "PRIMARY_LEGAL"),
+        ("DECRET", "PRIMARY_LEGAL"),
+        ("ORDER", "PRIMARY_LEGAL"),
+        ("ARRETE", "PRIMARY_LEGAL"),
+        ("ADMIN_CASELAW", "JURISPRUDENCE"),
+        ("CIRCULAR", "OFFICIAL_INTERPRETIVE"),
+        ("LOCAL_DELIBERATION", "LOCAL_NORMATIVE"),
+        ("LOCAL_REGULATION", "LOCAL_NORMATIVE"),
+    ],
+)
+def test_known_legal_document_kinds_receive_correct_authority_level(
+    document_kind, expected_authority,
+):
+    result = classify_legal_source({
+        "source_type": "LEGIFRANCE_API" if document_kind in {"CODE", "LAW", "DECREE", "DECRET", "ORDER", "ARRETE"} else "OTHER",
+        "document_kind": document_kind,
+        "source_id": "authority-test-001",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == expected_authority
+    assert result["claim_eligible"] is True
+    assert result["normative"] is True
+
+
+def test_unknown_document_kind_remains_unclassified_and_not_claim_eligible():
+    result = classify_legal_source({
+        "source_type": "UNRECOGNIZED_SOURCE",
+        "document_kind": "UNKNOWN_DOCUMENT_KIND",
+        "source_id": "unknown-authority-test",
+    })
+    assert result["authority_level"] == "UNCLASSIFIED"
+    assert result["claim_eligible"] is False
+    assert result["normative"] is False
+
+
+@pytest.mark.parametrize(
+    ("source_type", "document_kind", "publisher_type", "expected_authority"),
+    [
+        ("SERVICE_PUBLIC_PART", "CODE", "PUBLIC_ADMINISTRATION", "OFFICIAL_ADMIN_GUIDANCE"),
+        ("INSTITUTIONAL_GUIDANCE", "CODE", "TRADE_UNION", "PROFESSIONAL_GUIDANCE"),
+        ("INSTITUTIONAL_GUIDANCE", "CODE", "PUBLIC_ADMINISTRATION", "OFFICIAL_ADMIN_GUIDANCE"),
+    ],
+)
+def test_guidance_provenance_cannot_be_promoted_to_primary_law_by_raw_metadata(
+    source_type, document_kind, publisher_type, expected_authority,
+):
+    result = classify_legal_source({
+        "source_type": source_type,
+        "document_kind": document_kind,
+        "publisher_type": publisher_type,
+        "authority_level": "PRIMARY_LEGAL",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == expected_authority
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+    assert result["usable_for_conclusion"] is False
+
+
+def test_corpus_result_interleaving_preserves_each_research_axis_before_depth():
+    from app.legal_corpus import interleave_legal_corpus_results
+
+    axes = [
+        [{"source_id": f"axis-a-{n}"} for n in range(1, 4)],
+        [{"source_id": f"axis-b-{n}"} for n in range(1, 4)],
+        [{"source_id": f"axis-c-{n}"} for n in range(1, 4)],
+    ]
+    result = interleave_legal_corpus_results(axes, limit=6)
+    assert [item["source_id"] for item in result] == [
+        "axis-a-1", "axis-b-1", "axis-c-1",
+        "axis-a-2", "axis-b-2", "axis-c-2",
+    ]
+
+
+def test_corpus_candidate_overfetch_budget_stays_bounded_for_post_retrieval_guards():
+    from app.orchestrator import (
+        LEGAL_CORPUS_CANDIDATE_LIMIT,
+        LEGAL_CORPUS_INTERLEAVED_LIMIT,
+    )
+
+    assert LEGAL_CORPUS_CANDIDATE_LIMIT == 12
+    assert LEGAL_CORPUS_INTERLEAVED_LIMIT == 18
+    assert LEGAL_CORPUS_INTERLEAVED_LIMIT <= 30
+
+
+def test_ihts_query_expansion_covers_colloquial_recovery_and_payment_wording():
+    question = (
+        "Je suis titulaire de la FPT. Mon chef me demande de faire 2 heures supplémentaires, "
+        "mais me dit qu'elles ne seront pas payées et que je les récupérerai. "
+        "Peut-il faire cela même si je veux qu'il me les paie ?"
+    )
+    variants = expand_legal_query(question)
+    normalized = " ".join(variants).casefold()
+    assert variants[0] == question
+    assert "ihts" in normalized
+    assert "indemnités horaires pour travaux supplémentaires" in normalized
+    assert "repos compensateur" in normalized
+    assert "indemnisation des heures supplémentaires" in normalized
+    assert len(variants) <= 6
+
+
+def test_multi_source_selector_interleaves_independent_research_axes():
+    axes = [
+        [
+            {"source_id": "decree-ihts", "source_type": "LEGIFRANCE_LODA", "rank": 0.04},
+            {"source_id": "decree-other", "source_type": "LEGIFRANCE_LODA", "rank": 0.03},
+        ],
+        [
+            {"source_id": "service-public-overtime", "source_type": "SERVICE_PUBLIC_PART", "rank": 0.02},
+            {"source_id": "cdg-ihts", "source_type": "INSTITUTIONAL_GUIDANCE", "rank": 0.01},
+        ],
+    ]
+    selected = select_multi_source_chunks(axes, limit=4)
+    assert [item["source_id"] for item in selected] == [
+        "decree-ihts", "service-public-overtime", "decree-other", "cdg-ihts",
+    ]
+    # Preserve the real retrieval metadata; do not fabricate normalized vector scores.
+    assert selected[0]["rank"] == 0.04
+    assert selected[1]["source_type"] == "SERVICE_PUBLIC_PART"
+
+
+def test_fpt_scope_guard_does_not_accept_fph_only_source_as_fpt_evidence():
+    from app.fpt_scope import classify_public_service_scope
+
+    source = {
+        "title": "Dispositions propres à la fonction publique hospitalière",
+        "document_kind": "DECREE",
+        "text": "Les personnels de la fonction publique hospitalière sont concernés.",
+    }
+    result = classify_public_service_scope(source, target_versant="FPT")
+    assert result["scope"] == "FPH"
+    assert result["analysis_eligible"] is False
+    assert result["claim_eligible"] is False

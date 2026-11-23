@@ -805,6 +805,15 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
         "excerpt": "Extrait officiel de test suffisamment explicite.",
         "valid_from": "2020-01-01",
         "valid_to": "2999-01-01",
+        "legal_assurance": {
+            "source_family": "CODE",
+            "source_family_label": "Disposition codifiée",
+            "authority_level": "PRIMARY_LEGAL",
+            "authority_label": "Texte juridique primaire",
+            "publisher": "Légifrance",
+            "publisher_type": "PUBLIC_ADMINISTRATION",
+            "normative": True,
+        },
     }
     decision = {
         "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
@@ -831,6 +840,15 @@ async def test_gemini_openai_compatible_request_uses_fake_transport_and_keeps_so
     assert "LEGIARTI000012345678" in serialized
     assert "2026-11-19" in serialized
     assert "Extrait officiel de test suffisamment explicite." in serialized
+    payload_data = json.loads(serialized)
+    legal_source_payload = next(
+        item for item in payload_data["extraits_documentaires_valides"]
+        if item["identifiant_source"] == "LEGIARTI000012345678"
+    )
+    assert legal_source_payload["niveau_autorite"] == "PRIMARY_LEGAL"
+    assert legal_source_payload["libelle_autorite"] == "Texte juridique primaire"
+    assert legal_source_payload["editeur"] == "Légifrance"
+    assert legal_source_payload["source_normative"] is True
     assert "CETATEXT000012345678" in serialized
     assert '"date_decision": "2024-05-10"' in serialized
     assert '"qualification_juridique_pre_recherche": {"topic": "UNION_RIGHTS", "agent_status": "NOT_SPECIFIED"}' in serialized
@@ -988,6 +1006,48 @@ def test_usable_sources_reject_explicitly_failed_integrity_and_out_of_scope_reco
     out_of_scope = {**base, "analysis_eligible": False, "public_service_scope": "FPH"}
     assert _usable_document_sources([invalid_integrity, out_of_scope]) == []
 
+def test_shared_evidence_normalization_handles_typography_without_erasing_legal_differences():
+    from app.ai_provider import _normalize_entailment_text
+    from app.legal_assurance import _normalized_evidence_text
+
+    source = "L’agent – ne peut pas – bénéficier de « 10 000 euros »…"
+    quote = "L'agent - ne peut pas - bénéficier de \" 10 000 euros \"..."
+    normalized_source = _normalized_evidence_text(source)
+    normalized_quote = _normalize_entailment_text(quote)
+
+    assert normalized_source == normalized_quote
+    assert normalized_quote in normalized_source
+    assert _normalized_evidence_text("1\u00a0000 euros") == "1 000 euros"
+
+    # Typographic normalization must not remove negation, merge references,
+    # or change the numeric value of an amount.
+    assert "L. 1234" not in _normalized_evidence_text("L. 123-4")
+    assert "10000 euros" not in _normalize_entailment_text("10 000 euros")
+    assert "L'agent peut bénéficier" not in _normalized_evidence_text(
+        "L'agent ne peut pas bénéficier"
+    )
+
+
+def test_structured_answer_parser_accepts_only_pure_or_fenced_json_objects():
+    from app.ai_provider import parse_structured_answer
+
+    valid = '{"claims": []}'
+    assert parse_structured_answer(valid) == {"claims": []}
+    assert parse_structured_answer("```json\n" + valid + "\n```") == {"claims": []}
+    assert parse_structured_answer("```\n" + valid + "\n```") == {"claims": []}
+
+    for invalid in (
+        "Voici la réponse : " + valid,
+        valid + "\nVoici la réponse.",
+        "```json\n" + valid,
+        "[1, 2, 3]",
+        "{claims: []}",
+        "",
+        None,
+    ):
+        assert parse_structured_answer(invalid) is None
+
+
 def test_research_plan_parser_accepts_bounded_dynamic_queries_and_subquestions():
     plan = _parse_research_plan("""{
         "queries": [
@@ -1122,6 +1182,39 @@ async def test_source_relevance_evaluator_raises_provider_error_on_http_failure(
         )
 
 
+def test_research_plan_normalizes_whitespace_before_matching_verbatim_evidence():
+    plan = _parse_research_plan(
+        json.dumps({
+            "queries": ["régime de remplacement temporaire"],
+            "legal_issues": ["Conditions du remplacement temporaire"],
+            "extracted_facts": [
+                {
+                    "fact": "Remplacement effectué pendant une période prolongée.",
+                    "evidence_quote": "titulaire de la FPT. Je remplace un collègue pendant un an et 11 mois",
+                },
+                {
+                    "fact": "Même fait avec une mise en page différente.",
+                    "evidence_quote": "titulaire de la FPT.\nJe remplace   un collègue\tpendant un an et 11 mois",
+                },
+                {
+                    "fact": "Fait non présent dans la question.",
+                    "evidence_quote": "je remplace un collègue depuis trois ans",
+                },
+            ],
+        }, ensure_ascii=False),
+        question=(
+            "Je suis titulaire de la FPT.\n"
+            "Je remplace   un collègue\tpendant un an et 11 mois."
+        ),
+    )
+    assert plan is not None
+    assert len(plan.extracted_facts) == 1
+    assert plan.extracted_facts[0]["fact"] == "Remplacement effectué pendant une période prolongée."
+    assert plan.extracted_facts[0]["evidence_quote"] == (
+        "titulaire de la FPT. Je remplace un collègue pendant un an et 11 mois"
+    )
+
+
 def test_research_plan_extracts_only_facts_with_verbatim_question_evidence():
     plan = _parse_research_plan(
         json.dumps({
@@ -1207,3 +1300,134 @@ def test_entailment_verifier_keeps_individually_supported_claim_indices():
     assert result["valid"] is False
     assert result["supported_claim_indices"] == [0]
     assert "verdict_1:not_supported" in result["invalid"]
+
+
+
+def test_undated_non_normative_guidance_can_reach_ai_as_context_only():
+    from app.ai_provider import _usable_document_sources
+
+    guidance = {
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "source_id": "cfdt-guide-2026",
+        "title": "Guide syndical",
+        "publisher": "CFDT",
+        "excerpt": "Les agents peuvent consulter les représentants du personnel.",
+        "content_kind": "FULL_TEXT",
+        "claim_eligible": False,
+        "reference_role": "NON_NORMATIVE_CONTEXT_ONLY",
+        "legal_assurance": {
+            "reference_role": "NON_NORMATIVE_CONTEXT_ONLY",
+            "usable_for_interpretation": True,
+            "authority_level": "PROFESSIONAL_GUIDANCE",
+            "publisher_type": "TRADE_UNION",
+        },
+        "citation_integrity": {"valid": True},
+    }
+    assert _usable_document_sources([guidance]) == [{**guidance, "excerpt": guidance["excerpt"]}]
+
+    unsafe = {
+        **guidance,
+        "legal_assurance": {"reference_role": "NON_NORMATIVE_CONTEXT_ONLY"},
+    }
+    assert _usable_document_sources([unsafe]) == []
+
+
+@pytest.mark.asyncio
+async def test_gemini_availability_check_reports_http_failure_without_exposing_api_key(monkeypatch, caplog):
+    import httpx
+    import logging
+    from app.ai_provider import check_provider_availability
+
+    secret = "test-gemini-secret-never-log"
+    monkeypatch.setattr(settings, "ai_api_key", secret)
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
+    monkeypatch.setattr(
+        settings, "ai_api_base_url",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+
+    def handler(request):
+        assert request.url.path.endswith("/v1beta/models/gemini-2.5-flash")
+        return httpx.Response(
+            403, request=request,
+            json={"error": {"message": "API key not authorized"}},
+        )
+
+    caplog.set_level(logging.WARNING, logger="app.ai_provider")
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+
+    assert result == {"status": "AUTH_ERROR", "http_status": 403}
+    assert "AI_PROVIDER_REQUEST_FAILED" in caplog.text
+    assert "http_status=403" in caplog.text
+    assert secret not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_gemini_availability_check_distinguishes_quota_from_generic_http_error(monkeypatch):
+    import httpx
+    from app.ai_provider import check_provider_availability
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
+    monkeypatch.setattr(
+        settings, "ai_api_base_url",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+
+    def handler(request):
+        return httpx.Response(429, request=request, json={"error": {"message": "quota exceeded"}})
+
+    result = await check_provider_availability(transport=httpx.MockTransport(handler))
+    assert result == {"status": "QUOTA_OR_RATE_LIMIT", "http_status": 429}
+
+
+@pytest.mark.asyncio
+async def test_chat_completion_retries_once_after_transient_503(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    calls = {"count": 0}
+
+    def handler(request):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return httpx.Response(503, request=request, json={"error": {"message": "temporarily overloaded"}})
+        return httpx.Response(200, request=request, json={"choices": [{"message": {"content": "ok"}}]})
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client, "https://example.test/v1/chat/completions",
+            headers={"Authorization": "Bearer test"}, payload={"model": "test"},
+        )
+
+    assert response.status_code == 200
+    assert calls["count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_chat_completion_does_not_retry_auth_or_quota_errors(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    calls = {"count": 0}
+
+    def handler(request):
+        calls["count"] += 1
+        return httpx.Response(429, request=request, json={"error": {"message": "quota exceeded"}})
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(httpx.HTTPStatusError):
+            await ai_provider._post_chat_completion(
+                client, "https://example.test/v1/chat/completions",
+                headers={"Authorization": "Bearer test"}, payload={"model": "test"},
+            )
+
+    assert calls["count"] == 1

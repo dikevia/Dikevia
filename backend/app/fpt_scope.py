@@ -114,7 +114,9 @@ def classify_public_service_scope(
     if target_versant not in {"FPT", "FPE", "FPH"}:
         target_versant = "FPT"
     title = str(source.get("title") or "")
-    text = str(source.get("full_text") or source.get("text") or source.get("excerpt") or "")
+    # Classify the same relevant passage that can support a claim, not an
+    # entire instrument whose unrelated chapters may mention another versant.
+    text = str(source.get("excerpt") or source.get("text") or source.get("full_text") or "")
     article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     corpus = _fold((title + " " + text)[:500_000])
     title_folded = _fold(title)
@@ -231,6 +233,16 @@ def classify_public_service_scope(
             "claim_eligible": True,
         }
 
+    # A source containing competing territorial and State/hospital markers
+    # is not safe FPT proof, even when one marker appears in its title.
+    if title_fpt_hits and (title_fpe_hits or title_fph_hits):
+        return {
+            "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+            "evidence": title_fpt_hits[:2] + title_fpe_hits[:1] + title_fph_hits[:1],
+            "analysis_eligible": False,
+            "claim_eligible": False,
+        }
+
     # If the body contains competing versant markers and the title does not
     # identify a territorial instrument, its primary scope is unresolved.
     if fpt_hits and (fpe_hits or fph_hits) and not title_fpt_hits:
@@ -328,9 +340,11 @@ def is_ihts_question(question: str) -> bool:
     return any(_fold(marker) in folded_question for marker in _IHTS_QUERY_MARKERS)
 
 
-def is_ihts_relevant_source(question: str, source: dict[str, Any]) -> bool:
-    """Reject generic hour credits and unrelated CGFP hits for IHTS questions."""
-    if not is_ihts_question(question):
+def is_ihts_relevant_source(
+    question: str, source: dict[str, Any], target_versant: str = "FPT",
+) -> bool:
+    """Apply the IHTS-specific FPT guard only to territorial public-service questions."""
+    if str(target_versant or "FPT").upper() != "FPT" or not is_ihts_question(question):
         return True
 
     title = str(source.get("title") or "")
@@ -428,6 +442,15 @@ _TOPIC_FAMILIES = {
         "compte rendu d evaluation", "compte rendu d entretien",
         "valeur professionnelle", "appreciation de la valeur professionnelle",
     ),
+    "AVAILABILITY": (
+        "disponibilite", "mise en disponibilite", "disponibilite pour convenances personnelles",
+        "convenances personnelles", "disponibilite d office", "disponibilite sur demande",
+    ),
+    "CONTRACTUAL_STATUS": (
+        "agent contractuel", "agents contractuels", "contractuel territorial",
+        "contractuelle", "cdd", "cdi", "contrat a duree determinee",
+        "contrat a duree indeterminee",
+    ),
     "CONTRACT_CDI_SIX_YEARS": (
         "6 ans", "six ans", "six annees", "l332 8", "l332 9", "l332 10",
         "l332 11", "l332 12", "l332 23", "l452 44",
@@ -460,7 +483,9 @@ def _matched_topic_families(value: str) -> set[str]:
     return matched
 
 
-def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
+def is_topic_relevant_source(
+    question: str, source: dict[str, Any], target_versant: str = "FPT",
+) -> bool:
     """Reject only a source clearly belonging to another recognized topic family.
 
     Sources with no recognized family are retained as potentially cross-cutting
@@ -478,24 +503,34 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
     # decree 2020-592 governs complementary hours for permanent non-complete
     # jobs. A source explicitly limited to the opposite status is not evidence
     # for the user's status unless it also addresses that status.
-    if (
+    if str(target_versant or "FPT").upper() == "FPT" and (
         "PART_TIME" in question_topics
         and "NON_COMPLETE_TIME" in source_topics
         and "PART_TIME" not in source_topics
     ):
         return False
-    if (
+    if str(target_versant or "FPT").upper() == "FPT" and (
         "NON_COMPLETE_TIME" in question_topics
         and "PART_TIME" in source_topics
         and "NON_COMPLETE_TIME" not in source_topics
     ):
         return False
+    # The six-year CDI route is a specific legal mechanism. Apply this
+    # guard before the generic CONTRACTUAL_STATUS intersection below: a
+    # provision about contract agents (e.g. end-of-contract compensation or
+    # retirement) is not evidence of the six-year conversion mechanism.
+    if "CONTRACT_CDI_SIX_YEARS" in question_topics and (
+        "CONTRACT_CDI_SIX_YEARS" not in source_topics
+    ):
+        return False
+
     if question_topics & source_topics:
         return True
 
     # Strict question families reject generic keyword hits that cannot be
     # tied to the requested legal mechanism. Annual-appraisal questions retain
     # unclassified cross-cutting procedural sources as a narrow exception.
+
     strict_topics = {
         "TERMINATION_OF_TITULAR",
         "STAFFING_AND_WORK_CONDITIONS",
@@ -504,8 +539,10 @@ def is_topic_relevant_source(question: str, source: dict[str, Any]) -> bool:
         # jobs or skills are not evidence about the annual FPT appraisal report.
         "PROFESSIONAL_EVALUATION",
         "CONTRACT_CDI_SIX_YEARS",
+        "AVAILABILITY",
+        "CONTRACTUAL_STATUS",
     }
-    if question_topics & strict_topics:
+    if str(target_versant or "FPT").upper() == "FPT" and question_topics & strict_topics:
         # For annual-appraisal questions only, an unclassified procedural
         # source may still be relevant. The CDI six-year mechanism remains
         # strict: generic or unrelated CGFP provisions are rejected.

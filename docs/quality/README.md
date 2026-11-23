@@ -10,6 +10,25 @@ Le fichier `fpt_chatbot_eval_v1.json` contient les questions, l'intention à rec
 
 Ne pas transformer les critères d'intention en conclusions juridiques. Plusieurs questions nécessitent des précisions (statut, délibération locale, date, faits, règlement intérieur).
 
+## Références candidates pour les réponses de référence
+
+Les 100 cas disposent désormais d'une première cartographie de sources candidates et d'avertissements de portée. Les cas FPT-001 à FPT-030 ont fait l'objet de cartographies thématiques plus détaillées. Les cas FPT-031 à FPT-100 sont organisés par familles : carrière/rémunération, discipline, protection fonctionnelle, droits syndicaux, CST/formation spécialisée, santé-sécurité/télétravail et mobilité/fin de fonctions. Pour ces 70 cas, les références de base sont des textes-cadres officiels de la famille concernée ; elles constituent un point de départ documentaire et non une vérification article par article de chaque question. Les textes spéciaux (NBI, classement, cumul, procédures locales, seuils CST, modalités d'ASA, suppression d'emploi, rupture conventionnelle, etc.) doivent être recherchés et contrôlés au cas par cas avant de rédiger une réponse de référence.
+
+La cartographie signale expressément les points nécessitant des vérifications supplémentaires. Le décret n° 85-397 du 3 avril 1985 sur le droit syndical est indiqué comme texte historique abrogé à compter du 1er février 2025 et ne doit pas être présenté comme droit positif. Le Code général de la fonction publique consolidé constitue le socle, à compléter par les dispositions réglementaires codifiées et les textes spéciaux en vigueur.
+
+Le script `scripts/fpt_benchmark.py prepare-review` reporte ces références candidates et les avertissements de portée dans la grille de revue humaine. Tous les cas conservent le statut « validation juridique humaine requise ». La présence d'une source candidate ne signifie ni que l'article exact a été vérifié pour la question ni que la réponse juridique est validée.
+
+## Régressions conversationnelles
+
+Le fichier `conversation_regression_v1.json` ajoute 20 scénarios multi-tours couvrant :
+- les relances qui doivent conserver le sujet ;
+- les réponses courtes à une question de clarification ;
+- les nouvelles questions qui ne doivent pas hériter du sujet précédent ;
+- les changements explicites de versant FPT/FPE/FPH ;
+- les chaînes de plusieurs relances.
+
+Ces scénarios sont exécutés automatiquement par `backend/tests/test_conversation_regression_benchmark.py`. Ils vérifient la construction du contexte, pas la justesse d'une réponse juridique complète. Ils ne remplacent donc pas les 100 cas FPT évalués sur les réponses produites par le moteur.
+
 ## Questions générales et situations individuelles
 
 Une question générale sur les droits ou les règles de la FPT ne doit pas déclencher automatiquement une demande de date des faits. Le chatbot peut expliquer le droit actuellement consulté en précisant qu'il s'agit d'une information générale. Une date ou une période est demandée lorsque la formulation décrit une situation personnelle concrète ou un différend dont l'analyse dépend de la temporalité. Cette distinction fait l'objet de tests automatisés dans `backend/tests/test_case_date_clarification.py`.
