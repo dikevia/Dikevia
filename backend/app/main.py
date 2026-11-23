@@ -351,6 +351,40 @@ def _chat_orchestration_failure(conversation_id: UUID) -> AskResponse:
     )
 
 
+
+def _ai_safe_conversation_history(rows):
+    """Exclude assistant turns that may contain private local-document text.
+
+    Consent is per request. Historical assistant turns with local sources or
+    missing provenance metadata are not sent back to an external model.
+    """
+    safe = []
+    for row in reversed(rows):
+        role = row["role"]
+        if role == "assistant":
+            metadata = row["metadata"]
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except (TypeError, ValueError):
+                    metadata = None
+            if not isinstance(metadata, dict):
+                continue
+            if metadata.get("contains_local_documents") is True:
+                continue
+            sources = metadata.get("sources")
+            if not isinstance(sources, list):
+                continue
+            if any(
+                isinstance(source, dict)
+                and source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                for source in sources
+            ):
+                continue
+        safe.append({"role": role, "content": row["content"]})
+    return safe
+
+
 def decode_jsonb(value):
     if isinstance(value, str):
         try:
@@ -887,19 +921,26 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
             current_message_id = await conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
                 VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
                 str(conversation_id), ctx.user_id, payload.question,
-                json.dumps({"employer": payload.employer, "public_service": payload.public_service, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
-            history_rows = await conn.fetch("""SELECT role,content FROM chat_messages
+                json.dumps({"employer": payload.employer, "public_service": payload.public_service,
+                    "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date,
+                    "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing,
+                    "confirm_local_document_ai_transfer": payload.confirm_local_document_ai_transfer}, ensure_ascii=False))
+            history_rows = await conn.fetch("""SELECT role,content,metadata FROM chat_messages
                 WHERE conversation_id=$1::uuid AND organization_id=$4::uuid AND user_id=$5::uuid
                   AND id<>$2::uuid AND role IN ('user','assistant')
                 ORDER BY created_at DESC,id DESC LIMIT $3""", str(conversation_id), current_message_id,
                 CONVERSATION_HISTORY_MESSAGE_LIMIT, ctx.organization_id, ctx.user_id)
-            history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
+            history = _ai_safe_conversation_history(history_rows)
 
     # No connection or transaction is held while the orchestrator plans or calls providers.
     scoped_reader = _TenantScopedReadConnection(pool, ctx)
     try:
         result = await orchestrator.ask(
-            payload, ctx.organization_id, conn=scoped_reader, conversation_history=history
+            payload, ctx.organization_id, conn=scoped_reader, conversation_history=history,
+            allow_local_documents=(
+                payload.confirm_local_document_ai_transfer
+                and settings.ai_local_documents_in_chat_enabled
+            ),
         )
     except Exception:
         failure = _chat_orchestration_failure(conversation_id)
@@ -922,6 +963,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
                 str(conversation_id), ctx.user_id, result.answer,
                 json.dumps({"verification_status": result.verification_status,
+                    "contains_local_documents": any(
+                        source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                        for source in result.sources
+                    ),
                     "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
                         if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
                             "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
