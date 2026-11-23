@@ -210,17 +210,48 @@ async def _startup_external_diagnostics() -> None:
         )
 
 
+async def _startup_ai_provider_diagnostic() -> None:
+    """Run a read-only AI provider/model availability check in staging and production."""
+    configured = bool(settings.ai_api_base_url and settings.ai_api_key and settings.ai_model)
+    parsed = urlparse(settings.ai_api_base_url) if settings.ai_api_base_url else None
+    provider = "gemini" if (
+        parsed and parsed.hostname == "generativelanguage.googleapis.com"
+        and parsed.path.rstrip("/") == "/v1beta/openai"
+    ) else ("openai_compatible" if configured else "not_configured")
+    logger.warning(
+        "DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_START environment=%s provider=%s configured=%s model=%s",
+        settings.app_env, provider, configured, settings.ai_model or "not-configured",
+    )
+    try:
+        status = await asyncio.wait_for(check_provider_availability(), timeout=12.0)
+    except asyncio.TimeoutError:
+        logger.warning("DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_RESULT status=TIMEOUT")
+    except Exception as exc:
+        logger.warning(
+            "DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_RESULT status=FAILED error_type=%s",
+            type(exc).__name__,
+        )
+    else:
+        logger.warning(
+            "DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_RESULT provider=%s model=%s status=%s http_status=%s",
+            provider, settings.ai_model or "not-configured",
+            status.get("status"), status.get("http_status", "-"),
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_runtime_configuration(settings)
     await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
-    diagnostic_task = asyncio.create_task(_startup_external_diagnostics())
+    external_diagnostic_task = asyncio.create_task(_startup_external_diagnostics())
+    ai_diagnostic_task = asyncio.create_task(_startup_ai_provider_diagnostic())
     try:
         yield
     finally:
-        if not diagnostic_task.done():
-            diagnostic_task.cancel()
-        await asyncio.gather(diagnostic_task, return_exceptions=True)
+        for task in (external_diagnostic_task, ai_diagnostic_task):
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(external_diagnostic_task, ai_diagnostic_task, return_exceptions=True)
         await close_pool()
 
 app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifespan=lifespan,
