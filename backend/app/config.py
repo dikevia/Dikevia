@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     ai_api_key: str = ""
     ai_model: str = ""
     ai_timeout_seconds: float = 25.0
+    ai_local_document_review_enabled: bool = False
     chat_rate_limit_per_minute: int = 10
     legifrance_environment: str = "sandbox"
     # Accept both documented LEGIFRANCE_* names and the common PISTE_* aliases.
