@@ -34,7 +34,9 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     source_type = str(source.get("source_type") or "").upper()
     if source_type == "SERVICE_PUBLIC_PART" or kind == "ADMIN_GUIDANCE":
         kind = "ADMIN_GUIDANCE"
-    elif source_type == "INSTITUTIONAL_GUIDANCE" and kind == "PROFESSIONAL_GUIDANCE":
+    elif source_type == "INSTITUTIONAL_GUIDANCE":
+        # This source_type is reserved for non-normative professional,
+        # institutional and union material; document_kind must not promote it.
         kind = "PROFESSIONAL_GUIDANCE"
     elif kind == "CGFP_SNAPSHOT":
         kind = "CODE"
