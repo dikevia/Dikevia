@@ -184,3 +184,20 @@ def test_local_document_ai_has_two_independent_opt_in_switches():
     assert "settings.ai_local_documents_in_chat_enabled" in main_source
     assert "confirm_local_document_ai_transfer" in review_source
     assert "settings.ai_local_document_review_enabled" in review_source
+
+
+def test_external_diagnostics_and_stripe_billing_are_disabled_by_default():
+    from app.config import validate_runtime_configuration
+
+    defaults = Settings(_env_file=None)
+    assert defaults.startup_external_diagnostics_enabled is False
+    assert defaults.stripe_billing_enabled is False
+    with pytest.raises(RuntimeError, match="STRIPE_BILLING_ENABLED"):
+        validate_runtime_configuration(Settings(_env_file=None, stripe_billing_enabled=True))
+
+
+def test_external_billing_routes_use_transaction_free_authorization():
+    from app.main import billing_checkout, billing_portal
+
+    assert "require_org_admin_for_external" in inspect.getsource(billing_checkout)
+    assert "require_org_admin_for_external" in inspect.getsource(billing_portal)
