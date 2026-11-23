@@ -348,7 +348,7 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
 
 async def apply_semantic_source_relevance(
     *, question: str, research_axes: list[str], sources: list[dict],
-    target_versant: str = "FPT",
+    target_versant: str = "FPT", allow_local_documents: bool = False,
 ) -> None:
     """Apply Gemini relevance verdicts while preserving lexical fallback on provider failure."""
     for source in sources:
@@ -356,10 +356,16 @@ async def apply_semantic_source_relevance(
             research_axes, source, target_versant,
         )
     try:
+        semantic_sources = [
+            source for source in sources
+            if allow_local_documents or source.get("source_type") not in {
+                "LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT",
+            }
+        ]
         semantic_verdicts = await evaluate_source_relevance(
             question=question,
             research_axes=research_axes,
-            sources=sources,
+            sources=semantic_sources,
         )
         for source in sources:
             verdict = semantic_verdicts.get(source.get("source_id"))
@@ -1419,7 +1425,7 @@ class LegalOrchestrator:
         # triage only; source, citation, temporal and FPT-scope controls remain authoritative.
         await apply_semantic_source_relevance(
             question=request.question, research_axes=research_queries, sources=sources,
-            target_versant=request.public_service,
+            target_versant=request.public_service, allow_local_documents=allow_local_documents,
         )
 
 
