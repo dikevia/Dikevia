@@ -426,3 +426,33 @@ def test_ask_request_validates_optional_client_embedding_shape_and_values():
         AskRequest(**base, query_embedding=[float("inf")] + [0.0] * 383)
     with pytest.raises(ValueError):
         AskRequest(**base, query_embedding=[0.0] * 384)
+
+
+
+def test_source_classification_exposes_authority_publisher_and_union_doctrine():
+    from app.legal_assurance import classify_legal_source
+
+    official = classify_legal_source({
+        "source_type": "SERVICE_PUBLIC_PART",
+        "document_kind": "ADMIN_GUIDANCE",
+        "publisher": "Service-Public.gouv.fr / DILA",
+    })
+    assert official["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert official["publisher"] == "Service-Public.gouv.fr / DILA"
+    assert official["normative"] is False
+
+    union = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "PROFESSIONAL_GUIDANCE",
+        "raw_metadata": {
+            "source_id": "cfdt-fonctions-publiques",
+            "source_name": "CFDT Fonctions publiques",
+            "authority_level": "PROFESSIONAL_GUIDANCE",
+        },
+    })
+    assert union["authority_level"] == "PROFESSIONAL_GUIDANCE"
+    assert union["publisher"] == "CFDT Fonctions publiques"
+    assert union["publisher_type"] == "TRADE_UNION"
+    assert union["source_family_label"] == "Doctrine syndicale — non normative"
+    assert union["claim_eligible"] is False
+    assert union["usable_for_interpretation"] is True
