@@ -411,3 +411,18 @@ async def test_search_rejects_invalid_query_embedding_dimensions_and_non_finite_
     with pytest.raises(ValueError, match="384 valeurs finies"):
         await search_legal_corpus(FakeConn(), "question juridique", date(2026, 11, 23),
                                   query_embedding=[float("nan")] + [0.0] * 383)
+
+
+def test_ask_request_validates_optional_client_embedding_shape_and_values():
+    from app.schemas import AskRequest
+
+    base = {"employer": "NATIONAL", "question": "Question juridique suffisamment longue"}
+    valid = AskRequest(**base, query_embedding=[0.0] * 383 + [1.0])
+    assert len(valid.query_embedding) == 384
+    assert AskRequest(**base).query_embedding is None
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding=[0.0] * 383)
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding=[float("inf")] + [0.0] * 383)
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding=[0.0] * 384)
