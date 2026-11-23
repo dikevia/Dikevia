@@ -13,10 +13,10 @@ import re
 import sys
 import unicodedata
 
-MODEL_NAME = "intfloat/multilingual-e5-small"
+MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 DIMENSIONS = 384
-SEGMENT_CHARS = 1800
-SEGMENT_OVERLAP = 180
+SEGMENT_CHARS = 500
+SEGMENT_OVERLAP = 60
 
 
 def split_for_embedding(text: str) -> list[str]:
@@ -34,7 +34,7 @@ def split_for_embedding(text: str) -> list[str]:
                 end = boundary + 1
         piece = re.sub(r"\s+", " ", text[start:end]).strip()
         if piece:
-            segments.append("passage: " + piece)
+            segments.append(piece)
         if end >= len(text):
             break
         start = max(start + 1, end - SEGMENT_OVERLAP)
