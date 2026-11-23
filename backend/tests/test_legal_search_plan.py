@@ -542,16 +542,18 @@ def test_ambiguous_hierarchical_convocation_with_union_support_does_not_assume_p
     assert build_official_research_axes(question) == []
 
 
-def test_explicit_disciplinary_convocation_keeps_defence_rights_research():
+def test_explicit_disciplinary_hierarchical_convocation_keeps_both_research_axes():
     question = (
-        "Je suis titulaire de la fonction publique territoriale et convoqué "
-        "à un entretien disciplinaire avec assistance syndicale."
+        "Je suis titulaire de la fonction publique territoriale. "
+        "Puis-je être accompagné d'un syndicat lors d'une convocation "
+        "par ma hiérarchie pour un entretien disciplinaire ?"
     )
     axes = build_official_research_axes(question)
     joined = " ".join(axes).casefold()
 
-    assert axes
-    assert "procédure disciplinaire" in joined or "entretien disciplinaire" in joined
+    assert any("entretien hiérarchique ordinaire" in axis for axis in axes)
+    assert any("procédure disciplinaire" in axis for axis in axes)
+    assert "droits de la défense" in joined
 
 
 def test_agent_assaulted_by_service_user_retrieves_protection_and_workplace_safety_axes():
