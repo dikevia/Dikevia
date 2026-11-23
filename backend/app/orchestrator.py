@@ -1461,7 +1461,7 @@ class LegalOrchestrator:
                 clarification_question=None,
             )
 
-        missing = ["Vérifier les dates d'effet et la rédaction exacte applicable à la date des faits.",
+        missing = ["Vérifier l'existence d'une abrogation ou d'un remplacement explicite du texte retenu.",
             "Vérifier les dispositions réglementaires, décrets et textes spéciaux liés à la question.",
             "Rechercher et vérifier la jurisprudence pertinente si elle peut modifier l'analyse.",
             "Vérifier les actes locaux, délibérations et accords applicables à l'employeur concerné."]
@@ -1481,8 +1481,12 @@ class LegalOrchestrator:
             missing.insert(0, "Des documents locaux correspondent à la recherche mais leur validation humaine ou leur période d'effet ne permet pas de les utiliser pour une conclusion.")
         if any(s.get("content_kind") == "METADATA" for s in permanent_sources):
             missing.insert(0, "Certaines circulaires ou textes ne sont présents qu'au stade des métadonnées : ils ne sont pas utilisés pour produire une analyse IA.")
-        if any(s.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE" for s in permanent_sources):
-            missing.insert(0, "Des versions du corpus ont des dates d'effet incomplètes : elles sont signalées mais exclues des conclusions IA.")
+        if any(
+            s.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
+            and s.get("general_info_eligible") is not True
+            for s in permanent_sources
+        ):
+            missing.insert(0, "Certaines sources ne permettent pas de vérifier une version applicable à la date demandée ; elles sont écartées des conclusions historiques.")
         if temporal_issue:
             missing.insert(0, temporal_issue)
         if live_issue:
