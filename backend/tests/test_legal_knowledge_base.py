@@ -456,3 +456,15 @@ def test_source_classification_exposes_authority_publisher_and_union_doctrine():
     assert union["source_family_label"] == "Doctrine syndicale — non normative"
     assert union["claim_eligible"] is False
     assert union["usable_for_interpretation"] is True
+
+
+def test_unknown_source_is_not_mislabelled_as_primary_legal_authority():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "UNRECOGNIZED_SOURCE",
+        "document_kind": "OTHER",
+        "source_id": "unknown-source-001",
+    })
+    assert result["authority_level"] == "UNCLASSIFIED"
+    assert result["authority_label"] == "Nature et autorité de la source à qualifier"
