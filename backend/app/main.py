@@ -311,7 +311,8 @@ async def readiness():
 async def home():
     html = (FRONTEND/"index.html").read_text(encoding="utf-8")
     flag = "true" if settings.private_instance_mode else "false"
-    return html.replace("</head>", f"<script>window.PRIVATE_INSTANCE_MODE={flag};</script></head>")
+    vector_flag = "true" if settings.vector_search_enabled else "false"
+    return html.replace("</head>", f"<script>window.PRIVATE_INSTANCE_MODE={flag};window.DIKEVIA_VECTOR_SEARCH_ENABLED={vector_flag};</script></head>")
 
 @app.get("/api/v1/auth/me")
 async def auth_me(principal: Principal = Depends(get_principal)):
