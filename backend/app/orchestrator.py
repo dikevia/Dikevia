@@ -124,8 +124,9 @@ def _build_targeted_regulatory_queries(
     ))
     if overtime:
         queries.extend([
-            "décret n° 2001-623 du 12 juillet 2001 article 5 fonction publique territoriale temps de travail heures supplémentaires dépassement des bornes horaires du cycle",
-            "décret n° 2002-60 du 14 janvier 2002 article 3 repos compensateur indemnisation heures supplémentaires IHTS",
+            "décret n° 2000-815 du 25 août 2000 articles 3 et 4 durée du travail cycles de travail heures supplémentaires fonction publique",
+            "décret n° 2001-623 du 12 juillet 2001 articles 1 et 4 cycles de travail fonction publique territoriale délibération comité social territorial",
+            "décret n° 2002-60 du 14 janvier 2002 articles 3 4 6 et 7 repos compensateur définition heures supplémentaires contingent indemnisation IHTS",
             "décret n° 91-875 du 6 septembre 1991 article 2 liste des emplois ouvrant droit aux IHTS délibération organe délibérant fonction publique territoriale",
         ])
 
