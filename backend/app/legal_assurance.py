@@ -441,7 +441,7 @@ def validate_claim_evidence(
             or source.get("public_service_scope") in {
                 "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
                 "FPH", "FPE", "OUT_OF_SCOPE_OR_UNCONFIRMED",
-                "OUT_OF_SCOPE_EUROPEAN_LAW",
+                "OUT_OF_SCOPE_EUROPEAN_LAW", "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
             }
         ):
             continue
