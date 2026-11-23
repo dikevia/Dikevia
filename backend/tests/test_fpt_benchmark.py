@@ -97,19 +97,19 @@ def test_validate_repository_quality_benchmark_schema():
     assert questions[0]["id"] == "FPT-001"
     assert questions[0]["expected_failure_modes"]
     assert "Intention attendue" in questions[0]["expected_criteria"][0]
-    first_twenty = [q for q in questions if "FPT-001" <= q["id"] <= "FPT-020"]
-    assert len(first_twenty) == 20
-    assert all(q["candidate_sources"] for q in first_twenty)
-    assert all(q["source_scope_warning"] for q in first_twenty)
-    assert all(q["source_review_status"] == "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED" for q in first_twenty)
+    first_thirty = [q for q in questions if "FPT-001" <= q["id"] <= "FPT-030"]
+    assert len(first_thirty) == 30
+    assert all(q["candidate_sources"] for q in first_thirty)
+    assert all(q["source_scope_warning"] for q in first_thirty)
+    assert all(q["source_review_status"] == "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED" for q in first_thirty)
     assert all(
-        source["url"].startswith("https://www.legifrance.gouv.fr/")
-        or source["url"].startswith("https://www.cig929394.fr/")
-        or source["url"].startswith("https://www.conseil-etat.fr/")
-        for q in first_twenty for source in q["candidate_sources"]
+        source["url"].startswith(("https://www.legifrance.gouv.fr/", "https://www.cig929394.fr/", "https://www.conseil-etat.fr/", "https://www.service-public.gouv.fr/", "https://www.cnil.fr/", "https://www.fonction-publique.gouv.fr/"))
+        for q in first_thirty for source in q["candidate_sources"]
     )
     assert any("506127" in source["url"] for q in first_twenty for source in q["candidate_sources"])
     assert any("2026-768" in source["url"] for q in first_twenty for source in q["candidate_sources"])
+    assert any("2026-705" in source["url"] for q in first_thirty for source in q["candidate_sources"])
+    assert any("LEGIARTI000051201136" in source["url"] for q in first_thirty for source in q["candidate_sources"])
 
 
 def test_canonical_benchmark_review_uses_its_declared_five_dimension_release_gate(tmp_path):
