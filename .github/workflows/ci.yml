@@ -101,7 +101,8 @@ jobs:
       - name: Security static analysis
         run: bandit -q -r backend/app -ll
       - name: Dependency vulnerability audit
-        run: pip-audit -r backend/requirements-dev.txt
+        run: |
+          pip-audit -r backend/requirements-dev.txt
           pip-audit -r backend/requirements-embeddings.txt
       - name: Prepare disposable PostgreSQL database and least-privilege roles
         env:
