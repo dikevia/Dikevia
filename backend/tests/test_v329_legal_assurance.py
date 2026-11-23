@@ -502,3 +502,46 @@ def test_entailment_verifier_allows_only_the_verified_endpoint_date():
     assert allowed["valid"] is True
     assert rejected["valid"] is False
     assert "verdict_0:support_quote_missing_claim_facts" in rejected["invalid"]
+
+
+def test_claim_evidence_flags_unknown_uncovered_axis_without_discarding_verified_claims():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    claim_text = source["excerpt"]
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": claim_text,
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+            "axis": "santé et sécurité",
+        }],
+        "uncovered_axes": ["axe inventé"],
+    }, [source], required_axes=["santé et sécurité", "rémunération"])
+
+    assert result["valid"] is True
+    assert result["partial"] is True
+    assert result["claim_count"] == 1
+    assert result["uncovered_axes"] == ["rémunération"]
+    assert "unknown_or_invalid_uncovered_research_axis" in result["invalid_claims"]
+
+
+def test_claim_evidence_flags_duplicate_uncovered_axis_declarations():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    claim_text = source["excerpt"]
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": claim_text,
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+            "axis": "santé et sécurité",
+        }],
+        "uncovered_axes": ["rémunération", "rémunération"],
+    }, [source], required_axes=["santé et sécurité", "rémunération"])
+
+    assert result["valid"] is True
+    assert result["partial"] is True
+    assert result["uncovered_axes"] == ["rémunération"]
+    assert "duplicate_uncovered_research_axis" in result["invalid_claims"]
