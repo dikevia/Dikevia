@@ -32,7 +32,7 @@ def split_for_embedding(text: str) -> list[str]:
                            text.rfind(". ", start + SEGMENT_CHARS // 2, end))
             if boundary > start:
                 end = boundary + 1
-        piece = re.sub(r"\\s+", " ", text[start:end]).strip()
+        piece = re.sub(r"\s+", " ", text[start:end]).strip()
         if piece:
             segments.append("passage: " + piece)
         if end >= len(text):
@@ -106,8 +106,7 @@ async def run(args: argparse.Namespace) -> int:
             offset = 0
             for row, count in zip(rows, segment_counts):
                 if count < 1:
-                    vectors.append((row["id"], None))
-                    continue
+                    raise RuntimeError("Fragment vide ou non exploitable : " + str(row["id"]))
                 combined = normalized_mean(generated[offset:offset + count])
                 offset += count
                 if len(combined) != DIMENSIONS:
