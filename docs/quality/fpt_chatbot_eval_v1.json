@@ -531,7 +531,23 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, article 3 — fixation du calendrier des congés après consultation, selon les nécessités du service",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006369520",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Conseil d'État, 16 juin 2026, n° 506127 — encadrement de la fixation des dates et obligation de proposer une autre période lorsque l'intérêt du service fait obstacle à la demande",
+          "url": "https://www.conseil-etat.fr/fr/arianeweb/CE/decision/2026-06-16/506127",
+          "source_type": "jurisprudence_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "La réservation d'un voyage ne crée pas, à elle seule, un droit aux dates demandées. Vérifier la décision de l'autorité territoriale, la consultation, les nécessités du service et, si la période demandée est refusée, la possibilité effective d'une autre période. La décision CE n° 506127 du 16 juin 2026 doit être lue avec les textes en vigueur."
     },
     {
       "id": "FPT-012",
@@ -558,7 +574,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, article 5-1 — report des congés annuels en cas de congé pour raison de santé ou lié aux responsabilités parentales/familiales, version en vigueur depuis le 13 août 2026",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054670012",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Conseil d'État, 16 juin 2026, n° 506127 — information de l'agent sur les jours reportés et leur échéance",
+          "url": "https://www.conseil-etat.fr/fr/arianeweb/CE/decision/2026-06-16/506127",
+          "source_type": "jurisprudence_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2026-768 du 11 août 2026 — modification des articles 5-1 et 5-2 du décret n° 85-1250 après la décision du Conseil d'État",
+          "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054669982",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas résumer la règle par un report automatique et illimité. Vérifier la date de reprise, la période de report de quinze mois, les informations dues par l'employeur, la limite des quatre semaines selon le motif et les dispositions particulières liées aux responsabilités parentales ou familiales. Distinguer fonctionnaire et contractuel ; vérifier le fondement applicable au contractuel."
     },
     {
       "id": "FPT-013",
@@ -585,7 +623,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, article 5-2 — indemnisation des congés annuels non pris à la fin de la relation de travail, version en vigueur depuis le 13 août 2026",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054670008",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, article 5 — congés annuels des agents contractuels territoriaux",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000051777217",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2004-878 du 26 août 2004, articles 9 et 11 — maintien des droits CET en cas de mobilité et transfert conventionnel éventuel",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000446192",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Conseil d'État, 16 juin 2026, n° 506127 — conditions d'extinction et d'indemnisation des droits à congés reportés",
+          "url": "https://www.conseil-etat.fr/fr/arianeweb/CE/decision/2026-06-16/506127",
+          "source_type": "jurisprudence_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer mutation, détachement, intégration directe, démission, licenciement, fin de contrat et retraite. Le CET obéit à des règles spécifiques de maintien/transfert (articles 9 et 11 du décret 2004-878) ; ne pas assimiler automatiquement solde de congés annuels et solde CET. Pour les droits issus d'un report santé/parentalité, contrôler l'information de l'agent et la décision CE n° 506127."
     },
     {
       "id": "FPT-014",
@@ -612,7 +678,23 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, article 1 — durée annuelle exprimée en jours effectivement ouvrés, selon les obligations hebdomadaires de service",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054670016",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, article 3 — calendrier des congés annuels",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006369520",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ces dispositions ne tranchent pas à elles seules le cas précis d'un jour férié qui tombe pendant une période de congés. Aucune source nationale officielle suffisamment explicite sur cette règle de décompte n'a été identifiée dans cette recherche. Ne pas conclure sans examiner le cycle/roulement, les jours normalement travaillés, le règlement du temps de travail et la doctrine institutionnelle applicable ; une source locale ou une décision pertinente reste à rechercher."
     },
     {
       "id": "FPT-015",
@@ -639,7 +721,23 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, article 3 — l'autorité territoriale fixe le calendrier après consultation, en tenant compte des nécessités du service et de la priorité des agents chargés de famille",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006369520",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Conseil d'État, 16 juin 2026, n° 506127 — l'intérêt du service peut encadrer les dates, mais l'employeur doit proposer une autre période si les droits n'ont pas pu être exercés",
+          "url": "https://www.conseil-etat.fr/fr/arianeweb/CE/decision/2026-06-16/506127",
+          "source_type": "jurisprudence_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "L'autorité organise le calendrier après consultation ; il ne s'agit ni d'un libre choix absolu de l'agent ni d'un pouvoir sans limites. Vérifier les priorités légales, les nécessités concrètes du service, les règles locales et la possibilité réelle de prendre les congés. La décision CE n° 506127 impose une vigilance sur les droits qui seraient autrement perdus."
     },
     {
       "id": "FPT-016",
@@ -666,7 +764,23 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 86-68 du 13 janvier 1986, article 21 — disponibilité pour convenances personnelles des fonctionnaires territoriaux, sous réserve des nécessités du service",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000052998868",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, article 17 — congé sans rémunération pour convenances personnelles ouvert aux agents contractuels en CDI",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000046185721",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Ne pas traiter « congé sans solde » comme un régime juridique unique. Pour un fonctionnaire, examiner la disponibilité pour convenances personnelles ; pour un contractuel, l'article 17 vise l'agent en CDI et prévoit des conditions, une durée et un préavis spécifiques. Identifier le statut, le contrat et la situation administrative avant toute réponse."
     },
     {
       "id": "FPT-017",
@@ -693,7 +807,41 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 2004-878 du 26 août 2004, article 1 — ouverture du CET à la demande de l'agent et articulation avec la délibération locale",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000052872807",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2004-878 du 26 août 2004, articles 2 et 3 — agents éligibles et alimentation du CET",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000446192",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2004-878 du 26 août 2004, article 9 — maintien des droits CET en cas de mobilité statutaire",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000446192",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2004-878 du 26 août 2004, article 10 — compétence de l'organe délibérant et règles locales de gestion",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000446192",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Code général de la fonction publique, article L. 621-5 — cadre du compte épargne-temps dans la fonction publique territoriale",
+          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044427970",
+          "source_type": "code",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "La réponse dépend de la délibération de la collectivité (ou de son absence), des règles d'ouverture/gestion, du statut et de l'ancienneté de l'agent, des jours éligibles et des options d'utilisation/indemnisation. La délibération locale et ses éventuels avenants sont indispensables pour expliquer le régime effectivement applicable."
     },
     {
       "id": "FPT-018",
@@ -720,7 +868,29 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, article 5 — congés annuels des contractuels territoriaux dans les mêmes conditions de durée et d'attribution que les fonctionnaires titulaires",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000051777217",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, articles 1, 3 et 5-1 — règles territoriales de congés annuels, calendrier et report",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000690444",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 88-145 du 15 février 1988, dispositions relatives aux congés pour raison de santé et aux congés non rémunérés — régime distinct selon le statut contractuel",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "La similarité explicitement prévue à l'article 5 du décret 88-145 concerne les congés annuels : elle ne signifie pas que les contractuels ont les mêmes règles pour tous les congés, la maladie, la maternité, la rémunération ou le CET. Identifier la nature exacte du congé et les dispositions propres aux contractuels."
     },
     {
       "id": "FPT-019",
@@ -747,7 +917,23 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, article 3 — calendrier des congés fixé par l'autorité territoriale au regard des nécessités du service",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006369520",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Conseil d'État, 16 juin 2026, n° 506127 — droits à congés et obligation de permettre une prise effective lorsqu'une demande est écartée pour intérêt du service",
+          "url": "https://www.conseil-etat.fr/fr/arianeweb/CE/decision/2026-06-16/506127",
+          "source_type": "jurisprudence_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "La recherche n'a pas identifié de disposition générale explicite organisant le rappel d'un agent territorial pendant ses congés annuels ni ses conditions indemnitaires. Ne pas inventer un pouvoir général de rappel ou une compensation automatique. Rechercher les textes spéciaux éventuellement applicables, les nécessités concrètes, le règlement local, les circonstances et la jurisprudence avant de conclure."
     },
     {
       "id": "FPT-020",
@@ -774,7 +960,35 @@
         "Confondre titulaire, stagiaire, contractuel, temps partiel et temps non complet.",
         "Transformer une synthèse documentaire en avis individuel ou inventer des conseils."
       ],
-      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée."
+      "gold_answer_status": "À rédiger et valider par un référent juridique FPT avant notation automatisée.",
+      "candidate_sources": [
+        {
+          "title": "Décret n° 85-1250 du 26 novembre 1985, article 5-1 — report des congés annuels lorsque l'agent est empêché par un congé lié aux responsabilités parentales ou familiales, version en vigueur depuis le 13 août 2026",
+          "url": "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054670012",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2021-846 du 29 juin 2021, articles 1 à 7 — régime du congé de maternité dans la fonction publique territoriale",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000043715533",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Conseil d'État, 16 juin 2026, n° 506127 — report, information de l'agent et protection des droits à congés parentaux/familiaux",
+          "url": "https://www.conseil-etat.fr/fr/arianeweb/CE/decision/2026-06-16/506127",
+          "source_type": "jurisprudence_administrative",
+          "verification_status": "candidate_not_yet_human_validated"
+        },
+        {
+          "title": "Décret n° 2026-768 du 11 août 2026 — modification des articles 5-1 et 5-2 du décret n° 85-1250",
+          "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054669982",
+          "source_type": "texte_national",
+          "verification_status": "candidate_not_yet_human_validated"
+        }
+      ],
+      "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
+      "source_scope_warning": "Distinguer le congé de maternité du congé annuel : le report du congé annuel relève notamment de l'article 5-1 du décret 85-1250 et des responsabilités parentales/familiales. Vérifier la période de report, les jours concernés, l'information écrite de l'employeur, les éventuelles règles transitoires et le statut (fonctionnaire ou contractuel). Ne pas présenter le report comme illimité."
     },
     {
       "id": "FPT-021",
