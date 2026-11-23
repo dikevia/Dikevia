@@ -102,6 +102,8 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("Stripe doit être entièrement désactivé en mode instance privée.")
     if config.stripe_billing_enabled and not (config.stripe_secret_key and config.stripe_webhook_secret):
         raise RuntimeError("STRIPE_BILLING_ENABLED exige les deux secrets Stripe.")
+    if config.stripe_billing_enabled and not (config.stripe_secret_key and config.stripe_webhook_secret):
+        raise RuntimeError("STRIPE_BILLING_ENABLED exige les deux secrets Stripe.")
     if bool(config.stripe_secret_key) != bool(config.stripe_webhook_secret):
         raise RuntimeError("STRIPE_SECRET_KEY et STRIPE_WEBHOOK_SECRET doivent être configurés ensemble.")
     if config.app_env == "production" and config.stripe_secret_key:
