@@ -88,3 +88,12 @@ def test_prepare_review_and_score_require_all_100_real_answers_and_reviews(tmp_p
     assert result["questions_evaluees"] == 100
     assert result["score_global_percent"] == 100.0
     assert sum(item["reviewed"] for item in result["par_domaine"].values()) == 100
+
+
+def test_validate_repository_quality_benchmark_schema():
+    dataset_path = ROOT / "docs" / "quality" / "fpt_chatbot_eval_v1.json"
+    questions = benchmark.validate_dataset(str(dataset_path))
+    assert len(questions) == 100
+    assert questions[0]["id"] == "FPT-001"
+    assert questions[0]["expected_failure_modes"]
+    assert "Intention attendue" in questions[0]["expected_criteria"][0]
