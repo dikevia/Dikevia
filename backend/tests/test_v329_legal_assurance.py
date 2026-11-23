@@ -471,3 +471,34 @@ def test_entailment_verifier_uses_excerpt_not_unrelated_full_text():
         [{"source_id": "LEGIARTI000000000001", "text": "Proposition juridique de test."}],
     )
     assert result["valid"] is False
+
+
+def test_entailment_verifier_allows_only_the_verified_endpoint_date():
+    from app.ai_provider import validate_entailment_verdicts
+
+    quote = "Les agents territoriaux bénéficient d'une protection statutaire."
+    source = {
+        "source_id": "LEGIARTI000000000001",
+        "excerpt": quote,
+        "version_endpoint": "START",
+        "requested_effective_date": "2024-01-01",
+    }
+    payload = {"verdicts": [{
+        "claim_index": 0,
+        "source_id": source["source_id"],
+        "verdict": "SUPPORTED",
+        "support_quote": quote,
+    }]}
+    allowed = validate_entailment_verdicts(
+        payload,
+        [{"source_id": source["source_id"], "text": "Au 2024-01-01, les agents territoriaux bénéficient d'une protection statutaire."}],
+        [source],
+    )
+    rejected = validate_entailment_verdicts(
+        payload,
+        [{"source_id": source["source_id"], "text": "Au 2024-12-31, les agents territoriaux bénéficient d'une protection statutaire."}],
+        [source],
+    )
+    assert allowed["valid"] is True
+    assert rejected["valid"] is False
+    assert "verdict_0:support_quote_missing_claim_facts" in rejected["invalid"]
