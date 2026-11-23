@@ -97,6 +97,21 @@ def test_validate_repository_quality_benchmark_schema():
     assert questions[0]["id"] == "FPT-001"
     assert questions[0]["expected_failure_modes"]
     assert "Intention attendue" in questions[0]["expected_criteria"][0]
+    first_hundred = [q for q in questions if "FPT-001" <= q["id"] <= "FPT-100"]
+    assert len(first_hundred) == 100
+    assert all(q["candidate_sources"] for q in first_hundred)
+    assert all(q["source_scope_warning"] for q in first_hundred)
+    assert all(q["source_review_status"] == "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED" for q in first_hundred)
+    assert all(
+        source["url"].startswith(("https://www.legifrance.gouv.fr/", "https://www.cig929394.fr/", "https://www.conseil-etat.fr/", "https://www.service-public.gouv.fr/", "https://www.cnil.fr/", "https://www.fonction-publique.gouv.fr/", "https://www.collectivites-locales.gouv.fr/"))
+        for q in first_hundred for source in q["candidate_sources"]
+    )
+    assert any("506127" in source["url"] for q in first_hundred for source in q["candidate_sources"])
+    assert any("2026-768" in source["url"] for q in first_hundred for source in q["candidate_sources"])
+    assert any("JORFTEXT000054570030" in source["url"] for q in first_hundred for source in q["candidate_sources"])
+    assert any("LEGIARTI000051201136" in source["url"] for q in first_hundred for source in q["candidate_sources"])
+    assert all(any(source["verification_status"] == "candidate_not_yet_human_validated" for source in q["candidate_sources"]) for q in first_hundred)
+    assert all(q["source_scope_warning"] for q in first_hundred[30:])
 
 
 def test_canonical_benchmark_review_uses_its_declared_five_dimension_release_gate(tmp_path):
@@ -112,6 +127,9 @@ def test_canonical_benchmark_review_uses_its_declared_five_dimension_release_gat
     benchmark.prepare_review(str(dataset_path), str(responses_path), str(review_path))
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert set(review[0]["evaluations"]) == set(benchmark.CANONICAL_DIMENSIONS)
+    assert review[0]["candidate_sources"]
+    assert review[0]["source_scope_warning"]
+    assert review[0]["source_review_status"] == "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED"
     for item in review:
         item["evaluations"] = {dimension: 2 for dimension in benchmark.CANONICAL_DIMENSIONS}
         item["question_relevance"] = True

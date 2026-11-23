@@ -167,6 +167,35 @@ def test_short_followup_without_prior_question_stays_unchanged():
 
     assert build_contextual_research_question("Et pour les contractuels ?") == "Et pour les contractuels ?"
 
+def test_explicit_status_followup_without_pour_keeps_previous_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    resolved = build_contextual_research_question(
+        "Et les contractuels ?",
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    )
+    assert "heures supplémentaires" in resolved
+
+
+def test_new_legal_topic_starting_with_et_les_does_not_inherit_previous_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    question = "Et les congés annuels, comment ça marche ?"
+    assert build_contextual_research_question(
+        question,
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    ) == question
+
+
+def test_new_legal_topic_starting_with_et_l_does_not_inherit_previous_topic():
+    from app.legal_qualification import build_contextual_research_question
+
+    question = "Et l'astreinte, comment est-elle rémunérée ?"
+    assert build_contextual_research_question(
+        question,
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    ) == question
+
 
 
 def test_followup_context_preserves_topic_and_updates_explicit_agent_status():

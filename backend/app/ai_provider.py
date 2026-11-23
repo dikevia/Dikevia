@@ -15,6 +15,7 @@ from dataclasses import dataclass
 import httpx
 from .config import settings
 from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
+from .evidence_text import normalize_evidence_text
 
 logger = logging.getLogger(__name__)
 
@@ -397,15 +398,18 @@ def _parse_research_plan(
     # found in the user's contextualized question. This prevents invented dates,
     # durations, statuses or events from silently entering the legal analysis.
     extracted_facts: list[dict[str, str]] = []
-    question_folded = str(question or "").casefold()
+    # Normalize whitespace on both sides before checking verbatim evidence.
+    # The quote must remain a contiguous textual passage; only whitespace
+    # layout is normalized, never punctuation, words, numbers or negations.
+    question_folded = re.sub(r"\s+", " ", str(question or "")).strip().casefold()
     raw_facts = payload.get("extracted_facts")
     if isinstance(raw_facts, list) and question_folded:
         seen_quotes: set[str] = set()
         for item in raw_facts[:12]:
             if not isinstance(item, dict):
                 continue
-            fact = re.sub(r"\\s+", " ", str(item.get("fact") or "")).strip()[:240]
-            quote = re.sub(r"\\s+", " ", str(item.get("evidence_quote") or "")).strip()[:300]
+            fact = re.sub(r"\s+", " ", str(item.get("fact") or "")).strip()[:240]
+            quote = re.sub(r"\s+", " ", str(item.get("evidence_quote") or "")).strip()[:300]
             if not fact or len(quote) < 3 or quote.casefold() not in question_folded:
                 continue
             key = quote.casefold()
@@ -419,6 +423,31 @@ def _parse_research_plan(
         queries=queries, legal_issues=issues, clarification_needed=clarification,
         extracted_facts=extracted_facts,
     )
+
+
+def parse_structured_answer(content: Any) -> dict | None:
+    """Parse strict JSON output, allowing only a single optional Markdown fence.
+
+    Arbitrary prose, partial JSON, arrays and trailing content are rejected.
+    This is a transport-format tolerance, not a relaxation of claim validation.
+    """
+    if not isinstance(content, str):
+        return None
+    candidate = content.strip()
+    if candidate.startswith("```"):
+        match = re.fullmatch(
+            r"```(?:json)?\s*(.*?)\s*```",
+            candidate,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if not match:
+            return None
+        candidate = match.group(1).strip()
+    try:
+        payload = json.loads(candidate)
+    except (TypeError, ValueError):
+        return None
+    return payload if isinstance(payload, dict) else None
 
 
 def validate_source_relevance_verdicts(payload, sources: list[dict]) -> dict[str, str]:
@@ -772,7 +801,7 @@ Aucun texte hors JSON.
 
 
 def _normalize_entailment_text(value):
-    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", str(value or ""))).strip()
+    return normalize_evidence_text(value)
 
 
 _ENTAILMENT_STOPWORDS = {

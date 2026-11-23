@@ -1006,6 +1006,48 @@ def test_usable_sources_reject_explicitly_failed_integrity_and_out_of_scope_reco
     out_of_scope = {**base, "analysis_eligible": False, "public_service_scope": "FPH"}
     assert _usable_document_sources([invalid_integrity, out_of_scope]) == []
 
+def test_shared_evidence_normalization_handles_typography_without_erasing_legal_differences():
+    from app.ai_provider import _normalize_entailment_text
+    from app.legal_assurance import _normalized_evidence_text
+
+    source = "L’agent – ne peut pas – bénéficier de « 10 000 euros »…"
+    quote = "L'agent - ne peut pas - bénéficier de \" 10 000 euros \"..."
+    normalized_source = _normalized_evidence_text(source)
+    normalized_quote = _normalize_entailment_text(quote)
+
+    assert normalized_source == normalized_quote
+    assert normalized_quote in normalized_source
+    assert _normalized_evidence_text("1\u00a0000 euros") == "1 000 euros"
+
+    # Typographic normalization must not remove negation, merge references,
+    # or change the numeric value of an amount.
+    assert "L. 1234" not in _normalized_evidence_text("L. 123-4")
+    assert "10000 euros" not in _normalize_entailment_text("10 000 euros")
+    assert "L'agent peut bénéficier" not in _normalized_evidence_text(
+        "L'agent ne peut pas bénéficier"
+    )
+
+
+def test_structured_answer_parser_accepts_only_pure_or_fenced_json_objects():
+    from app.ai_provider import parse_structured_answer
+
+    valid = '{"claims": []}'
+    assert parse_structured_answer(valid) == {"claims": []}
+    assert parse_structured_answer("```json\n" + valid + "\n```") == {"claims": []}
+    assert parse_structured_answer("```\n" + valid + "\n```") == {"claims": []}
+
+    for invalid in (
+        "Voici la réponse : " + valid,
+        valid + "\nVoici la réponse.",
+        "```json\n" + valid,
+        "[1, 2, 3]",
+        "{claims: []}",
+        "",
+        None,
+    ):
+        assert parse_structured_answer(invalid) is None
+
+
 def test_research_plan_parser_accepts_bounded_dynamic_queries_and_subquestions():
     plan = _parse_research_plan("""{
         "queries": [
@@ -1138,6 +1180,39 @@ async def test_source_relevance_evaluator_raises_provider_error_on_http_failure(
             research_axes=["axe"],
             sources=[{"source_id": "DOC-1", "excerpt": "Texte officiel suffisamment renseigné."}],
         )
+
+
+def test_research_plan_normalizes_whitespace_before_matching_verbatim_evidence():
+    plan = _parse_research_plan(
+        json.dumps({
+            "queries": ["régime de remplacement temporaire"],
+            "legal_issues": ["Conditions du remplacement temporaire"],
+            "extracted_facts": [
+                {
+                    "fact": "Remplacement effectué pendant une période prolongée.",
+                    "evidence_quote": "titulaire de la FPT. Je remplace un collègue pendant un an et 11 mois",
+                },
+                {
+                    "fact": "Même fait avec une mise en page différente.",
+                    "evidence_quote": "titulaire de la FPT.\nJe remplace   un collègue\tpendant un an et 11 mois",
+                },
+                {
+                    "fact": "Fait non présent dans la question.",
+                    "evidence_quote": "je remplace un collègue depuis trois ans",
+                },
+            ],
+        }, ensure_ascii=False),
+        question=(
+            "Je suis titulaire de la FPT.\n"
+            "Je remplace   un collègue\tpendant un an et 11 mois."
+        ),
+    )
+    assert plan is not None
+    assert len(plan.extracted_facts) == 1
+    assert plan.extracted_facts[0]["fact"] == "Remplacement effectué pendant une période prolongée."
+    assert plan.extracted_facts[0]["evidence_quote"] == (
+        "titulaire de la FPT. Je remplace un collègue pendant un an et 11 mois"
+    )
 
 
 def test_research_plan_extracts_only_facts_with_verbatim_question_evidence():

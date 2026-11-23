@@ -1,3 +1,5 @@
+import pytest
+
 from app.legal_assurance import classify_legal_source, assess_source_set
 
 
@@ -406,6 +408,35 @@ def test_claim_may_be_scoped_to_the_verified_start_endpoint():
     assert result["valid"] is True
 
 
+@pytest.mark.parametrize("date_text", ["1er janvier 2024", "01/01/2024", "01-01-2024"])
+def test_start_endpoint_accepts_equivalent_french_and_numeric_date_formats(date_text):
+    from app.legal_assurance import validate_claim_evidence
+
+    result = validate_claim_evidence(
+        _period_claim(f"Au {date_text}, les agents territoriaux bénéficient d'une protection statutaire."),
+        [_period_source("START")],
+        facts_period={
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "reference_date_for_retrieval": "2024-12-31",
+            "ongoing": False,
+        },
+    )
+    assert result["valid"] is True
+
+
+def test_start_endpoint_still_rejects_a_different_french_date():
+    from app.legal_assurance import validate_claim_evidence
+
+    result = validate_claim_evidence(
+        _period_claim("Au 02/01/2024, les agents territoriaux bénéficient d'une protection statutaire."),
+        [_period_source("START")],
+        facts_period={"period_start": "2024-01-01", "period_end": "2024-12-31"},
+    )
+    assert result["valid"] is False
+    assert "claim_0:period_endpoint_not_date_scoped" in result["invalid_claims"]
+
+
 def test_start_endpoint_cannot_support_a_whole_period_assertion():
     from app.legal_assurance import validate_claim_evidence
 
@@ -502,3 +533,46 @@ def test_entailment_verifier_allows_only_the_verified_endpoint_date():
     assert allowed["valid"] is True
     assert rejected["valid"] is False
     assert "verdict_0:support_quote_missing_claim_facts" in rejected["invalid"]
+
+
+def test_claim_evidence_flags_unknown_uncovered_axis_without_discarding_verified_claims():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    claim_text = source["excerpt"]
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": claim_text,
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+            "axis": "santé et sécurité",
+        }],
+        "uncovered_axes": ["axe inventé"],
+    }, [source], required_axes=["santé et sécurité", "rémunération"])
+
+    assert result["valid"] is True
+    assert result["partial"] is True
+    assert result["claim_count"] == 1
+    assert result["uncovered_axes"] == ["rémunération"]
+    assert "unknown_or_invalid_uncovered_research_axis" in result["invalid_claims"]
+
+
+def test_claim_evidence_flags_duplicate_uncovered_axis_declarations():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    claim_text = source["excerpt"]
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": claim_text,
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+            "axis": "santé et sécurité",
+        }],
+        "uncovered_axes": ["rémunération", "rémunération"],
+    }, [source], required_axes=["santé et sécurité", "rémunération"])
+
+    assert result["valid"] is True
+    assert result["partial"] is True
+    assert result["uncovered_axes"] == ["rémunération"]
+    assert "duplicate_uncovered_research_axis" in result["invalid_claims"]

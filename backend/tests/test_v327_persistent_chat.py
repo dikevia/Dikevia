@@ -84,6 +84,34 @@ def test_short_answer_uses_previous_assistant_clarification_without_losing_legal
     ) == "Comment fonctionne le CET ?"
 
 
+def test_independent_questions_starting_with_a_or_en_do_not_inherit_clarification_context():
+    from app.legal_qualification import build_contextual_research_question
+
+    prior_users = ["Je suis en CITIS après un accident de service."]
+    prior_assistant = ["Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"]
+    for question in (
+        "À quelle date le CET peut-il être utilisé ?",
+        "En matière de congés annuels, quelles sont les règles ?",
+        "Depuis quand le régime indemnitaire est-il applicable ?",
+    ):
+        assert build_contextual_research_question(
+            question, prior_users, prior_assistant
+        ) == question
+
+
+def test_short_answers_with_specific_time_or_contract_markers_keep_context():
+    from app.legal_qualification import build_contextual_research_question
+
+    prior_users = ["Quels sont mes droits au regard de mon contrat ?"]
+    prior_assistant = ["Êtes-vous à temps complet ou à temps partiel ?"]
+    for reply in ("À temps partiel", "En CDI", "Depuis 2022"):
+        resolved = build_contextual_research_question(
+            reply, prior_users, prior_assistant
+        )
+        assert reply in resolved
+        assert "droits" in resolved
+
+
 def test_short_answer_does_not_inherit_topic_when_assistant_did_not_ask_a_question():
     from app.legal_qualification import build_contextual_research_question
 

@@ -12,7 +12,7 @@ from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
 from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
-from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
+from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, parse_structured_answer, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
 from .legal_corpus import search_legal_corpus, select_multi_source_chunks
@@ -107,6 +107,28 @@ def _build_targeted_regulatory_queries(
     # health/absence regimes and must never be sent as FPE/FPH requirements.
     if public_service != "FPT":
         return list(dict.fromkeys(queries))
+
+    # Target the FPT overtime framework explicitly. These searches complement,
+    # rather than replace, the user's wording and the ordinary research axes.
+    # The 2002-60 decree is retrieved as the reference IHTS regime; its FPT
+    # application must still be assessed together with the territorial texts
+    # and the local deliberation. Never inject these FPT queries into FPE/FPH.
+    overtime = any(marker in folded for marker in (
+        "heures supplémentaires", "heures supplementaires",
+        "heures sup", "heures en plus",
+        "travaux supplémentaires", "travaux supplementaires",
+        "temps de travail effectif au-delà", "temps de travail effectif au-dela",
+        "dépasser les horaires", "depasser les horaires",
+        "ihts", "repos compensateur", "récupérer", "recuperer",
+        "récupération", "recuperation",
+    ))
+    if overtime:
+        queries.extend([
+            "décret n° 2000-815 du 25 août 2000 articles 3 et 4 durée du travail cycles de travail heures supplémentaires fonction publique",
+            "décret n° 2001-623 du 12 juillet 2001 articles 1 et 4 cycles de travail fonction publique territoriale délibération comité social territorial",
+            "décret n° 2002-60 du 14 janvier 2002 articles 3 4 6 et 7 repos compensateur définition heures supplémentaires contingent indemnisation IHTS",
+            "décret n° 91-875 du 6 septembre 1991 article 2 liste des emplois ouvrant droit aux IHTS délibération organe délibérant fonction publique territoriale",
+        ])
 
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
@@ -1741,7 +1763,7 @@ class LegalOrchestrator:
                     )
                     if ai_sources:
                         ai_result = await analyze_question(
-                            question=request.question,
+                            question=contextual_question,
                             employer=request.employer,
                             facts_date=effective_date.isoformat(),
                             facts_period=temporal_context,
@@ -1762,10 +1784,7 @@ class LegalOrchestrator:
                         else:
                             # All providers and test adapters must use the same strict JSON contract.
                             raw_ai_content = ai_result
-                        try:
-                            structured_answer = json.loads(raw_ai_content) if isinstance(raw_ai_content, str) else None
-                        except (TypeError, ValueError):
-                            structured_answer = None
+                        structured_answer = parse_structured_answer(raw_ai_content)
                         claim_validation = validate_claim_evidence(
                             structured_answer, ai_sources,
                             required_axes=legal_context.get("axes_recherche_documentaire") or None,
@@ -1795,7 +1814,7 @@ class LegalOrchestrator:
                             )
                         else:
                             entailment_validation = await verify_claim_entailment(
-                                question=request.question,
+                                question=contextual_question,
                                 claims=claim_validation["claims"], sources=ai_sources,
                                 public_service=request.public_service,
                                 allow_local_documents=allow_local_documents,

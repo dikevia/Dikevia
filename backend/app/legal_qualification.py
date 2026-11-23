@@ -22,15 +22,22 @@ RECENT_USER_CONTEXT_LIMIT = 10
 _CLARIFICATION_REPLY = re.compile(
     r"^(?:oui\b|non\b|exactement\b|c['’]est\s+(?:ça|bien\s+ça)\b|"
     r"je\s+suis\b|je\s+travaille\b|mon\s+statut\b|"
-    r"depuis\b|à\b|au\b|en\b|titulaire\b|contractuel(?:le)?\b|"
-    r"stagiaire\b|fonctionnaire\b|agent\b|temps\b)",
+    r"depuis\s+(?:le\s+)?(?:\d|janvier\b|février\b|mars\b|avril\b|"
+    r"mai\b|juin\b|juillet\b|août\b|septembre\b|octobre\b|"
+    r"novembre\b|décembre\b)|"
+    r"à\s+temps\b|à\s+\d{1,3}\s*%|"
+    r"en\s+(?:cdi|cdd|catégorie\s+[abc]|classe\s+normale)\b|"
+    r"titulaire\b|contractuel(?:le)?\b|stagiaire\b|fonctionnaire\b|"
+    r"agent\b|temps\s+(?:partiel|complet|non\s+complet)\b)",
     re.IGNORECASE,
 )
 
 
 _CONTEXTUAL_FOLLOWUP = re.compile(
-    r"^(?:et\s+(?:pour|si|dans|concernant|les|la|le)\b|"
-    r"et\s+l['’]\s*\w+|dans ce cas\b|pour les\b|pour la\b|pour le\b|"
+    r"^(?:et\s+(?:pour|si|dans|concernant)\b|"
+    r"et\s+(?:les|la|le)\s+(?:agents?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"titulaires?|fonctionnaires?)\b|"
+    r"dans ce cas\b|pour les\b|pour la\b|pour le\b|"
     r"qu['’]en est-il\b|quid\b|même chose\b|cela\b|ça\b)",
     re.IGNORECASE,
 )

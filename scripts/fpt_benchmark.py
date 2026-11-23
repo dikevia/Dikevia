@@ -97,6 +97,9 @@ def validate_dataset(path: str) -> list[dict]:
                 "expected_criteria": criteria,
                 "expected_failure_modes": q["failure_modes"],
                 "gold_answer_status": q["gold_answer_status"],
+                "candidate_sources": q.get("candidate_sources", []),
+                "source_scope_warning": q.get("source_scope_warning", ""),
+                "source_review_status": q.get("source_review_status", "NOT_MAPPED"),
             })
         return normalized
 
@@ -161,6 +164,9 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
             "criteres_attendus": q["expected_criteria"],
             "modes_echec_attendus": q.get("expected_failure_modes", []),
             "gold_answer_status": q.get("gold_answer_status"),
+            "candidate_sources": q.get("candidate_sources", []),
+            "source_scope_warning": q.get("source_scope_warning", ""),
+            "source_review_status": q.get("source_review_status", "NOT_MAPPED"),
             "reponse_dikevia": r.get("answer", ""),
             "sources_dikevia": r.get("sources", []),
             "statut_verification": r.get("verification_status"),
