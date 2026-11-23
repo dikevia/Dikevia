@@ -110,3 +110,59 @@ def test_orchestrator_read_adapter_reapplies_transaction_local_rls_context():
     assert "conn.transaction()" in fetch_source
     assert "_set_tenant_rls_context(conn, self._ctx)" in fetch_source
     assert "conn.fetch(query, *args)" in fetch_source
+
+
+@pytest.mark.asyncio
+async def test_tenant_scoped_read_adapter_applies_all_rls_gucs_and_releases_connection():
+    from types import SimpleNamespace
+
+    from app.main import _TenantScopedReadConnection
+
+    events = []
+
+    class Transaction:
+        async def __aenter__(self):
+            events.append("transaction_enter")
+
+        async def __aexit__(self, exc_type, exc, tb):
+            events.append("transaction_exit")
+
+    class Connection:
+        def transaction(self):
+            return Transaction()
+
+        async def execute(self, query, value):
+            events.append(("execute", query, value))
+
+        async def fetch(self, query, *args):
+            events.append(("fetch", query, args))
+            return [{"ok": True}]
+
+    class Acquire:
+        async def __aenter__(self):
+            events.append("acquire")
+            return connection
+
+        async def __aexit__(self, exc_type, exc, tb):
+            events.append("release")
+
+    class Pool:
+        def acquire(self):
+            return Acquire()
+
+    connection = Connection()
+    context = SimpleNamespace(
+        principal=SimpleNamespace(issuer="issuer-A", subject="subject-A"),
+        organization_id="org-A",
+        user_id="user-A",
+    )
+
+    result = await _TenantScopedReadConnection(Pool(), context).fetch("SELECT 1", 42)
+
+    assert result == [{"ok": True}]
+    assert events[0:2] == ["acquire", "transaction_enter"]
+    configured = [event for event in events if isinstance(event, tuple) and event[0] == "execute"]
+    assert [event[2] for event in configured] == [
+        "issuer-A", "subject-A", "org-A", "user-A"
+    ]
+    assert events[-3:] == [("fetch", "SELECT 1", (42,)), "transaction_exit", "release"]
