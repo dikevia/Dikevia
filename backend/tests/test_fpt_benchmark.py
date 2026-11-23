@@ -108,7 +108,7 @@ def test_validate_repository_quality_benchmark_schema():
     )
     assert any("506127" in source["url"] for q in first_hundred for source in q["candidate_sources"])
     assert any("2026-768" in source["url"] for q in first_hundred for source in q["candidate_sources"])
-    assert any("2026-705" in source["url"] for q in first_hundred for source in q["candidate_sources"])
+    assert any("JORFTEXT000054570030" in source["url"] for q in first_hundred for source in q["candidate_sources"])
     assert any("LEGIARTI000051201136" in source["url"] for q in first_hundred for source in q["candidate_sources"])
     assert all(any(source["verification_status"] == "candidate_not_yet_human_validated" for source in q["candidate_sources"]) for q in first_hundred)
     assert all(q["source_scope_warning"] for q in first_hundred[30:])
