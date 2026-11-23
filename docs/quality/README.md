@@ -10,6 +10,12 @@ Le fichier `fpt_chatbot_eval_v1.json` contient les questions, l'intention à rec
 
 Ne pas transformer les critères d'intention en conclusions juridiques. Plusieurs questions nécessitent des précisions (statut, délibération locale, date, faits, règlement intérieur).
 
+## Références candidates pour les réponses de référence
+
+Les cas FPT-001 à FPT-010 disposent désormais d'une première cartographie de textes officiels candidats et de notes de portée juridique. Ces références ne constituent pas encore des réponses de référence certifiées : le régime applicable doit être contrôlé à la date de chaque cas, les règles de référence de l'État doivent être articulées avec leur transposition territoriale et les délibérations locales doivent être examinées lorsque nécessaire.
+
+Le script `scripts/fpt_benchmark.py prepare-review` reporte ces références candidates et les avertissements de portée dans la grille de revue humaine. Le statut reste explicitement « validation juridique humaine requise ». Les 90 autres cas restent à documenter de la même manière.
+
 ## Régressions conversationnelles
 
 Le fichier `conversation_regression_v1.json` ajoute 20 scénarios multi-tours couvrant :
