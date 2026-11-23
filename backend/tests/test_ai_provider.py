@@ -1207,3 +1207,33 @@ def test_entailment_verifier_keeps_individually_supported_claim_indices():
     assert result["valid"] is False
     assert result["supported_claim_indices"] == [0]
     assert "verdict_1:not_supported" in result["invalid"]
+
+
+
+def test_undated_non_normative_guidance_can_reach_ai_as_context_only():
+    from app.ai_provider import _usable_document_sources
+
+    guidance = {
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "source_id": "cfdt-guide-2026",
+        "title": "Guide syndical",
+        "publisher": "CFDT",
+        "excerpt": "Les agents peuvent consulter les représentants du personnel.",
+        "content_kind": "FULL_TEXT",
+        "claim_eligible": False,
+        "reference_role": "NON_NORMATIVE_CONTEXT_ONLY",
+        "legal_assurance": {
+            "reference_role": "NON_NORMATIVE_CONTEXT_ONLY",
+            "usable_for_interpretation": True,
+            "authority_level": "PROFESSIONAL_GUIDANCE",
+            "publisher_type": "TRADE_UNION",
+        },
+        "citation_integrity": {"valid": True},
+    }
+    assert _usable_document_sources([guidance]) == [{**guidance, "excerpt": guidance["excerpt"]}]
+
+    unsafe = {
+        **guidance,
+        "legal_assurance": {"reference_role": "NON_NORMATIVE_CONTEXT_ONLY"},
+    }
+    assert _usable_document_sources([unsafe]) == []
