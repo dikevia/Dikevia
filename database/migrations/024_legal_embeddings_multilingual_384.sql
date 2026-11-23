@@ -2,6 +2,8 @@
 -- Ajoute une colonne distincte : ne détruit ni ne convertit les éventuels vecteurs 1536 existants.
 BEGIN;
 
+CREATE EXTENSION IF NOT EXISTS vector;
+
 ALTER TABLE legal_chunks
     ADD COLUMN IF NOT EXISTS embedding_384 vector(384),
     ADD COLUMN IF NOT EXISTS embedding_384_model text,
