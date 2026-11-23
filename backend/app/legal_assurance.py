@@ -64,6 +64,14 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
         "VERIFIED_APPLICABLE",
     }
+    # Missing validity dates no longer block current-law general information
+    # when the caller explicitly marks the source eligible and no repeal is known.
+    # This is deliberately distinct from a verified, date-specific conclusion.
+    general_information_only = (
+        status == "TEMPORAL_SCOPE_INCOMPLETE"
+        and source.get("general_info_eligible") is True
+        and source.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
+    )
     # A decision issued after the facts may help interpret the law, but it
     # cannot by itself establish which rule was applicable on the facts date.
     # Keep these two uses separate instead of exposing one ambiguous boolean.
@@ -77,6 +85,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "claim_eligible": not non_normative and source.get("claim_eligible", True) is not False,
         "reference_role": "NON_NORMATIVE_CONTEXT_ONLY" if non_normative else source.get("reference_role"),
         "usable_for_conclusion": usable and not post_facts_decision and not non_normative,
+        "usable_for_general_information": general_information_only,
         "usable_for_interpretation": non_normative or ((usable or post_facts_decision) and kind == "ADMIN_CASELAW"),
         "usable_for_facts_date_conclusion": usable and not post_facts_decision and not non_normative,
         "temporal_limit": (
@@ -95,7 +104,12 @@ def assess_source_set(sources: list[dict[str, Any]]) -> dict[str, Any]:
     warnings: list[str] = []
     if local and national:
         warnings.append("Des sources nationales et locales sont présentes : comparer leur champ d'application, leur date d'effet et leur compatibilité. Leur coexistence ne prouve pas une contradiction.")
-    if any(not s["legal_assurance"]["usable_for_conclusion"] for s in classified):
+    if any(
+        not s["legal_assurance"]["usable_for_conclusion"]
+        and not s["legal_assurance"].get("usable_for_general_information")
+        and not s["legal_assurance"]["usable_for_interpretation"]
+        for s in classified
+    ):
         warnings.append("Au moins une source a un statut temporel ou de validation incomplet : ne pas l'utiliser seule pour établir une règle applicable.")
     if any(s["legal_assurance"]["source_family"] in {"CIRCULAR", "ADMIN_CASELAW"} for s in classified):
         warnings.append("Les circulaires et décisions juridictionnelles exigent une analyse de leur portée, de leur contexte et de leur état jurisprudentiel ; le rang indicatif ne suffit pas.")
