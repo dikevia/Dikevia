@@ -644,7 +644,7 @@ function addJurisMessage(sender,text,extra={}){
   const bubble=document.createElement('div');bubble.className='juris-bubble';
   if(sender==='assistant'){
     const status=document.createElement('span');status.className='juris-status '+(extra.status==='NON_VERIFIE'?'bad':extra.status==='PARTIELLEMENT_VERIFIE'?'warn':'');const statusLabels={VERIFIE:'Sources vérifiées',PARTIELLEMENT_VERIFIE:'Vérification partielle',NON_VERIFIE:'Non vérifié'};status.textContent=statusLabels[extra.status]||'Statut de vérification indisponible';bubble.appendChild(status);
-    const answer=document.createElement('div');answer.textContent=(text||'Aucune réponse disponible.').replace(/\\s*\\[source:[^\\]]+\\]/g,'');bubble.appendChild(answer);
+    const answer=document.createElement('div');answer.textContent=(text||'Aucune réponse disponible.').replace(/\s*\[source:[^\]]+\]/g,'');bubble.appendChild(answer);
     if(extra.clarificationQuestion){const clarification=document.createElement('div');clarification.className='juris-meta';clarification.textContent='Précision nécessaire : '+extra.clarificationQuestion;bubble.appendChild(clarification);}
     if(extra.missing?.length){const missing=document.createElement('div');missing.className='juris-meta';missing.textContent='Informations / vérifications nécessaires : '+extra.missing.join(' · ');bubble.appendChild(missing);}
     if(extra.disclaimer){const disclaimer=document.createElement('div');disclaimer.className='juris-meta';disclaimer.textContent=extra.disclaimer;bubble.appendChild(disclaimer);}
