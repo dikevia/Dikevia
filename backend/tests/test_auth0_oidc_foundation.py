@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import jwt
 import pytest
+from fastapi import HTTPException
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from app.config import Settings, validate_runtime_configuration
@@ -145,7 +146,6 @@ def test_auth0_does_not_strip_unrelated_subjects(monkeypatch):
          "iat": now, "exp": now + 300},
         KEY, algorithm="RS256",
     )
-    from fastapi import HTTPException
     with pytest.raises(HTTPException) as exc:
         security.verify_access_token(token)
     assert exc.value.status_code == 401
