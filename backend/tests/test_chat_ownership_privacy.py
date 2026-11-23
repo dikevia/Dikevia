@@ -158,16 +158,17 @@ def test_local_document_entailment_is_rejected_without_consent(monkeypatch):
 def test_local_document_conversation_history_is_not_reused_by_ai():
     from app.main import _ai_safe_conversation_history
 
+    # The API query returns newest messages first.
     rows = [
+        {"role": "assistant", "content": "Ancienne réponse sans provenance.", "metadata": None},
+        {"role": "assistant", "content": "Réponse fondée sur le droit national.", "metadata": {
+            "sources": [{"source_type": "LEGIFRANCE_LODA", "source_id": "official-1"}],
+        }},
+        {"role": "user", "content": "Question suivante.", "metadata": {}},
         {"role": "assistant", "content": "Réponse avec document local.", "metadata": {
             "contains_local_documents": True,
             "sources": [{"source_type": "LOCAL_DOCUMENT", "source_id": "local-1"}],
         }},
-        {"role": "user", "content": "Question suivante.", "metadata": {}},
-        {"role": "assistant", "content": "Réponse fondée sur le droit national.", "metadata": {
-            "sources": [{"source_type": "LEGIFRANCE_LODA", "source_id": "official-1"}],
-        }},
-        {"role": "assistant", "content": "Ancienne réponse sans provenance.", "metadata": None},
     ]
 
     assert _ai_safe_conversation_history(rows) == [
