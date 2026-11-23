@@ -12,7 +12,7 @@
 
 ## 2. État du code et de la CI
 
-- La branche de référence est `main`. La branche de consolidation `feature/dikevia-free-vector-search-poc` a été réalignée sur le commit de `main) après intégration de la PR #65.
+- La branche de référence est `main`. La branche de consolidation `feature/dikevia-free-vector-search-poc` a été réalignée sur le commit de `main` après intégration de la PR #65.
 - La CI du 23 novembre 2026 a réussi : **841 tests passés, 1 avertissement**. La suite comprend les tests unitaires, contrats, tests PostgreSQL/RLS, lint, analyse statique de sécurité, audit des dépendances, scripts, Docker Compose et construction du kit développeur.
 - La CI a également vérifié le staging Neon dédié : rôle d'ingestion attendu, schéma `vector(384)), et **5 640 fragments sur 5 640 avec vecteur**, sans incohérence de modèle/dimension.
 - Le job d'embeddings n'a rien recalculé : il a constaté qu'aucun fragment n'était dépourvu de vecteur.
