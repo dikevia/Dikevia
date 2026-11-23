@@ -468,3 +468,23 @@ def test_unknown_source_is_not_mislabelled_as_primary_legal_authority():
     })
     assert result["authority_level"] == "UNCLASSIFIED"
     assert result["authority_label"] == "Nature et autorité de la source à qualifier"
+
+
+def test_official_guidance_keeps_public_administration_publisher_type():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "PROFESSIONAL_GUIDANCE",
+        "raw_metadata": {
+            "source_id": "dgafp",
+            "source_name": "Direction générale de l'administration et de la fonction publique",
+            "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+        },
+    })
+    assert result["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert result["publisher_type"] == "PUBLIC_ADMINISTRATION"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+
+
