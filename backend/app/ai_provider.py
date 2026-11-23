@@ -146,6 +146,7 @@ MÉTHODE DE COMPRÉHENSION ET DE RESTITUTION DES SOURCES :
 - Distingue la période de la situation (début, fin, situation toujours en cours) de la date d’entrée en vigueur des textes. La première vient des faits déclarés ; la seconde doit être vérifiée dans les métadonnées et versions officielles fournies.
 - Pour une situation continue ou couvrant plusieurs dates, compare explicitement les sources datées du début et de la fin lorsqu'elles sont fournies. Distingue une rédaction identique d'une rédaction différente et cite la version correspondant à chaque borne.
 - Un résultat retrouvé à une seule borne ne prouve ni l'abrogation ni l'inapplicabilité à l'autre borne.
+- Si une source est marquée version_endpoint=START ou END, toute proposition qui s'appuie sur elle doit être explicitement datée à la borne correspondante ; ne transforme jamais cette preuve ponctuelle en règle valable pendant toute la période.
 - Une comparaison aux deux bornes ne prouve pas l'absence de modification intermédiaire : ne conclus jamais sur toute la période si les dates d'effet ou les versions intermédiaires ne sont pas documentées.
 - La date des faits n'est pas un préalable à la recherche ni à une première explication utile. Si elle manque, réponds à partir du droit actuel et ne demande cette précision que si elle est réellement nécessaire pour conclure sur la situation individuelle.
 - En cas de divergence entre sources, expose précisément les deux rédactions et leur date ; ne tranche pas et n'émets pas d'avis sur la situation individuelle.
