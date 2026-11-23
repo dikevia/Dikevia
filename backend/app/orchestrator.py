@@ -180,6 +180,12 @@ def should_use_cgfp_snapshot_fallback(
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
 logger = logging.getLogger(__name__)
 
+# The corpus is filtered for topic, source authority and public-service scope
+# after retrieval. Overfetch per axis so the first six lexical/vector hits do
+# not crowd out relevant documents before those deterministic guards run.
+LEGAL_CORPUS_CANDIDATE_LIMIT = 12
+LEGAL_CORPUS_INTERLEAVED_LIMIT = 24
+
 
 def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
@@ -1103,7 +1109,9 @@ class LegalOrchestrator:
                 # independent corpus searches sequential on this tenant-safe connection.
                 for query in research_queries:
                     try:
-                        result = await search_legal_corpus(conn, query, effective_date, limit=6)
+                        result = await search_legal_corpus(
+                            conn, query, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
+                        )
                     except Exception as exc:
                         logger.warning("Recherche du corpus juridique en échec (%s) : %r", query[:100], exc)
                         stored_search_failed = True
@@ -1117,7 +1125,7 @@ class LegalOrchestrator:
                 if settings.vector_search_enabled and request.query_embedding is not None:
                     try:
                         vector_results = await search_legal_corpus(
-                            conn, request.question, effective_date, limit=6,
+                            conn, request.question, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
                             query_embedding=request.query_embedding,
                         )
                     except Exception as exc:
@@ -1125,7 +1133,9 @@ class LegalOrchestrator:
                         stored_search_failed = True
                     else:
                         stored_by_query.insert(0, vector_results if isinstance(vector_results, list) else [])
-                stored = interleave_legal_corpus_results(stored_by_query, limit=12)
+                stored = interleave_legal_corpus_results(
+                    stored_by_query, limit=LEGAL_CORPUS_INTERLEAVED_LIMIT,
+                )
                 if stored_search_failed:
                     permanent_issue = "La recherche dans le corpus juridique permanent a échoué pour au moins un axe ; les résultats disponibles sont partiels."
                 for item in stored:
