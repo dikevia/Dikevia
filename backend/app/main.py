@@ -1830,7 +1830,7 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
 
 
 @app.get("/api/v1/documents/{document_id}/download")
-async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context)):
+async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid",document_id,ctx.organization_id)
     if not row or not row["storage_key"]:
         raise HTTPException(404,"Fichier introuvable.")
@@ -1845,7 +1845,7 @@ async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant
         "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
 @app.get("/api/v1/documents/{document_id}/versions/{version_number}/download")
-async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context)):
+async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("""SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM document_versions
       WHERE organization_id=$1::uuid AND document_id=$2::uuid AND version_number=$3""",ctx.organization_id,document_id,version_number)
     if not row or not row["storage_key"]:
