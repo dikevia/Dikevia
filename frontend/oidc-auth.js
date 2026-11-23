@@ -50,6 +50,7 @@
       scope:cfg.scopes||'openid profile email',state,
       code_challenge_method:'S256'
     };
+    if (cfg.audience) params.audience=cfg.audience;
     return challenge(verifier).then(value => {
       params.code_challenge=value;
       if (prompt) params.prompt=prompt;
