@@ -37,9 +37,9 @@ def load_json(path: str) -> Any:
 
 def questions_from(data: Any) -> list[dict]:
     if isinstance(data, dict):
-        data = data.get("questions")
+        data = data.get("questions", data.get("cases"))
     if not isinstance(data, list):
-        raise ValueError("Le jeu doit être un objet JSON contenant benchmark_name, total_questions, categories et questions.")
+        raise ValueError("Le jeu doit contenir une liste questions ou cases.")
     if any(not isinstance(item, dict) for item in data):
         raise ValueError("Chaque question doit être un objet JSON.")
     return data
@@ -47,7 +47,49 @@ def questions_from(data: Any) -> list[dict]:
 
 def validate_dataset(path: str) -> list[dict]:
     data = load_json(path)
-    if not isinstance(data, dict) or data.get("benchmark_name") != "FPT_Juridique_100_Questions" or data.get("total_questions") != 100:
+    if not isinstance(data, dict):
+        raise ValueError("Le jeu doit être un objet JSON.")
+
+    # Support the actual repository benchmark (schema 1.0) as well as the
+    # earlier normalized FPT_Juridique_100_Questions format.
+    if data.get("schema_version") == "1.0" and isinstance(data.get("cases"), list):
+        if data.get("case_count") != 100:
+            raise ValueError("Métadonnées invalides : case_count doit être égal à 100.")
+        raw_questions = questions_from(data)
+        required = {"id", "category", "question", "expected_intent", "required_checks",
+                    "failure_modes", "gold_answer_status"}
+        malformed = [
+            {"id": q.get("id"), "missing_fields": sorted(required - q.keys())}
+            for q in raw_questions if required - q.keys()
+        ]
+        ids = [q.get("id") for q in raw_questions]
+        duplicates = sorted({x for x in ids if ids.count(x) > 1})
+        missing = [x for x in EXPECTED_IDS if x not in ids]
+        unexpected = [x for x in ids if x not in EXPECTED_IDS]
+        if len(raw_questions) != 100 or duplicates or missing or unexpected or malformed:
+            raise ValueError(json.dumps({
+                "question_count": len(raw_questions), "duplicates": duplicates,
+                "missing_ids": missing, "unexpected_ids": unexpected,
+                "malformed_questions": malformed,
+            }, ensure_ascii=False, indent=2))
+        normalized = []
+        for q in raw_questions:
+            criteria = [f"Intention attendue : {q['expected_intent']}"]
+            criteria.extend(str(item) for item in q["required_checks"])
+            normalized.append({
+                "id": q["id"],
+                "category_id": q["category"],
+                "category": q["category"],
+                "action_type": "legal_question",
+                "estimated_credits": None,
+                "question": q["question"],
+                "expected_criteria": criteria,
+                "expected_failure_modes": q["failure_modes"],
+                "gold_answer_status": q["gold_answer_status"],
+            })
+        return normalized
+
+    if data.get("benchmark_name") != "FPT_Juridique_100_Questions" or data.get("total_questions") != 100:
         raise ValueError("Métadonnées invalides : benchmark_name ou total_questions.")
     questions = questions_from(data)
     ids = [q.get("id") for q in questions]
@@ -63,7 +105,11 @@ def validate_dataset(path: str) -> list[dict]:
     for q in questions:
         if q.get("category_id") in category_counts:
             category_counts[q["category_id"]] += 1
-    bad_categories = {cat.get("id"): {"declared": cat.get("count"), "actual": category_counts.get(cat.get("id"), 0)} for cat in categories if not isinstance(cat, dict) or category_counts.get(cat.get("id"), 0) != cat.get("count")}
+    bad_categories = {
+        cat.get("id"): {"declared": cat.get("count"), "actual": category_counts.get(cat.get("id"), 0)}
+        for cat in categories if not isinstance(cat, dict)
+        or category_counts.get(cat.get("id"), 0) != cat.get("count")
+    }
     if duplicates or missing or unexpected or malformed or len(questions) != 100 or len(categories) != 5 or bad_categories:
         raise ValueError(json.dumps({
             "question_count": len(questions), "duplicates": duplicates,
@@ -71,7 +117,6 @@ def validate_dataset(path: str) -> list[dict]:
             "malformed_questions": malformed, "category_counts": bad_categories,
         }, ensure_ascii=False, indent=2))
     return questions
-
 
 def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> None:
     questions = validate_dataset(dataset_path)
@@ -96,10 +141,12 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
             "id": q["id"],
             "category_id": q["category_id"],
             "category": q["category"],
-            "action_type": q["action_type"],
-            "estimated_credits": q["estimated_credits"],
+            "action_type": q.get("action_type"),
+            "estimated_credits": q.get("estimated_credits"),
             "question": q["question"],
             "criteres_attendus": q["expected_criteria"],
+            "modes_echec_attendus": q.get("expected_failure_modes", []),
+            "gold_answer_status": q.get("gold_answer_status"),
             "reponse_dikevia": r.get("answer", ""),
             "sources_dikevia": r.get("sources", []),
             "statut_verification": r.get("verification_status"),
