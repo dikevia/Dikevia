@@ -238,3 +238,33 @@ def test_six_year_cdi_question_rejects_unrelated_contract_and_hr_provisions():
 
     assert is_topic_relevant_source(question, relevant) is True
     assert all(is_topic_relevant_source(question, source) is False for source in unrelated)
+
+
+def test_fpe_overtime_relevance_does_not_require_fpt_ihts_implementing_markers():
+    from app.orchestrator import _source_relevant_to_any_research_axis
+
+    query = "heures supplémentaires des agents de la fonction publique de l'État"
+    source = {
+        "title": "Organisation du temps de travail dans la fonction publique de l'État",
+        "text": (
+            "Les agents de l'État peuvent être amenés à effectuer des heures "
+            "supplémentaires selon les règles propres à leur administration."
+        ),
+    }
+    assert _source_relevant_to_any_research_axis([query], source, "FPE") is True
+    assert _source_relevant_to_any_research_axis([query], source, "FPT") is False
+
+
+def test_fph_overtime_relevance_does_not_require_fpt_ihts_implementing_markers():
+    from app.orchestrator import _source_relevant_to_any_research_axis
+
+    query = "heures supplémentaires des personnels hospitaliers"
+    source = {
+        "title": "Organisation du temps de travail dans les établissements publics de santé",
+        "text": (
+            "Les personnels hospitaliers peuvent effectuer des heures "
+            "supplémentaires selon les dispositions propres à la fonction publique hospitalière."
+        ),
+    }
+    assert _source_relevant_to_any_research_axis([query], source, "FPH") is True
+    assert _source_relevant_to_any_research_axis([query], source, "FPT") is False
