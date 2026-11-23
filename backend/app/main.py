@@ -300,6 +300,24 @@ class _TenantScopedReadConnection:
                 return await conn.fetch(query, *args)
 
 
+def _chat_orchestration_failure(conversation_id: UUID) -> AskResponse:
+    """Return a safe, non-technical answer when legal orchestration is unavailable."""
+    return AskResponse(
+        request_id=str(uuid4()),
+        conversation_id=conversation_id,
+        verification_status="NON_VERIFIE",
+        answer=(
+            "Je n’ai pas pu terminer l’analyse de votre question en raison d’un "
+            "incident temporaire. Votre message a été conservé dans la conversation. "
+            "Aucune conclusion juridique ne peut être donnée pour le moment. "
+            "Vous pouvez réessayer dans quelques instants."
+        ),
+        sources=[],
+        missing_information=["Analyse juridique indisponible temporairement."],
+        disclaimer="Aucune réponse juridique n’a pu être établie pour cette demande.",
+    )
+
+
 def decode_jsonb(value):
     if isinstance(value, str):
         try:
@@ -822,9 +840,17 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
 
     # No connection or transaction is held while the orchestrator plans or calls providers.
     scoped_reader = _TenantScopedReadConnection(pool, ctx)
-    result = await orchestrator.ask(
-        payload, ctx.organization_id, conn=scoped_reader, conversation_history=history
-    )
+    try:
+        result = await orchestrator.ask(
+            payload, ctx.organization_id, conn=scoped_reader, conversation_history=history
+        )
+    except Exception:
+        failure = _chat_orchestration_failure(conversation_id)
+        logger.exception(
+            "Chat orchestration failed; a controlled response will be persisted (request_id=%s)",
+            failure.request_id,
+        )
+        result = failure
     result.conversation_id = conversation_id
 
     # Persist the generated answer and usage in a second short transaction.

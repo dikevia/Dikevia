@@ -430,6 +430,15 @@ _TOPIC_FAMILIES = {
         "compte rendu d evaluation", "compte rendu d entretien",
         "valeur professionnelle", "appreciation de la valeur professionnelle",
     ),
+    "AVAILABILITY": (
+        "disponibilite", "mise en disponibilite", "disponibilite pour convenances personnelles",
+        "convenances personnelles", "disponibilite d office", "disponibilite sur demande",
+    ),
+    "CONTRACTUAL_STATUS": (
+        "agent contractuel", "agents contractuels", "contractuel territorial",
+        "contractuelle", "cdd", "cdi", "contrat a duree determinee",
+        "contrat a duree indeterminee",
+    ),
     "CONTRACT_CDI_SIX_YEARS": (
         "6 ans", "six ans", "six annees", "l332 8", "l332 9", "l332 10",
         "l332 11", "l332 12", "l332 23", "l452 44",
@@ -494,12 +503,22 @@ def is_topic_relevant_source(
         and "NON_COMPLETE_TIME" not in source_topics
     ):
         return False
+    # The six-year CDI route is a specific legal mechanism. Apply this
+    # guard before the generic CONTRACTUAL_STATUS intersection below: a
+    # provision about contract agents (e.g. end-of-contract compensation or
+    # retirement) is not evidence of the six-year conversion mechanism.
+    if "CONTRACT_CDI_SIX_YEARS" in question_topics and (
+        "CONTRACT_CDI_SIX_YEARS" not in source_topics
+    ):
+        return False
+
     if question_topics & source_topics:
         return True
 
     # Strict question families reject generic keyword hits that cannot be
     # tied to the requested legal mechanism. Annual-appraisal questions retain
     # unclassified cross-cutting procedural sources as a narrow exception.
+
     strict_topics = {
         "TERMINATION_OF_TITULAR",
         "STAFFING_AND_WORK_CONDITIONS",
@@ -508,6 +527,8 @@ def is_topic_relevant_source(
         # jobs or skills are not evidence about the annual FPT appraisal report.
         "PROFESSIONAL_EVALUATION",
         "CONTRACT_CDI_SIX_YEARS",
+        "AVAILABILITY",
+        "CONTRACTUAL_STATUS",
     }
     if str(target_versant or "FPT").upper() == "FPT" and question_topics & strict_topics:
         # For annual-appraisal questions only, an unclassified procedural
