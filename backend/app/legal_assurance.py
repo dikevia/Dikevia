@@ -71,13 +71,25 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     authority_level = str(source.get("authority_level") or raw_metadata.get("authority_level") or "").upper()
     if authority_level not in {
         "PRIMARY_LEGAL", "OFFICIAL_ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE",
-        "JURISPRUDENCE", "OFFICIAL_INTERPRETIVE",
+        "JURISPRUDENCE", "OFFICIAL_INTERPRETIVE", "LOCAL_NORMATIVE",
     }:
         authority_level = {
             "ADMIN_GUIDANCE": "OFFICIAL_ADMIN_GUIDANCE",
             "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
             "ADMIN_CASELAW": "JURISPRUDENCE",
             "CIRCULAR": "OFFICIAL_INTERPRETIVE",
+            "CONSTITUTIONAL": "PRIMARY_LEGAL",
+            "EUROPEAN_TREATY": "PRIMARY_LEGAL",
+            "LAW": "PRIMARY_LEGAL",
+            "CODE": "PRIMARY_LEGAL",
+            "ORDONNANCE": "PRIMARY_LEGAL",
+            "DECREE": "PRIMARY_LEGAL",
+            "DECRET": "PRIMARY_LEGAL",
+            "ORDER": "PRIMARY_LEGAL",
+            "ARRETE": "PRIMARY_LEGAL",
+            "LOCAL_DELIBERATION": "LOCAL_NORMATIVE",
+            "LOCAL_REGULATION": "LOCAL_NORMATIVE",
+            "LOCAL_PROTOCOL": "LOCAL_NORMATIVE",
         }.get(kind, "UNCLASSIFIED")
     if publisher_type is None:
         source_key = str(raw_metadata.get("source_id") or "").casefold()
@@ -125,6 +137,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             "PROFESSIONAL_GUIDANCE": "Ressource professionnelle ou syndicale, non normative",
             "OFFICIAL_INTERPRETIVE": "Circulaire ou instruction administrative, portée à vérifier",
             "UNCLASSIFIED": "Nature et autorité de la source à qualifier",
+            "LOCAL_NORMATIVE": "Acte ou accord local — portée et opposabilité à vérifier",
         }.get(authority_level, "Niveau d'autorité à qualifier"),
         "publisher": publisher,
         "publisher_type": publisher_type,
