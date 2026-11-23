@@ -424,6 +424,31 @@ def _parse_research_plan(
     )
 
 
+def parse_structured_answer(content: Any) -> dict | None:
+    """Parse strict JSON output, allowing only a single optional Markdown fence.
+
+    Arbitrary prose, partial JSON, arrays and trailing content are rejected.
+    This is a transport-format tolerance, not a relaxation of claim validation.
+    """
+    if not isinstance(content, str):
+        return None
+    candidate = content.strip()
+    if candidate.startswith("```"):
+        match = re.fullmatch(
+            r"```(?:json)?\s*(.*?)\s*```",
+            candidate,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if not match:
+            return None
+        candidate = match.group(1).strip()
+    try:
+        payload = json.loads(candidate)
+    except (TypeError, ValueError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def validate_source_relevance_verdicts(payload, sources: list[dict]) -> dict[str, str]:
     """Validate model relevance labels; unknown or malformed items are omitted."""
     if not isinstance(payload, dict) or not isinstance(payload.get("items"), list):
