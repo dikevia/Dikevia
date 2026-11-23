@@ -49,7 +49,7 @@ def test_parse_circulaires_xml_rejects_empty_or_oversized_input():
 
 
 def test_administrative_open_data_zip_keeps_only_relevant_fpt_employment_decisions():
-    xml = b"""<Decision>
+    xml = """<Decision>
       <Identification>TA_202611_0001</Identification>
       <Date_Mise_Jour>2026-11-20</Date_Mise_Jour>
       <Code_Juridiction>TA38</Code_Juridiction>
@@ -62,6 +62,7 @@ def test_administrative_open_data_zip_keeps_only_relevant_fpt_employment_decisio
       <Formation_Jugement>2e chambre</Formation_Jugement>
       <Texte_Integral><P>La commune a pris une sanction disciplinaire à l'encontre d'un agent territorial relevant de la fonction publique territoriale. L'intéressé conteste la procédure et les garanties statutaires applicables à sa situation.</P></Texte_Integral>
     </Decision>"""
+    xml = xml.encode("utf-8")
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("TA_202611_0001.xml", xml)
