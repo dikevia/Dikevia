@@ -250,6 +250,8 @@ def expand_legal_query(query: str, max_variants: int = 8) -> list[str]:
     normalized = _normalize_legal_phrase(original)
     variants = [original]
     seen = {normalized}
+    if max_variants == 1:
+        return variants
 
     def append_terms(terms: tuple[str, ...]) -> bool:
         for term in terms:
