@@ -5,12 +5,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_render_api_image_uses_the_render_oidc_configuration():
+def test_render_api_image_uses_origin_scoped_oidc_configuration():
     dockerfile = (ROOT / "Dockerfile").read_text()
     auth = (ROOT / "frontend/auth-config.render.js").read_text()
     assert "COPY frontend/auth-config.render.js /srv/frontend/auth-config.js" in dockerfile
-    assert "https://dikevia-identity-l2r8.onrender.com/realms/cfdt" in auth
-    assert "https://dikevia-commercial-api-l2r8.onrender.com/" in auth
+    assert 'const appOrigin = window.location.origin' in auth
+    assert '"redirect_uri": appOrigin + "/"' in auth
+    assert '"silent_redirect_uri": appOrigin + "/static/silent-check-sso.html"' in auth
+    assert "cfdt-juris-web" in auth
 
 
 def test_render_keycloak_realm_and_api_redirect_origins_match():
@@ -28,7 +30,7 @@ def test_render_blueprint_uses_free_frankfurt_services_and_no_committed_secrets(
     assert blueprint.count("region: frankfurt") == 2
     for key in ("DATABASE_URL", "LEGAL_CORPUS_INGEST_DATABASE_URL", "PLATFORM_ADMIN_DATABASE_URL",
                 "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AI_API_KEY", "KC_DB_URL", "KC_DB_PASSWORD"):
-        assert f"key: {key}\n        sync: false" in blueprint
+        assert f"key: {key}\\n        sync: false" in blueprint
     assert "generateValue: true" in blueprint
     assert "CHANGE_ME" not in blueprint
 
