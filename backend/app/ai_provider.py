@@ -397,15 +397,18 @@ def _parse_research_plan(
     # found in the user's contextualized question. This prevents invented dates,
     # durations, statuses or events from silently entering the legal analysis.
     extracted_facts: list[dict[str, str]] = []
-    question_folded = str(question or "").casefold()
+    # Normalize whitespace on both sides before checking verbatim evidence.
+    # The quote must remain a contiguous textual passage; only whitespace
+    # layout is normalized, never punctuation, words, numbers or negations.
+    question_folded = re.sub(r"\s+", " ", str(question or "")).strip().casefold()
     raw_facts = payload.get("extracted_facts")
     if isinstance(raw_facts, list) and question_folded:
         seen_quotes: set[str] = set()
         for item in raw_facts[:12]:
             if not isinstance(item, dict):
                 continue
-            fact = re.sub(r"\\s+", " ", str(item.get("fact") or "")).strip()[:240]
-            quote = re.sub(r"\\s+", " ", str(item.get("evidence_quote") or "")).strip()[:300]
+            fact = re.sub(r"\s+", " ", str(item.get("fact") or "")).strip()[:240]
+            quote = re.sub(r"\s+", " ", str(item.get("evidence_quote") or "")).strip()[:300]
             if not fact or len(quote) < 3 or quote.casefold() not in question_folded:
                 continue
             key = quote.casefold()
