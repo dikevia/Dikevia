@@ -6,6 +6,7 @@ decide legal applicability, infer missing facts, or create legal evidence.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 import unicodedata
 
 
@@ -43,117 +44,64 @@ _CONTEXTUAL_FOLLOWUP = re.compile(
 )
 
 
-def build_contextual_research_question(
+@dataclass(frozen=True)
+class ContextualResearchContext:
+    question: str
+    is_followup: bool
+
+
+def build_contextual_research_context(
     current_question: str,
-    prior_user_questions: list[str] | None = None,
-    prior_assistant_messages: list[str] | None = None,
-) -> str:
-    """Resolve short follow-ups and answers to the assistant's last clarification."""
-    current = " ".join(str(current_question or "").split())
+    prior_user_questions: Sequence[str] | None = None,
+    prior_assistant_messages: Sequence[str] | None = None,
+) -> ContextualResearchContext:
+    """Return the contextualized question and explicit follow-up metadata."""
+    current = _clean_question(current_question)
     if not current:
-        return ""
+        return ContextualResearchContext(question="", is_followup=False)
     if len(current) >= 220:
-        return current[:500]
+        return ContextualResearchContext(question=current[:500], is_followup=False)
 
     prior_questions = [
-        str(item).strip()
+        _clean_question(item)
         for item in (prior_user_questions or [])
-        if str(item).strip()
+        if _clean_question(item)
     ]
+    prior_assistant = [
+        str(item or "").strip()
+        for item in (prior_assistant_messages or [])
+        if str(item or "").strip()
+    ]
+
     if _CONTEXTUAL_FOLLOWUP.match(current):
         if not prior_questions:
-            return current[:500]
-        # A chain of short follow-ups keeps the last substantive user subject.
-        prior = next(
-            (
-                item for item in reversed(prior_questions)
-                if not _CONTEXTUAL_FOLLOWUP.match(item)
-            ),
-            prior_questions[-1],
-        )
-        return f"{current[:300]}\n{prior[:180]}"[:500]
+            return ContextualResearchContext(question=current[:500], is_followup=True)
+        contextual = f"{current[:300]}\n{prior_questions[-1][:180]}"
+        return ContextualResearchContext(question=contextual[:500], is_followup=True)
 
-    # A short answer such as "oui", "non" or "contractuel" is meaningful only
-    # when the assistant's immediately preceding turn actually asked a question.
-    if _CLARIFICATION_REPLY.match(current) and prior_questions:
-        assistants = [
-            str(item).strip()
-            for item in (prior_assistant_messages or [])
-            if str(item).strip()
-        ]
-        if assistants:
-            fragments = re.findall(r"[^?]{1,260}\?", assistants[-1][-1200:])
-            if fragments:
-                prior = next(
-                    (
-                        item for item in reversed(prior_questions)
-                        if not _CONTEXTUAL_FOLLOWUP.match(item)
-                    ),
-                    prior_questions[-1],
-                )
-                clarification = " ".join(fragments[-1].split())[-200:]
-                return (
-                    f"{current[:100]}\n{prior[:160]}\n"
-                    f"Question de clarification précédente : {clarification}"
-                )[:500]
-    # Independent questions never inherit unrelated facts or topics.
-    return current[:500]
+    if (
+        _CLARIFICATION_REPLY.match(current)
+        and prior_questions
+        and prior_assistant
+        and _ASSISTANT_CLARIFICATION_PROMPT.search(prior_assistant[-1])
+    ):
+        contextual = f"{current[:180]}\n{prior_questions[-1][:300]}"
+        return ContextualResearchContext(question=contextual[:500], is_followup=True)
+
+    return ContextualResearchContext(question=current[:500], is_followup=False)
 
 
-
-
-_TOPIC_MARKERS = (
-    ("UNION_RIGHTS", ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
-                      "representants du personnel", "representant syndical", "representants syndicaux",
-                      "decharge d activite", "decharge syndicale", "credit de temps syndical",
-                      "credit d heures syndical", "asa syndicale", "autorisation speciale d absence syndicale",
-                      "local syndical", "locaux syndicaux", "reunion d information syndicale",
-                      "formation syndicale", "comite social territorial", "cst", "formation specialisee")),
-    ("TERMINATION_OF_TITULAR", ("peut me virer", "me virer", "me mettre dehors",
-                                "mettre dehors", "me licencier", "peut me licencier",
-                                "mettre fin a mes fonctions", "fin de mes fonctions",
-                                "licenciement fonctionnaire", "radiation des cadres",
-                                "perte de la qualite de fonctionnaire", "insuffisance professionnelle")),
-    ("STAFFING_AND_WORK_CONDITIONS", ("manque de personnel", "manque d effectifs",
-                                      "pas assez d agents", "pas suffisamment d agents",
-                                      "on manque d agents", "on est pas assez nombreux",
-                                      "on n est pas assez nombreux", "sous effectif",
-                                      "effectif reduit", "effectifs insuffisants",
-                                      "equipe en sous effectif", "equipes en sous effectif",
-                                      "mon service est en sous effectif", "surcharge de travail",
-                                      "ne renforce pas les equipes", "ne recrute pas",
-                                      "charge de travail", "conditions de travail",
-                                      "risques psychosociaux", "risques professionnels",
-                                      "sante et securite au travail")),
-    ("DISCIPLINE", ("sanction disciplinaire", "procedure disciplinaire", "conseil de discipline",
-                    "avertissement", "blame", "exclusion temporaire", "revocation",
-                    "on me sanctionne", "je suis sanctionne", "sanctionne par ma collectivite")),
-    # Status is classified independently below: the word "contractuel" must not mask the actual topic.
-    ("CONTRACTUAL_EMPLOYMENT", ("renouvellement de contrat", "fin de contrat",
-                                "licenciement contractuel", "recrutement contractuel",
-                                "terme du contrat", "non renouvellement", "refuse le renouvellement",
-                                "refus de renouvellement", "refus du renouvellement")),
-    ("WORKING_TIME", ("temps de travail", "duree du travail", "heures supplementaires",
-                      "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
-                      "travail de nuit", "travail le dimanche", "venir le dimanche",
-                      "travailler le dimanche", "venir travailler le dimanche")),
-    ("WORKPLACE_INCIDENT_AND_AGENT_PROTECTION", (
-        "agresse par un usager", "agressee par un usager", "agression par un usager",
-        "agression d un usager", "agression au travail", "agent victime d une agression",
-        "violence d un usager", "menace d un usager", "usager m a frappe",
-        "refuse que je fasse un rapport", "refuse de faire un rapport",
-    )),
-    ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "citis", "accident de service",
-                                       "maladie professionnelle", "conge longue maladie",
-                                       "conge longue duree")),
-    ("HARASSMENT_AND_PROTECTION", ("harcelement moral", "harcelement sexuel",
-                                   "agissement sexiste", "protection fonctionnelle")),
-    ("REMUNERATION", ("remuneration", "traitement indiciaire", "regime indemnitaire",
-                      "rifseep", "ifse", "nbi", "prime", "indemnite")),
-    ("LEAVE", ("conges annuels", "conge annuel", "poser des conges", "prendre des conges",
-               "compte epargne temps", "autorisation speciale d absence")),
-)
-
+def build_contextual_research_question(
+    current_question: str,
+    prior_user_questions: Sequence[str] | None = None,
+    prior_assistant_messages: Sequence[str] | None = None,
+) -> str:
+    """Backward-compatible text-only wrapper for contextual research."""
+    return build_contextual_research_context(
+        current_question,
+        prior_user_questions=prior_user_questions,
+        prior_assistant_messages=prior_assistant_messages,
+    ).question
 
 def qualify_legal_question(
     question: str, employer: str | None = None, public_service: str = "FPT",
