@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from dataclasses import dataclass
 
 
 def _fold(value: str) -> str:
@@ -43,17 +44,23 @@ _CONTEXTUAL_FOLLOWUP = re.compile(
 )
 
 
-def build_contextual_research_question(
+@dataclass(frozen=True)
+class ContextualResearchContext:
+    question: str
+    is_followup: bool
+
+
+def build_contextual_research_context(
     current_question: str,
     prior_user_questions: list[str] | None = None,
     prior_assistant_messages: list[str] | None = None,
-) -> str:
-    """Resolve short follow-ups and answers to the assistant's last clarification."""
+) -> ContextualResearchContext:
+    """Resolve short follow-ups while exposing the classification explicitly."""
     current = " ".join(str(current_question or "").split())
     if not current:
-        return ""
+        return ContextualResearchContext(question="", is_followup=False)
     if len(current) >= 220:
-        return current[:500]
+        return ContextualResearchContext(question=current[:500], is_followup=False)
 
     prior_questions = [
         str(item).strip()
@@ -62,7 +69,7 @@ def build_contextual_research_question(
     ]
     if _CONTEXTUAL_FOLLOWUP.match(current):
         if not prior_questions:
-            return current[:500]
+            return ContextualResearchContext(question=current[:500], is_followup=True)
         # A chain of short follow-ups keeps the last substantive user subject.
         prior = next(
             (
@@ -71,10 +78,11 @@ def build_contextual_research_question(
             ),
             prior_questions[-1],
         )
-        return f"{current[:300]}\n{prior[:180]}"[:500]
+        contextual = f"{current[:300]}\n{prior[:180]}"[:500]
+        return ContextualResearchContext(question=contextual, is_followup=True)
 
-    # A short answer such as "oui", "non" or "contractuel" is meaningful only
-    # when the assistant's immediately preceding turn actually asked a question.
+    # A short answer such as "oui" or "contractuel" is contextual only when
+    # the assistant's immediately preceding turn actually asked a question.
     if _CLARIFICATION_REPLY.match(current) and prior_questions:
         assistants = [
             str(item).strip()
@@ -92,14 +100,27 @@ def build_contextual_research_question(
                     prior_questions[-1],
                 )
                 clarification = " ".join(fragments[-1].split())[-200:]
-                return (
+                contextual = (
                     f"{current[:100]}\n{prior[:160]}\n"
                     f"Question de clarification précédente : {clarification}"
                 )[:500]
+                return ContextualResearchContext(question=contextual, is_followup=True)
+
     # Independent questions never inherit unrelated facts or topics.
-    return current[:500]
+    return ContextualResearchContext(question=current[:500], is_followup=False)
 
 
+def build_contextual_research_question(
+    current_question: str,
+    prior_user_questions: list[str] | None = None,
+    prior_assistant_messages: list[str] | None = None,
+) -> str:
+    """Backward-compatible text-only wrapper for contextual research."""
+    return build_contextual_research_context(
+        current_question,
+        prior_user_questions=prior_user_questions,
+        prior_assistant_messages=prior_assistant_messages,
+    ).question
 
 
 _TOPIC_MARKERS = (

@@ -1,4 +1,4 @@
-from app.legal_qualification import qualify_legal_question
+from app.legal_qualification import qualify_legal_question, build_contextual_research_context
 
 
 def test_union_question_is_qualified_before_research_without_inventing_agent_status():
@@ -271,3 +271,45 @@ def test_aggression_by_service_user_is_qualified_as_workplace_incident():
     assert result["topic"] == "WORKPLACE_INCIDENT_AND_AGENT_PROTECTION"
     assert result["agent_status"] == "TITULAIRE_EXPLICIT"
     assert result["public_service"] == "FPT"
+
+
+def test_contextual_research_context_marks_short_followup_explicitly():
+    context = build_contextual_research_context(
+        "Et pour les contractuels ?",
+        ["Je suis titulaire de la FPT. Quels sont mes droits aux IHTS ?"],
+        ["Les règles applicables aux titulaires sont..."],
+    )
+    assert context.is_followup is True
+    assert "\n" in context.question
+
+
+def test_contextual_research_context_does_not_confuse_multiline_question_with_followup():
+    question = "Je suis agent titulaire.\nQuels sont mes droits aux congés annuels ?"
+    context = build_contextual_research_context(
+        question,
+        ["Je suis contractuel. Quelle est ma rémunération ?"],
+        ["Pour votre rémunération, voici les règles..."],
+    )
+    assert context.question == "Je suis agent titulaire. Quels sont mes droits aux congés annuels ?"
+    assert context.is_followup is False
+
+
+def test_contextual_research_context_keeps_autonomous_leave_question_independent():
+    context = build_contextual_research_context(
+        "Et les congés annuels ?",
+        ["Je suis titulaire. Quels sont mes droits aux IHTS ?"],
+        ["Les règles relatives aux IHTS sont..."],
+    )
+    assert context.is_followup is False
+    assert context.question == "Et les congés annuels ?"
+
+
+def test_contextual_research_context_marks_answer_to_clarification_as_followup():
+    context = build_contextual_research_context(
+        "Oui, je suis titulaire.",
+        ["Comment sont calculées mes heures supplémentaires ?"],
+        ["Êtes-vous titulaire ou contractuel dans la fonction publique territoriale ?"],
+    )
+    assert context.is_followup is True
+    assert "\n" in context.question
+    assert "Question de clarification précédente :" in context.question
