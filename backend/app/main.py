@@ -444,6 +444,12 @@ async def auth_me(principal: Principal = Depends(get_principal)):
         raise HTTPException(403,"Compte désactivé ou non provisionné.")
     return {"id":str(row["id"]),"email":row["email"],"display_name":row["display_name"]}
 
+@app.get("/api/v1/account/identity")
+async def account_identity(ctx: TenantContext = Depends(get_tenant_context)):
+    # Return only the authenticated account's internal ID; never expose raw OIDC subject.
+    return {"user_id": str(ctx.user_id), "oidc_identity_verified": True}
+
+
 @app.get("/api/v1/organizations")
 async def organizations(principal: Principal = Depends(get_principal)):
     async with get_pool().acquire() as conn:
@@ -468,6 +474,10 @@ async def billing_plans():
 
 @app.get("/api/v1/billing/subscription")
 async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context)):
+    founder_entitlement = await ctx.conn.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements WHERE user_id=$1::uuid AND revoked_at IS NULL)",
+        ctx.user_id,
+    )
     if settings.private_instance_mode:
         active = await ctx.conn.fetchval(
             "SELECT count(*) FROM memberships WHERE organization_id=$1::uuid AND status='ACTIVE'",
@@ -475,6 +485,7 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
         return {"plan_code": "PRIVATE_PREMIUM_10", "status": "FOUNDING_FREE",
                 "provider": None, "max_users": 10, "active_users": active,
                 "paid_active_users": 0, "free_active_users": active,
+                "founder_entitlement": bool(founder_entitlement), "premium_access": True,
                 "billing_enabled": False}
     row = await ctx.conn.fetchrow("""SELECT plan_code,status,provider,current_period_end,
         cancel_at_period_end,free_access_until,updated_at FROM subscriptions
@@ -492,6 +503,8 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
             "current_period_end": row["current_period_end"] if row else None,
             "cancel_at_period_end": row["cancel_at_period_end"] if row else False,
             "free_access_until": row["free_access_until"] if row else None,
+            "founder_entitlement": bool(founder_entitlement),
+            "premium_access": bool(founder_entitlement),
             "updated_at": row["updated_at"] if row else None}
 
 
@@ -724,6 +737,55 @@ async def platform_revoke_free_email_access(access_id: str, platform=Depends(req
                 VALUES($1::uuid,'FREE_EMAIL_ACCESS_REVOKED','free_email_access',$2::uuid,jsonb_build_object('email',$3))""",
                 platform["user_id"], row["id"], row["email_normalized"])
     return {"id": str(row["id"]), "email": row["email_normalized"], "active": False}
+
+
+
+@app.get("/api/v1/platform/founder-entitlements")
+async def platform_list_founder_entitlements(platform=Depends(require_platform_admin)):
+    rows = await get_platform_admin_pool().fetch(
+        "SELECT * FROM platform_admin_list_founder_entitlements($1::uuid)",
+        platform["user_id"],
+    )
+    return {"entitlements": [
+        {"user_id": str(row["user_id"]), "note": row["note"],
+         "granted_at": row["granted_at"], "revoked_at": row["revoked_at"],
+         "active": row["revoked_at"] is None}
+        for row in rows
+    ]}
+
+
+@app.post("/api/v1/platform/founder-entitlements", status_code=201)
+async def platform_grant_founder_entitlement(payload: dict, platform=Depends(require_platform_admin)):
+    user_id = str(payload.get("user_id", "")).strip() if isinstance(payload, dict) else ""
+    note = str(payload.get("note", "")).strip()[:500] if isinstance(payload, dict) else ""
+    try:
+        target_user_id = UUID(user_id)
+    except ValueError:
+        raise HTTPException(422, "Identifiant de compte invalide.")
+    if len(note) < 8:
+        raise HTTPException(422, "Le motif d'attribution doit contenir au moins 8 caractères.")
+    granted = await get_platform_admin_pool().fetchval(
+        "SELECT platform_admin_grant_founder_entitlement($1::uuid,$2::uuid,$3)",
+        platform["user_id"], target_user_id, note,
+    )
+    if not granted:
+        raise HTTPException(404, "Compte actif authentifié introuvable. Aucun accès n'a été attribué.")
+    return {"user_id": str(granted), "active": True}
+
+
+@app.delete("/api/v1/platform/founder-entitlements/{user_id}")
+async def platform_revoke_founder_entitlement(user_id: str, platform=Depends(require_platform_admin)):
+    try:
+        target_user_id = UUID(user_id)
+    except ValueError:
+        raise HTTPException(422, "Identifiant de compte invalide.")
+    revoked = await get_platform_admin_pool().fetchval(
+        "SELECT platform_admin_revoke_founder_entitlement($1::uuid,$2::uuid)",
+        platform["user_id"], target_user_id,
+    )
+    if not revoked:
+        raise HTTPException(404, "Aucun accès fondateur actif pour ce compte.")
+    return {"user_id": str(target_user_id), "active": False}
 
 
 @app.post("/api/v1/platform/organizations/{organization_id}/grant-free")
