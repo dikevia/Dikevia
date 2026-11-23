@@ -304,39 +304,76 @@ def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: i
     return selected
 
 
-async def search_legal_corpus(conn, query: str, requested_date: date, limit: int = 12) -> list[dict]:
+async def search_legal_corpus(
+    conn, query: str, requested_date: date, limit: int = 12,
+    query_embedding: list[float] | None = None,
+) -> list[dict]:
     if not isinstance(query, str) or len(query.strip()) < 2 or len(query) > 500:
         raise ValueError("La recherche documentaire doit contenir entre 2 et 500 caractères.")
     if not 1 <= limit <= 30:
         raise ValueError("La limite doit être comprise entre 1 et 30.")
+    vector_literal = None
+    if query_embedding is not None:
+        import math
+        if len(query_embedding) != 384 or any(not math.isfinite(float(value)) for value in query_embedding):
+            raise ValueError("Le vecteur de requête doit contenir exactement 384 valeurs finies.")
+        norm = math.sqrt(sum(float(value) ** 2 for value in query_embedding))
+        if norm <= 0:
+            raise ValueError("Le vecteur de requête ne peut pas être nul.")
+        vector_literal = "[" + ",".join(f"{float(value) / norm:.8f}" for value in query_embedding) + "]"
+
     variants = expand_legal_query(query.strip())
-    # La requête d'origine reste prioritaire ; les variantes élargissent le rappel
-    # sans pouvoir dépasser un passage qui répond directement aux termes initiaux.
+    # The original wording keeps twice the lexical weight; curated variants widen recall.
     expansion_expression = " OR ".join(variants[1:])
     rows = await conn.fetch("""
       WITH search_terms AS (
         SELECT websearch_to_tsquery('french',$1) AS original_query,
                websearch_to_tsquery('french',$2) AS expansion_query
+      ), lexical_candidates AS (
+        SELECT c.id chunk_id,c.version_id,c.ordinal,
+          (2.0 * ts_rank_cd(c.search_vector,st.original_query)
+             + ts_rank_cd(c.search_vector,st.expansion_query)) lexical_score
+        FROM legal_chunks c CROSS JOIN search_terms st
+        WHERE c.content_kind='FULL_TEXT'
+          AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
+      ), lexical_ranked AS (
+        SELECT chunk_id,version_id,ordinal,
+          row_number() OVER(ORDER BY lexical_score DESC,ordinal) candidate_rank
+        FROM lexical_candidates
+      ), vector_ranked AS (
+        SELECT c.id chunk_id,c.version_id,c.ordinal,
+          row_number() OVER(ORDER BY c.embedding_384 <=> $4::vector) candidate_rank
+        FROM legal_chunks c
+        WHERE $4::vector IS NOT NULL
+          AND c.embedding_384 IS NOT NULL
+          AND c.content_kind='FULL_TEXT'
+        ORDER BY c.embedding_384 <=> $4::vector
+        LIMIT 120
+      ), candidate_scores AS (
+        SELECT chunk_id,version_id,ordinal,sum(score) AS rank
+        FROM (
+          SELECT chunk_id,version_id,ordinal,2.0/(60.0+candidate_rank) AS score
+          FROM lexical_ranked WHERE candidate_rank<=120
+          UNION ALL
+          SELECT chunk_id,version_id,ordinal,1.0/(60.0+candidate_rank) AS score
+          FROM vector_ranked
+        ) candidates
+        GROUP BY chunk_id,version_id,ordinal
       ), ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
           d.source_status,d.raw_metadata,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
-          c.anchor,c.content content_chunk,c.content_kind,c.ordinal,
-          (2.0 * ts_rank_cd(c.search_vector,st.original_query)
-             + ts_rank_cd(c.search_vector,st.expansion_query)) rank,
-          row_number() OVER(PARTITION BY v.id ORDER BY
-            (2.0 * ts_rank_cd(c.search_vector,st.original_query)
-             + ts_rank_cd(c.search_vector,st.expansion_query)) DESC,c.ordinal) rn
-        FROM legal_chunks c JOIN legal_document_versions v ON v.id=c.version_id
+          c.anchor,c.content content_chunk,c.content_kind,c.ordinal,candidate_scores.rank,
+          row_number() OVER(PARTITION BY v.id ORDER BY candidate_scores.rank DESC,c.ordinal) rn
+        FROM candidate_scores
+        JOIN legal_chunks c ON c.id=candidate_scores.chunk_id
+        JOIN legal_document_versions v ON v.id=c.version_id
         JOIN legal_documents d ON d.id=v.document_id
-        CROSS JOIN search_terms st
-        WHERE c.content_kind='FULL_TEXT'
-          AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
       ), selected_chunks AS (
-        SELECT version_id, string_agg(content_chunk, E'\n\n' ORDER BY chunk_order) AS content, max(rank) AS rank
+        SELECT version_id,string_agg(content_chunk,E'\n\n' ORDER BY chunk_order) AS content,max(rank) AS rank
         FROM (
           SELECT version_id,content_chunk,rn AS chunk_order,rank
-          FROM ranked WHERE rn <= CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
+          FROM ranked WHERE rn<=CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
           UNION ALL
           SELECT final_chunk.version_id,final_chunk.content_chunk,999999 AS chunk_order,0.0 AS rank
           FROM (
@@ -349,7 +386,8 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
           ) final_chunk
           WHERE NOT EXISTS (
             SELECT 1 FROM ranked r
-            WHERE r.version_id=final_chunk.version_id AND r.ordinal=final_chunk.ordinal AND r.rn <= CASE WHEN r.document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
+            WHERE r.version_id=final_chunk.version_id AND r.ordinal=final_chunk.ordinal
+              AND r.rn<=CASE WHEN r.document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
           )
         ) selected_passages
         GROUP BY version_id
@@ -363,7 +401,7 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
       SELECT metadata.*,selected_chunks.content,selected_chunks.rank
       FROM document_metadata metadata JOIN selected_chunks USING(version_id)
       ORDER BY selected_chunks.rank DESC,metadata.publication_date DESC NULLS LAST LIMIT $3
-    """, query.strip(), expansion_expression, limit)
+    """, query.strip(), expansion_expression, limit, vector_literal)
     results = []
     for row in rows:
         item = dict(row)
@@ -383,15 +421,13 @@ async def search_legal_corpus(conn, query: str, requested_date: date, limit: int
                 or item["raw_metadata"].get("generated_at")
             )
             item["snapshot_verification_status"] = item["raw_metadata"].get("verification_status")
-        item["source_id"] = item.pop("source_id")
-        item["source_type"] = item.pop("source_type")
         item["excerpt"] = item.pop("content")[:8500]
         item["retrieval_scope"] = (
-            "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
-            if item.get("document_kind") == "ADMIN_CASELAW"
+            "HYBRID_LEXICAL_VECTOR_SELECTED_PASSAGES"
+            if vector_literal is not None
             else "SELECTED_RELEVANT_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
-        item["content_kind"] = item.get("content_kind")
+        item["retrieval_mode"] = "HYBRID_LEXICAL_VECTOR" if vector_literal is not None else "LEXICAL_ONLY"
         full_text = item.pop("full_text")
         expected_hash = item.pop("text_sha256")
         actual_hash = sha256_text(full_text) if full_text else None
