@@ -201,3 +201,35 @@ def test_external_billing_routes_use_transaction_free_authorization():
 
     assert "require_org_admin_for_external" in inspect.getsource(billing_checkout)
     assert "require_org_admin_for_external" in inspect.getsource(billing_portal)
+
+
+@pytest.mark.asyncio
+async def test_semantic_relevance_does_not_send_local_documents_without_consent(monkeypatch):
+    from app import orchestrator as orchestrator_module
+
+    captured = {}
+
+    async def fake_evaluate_source_relevance(*, question, research_axes, sources):
+        captured["sources"] = sources
+        return {}
+
+    monkeypatch.setattr(orchestrator_module, "evaluate_source_relevance", fake_evaluate_source_relevance)
+    local = {"source_type": "LOCAL_COLLECTIVITY_DOCUMENT", "source_id": "local-1"}
+    official = {"source_type": "LEGIFRANCE_LODA", "source_id": "official-1"}
+    await orchestrator_module.apply_semantic_source_relevance(
+        question="Question juridique",
+        research_axes=["fondement juridique"],
+        sources=[local, official],
+        allow_local_documents=False,
+    )
+    assert captured["sources"] == [official]
+
+
+def test_frontend_requires_a_fresh_checkbox_for_each_local_document_transfer():
+    from pathlib import Path
+
+    html = (Path(__file__).resolve().parents[2] / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'id="confirmLocalDocumentAITransfer"' in html
+    assert "confirm_local_document_ai_transfer:confirmLocalDocumentAITransfer" in html
+    assert 'id="confirmComplianceLocalDocumentAITransfer"' in html
+    assert "confirm_local_document_ai_transfer:String(consent)" in html
