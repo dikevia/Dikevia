@@ -112,3 +112,75 @@ async def test_chat_tenant_context_has_no_open_transaction_and_clears_session_sc
     await generator.aclose()
     assert conn.terminated is False
     assert "set_config('app.current_org_id','',false)" in conn.execute_calls[-1][0]
+
+
+def test_local_documents_are_excluded_from_ai_payload_without_consent():
+    from app.ai_provider import _usable_document_sources
+
+    local = {
+        "source_type": "LOCAL_DOCUMENT",
+        "source_id": "local-1",
+        "valid_from": "2024-01-01",
+        "excerpt": "Règlement intérieur de la collectivité.",
+    }
+    official = {
+        "source_type": "LEGIFRANCE_LODA",
+        "source_id": "official-1",
+        "valid_from": "2024-01-01",
+        "excerpt": "Texte officiel applicable.",
+    }
+
+    assert [item["source_id"] for item in _usable_document_sources([local, official])] == ["official-1"]
+    assert {item["source_id"] for item in _usable_document_sources(
+        [local, official], allow_local_documents=True
+    )} == {"local-1", "official-1"}
+
+
+def test_local_document_entailment_is_rejected_without_consent(monkeypatch):
+    from app import ai_provider
+
+    monkeypatch.setattr(ai_provider.settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(ai_provider.settings, "ai_model", "test-model")
+    monkeypatch.setattr(ai_provider.settings, "ai_api_base_url", "https://example.invalid/v1")
+    result = __import__("asyncio").run(ai_provider.verify_claim_entailment(
+        question="Question juridique de test",
+        claims=[{"source_id": "local-1", "text": "Une proposition"}],
+        sources=[{
+            "source_type": "LOCAL_DOCUMENT",
+            "source_id": "local-1",
+            "excerpt": "Règlement intérieur.",
+        }],
+    ))
+    assert result["valid"] is False
+    assert result["invalid"] == ["claim_0:local_document_ai_transfer_disabled"]
+
+
+def test_local_document_conversation_history_is_not_reused_by_ai():
+    from app.main import _ai_safe_conversation_history
+
+    rows = [
+        {"role": "assistant", "content": "Réponse avec document local.", "metadata": {
+            "contains_local_documents": True,
+            "sources": [{"source_type": "LOCAL_DOCUMENT", "source_id": "local-1"}],
+        }},
+        {"role": "user", "content": "Question suivante.", "metadata": {}},
+        {"role": "assistant", "content": "Réponse fondée sur le droit national.", "metadata": {
+            "sources": [{"source_type": "LEGIFRANCE_LODA", "source_id": "official-1"}],
+        }},
+        {"role": "assistant", "content": "Ancienne réponse sans provenance.", "metadata": None},
+    ]
+
+    assert _ai_safe_conversation_history(rows) == [
+        {"role": "user", "content": "Question suivante."},
+        {"role": "assistant", "content": "Réponse fondée sur le droit national."},
+    ]
+
+
+def test_local_document_ai_has_two_independent_opt_in_switches():
+    assert Settings(_env_file=None).ai_local_documents_in_chat_enabled is False
+    main_source = inspect.getsource(ask)
+    review_source = inspect.getsource(review_local_rule_compliance)
+    assert "payload.confirm_local_document_ai_transfer" in main_source
+    assert "settings.ai_local_documents_in_chat_enabled" in main_source
+    assert "confirm_local_document_ai_transfer" in review_source
+    assert "settings.ai_local_document_review_enabled" in review_source
