@@ -108,6 +108,24 @@ def _build_targeted_regulatory_queries(
     if public_service != "FPT":
         return list(dict.fromkeys(queries))
 
+    # Target the FPT overtime framework explicitly. These searches complement,
+    # rather than replace, the user's wording and the ordinary research axes.
+    # The 2002-60 decree is retrieved as the reference IHTS regime; its FPT
+    # application must still be assessed together with the territorial texts
+    # and the local deliberation. Never inject these FPT queries into FPE/FPH.
+    overtime = any(marker in folded for marker in (
+        "heures supplémentaires", "heures supplementaires",
+        "travaux supplémentaires", "travaux supplementaires",
+        "ihts", "repos compensateur", "récupérer", "recuperer",
+        "récupération", "recuperation",
+    ))
+    if overtime:
+        queries.extend([
+            "décret n° 2001-623 du 12 juillet 2001 article 5 fonction publique territoriale temps de travail heures supplémentaires dépassement des bornes horaires du cycle",
+            "décret n° 2002-60 du 14 janvier 2002 article 3 repos compensateur indemnisation heures supplémentaires IHTS",
+            "décret n° 91-875 du 6 septembre 1991 article 2 liste des emplois ouvrant droit aux IHTS délibération organe délibérant fonction publique territoriale",
+        ])
+
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
         "invalidite temporaire imputable au service",
