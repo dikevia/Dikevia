@@ -63,3 +63,16 @@ def test_ambiguous_union_assistance_summons_asks_for_procedure_type():
     assert clarification_for_union_assistance_summons(
         QUESTION + " C'est un simple entretien ordinaire."
     ) is None
+
+def test_piste_credentials_accept_both_environment_variable_prefixes(monkeypatch):
+    from app.config import Settings
+
+    monkeypatch.delenv("LEGIFRANCE_CLIENT_ID", raising=False)
+    monkeypatch.delenv("LEGIFRANCE_CLIENT_SECRET", raising=False)
+    monkeypatch.setenv("PISTE_CLIENT_ID", "sandbox-client")
+    monkeypatch.setenv("PISTE_CLIENT_SECRET", "sandbox-secret")
+
+    settings_from_piste_aliases = Settings(_env_file=None)
+
+    assert settings_from_piste_aliases.legifrance_client_id == "sandbox-client"
+    assert settings_from_piste_aliases.legifrance_client_secret == "sandbox-secret"
