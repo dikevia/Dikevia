@@ -372,3 +372,4 @@ def test_query_expansion_uses_curated_fpt_referential_without_promoting_referenc
 def test_query_expansion_rejects_invalid_limits():
     with pytest.raises(ValueError):
         expand_legal_query("CITIS", max_variants=0)
+    assert expand_legal_query("CITIS", max_variants=1) == ["CITIS"]
