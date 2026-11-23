@@ -5,11 +5,11 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parents[1]
-import sys
 sys.path.insert(0, str(ROOT / "backend"))
 from app.cgfp import clean_cgfp_article_text  # noqa: E402
 
