@@ -761,17 +761,21 @@ async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
     conversation = await ctx.conn.fetchrow(
-        "SELECT id,title FROM chat_conversations WHERE id=$1::uuid", conversation_uuid)
+        """SELECT id,title FROM chat_conversations
+           WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if not conversation:
         raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
     existing = await ctx.conn.fetchrow(
-        "SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-        conversation_uuid)
+        """SELECT id,content,created_at,updated_at FROM legal_dossiers
+           WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if existing:
         return {"id": str(existing["id"]), "content": decode_jsonb(existing["content"]),
                 "created_at": existing["created_at"], "updated_at": existing["updated_at"], "created": False}
     messages = await ctx.conn.fetch("""SELECT id,role,content,metadata,created_at FROM chat_messages
-        WHERE conversation_id=$1::uuid ORDER BY created_at,id""", conversation_uuid)
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid
+        ORDER BY created_at,id""", conversation_uuid, ctx.organization_id, ctx.user_id)
     if not messages:
         raise HTTPException(409, "Ajoutez au moins un échange avant de constituer un dossier.")
     content = build_dossier_content(dict(conversation), [dict(row) for row in messages])
@@ -781,8 +785,9 @@ async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends
         RETURNING id,content,created_at,updated_at""",
         ctx.organization_id, conversation_uuid, ctx.user_id, json.dumps(content, ensure_ascii=False, default=str))
     if not row:
-        row = await ctx.conn.fetchrow("SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-                                      conversation_uuid)
+        row = await ctx.conn.fetchrow("""SELECT id,content,created_at,updated_at FROM legal_dossiers
+            WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                                      conversation_uuid, ctx.organization_id, ctx.user_id)
         created = False
     else:
         created = True
@@ -796,8 +801,9 @@ async def get_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(g
         conversation_uuid = str(UUID(conversation_id))
     except ValueError:
         raise HTTPException(422, "Identifiant de conversation invalide.")
-    row = await ctx.conn.fetchrow("SELECT id,content,created_at,updated_at FROM legal_dossiers WHERE conversation_id=$1::uuid",
-                                  conversation_uuid)
+    row = await ctx.conn.fetchrow("""SELECT id,content,created_at,updated_at FROM legal_dossiers
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                                  conversation_uuid, ctx.organization_id, ctx.user_id)
     if not row:
         raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
@@ -810,7 +816,9 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
         content = validate_dossier_content(payload.get("content"))
     except ValueError as exc:
         raise HTTPException(422, str(exc))
-    existing = await ctx.conn.fetchrow("SELECT id,content FROM legal_dossiers WHERE conversation_id=$1::uuid", conversation_uuid)
+    existing = await ctx.conn.fetchrow("""SELECT id,content FROM legal_dossiers
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id)
     if not existing:
         raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
     stored = decode_jsonb(existing["content"])
@@ -828,8 +836,10 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
         if key in content:
             stored[key] = content[key]
     row = await ctx.conn.fetchrow("""UPDATE legal_dossiers SET content=$2::jsonb,updated_at=now()
-        WHERE conversation_id=$1::uuid RETURNING id,content,created_at,updated_at""",
-        conversation_uuid, json.dumps(stored, ensure_ascii=False, default=str))
+        WHERE conversation_id=$1::uuid AND organization_id=$3::uuid AND user_id=$4::uuid
+        RETURNING id,content,created_at,updated_at""",
+        conversation_uuid, json.dumps(stored, ensure_ascii=False, default=str),
+        ctx.organization_id, ctx.user_id)
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
 
 
