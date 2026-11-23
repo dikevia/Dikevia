@@ -87,8 +87,10 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             publisher_type = "PROFESSIONAL_BODY"
     if publisher_type == "TRADE_UNION":
         label = "Doctrine syndicale — non normative"
-    elif kind == "PROFESSIONAL_GUIDANCE" and publisher_type == "PROFESSIONAL_BODY":
-        label = "Ressource professionnelle — non normative"
+    elif authority_level == "OFFICIAL_ADMIN_GUIDANCE":
+        label = "Information administrative officielle — non normative"
+    elif kind == "PROFESSIONAL_GUIDANCE":
+        label = "Ressource institutionnelle ou professionnelle — non normative"
     non_normative = kind in {"ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE"}
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
