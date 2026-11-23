@@ -20,7 +20,7 @@ def test_union_assistance_summons_uses_specific_legal_mechanisms():
     assert "défenseur de son choix" in primary.lower()
     assert any("procédure disciplinaire" in query.lower() for query in queries)
     assert any("entretien ordinaire" in query.lower() for query in queries)
-    assert any("défenseur de son choix" in axis.lower() for axis in axes)
+    assert axes == []  # One ambiguous topic is not a compound question requiring mandatory axis coverage.
     assert not any("autorisations speciales absence syndicale" in query.lower() for query in queries)
     assert not any("crédit temps syndical" in query.lower() for query in queries)
 
