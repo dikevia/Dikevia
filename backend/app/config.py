@@ -106,6 +106,12 @@ def validate_runtime_configuration(config: Settings) -> None:
     if config.oidc_provider == "auth0" and config.app_env == "production":
         if not config.oidc_client_id or not config.oidc_authorization_audience:
             raise RuntimeError("Auth0 exige OIDC_CLIENT_ID et OIDC_AUTHORIZATION_AUDIENCE en production.")
+        if config.oidc_authorization_audience != config.oidc_audience:
+            raise RuntimeError("OIDC_AUTHORIZATION_AUDIENCE doit être identique à OIDC_AUDIENCE.")
+        if not config.oidc_identity_compat_issuer or not config.oidc_identity_subject_prefix:
+            raise RuntimeError("La migration Auth0 doit préserver les identités Keycloak via OIDC_IDENTITY_COMPAT_ISSUER et OIDC_IDENTITY_SUBJECT_PREFIX.")
+        if config.oidc_identity_compat_issuer == config.oidc_issuer:
+            raise RuntimeError("L'émetteur de compatibilité historique doit être distinct de l'émetteur Auth0.")
     if bool(config.oidc_identity_compat_issuer) != bool(config.oidc_identity_subject_prefix):
         raise RuntimeError("OIDC_IDENTITY_COMPAT_ISSUER et OIDC_IDENTITY_SUBJECT_PREFIX doivent être configurés ensemble.")
     if config.oidc_identity_compat_issuer and not _valid_https_or_local(
