@@ -1023,7 +1023,7 @@ async def search_permanent_legal_knowledge(q: str, effective_date: date | None =
 
 @app.post("/api/v1/legal/compliance/review/{document_id}")
 async def review_local_rule_compliance(document_id: str, q: str,
-        effective_date: date | None = None, ctx: TenantContext = Depends(get_tenant_context)):
+        effective_date: date | None = None, ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     """Prepare a sourced comparison of one tenant-local document with national sources.
 
     This endpoint flags review needs; it never declares a local act illegal.
@@ -1035,9 +1035,10 @@ async def review_local_rule_compliance(document_id: str, q: str,
     query = q.strip()
     if len(query) < 8 or len(query) > 500:
         raise HTTPException(422, "La question de contrôle doit contenir entre 8 et 500 caractères.")
-    rate = await consume_chat_request(
-        ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
-    )
+    async with ctx.conn.transaction():
+        rate = await consume_chat_request(
+            ctx.conn, ctx.organization_id, ctx.user_id, settings.chat_rate_limit_per_minute
+        )
     if not rate.allowed:
         return JSONResponse(
             status_code=429,
@@ -1088,7 +1089,8 @@ async def review_local_rule_compliance(document_id: str, q: str,
     usable_national = [item for item in national_sources if item.get("temporal_status") in {
         "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}]
     ai_review = None
-    if usable_national and settings.ai_api_key and settings.ai_model:
+    if (usable_national and settings.ai_api_key and settings.ai_model
+            and settings.ai_local_document_review_enabled):
         review_question = (
             "CONTROLE DE COHERENCE D'UNE REGLE LOCALE. Question de contrôle : " + query +
             "\nCompare uniquement le document local fourni avec les textes nationaux intégraux et temporellement exploitables. "
@@ -1118,19 +1120,22 @@ async def review_local_rule_compliance(document_id: str, q: str,
             elif usage is not None:
                 usage["outcome"] = "REJECTED_UNGROUNDED"
             if usage is not None:
-                await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
+                async with ctx.conn.transaction():
+                    await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, usage)
         except AIProviderUnavailable:
-            await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, {
-                "provider": "openai_compatible", "model": settings.ai_model[:160],
-                "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
-                "outcome": "PROVIDER_ERROR",
-            })
+            async with ctx.conn.transaction():
+                await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, {
+                    "provider": "openai_compatible", "model": settings.ai_model[:160],
+                    "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
+                    "outcome": "PROVIDER_ERROR",
+                })
         except Exception:
             ai_review = None
-    await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
-      VALUES($1::uuid,$2::uuid,'LOCAL_RULE_COMPLIANCE_REVIEWED','document',$3::uuid,$4::jsonb)""",
-      ctx.organization_id, ctx.user_id, document_id,
-      json.dumps({"query": query, "effective_date": requested_date.isoformat(), "national_sources": len(national_sources)}, ensure_ascii=False))
+    async with ctx.conn.transaction():
+        await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
+          VALUES($1::uuid,$2::uuid,'LOCAL_RULE_COMPLIANCE_REVIEWED','document',$3::uuid,$4::jsonb)""",
+          ctx.organization_id, ctx.user_id, document_id,
+          json.dumps({"query": query, "effective_date": requested_date.isoformat(), "national_sources": len(national_sources)}, ensure_ascii=False))
     return {
       "status": "COMPARISON_REQUIRED" if national_sources else "NATIONAL_SOURCES_NOT_FOUND",
       "requested_date": requested_date.isoformat(),
