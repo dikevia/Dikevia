@@ -229,7 +229,8 @@ _DATE_FACT_RE = re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4
 _WHOLE_PERIOD_ASSERTION_RE = re.compile(
     r"\b(?:sur|pendant|pour)\s+(?:toute|l['’]ensemble de la)\s+(?:la\s+)?(?:période|année)\b|"
     r"\b(?:sur|pendant|pour)\s+l['’]ensemble\s+de\s+la\s+période\b|"
-    r"\bdu\s+\d{4}-\d{2}-\d{2}\s+au\s+\d{4}-\d{2}-\d{2}\b",
+    r"\bdu\s+\d{4}-\d{2}-\d{2}\s+au\s+\d{4}-\d{2}-\d{2}\b|"
+    r"\b(?:pendant|durant|au cours de|sur|pour)\s+(?:toute\s+)?(?:l['’]année\s+)?\d{4}\b",
     re.IGNORECASE,
 )
 _EVIDENCE_STOPWORDS = {
