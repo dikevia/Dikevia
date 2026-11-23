@@ -410,7 +410,7 @@ def test_start_endpoint_cannot_support_a_whole_period_assertion():
     from app.legal_assurance import validate_claim_evidence
 
     result = validate_claim_evidence(
-        _period_claim("Sur toute la période, les agents territoriaux bénéficient d'une protection statutaire."),
+        _period_claim("Au 2024-01-01, sur toute la période, les agents territoriaux bénéficient d'une protection statutaire."),
         [_period_source("START")],
         facts_period={
             "period_start": "2024-01-01",
@@ -420,7 +420,7 @@ def test_start_endpoint_cannot_support_a_whole_period_assertion():
         },
     )
     assert result["valid"] is False
-    assert "claim_0:period_endpoint_not_date_scoped" in result["invalid_claims"]
+    assert "claim_0:unsupported_whole_period_assertion" in result["invalid_claims"]
 
 
 def test_end_endpoint_requires_the_end_date_in_the_claim():
