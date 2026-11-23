@@ -1101,6 +1101,19 @@ class LegalOrchestrator:
                         stored_by_query.append(result if isinstance(result, list) else [])
                         if not isinstance(result, list):
                             stored_search_failed = True
+                # The client computes the user's original-question embedding locally.
+                # Generated research axes remain lexical so no server-side model is loaded.
+                if settings.vector_search_enabled and payload.query_embedding is not None:
+                    try:
+                        vector_results = await search_legal_corpus(
+                            conn, payload.question, effective_date, limit=6,
+                            query_embedding=payload.query_embedding,
+                        )
+                    except Exception as exc:
+                        logger.warning("Recherche vectorielle indisponible ; maintien du repli lexical : %r", exc)
+                        stored_search_failed = True
+                    else:
+                        stored_by_query.insert(0, vector_results if isinstance(vector_results, list) else [])
                 stored = interleave_legal_corpus_results(stored_by_query, limit=12)
                 if stored_search_failed:
                     permanent_issue = "La recherche dans le corpus juridique permanent a échoué pour au moins un axe ; les résultats disponibles sont partiels."
