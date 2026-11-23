@@ -827,6 +827,34 @@ def build_official_research_axes(question: str) -> list[str]:
     ):
         return []
     folded = _fold(original)
+    # An invitation to bring a union representative to an unspecified
+    # hierarchical summons is not enough to classify the procedure. The
+    # chatbot asks for clarification first; do not turn the competing
+    # ordinary-interview and disciplinary routes into mandatory answer axes.
+    union_assistance_markers = (
+        "accompagne d un syndicat",
+        "accompagne par un syndicat",
+        "accompagne d un representant syndical",
+        "accompagne par un representant syndical",
+        "assiste par un representant syndical",
+        "venir avec mon syndicat",
+        "venir avec un syndicat",
+        "assistance syndicale lors d une convocation",
+        "accompagnement syndical lors d une convocation",
+    )
+    explicit_procedure_markers = (
+        "procedure disciplinaire",
+        "entretien disciplinaire",
+        "entretien ordinaire",
+        "simple entretien",
+        "enquete administrative",
+        "audition disciplinaire",
+    )
+    if (
+        any(_contains_trigger(folded, marker) for marker in union_assistance_markers)
+        and not any(_contains_trigger(folded, marker) for marker in explicit_procedure_markers)
+    ):
+        return []
     if _is_contractual_evaluation_question(original):
         return [
             "décret 88-145 article 1-3 agent contractuel territorial emploi permanent CDI CDD supérieur à un an contrat de projet entretien professionnel compte rendu observations révision CCP"
