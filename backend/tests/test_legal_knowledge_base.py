@@ -543,3 +543,27 @@ def test_unknown_document_kind_remains_unclassified_and_not_claim_eligible():
     assert result["authority_level"] == "UNCLASSIFIED"
     assert result["claim_eligible"] is False
     assert result["normative"] is False
+
+
+@pytest.mark.parametrize(
+    ("source_type", "document_kind", "publisher_type", "expected_authority"),
+    [
+        ("SERVICE_PUBLIC_PART", "CODE", "PUBLIC_ADMINISTRATION", "OFFICIAL_ADMIN_GUIDANCE"),
+        ("INSTITUTIONAL_GUIDANCE", "CODE", "TRADE_UNION", "PROFESSIONAL_GUIDANCE"),
+        ("INSTITUTIONAL_GUIDANCE", "CODE", "PUBLIC_ADMINISTRATION", "OFFICIAL_ADMIN_GUIDANCE"),
+    ],
+)
+def test_guidance_provenance_cannot_be_promoted_to_primary_law_by_raw_metadata(
+    source_type, document_kind, publisher_type, expected_authority,
+):
+    result = classify_legal_source({
+        "source_type": source_type,
+        "document_kind": document_kind,
+        "publisher_type": publisher_type,
+        "authority_level": "PRIMARY_LEGAL",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == expected_authority
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+    assert result["usable_for_conclusion"] is False
