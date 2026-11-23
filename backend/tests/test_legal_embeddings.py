@@ -14,8 +14,8 @@ def test_embedding_segments_are_prefixed_and_cover_long_text():
     text = ("Le fonctionnaire bénéficie des garanties prévues par le code.\n" * 90).strip()
     segments = MODULE.split_for_embedding(text)
     assert len(segments) > 1
-    assert all(segment.startswith("passage: ") for segment in segments)
-    assert all(len(segment) <= MODULE.SEGMENT_CHARS + len("passage: ") for segment in segments)
+    assert all(segment.strip() for segment in segments)
+    assert all(len(segment) <= MODULE.SEGMENT_CHARS for segment in segments)
 
 
 def test_embedding_segments_reject_empty_text():
@@ -30,5 +30,5 @@ def test_normalized_mean_returns_unit_vector():
 
 
 def test_model_dimensions_are_explicit():
-    assert MODULE.MODEL_NAME == "intfloat/multilingual-e5-small"
+    assert MODULE.MODEL_NAME == "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     assert MODULE.DIMENSIONS == 384
