@@ -99,6 +99,16 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             publisher_type = "PUBLIC_ADMINISTRATION"
         elif kind == "PROFESSIONAL_GUIDANCE":
             publisher_type = "PROFESSIONAL_BODY"
+    # Source provenance is stronger than an untrusted or stale raw metadata
+    # authority label: guidance corpora must never be promoted to primary law.
+    if source_type == "SERVICE_PUBLIC_PART":
+        authority_level = "OFFICIAL_ADMIN_GUIDANCE"
+    elif source_type == "INSTITUTIONAL_GUIDANCE":
+        authority_level = (
+            "OFFICIAL_ADMIN_GUIDANCE"
+            if publisher_type == "PUBLIC_ADMINISTRATION"
+            else "PROFESSIONAL_GUIDANCE"
+        )
     if publisher_type == "TRADE_UNION":
         label = "Doctrine syndicale — non normative"
     elif authority_level == "OFFICIAL_ADMIN_GUIDANCE":
