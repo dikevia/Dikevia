@@ -515,6 +515,8 @@ def test_personal_convenience_availability_targets_decree_86_68_article_21():
     assert "décret 86-68" in queries[1]
     assert "article 21" in queries[1]
     assert "réintégration" in queries[2]
+    assert all("radiation des cadres" not in item for item in queries)
+    assert all("suivi conjoint" not in item for item in queries)
     assert all(len(item) <= 500 for item in queries)
 
 
