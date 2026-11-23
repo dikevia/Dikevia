@@ -1,4 +1,4 @@
-"""Real PostgreSQL tests for migration 019's global beta capacity guard.
+"""Real PostgreSQL regression tests for migration 019's global beta capacity guard.
 
 CI supplies disposable TEST_DATABASE_ADMIN_URL and TEST_DATABASE_URL connections.
 The test executes the SECURITY DEFINER function as the runtime role and exercises
