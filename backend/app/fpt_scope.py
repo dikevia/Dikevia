@@ -509,6 +509,14 @@ def is_topic_relevant_source(
     # Strict question families reject generic keyword hits that cannot be
     # tied to the requested legal mechanism. Annual-appraisal questions retain
     # unclassified cross-cutting procedural sources as a narrow exception.
+    # The six-year CDI route is a specific legal mechanism. A generic
+    # mention of contract agents must not make unrelated contract provisions
+    # eligible evidence for that question.
+    if "CONTRACT_CDI_SIX_YEARS" in question_topics and (
+        "CONTRACT_CDI_SIX_YEARS" not in source_topics
+    ):
+        return False
+
     strict_topics = {
         "TERMINATION_OF_TITULAR",
         "STAFFING_AND_WORK_CONDITIONS",
