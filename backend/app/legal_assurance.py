@@ -76,7 +76,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
             "ADMIN_CASELAW": "JURISPRUDENCE",
             "CIRCULAR": "OFFICIAL_INTERPRETIVE",
-        }.get(kind, "PRIMARY_LEGAL")
+        }.get(kind, "UNCLASSIFIED")
     if publisher_type is None:
         source_key = str(raw_metadata.get("source_id") or "").casefold()
         if any(name in source_key for name in ("cfdt", "cgt", "fo-", "cftc", "unsa", "solidaires")):
@@ -120,6 +120,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             "OFFICIAL_ADMIN_GUIDANCE": "Information administrative officielle, non normative",
             "PROFESSIONAL_GUIDANCE": "Ressource professionnelle ou syndicale, non normative",
             "OFFICIAL_INTERPRETIVE": "Circulaire ou instruction administrative, portée à vérifier",
+            "UNCLASSIFIED": "Nature et autorité de la source à qualifier",
         }.get(authority_level, "Niveau d'autorité à qualifier"),
         "publisher": publisher,
         "publisher_type": publisher_type,
