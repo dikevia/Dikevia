@@ -38,3 +38,13 @@ def test_summons_without_union_assistance_does_not_force_disciplinary_route():
     primary = build_official_search_query(question)
 
     assert "droits de la défense" not in primary.lower()
+
+def test_corpus_query_expansion_targets_assistance_and_defence_not_union_facilities():
+    from app.legal_corpus import expand_legal_query
+
+    variants = expand_legal_query(QUESTION)
+
+    joined = " ".join(variants).lower()
+    assert "représentant syndical" in joined
+    assert "défenseur de son choix" in joined
+    assert "autorisations spéciales d'absence" not in joined
