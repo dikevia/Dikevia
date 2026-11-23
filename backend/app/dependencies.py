@@ -16,7 +16,7 @@ class TenantContext:
     organization_id: str
     user_id: str
     role: str
-    conn: object
+    conn: object | None
 
 
 async def get_principal(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
