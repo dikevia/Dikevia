@@ -9,6 +9,8 @@ import json
 import logging
 from datetime import date
 import re
+import threading
+import time
 import unicodedata
 from urllib.parse import urlparse, quote
 from dataclasses import dataclass
@@ -691,7 +693,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         raise AIProviderUnavailable("Le fournisseur IA est temporairement indisponible.") from exc
 
 
-async def check_provider_availability(*, transport: httpx.AsyncBaseTransport | None = None) -> dict:
+async def _check_provider_availability_uncached(*, transport: httpx.AsyncBaseTransport | None = None) -> dict:
     """Check model availability through a read-only provider endpoint; never generate text."""
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
         return {"status": "NOT_CONFIGURED"}
@@ -748,6 +750,75 @@ async def check_provider_availability(*, transport: httpx.AsyncBaseTransport | N
     except (httpx.HTTPError, ValueError, TypeError) as exc:
         _log_provider_failure("availability_check", exc)
         return {"status": "UNAVAILABLE", "error_type": type(exc).__name__}
+
+
+_PROVIDER_AVAILABILITY_CACHE: dict[tuple[str, str, bool, bool], tuple[float, dict]] = {}
+_PROVIDER_AVAILABILITY_CACHE_LOCK = threading.Lock()
+
+
+def _provider_cache_now() -> float:
+    return time.monotonic()
+
+
+def _provider_availability_cache_key() -> tuple[str, str, bool, bool]:
+    return (
+        str(settings.ai_api_base_url or ""),
+        str(settings.ai_model or ""),
+        bool(settings.ai_api_key),
+        bool(_is_gemini_provider()),
+    )
+
+
+def _provider_availability_cache_ttl(result: dict) -> float:
+    status = str(result.get("status") or "").upper()
+    if status == "AVAILABLE":
+        return 60.0
+    if status in {
+        "NOT_CONFIGURED",
+        "AUTH_ERROR",
+        "MODEL_NOT_FOUND",
+        "MODEL_NOT_GENERATIVE",
+        "MODEL_NOT_LISTED",
+        "MODEL_DISABLED",
+        "MODEL_STATUS_UNKNOWN",
+        "INVALID_CATALOG",
+    }:
+        return 15.0
+    return 5.0
+
+
+def _clear_provider_availability_cache() -> None:
+    with _PROVIDER_AVAILABILITY_CACHE_LOCK:
+        _PROVIDER_AVAILABILITY_CACHE.clear()
+
+
+async def check_provider_availability(
+    *, transport: httpx.AsyncBaseTransport | None = None
+) -> dict:
+    """Cache the read-only catalog probe briefly; never cache actual generation calls."""
+    if transport is not None:
+        return await _check_provider_availability_uncached(transport=transport)
+
+    key = _provider_availability_cache_key()
+    now = _provider_cache_now()
+    with _PROVIDER_AVAILABILITY_CACHE_LOCK:
+        cached = _PROVIDER_AVAILABILITY_CACHE.get(key)
+        if cached and cached[0] > now:
+            return dict(cached[1])
+        _PROVIDER_AVAILABILITY_CACHE.pop(key, None)
+
+    result = await _check_provider_availability_uncached()
+    ttl = _provider_availability_cache_ttl(result)
+    with _PROVIDER_AVAILABILITY_CACHE_LOCK:
+        _PROVIDER_AVAILABILITY_CACHE[key] = (_provider_cache_now() + ttl, dict(result))
+        if len(_PROVIDER_AVAILABILITY_CACHE) > 8:
+            expired = [
+                cache_key for cache_key, (expires_at, _) in _PROVIDER_AVAILABILITY_CACHE.items()
+                if expires_at <= _provider_cache_now()
+            ]
+            for cache_key in expired:
+                _PROVIDER_AVAILABILITY_CACHE.pop(cache_key, None)
+    return result
 
 
 def extract_analysis_content(result):
