@@ -96,6 +96,24 @@ async def require_legal_editor(ctx: TenantContext = Depends(get_tenant_context))
     return ctx
 
 
+async def require_org_admin_for_external(
+    ctx: TenantContext = Depends(get_tenant_context_for_chat),
+):
+    """Authorize an admin without holding a DB transaction during external calls."""
+    if ctx.role != "ORG_ADMIN":
+        raise HTTPException(403, "Permission insuffisante.")
+    return ctx
+
+
+async def require_legal_editor_for_external(
+    ctx: TenantContext = Depends(get_tenant_context_for_chat),
+):
+    """Authorize document editors without a DB transaction during external I/O."""
+    if ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR"):
+        raise HTTPException(403, "Permission insuffisante.")
+    return ctx
+
+
 async def require_platform_admin(principal: Principal = Depends(get_principal)):
     """Platform authority is read from the dedicated global registry, never from a tenant role."""
     async with get_pool().acquire() as conn:
