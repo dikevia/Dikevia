@@ -79,6 +79,9 @@ async def run(args: argparse.Namespace) -> int:
         if args.dry_run:
             print("Dry-run : aucune écriture effectuée.")
             return 0
+        if total == 0:
+            print("Tous les fragments possèdent déjà un embedding.")
+            return 0
 
         model = TextEmbedding(model_name=MODEL_NAME)
         processed = 0
