@@ -8,7 +8,6 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Sequence
 
 
 def _fold(value: str) -> str:
@@ -53,49 +52,68 @@ class ContextualResearchContext:
 
 def build_contextual_research_context(
     current_question: str,
-    prior_user_questions: Sequence[str] | None = None,
-    prior_assistant_messages: Sequence[str] | None = None,
+    prior_user_questions: list[str] | None = None,
+    prior_assistant_messages: list[str] | None = None,
 ) -> ContextualResearchContext:
-    """Return the contextualized question and explicit follow-up metadata."""
-    current = _clean_question(current_question)
+    """Resolve short follow-ups while exposing the classification explicitly."""
+    current = " ".join(str(current_question or "").split())
     if not current:
         return ContextualResearchContext(question="", is_followup=False)
     if len(current) >= 220:
         return ContextualResearchContext(question=current[:500], is_followup=False)
 
     prior_questions = [
-        _clean_question(item)
+        str(item).strip()
         for item in (prior_user_questions or [])
-        if _clean_question(item)
+        if str(item).strip()
     ]
-    prior_assistant = [
-        str(item or "").strip()
-        for item in (prior_assistant_messages or [])
-        if str(item or "").strip()
-    ]
-
     if _CONTEXTUAL_FOLLOWUP.match(current):
         if not prior_questions:
             return ContextualResearchContext(question=current[:500], is_followup=True)
-        contextual = f"{current[:300]}\n{prior_questions[-1][:180]}"
-        return ContextualResearchContext(question=contextual[:500], is_followup=True)
+        # A chain of short follow-ups keeps the last substantive user subject.
+        prior = next(
+            (
+                item for item in reversed(prior_questions)
+                if not _CONTEXTUAL_FOLLOWUP.match(item)
+            ),
+            prior_questions[-1],
+        )
+        contextual = f"{current[:300]}\n{prior[:180]}"[:500]
+        return ContextualResearchContext(question=contextual, is_followup=True)
 
-    if (
-        _CLARIFICATION_REPLY.match(current)
-        and prior_questions
-        and prior_assistant
-        and _ASSISTANT_CLARIFICATION_PROMPT.search(prior_assistant[-1])
-    ):
-        contextual = f"{current[:180]}\n{prior_questions[-1][:300]}"
-        return ContextualResearchContext(question=contextual[:500], is_followup=True)
+    # A short answer such as "oui" or "contractuel" is contextual only when
+    # the assistant's immediately preceding turn actually asked a question.
+    if _CLARIFICATION_REPLY.match(current) and prior_questions:
+        assistants = [
+            str(item).strip()
+            for item in (prior_assistant_messages or [])
+            if str(item).strip()
+        ]
+        if assistants:
+            fragments = re.findall(r"[^?]{1,260}\?", assistants[-1][-1200:])
+            if fragments:
+                prior = next(
+                    (
+                        item for item in reversed(prior_questions)
+                        if not _CONTEXTUAL_FOLLOWUP.match(item)
+                    ),
+                    prior_questions[-1],
+                )
+                clarification = " ".join(fragments[-1].split())[-200:]
+                contextual = (
+                    f"{current[:100]}\n{prior[:160]}\n"
+                    f"Question de clarification précédente : {clarification}"
+                )[:500]
+                return ContextualResearchContext(question=contextual, is_followup=True)
 
+    # Independent questions never inherit unrelated facts or topics.
     return ContextualResearchContext(question=current[:500], is_followup=False)
 
 
 def build_contextual_research_question(
     current_question: str,
-    prior_user_questions: Sequence[str] | None = None,
-    prior_assistant_messages: Sequence[str] | None = None,
+    prior_user_questions: list[str] | None = None,
+    prior_assistant_messages: list[str] | None = None,
 ) -> str:
     """Backward-compatible text-only wrapper for contextual research."""
     return build_contextual_research_context(
@@ -103,6 +121,7 @@ def build_contextual_research_question(
         prior_user_questions=prior_user_questions,
         prior_assistant_messages=prior_assistant_messages,
     ).question
+
 
 def qualify_legal_question(
     question: str, employer: str | None = None, public_service: str = "FPT",
