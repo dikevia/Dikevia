@@ -348,9 +348,9 @@ async def _run_administrative_case_law_search_sql_scenario():
         assert item["citation_integrity"]["text_hash_verified"] is True
         assert item["citation_integrity"]["valid"] is True
         assert item["retrieval_scope"] == (
-            "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            "RELEVANCE_SELECTED_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
-        assert "MARQUEUR_FINAL_DECISION_CI" in item["excerpt"]
+        assert "MARQUEUR_FINAL_DECISION_CI" not in item["excerpt"]
     finally:
         await admin.execute(
             "DELETE FROM legal_documents WHERE source_type='OTHER_OFFICIAL' AND source_id=$1",
