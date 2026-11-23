@@ -12,7 +12,7 @@ def test_credit_wallet_is_rls_scoped_and_runtime_can_only_debit():
     assert "ENABLE ROW LEVEL SECURITY" in sql
     assert "FORCE ROW LEVEL SECURITY" in sql
     assert "REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON credit_accounts, credit_ledger_entries FROM cfdt_juris_app" in sql
-        assert "GRANT EXECUTE ON FUNCTION wallet_apply_entry" in sql
+    assert "GRANT EXECUTE ON FUNCTION wallet_apply_entry" in sql
     assert "TO cfdt_juris_app" in sql
     assert "GRANT EXECUTE ON FUNCTION wallet_admin_grant_entry" in sql
     assert "TO cfdt_juris_platform_admin" in sql
