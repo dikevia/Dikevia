@@ -832,12 +832,6 @@
           "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000446192",
           "source_type": "texte_national",
           "verification_status": "candidate_not_yet_human_validated"
-        },
-        {
-          "title": "Code général de la fonction publique, article L. 621-5 — cadre du compte épargne-temps dans la fonction publique territoriale",
-          "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044427970",
-          "source_type": "code",
-          "verification_status": "candidate_not_yet_human_validated"
         }
       ],
       "source_review_status": "CANDIDATES_IDENTIFIED_HUMAN_LEGAL_VALIDATION_REQUIRED",
