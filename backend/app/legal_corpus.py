@@ -242,7 +242,7 @@ def _referential_query_expansions() -> list[tuple[tuple[str, ...], tuple[str, ..
 _REFERENTIAL_QUERY_EXPANSIONS = _referential_query_expansions()
 
 
-def expand_legal_query(query: str, max_variants: int = 8) -> list[str]:
+def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
     """Expand user wording with curated synonyms while keeping the original query first."""
     if not isinstance(query, str) or not query.strip() or not 1 <= max_variants <= 20:
         raise ValueError("La requête doit être non vide et max_variants compris entre 1 et 20.")
