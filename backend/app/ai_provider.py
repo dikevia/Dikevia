@@ -786,8 +786,13 @@ def _entailment_tokens(value):
     return tokens - _ENTAILMENT_STOPWORDS
 
 
-def _claim_facts_missing_from_quote(claim_text, quote):
+def _claim_facts_missing_from_quote(claim_text, quote, allowed_dates=None):
     quote_folded = _normalize_entailment_text(quote).casefold()
+    allowed = {
+        _normalize_entailment_text(str(value)).casefold()
+        for value in (allowed_dates or [])
+        if value
+    }
     missing_numbers = [
         item for item in _ENTAILMENT_NUMBER_RE.findall(claim_text)
         if _normalize_entailment_text(item).casefold() not in quote_folded
@@ -795,6 +800,7 @@ def _claim_facts_missing_from_quote(claim_text, quote):
     missing_dates = [
         item for item in _ENTAILMENT_DATE_RE.findall(claim_text)
         if _normalize_entailment_text(item).casefold() not in quote_folded
+        and _normalize_entailment_text(item).casefold() not in allowed
     ]
     return missing_numbers, missing_dates
 
@@ -848,8 +854,12 @@ def validate_entailment_verdicts(payload, claims, sources):
         if len(claim_tokens) < 2 or overlap < 0.25:
             invalid.append(f"verdict_{index}:support_quote_not_relevantly_aligned")
             continue
+        endpoint_dates = (
+            [matched[0].get("requested_effective_date")]
+            if matched[0].get("version_endpoint") in {"START", "END"} else []
+        )
         missing_numbers, missing_dates = _claim_facts_missing_from_quote(
-            str(claim.get("text") or ""), normalized_quote
+            str(claim.get("text") or ""), normalized_quote, endpoint_dates
         )
         if missing_numbers or missing_dates:
             invalid.append(f"verdict_{index}:support_quote_missing_claim_facts")
