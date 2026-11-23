@@ -13,7 +13,7 @@ def send_invitation_email(host: str, port: int, username: str, password: str,
     msg["To"] = recipient
     msg.set_content(
         f"Bonjour,\n\nVous êtes invité(e) à rejoindre l'espace {organization} sur CFDT JURIS.\n"
-        f"Rôle proposé : {role}.\n\nPour accepter cette invitation après connexion, ouvrez :\n{invitation_url}\n\n"
+        f"Rôle proposé : {role}.\n\nPour accepter cette invitation, créez votre compte ou connectez-vous, puis ouvrez :\n{invitation_url}\n\n"
         "Ce lien est personnel, à usage unique et expire sous 7 jours. Si vous n'attendiez pas cette invitation, ignorez ce message.\n"
     )
     context = ssl.create_default_context()
