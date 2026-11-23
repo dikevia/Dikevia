@@ -75,10 +75,34 @@ def _build_code_research_queries(
     ]
 
 
-def _build_targeted_regulatory_queries(question: str) -> list[str]:
-    """Add exact, date-scoped FPT health texts without treating them as legal conclusions."""
+def _build_targeted_regulatory_queries(
+    question: str, public_service: str = "FPT",
+) -> list[str]:
+    """Add exact, date-scoped implementing-text searches for the selected public-service branch."""
     folded = " ".join(str(question or "").casefold().split())
     queries: list[str] = []
+    availability = any(marker in folded for marker in (
+        "disponibilité", "disponibilite", "convenances personnelles",
+    ))
+    if availability:
+        branch_availability_articles = {
+            "FPT": (
+                "décret n° 86-68 du 13 janvier 1986 article 21 disponibilité sur demande convenances personnelles fonctionnaires territoriaux",
+            ),
+            "FPE": (
+                "décret n° 85-986 du 16 septembre 1985 article 44 disponibilité sur demande convenances personnelles fonctionnaires de l'État",
+            ),
+            "FPH": (
+                "décret n° 88-976 du 13 octobre 1988 article 31 disponibilité sur demande convenances personnelles fonctionnaires hospitaliers",
+            ),
+        }
+        queries.extend(branch_availability_articles.get(public_service, ()))
+
+    # The following implementing texts are specific to the territorial
+    # health/absence regimes and must never be sent as FPE/FPH requirements.
+    if public_service != "FPT":
+        return list(dict.fromkeys(queries))
+
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
         "invalidite temporaire imputable au service",
@@ -734,8 +758,7 @@ class LegalOrchestrator:
             # query budgets and preserve the applicable FPT implementing texts.
             regulatory_queries = list(dict.fromkeys([
                 *research_queries,
-                *(_build_targeted_regulatory_queries(contextual_question)
-                  if request.public_service == "FPT" else []),
+                *_build_targeted_regulatory_queries(contextual_question, request.public_service),
             ]))
             # Exact article leads go only to the CGFP article endpoint, never
             # to regulatory-text or administrative case-law search.
