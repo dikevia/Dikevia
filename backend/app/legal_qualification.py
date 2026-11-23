@@ -123,6 +123,59 @@ def build_contextual_research_question(
     ).question
 
 
+_TOPIC_MARKERS = (
+    ("UNION_RIGHTS", ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
+                      "representants du personnel", "representant syndical", "representants syndicaux",
+                      "decharge d activite", "decharge syndicale", "credit de temps syndical",
+                      "credit d heures syndical", "asa syndicale", "autorisation speciale d absence syndicale",
+                      "local syndical", "locaux syndicaux", "reunion d information syndicale",
+                      "formation syndicale", "comite social territorial", "cst", "formation specialisee")),
+    ("TERMINATION_OF_TITULAR", ("peut me virer", "me virer", "me mettre dehors",
+                                "mettre dehors", "me licencier", "peut me licencier",
+                                "mettre fin a mes fonctions", "fin de mes fonctions",
+                                "licenciement fonctionnaire", "radiation des cadres",
+                                "perte de la qualite de fonctionnaire", "insuffisance professionnelle")),
+    ("STAFFING_AND_WORK_CONDITIONS", ("manque de personnel", "manque d effectifs",
+                                      "pas assez d agents", "pas suffisamment d agents",
+                                      "on manque d agents", "on est pas assez nombreux",
+                                      "on n est pas assez nombreux", "sous effectif",
+                                      "effectif reduit", "effectifs insuffisants",
+                                      "equipe en sous effectif", "equipes en sous effectif",
+                                      "mon service est en sous effectif", "surcharge de travail",
+                                      "ne renforce pas les equipes", "ne recrute pas",
+                                      "charge de travail", "conditions de travail",
+                                      "risques psychosociaux", "risques professionnels",
+                                      "sante et securite au travail")),
+    ("DISCIPLINE", ("sanction disciplinaire", "procedure disciplinaire", "conseil de discipline",
+                    "avertissement", "blame", "exclusion temporaire", "revocation",
+                    "on me sanctionne", "je suis sanctionne", "sanctionne par ma collectivite")),
+    # Status is classified independently below: the word "contractuel" must not mask the actual topic.
+    ("CONTRACTUAL_EMPLOYMENT", ("renouvellement de contrat", "fin de contrat",
+                                "licenciement contractuel", "recrutement contractuel",
+                                "terme du contrat", "non renouvellement", "refuse le renouvellement",
+                                "refus de renouvellement", "refus du renouvellement")),
+    ("WORKING_TIME", ("temps de travail", "duree du travail", "heures supplementaires",
+                      "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
+                      "travail de nuit", "travail le dimanche", "venir le dimanche",
+                      "travailler le dimanche", "venir travailler le dimanche")),
+    ("WORKPLACE_INCIDENT_AND_AGENT_PROTECTION", (
+        "agresse par un usager", "agressee par un usager", "agression par un usager",
+        "agression d un usager", "agression au travail", "agent victime d une agression",
+        "violence d un usager", "menace d un usager", "usager m a frappe",
+        "refuse que je fasse un rapport", "refuse de faire un rapport",
+    )),
+    ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "citis", "accident de service",
+                                       "maladie professionnelle", "conge longue maladie",
+                                       "conge longue duree")),
+    ("HARASSMENT_AND_PROTECTION", ("harcelement moral", "harcelement sexuel",
+                                   "agissement sexiste", "protection fonctionnelle")),
+    ("REMUNERATION", ("remuneration", "traitement indiciaire", "regime indemnitaire",
+                      "rifseep", "ifse", "nbi", "prime", "indemnite")),
+    ("LEAVE", ("conges annuels", "conge annuel", "poser des conges", "prendre des conges",
+               "compte epargne temps", "autorisation speciale d absence")),
+)
+
+
 def qualify_legal_question(
     question: str, employer: str | None = None, public_service: str = "FPT",
 ) -> dict:
