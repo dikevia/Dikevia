@@ -691,7 +691,10 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
     for triggers, axes in _TOPIC_RESEARCH_AXES:
         # A personal-convenience availability request has its own implementing
         # decree; do not dilute it with the broader mutation/following-spouse route.
-        if personal_convenience_availability and "mutation dans l interet du service" in triggers:
+        if personal_convenience_availability and (
+            "mutation dans l interet du service" in triggers
+            or "titulaire peut il" in triggers
+        ):
             continue
         # A therapeutic return is not ordinary part-time work. Keep its
         # dedicated CGFP/decree axis and suppress the generic IHTS expansion.
