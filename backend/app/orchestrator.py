@@ -1625,7 +1625,7 @@ class LegalOrchestrator:
                 if provider_status.get("status") == "MODEL_DISABLED" and provider_status.get("reason") == "paid_plan_required":
                     missing.insert(
                         0,
-                        "Le modèle IA configuré est désactivé par le fournisseur : son activation exige une offre payante. Aucune inférence n'a été envoyée ; la réponse reste documentaire.",
+                        "Le fournisseur IA configuré refuse actuellement l'accès au modèle (accès ou crédits non activés sur le compte). Aucune inférence n'a été envoyée ; la réponse reste documentaire. Vérifiez l'accès au fournisseur ou configurez un endpoint IA autorisé.",
                     )
                 else:
                     status_label = str(provider_status.get("status") or "UNKNOWN")[:60]
