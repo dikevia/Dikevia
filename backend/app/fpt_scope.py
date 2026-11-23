@@ -235,10 +235,10 @@ def classify_public_service_scope(
 
     # A source containing competing territorial and State/hospital markers
     # is not safe FPT proof, even when one marker appears in its title.
-    if fpt_hits and (fpe_hits or fph_hits):
+    if title_fpt_hits and (title_fpe_hits or title_fph_hits):
         return {
             "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
-            "evidence": fpt_hits[:2] + fpe_hits[:1] + fph_hits[:1],
+            "evidence": title_fpt_hits[:2] + title_fpe_hits[:1] + title_fph_hits[:1],
             "analysis_eligible": False,
             "claim_eligible": False,
         }
