@@ -1,7 +1,8 @@
 from datetime import date
 import pytest
 
-from app.legal_corpus import clean_text, sha256_text, split_text, temporal_status, safe_official_url, expand_legal_query
+from app.legal_corpus import (clean_text, sha256_text, split_text, temporal_status, safe_official_url,
+                              expand_legal_query, select_multi_source_chunks)
 from app.legal_assurance import classify_legal_source, validate_claim_evidence
 from app.legal_ingestion import parse_circulaires_xml
 from app.legifrance import LegifranceConnector
@@ -595,3 +596,53 @@ def test_corpus_candidate_overfetch_budget_stays_bounded_for_post_retrieval_guar
     assert LEGAL_CORPUS_CANDIDATE_LIMIT == 12
     assert LEGAL_CORPUS_INTERLEAVED_LIMIT == 18
     assert LEGAL_CORPUS_INTERLEAVED_LIMIT <= 30
+
+
+def test_ihts_query_expansion_covers_colloquial_recovery_and_payment_wording():
+    question = (
+        "Je suis titulaire de la FPT. Mon chef me demande de faire 2 heures supplémentaires, "
+        "mais me dit qu'elles ne seront pas payées et que je les récupérerai. "
+        "Peut-il faire cela même si je veux qu'il me les paie ?"
+    )
+    variants = expand_legal_query(question)
+    normalized = " ".join(variants).casefold()
+    assert variants[0] == question
+    assert "ihts" in normalized
+    assert "indemnités horaires pour travaux supplémentaires" in normalized
+    assert "repos compensateur" in normalized
+    assert "indemnisation des heures supplémentaires" in normalized
+    assert len(variants) <= 6
+
+
+def test_multi_source_selector_interleaves_independent_research_axes():
+    axes = [
+        [
+            {"source_id": "decree-ihts", "source_type": "LEGIFRANCE_LODA", "rank": 0.04},
+            {"source_id": "decree-other", "source_type": "LEGIFRANCE_LODA", "rank": 0.03},
+        ],
+        [
+            {"source_id": "service-public-overtime", "source_type": "SERVICE_PUBLIC_PART", "rank": 0.02},
+            {"source_id": "cdg-ihts", "source_type": "INSTITUTIONAL_GUIDANCE", "rank": 0.01},
+        ],
+    ]
+    selected = select_multi_source_chunks(axes, limit=4)
+    assert [item["source_id"] for item in selected] == [
+        "decree-ihts", "service-public-overtime", "decree-other", "cdg-ihts",
+    ]
+    # Preserve the real retrieval metadata; do not fabricate normalized vector scores.
+    assert selected[0]["rank"] == 0.04
+    assert selected[1]["source_type"] == "SERVICE_PUBLIC_PART"
+
+
+def test_fpt_scope_guard_does_not_accept_fph_only_source_as_fpt_evidence():
+    from app.fpt_scope import classify_public_service_scope
+
+    source = {
+        "title": "Dispositions propres à la fonction publique hospitalière",
+        "document_kind": "DECREE",
+        "text": "Les personnels de la fonction publique hospitalière sont concernés.",
+    }
+    result = classify_public_service_scope(source, target_versant="FPT")
+    assert result["scope"] == "FPH"
+    assert result["analysis_eligible"] is False
+    assert result["claim_eligible"] is False

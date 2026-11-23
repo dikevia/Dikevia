@@ -15,7 +15,7 @@ from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
-from .legal_corpus import search_legal_corpus, interleave_legal_corpus_results
+from .legal_corpus import search_legal_corpus, select_multi_source_chunks
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
@@ -1194,7 +1194,7 @@ class LegalOrchestrator:
                         stored_search_failed = True
                     else:
                         stored_by_query.insert(0, vector_results if isinstance(vector_results, list) else [])
-                stored = interleave_legal_corpus_results(
+                stored = select_multi_source_chunks(
                     stored_by_query, limit=LEGAL_CORPUS_INTERLEAVED_LIMIT,
                 )
                 if stored_search_failed:
@@ -1423,10 +1423,13 @@ class LegalOrchestrator:
 
         # Gemini assesses document content after the lexical fallback. This is relevance
         # triage only; source, citation, temporal and FPT-scope controls remain authoritative.
-        await apply_semantic_source_relevance(
-            question=request.question, research_axes=research_queries, sources=sources,
-            target_versant=request.public_service, allow_local_documents=allow_local_documents,
-        )
+        # Semantic source ranking is optional and previously caused an extra Gemini
+        # request on every chat turn. Keep the deterministic topic/versant filter as
+        # the baseline; reserve model calls for research planning and evidence analysis.
+        for source in sources:
+            source["research_axis_relevant"] = _source_relevant_for_target(
+                research_queries, source, request.public_service,
+            )
 
 
         # A direct request for the text/content of a numbered CGFP article is an

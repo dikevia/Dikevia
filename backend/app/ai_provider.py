@@ -4,6 +4,7 @@ Le modèle n'est jamais une source juridique : il ne reçoit que les extraits du
 corpus validés par le backend et ne peut pas créer de citations exposées.
 """
 from __future__ import annotations
+import asyncio
 import json
 import logging
 from datetime import date
@@ -258,6 +259,20 @@ class AIAnalysisRefusedNoSources(RuntimeError):
     pass
 
 
+async def _post_chat_completion(client, url: str, *, headers: dict, payload: dict):
+    """Retry one transient provider overload without retrying quota/auth/client errors."""
+    transient_statuses = {500, 502, 503, 504}
+    for attempt in range(2):
+        response = await client.post(url, headers=headers, json=payload)
+        if response.status_code not in transient_statuses or attempt == 1:
+            response.raise_for_status()
+            return response
+        # Gemini 503 high-demand responses are often short-lived. One bounded
+        # retry is preferable to multiplying requests or failing immediately.
+        await asyncio.sleep(0.6)
+    raise RuntimeError("Unreachable provider retry state")
+
+
 def _usable_document_sources(sources, *, allow_local_documents: bool = False):
     """Keep only identified, dated documents with meaningful retrieved text."""
     if not isinstance(sources, (list, tuple)):
@@ -475,7 +490,7 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
-            response = await client.post(_provider_api_base() + "/chat/completions", headers=headers, json=payload)
+            response = await _post_chat_completion(client, _provider_api_base() + "/chat/completions", headers=headers, payload=payload)
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
@@ -533,7 +548,7 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
-            response = await client.post(base + "/chat/completions", headers=headers, json=payload)
+            response = await _post_chat_completion(client, base + "/chat/completions", headers=headers, payload=payload)
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
@@ -623,7 +638,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
-            response = await client.post(base + "/chat/completions", headers=headers, json=payload)
+            response = await _post_chat_completion(client, base + "/chat/completions", headers=headers, payload=payload)
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
@@ -933,8 +948,8 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
-            response = await client.post(_provider_api_base() + "/chat/completions",
-                                         headers=headers, json=payload)
+            response = await _post_chat_completion(client, _provider_api_base() + "/chat/completions",
+                                         headers=headers, payload=payload)
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
