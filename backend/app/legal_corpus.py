@@ -370,25 +370,12 @@ async def search_legal_corpus(
         JOIN legal_document_versions v ON v.id=c.version_id
         JOIN legal_documents d ON d.id=v.document_id
       ), selected_chunks AS (
+        -- Keep only passages selected by lexical/vector relevance. Never append
+        -- the document's final chunk: it is often unrelated to the user's question.
         SELECT version_id,string_agg(content_chunk,E'\n\n' ORDER BY chunk_order) AS content,max(rank) AS rank
         FROM (
           SELECT version_id,content_chunk,rn AS chunk_order,rank
           FROM ranked WHERE rn<=CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
-          UNION ALL
-          SELECT final_chunk.version_id,final_chunk.content_chunk,999999 AS chunk_order,0.0 AS rank
-          FROM (
-            SELECT c.version_id,c.content AS content_chunk,c.ordinal
-            FROM legal_chunks c
-            JOIN (SELECT DISTINCT version_id FROM ranked) matched USING(version_id)
-            WHERE c.content_kind='FULL_TEXT'
-              AND c.ordinal=(SELECT max(c2.ordinal) FROM legal_chunks c2
-                             WHERE c2.version_id=c.version_id AND c2.content_kind='FULL_TEXT')
-          ) final_chunk
-          WHERE NOT EXISTS (
-            SELECT 1 FROM ranked r
-            WHERE r.version_id=final_chunk.version_id AND r.ordinal=final_chunk.ordinal
-              AND r.rn<=CASE WHEN r.document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
-          )
         ) selected_passages
         GROUP BY version_id
       ), document_metadata AS (
@@ -423,11 +410,11 @@ async def search_legal_corpus(
             item["snapshot_verification_status"] = item["raw_metadata"].get("verification_status")
         item["excerpt"] = item.pop("content")[:8500]
         item["retrieval_scope"] = (
-            "HYBRID_LEXICAL_VECTOR_TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK"
+            "HYBRID_LEXICAL_VECTOR_RELEVANCE_SELECTED_PASSAGES"
             if vector_literal is not None and item.get("document_kind") == "ADMIN_CASELAW"
             else "HYBRID_LEXICAL_VECTOR_SELECTED_PASSAGES"
             if vector_literal is not None
-            else "TOP_RELEVANT_PASSAGE_AND_FINAL_CHUNK_FROM_HASH_VERIFIED_FULL_TEXT"
+            else "RELEVANCE_SELECTED_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
             if item.get("document_kind") == "ADMIN_CASELAW"
             else "SELECTED_RELEVANT_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
