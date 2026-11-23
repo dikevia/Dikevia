@@ -235,6 +235,9 @@ jobs:
                   await conn.close()
           asyncio.run(main())
           PY
+      - name: Measure single-query embedding memory before API integration
+        run: |
+          /usr/bin/time -v python scripts/benchmark_embedding_query_memory.py
       - name: Generate embeddings locally without a paid API
         run: |
           /usr/bin/time -v python scripts/generate_legal_embeddings.py --batch-size 64 --max-chunks 10000
