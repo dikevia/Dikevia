@@ -884,7 +884,16 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
         source = matches[0]
         if source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"} and not allow_local_documents:
             return {"valid": False, "invalid": [f"claim_{index}:local_document_ai_transfer_disabled"]}
-        evidence_text = str(source.get("text") or source.get("full_text") or source.get("excerpt") or "")[:12000]
+        evidence_text = str(source.get("excerpt") or source.get("text") or "")[:12000]
+        if not evidence_text:
+            evidence_text = str(source.get("full_text") or "")[:1800]
+        period = facts_period or {}
+        if source.get("version_endpoint") == "START":
+            requested_effective_date = period.get("period_start") or period.get("facts_reference_date")
+        elif source.get("version_endpoint") == "END":
+            requested_effective_date = period.get("period_end") or period.get("reference_date_for_retrieval") or period.get("facts_reference_date")
+        else:
+            requested_effective_date = period.get("facts_reference_date")
         evidence.append({
             "claim_index": index,
             "source_id": claim.get("source_id"),
@@ -895,13 +904,8 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             "source_status": source.get("source_status"),
             "snapshot_modified_at": source.get("snapshot_modified_at"),
             "temporal_status": source.get("temporal_status"),
-            "facts_period": facts_period or {},
-            "requested_effective_date": (
-                (facts_period or {}).get("period_start") if source.get("version_endpoint") == "START"
-                else (facts_period or {}).get("period_end") or (facts_period or {}).get("reference_date_for_retrieval")
-                if source.get("version_endpoint") == "END"
-                else (facts_period or {}).get("facts_reference_date")
-            ),
+            "facts_period": period,
+            "requested_effective_date": requested_effective_date,
             "version_endpoint": source.get("version_endpoint"),
             "valid_from": source.get("valid_from"),
             "valid_to": source.get("valid_to"),
