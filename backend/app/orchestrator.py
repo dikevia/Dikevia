@@ -1762,7 +1762,7 @@ class LegalOrchestrator:
                     )
                     if ai_sources:
                         ai_result = await analyze_question(
-                            question=request.question,
+                            question=contextual_question,
                             employer=request.employer,
                             facts_date=effective_date.isoformat(),
                             facts_period=temporal_context,
@@ -1816,7 +1816,7 @@ class LegalOrchestrator:
                             )
                         else:
                             entailment_validation = await verify_claim_entailment(
-                                question=request.question,
+                                question=contextual_question,
                                 claims=claim_validation["claims"], sources=ai_sources,
                                 public_service=request.public_service,
                                 allow_local_documents=allow_local_documents,
