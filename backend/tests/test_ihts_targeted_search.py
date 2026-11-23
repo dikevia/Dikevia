@@ -22,3 +22,14 @@ def test_fpt_overtime_templates_are_not_applied_to_other_public_service_branches
 
     assert _build_targeted_regulatory_queries(question, "FPE") == []
     assert _build_targeted_regulatory_queries(question, "FPH") == []
+
+
+def test_common_everyday_overtime_wording_triggers_fpt_regulatory_searches():
+    questions = [
+        "Mon chef me demande de faire des heures sup après mes horaires.",
+        "Est-ce que mes heures en plus doivent être récupérées ?",
+    ]
+
+    for question in questions:
+        queries = _build_targeted_regulatory_queries(question, "FPT")
+        assert any("2002-60" in query for query in queries)
