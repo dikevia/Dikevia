@@ -867,7 +867,9 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 conversation_id = row["id"]
             else:
                 exists = await conn.fetchval(
-                    "SELECT id FROM chat_conversations WHERE id=$1::uuid", str(conversation_id)
+                    """SELECT id FROM chat_conversations
+                    WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                    str(conversation_id), ctx.organization_id, ctx.user_id,
                 )
                 if not exists:
                     raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
@@ -876,9 +878,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 str(conversation_id), ctx.user_id, payload.question,
                 json.dumps({"employer": payload.employer, "public_service": payload.public_service, "facts_date": payload.facts_date, "facts_start_date": payload.facts_start_date, "facts_end_date": payload.facts_end_date, "situation_ongoing": payload.situation_ongoing}, ensure_ascii=False))
             history_rows = await conn.fetch("""SELECT role,content FROM chat_messages
-                WHERE conversation_id=$1::uuid AND id<>$2::uuid AND role IN ('user','assistant')
+                WHERE conversation_id=$1::uuid AND organization_id=$4::uuid AND user_id=$5::uuid
+                  AND id<>$2::uuid AND role IN ('user','assistant')
                 ORDER BY created_at DESC,id DESC LIMIT $3""", str(conversation_id), current_message_id,
-                CONVERSATION_HISTORY_MESSAGE_LIMIT)
+                CONVERSATION_HISTORY_MESSAGE_LIMIT, ctx.organization_id, ctx.user_id)
             history = [{"role": r["role"], "content": r["content"]} for r in reversed(history_rows)]
 
     # No connection or transaction is held while the orchestrator plans or calls providers.
@@ -918,7 +921,9 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                     "clarification_question": result.clarification_question, "public_service": payload.public_service},
                     ensure_ascii=False, default=str))
             await conn.execute(
-                "UPDATE chat_conversations SET updated_at=now() WHERE id=$1::uuid", str(conversation_id)
+                """UPDATE chat_conversations SET updated_at=now()
+                WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+                str(conversation_id), ctx.organization_id, ctx.user_id,
             )
     return result
 
