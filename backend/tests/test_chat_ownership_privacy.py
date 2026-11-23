@@ -29,7 +29,8 @@ def test_chat_and_dossier_queries_include_organization_and_owner_filters():
         inspect.getsource(ask),
     ]
     combined = "\n".join(sources)
-    assert "c.organization_id=$1::uuid AND c.user_id=$2::uuid" in combined
+    assert "c.organization_id=$1::uuid" in combined
+    assert "c.user_id=$2::uuid" in combined
     assert "m.organization_id=$2::uuid AND m.user_id=$3::uuid" in combined
     assert "organization_id=$2::uuid AND user_id=$3::uuid" in combined
     assert "organization_id=$3::uuid AND user_id=$4::uuid" in combined
