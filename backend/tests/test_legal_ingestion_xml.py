@@ -80,13 +80,14 @@ def test_administrative_open_data_zip_keeps_only_relevant_fpt_employment_decisio
 
 
 def test_administrative_open_data_zip_rejects_non_fpt_or_non_hr_decisions():
-    xml = b"""<Decision>
+    xml = """<Decision>
       <Identification>TA_202611_0002</Identification>
       <Nom_Juridiction>Tribunal administratif de Grenoble</Nom_Juridiction>
       <Numero_Dossier>2601235</Numero_Dossier>
       <Date_Lecture>2026-11-18</Date_Lecture>
       <Texte_Integral><P>La commune a adopté un plan local d'urbanisme et conteste une autorisation de construire délivrée à un promoteur privé.</P></Texte_Integral>
     </Decision>"""
+    xml = xml.encode("utf-8")
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("TA_202611_0002.xml", xml)
