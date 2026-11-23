@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feat/chatbot-p0-legal-qualification, fix/chatbot-legal-reliability, feat/chatbot-query-planning-safe, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, develop, cfdt-juris-v3-30-developer-ready, feat/chatbot-p0-legal-qualification, fix/chatbot-legal-reliability, feat/chatbot-query-planning-safe, feature/dikevia-v3.38.5-cgfp-chat, feature/dikevia-free-vector-search-poc]
   pull_request:
-    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
+    branches: [main, feature/dikevia-v3.38.5-cgfp-chat, feature/dikevia-free-vector-search-poc]
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -39,7 +39,7 @@ jobs:
           cat > "$RUNNER_TEMP/pg-client/psql" <<'SH'
           #!/usr/bin/env bash
           set -euo pipefail
-          container_id="$(docker ps --filter 'ancestor=postgres:16-alpine' --format '{{.ID}}' | head -n1)"
+          container_id="$(docker ps --filter 'ancestor=pgvector/pgvector:pg16' --format '{{.ID}}' | head -n1)"
           if [[ -z "$container_id" ]]; then
             echo "The disposable PostgreSQL service container is not running." >&2
             exit 1
@@ -101,6 +101,7 @@ jobs:
         run: bandit -q -r backend/app -ll
       - name: Dependency vulnerability audit
         run: pip-audit -r backend/requirements-dev.txt
+          pip-audit -r backend/requirements-embeddings.txt
       - name: Prepare disposable PostgreSQL database and least-privilege roles
         env:
           PGHOST: 127.0.0.1
@@ -134,6 +135,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f database/migrations/020_ai_usage_outcome_contract.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/021_official_commercial_catalog.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/022_public_and_professional_guidance.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/023_pgvector_legal_embeddings.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/024_legal_embeddings_multilingual_384.sql
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend
