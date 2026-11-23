@@ -184,7 +184,7 @@ logger = logging.getLogger(__name__)
 # after retrieval. Overfetch per axis so the first six lexical/vector hits do
 # not crowd out relevant documents before those deterministic guards run.
 LEGAL_CORPUS_CANDIDATE_LIMIT = 12
-LEGAL_CORPUS_INTERLEAVED_LIMIT = 24
+LEGAL_CORPUS_INTERLEAVED_LIMIT = 18
 
 
 def _france_today() -> date:
