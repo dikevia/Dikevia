@@ -179,7 +179,7 @@ jobs:
     if: github.ref == 'refs/heads/feature/dikevia-free-vector-search-poc'
     needs: test-and-audit
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     env:
       LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ secrets.LEGAL_CORPUS_INGEST_DATABASE_URL }}
     steps:
@@ -237,7 +237,7 @@ jobs:
           PY
       - name: Generate embeddings locally without a paid API
         run: |
-          /usr/bin/time -v python scripts/generate_legal_embeddings.py --batch-size 16 --max-chunks 10000
+          /usr/bin/time -v python scripts/generate_legal_embeddings.py --batch-size 64 --max-chunks 10000
       - name: Verify complete and consistent embedding coverage
         run: |
           python - <<'PY'
