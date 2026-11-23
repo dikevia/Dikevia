@@ -281,7 +281,6 @@ def test_contextual_research_context_marks_short_followup_explicitly():
     )
     assert context.is_followup is True
     assert "\n" in context.question
-    assert "Question de clarification précédente :" in context.question
 
 
 def test_contextual_research_context_does_not_confuse_multiline_question_with_followup():
@@ -313,3 +312,4 @@ def test_contextual_research_context_marks_answer_to_clarification_as_followup()
     )
     assert context.is_followup is True
     assert "\n" in context.question
+    assert "Question de clarification précédente :" in context.question
