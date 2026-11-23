@@ -1,14 +1,7 @@
 name: Claude review bundle
 
 on:
-  push:
-    branches:
-      - feature/dikevia-v3.38.5-cgfp-chat
-    paths:
-      - .github/workflows/claude-review-bundle.yml
-      - docs/CLAUDE_REVIEW_BRIEF.md
-      - corpus_national/sources/registry.json
-      - corpus_national/sources/README.md
+  workflow_dispatch:
 
 permissions:
   contents: read
