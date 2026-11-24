@@ -5,6 +5,7 @@ legality or resolve conflicts without a complete legal analysis.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
 from datetime import date
@@ -519,6 +520,21 @@ def validate_claim_evidence(
         temporal_status = source.get("temporal_status")
         if not isinstance(integrity, dict) or integrity.get("valid") is not True:
             continue
+        # Versioned corpus evidence must independently match its stored full-text
+        # digest at the claim-validation boundary. A caller-provided "valid" flag
+        # alone must never authorize a quote from a different or stale version.
+        if source.get("version_id") is not None:
+            stored_hash = source.get("text_sha256")
+            full_text = source.get("full_text")
+            if (
+                not isinstance(stored_hash, str)
+                or not re.fullmatch(r"[0-9a-fA-F]{64}", stored_hash)
+                or not isinstance(full_text, str)
+                or not full_text
+                or hashlib.sha256(full_text.encode("utf-8")).hexdigest() != stored_hash.casefold()
+                or integrity.get("text_hash_verified") is not True
+            ):
+                continue
         snapshot_fallback_evidence = (
             source_type == "CGFP_SNAPSHOT"
             and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
