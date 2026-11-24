@@ -166,6 +166,8 @@ def test_non_fpt_prompt_requires_explicit_scope_and_blocks_context_only_sources(
     assert "ne déduis jamais le versant personnel d'une simple mention comparative ou d'un tiers" in prompt
     assert "GENERAL_PUBLIC_SERVICE" in prompt
     assert "portée commune" in prompt
+    assert "la situation de la personne dont les droits sont demandés" in prompt
+    assert "une mention comparative ou une question portant sur un tiers ne suffit pas" in prompt
     assert "versant_selectionne" in ENTAILMENT_SYSTEM_PROMPT
     assert "Une source propre à un autre versant ne peut pas soutenir une affirmation" in ENTAILMENT_SYSTEM_PROMPT
 
