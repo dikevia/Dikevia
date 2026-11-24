@@ -400,6 +400,19 @@ async def search_legal_corpus(
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
           d.source_status,d.raw_metadata,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
           c.anchor,c.content content_chunk,c.content_kind,c.ordinal,candidate_scores.rank,
+          CASE
+            WHEN d.source_type IN ('LEGIFRANCE_LEGI','LEGIFRANCE_LODA','LEGIFRANCE_JORF','OTHER_OFFICIAL')
+              AND d.document_kind IN ('CODE','LAW','ORDONNANCE','DECREE','ORDER','JOURNAL_OFFICIEL')
+              AND d.source_status IN ('OFFICIAL_TEXT_RETRIEVED','OFFICIAL_TEXT_ID_VERIFIED','OFFICIAL_XML_IMPORTED','MANUALLY_VERIFIED')
+              THEN 1.15
+            WHEN d.source_type='LEGIFRANCE_CETAT' AND d.document_kind='ADMIN_CASELAW'
+              AND d.source_status IN ('OFFICIAL_TEXT_RETRIEVED','OFFICIAL_TEXT_ID_VERIFIED','OFFICIAL_XML_IMPORTED','MANUALLY_VERIFIED')
+              THEN 1.10
+            WHEN d.source_type='DILA_CIRCULAIRES' AND d.document_kind='CIRCULAR'
+              AND d.source_status IN ('OFFICIAL_TEXT_RETRIEVED','OFFICIAL_TEXT_ID_VERIFIED','OFFICIAL_XML_IMPORTED','MANUALLY_VERIFIED')
+              THEN 1.05
+            ELSE 1.0
+          END AS authority_weight,
           row_number() OVER(PARTITION BY v.id ORDER BY candidate_scores.rank DESC,c.ordinal) rn
         FROM candidate_scores
         JOIN legal_chunks c ON c.id=candidate_scores.chunk_id
@@ -408,9 +421,9 @@ async def search_legal_corpus(
       ), selected_chunks AS (
         -- Keep only passages selected by lexical/vector relevance. Never append
         -- the document's final chunk: it is often unrelated to the user's question.
-        SELECT version_id,string_agg(content_chunk,E'\n\n' ORDER BY chunk_order) AS content,max(rank) AS rank
+        -- Bounded authority adjustment: it cannot replace relevance, temporal validity,\n        -- public-service scope checks or claim-level evidence validation.\n        SELECT version_id,string_agg(content_chunk,E'\\n\\n' ORDER BY chunk_order) AS content,\n          max(rank * authority_weight) AS rank
         FROM (
-          SELECT version_id,content_chunk,rn AS chunk_order,rank
+          SELECT version_id,content_chunk,rn AS chunk_order,rank,authority_weight
           FROM ranked WHERE rn<=CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
         ) selected_passages
         GROUP BY version_id
