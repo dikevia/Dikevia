@@ -1155,7 +1155,7 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             return {"valid": False, "invalid": [f"claim_{index}:local_document_ai_transfer_disabled"]}
         evidence_value = next(
             (
-                source.get(field) for field in ("analysis_excerpt", "full_text", "excerpt", "text")
+                source.get(field) for field in ("full_text", "text", "analysis_excerpt", "excerpt")
                 if isinstance(source.get(field), str) and source[field].strip()
             ),
             "",
