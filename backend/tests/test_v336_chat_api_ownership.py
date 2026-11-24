@@ -243,9 +243,11 @@ class ConversationScopeConnection:
     async def fetchrow(self, query, *args):
         self.query = query
         self.args = args
-        if self.public_service is None:
+        if self.public_service == "MISSING":
             return None
-        return {"id": args[0], "public_service": self.public_service}
+        return {"id": args[0], "public_service": (
+            None if self.public_service == "NO_METADATA" else self.public_service
+        )}
 
 
 def test_chat_turn_cannot_switch_public_service_inside_existing_conversation():
@@ -276,10 +278,10 @@ def test_chat_turn_keeps_existing_public_service_in_conversation():
 def test_legacy_conversation_without_public_service_defaults_to_fpt():
     from app.main import _lock_conversation_for_chat_turn
 
-    conn = ConversationScopeConnection(None)
+    conn = ConversationScopeConnection("NO_METADATA")
     with pytest.raises(HTTPException) as exc:
         asyncio.run(_lock_conversation_for_chat_turn(
             conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPE",
         ))
-    assert exc.value.status_code == 404
+    assert exc.value.status_code == 409
 
