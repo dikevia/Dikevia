@@ -137,3 +137,40 @@ def test_fifteen_question_pilot_runs_through_prepare_review_and_score(tmp_path):
     assert boolean_report["questions_restantes"] == [ids[0]]
     assert boolean_report["status"] == "INCOMPLET"
     assert boolean_report["release_gate"]["status"] == "INCOMPLETE"
+
+
+
+def test_benchmark_rejects_non_string_case_ids_without_crashing(tmp_path):
+    repository_root = Path(__file__).resolve().parents[2]
+    source = repository_root / "docs" / "quality" / "fpt_pilot_15_v1.json"
+    manifest = json.loads(source.read_text(encoding="utf-8"))
+    manifest["cases"][0]["id"] = ["FPT-001"]
+    malformed_path = tmp_path / "malformed_ids.json"
+    malformed_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    script = repository_root / "scripts" / "fpt_benchmark.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "validate", "--dataset", str(malformed_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 2
+    assert "identifiant texte non vide" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_benchmark_rejects_invalid_release_thresholds(tmp_path):
+    repository_root = Path(__file__).resolve().parents[2]
+    source = repository_root / "docs" / "quality" / "fpt_pilot_15_v1.json"
+    manifest = json.loads(source.read_text(encoding="utf-8"))
+    manifest["release_gate"]["minimum_question_relevance_rate"] = True
+    malformed_path = tmp_path / "malformed_threshold.json"
+    malformed_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    script = repository_root / "scripts" / "fpt_benchmark.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "validate", "--dataset", str(malformed_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 2
+    assert "minimum_question_relevance_rate" in result.stderr
+    assert "Traceback" not in result.stderr
