@@ -7,6 +7,7 @@ import hashlib
 import json
 import re
 import secrets
+import time
 import os
 import zipfile
 from io import BytesIO
@@ -264,14 +265,19 @@ async def _startup_external_diagnostics() -> None:
         )
 
 
+def _configured_ai_provider() -> str:
+    """Return a non-secret provider label derived from the configured API endpoint."""
+    configured = bool(settings.ai_api_base_url and settings.ai_api_key and settings.ai_model)
+    parsed = urlparse(settings.ai_api_base_url) if settings.ai_api_base_url else None
+    if parsed and parsed.hostname == "generativelanguage.googleapis.com" and parsed.path.rstrip("/") == "/v1beta/openai":
+        return "gemini"
+    return "openai_compatible" if configured else "not_configured"
+
+
 async def _startup_ai_provider_diagnostic() -> None:
     """Run a read-only AI provider/model availability check in staging and production."""
     configured = bool(settings.ai_api_base_url and settings.ai_api_key and settings.ai_model)
-    parsed = urlparse(settings.ai_api_base_url) if settings.ai_api_base_url else None
-    provider = "gemini" if (
-        parsed and parsed.hostname == "generativelanguage.googleapis.com"
-        and parsed.path.rstrip("/") == "/v1beta/openai"
-    ) else ("openai_compatible" if configured else "not_configured")
+    provider = _configured_ai_provider()
     logger.warning(
         "DIKEVIA_DIAGNOSTIC AI_PROVIDER_CHECK_START environment=%s provider=%s configured=%s model=%s",
         settings.app_env, provider, configured, settings.ai_model or "not-configured",
@@ -1362,6 +1368,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
             "Toute affirmation juridique doit être rattachée aux références exactes présentes dans les sources."
         )
         request_id = str(uuid4())
+        answer_started_at = time.perf_counter()
         try:
             candidate_result = await analyze_question(
                 question=review_question, employer="NATIONAL", facts_date=requested_date.isoformat(),
@@ -1371,10 +1378,13 @@ async def review_local_rule_compliance(document_id: str, q: str,
             usage = None
             if isinstance(candidate_result, AIAnalysisResult):
                 usage = {
-                    "provider": "openai_compatible", "model": candidate_result.model,
+                    "provider": _configured_ai_provider(), "model": candidate_result.model,
+                    "operation": "answer_generation",
                     "prompt_tokens": candidate_result.prompt_tokens,
                     "completion_tokens": candidate_result.completion_tokens,
-                    "total_tokens": candidate_result.total_tokens, "outcome": "ANSWERED",
+                    "total_tokens": candidate_result.total_tokens,
+                    "latency_ms": max(0, round((time.perf_counter() - answer_started_at) * 1000)),
+                    "outcome": "ANSWERED",
                 }
             allowed_refs = {item.get("article") for item in usable_national if item.get("article")}
             allowed_authorities = {value for item in usable_national for value in
@@ -1389,11 +1399,17 @@ async def review_local_rule_compliance(document_id: str, q: str,
         except AIProviderUnavailable:
             async with ctx.conn.transaction():
                 await record_ai_usage_event(ctx.conn, ctx.organization_id, ctx.user_id, request_id, {
-                    "provider": "openai_compatible", "model": settings.ai_model[:160],
+                    "provider": _configured_ai_provider(), "model": settings.ai_model[:160],
+                    "operation": "answer_generation",
                     "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
+                    "latency_ms": max(0, round((time.perf_counter() - answer_started_at) * 1000)),
                     "outcome": "PROVIDER_ERROR",
                 })
-        except Exception:
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "Local document AI review failed without exposing request content (error_type=%s)",
+                type(exc).__name__,
+            )
             ai_review = None
     async with ctx.conn.transaction():
         await ctx.conn.execute("""INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
