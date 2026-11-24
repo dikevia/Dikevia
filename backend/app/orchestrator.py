@@ -666,24 +666,26 @@ def _immediate_prior_assistant_messages(history: list[dict]) -> list[str]:
 
 
 def _provider_context_history(
-    contextual_question: str, is_followup: bool,
+    contextual_question: str,
+    is_followup: bool,
+    assistant_context: str | None = None,
 ) -> list[dict]:
-    """Give providers only the immediately relevant prior user turn.
-
-    The resolved question already carries the selected referent. Independent
-    questions receive no prior history, preventing stale topics from leaking
-    into planning or answer generation.
-    """
+    """Pass only the resolved prior user turn and, when needed, a non-source assistant referent."""
     if not is_followup:
         return []
-    parts = str(contextual_question or "").split("\n", 1)
+    parts = str(contextual_question or "").split("\\n", 1)
     if len(parts) < 2:
         return []
-    prior_question = parts[1].split("\n", 1)[0].strip()
+    prior_question = parts[1].split("\\n", 1)[0].strip()
     if not prior_question:
         return []
-    return [{"role": "user", "content": prior_question[:1200]}]
-
+    history = [{"role": "user", "content": prior_question[:1200]}]
+    if isinstance(assistant_context, str) and assistant_context.strip():
+        history.append({
+            "role": "assistant",
+            "content": assistant_context.strip()[-1800:],
+        })
+    return history
 
 
 class LegalOrchestrator:
@@ -741,7 +743,10 @@ class LegalOrchestrator:
         )
         contextual_question = contextual_research_context.question
         is_followup = contextual_research_context.is_followup
-        provider_history = _provider_context_history(contextual_question, is_followup)
+        provider_history = _provider_context_history(
+            contextual_question, is_followup,
+            assistant_context=contextual_research_context.assistant_context,
+        )
         targeted_clarification = clarification_for_union_assistance_summons(contextual_question)
         if targeted_clarification:
             return AskResponse(
