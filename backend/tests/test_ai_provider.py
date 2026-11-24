@@ -1422,6 +1422,64 @@ async def test_chat_completion_retries_once_after_transient_503(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_gemini_503_uses_flash_lite_fallback_after_primary_retry(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
+
+    calls = []
+    def handler(request):
+        body = json.loads(request.content)
+        calls.append(body["model"])
+        if body["model"] == "gemini-2.5-flash":
+            return httpx.Response(503, request=request, json={"error": {"message": "high demand"}})
+        return httpx.Response(200, request=request, json={"choices": [{"message": {"content": "ok"}}]})
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client, "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={"Authorization": "Bearer test"}, payload={"model": "gemini-2.5-flash"},
+        )
+
+    assert response.status_code == 200
+    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+
+
+@pytest.mark.asyncio
+async def test_gemini_503_fallback_is_not_used_for_non_gemini_provider(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
+
+    calls = []
+    def handler(request):
+        calls.append(json.loads(request.content)["model"])
+        return httpx.Response(503, request=request)
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(httpx.HTTPStatusError):
+            await ai_provider._post_chat_completion(
+                client, "https://example.test/v1/chat/completions",
+                headers={}, payload={"model": "configured-model"},
+            )
+    assert calls == ["configured-model", "configured-model"]
+
+
+@pytest.mark.asyncio
 async def test_chat_completion_does_not_retry_auth_or_quota_errors(monkeypatch):
     import httpx
     from app import ai_provider

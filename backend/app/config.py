@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     ai_api_base_url: str = ""
     ai_api_key: str = ""
     ai_model: str = ""
+    ai_fallback_models: str = "gemini-2.5-flash-lite"
     ai_timeout_seconds: float = 25.0
     ai_local_document_review_enabled: bool = False
     ai_local_documents_in_chat_enabled: bool = False

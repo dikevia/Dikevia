@@ -331,17 +331,45 @@ class AIAnalysisRefusedNoSources(RuntimeError):
 
 
 async def _post_chat_completion(client, url: str, *, headers: dict, payload: dict):
-    """Retry one transient provider overload without retrying quota/auth/client errors."""
+    """Bounded retry plus one configured Gemini model fallback for capacity-only 503s.
+
+    Authentication, quota and request errors are never retried or redirected to
+    another model. The fallback uses the same provider, credentials and prompt;
+    downstream source/citation/claim validation remains unchanged.
+    """
     transient_statuses = {500, 502, 503, 504}
-    for attempt in range(2):
-        response = await client.post(url, headers=headers, json=payload)
-        if response.status_code not in transient_statuses or attempt == 1:
+    primary_model = payload.get("model")
+    fallback_models = []
+    if _is_gemini_provider():
+        configured = getattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
+        if isinstance(configured, str):
+            fallback_models = [
+                item.strip() for item in configured.split(",")
+                if item.strip() and item.strip() != primary_model
+            ][:2]
+
+    models = [(primary_model, 2)] + [(model, 1) for model in fallback_models]
+    for model, max_attempts in models:
+        request_payload = dict(payload)
+        if model:
+            request_payload["model"] = model
+        for attempt in range(max_attempts):
+            response = await client.post(url, headers=headers, json=request_payload)
+            if response.status_code not in transient_statuses:
+                response.raise_for_status()
+                return response
+            if response.status_code == 503:
+                if attempt + 1 < max_attempts:
+                    await asyncio.sleep(0.6)
+                    continue
+                break
+            if attempt + 1 < max_attempts:
+                await asyncio.sleep(0.6)
+                continue
             response.raise_for_status()
-            return response
-        # Gemini 503 high-demand responses are often short-lived. One bounded
-        # retry is preferable to multiplying requests or failing immediately.
-        await asyncio.sleep(0.6)
-    raise RuntimeError("Unreachable provider retry state")
+        if response.status_code == 503:
+            continue
+    response.raise_for_status()
 
 
 def _planner_evidence_records(retrieved_evidence):
