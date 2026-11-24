@@ -131,6 +131,32 @@ def _build_targeted_regulatory_queries(
             "décret n° 91-875 du 6 septembre 1991 article 2 liste des emplois ouvrant droit aux IHTS délibération organe délibérant fonction publique territoriale",
         ])
 
+        # Some territorial medico-social/medico-technical cadres follow a
+        # specific equivalence route and a 20-hour monthly ceiling. Do not
+        # generalize this exception to the whole social/health sector: retrieve
+        # the exact territorial equivalences and hospital-reference texts.
+        medico_social_ihts = any(marker in folded for marker in (
+            "filière médico-sociale", "filiere medico-sociale",
+            "filière médico-technique", "filiere medico-technique",
+            "cadre de santé", "cadre de sante",
+            "cadre territorial de santé", "cadre territorial de sante",
+            "cadres territoriaux de santé", "cadres territoriaux de sante",
+            "cadre de santé paramédical", "cadre de sante paramedical",
+            "technicien paramédical", "technicien paramedical",
+            "sage-femme", "sage femme", "puéricultrice", "puericultrice",
+            "auxiliaire de puériculture", "auxiliaire de puericulture",
+            "masseur-kinésithérapeute", "masseur-kinesitherapeute",
+            "orthophoniste", "ergothérapeute", "ergotherapeute",
+            "psychomotricien", "20 heures", "20h",
+        ))
+        if medico_social_ihts:
+            queries.extend([
+                "décret n° 91-875 du 6 septembre 1991 annexes 1 et 2 fonctions médico-sociales cadres d'emplois territoriaux corps de référence IHTS",
+                "décret n° 98-1057 du 16 novembre 1998 article 1 régime indemnitaire personnels paramédicaux civils ministère de la défense",
+                "décret n° 2002-598 du 25 avril 2002 articles 6 7 et 8 contingent 20 heures IHTS équivalence fonction publique territoriale",
+                "arrêté du 25 avril 2002 liste des corps grades emplois éligibles IHTS article 1",
+            ])
+
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
         "invalidite temporaire imputable au service",
