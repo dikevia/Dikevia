@@ -19,6 +19,8 @@ QUERIES = (
     "Quelles conditions permettent à un fonctionnaire territorial de bénéficier du temps partiel thérapeutique ?",
     "Comment est déterminée l'indemnisation des heures supplémentaires des agents territoriaux ?",
     "Quelles règles encadrent le temps de travail annualisé dans la fonction publique territoriale ?",
+    "Quelles sont les règles du congé de longue maladie pour un agent public territorial ?",
+    "Dans quelles conditions un agent territorial peut-il être placé en CITIS après un accident de service ?",
 )
 
 
