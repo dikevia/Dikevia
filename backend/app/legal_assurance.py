@@ -579,9 +579,18 @@ def validate_claim_evidence(
             continue
         source_scope = str(source.get("public_service_scope") or "").upper()
         is_local_document = source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+        allowed_scopes = {selected_versant, "COMMON_PUBLIC_SERVICE"}
+        if selected_versant == "FPT":
+            allowed_scopes.add("FPT_REFERENCE")
+        # National legal evidence must carry an explicit, previously qualified
+        # public-service scope. A missing scope is not proof of cross-branch
+        # applicability. Tenant-scoped local documents are the narrow exception:
+        # their employer and validation workflow establish the FPT context.
+        missing_national_scope = not is_local_document and source_scope not in allowed_scopes
         if (
             (not is_local_document and not snapshot_fallback_evidence and source.get("analysis_eligible") is not True)
             or source.get("analysis_eligible") is False
+            or missing_national_scope
             or source_scope in {
                 "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
                 "OUT_OF_SCOPE_OR_UNCONFIRMED", "OUT_OF_SCOPE_EUROPEAN_LAW",

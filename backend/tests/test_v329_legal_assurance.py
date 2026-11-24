@@ -86,6 +86,7 @@ def _verified_evidence_source(**overrides):
         ),
         "content_kind": "FULL_TEXT",
         "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+        "public_service_scope": "FPT",
         "analysis_eligible": True,
         "official_source": True,
         "citation_integrity": {"valid": True},
@@ -909,3 +910,47 @@ def test_claim_evidence_can_quote_beyond_the_compact_display_excerpt():
     )
 
     assert result["valid"] is True
+
+def test_claim_evidence_rejects_national_source_without_explicit_versant_scope():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    source.pop("public_service_scope")
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+            source["excerpt"],
+        ),
+        [source],
+        public_service="FPT",
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+@pytest.mark.parametrize(
+    ("scope", "versant", "expected"),
+    [
+        ("FPT", "FPT", True),
+        ("FPE", "FPT", False),
+        ("FPH", "FPT", False),
+        ("COMMON_PUBLIC_SERVICE", "FPT", True),
+        ("FPT_REFERENCE", "FPT", True),
+        ("FPT_REFERENCE", "FPE", False),
+    ],
+)
+def test_claim_evidence_requires_explicit_matching_versant_or_common_scope(
+    scope, versant, expected,
+):
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(public_service_scope=scope)
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+            source["excerpt"],
+        ),
+        [source],
+        public_service=versant,
+    )
+    assert result["valid"] is expected
