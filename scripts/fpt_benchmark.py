@@ -272,8 +272,8 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
     reviewed = len(question_scores)
     average_score = round(sum(x["score"] for x in question_scores) / reviewed, 3) if reviewed else None
     result = {
-        "benchmark": "Dikévia — 100 questions FPT",
-        "status": "COMPLET" if reviewed == 100 else "INCOMPLET",
+        "benchmark": "Dikévia — benchmark FPT",
+        "status": "INCOMPLET" if reviewed != len(expected_ids) else "COMPLET",
         "questions_total": len(expected_ids),
         "questions_evaluees": reviewed,
         "questions_restantes": unreviewed,
@@ -293,7 +293,12 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         gate = dataset.get("release_gate") or {}
         relevance_rate = sum(relevance_values) / reviewed if reviewed else None
         source_support_rate = sum(source_support_values) / reviewed if reviewed else None
+        gold_answers_validated = (
+            dataset.get("release_gate", {}).get("gold_answers") == "HUMAN_VALIDATED"
+            or all(q.get("gold_answer_status") == "HUMAN_VALIDATED" for q in questions)
+        )
         checks = {
+            "gold_answers_human_validated": gold_answers_validated,
             "no_critical_failures": severity_counts["critique"] == 0,
             "minimum_average_score": average_score is not None and average_score >= float(gate.get("minimum_average_score", 8.5)),
             "minimum_question_relevance_rate": relevance_rate is not None and relevance_rate >= float(gate.get("minimum_question_relevance_rate", 0.95)),
@@ -303,7 +308,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         result["question_relevance_rate"] = round(relevance_rate, 4) if relevance_rate is not None else None
         result["source_support_rate"] = round(source_support_rate, 4) if source_support_rate is not None else None
         result["release_gate"] = {
-            "status": "INCOMPLETE" if reviewed < 100 else ("PASS" if all(checks.values()) else "FAIL"),
+            "status": "INCOMPLETE" if reviewed < len(expected_ids) or not gold_answers_validated else ("PASS" if all(checks.values()) else "FAIL"),
             "checks": checks,
         }
     Path(output_path).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
