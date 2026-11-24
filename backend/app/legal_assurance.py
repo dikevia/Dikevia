@@ -467,7 +467,7 @@ def _evidence_tokens(value: Any) -> set[str]:
 
 def validate_claim_evidence(
     payload: Any, sources: list[dict[str, Any]], required_axes: list[str] | None = None,
-    facts_period: dict[str, Any] | None = None,
+    facts_period: dict[str, Any] | None = None, public_service: str = "FPT",
 ) -> dict[str, Any]:
     """Fail closed unless each generated legal claim quotes its own eligible source.
 
@@ -487,6 +487,9 @@ def validate_claim_evidence(
         if isinstance(axis, str) and axis.strip()
     ]
     facts_period = facts_period if isinstance(facts_period, dict) else {}
+    selected_versant = str(public_service or "FPT").upper()
+    if selected_versant not in {"FPT", "FPE", "FPH"}:
+        selected_versant = "FPT"
     source_records = sources if isinstance(sources, (list, tuple)) else []
     raw_claims = payload["claims"]
     if len(raw_claims) > 12:
@@ -540,13 +543,16 @@ def validate_claim_evidence(
             "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY",
         } or source.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY" or source.get("claim_eligible") is False:
             continue
+        source_scope = str(source.get("public_service_scope") or "").upper()
         if (
             source.get("analysis_eligible") is False
-            or source.get("public_service_scope") in {
+            or source_scope in {
                 "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
-                "FPH", "FPE", "OUT_OF_SCOPE_OR_UNCONFIRMED",
-                "OUT_OF_SCOPE_EUROPEAN_LAW", "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+                "OUT_OF_SCOPE_OR_UNCONFIRMED", "OUT_OF_SCOPE_EUROPEAN_LAW",
+                "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
             }
+            or (source_scope in {"FPT", "FPE", "FPH"} and source_scope != selected_versant)
+            or (source_scope == "FPT_REFERENCE" and selected_versant != "FPT")
         ):
             continue
         general_information_only = (
