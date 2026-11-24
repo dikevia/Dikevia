@@ -995,8 +995,14 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
     """
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
         raise AIProviderUnavailable("Le vérificateur d'appui documentaire n'est pas configuré.")
+    if not isinstance(claims, list) or not claims or any(not isinstance(claim, dict) for claim in claims):
+        return {"valid": False, "invalid": ["missing_or_invalid_claims"]}
+    if not isinstance(sources, (list, tuple)):
+        return {"valid": False, "invalid": ["missing_or_invalid_sources"]}
     source_by_id = {}
     for source in sources:
+        if not isinstance(source, dict):
+            continue
         source_id = source.get("source_id")
         if isinstance(source_id, str):
             source_by_id.setdefault(source_id, []).append(source)
