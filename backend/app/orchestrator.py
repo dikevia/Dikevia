@@ -32,6 +32,11 @@ from .legal_qualification import (
 )
 
 
+def _citation_is_valid(source: dict) -> bool:
+    integrity = source.get("citation_integrity")
+    return isinstance(integrity, dict) and integrity.get("valid") is True
+
+
 def _cgfp_article_fpt_eligible(article_ref: str, target_versant: str = "FPT") -> bool:
     """Check the article body before treating a CGFP hit as a selected-branch research lead."""
     normalized_ref = re.sub(r"\s+", "", str(article_ref or "")).upper()
@@ -1522,7 +1527,7 @@ class LegalOrchestrator:
             s for s in sources
             if s.get("source_id") in permanent_source_ids
             and s.get("content_kind") == "FULL_TEXT"
-            and (s.get("citation_integrity") or {}).get("valid") is True
+            and _citation_is_valid(s)
             and (
                 s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}
                 or (
@@ -1541,13 +1546,13 @@ class LegalOrchestrator:
                 "LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT",
             }
             and s.get("content_kind") != "METADATA"
-            and (s.get("citation_integrity") or {}).get("valid") is True
+            and _citation_is_valid(s)
             and s.get("analysis_eligible") is True
             and s.get("claim_eligible", True) is not False
             and s.get("research_axis_relevant", True) is not False
         ]
         usable_local = [s for s in local_sources
-            if (s.get("citation_integrity") or {}).get("valid") is True
+            if _citation_is_valid(s)
             and s.get("temporal_status") == "VERIFIED_APPLICABLE"
             and s.get("research_axis_relevant", True) is not False]
         usable_snapshot_fallback = [
@@ -1556,7 +1561,7 @@ class LegalOrchestrator:
             and s.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
             and s.get("general_info_eligible") is True
             and s.get("research_axis_relevant") is True
-            and (s.get("citation_integrity") or {}).get("valid") is True
+            and _citation_is_valid(s)
         ]
         if not usable_official and not usable_permanent and not usable_local and not usable_snapshot_fallback:
             missing = ["Aucune disposition législative ou réglementaire exploitable n'a été récupérée.",
@@ -1743,7 +1748,7 @@ class LegalOrchestrator:
                         if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
                         and s.get("research_axis_relevant", True) is not False
                         and s.get("content_kind") != "METADATA"
-                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and _citation_is_valid(s)
                         and (
                             s.get("temporal_status") in eligible_temporal_statuses
                             or (
@@ -1773,7 +1778,7 @@ class LegalOrchestrator:
                         and s.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
                         and s.get("general_info_eligible") is True
                         and s.get("research_axis_relevant") is True
-                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and _citation_is_valid(s)
                     ]
                     context_guidance_sources = [
                         s for s in sources
@@ -1781,7 +1786,7 @@ class LegalOrchestrator:
                         and s.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY"
                         and (s.get("legal_assurance") or {}).get("usable_for_interpretation") is True
                         and s.get("content_kind") == "FULL_TEXT"
-                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and _citation_is_valid(s)
                         and s.get("research_axis_relevant", True) is not False
                     ]
                     ai_sources = (
