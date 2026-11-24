@@ -181,6 +181,13 @@ _TOPIC_MARKERS = (
                       "rifseep", "ifse", "nbi", "prime", "indemnite")),
     ("LEAVE", ("conges annuels", "conge annuel", "poser des conges", "prendre des conges",
                "compte epargne temps", "autorisation speciale d absence")),
+    ("RETIREMENT", ("retraite", "pension", "liquidation des droits", "age legal de depart",
+                    "depart a la retraite", "retraite progressive", "carriere longue")),
+    ("TELEWORK", ("teletravail", "tele travailler", "jours de teletravail", "autorisation de teletravail")),
+    ("PROFESSIONAL_TRAINING", ("formation professionnelle", "formation continue", "conge de formation",
+                               "cpf", "compte personnel de formation", "bilan de competences")),
+    ("CAREER_AND_PROMOTION", ("avancement de grade", "promotion interne", "avancement d echelon",
+                              "entretien professionnel", "evaluation professionnelle", "mobilite interne")),
 )
 
 def _matched_question_topics(question: str) -> set[str]:
