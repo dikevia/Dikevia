@@ -549,7 +549,18 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
     base = _provider_api_base()
     if not base:
         return None
-    selected_versant = str((legal_context or {}).get("versant_fonction_publique") or "FPT").upper()
+    context = _as_mapping(legal_context)
+    period = _as_mapping(facts_period)
+    history_records = [
+        item for item in conversation_history
+        if isinstance(item, dict)
+    ] if isinstance(conversation_history, (list, tuple)) else []
+    evidence_records = [
+        item for item in retrieved_evidence
+        if isinstance(item, dict)
+    ] if isinstance(retrieved_evidence, (list, tuple)) else []
+    query_records = previous_queries if isinstance(previous_queries, (list, tuple)) else []
+    selected_versant = str(context.get("versant_fonction_publique") or "FPT").upper()
     selected_label = _PUBLIC_SERVICE_LABELS.get(selected_versant, _PUBLIC_SERVICE_LABELS["FPT"])
     system = (
         f"Tu es le planificateur de recherche documentaire juridique de Dikévia, spécialisé en {selected_label} française. "
@@ -574,16 +585,16 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
     user_payload = {
         "question": str(question or "")[:5000],
         "employer": str(employer or "")[:120],
-        "facts_period": facts_period or {},
-        "deterministic_scope_hints_not_legal_evidence": legal_context or {},
-        "previous_queries_already_executed": (previous_queries or [])[:7],
+        "facts_period": period,
+        "deterministic_scope_hints_not_legal_evidence": context,
+        "previous_queries_already_executed": [str(item)[:500] for item in query_records[:7] if isinstance(item, str)],
         "retrieved_source_summaries_not_legal_conclusions": [
             {"source_type": item.get("source_type"), "title": item.get("title"), "article": item.get("article"),
              "official_number": item.get("official_number"), "source_id": item.get("source_id"),
              "excerpt": str(item.get("excerpt") or item.get("text") or "")[:700]}
-            for item in (retrieved_evidence or [])[:24] if isinstance(item, dict)
+            for item in evidence_records[:24]
         ],
-        "recent_user_context": [{"content": str(item.get("content", ""))[:1000]} for item in [m for m in (conversation_history or []) if m.get("role") == "user"][-RECENT_USER_CONTEXT_LIMIT:]],
+        "recent_user_context": [{"content": str(item.get("content", ""))[:1000]} for item in [m for m in history_records if m.get("role") == "user"][-RECENT_USER_CONTEXT_LIMIT:]],
     }
     payload = {"model": settings.ai_model, "temperature": 0.1, "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)}]}
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
@@ -618,6 +629,12 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         return None
     # Defense in depth: only non-empty retrieved excerpts may reach the provider.
     sources = _usable_document_sources(sources, allow_local_documents=allow_local_documents)
+    context = _as_mapping(legal_context)
+    period = _as_mapping(facts_period)
+    history_records = [
+        item for item in conversation_history
+        if isinstance(item, dict)
+    ] if isinstance(conversation_history, (list, tuple)) else []
     if not sources:
         raise AIAnalysisRefusedNoSources("Analyse refusée : aucun extrait documentaire non vide n'est disponible.")
     base = _provider_api_base()
@@ -627,12 +644,12 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         "model": settings.ai_model,
         "temperature": 0.1,
         "messages": [
-            {"role": "system", "content": _system_prompt_for_versant((legal_context or {}).get("versant_fonction_publique", "FPT"))},
+            {"role": "system", "content": _system_prompt_for_versant(context.get("versant_fonction_publique", "FPT"))},
             {"role": "user", "content": json.dumps({
                 "question_actuelle": question, "employeur": employer, "date_de_reference_pour_la_recherche": facts_date,
-                "periode_de_la_situation": facts_period or {"exact_date": facts_date},
-                "qualification_juridique_pre_recherche": legal_context or {},
-                "contexte_questions_utilisateur": [{"content": str(m.get("content", ""))[:1200]} for m in (conversation_history or [])[-12:] if m.get("role") == "user"],
+                "periode_de_la_situation": period or {"exact_date": facts_date},
+                "qualification_juridique_pre_recherche": context,
+                "contexte_questions_utilisateur": [{"content": str(m.get("content", ""))[:1200]} for m in history_records[-12:] if m.get("role") == "user"],
                 "extraits_documentaires_valides": [{
                     "type_source": s.get("source_type"), "identifiant_source": s.get("source_id"),
                     "titre": s.get("title"), "article": s.get("article"),
