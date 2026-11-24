@@ -457,6 +457,28 @@ def test_substantive_new_topic_starting_with_je_suis_does_not_inherit_old_contex
     assert context.question == question
 
 
+def test_je_suis_in_availability_is_not_mistaken_for_a_status_clarification():
+    prior = "Mon chef refuse de payer mes heures supplémentaires."
+    question = "Je suis en disponibilité pour convenances personnelles. Quels sont mes droits ?"
+    context = build_contextual_research_context(
+        question,
+        [prior],
+        ["Êtes-vous titulaire ou contractuel ?"],
+    )
+    assert context.is_followup is False
+    assert context.question == question
+
+
+def test_explicit_status_clarification_still_inherits_previous_topic():
+    context = build_contextual_research_context(
+        "Je suis agent contractuel en CDD.",
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+        ["Êtes-vous titulaire ou contractuel ?"],
+    )
+    assert context.is_followup is True
+    assert "heures supplémentaires" in context.question
+
+
 def test_clarification_status_reply_still_inherits_when_no_new_topic_is_named():
     context = build_contextual_research_context(
         "Je suis agent contractuel en CDD.",

@@ -22,7 +22,8 @@ RECENT_USER_CONTEXT_LIMIT = 10
 
 _CLARIFICATION_REPLY = re.compile(
     r"^(?:oui\b|non\b|exactement\b|c['’]est\s+(?:ça|bien\s+ça)\b|"
-    r"je\s+suis\b|je\s+travaille\b|mon\s+statut\b|"
+    r"je\s+suis\s+(?:(?:un|une|agent(?:e)?\s+)?(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b)|"
+    r"je\s+travaille\s+(?:comme|en\s+tant\s+que)\b|mon\s+statut\b|"
     r"depuis\s+(?:le\s+)?(?:\d|janvier\b|février\b|mars\b|avril\b|"
     r"mai\b|juin\b|juillet\b|août\b|septembre\b|octobre\b|"
     r"novembre\b|décembre\b)|"
@@ -211,6 +212,8 @@ _TOPIC_MARKERS = (
                                "cpf", "compte personnel de formation", "bilan de competences")),
     ("CAREER_AND_PROMOTION", ("avancement de grade", "promotion interne", "avancement d echelon",
                               "entretien professionnel", "evaluation professionnelle", "mobilite interne")),
+    ("AVAILABILITY", ("mise en disponibilite", "demande de disponibilite", "disponibilite d office",
+                      "disponibilite pour convenances personnelles", "disponibilite")),
 )
 
 def _matched_question_topics(question: str) -> set[str]:
