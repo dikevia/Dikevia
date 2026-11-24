@@ -108,3 +108,16 @@ def test_local_document_temporal_status_can_be_checked_at_multiple_period_dates(
     assert local_document_temporal_status(
         None, end, "VERIFIED_APPLICABLE", date(2024, 6, 30)
     ) == "TEMPORAL_SCOPE_INCOMPLETE"
+
+
+@pytest.mark.asyncio
+async def test_local_search_strips_ts_headline_markup_from_evidence_excerpt():
+    conn = FakeConn([
+        local_row(excerpt="Extrait <b>contrôlé</b> de la <B>délibération</B>."),
+    ])
+    results = await search_local_documents(
+        conn, "00000000-0000-0000-0000-000000000001",
+        "VILLE_SAINT_ETIENNE", "temps de travail", date(2024, 6, 1)
+    )
+    assert results[0]["excerpt"] == "Extrait contrôlé de la délibération."
+    assert results[0]["text"] == results[0]["excerpt"]
