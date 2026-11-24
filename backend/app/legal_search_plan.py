@@ -1005,6 +1005,28 @@ def build_official_research_axes(question: str) -> list[str]:
     return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
 
 
+def select_required_research_axes(deterministic_axes: list[str] | None) -> list[str]:
+    """Keep mandatory coverage axes tied to deterministic analysis of the user's question.
+
+    Model-generated issue labels are useful planning hints, but they are not a
+    reliable basis for mandatory coverage checks: they may be unsearched,
+    duplicative, or phrased differently from the validated research axes.
+    """
+    selected: list[str] = []
+    seen: set[str] = set()
+    for axis in deterministic_axes or []:
+        if not isinstance(axis, str):
+            continue
+        normalized = " ".join(axis.split())[:500]
+        if len(normalized) < 8 or normalized.casefold() in seen:
+            continue
+        seen.add(normalized.casefold())
+        selected.append(normalized)
+        if len(selected) >= 10:
+            break
+    return selected
+
+
 def merge_ai_and_fallback_research_queries(
     ai_queries: list[str],
     fallback_queries: list[str],
