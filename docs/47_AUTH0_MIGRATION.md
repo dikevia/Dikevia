@@ -40,11 +40,11 @@ Les variables publiques et privées sont séparées. Les variables suivantes son
 
 - OIDC_PROVIDER=auth0
 - OIDC_ISSUER=https://dev-brlgaz1yh2de3mjo.us.auth0.com/ — conserver la barre oblique finale exacte.
-- OIDC_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com
+- OIDC_AUDIENCE=urn:dikevia:api:development
 - OIDC_JWKS_URL=https://dev-brlgaz1yh2de3mjo.us.auth0.com/.well-known/jwks.json
 - OIDC_CLIENT_ID=BSpBdDO3IUyG2g5JcHYH29e80JRbnW41 — identifiant public de l'application SPA.
 - OIDC_SCOPES=openid profile email
-- OIDC_AUTHORIZATION_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com
+- OIDC_AUTHORIZATION_AUDIENCE=urn:dikevia:api:development
 - OIDC_EMAIL_CLAIM=email
 - OIDC_EMAIL_VERIFIED_CLAIM=email_verified
 
