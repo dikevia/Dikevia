@@ -479,6 +479,34 @@ def test_explicit_status_clarification_still_inherits_previous_topic():
     assert "heures supplémentaires" in context.question
 
 
+def test_et_pour_discipline_is_a_new_topic_not_an_hours_followup():
+    question = "Et pour la discipline ?"
+    context = build_contextual_research_context(
+        question,
+        ["Comment sont rémunérées mes heures supplémentaires ?"],
+    )
+    assert context.is_followup is False
+    assert context.question == question
+
+
+def test_et_pour_fpe_keeps_the_previous_legal_issue_as_a_scope_change():
+    context = build_contextual_research_context(
+        "Et pour la FPE ?",
+        ["Comment sont rémunérées mes heures supplémentaires dans la FPT ?"],
+    )
+    assert context.is_followup is True
+    assert "heures supplémentaires" in context.question
+
+
+def test_et_pour_stagiaires_keeps_the_previous_legal_issue_as_a_population_change():
+    context = build_contextual_research_context(
+        "Et pour les stagiaires ?",
+        ["Comment sont rémunérées mes heures supplémentaires ?"],
+    )
+    assert context.is_followup is True
+    assert "heures supplémentaires" in context.question
+
+
 def test_clarification_status_reply_still_inherits_when_no_new_topic_is_named():
     context = build_contextual_research_context(
         "Je suis agent contractuel en CDD.",
