@@ -262,3 +262,18 @@ async def test_explicit_self_reported_other_versant_stops_research_before_retrie
     assert "nouvelle conversation" in response.answer
     assert response.sources == []
 
+@pytest.mark.parametrize(
+    ("versant", "label"),
+    [("FPE", "fonction publique de l'État"), ("FPH", "fonction publique hospitalière")],
+)
+def test_non_territorial_compound_questions_keep_independent_research_axes(versant, label):
+    from app.orchestrator import _build_versant_fallback_research
+
+    question = "Mon congé maladie est refusé et ma prime n'est pas versée."
+    queries, axes = _build_versant_fallback_research(question, versant)
+
+    assert len(axes) == 2
+    assert all(label in axis for axis in axes)
+    assert all("décret 87-602" not in query and "décret 2002-60" not in query for query in queries)
+    assert all("congé maladie" in axis or "rémunération" in axis for axis in axes)
+
