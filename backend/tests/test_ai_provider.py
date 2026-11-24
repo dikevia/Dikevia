@@ -1632,3 +1632,27 @@ def test_usable_sources_reject_malformed_citation_integrity_metadata():
         {**base, "citation_integrity": 1},
     ]
     assert _usable_document_sources(malformed) == []
+
+
+def test_entailment_verdict_validation_fails_closed_on_malformed_inputs():
+    from app.ai_provider import validate_entailment_verdicts
+
+    valid_claim = {
+        "source_id": "SRC-123456",
+        "text": "Les heures supplémentaires ouvrent droit à compensation.",
+    }
+    valid_verdict = {
+        "claim_index": 0,
+        "source_id": "SRC-123456",
+        "verdict": "SUPPORTED",
+        "support_quote": "Les heures supplémentaires ouvrent droit à compensation.",
+    }
+    assert validate_entailment_verdicts(
+        {"verdicts": [valid_verdict]}, [None], [],
+    )["invalid"] == ["missing_or_invalid_claims"]
+    assert validate_entailment_verdicts(
+        {"verdicts": [valid_verdict]}, [valid_claim], [None, "bad-source"],
+    )["invalid"] == ["verdict_0:source_missing_or_ambiguous"]
+    assert validate_entailment_verdicts(
+        {"verdicts": [valid_verdict]}, [valid_claim], None,
+    )["invalid"] == ["verdict_0:source_missing_or_ambiguous"]
