@@ -453,8 +453,9 @@ def validate_source_relevance_verdicts(payload, sources: list[dict]) -> dict[str
     if not isinstance(payload, dict) or not isinstance(payload.get("items"), list):
         return {}
     allowed = {"DIRECT", "CONTEXTUAL", "IRRELEVANT", "UNCERTAIN"}
+    source_records = sources if isinstance(sources, (list, tuple)) else []
     expected = {
-        source.get("source_id") for source in sources
+        source.get("source_id") for source in source_records
         if isinstance(source, dict) and isinstance(source.get("source_id"), str)
     }
     verdicts: dict[str, str] = {}
@@ -463,7 +464,13 @@ def validate_source_relevance_verdicts(payload, sources: list[dict]) -> dict[str
             continue
         source_id = item.get("source_id")
         verdict = item.get("verdict")
-        if source_id in expected and source_id not in verdicts and verdict in allowed:
+        if (
+            isinstance(source_id, str)
+            and isinstance(verdict, str)
+            and source_id in expected
+            and source_id not in verdicts
+            and verdict in allowed
+        ):
             verdicts[source_id] = verdict
     return verdicts
 
