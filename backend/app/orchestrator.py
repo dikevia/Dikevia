@@ -149,6 +149,45 @@ def _build_targeted_regulatory_queries(
         }
         queries.extend(branch_availability_articles.get(public_service, ()))
 
+    citis = any(marker in folded for marker in (
+        "citis", "invalidité temporaire imputable au service",
+        "invalidite temporaire imputable au service",
+    )) or (
+        "accident de service" in folded and
+        ("imputable au service" in folded or "maladie professionnelle" in folded)
+    )
+    therapeutic_part_time = any(marker in folded for marker in (
+        "temps partiel thérapeutique", "temps partiel therapeutique",
+        "temps partiel pour raison thérapeutique",
+        "temps partiel pour raison therapeutique", "tpt",
+    ))
+
+    # Target the current implementing decrees for the selected branch. These
+    # searches are deliberately disjoint: FPE and FPH must never inherit FPT
+    # decrees, and a cross-versant title remains subject to the scope guard.
+    if public_service == "FPE":
+        if citis:
+            queries.extend([
+                "décret n° 86-442 du 14 mars 1986 titre VI bis articles 47-1 à 47-20 congé pour invalidité temporaire imputable au service fonctionnaires de l'État",
+                "décret n° 2026-705 du 29 juillet 2026 et décret n° 86-442 articles 47-1 à 47-20 CITIS fonction publique de l'État",
+            ])
+        if therapeutic_part_time:
+            queries.extend([
+                "décret n° 86-442 du 14 mars 1986 titre II bis articles 23-1 à 23-14 temps partiel pour raison thérapeutique fonctionnaires de l'État",
+                "décret n° 2026-705 du 29 juillet 2026 et décret n° 86-442 articles 23-1 à 23-14 temps partiel thérapeutique fonction publique de l'État",
+            ])
+    elif public_service == "FPH":
+        if citis:
+            queries.extend([
+                "décret n° 88-386 du 19 avril 1988 articles 35-2 et 35-3 déclaration accident de service maladie professionnelle CITIS fonctionnaires hospitaliers",
+                "décret n° 2026-705 du 29 juillet 2026 et décret n° 88-386 titre IV CITIS fonction publique hospitalière",
+            ])
+        if therapeutic_part_time:
+            queries.extend([
+                "décret n° 88-386 du 19 avril 1988 titre II bis articles 13-1 à 13-14 temps partiel pour raison thérapeutique fonctionnaires hospitaliers",
+                "décret n° 2026-705 du 29 juillet 2026 et décret n° 88-386 articles 13-1 à 13-14 temps partiel thérapeutique fonction publique hospitalière",
+            ])
+
     # The following implementing texts are specific to the territorial
     # health/absence regimes and must never be sent as FPE/FPH requirements.
     if public_service != "FPT":
@@ -202,18 +241,6 @@ def _build_targeted_regulatory_queries(
                 "arrêté du 25 avril 2002 liste des corps grades emplois éligibles IHTS article 1",
             ])
 
-    citis = any(marker in folded for marker in (
-        "citis", "invalidité temporaire imputable au service",
-        "invalidite temporaire imputable au service",
-    )) or (
-        "accident de service" in folded and
-        ("imputable au service" in folded or "maladie professionnelle" in folded)
-    )
-    therapeutic_part_time = any(marker in folded for marker in (
-        "temps partiel thérapeutique", "temps partiel therapeutique",
-        "temps partiel pour raison thérapeutique",
-        "temps partiel pour raison therapeutique", "tpt",
-    ))
     if citis:
         queries.extend([
             "décret n° 87-602 articles 37-1 37-2 37-5 37-9 37-9-1 37-20 CITIS accident de service déclaration imputabilité instruction",
