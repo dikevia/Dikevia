@@ -341,8 +341,9 @@ async def test_search_prioritizes_original_terms_over_fpt_expansions():
     assert "c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query" in conn.query
     assert conn.args[0] == original
     assert "IHTS" in conn.args[1]
-    assert len(conn.args) == 4
+    assert len(conn.args) == 5
     assert conn.args[3] is None
+    assert conn.args[4] == date(2026, 1, 1)
 
 
 def test_incomplete_dates_allow_general_information_but_not_verified_conclusion():
