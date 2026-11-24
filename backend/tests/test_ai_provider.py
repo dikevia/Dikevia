@@ -2211,3 +2211,56 @@ def test_bounded_legal_evidence_keeps_retrieved_passage_and_document_ending():
     assert ending in evidence
     assert "Autres passages du texte officiel" in evidence
 
+@pytest.mark.asyncio
+async def test_provider_completion_retries_one_transient_server_error(monkeypatch):
+    import httpx
+    from app.ai_provider import _post_chat_completion
+
+    responses = [
+        httpx.Response(503, request=httpx.Request("POST", "https://provider.test/chat/completions")),
+        httpx.Response(200, json={"choices": []}, request=httpx.Request("POST", "https://provider.test/chat/completions")),
+    ]
+
+    class FakeClient:
+        calls = 0
+
+        async def post(self, url, *, headers, json):
+            self.calls += 1
+            return responses.pop(0)
+
+    async def no_sleep(_):
+        return None
+
+    monkeypatch.setattr("app.ai_provider.asyncio.sleep", no_sleep)
+    client = FakeClient()
+    response = await _post_chat_completion(
+        client, "https://provider.test/chat/completions", headers={}, payload={}
+    )
+
+    assert response.status_code == 200
+    assert client.calls == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status_code", [401, 403, 429, 400])
+async def test_provider_completion_does_not_retry_auth_quota_or_client_errors(status_code):
+    import httpx
+    from app.ai_provider import _post_chat_completion
+
+    class FakeClient:
+        calls = 0
+
+        async def post(self, url, *, headers, json):
+            self.calls += 1
+            return httpx.Response(
+                status_code,
+                request=httpx.Request("POST", "https://provider.test/chat/completions"),
+            )
+
+    client = FakeClient()
+    with pytest.raises(httpx.HTTPStatusError):
+        await _post_chat_completion(
+            client, "https://provider.test/chat/completions", headers={}, payload={}
+        )
+
+    assert client.calls == 1
