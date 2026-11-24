@@ -38,7 +38,7 @@ function split(value){
   if(end<text.length){
    const midpoint=start+250;
    const newline=text.lastIndexOf("\n",end-1);
-   const sentence=text.lastIndexOf(". ",end-2);
+   const sentence=text.lastIndexOf(". ",end-1);
    const boundary=Math.max(newline>=midpoint?newline:-1,sentence>=midpoint?sentence:-1);
    if(boundary>start)end=boundary+1;
   }
