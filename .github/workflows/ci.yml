@@ -146,6 +146,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f database/migrations/024_legal_embeddings_multilingual_384.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/025_credit_wallet_foundation.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/026_platform_founder_entitlements.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/027_ai_usage_event_dimensions.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/028_personal_user_documents.sql
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend
