@@ -504,6 +504,7 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
         })
     if not candidates:
         return {}
+    axes_records = research_axes if isinstance(research_axes, (list, tuple)) else []
     system = (
         "Tu es un évaluateur de pertinence documentaire, pas un juriste et pas un moteur de validation du droit. "
         "Compare le contenu réel de chaque document à la question et aux axes de recherche. "
@@ -523,7 +524,7 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
             {"role": "system", "content": system},
             {"role": "user", "content": json.dumps({
                 "question": str(question or "")[:5000],
-                "research_axes": [str(axis)[:500] for axis in (research_axes or [])[:8]],
+                "research_axes": [str(axis)[:500] for axis in axes_records[:8] if isinstance(axis, str)],
                 "documents": candidates,
             }, ensure_ascii=False)},
         ],
