@@ -553,3 +553,33 @@ def test_comparative_or_third_party_branch_mention_does_not_create_self_mismatch
     assert comparative["explicit_self_versant_mismatch"] is None
     assert third_party["explicit_self_versant_mismatch"] is None
 
+def test_referential_followup_resolves_previous_assistant_point_without_using_it_as_question_text():
+    previous_user = "Je suis titulaire dans une commune et mon employeur refuse mes heures supplémentaires."
+    previous_assistant = (
+        "La réponse distingue trois points. Le deuxième concerne les conditions de récupération "
+        "des heures supplémentaires et les règles de décompte."
+    )
+
+    context = build_contextual_research_context(
+        "Peux-tu détailler le deuxième point ?",
+        prior_user_questions=[previous_user],
+        prior_assistant_messages=[previous_assistant],
+    )
+
+    assert context.is_followup is True
+    assert "heures supplémentaires" in context.question
+    assert context.assistant_context == previous_assistant
+
+
+def test_referential_followup_does_not_inherit_an_unrelated_previous_answer():
+    previous_user = "Mon employeur refuse mes heures supplémentaires."
+    previous_assistant = "La réponse porte sur le temps de travail et sa compensation."
+
+    context = build_contextual_research_context(
+        "Peux-tu préciser les congés annuels ?",
+        prior_user_questions=[previous_user],
+        prior_assistant_messages=[previous_assistant],
+    )
+
+    assert context.is_followup is False
+    assert context.assistant_context is None
