@@ -38,7 +38,9 @@ _CONTEXTUAL_FOLLOWUP = re.compile(
     r"^(?:et\s+(?:pour|si|dans|concernant)\b|"
     r"et\s+(?:les|la|le)\s+(?:agents?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
     r"titulaires?|fonctionnaires?)\b|"
-    r"dans ce cas\b|pour les\b|pour la\b|pour le\b|"
+    r"pour\s+les?\s+(?:agents?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"titulaires?|fonctionnaires?)\s*\??$|"
+    r"dans ce cas\b|"
     r"qu['’]en est-il\b|quid\b|même chose\b|cela\b|ça\b)",
     re.IGNORECASE,
 )
@@ -187,15 +189,46 @@ def qualify_legal_question(
             topic = candidate
             break
 
-    if re.search(r"\b(agent|agents|je suis)\s+contractuel(le)?s?\b|\bcontractuel(le)?s?\b", folded):
+    # Status describes the user's own situation, not a third party or a
+    # population mentioned in the question. Use only the current turn's first
+    # line so prior conversation context cannot overwrite a new status.
+    current_line = str(question or "").splitlines()[0]
+    current_folded = _fold(current_line)
+    short_status_reply = re.fullmatch(
+        r"(?:et\s+)?(?:pour\s+les?\s+)?(?:agents?\s+)?"
+        r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\s*\??",
+        current_folded,
+    )
+    if (
+        short_status_reply
+        and re.search(r"contractuel", current_folded)
+    ) or re.search(
+        r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
+        r"(?:(?:un|une)\s+)?(?:agent|agente\s+)?contractuel(?:le)?s?\b",
+        current_folded,
+    ):
         status = "CONTRACTUEL_EXPLICIT"
-    elif re.search(r"\b(stagiaire|fonctionnaire stagiaire)\b", folded):
+    elif (
+        short_status_reply and "stagiaire" in current_folded
+    ) or re.search(
+        r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
+        r"(?:(?:un|une)\s+)?(?:fonctionnaire\s+)?stagiaire\b",
+        current_folded,
+    ):
         status = "STAGIAIRE_EXPLICIT"
-    elif re.search(r"\b(titulaire|fonctionnaire titulaire)\b", folded):
+    elif (
+        short_status_reply and "titulaire" in current_folded
+    ) or re.search(
+        r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
+        r"(?:(?:un|une)\s+)?(?:agent\s+)?titulaire\b",
+        current_folded,
+    ):
         status = "TITULAIRE_EXPLICIT"
-    elif re.search(r"\bfonctionnaire\b", folded):
+    elif (
+        short_status_reply and "fonctionnaire" in current_folded
+    ) or re.search(r"\bje suis fonctionnaire\b", current_folded):
         status = "FONCTIONNAIRE_STATUS_UNSPECIFIED"
-    elif re.search(r"\b(cdd|cdi)\b", folded):
+    elif re.search(r"\b(?:je suis|je travaille) en (?:cdd|cdi)\b", current_folded):
         # A CDD/CDI alone does not establish public-agent contractual status.
         status = "EMPLOYMENT_STATUS_AMBIGUOUS"
     else:
