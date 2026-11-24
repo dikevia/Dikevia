@@ -22,6 +22,28 @@ TOKEN_TTL_SAFETY_SECONDS = 60
 ARTICLE_ID_RE = re.compile(r"^LEGIARTI\d{12}$")
 logger = logging.getLogger("dikevia.legifrance")
 
+PISTE_OAUTH_ERROR_CODES = {
+    "invalid_request", "invalid_client", "invalid_grant",
+    "unauthorized_client", "unsupported_grant_type", "invalid_scope",
+    "access_denied", "temporarily_unavailable",
+}
+
+
+def _safe_piste_oauth_error_code(response: httpx.Response) -> str | None:
+    """Extract only documented OAuth error identifiers; never expose provider descriptions."""
+    try:
+        payload = response.json()
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    value = payload.get("error")
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().lower()
+    return normalized if normalized in PISTE_OAUTH_ERROR_CODES else None
+
+
 
 def _loda_document_kind(nature: Any, title: str, number: str | None) -> str:
     """Classify LODA results from the API's nature field; unknown types stay unknown."""
@@ -143,9 +165,15 @@ class LegifranceConnector:
                 self._token_expires_at = time.monotonic() + expires
                 return token
             except httpx.HTTPStatusError as exc:
-                # Log only the HTTP status; never expose OAuth response bodies or credentials.
+                # OAuth descriptions may echo configuration details: retain only an allowlisted code.
+                error_code = _safe_piste_oauth_error_code(exc.response)
+                logger.warning(
+                    "PISTE_OAUTH_TOKEN_REJECTED status=%d error_code=%s",
+                    exc.response.status_code, error_code or "unspecified",
+                )
+                suffix = f", code {error_code}" if error_code else ""
                 raise LegifranceUnavailable(
-                    f"Refus OAuth PISTE (HTTP {exc.response.status_code})."
+                    f"Refus OAuth PISTE (HTTP {exc.response.status_code}{suffix})."
                 ) from exc
             except (httpx.HTTPError, ValueError, TypeError) as exc:
                 raise LegifranceUnavailable("Échec réseau ou réponse OAuth PISTE invalide.") from exc
