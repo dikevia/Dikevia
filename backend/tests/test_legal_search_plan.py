@@ -667,3 +667,14 @@ def test_deterministic_fallback_is_used_when_ai_plan_is_empty():
         [], fallback_queries, ["axe juridique heures supplémentaires"], max_queries=3,
     )
     assert merged == fallback_queries
+
+
+
+def test_single_query_budget_prefers_deterministic_official_retrieval():
+    merged = merge_ai_and_fallback_research_queries(
+        ["plan IA non vérifié"],
+        ["question utilisateur avec expansion juridique officielle"],
+        [],
+        max_queries=1,
+    )
+    assert merged == ["question utilisateur avec expansion juridique officielle"]
