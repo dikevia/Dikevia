@@ -568,3 +568,29 @@ def test_agent_assaulted_by_service_user_retrieves_protection_and_workplace_safe
     assert any("santé sécurité travail" in axis for axis in axes)
     assert any("rapport circonstancié" in axis for axis in axes)
     assert len(axes) >= 2
+
+
+def test_required_research_axes_are_deduplicated_and_bounded():
+    from app.legal_search_plan import select_required_research_axes
+
+    axes = select_required_research_axes([
+        "  axe juridique A   ",
+        "axe juridique A",
+        "axe juridique B",
+        "",
+        None,
+    ])
+    assert axes == ["axe juridique A", "axe juridique B"]
+
+
+def test_required_research_axes_never_depend_on_model_generated_issue_labels():
+    from app.legal_search_plan import select_required_research_axes
+
+    # The orchestrator supplies only deterministic axes derived from the
+    # user's wording; LLM planning labels are intentionally not accepted here.
+    deterministic_axes = build_official_research_axes(
+        "Je suis titulaire. Je suis agressé par un usager et mon chef refuse le rapport."
+    )
+    selected = select_required_research_axes(deterministic_axes)
+    assert selected == deterministic_axes
+    assert all(axis in deterministic_axes for axis in selected)
