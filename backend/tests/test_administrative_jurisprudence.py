@@ -602,7 +602,7 @@ def test_administrative_open_data_import_accepts_explicit_hospital_employment_de
 def test_open_data_import_rejects_mixed_branch_decisions_even_with_local_employer_context():
     from app.legal_ingestion import _public_service_employment_case_law_scope
 
-    title = "Décision relative à la fonction publique territoriale et hospitalière"
+    title = "Décision relative à la fonction publique territoriale et à la fonction publique hospitalière"
     body = (
         "La commune a pris une décision disciplinaire concernant un agent territorial "
         "et un agent hospitalier. Le litige porte sur les garanties disciplinaires."
