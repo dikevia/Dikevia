@@ -56,6 +56,8 @@ Le frontend charge /auth-config.js, généré côté serveur à partir de ces va
 
 La correspondance historique est résolue côté API par une recherche PostgreSQL sous RLS : pour un sujet Auth0 de la connexion base de données commençant par `auth0|`, le backend retire ce préfixe uniquement pour vérifier si le couple exact (ancien émetteur Keycloak, ancien sujet) existe encore et correspond à un compte actif. Si le compte historique existe, le backend réutilise cette identité ; sinon, il conserve intégralement l'identité Auth0 native. Aucun rapprochement par adresse e-mail, aucune revendication fournie par l'utilisateur et aucune Action Auth0 ne sont utilisés. Le lookup est limité au sujet signé du jeton et à la politique RLS PostgreSQL.
 
+Pour l'import Auth0, le champ `user_id` doit contenir l'ancien `oidc_subject` Keycloak **sans** préfixe `auth0|`. Auth0 ajoute lui-même le préfixe de la connexion base de données dans le sujet final du jeton (`auth0|<user_id>`). Ne jamais fournir `auth0|<ancien-sujet>` dans le fichier d'import, sous peine d'obtenir un double préfixe et de perdre la correspondance. Le pilote doit vérifier le `sub` réellement émis avant tout import massif.
+
 La reprise des mots de passe n'est pas présumée. Les hashes Keycloak doivent être comparés aux formats acceptés par Auth0 ; si le format n'est pas importable, prévoir une réinitialisation sécurisée des mots de passe. Un échantillon d'utilisateurs doit être testé avant tout import global. Contrôler également les comptes sans e-mail, les doublons et les adresses non vérifiées.
 
 ## Invitations
