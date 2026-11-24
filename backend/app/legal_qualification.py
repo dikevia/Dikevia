@@ -192,37 +192,42 @@ def qualify_legal_question(
     # Status describes the user's own situation, not a third party or a
     # population mentioned in the question. Use only the current turn's first
     # line so prior conversation context cannot overwrite a new status.
-    current_line = str(question or "").splitlines()[0]
+    current_lines = str(question or "").splitlines()
+    current_line = current_lines[0] if current_lines else ""
     current_folded = _fold(current_line)
+    negative_status_statement = bool(re.search(
+        r"\\bje\\s+(?:ne\\s+)?(?:suis|travaille)\\s+(?:pas|plus|jamais)\\b",
+        current_folded,
+    ))
     short_status_reply = re.fullmatch(
         r"(?:(?:et\s+)?pour\s+les?\s+|et\s+les?\s+)?(?:agent(?:e)?s?\s+)?"
         r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\s*\??",
         current_folded,
     )
-    if (
+    if not negative_status_statement and ((
         short_status_reply
         and re.search(r"contractuel", current_folded)
     ) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
         r"(?:(?:un|une)\s+)?(?:(?:agent|agente)\s+)?contractuel(?:le)?s?\b",
         current_folded,
-    ):
+    )):
         status = "CONTRACTUEL_EXPLICIT"
-    elif (
+    elif not negative_status_statement and ((
         short_status_reply and "stagiaire" in current_folded
     ) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
         r"(?:(?:un|une)\s+)?(?:fonctionnaire\s+)?stagiaire\b",
         current_folded,
-    ):
+    )):
         status = "STAGIAIRE_EXPLICIT"
-    elif (
+    elif not negative_status_statement and ((
         short_status_reply and "titulaire" in current_folded
     ) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
         r"(?:(?:un|une)\s+)?(?:(?:agent|fonctionnaire)\s+)?titulaire\b",
         current_folded,
-    ):
+    )):
         status = "TITULAIRE_EXPLICIT"
     elif (
         short_status_reply and "fonctionnaire" in current_folded
