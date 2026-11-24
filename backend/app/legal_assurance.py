@@ -51,6 +51,9 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         kind = "CODE"
     elif kind.startswith("LEGIFRANCE_"):
         kind = str(source.get("document_kind") or "OTHER").upper()
+    # Normalize French API vocabulary to the canonical families used for
+    # source ranking; authority and review priority must tell the same story.
+    kind = {"DECRET": "DECREE", "ARRETE": "ORDER", "LOI": "LAW"}.get(kind, kind)
     if kind in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
         doc_type = str(source.get("local_document_type") or "").upper()
         if "DELIB" in doc_type:
