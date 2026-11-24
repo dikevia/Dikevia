@@ -84,6 +84,34 @@ def test_only_the_immediately_previous_assistant_turn_can_supply_a_clarification
     ]
 
 
+def test_multi_turn_followup_preserves_an_explicit_status_from_an_earlier_user_turn():
+    from app.legal_qualification import build_contextual_research_context, qualify_legal_question
+    from app.orchestrator import _provider_context_history
+
+    history = [
+        "Je suis agent contractuel en CDD.",
+        "Quels sont les délais de préavis en cas de fin de contrat ?",
+    ]
+    resolved = build_contextual_research_context("Et en cas de maladie ?", history)
+    assert resolved.is_followup is True
+    assert "Contexte de statut déclaré précédemment : Je suis agent contractuel" in resolved.question
+    assert qualify_legal_question(resolved.question)["agent_status"] == "CONTRACTUEL_EXPLICIT"
+    provider_history = _provider_context_history(resolved.question, True)
+    assert len(provider_history) == 1
+    assert "Contexte de statut déclaré précédemment" in provider_history[0]["content"]
+
+
+def test_independent_question_does_not_inherit_a_previously_declared_status():
+    from app.legal_qualification import build_contextual_research_context
+
+    resolved = build_contextual_research_context(
+        "Comment fonctionne le compte épargne-temps ?",
+        ["Je suis agent contractuel en CDD.", "Quels sont mes droits aux heures supplémentaires ?"],
+    )
+    assert resolved.is_followup is False
+    assert "Contexte de statut déclaré précédemment" not in resolved.question
+
+
 def test_provider_context_history_excludes_stale_topics_and_keeps_only_the_selected_referent():
     from app.orchestrator import _provider_context_history
 

@@ -43,6 +43,17 @@ _CONTEXTUAL_SCOPE_MODIFIER = re.compile(
 )
 
 
+# Carry only an explicitly declared first-person public-agent status across
+# genuine follow-ups. Population questions and third-party descriptions do not
+# become facts about the current user.
+_EXPLICIT_STATUS_DECLARATION = re.compile(
+    r"\b(?:je\s+suis|je\s+travaille\s+comme|en\s+tant\s+que|mon\s+statut\s+est)\s+"
+    r"(?:(?:un|une)\s+)?(?:(?:agent|agente|fonctionnaire)\s+)?"
+    r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b",
+    re.IGNORECASE,
+)
+
+
 _CONTEXTUAL_FOLLOWUP = re.compile(
     r"^(?:et\s+(?:pour|si|dans|concernant)\b|"
     r"et\s+(?:les|la|le)\s+(?:agent(?:e)?s?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
@@ -104,7 +115,19 @@ def build_contextual_research_context(
             # A short "Et pour ..." that names a different legal family is a
             # new question, not a continuation of the previous legal issue.
             return ContextualResearchContext(question=current[:500], is_followup=False)
-        contextual = f"{current[:300]}\n{prior[:180]}"[:500]
+        contextual = f"{current[:300]}\n{prior[:180]}"
+        # Retain a first-person status declared in an earlier user turn across
+        # a genuine follow-up, unless the current turn declares a new status.
+        if not _EXPLICIT_STATUS_DECLARATION.search(current):
+            for earlier_question in reversed(prior_questions):
+                declaration = _EXPLICIT_STATUS_DECLARATION.search(earlier_question)
+                if declaration:
+                    contextual += (
+                        "\nContexte de statut déclaré précédemment : "
+                        + declaration.group(0)
+                    )
+                    break
+        contextual = contextual[:500]
         return ContextualResearchContext(question=contextual, is_followup=True)
 
     # A short answer such as "oui" or "contractuel" is contextual only when
@@ -240,6 +263,16 @@ def qualify_legal_question(
     # line so prior conversation context cannot overwrite a new status.
     current_lines = str(question or "").splitlines()
     current_line = current_lines[0] if current_lines else ""
+    # Only the contextualizer may add this dedicated line, based on an
+    # explicit first-person declaration in a previous user turn.
+    if not _EXPLICIT_STATUS_DECLARATION.search(current_line):
+        inherited_status = next((
+            line.split(":", 1)[1].strip()
+            for line in current_lines[1:]
+            if line.startswith("Contexte de statut déclaré précédemment :") and ":" in line
+        ), None)
+        if inherited_status:
+            current_line = inherited_status
     current_folded = _fold(current_line)
     negative_status_match = re.search(
         r"\bje\s+(?:ne\s+)?(?:suis|travaille)\s+(?:pas|plus|jamais)\s+"
