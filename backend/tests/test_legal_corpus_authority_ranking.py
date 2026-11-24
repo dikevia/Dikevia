@@ -183,3 +183,44 @@ def test_corpus_version_citation_ids_distinguish_versions_of_one_official_docume
     assert second.startswith("CORPUS_VERSION_")
     assert corpus_version_citation_id(official_id, None) == official_id
     assert corpus_version_citation_id(None, "11111111-1111-4111-8111-111111111111") is None
+
+@pytest.mark.asyncio
+async def test_corpus_search_uses_normalized_384d_query_vector_in_hybrid_ranking():
+    conn = FakeConn()
+
+    await search_legal_corpus(
+        conn,
+        "temps de travail fonction publique",
+        date(2026, 11, 24),
+        limit=12,
+        query_embedding=[3.0] + [4.0] + [0.0] * 382,
+    )
+
+    assert "vector_ranked AS" in conn.query
+    assert "c.embedding_384 <=> $4::vector" in conn.query
+    assert conn.args[3].startswith("[0.60000000,0.80000000,")
+    assert conn.args[3].endswith("0.00000000]")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "embedding",
+    [
+        [1.0] * 383,
+        [0.0] * 384,
+        [float("nan")] + [0.0] * 383,
+        [float("inf")] + [0.0] * 383,
+    ],
+)
+async def test_corpus_search_rejects_invalid_query_embeddings_before_database_access(embedding):
+    conn = FakeConn()
+
+    with pytest.raises(ValueError):
+        await search_legal_corpus(
+            conn,
+            "temps de travail fonction publique",
+            date(2026, 11, 24),
+            query_embedding=embedding,
+        )
+
+    assert conn.query is None
