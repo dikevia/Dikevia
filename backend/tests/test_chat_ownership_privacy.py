@@ -136,6 +136,19 @@ def test_local_documents_are_excluded_from_ai_payload_without_consent():
     )} == {"local-1", "official-1"}
 
 
+def test_research_planner_never_receives_local_tenant_documents():
+    from app.ai_provider import _planner_evidence_records
+
+    records = _planner_evidence_records([
+        {"source_type": "LEGIFRANCE_LODA", "source_id": "official-1", "excerpt": "Texte officiel."},
+        {"source_type": "LOCAL_DOCUMENT", "source_id": "local-1", "excerpt": "Règlement interne."},
+        {"source_type": "LOCAL_COLLECTIVITY_DOCUMENT", "source_id": "local-2", "text": "Délibération locale."},
+        {"source_type": "LEGIFRANCE_LODA", "source_id": "empty-1", "excerpt": "   "},
+    ])
+
+    assert [item["source_id"] for item in records] == ["official-1"]
+
+
 def test_local_document_entailment_is_rejected_without_consent(monkeypatch):
     from app import ai_provider
 
