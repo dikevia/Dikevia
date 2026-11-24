@@ -364,14 +364,8 @@ def _parse_research_plan(
     """Parse and bound an untrusted model-generated research plan."""
     if not isinstance(content, str):
         return None
-    candidate = content.strip()
-    if candidate.startswith("```"):
-        candidate = re.sub(r"^```(?:json)?\s*|\s*```$", "", candidate, flags=re.IGNORECASE).strip()
-    try:
-        payload = json.loads(candidate)
-    except (TypeError, ValueError):
-        return None
-    if not isinstance(payload, dict):
+    payload = parse_structured_answer(content)
+    if payload is None:
         return None
     def clean_items(value, maximum, limit):
         if not isinstance(value, list):
@@ -525,7 +519,7 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
-        parsed = json.loads(content) if isinstance(content, str) else None
+        parsed = parse_structured_answer(content)
         return validate_source_relevance_verdicts(parsed, candidates)
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
         _log_provider_failure("source_relevance", exc)
