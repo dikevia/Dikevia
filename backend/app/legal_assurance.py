@@ -179,11 +179,18 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
 def assess_source_set(sources: list[dict[str, Any]]) -> dict[str, Any]:
     # Connector payloads are untrusted input: malformed records are ignored
     # rather than crashing the whole answer pipeline.
-    source_records = [source for source in (sources or []) if isinstance(source, dict)]
+    raw_sources = sources if isinstance(sources, (list, tuple)) else []
+    source_records = [source for source in raw_sources if isinstance(source, dict)]
+    malformed_count = len(raw_sources) - len(source_records)
     classified = [{**source, "legal_assurance": classify_legal_source(source)} for source in source_records]
     local = [s for s in classified if s["legal_assurance"]["source_family"].startswith("LOCAL_")]
     national = [s for s in classified if not s["legal_assurance"]["source_family"].startswith("LOCAL_")]
     warnings: list[str] = []
+    if malformed_count:
+        warnings.append(
+            f"{malformed_count} enregistrement(s) de source mal formé(s) ont été écartés ; "
+            "la vérification documentaire est incomplète."
+        )
     if local and national:
         warnings.append("Des sources nationales et locales sont présentes : comparer leur champ d'application, leur date d'effet et leur compatibilité. Leur coexistence ne prouve pas une contradiction.")
     if any(
