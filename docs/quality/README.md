@@ -88,4 +88,4 @@ python scripts/fpt_benchmark.py prepare-review --dataset docs/quality/fpt_pilot_
 python scripts/fpt_benchmark.py score --dataset docs/quality/fpt_pilot_15_v1.json --responses pilot_responses.json --reviews pilot_review.json --out pilot_score.json
 ```
 
-Le fichier de réponses doit contenir exactement une réponse par identifiant du manifeste. La grille générée reprend les critères et avertissements du cas. Le score du pilote porte uniquement sur ces 15 cas et ne remplace pas le benchmark de 100 questions. Le statut de validation juridique humaine reste obligatoire ; les seuils du rapport ne constituent pas une certification juridique.
+Le fichier de réponses doit contenir exactement une réponse par identifiant du manifeste. La grille générée reprend les critères et avertissements du cas. Le score du pilote porte uniquement sur ces 15 cas et ne remplace pas le benchmark de 100 questions. Le statut de validation juridique humaine reste obligatoire ; les seuils du rapport ne constituent pas une certification juridique. Le calculateur rejette les notes booléennes et les évaluations mal formées ; une grille incomplète conserve le statut `INCOMPLET`.
