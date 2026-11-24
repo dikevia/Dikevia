@@ -436,6 +436,31 @@ def _permanent_source_temporal_metadata(
     return status, explanation
 
 
+def _is_usable_permanent_source(source: dict, permanent_source_ids: set) -> bool:
+    """Apply the final corpus-source eligibility gate, including historical versions."""
+    if (
+        source.get("source_id") not in permanent_source_ids
+        or source.get("content_kind") != "FULL_TEXT"
+        or not _citation_is_valid(source)
+        or source.get("analysis_eligible") is not True
+        or source.get("claim_eligible", True) is False
+        or source.get("research_axis_relevant", True) is False
+    ):
+        return False
+    temporal_status = source.get("temporal_status")
+    if temporal_status in {
+        "IN_FORCE_ON_REQUESTED_DATE",
+        "IN_FORCE_ON_FACTS_DATE",
+        "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+    }:
+        return True
+    return (
+        temporal_status == "TEMPORAL_SCOPE_INCOMPLETE"
+        and source.get("general_info_eligible") is True
+        and source.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
+    )
+
+
 def classify_question_intent(question: str) -> str:
     """Classify whether the current turn describes an individual event or asks for general rules.
 
@@ -1706,25 +1731,7 @@ class LegalOrchestrator:
         sources = filter_irrelevant_sources_for_display(sources)
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
-            s for s in sources
-            if s.get("source_id") in permanent_source_ids
-            and s.get("content_kind") == "FULL_TEXT"
-            and _citation_is_valid(s)
-            and (
-                s.get("temporal_status") in {
-                    "IN_FORCE_ON_REQUESTED_DATE",
-                    "IN_FORCE_ON_FACTS_DATE",
-                    "DECISION_AVAILABLE_BY_REQUESTED_DATE",
-                }
-                or (
-                    s.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
-                    and s.get("general_info_eligible") is True
-                    and s.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
-                )
-            )
-            and s.get("analysis_eligible") is True
-            and s.get("claim_eligible", True) is not False
-            and s.get("research_axis_relevant", True) is not False
+            s for s in sources if _is_usable_permanent_source(s, permanent_source_ids)
         ]
         usable_official = [
             s for s in sources
