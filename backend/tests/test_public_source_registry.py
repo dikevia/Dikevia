@@ -84,6 +84,7 @@ def test_sig_info_gouv_pages_are_explicitly_reuse_approved_and_scoped():
         "sig-missions-2026",
         "sig-charte-etat-marque",
         "sig-charte-accessibilite-communication",
+        "sig-charte-usage-responsable-ia-2026",
     }
     assert source["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
     assert source["status"] == "REUSE_APPROVED"
@@ -92,8 +93,9 @@ def test_sig_info_gouv_pages_are_explicitly_reuse_approved_and_scoped():
     assert {item["id"] for item in seeds} == expected
     assert all(item["status"] == "REUSE_APPROVED" for item in seeds)
     assert all(item["reuse_status"] == "REUSE_APPROVED" for item in seeds)
-    assert all(item["content_status"] == "NOT_COLLECTED" for item in seeds)
     assert all(item["url"].startswith("https://www.info.gouv.fr/") for item in seeds)
+    assert next(item for item in seeds if item["id"] == "sig-missions-2026")["collection_note"].startswith("Le collecteur automatisé")
+    assert next(item for item in seeds if item["id"] == "sig-charte-etat-marque")["collection_note"].startswith("Le collecteur automatisé")
 
 
 def test_sig_info_gouv_guidance_cannot_become_primary_legal_evidence():
