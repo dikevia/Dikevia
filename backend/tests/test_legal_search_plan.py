@@ -594,3 +594,11 @@ def test_required_research_axes_never_depend_on_model_generated_issue_labels():
     selected = select_required_research_axes(deterministic_axes)
     assert selected == deterministic_axes
     assert all(axis in deterministic_axes for axis in selected)
+
+
+def test_orchestrator_does_not_promote_llm_refinement_labels_to_required_axes():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "orchestrator.py").read_text()
+    assert "refinement.legal_issues" not in source
+    assert "research_axes = select_required_research_axes(fallback_axes)" in source
