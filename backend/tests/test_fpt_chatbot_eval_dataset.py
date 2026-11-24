@@ -116,6 +116,6 @@ def test_fifteen_question_pilot_runs_through_prepare_review_and_score(tmp_path):
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert report["questions_total"] == 15
     assert report["questions_evaluees"] == 15
-    assert report["status"] == "COMPLET"
+    assert report["status"] == "INCOMPLET"
     assert report["release_gate"]["status"] == "INCOMPLETE"
     assert report["release_gate"]["checks"]["gold_answers_human_validated"] is False
