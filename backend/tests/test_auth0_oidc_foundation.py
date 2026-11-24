@@ -31,7 +31,7 @@ def production_base():
         oidc_email_claim="https://dikevia.invalid/claims/email",
         oidc_email_verified_claim="https://dikevia.invalid/claims/email_verified",
         oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
-        oidc_identity_legacy_subject_claim="https://dikevia.invalid/claims/legacy_subject",
+        oidc_identity_subject_prefix="auth0|",
         cors_origins="https://dikevia.example",
         aws_endpoint_url_s3="https://storage.example",
         aws_region="us-east-2",
@@ -70,7 +70,7 @@ def test_oidc_provider_scopes_and_compatibility_settings_are_validated():
             oidc_jwks_url="https://tenant.auth0.com/.well-known/jwks.json",
             oidc_client_id="client", oidc_authorization_audience="urn:api",
             oidc_identity_compat_issuer="https://old.example",
-            oidc_identity_legacy_subject_claim="",
+            oidc_identity_subject_prefix="",
         ))
 
 
@@ -102,7 +102,6 @@ def test_auth0_token_claims_map_to_existing_keycloak_identity(monkeypatch):
             "iss": issuer,
             "aud": audience,
             "sub": "auth0|auth0-internal-id",
-            "https://dikevia.invalid/claims/legacy_subject": "existing-keycloak-user-uuid",
             "iat": now,
             "exp": now + 300,
             "https://dikevia.invalid/claims/email": "agent@example.test",
@@ -114,8 +113,8 @@ def test_auth0_token_claims_map_to_existing_keycloak_identity(monkeypatch):
     )
 
     principal = security.verify_access_token(token)
-    assert principal.issuer == old_issuer
-    assert principal.subject == "existing-keycloak-user-uuid"
+    assert principal.issuer == issuer
+    assert principal.subject == "auth0|auth0-internal-id"
     assert principal.email == "agent@example.test"
     assert principal.email_verified is True
 
@@ -169,7 +168,7 @@ def test_auth0_without_legacy_mapping_keeps_native_auth0_subject(monkeypatch):
         oidc_email_claim="email",
         oidc_email_verified_claim="email_verified",
         oidc_identity_compat_issuer="",
-        oidc_identity_legacy_subject_claim="https://dikevia.invalid/claims/legacy_subject",
+        oidc_identity_subject_prefix="auth0|",
     )
     monkeypatch.setattr(security, "settings", settings)
     monkeypatch.setattr(security, "jwks_client", lambda _url: FakeJwks())
@@ -188,6 +187,6 @@ def test_auth0_migration_keeps_database_roles_and_org_memberships_out_of_auth0()
     config = (ROOT / "backend/app/config.py").read_text()
     security_source = (ROOT / "backend/app/security.py").read_text()
     assert "oidc_identity_compat_issuer" in config
-    assert "oidc_identity_legacy_subject_claim" in config
-    assert "legacy_subject = claims.get(legacy_claim)" in security_source
+    assert "oidc_identity_subject_prefix" in config
+    assert "users WHERE oidc_issuer=$1 AND oidc_subject=$2 AND status='ACTIVE'" in (ROOT / "backend/app/dependencies.py").read_text()
     assert "platform_admins" not in (ROOT / "frontend/oidc-auth.js").read_text()
