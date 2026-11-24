@@ -42,3 +42,12 @@ def test_follow_up_context_is_used_for_generation_and_entailment():
         found.add(name)
 
     assert found == checked_calls
+
+
+def test_orchestrator_citation_guard_fails_closed_on_malformed_sources():
+    from app.orchestrator import _citation_is_valid
+
+    assert _citation_is_valid(None) is False
+    assert _citation_is_valid("not-a-source") is False
+    assert _citation_is_valid({"citation_integrity": "valid"}) is False
+    assert _citation_is_valid({"citation_integrity": {"valid": True}}) is True
