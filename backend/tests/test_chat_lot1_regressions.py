@@ -290,3 +290,17 @@ def test_non_territorial_contract_and_discipline_question_keeps_both_axes():
     assert any("procédure disciplinaire et sanctions" in axis for axis in axes)
     assert all("fonction publique de l'État" in axis for axis in axes)
 
+def test_provider_history_includes_previous_assistant_answer_only_when_explicitly_supplied():
+    from app.orchestrator import _provider_context_history
+
+    question = "Peux-tu détailler le deuxième point ?\\nMon employeur refuse mes heures supplémentaires."
+    assistant_context = "Le deuxième point concerne les conditions de récupération."
+
+    history = _provider_context_history(
+        question, True, assistant_context=assistant_context,
+    )
+    assert history == [
+        {"role": "user", "content": "Mon employeur refuse mes heures supplémentaires."},
+        {"role": "assistant", "content": assistant_context},
+    ]
+    assert _provider_context_history(question, False, assistant_context) == []
