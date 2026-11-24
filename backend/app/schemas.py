@@ -53,6 +53,10 @@ class AskRequest(BaseModel):
     def validate_embedding_contract(self):
         if self.public_service == "FPT" and self.employer not in get_args(Employer):
             raise ValueError("Pour la FPT, choisissez un employeur territorial reconnu.")
+        if self.public_service in {"FPE", "FPH"} and self.employer in {
+            "VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE",
+        }:
+            raise ValueError("Un employeur territorial ne peut pas être associé à la FPE ou à la FPH.")
         if (self.query_embedding is None) != (self.query_embedding_model is None):
             raise ValueError("Le vecteur et son identifiant de modèle doivent être fournis ensemble.")
         return self
