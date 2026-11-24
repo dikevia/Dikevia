@@ -646,3 +646,24 @@ def test_fpt_scope_guard_does_not_accept_fph_only_source_as_fpt_evidence():
     assert result["scope"] == "FPH"
     assert result["analysis_eligible"] is False
     assert result["claim_eligible"] is False
+
+
+@pytest.mark.parametrize(
+    ("document_kind", "expected_family", "minimum_priority"),
+    [
+        ("DECRET", "DECREE", 65),
+        ("ARRETE", "ORDER", 60),
+        ("LOI", "LAW", 80),
+    ],
+)
+def test_french_document_kind_aliases_keep_canonical_source_rank(
+    document_kind, expected_family, minimum_priority,
+):
+    result = classify_legal_source({
+        "source_type": "LEGIFRANCE_API",
+        "document_kind": document_kind,
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["source_family"] == expected_family
+    assert result["review_priority"] >= minimum_priority
+    assert result["normative"] is True
