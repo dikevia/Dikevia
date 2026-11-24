@@ -303,7 +303,9 @@ def _usable_document_sources(sources, *, allow_local_documents: bool = False):
         # Preserve compatibility for older direct adapters that have no
         # integrity field, but never let an explicit failed check reach a model.
         integrity = source.get("citation_integrity")
-        if isinstance(integrity, dict) and integrity.get("valid") is not True:
+        if integrity is not None and (
+            not isinstance(integrity, dict) or integrity.get("valid") is not True
+        ):
             continue
         source_id = source.get("source_id") or source.get("official_source_id") or source.get("source_version_id")
         has_date = False
