@@ -287,15 +287,13 @@ def test_legacy_conversation_without_public_service_defaults_to_fpt():
         ))
     assert exc.value.status_code == 409
 
-def test_empty_conversation_defaults_to_fpt_after_row_lock():
+def test_empty_conversation_allows_first_turn_to_select_fph():
     from app.main import _lock_conversation_for_chat_turn
 
     conn = ConversationScopeConnection("NO_MESSAGES")
-    with pytest.raises(HTTPException) as exc:
-        asyncio.run(_lock_conversation_for_chat_turn(
-            conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPH",
-        ))
-    assert exc.value.status_code == 409
+    asyncio.run(_lock_conversation_for_chat_turn(
+        conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPH",
+    ))
     assert len(conn.calls) == 2
 
 
