@@ -13,6 +13,26 @@ La documentation DILA indique que sandbox et production ont des URL, application
 
 Variables : `LEGIFRANCE_ENVIRONMENT`, `LEGIFRANCE_CLIENT_ID`, `LEGIFRANCE_CLIENT_SECRET`, `LEGIFRANCE_SCOPE`, `LEGIFRANCE_TIMEOUT_SECONDS`, `LEGIFRANCE_CODE_NAME`.
 
+### Diagnostic des refus OAuth
+
+Le connecteur journalise désormais uniquement le statut HTTP et, lorsque PISTE le fournit, un code OAuth standard autorisé. Il ne journalise ni le corps de réponse complet, ni la description du fournisseur, ni les identifiants.
+
+| Code observé | Contrôles à effectuer dans PISTE |
+|---|---|
+| `invalid_client` | Vérifier que le couple Client ID / Client Secret appartient bien à l'application de l'environnement configuré (`sandbox` ou `production`) et qu'il est encore valide. |
+| `invalid_scope` | Vérifier que le scope demandé correspond à celui autorisé ; la configuration habituelle de l'API Légifrance est `openid`. |
+| `unauthorized_client` | Vérifier que l'application PISTE est autorisée à consommer l'API Légifrance et que le flux Client Credentials est permis. |
+| `unsupported_grant_type` | Vérifier le flux OAuth demandé ; Dikévia utilise `client_credentials` avec un formulaire `application/x-www-form-urlencoded`. |
+| `invalid_request` ou code absent | Vérifier les champs obligatoires, les consentements et l'état de l'application dans le portail PISTE ; ne pas déduire la cause à partir du seul HTTP 400. |
+
+Avant de régénérer des identifiants, vérifier dans le portail PISTE :
+1. que les CGU de l'API Légifrance sont acceptées pour l'environnement concerné ;
+2. que l'API Légifrance est sélectionnée dans l'application PISTE correspondante ;
+3. que les identifiants utilisés sont ceux de cette même application et du même environnement ;
+4. que `LEGIFRANCE_ENVIRONMENT` vaut `sandbox` pendant les tests.
+
+La FAQ officielle DILA rappelle que sandbox et production disposent d'URL, d'applications et d'identifiants distincts. Une clé de sandbox ne doit jamais être utilisée contre l'API de production, ni l'inverse. Ne jamais transmettre les secrets dans un ticket, une capture d'écran ou un journal.
+
 Routes authentifiées :
 - `GET /api/v1/integrations/legifrance/status` : état de configuration, sans secret.
 - `POST /api/v1/integrations/legifrance/check` : test OAuth et ping API.
