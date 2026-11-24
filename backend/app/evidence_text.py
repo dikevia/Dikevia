@@ -36,3 +36,34 @@ def bound_evidence_text(value: object, max_chars: int = 12000, head_chars: int =
     if tail <= 0:
         return text[:available] + marker
     return text[:head] + marker + text[-tail:]
+
+def build_legal_evidence_text(
+    full_text: object,
+    selected_excerpt: object = None,
+    max_chars: int = 12000,
+) -> str:
+    """Keep retrieved relevant passages and the beginning/end of verified full text."""
+    full = str(full_text or "").strip()
+    excerpt = str(selected_excerpt or "").strip()
+    if not full:
+        return bound_evidence_text(excerpt, max_chars=max_chars)
+    if len(full) <= max_chars:
+        return full
+    if not excerpt:
+        return bound_evidence_text(full, max_chars=max_chars)
+
+    marker = "\\n\\n[Autres passages du texte officiel]\\n\\n"
+    if max_chars <= len(marker):
+        return bound_evidence_text(excerpt or full, max_chars=max_chars)
+    excerpt_budget = min(len(excerpt), max(0, max_chars - len(marker) - 3000))
+    if excerpt_budget <= 0:
+        return bound_evidence_text(full, max_chars=max_chars)
+    primary = bound_evidence_text(excerpt, max_chars=excerpt_budget)
+    remaining = max_chars - len(primary) - len(marker)
+    supplement = bound_evidence_text(
+        full,
+        max_chars=remaining,
+        head_chars=max(1, remaining * 3 // 4),
+    )
+    return primary + marker + supplement
+
