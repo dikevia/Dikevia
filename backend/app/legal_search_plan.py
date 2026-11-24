@@ -972,11 +972,16 @@ def build_official_research_axes(question: str) -> list[str]:
     )
     medico_social_ihts_markers = (
         "filiere medico-sociale", "filiere medico-technique",
-        "cadre de sante", "cadre territorial de sante",
-        "cadre de sante paramedical", "technicien paramedical",
-        "sage-femme", "sage femme", "puericultrice",
-        "auxiliaire de puericulture", "masseur-kinesitherapeute",
-        "orthophoniste", "ergotherapeute", "psychomotricien",
+        "cadre de sante", "cadres de sante",
+        "cadre territorial de sante", "cadres territoriaux de sante",
+        "cadre de sante paramedical", "cadres de sante paramedicaux",
+        "technicien paramedical", "techniciens paramedicaux",
+        "sage-femme", "sage femme", "sages-femmes", "puericultrice",
+        "puericultrices", "auxiliaire de puericulture",
+        "auxiliaires de puericulture", "masseur-kinesitherapeute",
+        "masseurs-kinesitherapeutes", "orthophoniste", "orthophonistes",
+        "ergotherapeute", "ergotherapeutes", "psychomotricien",
+        "psychomotriciens",
     )
     medico_social_ihts_present = ihts_topic_present and any(
         _contains_trigger(folded, marker)
