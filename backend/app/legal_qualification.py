@@ -183,11 +183,11 @@ def qualify_legal_question(
 ) -> dict:
     """Return conservative pre-research routing hints; never a legal conclusion."""
     folded = _fold(question)
-    topic = "UNCLASSIFIED"
-    for candidate, markers in _TOPIC_MARKERS:
-        if any(_fold(marker) in folded for marker in markers):
-            topic = candidate
-            break
+    matched_topics = [
+        candidate for candidate, markers in _TOPIC_MARKERS
+        if any(_fold(marker) in folded for marker in markers)
+    ]
+    topic = matched_topics[0] if matched_topics else "UNCLASSIFIED"
 
     # Status describes the user's own situation, not a third party or a
     # population mentioned in the question. Use only the current turn's first
@@ -297,6 +297,7 @@ def qualify_legal_question(
         "scope_status": scope_status,
         "scope_evidence": scope_evidence,
         "topic": topic,
+        "topics": matched_topics,
         "agent_status": status,
         "public_service": public_service,
         "employer_document_scope": (
