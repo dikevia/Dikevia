@@ -9,7 +9,10 @@ Ce document distingue les contrôles réellement effectués des fonctions qui re
 
 - API commerciale Render : déploiement en ligne, `/ready` répond `200`.
 - Identité : Keycloak/OIDC conservé pour la bêta. La découverte OIDC, les JWKS, PKCE, l'URI de retour et la configuration dynamique ont passé les smoke tests live. La connexion avec un compte utilisateur réel reste à effectuer.
-- Realm Keycloak : auto-inscription désactivée et vérification d'e-mail exigée. La configuration SMTP et le client de service Keycloak nécessaires au provisionnement automatique ne sont pas confirmés. En mode manuel, un administrateur doit donc créer et vérifier le compte dans Keycloak avant que l'invitation Dikévia puisse être acceptée.
+- Realm Keycloak : auto-inscription désactivée et vérification d'e-mail exigée.
+- Diagnostic Render du 24/11 à 22:46 UTC : `smtp_configured=False` et `keycloak_admin_configured=False`. Le client attendu par le backend est `cfdt-juris-provisioner`.
+- En conséquence, le provisionnement automatique n'est pas opérationnel. Un administrateur Keycloak doit créer et vérifier le compte dans le realm `cfdt` avant que l'invitation Dikévia puisse être acceptée. Le guide de configuration doit rester dans la documentation opérateur ; aucun secret ne doit être commité.
+
 - Identifiant public OIDC : `cfdt-juris-web`, fixé dans le Blueprint commercial.
 - Sources légales : PISTE/Légifrance en **Production**. Les sondes de démarrage CGFP L.111-1, Code civil 1217 et les trois sondes IHTS ont retourné des références exactes et des textes intégraux.
 - IA : Gemini `gemini-2.5-flash` configuré ; le catalogue du fournisseur répond `AVAILABLE`. Cela ne remplace pas un test de génération réelle avec une session utilisateur.
@@ -45,7 +48,8 @@ Ce document distingue les contrôles réellement effectués des fonctions qui re
 - La souscription et le paiement en ligne sont désactivés ; l'onboarding des premières sections doit être manuel.
 - La migration Auth0 n'est pas activée en production ; Keycloak reste le fournisseur runtime de la bêta.
 - Une vraie connexion utilisateur et une première génération IA doivent être testées avant de présenter le chatbot comme validé.
-- Les réponses du benchmark juridique de 15 questions n'ont pas encore de corrigés de référence validés par un humain ; le gate d'évaluation reste incomplet.
+- Le dataset de benchmark comporte 100 cas. Le gate proposé exige 100 cas revus par un humain, aucun échec critique, une moyenne d'au moins 8,5/10, une pertinence des questions d'au moins 95 % et un support des sources d'au moins 98 %. Aucun corrigé de référence n'est actuellement validé.
+- Le sous-ensemble pilote de 15 cas est explicitement `NOT_EVALUATED` et requiert une validation juridique humaine avant tout score.
 - Les services Render gratuits peuvent subir un démarrage à froid. Ouvrir l'application quelques minutes avant la démonstration.
 
 ## Décision
