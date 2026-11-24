@@ -510,3 +510,69 @@ async def _run_transaction_local_context_reset_scenario():
 
 def test_postgresql_transaction_local_tenant_context_is_cleared_on_connection_reuse():
     asyncio.run(_run_transaction_local_context_reset_scenario())
+
+
+async def _run_personal_document_owner_rls_scenario():
+    """Private document rows must be visible only to their verified owner UUID."""
+    import asyncpg
+
+    owner_a, owner_b = uuid.uuid4(), uuid.uuid4()
+    doc_a, doc_b, forbidden_doc = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    issuer = "https://personal-doc-rls.test"
+    admin = await asyncpg.connect(ADMIN_URL)
+    runtime = await asyncpg.connect(RUNTIME_URL)
+    try:
+        await admin.execute(
+            """INSERT INTO users(id,oidc_issuer,oidc_subject,email,status)
+               VALUES($1,$2,$3,$4,'ACTIVE'),($5,$2,$6,$7,'ACTIVE')""",
+            owner_a, issuer, "owner-a-" + owner_a.hex, owner_a.hex + "@example.test",
+            owner_b, "owner-b-" + owner_b.hex, owner_b.hex + "@example.test",
+        )
+        await admin.execute(
+            """INSERT INTO personal_documents(
+                id,owner_user_id,title,original_filename,mime_type,file_size_bytes,
+                storage_key,sha256,scan_status,scan_engine,scanned_at,
+                extraction_status,extracted_text
+            ) VALUES
+                ($1,$2,'Private A','a.pdf','application/pdf',10,$3,$4,'CLEAN','CI',now(),'EXTRACTED','Texte privé A'),
+                ($5,$6,'Private B','b.pdf','application/pdf',10,$7,$8,'CLEAN','CI',now(),'EXTRACTED','Texte privé B')""",
+            doc_a, owner_a, "personal-test/" + str(doc_a), "a" * 64,
+            doc_b, owner_b, "personal-test/" + str(doc_b), "b" * 64,
+        )
+
+        async with runtime.transaction():
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(owner_a))
+            visible_a = await runtime.fetch(
+                "SELECT id FROM personal_documents ORDER BY id"
+            )
+            assert [row["id"] for row in visible_a] == [doc_a]
+            # RLS WITH CHECK must reject an attempted cross-owner insert.
+            with pytest.raises(asyncpg.exceptions.InsufficientPrivilegeError):
+                await runtime.execute(
+                    """INSERT INTO personal_documents(
+                        id,owner_user_id,title,original_filename,mime_type,file_size_bytes,
+                        storage_key,sha256,scan_status,scan_engine,scanned_at,
+                        extraction_status,extracted_text
+                    ) VALUES($1,$2,'Forbidden','x.pdf','application/pdf',10,$3,$4,
+                        'CLEAN','CI',now(),'EXTRACTED','Should not be inserted')""",
+                    forbidden_doc, owner_b, "personal-test/" + str(forbidden_doc), "c" * 64,
+                )
+
+        async with runtime.transaction():
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(owner_b))
+            visible_b = await runtime.fetch(
+                "SELECT id FROM personal_documents ORDER BY id"
+            )
+            assert [row["id"] for row in visible_b] == [doc_b]
+    finally:
+        await admin.execute(
+            "DELETE FROM personal_documents WHERE id = ANY($1::uuid[])",
+            [doc_a, doc_b, forbidden_doc],
+        )
+        await admin.execute("DELETE FROM users WHERE id = ANY($1::uuid[])", [owner_a, owner_b])
+        await runtime.close()
+        await admin.close()
+
+
+def test_postgresql_personal_documents_are_isolated_by_owner_rls():
+    asyncio.run(_run_personal_document_owner_rls_scenario())
