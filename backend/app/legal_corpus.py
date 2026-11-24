@@ -405,7 +405,7 @@ async def search_legal_corpus(
               AND d.document_kind IN ('CODE','LAW','ORDONNANCE','DECREE','ORDER','JOURNAL_OFFICIEL')
               AND d.source_status IN ('OFFICIAL_TEXT_RETRIEVED','OFFICIAL_TEXT_ID_VERIFIED','OFFICIAL_XML_IMPORTED','MANUALLY_VERIFIED')
               THEN 1.15
-            WHEN d.source_type='LEGIFRANCE_CETAT' AND d.document_kind='ADMIN_CASELAW'
+            WHEN d.source_type IN ('LEGIFRANCE_CETAT','OTHER_OFFICIAL') AND d.document_kind='ADMIN_CASELAW'
               AND d.source_status IN ('OFFICIAL_TEXT_RETRIEVED','OFFICIAL_TEXT_ID_VERIFIED','OFFICIAL_XML_IMPORTED','MANUALLY_VERIFIED')
               THEN 1.10
             WHEN d.source_type='DILA_CIRCULAIRES' AND d.document_kind='CIRCULAR'
@@ -421,7 +421,8 @@ async def search_legal_corpus(
       ), selected_chunks AS (
         -- Keep only passages selected by lexical/vector relevance. Never append
         -- the document's final chunk: it is often unrelated to the user's question.
-        -- Bounded authority adjustment: it cannot replace relevance, temporal validity,\n        -- public-service scope checks or claim-level evidence validation.\n        SELECT version_id,string_agg(content_chunk,E'\\n\\n' ORDER BY chunk_order) AS content,\n          max(rank * authority_weight) AS rank
+        -- Bounded authority adjustment: it cannot replace relevance, temporal validity,
+        -- public-service scope checks or claim-level evidence validation.\n        SELECT version_id,string_agg(content_chunk,E'\\n\\n' ORDER BY chunk_order) AS content,\n          max(rank * authority_weight) AS rank
         FROM (
           SELECT version_id,content_chunk,rn AS chunk_order,rank,authority_weight
           FROM ranked WHERE rn<=CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
