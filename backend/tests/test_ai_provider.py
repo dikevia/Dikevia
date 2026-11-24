@@ -1729,3 +1729,42 @@ async def test_ai_payload_ignores_malformed_nested_source_metadata(monkeypatch):
     assert source["code_publication_jurisprudentielle"] is None
     assert source["numero_ecli"] is None
     assert source["niveau_autorite"] is None
+
+
+@pytest.mark.asyncio
+async def test_research_planner_sanitizes_malformed_optional_context(monkeypatch):
+    import httpx
+    from app.ai_provider import plan_legal_research
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(200, json={
+            "choices": [{
+                "message": {"content": json.dumps({
+                    "queries": ["droit au congé annuel fonction publique territoriale"],
+                    "legal_issues": ["conditions du congé annuel"],
+                    "extracted_facts": [],
+                })}
+            }],
+            "usage": {},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    result = await plan_legal_research(
+        question="Quels sont mes droits aux congés annuels ?",
+        employer="NATIONAL",
+        facts_period="malformed",
+        legal_context="malformed",
+        conversation_history=[None, "bad-history-record", {"role": "user", "content": "Question précédente"}],
+        previous_queries="not-a-list",
+        retrieved_evidence={"not": "a-list"},
+    )
+    assert result is not None
+    assert result.queries == ["droit au congé annuel fonction publique territoriale"]
