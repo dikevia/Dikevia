@@ -824,3 +824,24 @@ async def test_legifrance_bounds_concurrent_requests_and_refreshes_oauth_once(mo
     assert all(result == {"ok": True} for result in results)
     assert transport.token_calls == 1
     assert transport.max_active <= 4
+
+
+@pytest.mark.parametrize(
+    ("nature", "title", "expected"),
+    [
+        ("DECRET", "Texte réglementaire", "DECREE"),
+        ("ARRETE", "Texte réglementaire", "ORDER"),
+        ("LOI", "Texte législatif", "LAW"),
+        ("ORDONNANCE", "Texte", "ORDONNANCE"),
+        ("CIRCULAIRE", "Instruction", "CIRCULAR"),
+        ("NATURE_INCONNUE", "Acte administratif non qualifié", "OTHER"),
+        (None, "Décret n° 2002-60", "DECREE"),
+        (None, "Acte administratif non qualifié", "OTHER"),
+    ],
+)
+def test_loda_document_kind_uses_official_nature_and_never_defaults_unknown_to_law(
+    nature, title, expected,
+):
+    from app.legifrance import _loda_document_kind
+
+    assert _loda_document_kind(nature, title, None) == expected
