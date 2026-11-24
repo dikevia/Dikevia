@@ -51,3 +51,13 @@ def test_orchestrator_citation_guard_fails_closed_on_malformed_sources():
     assert _citation_is_valid("not-a-source") is False
     assert _citation_is_valid({"citation_integrity": "valid"}) is False
     assert _citation_is_valid({"citation_integrity": {"valid": True}}) is True
+
+
+def test_orchestrator_source_metadata_guard_rejects_non_mapping_values():
+    from app.orchestrator import _source_metadata
+
+    assert _source_metadata({"raw_metadata": {"publication_code": "B"}}) == {
+        "publication_code": "B",
+    }
+    assert _source_metadata({"raw_metadata": "not-json"}) == {}
+    assert _source_metadata({"raw_metadata": ["not", "a", "mapping"]}) == {}
