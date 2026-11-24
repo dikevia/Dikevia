@@ -2011,7 +2011,7 @@ async def test_ai_answer_payload_keeps_prior_assistant_context_separate_from_leg
     previous_user = "Mon employeur refuse mes heures supplémentaires."
     previous_assistant = "Le deuxième point concerne les conditions de récupération."
     await analyze_question(
-        question="Peux-tu détailler le deuxième point ?\\n" + previous_user,
+        question="Peux-tu détailler le deuxième point ?\n" + previous_user,
         employer="NATIONAL",
         facts_date="2026-11-24",
         conversation_history=[
@@ -2061,7 +2061,7 @@ async def test_research_planner_payload_keeps_prior_assistant_context_non_eviden
     )
     previous_assistant = "Le deuxième point concerne les conditions de récupération."
     await plan_legal_research(
-        question="Peux-tu détailler le deuxième point ?\\nMon employeur refuse mes heures supplémentaires.",
+        question="Peux-tu détailler le deuxième point ?\nMon employeur refuse mes heures supplémentaires.",
         employer="NATIONAL",
         conversation_history=[
             {"role": "user", "content": "Mon employeur refuse mes heures supplémentaires."},
