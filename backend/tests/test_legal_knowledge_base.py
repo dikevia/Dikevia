@@ -509,22 +509,22 @@ def test_institutional_guidance_source_type_cannot_be_promoted_by_document_kind(
 
 
 @pytest.mark.parametrize(
-    ("document_kind", "expected_authority"),
+    ("document_kind", "expected_authority", "expected_normative"),
     [
-        ("CODE", "PRIMARY_LEGAL"),
-        ("LAW", "PRIMARY_LEGAL"),
-        ("DECREE", "PRIMARY_LEGAL"),
-        ("DECRET", "PRIMARY_LEGAL"),
-        ("ORDER", "PRIMARY_LEGAL"),
-        ("ARRETE", "PRIMARY_LEGAL"),
-        ("ADMIN_CASELAW", "JURISPRUDENCE"),
-        ("CIRCULAR", "OFFICIAL_INTERPRETIVE"),
-        ("LOCAL_DELIBERATION", "LOCAL_NORMATIVE"),
-        ("LOCAL_REGULATION", "LOCAL_NORMATIVE"),
+        ("CODE", "PRIMARY_LEGAL", True),
+        ("LAW", "PRIMARY_LEGAL", True),
+        ("DECREE", "PRIMARY_LEGAL", True),
+        ("DECRET", "PRIMARY_LEGAL", True),
+        ("ORDER", "PRIMARY_LEGAL", True),
+        ("ARRETE", "PRIMARY_LEGAL", True),
+        ("ADMIN_CASELAW", "JURISPRUDENCE", False),
+        ("CIRCULAR", "OFFICIAL_INTERPRETIVE", False),
+        ("LOCAL_DELIBERATION", "LOCAL_NORMATIVE", True),
+        ("LOCAL_REGULATION", "LOCAL_NORMATIVE", True),
     ],
 )
 def test_known_legal_document_kinds_receive_correct_authority_level(
-    document_kind, expected_authority,
+    document_kind, expected_authority, expected_normative,
 ):
     result = classify_legal_source({
         "source_type": "LEGIFRANCE_API" if document_kind in {"CODE", "LAW", "DECREE", "DECRET", "ORDER", "ARRETE"} else "OTHER",
@@ -534,7 +534,7 @@ def test_known_legal_document_kinds_receive_correct_authority_level(
     })
     assert result["authority_level"] == expected_authority
     assert result["claim_eligible"] is True
-    assert result["normative"] is True
+    assert result["normative"] is expected_normative
 
 
 def test_unknown_document_kind_remains_unclassified_and_not_claim_eligible():

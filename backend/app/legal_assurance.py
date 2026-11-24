@@ -99,6 +99,14 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             publisher_type = "TRADE_UNION"
         elif kind == "ADMIN_GUIDANCE" or authority_level == "OFFICIAL_ADMIN_GUIDANCE":
             publisher_type = "PUBLIC_ADMINISTRATION"
+        elif (
+            kind == "PROFESSIONAL_GUIDANCE"
+            and (
+                source_key in {"dgafp", "dgcl"}
+                or "direction générale de l'administration et de la fonction publique" in publisher.casefold()
+            )
+        ):
+            publisher_type = "PUBLIC_ADMINISTRATION"
         elif kind == "PROFESSIONAL_GUIDANCE":
             publisher_type = "PROFESSIONAL_BODY"
     # Source provenance is stronger than an untrusted or stale raw metadata

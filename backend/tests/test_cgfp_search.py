@@ -225,13 +225,15 @@ def test_cgfp_live_article_discovery_keeps_up_to_six_relevant_subtopics(monkeypa
     ]
 
 
-def test_code_research_budget_never_drops_a_recognized_subquestion():
+def test_code_research_budget_preserves_priority_without_exceeding_limit():
     from app.orchestrator import _build_code_research_queries
 
     axes = [f"axe juridique {number}" for number in range(1, 7)]
     exact_articles = [f"article L{number}" for number in range(1, 7)]
     result = _build_code_research_queries(axes, exact_articles, max_queries=5)
-    assert result == axes
+    assert result == axes[:5]
+    assert len(result) <= 5
+    assert not any(query in result for query in exact_articles)
 
     result_with_spare_capacity = _build_code_research_queries(
         axes[:3], exact_articles, max_queries=5

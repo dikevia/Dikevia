@@ -686,6 +686,8 @@ def test_citation_validator_handles_non_collection_source_payload():
 
 
 def test_claim_validator_handles_non_collection_sources_and_malformed_period():
+    from app.legal_assurance import validate_claim_evidence
+
     result = validate_claim_evidence(
         {"claims": [{
             "text": "L'autorité territoriale doit respecter les règles applicables.",
