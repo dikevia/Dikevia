@@ -667,3 +667,31 @@ def test_french_document_kind_aliases_keep_canonical_source_rank(
     assert result["source_family"] == expected_family
     assert result["review_priority"] >= minimum_priority
     assert result["normative"] is True
+
+
+@pytest.mark.parametrize(
+    ("source_type", "document_kind", "expected_authority", "expected_normative"),
+    [
+        ("LEGIFRANCE_CETAT_FULL_TEXT", "ADMIN_CASELAW", "JURISPRUDENCE", False),
+        ("DILA_CIRCULAIRES", "CIRCULAR", "OFFICIAL_INTERPRETIVE", False),
+        ("LOCAL_COLLECTIVITY_DOCUMENT", "LOCAL_DOCUMENT", "LOCAL_NORMATIVE", True),
+        ("LEGIFRANCE_API", "DECRET", "PRIMARY_LEGAL", True),
+    ],
+)
+def test_trusted_source_provenance_overrides_contradictory_authority_metadata(
+    source_type, document_kind, expected_authority, expected_normative,
+):
+    source = {
+        "source_type": source_type,
+        "document_kind": document_kind,
+        "authority_level": "PRIMARY_LEGAL" if source_type != "LEGIFRANCE_API" else "PROFESSIONAL_GUIDANCE",
+        "raw_metadata": {"authority_level": "PRIMARY_LEGAL"},
+        "local_document_type": "REGLEMENT_TEMPS_TRAVAIL",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    }
+    result = classify_legal_source(source)
+    assert result["authority_level"] == expected_authority
+    assert result["normative"] is expected_normative
+    if source_type == "LEGIFRANCE_CETAT_FULL_TEXT":
+        assert result["claim_eligible"] is True
+        assert result["usable_for_interpretation"] is True
