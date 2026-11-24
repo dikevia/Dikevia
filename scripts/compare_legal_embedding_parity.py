@@ -129,7 +129,7 @@ def split_for_query_embedding(value: str) -> list[str]:
         end = min(len(text), start + 500)
         if end < len(text):
             midpoint = start + 250
-            newline = text.rfind("\\n", start + 250, end)
+            newline = text.rfind("\n", start + 250, end)
             sentence = text.rfind(". ", start + 250, end)
             boundary = max(newline, sentence)
             if boundary > start:
