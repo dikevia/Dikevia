@@ -63,7 +63,7 @@ def test_oidc_provider_scopes_and_compatibility_settings_are_validated():
         validate_runtime_configuration(Settings(oidc_provider="unknown"))
     with pytest.raises(RuntimeError, match="openid"):
         validate_runtime_configuration(Settings(oidc_scopes="profile email"))
-    with pytest.raises(RuntimeError, match="OIDC_IDENTITY_LEGACY_SUBJECT_CLAIM"):
+    with pytest.raises(RuntimeError, match="OIDC_IDENTITY_SUBJECT_PREFIX"):
         validate_runtime_configuration(Settings(
             app_env="production", oidc_provider="auth0",
             oidc_issuer="https://tenant.auth0.com/", oidc_audience="urn:api",
@@ -79,7 +79,7 @@ class FakeJwks:
         return SimpleNamespace(key=KEY.public_key())
 
 
-def test_auth0_token_claims_map_to_existing_keycloak_identity(monkeypatch):
+def test_auth0_access_token_retains_native_subject_for_database_checked_mapping(monkeypatch):
     issuer = "https://tenant.eu.auth0.com/"
     audience = "urn:dikevia:api"
     old_issuer = "https://dikevia-identity-l2r8.onrender.com/realms/cfdt"
@@ -128,6 +128,10 @@ def test_auth0_runtime_configuration_is_server_supplied_and_has_no_secret():
     assert "settings.oidc_authorization_audience" in main
     assert 'src="/auth-config.js"' in frontend
     assert "params.audience=cfg.audience" in oidc
+    assert "params.nonce" in oidc
+    assert "data.id_token" in oidc
+    assert "X-OIDC-ID-Token" in oidc
+    assert "X-OIDC-ID-Token" in frontend
     assert "client_secret" not in main[main.index('@app.get("/auth-config.js"'):main.index("orchestrator = LegalOrchestrator()")].lower()
 
 
@@ -188,5 +192,109 @@ def test_auth0_migration_keeps_database_roles_and_org_memberships_out_of_auth0()
     security_source = (ROOT / "backend/app/security.py").read_text()
     assert "oidc_identity_compat_issuer" in config
     assert "oidc_identity_subject_prefix" in config
-    assert "users WHERE oidc_issuer=$1 AND oidc_subject=$2 AND status='ACTIVE'" in (ROOT / "backend/app/dependencies.py").read_text()
+    dependencies_source = (ROOT / "backend/app/dependencies.py").read_text()
+    assert "users WHERE oidc_issuer=$1 AND oidc_subject=$2 AND status='ACTIVE'" in dependencies_source
+    assert "verify_identity_token" in dependencies_source
     assert "platform_admins" not in (ROOT / "frontend/oidc-auth.js").read_text()
+
+
+def test_auth0_id_token_is_signature_audience_issuer_and_subject_bound(monkeypatch):
+    issuer = "https://tenant.eu.auth0.com/"
+    client_id = "public-spa-client-id"
+    monkeypatch.setattr(security, "settings", SimpleNamespace(
+        oidc_issuer=issuer, oidc_client_id=client_id,
+        oidc_jwks_url=issuer + ".well-known/jwks.json",
+        oidc_algorithms="RS256",
+    ))
+    monkeypatch.setattr(security, "jwks_client", lambda _url: FakeJwks())
+    now = int(time.time())
+    principal = security.Principal(subject="auth0|new-user", issuer=issuer)
+    token = jwt.encode(
+        {"iss": issuer, "aud": client_id, "sub": principal.subject,
+         "iat": now, "exp": now + 600,
+         "email": "agent@example.test", "email_verified": True},
+        KEY, algorithm="RS256",
+    )
+    verified = security.verify_identity_token(token, principal)
+    assert verified.subject == principal.subject
+    assert verified.issuer == issuer
+    assert verified.email == "agent@example.test"
+    assert verified.email_verified is True
+
+    mismatched = jwt.encode(
+        {"iss": issuer, "aud": client_id, "sub": "auth0|other-user",
+         "iat": now, "exp": now + 600},
+        KEY, algorithm="RS256",
+    )
+    with pytest.raises(HTTPException):
+        security.verify_identity_token(mismatched, principal)
+
+
+class _FakeTransaction:
+    async def __aenter__(self):
+        return self
+    async def __aexit__(self, *_args):
+        return False
+
+
+class _FakeConnection:
+    def __init__(self, expected_issuer, expected_subject, exists):
+        self.expected_issuer = expected_issuer
+        self.expected_subject = expected_subject
+        self.exists = exists
+        self.settings = {}
+    def transaction(self):
+        return _FakeTransaction()
+    async def execute(self, query, key, value):
+        self.settings[key] = value
+    async def fetchrow(self, _query, issuer, subject):
+        assert self.settings.get("app.oidc_issuer") == issuer
+        assert self.settings.get("app.oidc_subject") == subject
+        if self.exists and issuer == self.expected_issuer and subject == self.expected_subject:
+            return {"id": "internal-user-id"}
+        return None
+
+
+class _FakeAcquire:
+    def __init__(self, connection):
+        self.connection = connection
+    async def __aenter__(self):
+        return self.connection
+    async def __aexit__(self, *_args):
+        return False
+
+
+class _FakePool:
+    def __init__(self, connection):
+        self.connection = connection
+    def acquire(self):
+        return _FakeAcquire(self.connection)
+
+
+@pytest.mark.parametrize("exists,expected_issuer,expected_subject", [
+    (True, "https://legacy.example/realms/cfdt", "legacy-user-123"),
+    (False, "https://tenant.eu.auth0.com/", "auth0|legacy-user-123"),
+])
+def test_auth0_legacy_mapping_requires_exact_existing_database_identity(
+    monkeypatch, exists, expected_issuer, expected_subject
+):
+    from app import dependencies
+    legacy_issuer = "https://legacy.example/realms/cfdt"
+    conn = _FakeConnection(legacy_issuer, "legacy-user-123", exists)
+    monkeypatch.setattr(dependencies, "get_pool", lambda: _FakePool(conn))
+    monkeypatch.setattr(dependencies, "settings", SimpleNamespace(
+        oidc_provider="auth0",
+        oidc_identity_compat_issuer=legacy_issuer,
+        oidc_identity_subject_prefix="auth0|",
+    ))
+    principal = security.Principal(
+        subject="auth0|legacy-user-123",
+        issuer="https://tenant.eu.auth0.com/",
+        email="agent@example.test",
+        email_verified=True,
+    )
+    mapped = __import__("asyncio").run(dependencies._resolve_auth0_legacy_identity(principal))
+    assert mapped.issuer == expected_issuer
+    assert mapped.subject == expected_subject
+    assert mapped.email == principal.email
+    assert mapped.email_verified is True
