@@ -177,14 +177,15 @@ async def create_user_ticket(client: httpx.AsyncClient, domain: str, token: str,
 async def load_source_users(database_url: str, legacy_issuer: str) -> list[dict]:
     connection = await asyncpg.connect(database_url, command_timeout=20)
     try:
-        rows = await connection.fetch(
-            """SELECT oidc_subject, email, display_name
-               FROM users
-               WHERE oidc_issuer=$1 AND status='ACTIVE'
-               ORDER BY created_at, oidc_subject""",
-            legacy_issuer,
-        )
-        return [dict(row) for row in rows]
+        async with connection.transaction(readonly=True):
+            rows = await connection.fetch(
+                """SELECT oidc_subject, email, display_name
+                   FROM users
+                   WHERE oidc_issuer=$1 AND status='ACTIVE'
+                   ORDER BY created_at, oidc_subject""",
+                legacy_issuer,
+            )
+            return [dict(row) for row in rows]
     finally:
         await connection.close()
 
