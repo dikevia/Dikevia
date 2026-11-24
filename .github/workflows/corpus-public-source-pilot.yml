@@ -82,6 +82,15 @@ jobs:
       - name: Dry-run solidaires-fp-site extraction (union source, no database writes)
         run: python scripts/import_public_guidance_sources.py --id solidaires-fp-site --export-json /tmp/solidaires-fp.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
+      - name: Dry-run SIG mission page extraction (official administrative guidance, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id sig-missions-2026 --export-json /tmp/sig-missions.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run State Charter page extraction (official administrative guidance, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id sig-charte-etat-marque --export-json /tmp/sig-charte-etat.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run State communication accessibility charter PDF extraction (64 pages, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id sig-charte-accessibilite-communication --export-json /tmp/sig-charte-accessibilite.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
       - name: Archive the extracted public corpus for audit
         uses: actions/upload-artifact@v4
         with:
@@ -107,6 +116,9 @@ jobs:
             /tmp/cftc-greve.json
             /tmp/unsa-fp.json
             /tmp/solidaires-fp.json
+            /tmp/sig-missions.json
+            /tmp/sig-charte-etat.json
+            /tmp/sig-charte-accessibilite.json
           if-no-files-found: warn
           retention-days: 2
       - name: Detect an explicit full-import request on this branch
