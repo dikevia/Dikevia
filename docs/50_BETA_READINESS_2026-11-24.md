@@ -9,6 +9,7 @@ Ce document distingue les contrôles réellement effectués des fonctions qui re
 
 - API commerciale Render : déploiement en ligne, `/ready` répond `200`.
 - Identité : Keycloak/OIDC conservé pour la bêta. La découverte OIDC, les JWKS, PKCE, l'URI de retour et la configuration dynamique ont passé les smoke tests live. La connexion avec un compte utilisateur réel reste à effectuer.
+- Realm Keycloak : auto-inscription désactivée et vérification d'e-mail exigée. La configuration SMTP et le client de service Keycloak nécessaires au provisionnement automatique ne sont pas confirmés. En mode manuel, un administrateur doit donc créer et vérifier le compte dans Keycloak avant que l'invitation Dikévia puisse être acceptée.
 - Identifiant public OIDC : `cfdt-juris-web`, fixé dans le Blueprint commercial.
 - Sources légales : PISTE/Légifrance en **Production**. Les sondes de démarrage CGFP L.111-1, Code civil 1217 et les trois sondes IHTS ont retourné des références exactes et des textes intégraux.
 - IA : Gemini `gemini-2.5-flash` configuré ; le catalogue du fournisseur répond `AVAILABLE`. Cela ne remplace pas un test de génération réelle avec une session utilisateur.
