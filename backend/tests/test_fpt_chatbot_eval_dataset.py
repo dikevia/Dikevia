@@ -174,3 +174,55 @@ def test_benchmark_rejects_invalid_release_thresholds(tmp_path):
     assert result.returncode == 2
     assert "minimum_question_relevance_rate" in result.stderr
     assert "Traceback" not in result.stderr
+
+
+
+def test_explicit_manifest_gold_gate_cannot_be_overridden_by_case_labels(tmp_path):
+    repository_root = Path(__file__).resolve().parents[2]
+    source = repository_root / "docs" / "quality" / "fpt_pilot_15_v1.json"
+    manifest = json.loads(source.read_text(encoding="utf-8"))
+    # Deliberately contradictory metadata: the manifest still requires human
+    # validation even if every individual case is accidentally marked validated.
+    for case in manifest["cases"]:
+        case["gold_answer_status"] = "HUMAN_VALIDATED"
+    manifest["release_gate"]["gold_answers"] = "HUMAN_VALIDATION_REQUIRED"
+    dataset_path = tmp_path / "contradictory_manifest.json"
+    dataset_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    ids = manifest["case_ids"]
+    responses_path = tmp_path / "responses.json"
+    responses_path.write_text(json.dumps({
+        "responses": [{"id": case_id, "answer": "Réponse", "sources": []} for case_id in ids]
+    }), encoding="utf-8")
+    reviews_path = tmp_path / "reviews.json"
+    reviews_path.write_text(json.dumps([
+        {
+            "id": case_id,
+            "evaluations": {
+                "question_understanding": 2,
+                "research_coverage": 2,
+                "source_relevance": 2,
+                "legal_accuracy": 2,
+                "synthesis_fidelity": 2,
+            },
+            "question_relevance": True,
+            "source_support": True,
+            "severite": "conforme",
+        }
+        for case_id in ids
+    ]), encoding="utf-8")
+
+    report_path = tmp_path / "report.json"
+    script = repository_root / "scripts" / "fpt_benchmark.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "score", "--dataset", str(dataset_path),
+         "--responses", str(responses_path), "--reviews", str(reviews_path),
+         "--out", str(report_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["questions_evaluees"] == 15
+    assert report["status"] == "INCOMPLET"
+    assert report["release_gate"]["status"] == "INCOMPLETE"
+    assert report["release_gate"]["checks"]["gold_answers_human_validated"] is False

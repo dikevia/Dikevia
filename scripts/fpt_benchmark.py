@@ -318,10 +318,14 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
     reviewed = len(question_scores)
     average_score = round(sum(x["score"] for x in question_scores) / reviewed, 3) if reviewed else None
     dataset_gate = dataset.get("release_gate")
-    gold_answers_validated = (
-        (isinstance(dataset_gate, dict) and dataset_gate.get("gold_answers") == "HUMAN_VALIDATED")
-        or all(q.get("gold_answer_status") == "HUMAN_VALIDATED" for q in questions)
-    )
+    # An explicit manifest-level decision is authoritative. Per-case labels
+    # are only a fallback for legacy datasets without this gate field.
+    if isinstance(dataset_gate, dict) and "gold_answers" in dataset_gate:
+        gold_answers_validated = dataset_gate.get("gold_answers") == "HUMAN_VALIDATED"
+    else:
+        gold_answers_validated = all(
+            q.get("gold_answer_status") == "HUMAN_VALIDATED" for q in questions
+        )
     result = {
         "benchmark": "Dikévia — benchmark FPT",
         "status": "COMPLET" if reviewed == len(expected_ids) and gold_answers_validated else "INCOMPLET",
