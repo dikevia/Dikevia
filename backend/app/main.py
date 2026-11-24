@@ -268,7 +268,7 @@ app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifes
 if settings.cors_origins:
     app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.cors_origins.split(",")],
         allow_credentials=True, allow_methods=["GET","POST","PUT","PATCH","DELETE"],
-        allow_headers=["Authorization","Content-Type","X-Organization-ID"])
+        allow_headers=["Authorization","Content-Type","X-Organization-ID","X-OIDC-ID-Token"])
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
 
