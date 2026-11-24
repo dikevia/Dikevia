@@ -58,7 +58,6 @@ def test_browser_query_embedding_matches_python_preprocessing_and_aggregation():
     ) * 35
     harness = r"""
 const fs = require('node:fs');
-const vm = require('node:vm');
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const messages = [];
 const seen = [];
@@ -74,10 +73,10 @@ const pipeline = async (task, model, options) => {
     return { data: Float32Array.from({ length: 384 }, (_, i) => ((seed + i * 17) % 101) / 101 + 0.01) };
   };
 };
-const context = vm.createContext({ self, env: { allowLocalModels: true, useBrowserCache: false, backends: { onnx: { wasm: {} } } }, pipeline, Float32Array, Math, String, Number, Array });
-vm.runInContext(input.worker, context);
+const env = { allowLocalModels: true, useBrowserCache: false, backends: { onnx: { wasm: {} } } };
+new Function("self", "env", "pipeline", "Float32Array", "Math", "String", "Number", "Array", input.worker)(self, env, pipeline, Float32Array, Math, String, Number, Array);
 (async () => {
-  const handler = vm.runInContext("self.onmessage", context);
+  const handler = self.onmessage;
   await handler({ data: { id: 17, text: input.sample } });
   process.stdout.write(JSON.stringify({ seen, message: messages[0] }));
 })().catch(error => { process.stderr.write(String(error)); process.exit(1); });
