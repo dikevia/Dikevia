@@ -195,25 +195,30 @@ def qualify_legal_question(
     current_lines = str(question or "").splitlines()
     current_line = current_lines[0] if current_lines else ""
     current_folded = _fold(current_line)
-    negative_status_statement = bool(re.search(
-        r"\\bje\\s+(?:ne\\s+)?(?:suis|travaille)\\s+(?:pas|plus|jamais)\\b",
+    negative_status_match = re.search(
+        r"\bje\s+(?:ne\s+)?(?:suis|travaille)\s+(?:pas|plus|jamais)\s+"
+        r"(?:comme\s+)?(?:(?:un|une|agent(?:e)?)\s+)?"
+        r"(contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b",
         current_folded,
-    ))
+    )
+    negative_status = (
+        _fold(negative_status_match.group(1))
+        if negative_status_match else None
+    )
     short_status_reply = re.fullmatch(
         r"(?:(?:et\s+)?pour\s+les?\s+|et\s+les?\s+)?(?:agent(?:e)?s?\s+)?"
         r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\s*\??",
         current_folded,
     )
-    if not negative_status_statement and ((
-        short_status_reply
-        and re.search(r"contractuel", current_folded)
+    if negative_status != "contractuel" and ((
+        short_status_reply and re.search(r"contractuel", current_folded)
     ) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
         r"(?:(?:un|une)\s+)?(?:(?:agent|agente)\s+)?contractuel(?:le)?s?\b",
         current_folded,
     )):
         status = "CONTRACTUEL_EXPLICIT"
-    elif not negative_status_statement and ((
+    elif negative_status != "stagiaire" and ((
         short_status_reply and "stagiaire" in current_folded
     ) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
@@ -221,7 +226,7 @@ def qualify_legal_question(
         current_folded,
     )):
         status = "STAGIAIRE_EXPLICIT"
-    elif not negative_status_statement and ((
+    elif negative_status != "titulaire" and ((
         short_status_reply and "titulaire" in current_folded
     ) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
@@ -229,9 +234,9 @@ def qualify_legal_question(
         current_folded,
     )):
         status = "TITULAIRE_EXPLICIT"
-    elif (
+    elif negative_status != "fonctionnaire" and ((
         short_status_reply and "fonctionnaire" in current_folded
-    ) or re.search(r"\bje suis fonctionnaire\b", current_folded):
+    ) or re.search(r"\bje suis fonctionnaire\b", current_folded)):
         status = "FONCTIONNAIRE_STATUS_UNSPECIFIED"
     elif re.search(r"\b(?:je suis|je travaille) en (?:cdd|cdi)\b", current_folded):
         # A CDD/CDI alone does not establish public-agent contractual status.
