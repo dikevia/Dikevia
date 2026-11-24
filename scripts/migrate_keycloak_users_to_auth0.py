@@ -107,13 +107,22 @@ async def auth0_users_by_email(client: httpx.AsyncClient, domain: str, token: st
     return response.json()
 
 
+def validate_existing_auth0_user(existing: dict | None, expected_id: str, email: str) -> None:
+    """Fail closed if a pre-existing Auth0 subject is not the expected account."""
+    if existing is None:
+        return
+    if existing.get("user_id") != expected_id:
+        raise RuntimeError("Identifiant Auth0 existant incohérent ; arrêt de sécurité.")
+    if str(existing.get("email") or "").strip().lower() != email.strip().lower():
+        raise RuntimeError("Identifiant Auth0 déjà utilisé par une autre adresse ; arrêt de sécurité.")
+
+
 async def create_auth0_user(client: httpx.AsyncClient, domain: str, token: str,
                             connection: str, source: dict, email: str) -> dict:
     expected_id = "auth0|" + source["id"]
     existing = await auth0_get_user(client, domain, token, expected_id)
+    validate_existing_auth0_user(existing, expected_id, email)
     if existing:
-        if existing.get("email", "").lower() != email.lower():
-            raise RuntimeError("Identifiant Auth0 déjà utilisé par une autre adresse ; arrêt de sécurité.")
         return existing
 
     by_email = await auth0_users_by_email(client, domain, token, email)
@@ -139,7 +148,8 @@ async def create_auth0_user(client: httpx.AsyncClient, domain: str, token: str,
     )
     if response.status_code == 409:
         existing = await auth0_get_user(client, domain, token, expected_id)
-        if existing and existing.get("email", "").lower() == email.lower():
+        if existing:
+            validate_existing_auth0_user(existing, expected_id, email)
             return existing
     response.raise_for_status()
     created = response.json()
@@ -238,6 +248,7 @@ async def migrate(args: argparse.Namespace) -> None:
                 raise RuntimeError("L'identifiant Keycloak ne correspond pas au sujet PostgreSQL ; arrêt de sécurité.")
             expected_id = "auth0|" + source["id"]
             existing = await auth0_get_user(client, domain, auth0_token, expected_id)
+            validate_existing_auth0_user(existing, expected_id, email)
             if not existing and await auth0_users_by_email(client, domain, auth0_token, email):
                 raise RuntimeError("Un compte Auth0 existant utilise déjà une adresse à migrer.")
             sources.append((user, source, existing))
