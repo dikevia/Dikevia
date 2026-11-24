@@ -778,7 +778,10 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "borne_periode": s.get("version_endpoint"),
                     "url_officielle": s.get("official_url") or s.get("source_url"),
                     "pages_pdf": [s.get("page_start"), s.get("page_end")],
-                    "extrait": s.get("analysis_excerpt") or s.get("excerpt") or s.get("text", "")[:1800],
+                    "extrait": str(
+                        s.get("analysis_excerpt") or s.get("full_text")
+                        or s.get("excerpt") or s.get("text") or ""
+                    )[:12000],
                     "statut_source": s.get("source_status"), "type_contenu": s.get("content_kind"),
                     "type_document_local": s.get("local_document_type"), "statut_validation_locale": s.get("validation_status"),
                     "collectivite": s.get("collectivity"), "classement_juridique": _as_mapping(s.get("legal_assurance")),
@@ -1153,7 +1156,7 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             return {"valid": False, "invalid": [f"claim_{index}:local_document_ai_transfer_disabled"]}
         evidence_value = next(
             (
-                source.get(field) for field in ("analysis_excerpt", "excerpt", "text", "full_text")
+                source.get(field) for field in ("analysis_excerpt", "full_text", "excerpt", "text")
                 if isinstance(source.get(field), str) and source[field].strip()
             ),
             "",
