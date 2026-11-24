@@ -525,6 +525,10 @@ def test_explicit_first_person_versant_mismatch_is_flagged_without_inferring_fro
         "Je suis agent hospitalier et je souhaite connaître mes droits.",
         public_service="FPT",
     )
+    explicit_public_hospital = qualify_legal_question(
+        "Je travaille dans un établissement public de santé.",
+        public_service="FPT",
+    )
     ambiguous_profession = qualify_legal_question(
         "Je suis infirmière à l'hôpital. Quels sont mes droits ?",
         public_service="FPT",
@@ -532,6 +536,7 @@ def test_explicit_first_person_versant_mismatch_is_flagged_without_inferring_fro
 
     assert fpe["explicit_self_versant_mismatch"] == "FPE"
     assert fph["explicit_self_versant_mismatch"] == "FPH"
+    assert explicit_public_hospital["explicit_self_versant_mismatch"] == "FPH"
     assert ambiguous_profession["explicit_self_versant_mismatch"] is None
 
 
