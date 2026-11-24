@@ -22,6 +22,7 @@ from .article_lookup import missing_direct_article_reference
 from .legal_search_plan import (
     build_official_search_queries,
     build_official_research_axes,
+    select_required_research_axes,
     merge_ai_and_fallback_research_queries,
     clarification_for_union_assistance_summons,
 )
@@ -683,7 +684,7 @@ class LegalOrchestrator:
             research_queries = merge_ai_and_fallback_research_queries(
                 research_plan.queries, fallback_queries, fallback_axes, max_queries=5,
             )
-            research_axes = research_plan.legal_issues or fallback_axes
+            research_axes = select_required_research_axes(fallback_axes)
             legal_context["strategie_recherche"] = "PLANIFIEE_PAR_IA_AVANT_CONSULTATION"
             legal_context["axes_recherche_documentaire"] = research_axes
             legal_context["clarification_recherche"] = research_plan.clarification_needed
