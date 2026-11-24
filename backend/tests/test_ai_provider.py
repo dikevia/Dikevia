@@ -894,7 +894,8 @@ def test_system_prompt_requires_neutral_documentary_explanations_without_case_ad
     assert "strictement fidèle au texte ou à la décision citée" in SYSTEM_PROMPT
     assert "Ne donne aucun avis personnel" in SYSTEM_PROMPT
     assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
-    assert "N'ajoute pas de démarches à entreprendre, de recommandations ou de conseils pratiques" in SYSTEM_PROMPT
+    assert "Présente ces éléments comme une explication documentaire générale" in SYSTEM_PROMPT
+    assert "Ne suggère aucune action individuelle, aucun recours à engager ni aucune stratégie personnelle" in SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio
