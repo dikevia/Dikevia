@@ -1015,3 +1015,32 @@ async def test_code_article_keeps_compact_display_excerpt_and_expanded_analysis_
     assert len(results[0]["analysis_excerpt"]) > 1800
     assert exception in results[0]["analysis_excerpt"]
     assert exception not in results[0]["excerpt"]
+
+@pytest.mark.asyncio
+async def test_legifrance_invalid_client_is_classified_without_logging_provider_details(
+    monkeypatch, caplog,
+):
+    monkeypatch.setattr(settings, "legifrance_environment", "sandbox")
+    monkeypatch.setattr(settings, "legifrance_client_id", "configured-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "never-log-this-secret")
+
+    def handler(request):
+        assert request.url.path == "/api/oauth/token"
+        return httpx.Response(
+            400,
+            json={
+                "error": "invalid_client",
+                "error_description": "invalid client never-log-this-secret",
+            },
+        )
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    caplog.set_level("WARNING", logger="dikevia.legifrance")
+
+    with pytest.raises(LegifranceUnavailable, match="invalid_client"):
+        await connector._get_token()
+
+    assert "PISTE_OAUTH_TOKEN_REJECTED status=400 error_code=invalid_client" in caplog.text
+    assert "never-log-this-secret" not in caplog.text
+    assert "error_description" not in caplog.text
+
