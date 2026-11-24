@@ -36,6 +36,18 @@ CANONICAL_DIMENSIONS = (
 
 def dimensions_for_dataset(dataset: Any) -> tuple[str, ...]:
     return CANONICAL_DIMENSIONS if isinstance(dataset, dict) and dataset.get("schema_version") == "1.0" else DIMENSIONS
+
+
+def expected_ids_for_dataset(dataset: Any) -> list[str]:
+    """Return declared case IDs; keep the canonical 100-case dataset strict."""
+    if isinstance(dataset, dict) and isinstance(dataset.get("case_ids"), list):
+        ids = dataset["case_ids"]
+        if not ids or any(not isinstance(item, str) or not item for item in ids):
+            raise ValueError("Métadonnées invalides : case_ids doit être une liste non vide.")
+        if len(ids) != len(set(ids)):
+            raise ValueError("Métadonnées invalides : case_ids contient des doublons.")
+        return ids
+    return EXPECTED_IDS
 SEVERITY = {"conforme", "mineur", "majeur", "critique"}
 
 
@@ -64,9 +76,16 @@ def validate_dataset(path: str) -> list[dict]:
     # Support the actual repository benchmark (schema 1.0) as well as the
     # earlier normalized FPT_Juridique_100_Questions format.
     if data.get("schema_version") == "1.0" and isinstance(data.get("cases"), list):
-        if data.get("case_count") != 100:
-            raise ValueError("Métadonnées invalides : case_count doit être égal à 100.")
         raw_questions = questions_from(data)
+        pilot_ids = data.get("case_ids")
+        if isinstance(pilot_ids, list):
+            if len(pilot_ids) != 15 or len(set(pilot_ids)) != 15:
+                raise ValueError("Manifeste pilote invalide : exactement 15 identifiants distincts sont requis.")
+            ids = [q.get("id") for q in raw_questions]
+            if ids != pilot_ids:
+                raise ValueError("Manifeste pilote invalide : ordre des cases différent de case_ids.")
+        elif data.get("case_count") != 100:
+            raise ValueError("Métadonnées invalides : case_count doit être égal à 100.")
         required = {"id", "category", "question", "expected_intent", "required_checks",
                     "failure_modes", "gold_answer_status"}
         malformed = [
@@ -75,9 +94,10 @@ def validate_dataset(path: str) -> list[dict]:
         ]
         ids = [q.get("id") for q in raw_questions]
         duplicates = sorted({x for x in ids if ids.count(x) > 1})
-        missing = [x for x in EXPECTED_IDS if x not in ids]
-        unexpected = [x for x in ids if x not in EXPECTED_IDS]
-        if len(raw_questions) != 100 or duplicates or missing or unexpected or malformed:
+        expected_ids = pilot_ids if isinstance(pilot_ids, list) else EXPECTED_IDS
+        missing = [x for x in expected_ids if x not in ids]
+        unexpected = [x for x in ids if x not in expected_ids]
+        if len(raw_questions) != len(expected_ids) or duplicates or missing or unexpected or malformed:
             raise ValueError(json.dumps({
                 "question_count": len(raw_questions), "duplicates": duplicates,
                 "missing_ids": missing, "unexpected_ids": unexpected,
@@ -145,7 +165,7 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
     by_id = {r.get("id"): r for r in responses if isinstance(r, dict)}
     if len(by_id) != len(responses):
         raise ValueError("Identifiants de réponses dupliqués ou réponse mal formée.")
-    expected = set(EXPECTED_IDS)
+    expected = set(expected_ids_for_dataset(dataset))
     if set(by_id) != expected:
         raise ValueError(json.dumps({
             "missing_response_ids": sorted(expected - set(by_id)),
@@ -192,15 +212,16 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
     responses = load_json(responses_path)
     if isinstance(responses, dict):
         responses = responses.get("responses")
+    expected_ids = set(expected_ids_for_dataset(dataset))
     response_ids = {r.get("id") for r in responses if isinstance(r, dict)}
-    if response_ids != set(EXPECTED_IDS) or len(responses) != 100:
-        raise ValueError("Le fichier de réponses doit contenir exactement une réponse pour chacun des FPT-001–FPT-100.")
+    if response_ids != expected_ids or len(responses) != len(expected_ids):
+        raise ValueError(f"Le fichier de réponses doit contenir exactement une réponse pour chacun des {len(expected_ids)} cas du jeu.")
     reviews = load_json(reviews_path)
     if not isinstance(reviews, list):
         raise ValueError("Le fichier de revue doit être une liste JSON.")
     review_by_id = {r.get("id"): r for r in reviews if isinstance(r, dict)}
-    if len(review_by_id) != 100 or set(review_by_id) != set(EXPECTED_IDS):
-        raise ValueError("Le fichier de revue doit contenir exactement une évaluation par question FPT-001–FPT-100.")
+    if len(review_by_id) != len(reviews) or len(review_by_id) != len(expected_ids) or set(review_by_id) != expected_ids:
+        raise ValueError(f"Le fichier de revue doit contenir exactement une évaluation par question ({len(expected_ids)} cas).")
 
     totals = {d: 0 for d in dimensions}
     dimension_counts = {d: 0 for d in dimensions}
@@ -253,7 +274,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
     result = {
         "benchmark": "Dikévia — 100 questions FPT",
         "status": "COMPLET" if reviewed == 100 else "INCOMPLET",
-        "questions_total": 100,
+        "questions_total": len(expected_ids),
         "questions_evaluees": reviewed,
         "questions_restantes": unreviewed,
         "score_global_percent": round(sum(x["score"] for x in question_scores) / (max_points * reviewed) * 100, 2) if reviewed else None,
@@ -277,7 +298,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
             "minimum_average_score": average_score is not None and average_score >= float(gate.get("minimum_average_score", 8.5)),
             "minimum_question_relevance_rate": relevance_rate is not None and relevance_rate >= float(gate.get("minimum_question_relevance_rate", 0.95)),
             "minimum_source_support_rate": source_support_rate is not None and source_support_rate >= float(gate.get("minimum_source_support_rate", 0.98)),
-            "all_high_risk_cases_human_reviewed": reviewed == 100,
+            "all_high_risk_cases_human_reviewed": reviewed == len(expected_ids),
         }
         result["question_relevance_rate"] = round(relevance_rate, 4) if relevance_rate is not None else None
         result["source_support_rate"] = round(source_support_rate, 4) if source_support_rate is not None else None
@@ -292,9 +313,9 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    v = sub.add_parser("validate", help="Valide le JSON FPT-001–FPT-100")
+    v = sub.add_parser("validate", help="Valide le jeu FPT de 100 questions ou le manifeste pilote de 15 questions")
     v.add_argument("--dataset", required=True)
-    p = sub.add_parser("prepare-review", help="Construit la grille d'évaluation à partir des 100 réponses")
+    p = sub.add_parser("prepare-review", help="Construit la grille de revue à partir des réponses du jeu fourni")
     p.add_argument("--dataset", required=True)
     p.add_argument("--responses", required=True)
     p.add_argument("--out", required=True)
@@ -307,7 +328,7 @@ def main() -> int:
     try:
         if args.command == "validate":
             questions = validate_dataset(args.dataset)
-            print(f"OK — {len(questions)} questions, FPT-001 à FPT-100, champs obligatoires présents.")
+            print(f"OK — {len(questions)} questions, identifiants et champs obligatoires vérifiés.")
         elif args.command == "prepare-review":
             prepare_review(args.dataset, args.responses, args.out)
             print(f"Grille créée : {args.out}")
