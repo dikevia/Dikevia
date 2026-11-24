@@ -36,6 +36,7 @@ def test_persisted_chat_source_metadata_retains_exact_legal_version_provenance()
         "version_endpoint",
         "version_matches_facts_date",
         "citation_integrity",
+        "legal_assurance",
     }
     assert required <= CHAT_SOURCE_METADATA_FIELDS
 

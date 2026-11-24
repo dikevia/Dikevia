@@ -79,6 +79,7 @@ CHAT_SOURCE_METADATA_FIELDS = frozenset({
     "effective_to",
     "content_kind",
     "official_source",
+    "legal_assurance",
 })
 
 logger = logging.getLogger("dikevia.startup")
