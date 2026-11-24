@@ -35,7 +35,7 @@ jobs:
           python -m pip install -r backend/requirements-embeddings.txt
           python -m pip check
       - name: Install Transformers.js runtime
-        run: npm install --no-save --no-package-lock @huggingface/transformers@3.7.2
+        run: npm install --no-save --no-package-lock --onnxruntime-node-install-cuda=skip @huggingface/transformers@3.7.2
       - name: Generate FastEmbed reference vectors
         run: |
           python scripts/compare_legal_embedding_parity.py generate-fastembed \
