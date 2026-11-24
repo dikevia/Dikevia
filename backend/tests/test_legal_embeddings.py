@@ -72,7 +72,7 @@ const messages = [];
 const seen = [];
 const self = { postMessage: value => messages.push(value) };
 const pipeline = async (task, model, options) => {
-  if (task !== 'feature-extraction' || model !== 'Xenova/paraphrase-multilingual-MiniLM-L12-v2' || options.quantized !== true) {
+  if (task !== 'feature-extraction' || model !== 'Xenova/paraphrase-multilingual-MiniLM-L12-v2' || options.quantized !== false) {
     throw new Error('Unexpected model contract');
   }
   return async (segment, settings) => {
