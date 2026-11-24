@@ -8,12 +8,12 @@ Le navigateur reste un client public OIDC Authorization Code + PKCE. Aucun secre
 
 ## Configuration du tenant Auth0
 
-Créer un tenant Auth0 et deux objets :
+Le tenant de développement créé est `dev-brlgaz1yh2de3mjo` (région US-5), émetteur `https://dev-brlgaz1yh2de3mjo.us.auth0.com/`. Il contient deux objets :
 
-1. Une application **Single Page Application** nommée **Dikévia Web**.
-2. Une API nommée **Dikévia API**, identifiant **urn:dikevia:api**, algorithme de signature RS256.
+1. Une application **Single Page Application** nommée **Dikévia Web SPA - Development** (Client ID `BSpBdDO3IUyG2g5JcHYH29e80JRbnW41`).
+2. Une API nommée **Dikévia API - Development**, identifiant **https://dikevia-commercial-api-l2r8.onrender.com**, algorithme de signature RS256.
 
-Pour l'API, limiter la durée de vie des access tokens à **900 secondes**. Le backend Dikévia rejette volontairement les jetons dont la durée dépasse 15 minutes.
+Pour l'API, la durée de vie maximale des access tokens et des tokens implicit/hybrid est configurée à **900 secondes**. Le backend Dikévia rejette volontairement les jetons dont la durée dépasse 15 minutes.
 
 Dans l'application SPA, autoriser explicitement les URL de callback, logout et origines réellement utilisées. Pour les environnements Render actuellement identifiés :
 
@@ -35,10 +35,10 @@ Aucune Action Auth0 personnalisée n'est nécessaire pour les claims standard `e
 Les variables publiques et privées sont séparées. Les variables suivantes sont nécessaires :
 
 - OIDC_PROVIDER=auth0
-- OIDC_ISSUER=https://TENANT.eu.auth0.com/ — conserver la barre oblique finale exacte.
+- OIDC_ISSUER=https://dev-brlgaz1yh2de3mjo.us.auth0.com/ — conserver la barre oblique finale exacte.
 - OIDC_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com
-- OIDC_JWKS_URL=https://TENANT.eu.auth0.com/.well-known/jwks.json
-- OIDC_CLIENT_ID — identifiant public de l'application SPA.
+- OIDC_JWKS_URL=https://dev-brlgaz1yh2de3mjo.us.auth0.com/.well-known/jwks.json
+- OIDC_CLIENT_ID=BSpBdDO3IUyG2g5JcHYH29e80JRbnW41 — identifiant public de l'application SPA.
 - OIDC_SCOPES=openid profile email
 - OIDC_AUTHORIZATION_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com
 - OIDC_EMAIL_CLAIM=https://dikevia.invalid/claims/email
@@ -48,7 +48,7 @@ Le frontend charge /auth-config.js, généré côté serveur à partir de ces va
 
 ## Préservation des comptes et des droits existants
 
-**Ne pas basculer le fournisseur avant d'avoir importé et vérifié les identités.** La base Dikévia associe les utilisateurs à (oidc_issuer, oidc_subject). Une migration qui créerait de nouveaux sujets sans correspondance ferait perdre l'accès aux espaces, même si les adresses e-mail sont identiques.
+**Ne pas basculer le fournisseur avant d'avoir importé et vérifié les identités.** La base Dikévia associe les utilisateurs à (oidc_issuer, oidc_subject). Le préfixe Auth0 `auth0|` est retiré uniquement pour un contrôle de correspondance sous RLS. Une migration qui créerait de nouveaux sujets sans correspondance ferait perdre l'accès aux espaces, même si les adresses e-mail sont identiques.
 
 La correspondance historique est résolue côté API par une recherche PostgreSQL sous RLS : pour un sujet Auth0 de la connexion base de données commençant par `auth0|`, le backend retire ce préfixe uniquement pour vérifier si le couple exact (ancien émetteur Keycloak, ancien sujet) existe encore et correspond à un compte actif. Si le compte historique existe, le backend réutilise cette identité ; sinon, il conserve intégralement l'identité Auth0 native. Aucun rapprochement par adresse e-mail, aucune revendication fournie par l'utilisateur et aucune Action Auth0 ne sont utilisés. Le lookup est limité au sujet signé du jeton et à la politique RLS PostgreSQL.
 
@@ -73,4 +73,4 @@ Les variables SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont donc suffisantes 
 
 ## État actuel
 
-Le tenant Auth0 de développement, la SPA et l'API sont créés. Le code Auth0 est préparé dans la branche feat/auth0-oidc-foundation. Aucun compte n'a été importé, aucune variable Render n'a été modifiée, aucun déploiement ni changement de base n'a été effectué. La migration des comptes et la recette réelle restent bloquantes avant la bascule.
+Le tenant Auth0 de développement, la SPA et l'API sont créés. Les connexions de la SPA sont limitées à la base de données Auth0 ; Google OAuth2 est désactivé pour cette application. La vérification de l'adresse e-mail à l'inscription par lien est activée. Le code Auth0 est préparé dans la branche feat/auth0-oidc-foundation. Aucun compte n'a été importé, aucune variable Render n'a été modifiée, aucun déploiement ni changement de base n'a été effectué. La migration des comptes et la recette réelle restent bloquantes avant la bascule.
