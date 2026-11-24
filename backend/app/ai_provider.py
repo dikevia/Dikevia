@@ -1088,9 +1088,9 @@ def validate_entailment_verdicts(payload, claims, sources):
             continue
         source_text = str(
             matched[0].get("analysis_excerpt")
+            or matched[0].get("full_text")
             or matched[0].get("excerpt")
             or matched[0].get("text")
-            or matched[0].get("full_text")
             or ""
         )[:12000]
         normalized_quote = _normalize_entailment_text(support_quote)
