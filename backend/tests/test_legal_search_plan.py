@@ -467,9 +467,15 @@ def test_merged_research_queries_respect_the_five_query_budget():
         max_queries=5,
     )
     assert len(merged) == 5
-    assert merged[:3] == ["axe IA 1", "axe IA 2", "axe IA 3"]
-    assert "recherche de secours 2" in merged
-    assert "recherche de secours 3" in merged
+    # Three independently detected legal axes outrank the third generic AI
+    # query: retain two AI queries plus all three focused fallback searches.
+    assert merged == [
+        "axe IA 1",
+        "axe IA 2",
+        "recherche de secours 2",
+        "recherche de secours 3",
+        "recherche de secours 4",
+    ]
 
 def test_therapeutic_part_time_after_citis_has_a_dedicated_cgfp_and_fpt_decree_axis():
     question = (
