@@ -845,7 +845,16 @@ async def test_permanent_corpus_version_status_survives_orchestration_for_genera
         return []
 
     async def no_regulatory(*args, **kwargs):
-        return []
+        return [{
+            "source_type": "LEGIFRANCE_LODA",
+            "source_id": "LEGITEXT_LIVE_CONTROL_001",
+            "title": "Décret relatif à la fonction publique territoriale",
+            "document_kind": "DECREE",
+            "official_number": "2024-100",
+            "source_status": "OFFICIAL_TEXT_ID_VERIFIED",
+            "full_text": "Les agents de la fonction publique territoriale bénéficient des garanties prévues par le présent décret. " * 5,
+            "excerpt": "Les agents de la fonction publique territoriale bénéficient des garanties prévues par le présent décret. " * 5,
+        }]
 
     async def no_case_law(*args, **kwargs):
         return []
