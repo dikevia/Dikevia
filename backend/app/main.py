@@ -1016,10 +1016,13 @@ async def _lock_conversation_for_chat_turn(
         LIMIT 1""",
         str(conversation_id), organization_id, user_id,
     )
-    stored_public_service = str(
-        first_message["public_service"] if first_message else "FPT"
-    ).upper()
     requested = str(requested_public_service or "FPT").upper()
+    # An empty pre-created conversation has no branch yet: its first turn
+    # selects the branch. Legacy conversations with messages but no metadata
+    # remain FPT by default for backward compatibility.
+    stored_public_service = str(
+        first_message["public_service"] or "FPT"
+    ).upper() if first_message else requested
     if stored_public_service != requested:
         labels = {
             "FPT": "fonction publique territoriale",
