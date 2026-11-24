@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -87,6 +88,27 @@ def records_by_id(data: Any, label: str) -> dict[str, dict]:
     return indexed
 
 
+
+def _validate_release_thresholds(gate: dict[str, Any]) -> None:
+    """Reject malformed release thresholds before score calculation."""
+    thresholds = {
+        "minimum_average_score": (8.5, 0.0, 10.0),
+        "minimum_question_relevance_rate": (0.95, 0.0, 1.0),
+        "minimum_source_support_rate": (0.98, 0.0, 1.0),
+    }
+    for key, (default, minimum, maximum) in thresholds.items():
+        value = gate.get(key, default)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or not minimum <= value <= maximum
+        ):
+            raise ValueError(
+                f"Configuration release_gate invalide : {key} doit être un nombre compris entre {minimum} et {maximum}."
+            )
+
+
 def validate_dataset(path: str) -> list[dict]:
     data = load_json(path)
     if not isinstance(data, dict):
@@ -111,6 +133,11 @@ def validate_dataset(path: str) -> list[dict]:
                 raise ValueError("Manifeste pilote invalide : ordre des cases différent de case_ids.")
         elif data.get("case_count") != 100:
             raise ValueError("Métadonnées invalides : case_count doit être égal à 100.")
+        release_gate = data.get("release_gate")
+        if not isinstance(release_gate, dict):
+            raise ValueError("Manifeste invalide : release_gate doit être un objet JSON.")
+        _validate_release_thresholds(release_gate)
+
         required = {"id", "category", "question", "expected_intent", "required_checks",
                     "failure_modes", "gold_answer_status"}
         malformed = [
@@ -118,6 +145,8 @@ def validate_dataset(path: str) -> list[dict]:
             for q in raw_questions if required - q.keys()
         ]
         ids = [q.get("id") for q in raw_questions]
+        if any(not isinstance(item_id, str) or not item_id for item_id in ids):
+            raise ValueError("Jeu invalide : chaque question doit avoir un identifiant texte non vide.")
         duplicates = sorted({x for x in ids if ids.count(x) > 1})
         expected_ids = pilot_ids if isinstance(pilot_ids, list) else EXPECTED_IDS
         missing = [x for x in expected_ids if x not in ids]
@@ -152,6 +181,8 @@ def validate_dataset(path: str) -> list[dict]:
         raise ValueError("Métadonnées invalides : benchmark_name ou total_questions.")
     questions = questions_from(data)
     ids = [q.get("id") for q in questions]
+    if any(not isinstance(item_id, str) or not item_id for item_id in ids):
+        raise ValueError("Jeu invalide : chaque question doit avoir un identifiant texte non vide.")
     duplicates = sorted({x for x in ids if ids.count(x) > 1})
     missing = [x for x in EXPECTED_IDS if x not in ids]
     unexpected = [x for x in ids if x not in EXPECTED_IDS]
@@ -315,7 +346,7 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         ),
     }
     if canonical:
-        gate = dataset.get("release_gate") or {}
+        gate = dataset["release_gate"]
         relevance_rate = sum(relevance_values) / reviewed if reviewed else None
         source_support_rate = sum(source_support_values) / reviewed if reviewed else None
         checks = {
