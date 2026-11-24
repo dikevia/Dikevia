@@ -1061,7 +1061,11 @@ def merge_ai_and_fallback_research_queries(
     # broad user query. When focused fallback queries exist, reserve one for
     # each independently detected legal axis; never let a model-only plan
     # consume the entire retrieval budget.
-    if len(fallback) == 1:
+    if limit == 1:
+        # With a one-query budget, prefer deterministic retrieval over an
+        # unverified model plan: this is the only route to official sources.
+        reserved = fallback[:1]
+    elif len(fallback) == 1:
         reserved = fallback[:1]
     else:
         reserve_count = max(1, min(len(fallback_axes or []), len(fallback) - 1, limit - 1))
