@@ -44,3 +44,11 @@ def test_beta_capacity_migration_has_a_reversible_down_script():
 def test_production_blueprint_disables_quota_consuming_startup_probes():
     render = (ROOT / "render.yaml").read_text()
     assert '      - key: STARTUP_EXTERNAL_DIAGNOSTICS_ENABLED\n        value: "false"' in render
+
+
+def test_production_blueprint_pins_identity_and_disabled_features():
+    render = (ROOT / "render.yaml").read_text()
+    assert '      - key: OIDC_PROVIDER\n        value: keycloak' in render
+    assert '      - key: VECTOR_SEARCH_ENABLED\n        value: "false"' in render
+    assert '      - key: AI_LOCAL_DOCUMENT_REVIEW_ENABLED\n        value: "false"' in render
+    assert '      - key: STRIPE_BILLING_ENABLED\n        value: "false"' in render
