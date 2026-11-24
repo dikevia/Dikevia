@@ -756,6 +756,21 @@ class LegifranceConnector:
             valid_to = self._iso_date(self._first_value(
                 article_metadata, ("dateFin", "dateFinVersion", "dateFinApplication")
             ))
+            # DATE_VERSION is the primary temporal selector. If the consulted
+            # article also exposes explicit validity bounds, they must not
+            # contradict the requested date; reject rather than label a
+            # contradictory snapshot as applicable.
+            if (
+                (valid_from is not None and valid_from > effective_date)
+                or (valid_to is not None and valid_to < effective_date)
+            ):
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_REJECTED_DATE id=%s requested_date=%s valid_from=%s valid_to=%s",
+                    article_id, effective_date.isoformat(),
+                    valid_from.isoformat() if valid_from else None,
+                    valid_to.isoformat() if valid_to else None,
+                )
+                continue
             articles.append({
                 "source_type": "LEGIFRANCE_API", "source_id": article_id, "article": article_label,
                 "article_id": article_id, "source_version_id": article_id,

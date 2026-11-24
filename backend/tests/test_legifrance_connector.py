@@ -40,6 +40,53 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
     assert any(path.endswith("/search") for _, path in seen)
     assert any(path.endswith("/list/ping") for _, path in seen)
 
+
+@pytest.mark.parametrize(
+    ("valid_from", "valid_to"),
+    [
+        ("2026-12-01", None),
+        (None, "2026-11-18"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_legifrance_rejects_article_validity_bounds_outside_requested_date(
+    monkeypatch, valid_from, valid_to,
+):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    requested_date = date(2026, 11, 19)
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            assert payload["fond"] == "CODE_DATE"
+            assert payload["recherche"]["filtres"][1] == {
+                "facette": "DATE_VERSION",
+                "singleDate": int(datetime(2026, 11, 19, tzinfo=timezone.utc).timestamp() * 1000),
+            }
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            article = {
+                "id": ARTICLE_ID,
+                "num": "L. 123-4",
+                "nomCode": "Code général de la fonction publique",
+                "texte": "Disposition officielle suffisamment longue pour le test.",
+            }
+            if valid_from is not None:
+                article["dateDebut"] = valid_from
+            if valid_to is not None:
+                article["dateFin"] = valid_to
+            return httpx.Response(200, json={"article": article})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    assert await connector.search_code_articles(
+        "article L. 123-4", requested_date,
+    ) == []
+
+
 @pytest.mark.parametrize(
     ("requested_ref", "returned_num"),
     [
