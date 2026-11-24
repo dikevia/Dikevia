@@ -40,6 +40,15 @@ def test_model_dimensions_are_explicit():
     assert MODULE.DIMENSIONS == 384
 
 
+def test_embedding_backfill_repairs_stale_model_and_dimension_metadata():
+    source = SCRIPT.read_text(encoding="utf-8")
+    assert "embedding_384_model IS DISTINCT FROM $1" in source
+    assert "embedding_384_dimensions IS DISTINCT FROM $2" in source
+    assert "embedding_384_model IS DISTINCT FROM $3" in source
+    assert "embedding_384_dimensions IS DISTINCT FROM $4" in source
+    assert "AND embedding_384_model=$1 AND embedding_384_dimensions=$2" in source
+
+
 def test_browser_query_embedding_matches_python_preprocessing_and_aggregation():
     node = shutil.which("node")
     if not node:
