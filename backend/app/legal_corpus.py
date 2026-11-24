@@ -115,9 +115,12 @@ def safe_official_url(value: str | None) -> str | None:
         # Exact HTTPS hosts of the explicitly selected and approved guidance corpus.
         "cdg35.bzh", "www.cdg35.bzh",
         "uffa.cfdt.fr",
+        "interco.cfdt.fr",
         "cfdt-interco31.fr", "www.cfdt-interco31.fr",
         "cfdtinterco35.fr", "www.cfdtinterco35.fr",
         "cgtservicespublics.fr", "www.cgtservicespublics.fr",
+        "cgtetat.fr", "www.cgtetat.fr",
+        "sante.cgt.fr", "www.sante.cgt.fr",
         "fo-fonctionnaires.fr", "www.fo-fonctionnaires.fr",
         "cftc.fr", "www.cftc.fr", "ledecodeur.cftc.fr",
         "unsa-fp.org", "www.unsa-fp.org",
