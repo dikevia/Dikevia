@@ -195,7 +195,7 @@ def qualify_legal_question(
     current_line = str(question or "").splitlines()[0]
     current_folded = _fold(current_line)
     short_status_reply = re.fullmatch(
-        r"(?:et\s+)?(?:pour\s+les?\s+)?(?:agents?\s+)?"
+        r"(?:et\s+(?:pour\s+)?les?\s+)?(?:agent(?:e)?s?\s+)?"
         r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\s*\??",
         current_folded,
     )
