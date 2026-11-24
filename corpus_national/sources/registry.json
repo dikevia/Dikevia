@@ -105,20 +105,26 @@
     {
       "id": "info-gouv",
       "name": "Info.gouv.fr — informations et communications gouvernementales",
-      "publisher": "Services du Premier ministre",
+      "publisher": "Service d'information du Gouvernement (SIG), Services du Premier ministre",
       "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
-      "status": "CANDIDATE",
-      "collection_mode": "Pages publiques à qualifier individuellement",
+      "status": "REUSE_APPROVED",
+      "collection_mode": "Pages publiques explicitement sélectionnées du SIG (HTML et PDF) ; aucune collecte globale du domaine.",
       "scope": [
         "TRANSVERSAL"
       ],
-      "reuse": "Ne retenir que les contenus ayant un lien utile avec la fonction publique ; vérifier date, auteur et réutilisation.",
+      "reuse": "Licence Ouverte Etalab 2.0 pour les contenus textuels, sauf droits de tiers ; attribution obligatoire de la source et de la date de dernière mise à jour ; ne pas induire en erreur. Exclure images, logos, vidéos et éléments signalés comme appartenant à des tiers.",
       "domain": "info.gouv.fr",
       "priority": 4,
       "domains": [
         "info.gouv.fr",
         "www.info.gouv.fr"
-      ]
+      ],
+      "reuse_authorization": {
+        "status": "SOURCE_TERMS_CONFIRMED",
+        "confirmed_at": "2026-11-24",
+        "scope": "Uniquement les trois ressources document_seeds sig-missions-2026, sig-charte-etat-marque et sig-charte-accessibilite-communication. Contenus textuels des pages et PDF officiels info.gouv.fr ; pas d'aspiration générale du site.",
+        "note": "Les mentions légales info.gouv.fr indiquent que les contenus, sauf propriété intellectuelle de tiers, sont sous Licence Ouverte Etalab 2.0 et exigent la mention de la source et de la date de dernière mise à jour. Exclure les images, logos, vidéos et contenus tiers."
+      }
     },
     {
       "id": "cnfpt",
@@ -1443,6 +1449,58 @@
       "character_count": 181469,
       "artifact_name": "service-public-function-public-corpus",
       "authorization_note": "Réutilisation confirmée par le responsable du projet le 2026-11-23 pour l'intégration dans le corpus Dikévia."
+    },
+    {
+      "id": "sig-missions-2026",
+      "source_id": "info-gouv",
+      "title": "Service d'information du Gouvernement (SIG) — missions et rôle",
+      "url": "https://www.info.gouv.fr/organisation/service-d-information-du-gouvernement-sig",
+      "format": "HTML",
+      "status": "REUSE_APPROVED",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REUSE_APPROVED",
+      "scope": [
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "communication_publique",
+        "service_public"
+      ]
+    },
+    {
+      "id": "sig-charte-etat-marque",
+      "source_id": "info-gouv",
+      "title": "La marque de l'État — Charte de l'État",
+      "url": "https://www.info.gouv.fr/marque-de-letat/",
+      "format": "HTML",
+      "status": "REUSE_APPROVED",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REUSE_APPROVED",
+      "scope": [
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "charte_etat",
+        "communication_publique"
+      ]
+    },
+    {
+      "id": "sig-charte-accessibilite-communication",
+      "source_id": "info-gouv",
+      "title": "Charte d'accessibilité de la communication de l'État — septembre 2022",
+      "url": "https://www.info.gouv.fr/upload/media/content/0001/12/83591f3585c69b362127e2f3f6021fe4e5711967.pdf",
+      "format": "PDF",
+      "status": "REUSE_APPROVED",
+      "content_status": "NOT_COLLECTED",
+      "reuse_status": "REUSE_APPROVED",
+      "scope": [
+        "TRANSVERSAL"
+      ],
+      "topics": [
+        "accessibilite",
+        "communication_publique",
+        "FALC"
+      ]
     }
   ]
 }
