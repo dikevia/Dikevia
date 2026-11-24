@@ -20,6 +20,16 @@ class TenantContext:
     conn: object | None
 
 
+def _require_verified_auth0_email(principal: Principal) -> Principal:
+    if not principal.email or not principal.email_verified:
+        auth_log.warning("auth_rejected reason=email_not_verified status=403")
+        raise HTTPException(
+            403,
+            "Adresse e-mail non vérifiée. Ouvrez le lien de vérification reçu par e-mail puis reconnectez-vous.",
+        )
+    return principal
+
+
 async def _resolve_auth0_legacy_identity(principal: Principal) -> Principal:
     """Map only Auth0 DB users whose exact legacy identity still exists in Dikévia."""
     if settings.oidc_provider != "auth0" or not settings.oidc_identity_compat_issuer:
@@ -72,6 +82,7 @@ async def get_principal(
         if not x_oidc_id_token:
             raise HTTPException(401, "Jeton d'identité OIDC manquant. Reconnectez-vous.")
         principal = verify_identity_token(x_oidc_id_token, principal)
+        principal = _require_verified_auth0_email(principal)
         principal = await _resolve_auth0_legacy_identity(principal)
     return principal
 
