@@ -237,6 +237,21 @@ def test_plain_language_phrasing_activates_the_same_strict_relevance_filter():
 
 
 
+def test_explicit_three_branch_scope_overrides_title_naming_only_two_branches():
+    source = {
+        "title": "Décret relatif à la fonction publique de l'État et à la fonction publique hospitalière",
+        "text": (
+            "Les dispositions du présent article s'appliquent aux agents des trois "
+            "versants de la fonction publique."
+        ),
+    }
+    for target in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=target)
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True
+
+
 def test_title_explicitly_covering_fpe_and_fph_is_not_assigned_to_either_branch():
     source = {
         "title": "Décret relatif à la fonction publique de l'État et à la fonction publique hospitalière",
