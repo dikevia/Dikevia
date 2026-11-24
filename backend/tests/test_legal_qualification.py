@@ -313,3 +313,38 @@ def test_contextual_research_context_marks_answer_to_clarification_as_followup()
     assert context.is_followup is True
     assert "\n" in context.question
     assert "Question de clarification précédente :" in context.question
+
+
+def test_population_mentioned_in_question_does_not_become_user_agent_status():
+    contractual = qualify_legal_question("Les agents contractuels ont-ils droit à cette prime ?")
+    titular = qualify_legal_question("Les agents titulaires peuvent-ils être licenciés ?")
+    trainee = qualify_legal_question("Les stagiaires peuvent-ils poser ces congés ?")
+    assert contractual["agent_status"] == "NOT_SPECIFIED"
+    assert titular["agent_status"] == "NOT_SPECIFIED"
+    assert trainee["agent_status"] == "NOT_SPECIFIED"
+
+
+def test_status_requires_first_person_or_a_short_clarification_reply():
+    assert qualify_legal_question("Je suis agent contractuel en CDD.")["agent_status"] == "CONTRACTUEL_EXPLICIT"
+    assert qualify_legal_question("Et pour les contractuels ?")["agent_status"] == "CONTRACTUEL_EXPLICIT"
+    assert qualify_legal_question("Contractuelle")["agent_status"] == "CONTRACTUEL_EXPLICIT"
+    assert qualify_legal_question("Mon collègue est contractuel.")["agent_status"] == "NOT_SPECIFIED"
+
+
+def test_standalone_question_starting_with_pour_les_is_not_a_followup():
+    question = "Pour les agents contractuels, quel est le délai de préavis ?"
+    context = build_contextual_research_context(
+        question,
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    )
+    assert context.is_followup is False
+    assert context.question == question
+
+
+def test_short_pour_les_contractuels_question_remains_a_followup():
+    context = build_contextual_research_context(
+        "Pour les contractuels ?",
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+    )
+    assert context.is_followup is True
+    assert "heures supplémentaires" in context.question
