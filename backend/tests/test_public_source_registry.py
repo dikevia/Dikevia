@@ -5,8 +5,6 @@ from pathlib import Path
 
 from app.legal_corpus import safe_official_url
 
-from app.legal_corpus import safe_official_url
-
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = ROOT / "corpus_national" / "sources" / "registry.json"
 
@@ -59,22 +57,6 @@ def test_administrative_justice_open_data_is_registered_as_primary_case_law():
     assert "archives xml zip mensuelles" in source["collection_mode"].casefold()
     assert "profilage" in source["reuse"]
     assert "numéro" in source["reuse"]
-
-def test_reuse_approved_public_source_hosts_are_preserved_for_citations():
-    registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
-    restricted_or_non_public_hosts = {"espace-echanges.cdg35.bzh"}
-    approved = [
-        source for source in registry["sources"]
-        if source.get("status") == "REUSE_APPROVED"
-    ]
-    assert approved
-    for source in approved:
-        for host in source.get("domains", []):
-            if host in restricted_or_non_public_hosts:
-                continue
-            assert safe_official_url(f"https://{host}/"), (
-                f"Host approved in source registry is missing from legal URL allowlist: {host}"
-            )
 
 def test_reuse_approved_public_source_hosts_are_preserved_for_citations():
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
