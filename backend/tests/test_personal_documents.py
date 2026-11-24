@@ -67,3 +67,13 @@ def test_personal_zip_import_is_bounded_and_rejects_unsafe_archive_entries():
     assert "part in {\"\", \".\", \"..\"}" in source
     assert "scan_with_clamav" in source
     assert "owner_user_id" in source
+
+
+
+def test_personal_zip_import_streams_entries_and_scans_with_bounded_concurrency():
+    from app.personal_documents import import_personal_documents_zip
+    source = inspect.getsource(import_personal_documents_zip)
+    assert "archive.open(info)" in source
+    assert "asyncio.to_thread" in source
+    assert "asyncio.Semaphore(8)" in source
+    assert "MAX_ARCHIVE_DOCUMENTS = 50" in inspect.getsource(__import__("app.personal_documents", fromlist=["MAX_ARCHIVE_DOCUMENTS"]))

@@ -1,6 +1,7 @@
 """Strictly user-owned private document storage and search endpoints."""
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import re
 import zipfile
@@ -30,7 +31,7 @@ from .security import Principal
 router = APIRouter(prefix="/api/v1/personal-documents", tags=["personal-documents"])
 MAX_FILE_BYTES = 20 * 1024 * 1024
 MAX_ZIP_BYTES = 60 * 1024 * 1024
-MAX_ARCHIVE_DOCUMENTS = 100
+MAX_ARCHIVE_DOCUMENTS = 50
 MAX_ARCHIVE_UNCOMPRESSED_BYTES = 120 * 1024 * 1024
 ALLOWED = {
     ".pdf": "application/pdf",
@@ -217,22 +218,26 @@ async def import_personal_documents_zip(
                 if total_uncompressed > MAX_ARCHIVE_UNCOMPRESSED_BYTES:
                     raise HTTPException(413, "Le volume total décompressé dépasse 120 Mo.")
                 try:
-                    data = archive.read(info)
+                    chunks = []
+                    extracted_size = 0
+                    with archive.open(info) as entry:
+                        while True:
+                            chunk = entry.read(min(1024 * 1024, MAX_FILE_BYTES + 1 - extracted_size))
+                            if not chunk:
+                                break
+                            extracted_size += len(chunk)
+                            if extracted_size > info.file_size or extracted_size > MAX_FILE_BYTES:
+                                raise HTTPException(413, "Un document dépasse sa taille déclarée.")
+                            chunks.append(chunk)
+                    data = b"".join(chunks)
+                except HTTPException:
+                    raise
                 except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
                     raise HTTPException(415, "Un document de l'archive est illisible.") from exc
                 if len(data) != info.file_size:
                     raise HTTPException(415, "La taille d'un document extrait est incohérente.")
                 mime_type = ALLOWED[suffix]
                 _validate_upload(filename, mime_type, data)
-                try:
-                    scan = scan_with_clamav(
-                        data, settings.clamav_host, settings.clamav_port,
-                        settings.clamav_timeout_seconds,
-                    )
-                except MalwareDetected as exc:
-                    raise HTTPException(422, "Un document a été rejeté par le contrôle antivirus.") from exc
-                except ScannerUnavailable as exc:
-                    raise HTTPException(503, "Le contrôle antivirus est indisponible ; aucun document n'a été importé.") from exc
                 extracted_text, extraction_status = extract_document_text(data, mime_type)
                 prepared.append({
                     "id": uuid4(),
@@ -241,7 +246,6 @@ async def import_personal_documents_zip(
                     "mime_type": mime_type,
                     "data": data,
                     "sha256": hashlib.sha256(data).hexdigest(),
-                    "scan_engine": scan.engine,
                     "extracted_text": extracted_text,
                     "extraction_status": extraction_status,
                 })
@@ -249,6 +253,30 @@ async def import_personal_documents_zip(
         raise
     except Exception as exc:
         raise HTTPException(415, "L'archive n'a pas pu être contrôlée.") from exc
+
+    # Run bounded concurrent scans so a 49-document archive does not incur
+    # one network round-trip per file serially. Any scanner failure rejects all.
+    scan_semaphore = asyncio.Semaphore(8)
+
+    async def scan_one(item):
+        async with scan_semaphore:
+            return await asyncio.to_thread(
+                scan_with_clamav, item["data"], settings.clamav_host,
+                settings.clamav_port, settings.clamav_timeout_seconds,
+            )
+
+    scan_results = await asyncio.gather(
+        *(scan_one(item) for item in prepared), return_exceptions=True,
+    )
+    for result in scan_results:
+        if isinstance(result, MalwareDetected):
+            raise HTTPException(422, "Un document a été rejeté par le contrôle antivirus.")
+        if isinstance(result, ScannerUnavailable):
+            raise HTTPException(503, "Le contrôle antivirus est indisponible ; aucun document n'a été importé.")
+        if isinstance(result, BaseException):
+            raise HTTPException(503, "Le contrôle antivirus n'a pas pu terminer l'analyse.")
+    for item, scan in zip(prepared, scan_results):
+        item["scan_engine"] = scan.engine
 
     stored_keys = []
     documents = []
