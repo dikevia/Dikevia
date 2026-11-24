@@ -32,7 +32,7 @@ La connexion `Username-Password-Authentication` est activée pour la SPA ; `goog
 
 Le navigateur utilise Authorization Code + PKCE et reçoit un access token pour l'API ainsi qu'un ID token OIDC. Le frontend vérifie le nonce, l'émetteur et l'audience de l'ID token, puis transmet ce dernier à l'API dans l'en-tête `X-OIDC-ID-Token`. L'API vérifie à nouveau sa signature, son émetteur, son audience et l'identité `sub` identique à celle de l'access token. L'adresse e-mail et `email_verified` proviennent de cet ID token signé.
 
-Aucune Action Auth0 personnalisée n'est nécessaire pour les claims standard `email` et `email_verified`. Le flux n'accorde aucun rôle ni droit dans Auth0 : les autorisations restent exclusivement dans PostgreSQL.
+Aucune Action Auth0 personnalisée n'est nécessaire pour les claims standard `email` et `email_verified`. Le flux n'accorde aucun rôle ni droit dans Auth0 : les autorisations restent exclusivement dans PostgreSQL. L'API refuse les appels authentifiés si l'ID token ne contient pas une adresse e-mail et `email_verified=true` ; l'utilisateur doit ouvrir le lien de vérification puis se reconnecter.
 
 ## Variables Render
 
