@@ -194,6 +194,13 @@ def classify_public_service_scope(
     title_fpt_hits = [marker for marker in _FPT_MARKERS if _fold(marker) in title_folded]
     title_fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in title_folded]
     title_fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in title_folded]
+    if title_fpe_hits and title_fph_hits and not title_fpt_hits:
+        return {
+            "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+            "evidence": title_fpe_hits[:2] + title_fph_hits[:2],
+            "analysis_eligible": False,
+            "claim_eligible": False,
+        }
     if (title_fpe_hits or title_fph_hits) and not title_fpt_hits:
         title_scope = "FPH" if title_fph_hits else "FPE"
         return {
