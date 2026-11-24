@@ -611,3 +611,26 @@ def test_claim_validation_fails_closed_on_malformed_source_records():
     )
     assert result["valid"] is False
     assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_claim_validation_rejects_non_object_citation_integrity_metadata():
+    from app.legal_assurance import validate_claim_evidence
+
+    for malformed_integrity in ("valid", ["valid"], 1, True):
+        source = {
+            "source_id": "LEGIARTI000000000123",
+            "source_type": "LEGIFRANCE_API",
+            "citation_integrity": malformed_integrity,
+            "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+            "excerpt": "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+            "official_source": True,
+        }
+        result = validate_claim_evidence(
+            _evidence_claim(
+                "L'autorité territoriale veille à la santé des agents.",
+                "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+            ),
+            [source],
+        )
+        assert result["valid"] is False
+        assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
