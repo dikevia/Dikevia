@@ -182,10 +182,10 @@ _EXPLICIT_SELF_VERSANT_PATTERNS = {
     "FPT": (
         r"\bje suis (?:un |une )?(?:agent|fonctionnaire) territorial\b",
         r"\bje releve de la fonction publique territoriale\b",
-        r"\bmon employeur est (?:la )?(?:mairie|commune|collectivite territoriale)\b",
+        r"\bmon employeur est (?:(?:la|une) )?(?:mairie|commune|collectivite territoriale)\b",
     ),
     "FPE": (
-        r"\bje suis (?:un |une )?(?:agent|fonctionnaire) de l etat\b",
+        r"\bje suis (?:un |une )?(?:agent|fonctionnaire) (?:public )?de l etat\b",
         r"\bje releve de la fonction publique de l etat\b",
         r"\bje travaille (?:au|dans un|pour un) ministere\b",
         r"\bmon employeur est (?:un )?ministere\b",
@@ -193,7 +193,7 @@ _EXPLICIT_SELF_VERSANT_PATTERNS = {
     "FPH": (
         r"\bje suis (?:un |une )?(?:agent|fonctionnaire) hospitalier\b",
         r"\bje releve de la fonction publique hospitaliere\b",
-        r"\bje travaille (?:dans|au sein d un) etablissement public de sante\b",
+        r"\bje travaille (?:dans un|au sein d un) etablissement public de sante\b",
         r"\bmon employeur est (?:un )?etablissement public de sante\b",
     ),
 }
@@ -201,7 +201,8 @@ _EXPLICIT_SELF_VERSANT_PATTERNS = {
 
 def _explicit_self_versant(question: str) -> str | None:
     """Return a branch only when the user explicitly describes their own employer/status."""
-    folded = _fold(str(question or "").splitlines()[0])
+    question_lines = str(question or "").splitlines()
+    folded = _fold(question_lines[0] if question_lines else "")
     for versant, patterns in _EXPLICIT_SELF_VERSANT_PATTERNS.items():
         if any(re.search(pattern, folded) for pattern in patterns):
             return versant
