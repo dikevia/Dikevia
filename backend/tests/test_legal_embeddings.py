@@ -32,3 +32,12 @@ def test_normalized_mean_returns_unit_vector():
 def test_model_dimensions_are_explicit():
     assert MODULE.MODEL_NAME == "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     assert MODULE.DIMENSIONS == 384
+
+def test_browser_query_embedding_uses_the_same_segmenting_and_aggregation_contract():
+    worker = (Path(__file__).resolve().parents[2] / "frontend" / "legal-embedding-worker.js").read_text(encoding="utf-8")
+    assert 'const SEGMENT_CHARS = 500;' in worker
+    assert 'const SEGMENT_OVERLAP = 60;' in worker
+    assert '.normalize("NFC")' in worker
+    assert 'pooling: "mean", normalize: true' in worker
+    assert 'const embedding = normalizedMean(vectors);' in worker
+    assert 'const embedding = await extractor(text.slice(0, 5000)' not in worker
