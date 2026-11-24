@@ -465,7 +465,7 @@ def test_open_data_search_results_mark_only_relevance_selected_passages():
 
 
 
-def test_administrative_open_data_import_excludes_explicit_state_public_service_decisions():
+def test_administrative_open_data_import_includes_explicit_state_public_service_decisions():
     from io import BytesIO
     import zipfile
     from app.legal_ingestion import parse_administrative_open_data_zip
@@ -481,7 +481,9 @@ def test_administrative_open_data_import_excludes_explicit_state_public_service_
     archive_bytes = BytesIO()
     with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("CE_2024002_20240510.xml", xml)
-    assert parse_administrative_open_data_zip(archive_bytes.getvalue(), "CE_202405.zip") == []
+    records = parse_administrative_open_data_zip(archive_bytes.getvalue(), "CE_202405.zip")
+    assert len(records) == 1
+    assert records[0]["raw_metadata"]["public_service_scope"] == "FPE"
 
 
 def test_administrative_open_data_import_rejects_xml_entity_declarations():
@@ -574,3 +576,24 @@ def test_open_data_case_law_filter_keeps_local_authority_hr_disputes():
         {"scope": "OUT_OF_SCOPE_OR_UNCONFIRMED", "analysis_eligible": False},
     )
 
+
+
+def test_administrative_open_data_import_accepts_explicit_hospital_employment_decisions():
+    from io import BytesIO
+    import zipfile
+    from app.legal_ingestion import parse_administrative_open_data_zip
+
+    xml = """<Decision>
+      <Identification>TA_2024003_20240512.xml</Identification>
+      <Code_Juridiction>TA69</Code_Juridiction>
+      <Nom_Juridiction>Tribunal administratif de Lyon</Nom_Juridiction>
+      <Numero_Dossier>2400003</Numero_Dossier>
+      <Date_Lecture>2024-05-12</Date_Lecture>
+      <Texte_Integral><p>Un agent hospitalier d'un établissement public de santé conteste une décision relative à son accident de service au regard des règles propres à la fonction publique hospitalière.</p></Texte_Integral>
+    </Decision>""".encode("utf-8")
+    archive_bytes = BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("TA_2024003_20240512.xml", xml)
+    records = parse_administrative_open_data_zip(archive_bytes.getvalue(), "TA_202405.zip")
+    assert len(records) == 1
+    assert records[0]["raw_metadata"]["public_service_scope"] == "FPH"
