@@ -1938,3 +1938,49 @@ async def test_research_planner_records_provider_failure_with_unknown_usage(monk
     assert event["total_tokens"] is None
     assert event["latency_ms"] >= 0
     assert event["outcome"] == "PROVIDER_ERROR"
+
+@pytest.mark.asyncio
+async def test_ai_analysis_payload_prefers_expanded_analysis_excerpt(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import analyze_question
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"claims": []}'}}], "usage": {}},
+        )
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    display_excerpt = "Extrait court destiné à l'affichage."
+    analysis_excerpt = (
+        display_excerpt + " " +
+        "Clause complémentaire, condition et exception juridique conservées dans le dossier d'analyse."
+    )
+
+    await analyze_question(
+        question="Question de test sur une disposition",
+        employer="NATIONAL",
+        facts_date="2026-11-24",
+        sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678",
+            "requested_effective_date": "2026-11-24",
+            "excerpt": display_excerpt,
+            "analysis_excerpt": analysis_excerpt,
+        }],
+    )
+
+    payload = json.loads(captured["payload"]["messages"][1]["content"])
+    source = payload["extraits_documentaires_valides"][0]
+    assert source["extrait"] == analysis_excerpt
