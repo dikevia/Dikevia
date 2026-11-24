@@ -411,16 +411,12 @@ jobs:
             exit 1
           fi
           curl --connect-timeout 10 --max-time 20 -fsS \
-            https://dikevia-commercial-api-l2r8.onrender.com/auth-config.js -o /tmp/auth-config.js
-          python - <<'PY'
-          from pathlib import Path
-          config = Path("/tmp/auth-config.js").read_text(encoding="utf-8")
-          assert "dikevia-identity-l2r8.onrender.com/realms/cfdt" in config, "OIDC issuer mismatch"
-          assert "cfdt-juris-web" in config, "OIDC public client ID missing"
-          assert "redirect_uri:" in config, "OIDC redirect URI missing"
-          assert (
-              "dikevia-commercial-api-l2r8.onrender.com/" in config
-              or "window.location.origin" in config
-          ), "OIDC redirect URI does not target the commercial origin"
-          print("Commercial web shell and runtime OIDC configuration are present.")
-          PY
+            https://dikevia-commercial-api-l2r8.onrender.com/static/auth-config.js -o /tmp/auth-config.js
+          grep -q "dikevia-identity-l2r8.onrender.com/realms/cfdt" /tmp/auth-config.js
+          grep -q '"client_id": "cfdt-juris-web"' /tmp/auth-config.js
+          grep -q 'redirect_uri": appOrigin + "/"' /tmp/auth-config.js
+          curl --connect-timeout 10 --max-time 20 -fsS \
+            https://dikevia-commercial-api-l2r8.onrender.com/auth-config.js -o /tmp/runtime-auth-config.js
+          grep -q "Runtime OIDC override not configured" /tmp/runtime-auth-config.js || \
+            grep -q "dikevia-identity-l2r8.onrender.com/realms/cfdt" /tmp/runtime-auth-config.js
+          echo "Commercial web shell and static OIDC fallback are present; runtime override is optional."
