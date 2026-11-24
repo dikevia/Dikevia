@@ -1053,7 +1053,7 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
-        parsed = json.loads(content) if isinstance(content, str) else None
+        parsed = parse_structured_answer(content)
         return validate_entailment_verdicts(parsed, claims, sources)
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
         _log_provider_failure("claim_entailment", exc)
