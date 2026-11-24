@@ -1052,21 +1052,20 @@ def merge_ai_and_fallback_research_queries(
         for query in (fallback_queries or [])
         if isinstance(query, str) and query.strip()
     ))
-    # Always retain one bounded fallback retrieval query: even a single-topic
-    # model plan can omit the central mechanism. Compound questions reserve a
-    # second focused fallback axis. The first fallback query is the broad user
-    # query; only subsequent focused queries are eligible for this reserve.
-    if len(fallback) < 2:
-        return primary[:limit] or fallback[:limit]
+    if not fallback:
+        return primary[:limit]
 
-    # Reserve one focused fallback query for every independently detected
-    # legal axis that fits inside the bounded request budget. A fixed reserve
-    # of two silently dropped a third (or later) topic whenever the AI plan
-    # omitted it. The broad fallback query remains excluded from this reserve.
-    reserve_count = max(1, min(len(fallback_axes or []), limit - 1))
-    reserved = fallback[1:1 + reserve_count]
+    # Keep one deterministic fallback even when the planner produced only the
+    # broad user query. When focused fallback queries exist, reserve one for
+    # each independently detected legal axis; never let a model-only plan
+    # consume the entire retrieval budget.
+    if len(fallback) == 1:
+        reserved = fallback[:1]
+    else:
+        reserve_count = max(1, min(len(fallback_axes or []), len(fallback) - 1, limit - 1))
+        reserved = fallback[1:1 + reserve_count]
     primary_budget = max(0, limit - len(reserved))
-    ordered = [*primary[:primary_budget], *reserved, *primary[primary_budget:]]
+    ordered = [*primary[:primary_budget], *reserved, *primary[primary_budget:], *fallback]
     merged: list[str] = []
     seen: set[str] = set()
     for query in ordered:
