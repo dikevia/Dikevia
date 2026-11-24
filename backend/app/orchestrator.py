@@ -1107,7 +1107,7 @@ class LegalOrchestrator:
             try:
                 refinement = await plan_legal_research(
                     question=contextual_question,
-                    employer=request.employer,
+                    employer=_effective_employer_for_versant(request.public_service, request.employer),
                     facts_period=temporal_context,
                     legal_context=legal_context,
                     conversation_history=provider_history,
@@ -1924,7 +1924,7 @@ class LegalOrchestrator:
                         answer_started_at = time.perf_counter()
                         ai_result = await analyze_question(
                             question=contextual_question,
-                            employer=request.employer,
+                            employer=_effective_employer_for_versant(request.public_service, request.employer),
                             facts_date=effective_date.isoformat(),
                             facts_period=temporal_context,
                             sources=ai_sources,

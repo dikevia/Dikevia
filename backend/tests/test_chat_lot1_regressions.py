@@ -345,3 +345,14 @@ def test_fpe_fph_research_never_inherits_fpt_only_employer_selector(
     from app.orchestrator import _effective_employer_for_versant
 
     assert _effective_employer_for_versant(versant, employer) == expected
+
+
+def test_all_ai_research_and_answer_stages_receive_versant_consistent_employer():
+    import inspect
+
+    from app.orchestrator import LegalOrchestrator
+
+    source = inspect.getsource(LegalOrchestrator.ask)
+    assert source.count(
+        "_effective_employer_for_versant(request.public_service, request.employer)"
+    ) == 4
