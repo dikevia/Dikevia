@@ -352,3 +352,12 @@ def test_short_pour_les_contractuels_question_remains_a_followup():
 
 def test_short_pour_les_contractuels_reply_can_update_status_without_inheriting_topic_errors():
     assert qualify_legal_question("Pour les contractuels ?")["agent_status"] == "CONTRACTUEL_EXPLICIT"
+
+
+def test_multi_topic_question_exposes_all_detected_topic_families():
+    result = qualify_legal_question(
+        "Mon chef refuse de payer mes heures supplémentaires et la mairie refuse mes congés annuels."
+    )
+    assert result["topic"] == "WORKING_TIME"
+    assert "WORKING_TIME" in result["topics"]
+    assert "LEAVE" in result["topics"]
