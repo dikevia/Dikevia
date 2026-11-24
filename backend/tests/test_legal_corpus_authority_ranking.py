@@ -32,6 +32,7 @@ async def test_corpus_search_applies_bounded_authority_weight_only_to_verified_o
     assert "authority_weight" in conn.query
     assert "max(rank * authority_weight) AS rank" in conn.query
     assert "THEN 1.15" in conn.query
+    assert "WHEN d.source_type IN ('LEGIFRANCE_CETAT','OTHER_OFFICIAL') AND d.document_kind='ADMIN_CASELAW'" in conn.query
     assert "THEN 1.10" in conn.query
     assert "THEN 1.05" in conn.query
     assert "ELSE 1.0" in conn.query
