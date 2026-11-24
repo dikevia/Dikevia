@@ -17,7 +17,7 @@ SPEC.loader.exec_module(MODULE)
 
 
 def test_embedding_segments_are_prefixed_and_cover_long_text():
-    text = ("Le fonctionnaire bénéficie des garanties prévues par le code.\\n" * 90).strip()
+    text = ("Le fonctionnaire bénéficie des garanties prévues par le code.\n" * 90).strip()
     segments = MODULE.split_for_embedding(text)
     assert len(segments) > 1
     assert all(segment.strip() for segment in segments)
@@ -47,12 +47,12 @@ def test_browser_query_embedding_matches_python_preprocessing_and_aggregation():
 
     root = Path(__file__).resolve().parents[2]
     worker = (root / "frontend" / "legal-embedding-worker.js").read_text(encoding="utf-8")
-    worker = "\\n".join(
+    worker = "\n".join(
         line for line in worker.splitlines()
         if not line.startswith('import { env, pipeline }')
     )
     sample = (
-        "Le fonctionnaire bénéficie des congés annuels.\\n"
+        "Le fonctionnaire bénéficie des congés annuels.\n"
         "L’administration doit motiver sa décision, conformément au code général. "
         "Éléments de situation : temps partiel thérapeutique, agent contractuel. "
     ) * 35
