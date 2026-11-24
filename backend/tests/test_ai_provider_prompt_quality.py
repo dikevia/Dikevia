@@ -1,4 +1,4 @@
-from app.ai_provider import SYSTEM_PROMPT
+from app.ai_provider import SYSTEM_PROMPT, _system_prompt_for_versant
 
 
 def test_prompt_prioritizes_understanding_the_current_request_over_lexical_matches():
@@ -204,3 +204,18 @@ def test_all_versants_explain_current_rules_and_source_based_procedures_without_
         assert "Ne demande pas automatiquement la date des faits" in prompt
         assert "procédures, autorités compétentes, délais et conditions expressément documentés" in prompt
         assert "ne propose aucune stratégie personnelle" in prompt
+
+
+def test_fpt_prompt_explains_documented_procedures_without_personal_strategy():
+    assert "même si l'utilisateur n'a pas explicitement demandé" in SYSTEM_PROMPT
+    assert "l'autorité compétente" in SYSTEM_PROMPT
+    assert "jamais comme une stratégie ou une recommandation personnalisée" in SYSTEM_PROMPT
+    assert "Ne suggère aucune action individuelle" in SYSTEM_PROMPT
+
+
+def test_fpe_and_fph_prompts_explain_documented_procedures_without_personal_strategy():
+    for versant in ("FPE", "FPH"):
+        prompt = _system_prompt_for_versant(versant)
+        assert "même sans demande explicite de démarches" in prompt
+        assert "l'autorité compétente" in prompt
+        assert "jamais d'une recommandation d'action ou d'une stratégie individuelle" in prompt
