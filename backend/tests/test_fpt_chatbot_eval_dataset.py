@@ -142,7 +142,7 @@ def test_fifteen_question_pilot_runs_through_prepare_review_and_score(tmp_path):
 
 def test_benchmark_rejects_non_string_case_ids_without_crashing(tmp_path):
     repository_root = Path(__file__).resolve().parents[2]
-    source = repository_root / "docs" / "quality" / "fpt_pilot_15_v1.json"
+    source = repository_root / "docs" / "quality" / "fpt_chatbot_eval_v1.json"
     manifest = json.loads(source.read_text(encoding="utf-8"))
     manifest["cases"][0]["id"] = ["FPT-001"]
     malformed_path = tmp_path / "malformed_ids.json"
