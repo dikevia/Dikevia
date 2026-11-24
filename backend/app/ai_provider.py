@@ -920,10 +920,14 @@ def validate_entailment_verdicts(payload, claims, sources):
     if not isinstance(payload, dict) or not isinstance(payload.get("verdicts"), list):
         return {"valid": False, "invalid": ["missing_or_invalid_verdicts"]}
     verdicts = payload["verdicts"]
-    if len(verdicts) != len(claims) or not claims:
+    if not isinstance(claims, list) or not claims or any(not isinstance(claim, dict) for claim in claims):
+        return {"valid": False, "invalid": ["missing_or_invalid_claims"]}
+    if len(verdicts) != len(claims):
         return {"valid": False, "invalid": ["verdict_count_mismatch"]}
     source_by_id = {}
-    for source in sources:
+    for source in sources if isinstance(sources, (list, tuple)) else []:
+        if not isinstance(source, dict):
+            continue
         source_id = source.get("source_id")
         if isinstance(source_id, str):
             source_by_id.setdefault(source_id, []).append(source)
