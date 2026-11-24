@@ -2073,3 +2073,118 @@ async def test_research_planner_payload_keeps_prior_assistant_context_non_eviden
     assert payload["previous_assistant_answer_context_not_legal_evidence"] == [
         {"content": previous_assistant}
     ]
+
+@pytest.mark.asyncio
+async def test_ai_analysis_payload_uses_full_text_beyond_display_excerpt(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import analyze_question
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 100)
+    late_exception = (
+        "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
+        "après consultation préalable de l'instance compétente."
+    )
+    full_text = display_excerpt + late_exception
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": '{"claims": []}'}}],
+            "usage": {},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    await analyze_question(
+        question="Quelles sont les conditions et dérogations applicables ?",
+        employer="NATIONAL",
+        facts_date="2026-11-24",
+        sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678",
+            "excerpt": display_excerpt,
+            "full_text": full_text,
+            "requested_effective_date": "2026-11-24",
+        }],
+    )
+    payload = json.loads(captured["payload"]["messages"][1]["content"])
+    assert payload["extraits_documentaires_valides"][0]["extrait"] == full_text
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_receives_full_text_beyond_display_excerpt(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 100)
+    late_exception = (
+        "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
+        "après consultation préalable de l'instance compétente."
+    )
+    full_text = display_excerpt + late_exception
+    captured = {}
+
+    def handler(request):
+        payload = json.loads(request.content)
+        captured["payload"] = payload
+        return httpx.Response(200, json={"choices": [{
+            "message": {"content": json.dumps({"verdicts": [{
+                "claim_index": 0,
+                "source_id": "SRC-LATE-EXCEPTION",
+                "verdict": "SUPPORTED",
+                "support_quote": late_exception,
+            }]})}
+        }], "usage": {}})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    result = await verify_claim_entailment(
+        question="La dérogation est-elle possible ?",
+        claims=[{
+            "source_id": "SRC-LATE-EXCEPTION",
+            "text": late_exception,
+        }],
+        sources=[{
+            "source_id": "SRC-LATE-EXCEPTION",
+            "source_type": "LEGIFRANCE_API",
+            "excerpt": display_excerpt,
+            "full_text": full_text,
+        }],
+    )
+    evidence = json.loads(captured["payload"]["messages"][1]["content"])["items_to_verify"][0]
+    assert evidence["official_text"] == full_text
+    assert result["valid"] is True
+
+
+def test_claim_validation_uses_full_text_beyond_display_excerpt():
+    from app.legal_assurance import validate_claim_evidence
+
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 100)
+    late_exception = (
+        "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
+        "après consultation préalable de l'instance compétente."
+    )
+    source = _claim_source(excerpt=display_excerpt, full_text=display_excerpt + late_exception)
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": late_exception,
+            "source_id": source["source_id"],
+            "quote": late_exception,
+        }]
+    }, [source])
+    assert result["valid"] is True
