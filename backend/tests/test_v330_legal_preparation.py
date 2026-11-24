@@ -887,7 +887,7 @@ async def test_permanent_corpus_version_status_survives_orchestration_for_genera
     monkeypatch.setattr(module, "search_legal_corpus", permanent)
     monkeypatch.setattr(module, "analyze_question", fake_ai)
 
-    await LegalOrchestrator().ask(
+    response = await LegalOrchestrator().ask(
         AskRequest(
             employer="NATIONAL",
             question="Quelles règles encadrent la fonction publique territoriale ?",
@@ -897,8 +897,12 @@ async def test_permanent_corpus_version_status_survives_orchestration_for_genera
     )
 
     imported_source = next(
-        source for source in captured["sources"]
+        source for source in response.sources
         if source.get("source_id") == "LEGITEXT_REPEALED_001"
     )
     assert imported_source["version_status"] == "REPEALED"
     assert imported_source["general_info_eligible"] is False
+    assert all(
+        source.get("source_id") != "LEGITEXT_REPEALED_001"
+        for source in captured["sources"]
+    )
