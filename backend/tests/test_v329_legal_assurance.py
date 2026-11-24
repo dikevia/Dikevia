@@ -145,6 +145,44 @@ def test_claim_evidence_rejects_explicitly_out_of_scope_sources():
     assert result["valid"] is False
 
 
+def test_claim_evidence_rejects_national_source_without_explicit_analysis_scope():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source()
+    source.pop("analysis_eligible")
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé des agents.",
+            source["excerpt"],
+        ),
+        [source],
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_claim_evidence_keeps_verified_tenant_document_without_national_scope_flag():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(
+        source_type="LOCAL_DOCUMENT",
+        source_id="LOCAL-DOC:123_V20240101",
+        validation_status="VERIFIED_HISTORICAL",
+        temporal_status="VERIFIED_APPLICABLE",
+        official_source=False,
+    )
+    source.pop("analysis_eligible")
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé des agents.",
+            source["excerpt"],
+        ),
+        [source],
+    )
+    assert result["valid"] is True
+    assert result["claim_count"] == 1
+
+
 def test_claim_evidence_rejects_unsupported_numeric_or_date_details():
     from app.legal_assurance import validate_claim_evidence
 
