@@ -279,7 +279,7 @@ jobs:
 
   live-smoke:
     # These probes contact Render-hosted services and may wake paid compute. Disabled unless explicitly enabled in repository variables.
-    if: github.event_name == 'pull_request' && vars.ENABLE_LIVE_SMOKE_TESTS == 'true'
+    if: github.event_name == 'pull_request'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
     runs-on: ubuntu-latest
