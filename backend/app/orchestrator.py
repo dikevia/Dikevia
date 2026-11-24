@@ -609,6 +609,18 @@ def _compare_official_period_versions(
     }
 
 
+
+def _immediate_prior_assistant_messages(history: list[dict]) -> list[str]:
+    """Only the immediately preceding turn may answer a clarification prompt."""
+    if not history or not isinstance(history[-1], dict):
+        return []
+    latest = history[-1]
+    if latest.get("role") != "assistant":
+        return []
+    content = str(latest.get("content") or "").strip()
+    return [content[:1200]] if content else []
+
+
 def _provider_context_history(
     contextual_question: str, is_followup: bool,
 ) -> list[dict]:
@@ -677,9 +689,7 @@ class LegalOrchestrator:
         history = (conversation_history or [])[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]
         prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"]
         current_question = request.question.strip()
-        prior_assistant_messages = [
-            str(m.get("content", ""))[:1200] for m in history if m.get("role") == "assistant"
-        ]
+        prior_assistant_messages = _immediate_prior_assistant_messages(history)
         contextual_research_context = build_contextual_research_context(
             current_question, prior_user_questions, prior_assistant_messages,
         )

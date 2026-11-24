@@ -66,6 +66,24 @@ def test_chat_route_loads_bounded_history_but_providers_receive_only_relevant_co
     assert "conversation_history=provider_history" in orchestrator
 
 
+def test_only_the_immediately_previous_assistant_turn_can_supply_a_clarification():
+    from app.orchestrator import _immediate_prior_assistant_messages
+
+    history_with_filtered_local_reply = [
+        {"role": "assistant", "content": "Êtes-vous titulaire ou contractuel ?"},
+        {"role": "user", "content": "Que prévoit le règlement intérieur ?"},
+    ]
+    assert _immediate_prior_assistant_messages(history_with_filtered_local_reply) == []
+
+    history_with_current_clarification = [
+        {"role": "user", "content": "Je suis en CITIS après un accident de service."},
+        {"role": "assistant", "content": "Êtes-vous titulaire ou contractuel ?"},
+    ]
+    assert _immediate_prior_assistant_messages(history_with_current_clarification) == [
+        "Êtes-vous titulaire ou contractuel ?"
+    ]
+
+
 def test_provider_context_history_excludes_stale_topics_and_keeps_only_the_selected_referent():
     from app.orchestrator import _provider_context_history
 
