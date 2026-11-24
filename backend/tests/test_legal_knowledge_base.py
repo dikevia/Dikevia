@@ -76,6 +76,7 @@ def test_imported_cgfp_snapshot_can_support_bounded_general_claim_with_provenanc
         "content_kind": "FULL_TEXT", "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
         "general_info_eligible": True, "citation_integrity": {"valid": True},
         "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
+        "public_service_scope": "FPT",
         "snapshot_modified_at": "2026-10-31",
         "snapshot_verification_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
         "source_status": "IMPORTED_UNVERIFIED",
