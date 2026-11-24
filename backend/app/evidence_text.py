@@ -29,7 +29,7 @@ def bound_evidence_text(value: object, max_chars: int = 12000, head_chars: int =
         return ""
     if len(text) <= max_chars:
         return text
-    marker = "\\n\\n[Passage intermédiaire non transmis]\\n\\n"
+    marker = "\n\n[Passage intermédiaire non transmis]\n\n"
     available = max(0, max_chars - len(marker))
     head = min(max(0, head_chars), available)
     tail = available - head
