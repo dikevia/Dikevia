@@ -1853,3 +1853,88 @@ def test_research_planner_does_not_infer_versant_from_profession_or_workplace(ve
     assert "clarification_needed" in source
     assert "infirmière à l'hôpital" in source
     assert "professeur dans un lycée" in source
+
+
+
+@pytest.mark.asyncio
+async def test_research_planner_records_provider_tokens_and_latency(monkeypatch):
+    import httpx
+    from app.ai_provider import plan_legal_research
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "configured-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(200, json={
+            "model": "actual-model",
+            "choices": [{
+                "message": {"content": json.dumps({
+                    "queries": ["congé annuel fonction publique territoriale"],
+                    "legal_issues": ["conditions du congé annuel"],
+                    "extracted_facts": [],
+                })}
+            }],
+            "usage": {"prompt_tokens": 120, "completion_tokens": 35, "total_tokens": 155},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    events = []
+    result = await plan_legal_research(
+        question="Quels sont mes droits aux congés annuels ?",
+        employer="NATIONAL",
+        usage_events=events,
+    )
+
+    assert result is not None
+    assert len(events) == 1
+    event = events[0]
+    assert event["operation"] == "research_planning"
+    assert event["provider"] == "openai_compatible"
+    assert event["model"] == "actual-model"
+    assert event["prompt_tokens"] == 120
+    assert event["completion_tokens"] == 35
+    assert event["total_tokens"] == 155
+    assert event["latency_ms"] >= 0
+    assert event["outcome"] == "COMPLETED"
+
+
+@pytest.mark.asyncio
+async def test_research_planner_records_provider_failure_with_unknown_usage(monkeypatch):
+    import httpx
+    from app.ai_provider import plan_legal_research, AIProviderUnavailable
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "configured-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(503, json={"error": "unavailable"})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    events = []
+    with pytest.raises(AIProviderUnavailable):
+        await plan_legal_research(
+            question="Quels sont mes droits ?",
+            employer="NATIONAL",
+            usage_events=events,
+        )
+
+    assert len(events) == 1
+    event = events[0]
+    assert event["operation"] == "research_planning"
+    assert event["provider"] == "openai_compatible"
+    assert event["model"] == "configured-model"
+    assert event["prompt_tokens"] is None
+    assert event["completion_tokens"] is None
+    assert event["total_tokens"] is None
+    assert event["latency_ms"] >= 0
+    assert event["outcome"] == "PROVIDER_ERROR"
