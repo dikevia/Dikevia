@@ -409,6 +409,8 @@ async def search_legal_corpus(
         FROM legal_chunks c
         WHERE $4::vector IS NOT NULL
           AND c.embedding_384 IS NOT NULL
+          AND c.embedding_384_model='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+          AND c.embedding_384_dimensions=384
           AND c.content_kind='FULL_TEXT'
         ORDER BY c.embedding_384 <=> $4::vector
         LIMIT 120

@@ -198,6 +198,8 @@ async def test_corpus_search_uses_normalized_384d_query_vector_in_hybrid_ranking
 
     assert "vector_ranked AS" in conn.query
     assert "c.embedding_384 <=> $4::vector" in conn.query
+    assert "c.embedding_384_model='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'" in conn.query
+    assert "c.embedding_384_dimensions=384" in conn.query
     assert conn.args[3].startswith("[0.60000000,0.80000000,")
     assert conn.args[3].endswith("0.00000000]")
 
