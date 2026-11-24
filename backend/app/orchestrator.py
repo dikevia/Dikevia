@@ -609,6 +609,26 @@ def _compare_official_period_versions(
     }
 
 
+def _provider_context_history(
+    history: list[dict], contextual_question: str, is_followup: bool,
+) -> list[dict]:
+    """Give providers only the immediately relevant prior user turn.
+
+    The resolved question already carries the selected referent. Independent
+    questions receive no prior history, preventing stale topics from leaking
+    into planning or answer generation.
+    """
+    if not is_followup:
+        return []
+    parts = str(contextual_question or "").split("\\n", 1)
+    if len(parts) < 2:
+        return []
+    prior_question = parts[1].split("\\n", 1)[0].strip()
+    if not prior_question:
+        return []
+    return [{"role": "user", "content": prior_question[:1200]}]
+
+
 
 class LegalOrchestrator:
     async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False) -> AskResponse:
@@ -665,6 +685,7 @@ class LegalOrchestrator:
         )
         contextual_question = contextual_research_context.question
         is_followup = contextual_research_context.is_followup
+        provider_history = _provider_context_history(history, contextual_question, is_followup)
         targeted_clarification = clarification_for_union_assistance_summons(contextual_question)
         if targeted_clarification:
             return AskResponse(
@@ -704,7 +725,7 @@ class LegalOrchestrator:
                 employer=request.employer,
                 facts_period=temporal_context,
                 legal_context=legal_context,
-                conversation_history=history,
+                conversation_history=provider_history,
             )
         except AIProviderUnavailable:
             logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
@@ -991,7 +1012,7 @@ class LegalOrchestrator:
                     employer=request.employer,
                     facts_period=temporal_context,
                     legal_context=legal_context,
-                    conversation_history=history,
+                    conversation_history=provider_history,
                     previous_queries=research_queries,
                     retrieved_evidence=first_pass_evidence,
                 )
@@ -1807,7 +1828,7 @@ class LegalOrchestrator:
                             facts_date=effective_date.isoformat(),
                             facts_period=temporal_context,
                             sources=ai_sources,
-                            conversation_history=history,
+                            conversation_history=provider_history,
                             legal_context=legal_context,
                             allow_local_documents=allow_local_documents,
                         )

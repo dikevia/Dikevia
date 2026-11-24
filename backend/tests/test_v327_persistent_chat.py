@@ -57,14 +57,28 @@ def test_conversation_history_supports_ten_exchange_context_and_resolves_followu
         "Comment fonctionne le CET ?", prior
     ) == "Comment fonctionne le CET ?"
 
-def test_chat_route_loads_twenty_messages_and_ai_planner_keeps_ten_user_turns():
+def test_chat_route_loads_bounded_history_but_providers_receive_only_relevant_context():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     orchestrator = (ROOT / "backend/app/orchestrator.py").read_text(encoding="utf-8")
-    provider = (ROOT / "backend/app/ai_provider.py").read_text(encoding="utf-8")
     assert "ORDER BY created_at DESC,id DESC LIMIT $3" in main
     assert "CONVERSATION_HISTORY_MESSAGE_LIMIT" in main
     assert "[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]" in orchestrator
-    assert "[-RECENT_USER_CONTEXT_LIMIT:]" in provider
+    assert "conversation_history=provider_history" in orchestrator
+
+
+def test_provider_context_history_excludes_stale_topics_and_keeps_only_the_selected_referent():
+    from app.orchestrator import _provider_context_history
+
+    history = [
+        {"role": "user", "content": "Comment fonctionne le CET ?"},
+        {"role": "assistant", "content": "Réponse antérieure."},
+        {"role": "user", "content": "Mon chef refuse mes heures supplémentaires."},
+    ]
+    followup_question = "Et pour les contractuels ?\\nMon chef refuse mes heures supplémentaires."
+    assert _provider_context_history(history, followup_question, True) == [
+        {"role": "user", "content": "Mon chef refuse mes heures supplémentaires."}
+    ]
+    assert _provider_context_history(history, "Quels sont les congés annuels ?", False) == []
 
 
 def test_short_answer_uses_previous_assistant_clarification_without_losing_legal_topic():
