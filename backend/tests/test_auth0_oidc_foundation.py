@@ -128,7 +128,7 @@ def test_auth0_runtime_configuration_is_server_supplied_and_has_no_secret():
     assert "settings.oidc_authorization_audience" in main
     assert 'src="/auth-config.js"' in frontend
     assert "params.audience=cfg.audience" in oidc
-    assert "params.nonce" in oidc
+    assert "scope:cfg.scopes||'openid profile email',state,nonce" in oidc
     assert "data.id_token" in oidc
     assert "X-OIDC-ID-Token" in oidc
     assert "X-OIDC-ID-Token" in frontend
@@ -245,8 +245,11 @@ class _FakeConnection:
         self.settings = {}
     def transaction(self):
         return _FakeTransaction()
-    async def execute(self, query, key, value):
-        self.settings[key] = value
+    async def execute(self, query, value):
+        if "app.oidc_issuer" in query:
+            self.settings["app.oidc_issuer"] = value
+        elif "app.oidc_subject" in query:
+            self.settings["app.oidc_subject"] = value
     async def fetchrow(self, _query, issuer, subject):
         assert self.settings.get("app.oidc_issuer") == issuer
         assert self.settings.get("app.oidc_subject") == subject
