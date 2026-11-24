@@ -865,3 +865,38 @@ def test_loda_version_status_does_not_promote_qualified_or_negative_labels(raw_s
     from app.legifrance import _loda_version_status
 
     assert _loda_version_status(raw_status) == expected
+
+@pytest.mark.asyncio
+async def test_code_article_keeps_compact_display_excerpt_and_expanded_analysis_excerpt(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    clauses = [
+        f"La rémunération et les indemnités des agents sont encadrées par la disposition numéro {index}."
+        for index in range(35)
+    ]
+    exception = "Toutefois, l'indemnité de rémunération n'est pas due lorsque les conditions prévues ne sont pas réunies."
+    full_text = "\\n".join(["Article L. 123-4.", *clauses, exception])
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID, "num": "L. 123-4",
+                "nomCode": "Code général de la fonction publique",
+                "texte": full_text,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles(
+        "article L. 123-4 rémunération indemnité", date(2026, 11, 24),
+    )
+
+    assert len(results) == 1
+    assert len(results[0]["excerpt"]) <= 1800
+    assert len(results[0]["analysis_excerpt"]) > 1800
+    assert exception in results[0]["analysis_excerpt"]
+    assert exception not in results[0]["excerpt"]
