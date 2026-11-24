@@ -18,7 +18,7 @@ from typing import Any
 import httpx
 from .config import settings
 from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
-from .evidence_text import bound_evidence_text, build_legal_evidence_text, normalize_evidence_text
+from .evidence_text import build_legal_evidence_text, normalize_evidence_text
 
 logger = logging.getLogger(__name__)
 
