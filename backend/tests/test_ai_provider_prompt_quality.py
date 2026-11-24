@@ -167,7 +167,9 @@ def test_non_fpt_prompt_requires_explicit_scope_and_blocks_context_only_sources(
     assert "versant_selectionne" in ENTAILMENT_SYSTEM_PROMPT
     assert "Une source propre à un autre versant ne peut pas soutenir une affirmation" in ENTAILMENT_SYSTEM_PROMPT
 
-\n\ndef test_non_fpt_prompts_preserve_the_same_structured_evidence_contract():
+
+
+def test_non_fpt_prompts_preserve_the_same_structured_evidence_contract():
     from app.ai_provider import _system_prompt_for_versant
 
     for versant in ("FPE", "FPH"):
