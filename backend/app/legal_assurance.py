@@ -156,7 +156,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "publisher_type": publisher_type,
         "review_priority": rank,
         "temporal_or_validation_status": status,
-        "normative": not non_normative and authority_level != "UNCLASSIFIED",
+        "normative": authority_level in {"PRIMARY_LEGAL", "LOCAL_NORMATIVE"},
         "claim_eligible": (
             not non_normative
             and authority_level != "UNCLASSIFIED"
