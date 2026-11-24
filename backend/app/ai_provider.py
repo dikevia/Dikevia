@@ -287,6 +287,32 @@ def _nonnegative_token_count(value):
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
 
 
+def _record_provider_usage_event(events, operation: str, started_at: float, data=None, outcome: str = "COMPLETED") -> None:
+    """Append privacy-minimal per-call telemetry; never retain prompts, answers or excerpts."""
+    if not isinstance(events, list):
+        return
+    payload = data if isinstance(data, dict) else {}
+    usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
+    prompt_tokens = _nonnegative_token_count(usage.get("prompt_tokens"))
+    completion_tokens = _nonnegative_token_count(usage.get("completion_tokens"))
+    total_tokens = _nonnegative_token_count(usage.get("total_tokens"))
+    if total_tokens is None and prompt_tokens is not None and completion_tokens is not None:
+        total_tokens = prompt_tokens + completion_tokens
+    model = payload.get("model") if isinstance(payload.get("model"), str) else settings.ai_model
+    base = str(settings.ai_api_base_url or "").lower()
+    provider = "gemini" if "generativelanguage.googleapis.com" in base else "openai_compatible"
+    events.append({
+        "operation": operation,
+        "provider": provider,
+        "model": str(model or "unknown")[:160],
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": total_tokens,
+        "latency_ms": max(0, round((time.perf_counter() - started_at) * 1000)),
+        "outcome": outcome,
+    })
+
+
 class AIProviderUnavailable(RuntimeError):
     pass
 
@@ -524,7 +550,7 @@ def validate_source_relevance_verdicts(payload, sources: list[dict]) -> dict[str
     return verdicts
 
 
-async def evaluate_source_relevance(*, question: str, research_axes: list[str], sources: list[dict]) -> dict[str, str]:
+async def evaluate_source_relevance(*, question: str, research_axes: list[str], sources: list[dict], usage_events: list[dict] | None = None) -> dict[str, str]:
     """Semantically assess retrieved document relevance without certifying legal applicability."""
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
         return {}
@@ -573,6 +599,8 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
         ],
     }
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
+    started_at = time.perf_counter()
+    data = None
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
             response = await _post_chat_completion(client, _provider_api_base() + "/chat/completions", headers=headers, payload=payload)
@@ -580,13 +608,16 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
             data = response.json()
         content = data["choices"][0]["message"]["content"]
         parsed = parse_structured_answer(content)
-        return validate_source_relevance_verdicts(parsed, candidates)
+        verdicts = validate_source_relevance_verdicts(parsed, candidates)
+        _record_provider_usage_event(usage_events, "source_relevance", started_at, data)
+        return verdicts
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+        _record_provider_usage_event(usage_events, "source_relevance", started_at, data, "PROVIDER_ERROR")
         _log_provider_failure("source_relevance", exc)
         raise AIProviderUnavailable("L'évaluation sémantique des sources est indisponible.") from exc
 
 
-async def plan_legal_research(*, question: str, employer: str, facts_period: dict | None = None, legal_context: dict | None = None, conversation_history: list[dict] | None = None, previous_queries: list[str] | None = None, retrieved_evidence: list[dict] | None = None) -> LegalResearchPlan | None:
+async def plan_legal_research(*, question: str, employer: str, facts_period: dict | None = None, legal_context: dict | None = None, conversation_history: list[dict] | None = None, previous_queries: list[str] | None = None, retrieved_evidence: list[dict] | None = None, usage_events: list[dict] | None = None) -> LegalResearchPlan | None:
     """Generate search queries; official connectors, not the model, verify every result."""
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
         return None
@@ -646,6 +677,8 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
     }
     payload = {"model": settings.ai_model, "temperature": 0.1, "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)}]}
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
+    started_at = time.perf_counter()
+    data = None
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
             response = await _post_chat_completion(client, base + "/chat/completions", headers=headers, payload=payload)
@@ -657,8 +690,10 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
         )
         if plan is None:
             raise AIProviderUnavailable("Le plan de recherche juridique généré est invalide.")
+        _record_provider_usage_event(usage_events, "research_planning", started_at, data)
         return plan
-    except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+    except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError, AIProviderUnavailable) as exc:
+        _record_provider_usage_event(usage_events, "research_planning", started_at, data, "PROVIDER_ERROR")
         _log_provider_failure("research_planning", exc)
         raise AIProviderUnavailable("La planification IA de la recherche juridique est indisponible.") from exc
 
@@ -1069,7 +1104,7 @@ def validate_entailment_verdicts(payload, claims, sources):
     }
 
 
-async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict], public_service: str = "FPT", allow_local_documents: bool = False, facts_period: dict | None = None) -> dict:
+async def verify_claim_entailment(*, question: str, claims: list[dict], sources: list[dict], public_service: str = "FPT", allow_local_documents: bool = False, facts_period: dict | None = None, usage_events: list[dict] | None = None) -> dict:
     """Ask the configured model for a conservative second-stage entailment check.
 
     This is an additional probabilistic safeguard, not a legal certification.
@@ -1143,6 +1178,8 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
         ],
     }
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
+    started_at = time.perf_counter()
+    data = None
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
             response = await _post_chat_completion(client, _provider_api_base() + "/chat/completions",
@@ -1151,7 +1188,10 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             data = response.json()
         content = data["choices"][0]["message"]["content"]
         parsed = parse_structured_answer(content)
-        return validate_entailment_verdicts(parsed, claims, sources)
+        verdicts = validate_entailment_verdicts(parsed, claims, sources)
+        _record_provider_usage_event(usage_events, "claim_entailment", started_at, data)
+        return verdicts
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+        _record_provider_usage_event(usage_events, "claim_entailment", started_at, data, "PROVIDER_ERROR")
         _log_provider_failure("claim_entailment", exc)
         raise AIProviderUnavailable("Le contrôle contradictoire des affirmations a échoué.") from exc
