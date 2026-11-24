@@ -235,3 +235,30 @@ def test_chat_route_persists_a_controlled_response_when_orchestration_raises():
     assert "logger.exception(" in ask_source
     assert "INSERT INTO chat_messages" in ask_source
     assert "result.answer" in ask_source
+
+@pytest.mark.asyncio
+async def test_explicit_self_reported_other_versant_stops_research_before_retrieval(monkeypatch):
+    async def forbidden_plan(**kwargs):
+        pytest.fail("Aucune planification ne doit être lancée après un décalage explicite de versant.")
+
+    async def forbidden_retrieval(*args, **kwargs):
+        pytest.fail("Aucune recherche documentaire ne doit démarrer pour le mauvais versant.")
+
+    monkeypatch.setattr(orchestrator_module, "plan_legal_research", forbidden_plan)
+    monkeypatch.setattr(orchestrator_module, "search_cgfp", forbidden_retrieval)
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            public_service="FPT",
+            question="Je suis fonctionnaire de l'État et mon employeur refuse ma demande.",
+        ),
+        "00000000-0000-0000-0000-000000000001",
+    )
+
+    assert response.verification_status == "NON_VERIFIE"
+    assert response.clarification_question
+    assert "fonction publique de l'État" in response.clarification_question
+    assert "nouvelle conversation" in response.answer
+    assert response.sources == []
+
