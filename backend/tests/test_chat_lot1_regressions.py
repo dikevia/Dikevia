@@ -277,3 +277,16 @@ def test_non_territorial_compound_questions_keep_independent_research_axes(versa
     assert all("décret 87-602" not in query and "décret 2002-60" not in query for query in queries)
     assert all("congé maladie" in axis or "rémunération" in axis for axis in axes)
 
+def test_non_territorial_contract_and_discipline_question_keeps_both_axes():
+    from app.orchestrator import _build_versant_fallback_research
+
+    queries, axes = _build_versant_fallback_research(
+        "Mon contrat arrive à son terme et une procédure disciplinaire est engagée.",
+        "FPE",
+    )
+
+    assert len(axes) == 2
+    assert any("contrat, renouvellement et fin de contrat" in axis for axis in axes)
+    assert any("procédure disciplinaire et sanctions" in axis for axis in axes)
+    assert all("fonction publique de l'État" in axis for axis in axes)
+
