@@ -425,9 +425,16 @@ def test_ask_request_validates_optional_client_embedding_shape_and_values():
     from app.schemas import AskRequest
 
     base = {"employer": "NATIONAL", "question": "Question juridique suffisamment longue"}
-    valid = AskRequest(**base, query_embedding=[0.0] * 383 + [1.0])
+    model = "Xenova/paraphrase-multilingual-MiniLM-L12-v2"
+    valid = AskRequest(**base, query_embedding_model=model, query_embedding=[0.0] * 383 + [1.0])
     assert len(valid.query_embedding) == 384
     assert AskRequest(**base).query_embedding is None
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding=[0.0] * 383 + [1.0])
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding_model="unknown/model", query_embedding=[0.0] * 383 + [1.0])
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding_model=model)
     with pytest.raises(ValueError):
         AskRequest(**base, query_embedding=[0.0] * 383)
     with pytest.raises(ValueError):

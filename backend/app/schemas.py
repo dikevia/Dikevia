@@ -17,7 +17,8 @@ class AskRequest(BaseModel):
     situation_ongoing: bool = False
     question: str = Field(min_length=1, max_length=5000)
     confirm_local_document_ai_transfer: bool = False
-    # Optional client-side embedding; only used when VECTOR_SEARCH_ENABLED is true.
+    # The model identifier travels with the vector so incompatible client encoders fail closed.
+    query_embedding_model: Literal["Xenova/paraphrase-multilingual-MiniLM-L12-v2"] | None = None
     query_embedding: list[float] | None = Field(default=None, min_length=384, max_length=384)
     conversation_id: UUID | None = None
 
@@ -31,7 +32,12 @@ class AskRequest(BaseModel):
 
     @field_validator("query_embedding")
     @classmethod
-    def validate_query_embedding(cls, value):
+    def validate_query_embedding(cls, value, info):
+        model = info.data.get("query_embedding_model")
+        if value is not None and model is None:
+            raise ValueError("Le modèle du vecteur de recherche doit être explicitement identifié.")
+        if value is None and model is not None:
+            raise ValueError("Un modèle de vecteur ne peut pas être fourni sans vecteur.")
         if value is None:
             return value
         if any(not math.isfinite(float(component)) for component in value):
