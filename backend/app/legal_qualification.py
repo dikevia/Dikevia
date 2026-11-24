@@ -36,9 +36,9 @@ _CLARIFICATION_REPLY = re.compile(
 
 _CONTEXTUAL_FOLLOWUP = re.compile(
     r"^(?:et\s+(?:pour|si|dans|concernant)\b|"
-    r"et\s+(?:les|la|le)\s+(?:agents?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"et\s+(?:les|la|le)\s+(?:agent(?:e)?s?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
     r"titulaires?|fonctionnaires?)\b|"
-    r"pour\s+les?\s+(?:agents?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"pour\s+les?\s+(?:agent(?:e)?s?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
     r"titulaires?|fonctionnaires?)\s*\??$|"
     r"dans ce cas\b|"
     r"qu['’]en est-il\b|quid\b|même chose\b|cela\b|ça\b)",
@@ -204,7 +204,7 @@ def qualify_legal_question(
         and re.search(r"contractuel", current_folded)
     ) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
-        r"(?:(?:un|une)\s+)?(?:agent|agente\s+)?contractuel(?:le)?s?\b",
+        r"(?:(?:un|une)\s+)?(?:agent|agente)\s+contractuel(?:le)?s?\b",
         current_folded,
     ):
         status = "CONTRACTUEL_EXPLICIT"
