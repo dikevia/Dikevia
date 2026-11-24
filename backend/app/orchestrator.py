@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from uuid import uuid4
 import logging
 import re
+import time
 
 from .schemas import AskRequest, AskResponse
 from .config import settings
@@ -441,6 +442,7 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
 async def apply_semantic_source_relevance(
     *, question: str, research_axes: list[str], sources: list[dict],
     target_versant: str = "FPT", allow_local_documents: bool = False,
+    usage_events: list[dict] | None = None,
 ) -> None:
     """Apply Gemini relevance verdicts while preserving lexical fallback on provider failure."""
     for source in sources:
@@ -458,6 +460,7 @@ async def apply_semantic_source_relevance(
             question=question,
             research_axes=research_axes,
             sources=semantic_sources,
+            usage_events=usage_events,
         )
         for source in sources:
             verdict = semantic_verdicts.get(source.get("source_id"))
@@ -675,6 +678,8 @@ def _provider_context_history(
 class LegalOrchestrator:
     async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False) -> AskResponse:
         request_id = str(uuid4())
+        ai_usage_events: list[dict] = []
+        answer_started_at = None
         try:
             legacy_date = parse_facts_date(request.facts_date)
             period_start = parse_facts_date(request.facts_start_date) or legacy_date
@@ -787,6 +792,7 @@ class LegalOrchestrator:
                 facts_period=temporal_context,
                 legal_context=legal_context,
                 conversation_history=provider_history,
+                usage_events=ai_usage_events,
             )
         except AIProviderUnavailable:
             logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
@@ -800,6 +806,7 @@ class LegalOrchestrator:
                 clarification_question=clarification,
                 sources=[],
                 missing_information=[],
+                ai_usage_events=ai_usage_events,
             )
         if research_plan is not None:
             research_queries = merge_ai_and_fallback_research_queries(
@@ -1076,6 +1083,7 @@ class LegalOrchestrator:
                     conversation_history=provider_history,
                     previous_queries=research_queries,
                     retrieved_evidence=first_pass_evidence,
+                    usage_events=ai_usage_events,
                 )
             except AIProviderUnavailable:
                 refinement = None
@@ -1883,6 +1891,7 @@ class LegalOrchestrator:
                         if verified_sources or cgfp_fallback_sources or context_guidance_sources else []
                     )
                     if ai_sources:
+                        answer_started_at = time.perf_counter()
                         ai_result = await analyze_question(
                             question=contextual_question,
                             employer=request.employer,
@@ -1896,7 +1905,10 @@ class LegalOrchestrator:
                         if isinstance(ai_result, AIAnalysisResult):
                             raw_ai_content = ai_result.content
                             ai_usage = {
-                                "provider": "openai_compatible", "model": ai_result.model,
+                                "provider": "gemini" if settings.ai_api_base_url and "generativelanguage.googleapis.com" in settings.ai_api_base_url else "openai_compatible",
+                                "model": ai_result.model,
+                                "operation": "answer_generation",
+                                "latency_ms": max(0, round((time.perf_counter() - answer_started_at) * 1000)) if answer_started_at is not None else None,
                                 "prompt_tokens": ai_result.prompt_tokens,
                                 "completion_tokens": ai_result.completion_tokens,
                                 "total_tokens": ai_result.total_tokens,
@@ -1941,6 +1953,7 @@ class LegalOrchestrator:
                                 public_service=request.public_service,
                                 allow_local_documents=allow_local_documents,
                                 facts_period=temporal_context,
+                                usage_events=ai_usage_events,
                             )
                             supported_indices = entailment_validation.get("supported_claim_indices", [])
                             if not entailment_validation.get("valid") and not supported_indices:
@@ -2036,7 +2049,10 @@ class LegalOrchestrator:
                     # Record a provider attempt even when it fails; token usage remains unknown.
                     if settings.ai_api_base_url and settings.ai_model:
                         ai_usage = {
-                            "provider": "openai_compatible", "model": settings.ai_model[:160],
+                            "provider": "gemini" if settings.ai_api_base_url and "generativelanguage.googleapis.com" in settings.ai_api_base_url else "openai_compatible",
+                            "model": settings.ai_model[:160],
+                            "operation": "answer_generation",
+                            "latency_ms": max(0, round((time.perf_counter() - answer_started_at) * 1000)) if answer_started_at is not None else None,
                             "prompt_tokens": None, "completion_tokens": None,
                             "total_tokens": None, "outcome": "PROVIDER_ERROR",
                         }
@@ -2125,9 +2141,12 @@ class LegalOrchestrator:
             source.pop("full_text", None)
             if isinstance(source.get("text"), str):
                 source["text"] = source.get("excerpt") or source["text"][:1800]
+        if ai_usage is not None:
+            ai_usage_events.append(dict(ai_usage))
         return AskResponse(
             request_id=request_id,
             verification_status="PARTIELLEMENT_VERIFIE" if ai_answer else "NON_VERIFIE",
             answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage,
+            ai_usage_events=ai_usage_events,
             clarification_question=None,
         )
