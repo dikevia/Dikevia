@@ -1686,3 +1686,46 @@ def test_source_relevance_verdict_parser_ignores_unhashable_and_malformed_values
     )
     assert result == {"SRC-1": "DIRECT"}
     assert validate_source_relevance_verdicts({"items": []}, None) == {}
+
+
+@pytest.mark.asyncio
+async def test_ai_payload_ignores_malformed_nested_source_metadata(monkeypatch):
+    import json
+    import httpx
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": json.dumps({"claims": []})}}],
+            "usage": {},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    await analyze_question(
+        question="Question sur un agent territorial",
+        employer="NATIONAL",
+        facts_date="2026-01-01",
+        sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678",
+            "requested_effective_date": "2026-01-01",
+            "excerpt": "Extrait officiel suffisamment long pour l'analyse documentaire.",
+            "raw_metadata": "not-json-object",
+            "legal_assurance": "malformed",
+        }],
+    )
+    source = json.loads(
+        captured["payload"]["messages"][1]["content"]
+    )["extraits_documentaires_valides"][0]
+    assert source["code_publication_jurisprudentielle"] is None
+    assert source["numero_ecli"] is None
+    assert source["niveau_autorite"] is None
