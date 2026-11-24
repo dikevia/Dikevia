@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, EmailStr
-from typing import Literal
+from typing import Literal, get_args
 from uuid import UUID
 from datetime import date
 import math
@@ -8,7 +8,7 @@ from pydantic import field_validator, model_validator
 Employer = Literal["NATIONAL", "VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE"]
 
 class AskRequest(BaseModel):
-    employer: Employer
+    employer: str = Field(default="NATIONAL", min_length=1, max_length=180)
     public_service: Literal["FPT", "FPE", "FPH"] = "FPT"
     # Legacy exact date remains supported for existing clients.
     facts_date: str | None = None
@@ -21,6 +21,14 @@ class AskRequest(BaseModel):
     query_embedding_model: Literal["Xenova/paraphrase-multilingual-MiniLM-L12-v2"] | None = None
     query_embedding: list[float] | None = Field(default=None, min_length=384, max_length=384)
     conversation_id: UUID | None = None
+
+    @field_validator("employer")
+    @classmethod
+    def normalize_employer(cls, value):
+        normalized = str(value or "").strip()
+        if not normalized:
+            raise ValueError("L'employeur ne peut pas être vide.")
+        return normalized
 
     @field_validator("question")
     @classmethod
@@ -43,6 +51,12 @@ class AskRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_embedding_contract(self):
+        if self.public_service == "FPT" and self.employer not in get_args(Employer):
+            raise ValueError("Pour la FPT, choisissez un employeur territorial reconnu.")
+        if self.public_service in {"FPE", "FPH"} and self.employer in {
+            "VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE",
+        }:
+            raise ValueError("Un employeur territorial ne peut pas être associé à la FPE ou à la FPH.")
         if (self.query_embedding is None) != (self.query_embedding_model is None):
             raise ValueError("Le vecteur et son identifiant de modèle doivent être fournis ensemble.")
         return self
