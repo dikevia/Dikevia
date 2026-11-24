@@ -20,6 +20,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: dikevia-android-beta-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-android-apks:
     runs-on: ubuntu-latest
