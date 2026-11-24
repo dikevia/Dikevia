@@ -53,10 +53,10 @@ def test_query_embedding_averages_segment_vectors_before_normalizing():
             return iter([[3.0] + [0.0] * 383, [0.0, 4.0] + [0.0] * 382])
 
     model = FakeModel()
-    vector = MODULE.embed_query_text(model, "Première partie. " + "Deuxième partie.")
-    assert len(model.seen) == 1
-    assert vector[0] == pytest.approx(1.0)
-    assert vector[1] == pytest.approx(0.0)
+    vector = MODULE.embed_query_text(model, "x" * 501)
+    assert len(model.seen) == 2
+    assert vector[0] == pytest.approx(0.6)
+    assert vector[1] == pytest.approx(0.8)
 
 
 def test_cosine_similarity_of_identical_vectors_is_one():
