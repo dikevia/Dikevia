@@ -325,6 +325,18 @@ async def _run_administrative_case_law_search_sql_scenario():
         # document/version and replace, not duplicate, its indexed chunks.
         await upsert_legal_document(admin, item)
         await upsert_legal_document(admin, item)
+        # Populate a deterministic vector to execute the real pgvector retrieval branch.
+        embedding_literal = "[" + ",".join(["1"] + ["0"] * 383) + "]"
+        await admin.execute("""
+            UPDATE legal_chunks c
+            SET embedding_384=$2::vector,
+                embedding_384_model='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+                embedding_384_dimensions=384
+            FROM legal_document_versions v
+            JOIN legal_documents d ON d.id=v.document_id
+            WHERE c.version_id=v.id
+              AND d.source_type='OTHER_OFFICIAL' AND d.source_id=$1
+        """, source_id, embedding_literal)
         persisted = await admin.fetchrow("""
             SELECT count(DISTINCT d.id) AS documents,
                    count(DISTINCT v.id) AS versions,
@@ -351,6 +363,17 @@ async def _run_administrative_case_law_search_sql_scenario():
             "RELEVANCE_SELECTED_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
         assert "MARQUEUR_FINAL_DECISION_CI" not in item["excerpt"]
+
+        # This query has no lexical overlap with the document: the row must be
+        # recovered by pgvector, and the returned metadata must identify hybrid mode.
+        vector_results = await search_legal_corpus(
+            admin, "astreinte sans correspondance lexicale", date(2026, 11, 21),
+            limit=6, query_embedding=[1.0] + [0.0] * 383,
+        )
+        vector_item = next(result for result in vector_results if result["source_id"] == source_id)
+        assert vector_item["retrieval_mode"] == "HYBRID_LEXICAL_VECTOR"
+        assert vector_item["citation_integrity"]["text_hash_verified"] is True
+        assert vector_item["citation_integrity"]["valid"] is True
     finally:
         await admin.execute(
             "DELETE FROM legal_documents WHERE source_type='OTHER_OFFICIAL' AND source_id=$1",
