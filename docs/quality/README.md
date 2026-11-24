@@ -18,6 +18,11 @@ La cartographie signale expressément les points nécessitant des vérifications
 
 Le script `scripts/fpt_benchmark.py prepare-review` reporte ces références candidates et les avertissements de portée dans la grille de revue humaine. Tous les cas conservent le statut « validation juridique humaine requise ». La présence d'une source candidate ne signifie ni que l'article exact a été vérifié pour la question ni que la réponse juridique est validée.
 
+
+## Pilote de recette en 15 questions
+
+Le manifeste `fpt_pilot_15_v1.json` sélectionne 15 cas répartis sur les dix familles du jeu de 100 questions. Il fixe un protocole reproductible, avec une seule session authentifiée et un contexte neutre identique. Il ne contient pas de vérité juridique certifiée : les réponses de référence restent à établir ou valider par un référent juridique FPT. Le statut du pilote reste `NOT_EVALUATED` tant que les réponses réelles et leur revue ne sont pas consignées.
+
 ## Régressions conversationnelles
 
 Le fichier `conversation_regression_v1.json` ajoute 20 scénarios multi-tours couvrant :
