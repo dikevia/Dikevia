@@ -9,8 +9,13 @@ def test_beta_user_cap_defaults_to_one_and_is_configurable():
     env = (ROOT / "deploy/.env.example").read_text()
     assert "beta_max_users: int = 1" in config
     assert "BETA_MAX_USERS" in config
-    assert '      - key: BETA_MAX_USERS\n        value: "1"' in render
+    assert '      - key: BETA_MAX_USERS\n        value: "100"' in render
     assert "BETA_MAX_USERS=1" in env
+
+
+def test_production_blueprint_uses_piste_production_credentials():
+    render = (ROOT / "render.yaml").read_text()
+    assert '      - key: LEGIFRANCE_ENVIRONMENT\n        value: production' in render
 
 
 def test_beta_user_cap_is_enforced_for_invites_and_acceptance():
