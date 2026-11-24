@@ -76,6 +76,31 @@ def _build_versant_fallback_research(
         else "fonction publique hospitalière"
     )
     branch_query = f"{question} {branch_qualifier}".strip()
+    topic_labels = {
+        "SICK_LEAVE_AND_SERVICE_INJURY": "congé maladie, accident de service et CITIS",
+        "HARASSMENT_AND_PROTECTION": "harcèlement et protection fonctionnelle",
+        "REMUNERATION": "rémunération, traitement et indemnités",
+        "LEAVE": "congés et autorisations d'absence",
+        "RETIREMENT": "retraite et pension",
+        "TELEWORK": "télétravail",
+        "PROFESSIONAL_TRAINING": "formation professionnelle",
+        "CAREER_AND_PROMOTION": "carrière et avancement",
+        "AVAILABILITY": "disponibilité",
+        "WORKING_TIME": "temps de travail, heures supplémentaires et astreintes",
+        "WORKPLACE_INCIDENT_AND_AGENT_PROTECTION": "agression par un usager et protection de l'agent",
+    }
+    topics = qualify_legal_question(
+        question, public_service=public_service,
+    ).get("topics") or []
+    focused_axes = [
+        f"{question} — {topic_labels[topic]} — {branch_qualifier}"
+        for topic in topics if topic in topic_labels
+    ][:4]
+    if len(focused_axes) > 1:
+        # Keep one broad fallback, then one deterministic query/coverage axis
+        # per independently recognized legal family. The merge routine reserves
+        # these focused axes so model-generated queries cannot hide a subtopic.
+        return [branch_query, *focused_axes], focused_axes
     return [branch_query], [branch_query]
 
 
