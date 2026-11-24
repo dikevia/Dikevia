@@ -1059,8 +1059,12 @@ def merge_ai_and_fallback_research_queries(
     if len(fallback) < 2:
         return primary[:limit] or fallback[:limit]
 
-    reserve_count = 2 if len(fallback_axes or []) >= 2 else 1
-    reserved = fallback[1:1 + min(reserve_count, limit - 1)]
+    # Reserve one focused fallback query for every independently detected
+    # legal axis that fits inside the bounded request budget. A fixed reserve
+    # of two silently dropped a third (or later) topic whenever the AI plan
+    # omitted it. The broad fallback query remains excluded from this reserve.
+    reserve_count = max(1, min(len(fallback_axes or []), limit - 1))
+    reserved = fallback[1:1 + reserve_count]
     primary_budget = max(0, limit - len(reserved))
     ordered = [*primary[:primary_budget], *reserved, *primary[primary_budget:]]
     merged: list[str] = []
