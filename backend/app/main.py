@@ -996,24 +996,29 @@ async def _lock_conversation_for_chat_turn(
     requested_public_service: str,
 ) -> None:
     """Lock an owned conversation and prevent mixing legal branches in its history."""
-    row = await conn.fetchrow(
-        """SELECT c.id,
-            (SELECT COALESCE(NULLIF(m.metadata->>'public_service',''),'FPT')
-             FROM chat_messages m
-             WHERE m.conversation_id=c.id
-               AND m.organization_id=c.organization_id
-               AND m.user_id=c.user_id
-               AND m.role='user'
-             ORDER BY m.created_at,m.id
-             LIMIT 1) AS public_service
-        FROM chat_conversations c
-        WHERE c.id=$1::uuid AND c.organization_id=$2::uuid AND c.user_id=$3::uuid
-        FOR UPDATE OF c""",
+    conversation = await conn.fetchrow(
+        """SELECT id FROM chat_conversations
+        WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid
+        FOR UPDATE""",
         str(conversation_id), organization_id, user_id,
     )
-    if not row:
+    if not conversation:
         raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
-    stored_public_service = str(row["public_service"] or "FPT").upper()
+    # Read the first message in a separate statement after acquiring the row
+    # lock. Under READ COMMITTED this gets a fresh snapshot, including a first
+    # message committed by a concurrent request that was waiting on the lock.
+    first_message = await conn.fetchrow(
+        """SELECT COALESCE(NULLIF(metadata->>'public_service',''),'FPT') AS public_service
+        FROM chat_messages
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid
+          AND user_id=$3::uuid AND role='user'
+        ORDER BY created_at,id
+        LIMIT 1""",
+        str(conversation_id), organization_id, user_id,
+    )
+    stored_public_service = str(
+        first_message["public_service"] if first_message else "FPT"
+    ).upper()
     requested = str(requested_public_service or "FPT").upper()
     if stored_public_service != requested:
         labels = {
