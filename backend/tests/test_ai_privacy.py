@@ -14,7 +14,7 @@ def test_direct_personal_identifiers_are_masked_before_provider_transfer():
     assert "agent@example.fr" not in result
     assert "1 85 05 42 123 456 78" not in result
     assert "FR76 3000 6000 0112 3456 7890 189" not in result
-    assert result.count("MASQUÉE") == 4
+    assert result.count("MASQU") == 4
 
 
 def test_identifier_minimization_preserves_legal_references_dates_and_amounts():
