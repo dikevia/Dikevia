@@ -325,7 +325,17 @@ async def _run_administrative_case_law_search_sql_scenario():
         # document/version and replace, not duplicate, its indexed chunks.
         await upsert_legal_document(admin, item)
         await upsert_legal_document(admin, item)
-        # Populate a deterministic vector to execute the real pgvector retrieval branch.
+        future_text = ("Agent territorial temps de travail agent territorial temps de travail. " * 30)
+        future_item = {
+            **item,
+            "version_key": version_key + "-future",
+            "valid_from": date(2027, 1, 1),
+            "valid_to": date(2027, 12, 31),
+            "full_text": future_text,
+        }
+        await upsert_legal_document(admin, future_item)
+        # Populate deterministic vectors on both versions to execute the real
+        # pgvector branch and prove that a future version cannot crowd out facts.
         embedding_literal = "[" + ",".join(["1"] + ["0"] * 383) + "]"
         await admin.execute("""
             UPDATE legal_chunks c
@@ -348,14 +358,15 @@ async def _run_administrative_case_law_search_sql_scenario():
         """, source_id)
         from app.legal_corpus import split_text
         assert persisted["documents"] == 1
-        assert persisted["versions"] == 1
-        assert persisted["chunks"] == len(split_text(full_text))
+        assert persisted["versions"] == 2
+        assert persisted["chunks"] == len(split_text(full_text)) + len(split_text(future_text))
 
         results = await search_legal_corpus(
             admin, "agent territorial temps de travail", date(2026, 11, 21), limit=6,
         )
         item = next(result for result in results if result["source_id"] == source_id)
         assert item["document_kind"] == "ADMIN_CASELAW"
+        assert item["version_key"] == version_key
         assert item["temporal_status"] == "DECISION_AVAILABLE_BY_REQUESTED_DATE"
         assert item["citation_integrity"]["text_hash_verified"] is True
         assert item["citation_integrity"]["valid"] is True
@@ -371,6 +382,8 @@ async def _run_administrative_case_law_search_sql_scenario():
             limit=6, query_embedding=[1.0] + [0.0] * 383,
         )
         vector_item = next(result for result in vector_results if result["source_id"] == source_id)
+        assert vector_item["version_key"] == version_key
+        assert all(result["version_key"] != future_item["version_key"] for result in vector_results)
         assert vector_item["retrieval_mode"] == "HYBRID_LEXICAL_VECTOR"
         assert vector_item["citation_integrity"]["text_hash_verified"] is True
         assert vector_item["citation_integrity"]["valid"] is True
