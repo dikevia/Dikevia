@@ -74,6 +74,7 @@ Une vérification en lecture seule de la branche Neon de staging `br-billowing-h
 | **Total** | **4 459** | **5 640** |
 
 Les 5 640 fragments disposent d'un embedding 384 dimensions conforme au modèle `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` ; aucune incohérence de modèle ou de dimension n'a été détectée. Le workflow de staging a confirmé cette couverture et n'a pas eu besoin de régénérer les vecteurs.
+Le même workflow exécute un contrôle de retrieval vectoriel seul sur quatre questions techniques. Il vérifie le modèle, le SQL, les dates et la disponibilité de résultats réels ; il ne certifie pas la pertinence juridique ni le classement métier.
 
 Pour les 199 fiches Service-Public et les 18 ressources complémentaires, les documents restent `IMPORTED_UNVERIFIED` et leur statut juridique reste `UNKNOWN`. Les 18 ressources complémentaires ont un statut de réutilisation `REUSE_APPROVED`, mais leur validation juridique reste `NOT_VERIFIED`. Les sources syndicales restent identifiées dans le registre comme `TRADE_UNION_POSITION` ; en base, elles sont stockées sous `INSTITUTIONAL_GUIDANCE` avec les métadonnées d'éditeur nécessaires à leur classement comme doctrine syndicale non normative.
 

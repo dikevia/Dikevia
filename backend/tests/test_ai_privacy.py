@@ -44,3 +44,22 @@ def test_every_user_text_provider_path_applies_direct_identifier_minimization():
     )
     for function in provider_functions:
         assert "redact_direct_identifiers" in inspect.getsource(function), function.__name__
+
+
+
+def test_personal_documents_are_excluded_from_ai_without_explicit_opt_in():
+    from app.ai_provider import _usable_document_sources, SYSTEM_PROMPT
+
+    source = {
+        "source_type": "PERSONAL_DOCUMENT",
+        "source_id": "personal-doc-123456",
+        "excerpt": "Règlement interne de temps de travail du service.",
+        "content_kind": "EXCERPT",
+        "reference_role": "PERSONAL_CONTEXT_ONLY",
+        "claim_eligible": False,
+        "official_source": False,
+    }
+    assert _usable_document_sources([source]) == []
+    assert _usable_document_sources([source], allow_local_documents=True) == [source]
+    assert "PERSONAL_DOCUMENT" in SYSTEM_PROMPT
+    assert "Ne traite jamais un PERSONAL_DOCUMENT comme un texte normatif" in SYSTEM_PROMPT

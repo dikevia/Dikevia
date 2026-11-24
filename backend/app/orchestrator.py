@@ -807,7 +807,7 @@ def _provider_context_history(
 
 
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None) -> AskResponse:
         request_id = str(uuid4())
         ai_usage_events: list[dict] = []
         answer_started_at = None
@@ -1445,6 +1445,72 @@ class LegalOrchestrator:
                     logger.exception("Échec de la recherche dans le corpus local tenant-scoped.")
                     local_issue = "La recherche dans les documents de l'employeur n'a pas pu être exécutée."
 
+
+        personal_sources: list[dict] = []
+        if conn is not None and personal_user_id:
+            try:
+                personal_hits_by_id: dict[str, dict] = {}
+                for personal_query in research_queries:
+                    rows = await conn.fetch(
+                        """SELECT id,title,document_type,collectivity_scope,validation_status,
+                                  effective_from,effective_to,
+                                  ts_rank(search_vector,plainto_tsquery('french',$2)) relevance,
+                                  ts_headline('french',extracted_text,plainto_tsquery('french',$2),
+                                    'MaxWords=90,MinWords=20,ShortWord=2,HighlightAll=false') excerpt
+                           FROM personal_documents
+                           WHERE owner_user_id=$1::uuid AND scan_status='CLEAN'
+                             AND extraction_status='EXTRACTED'
+                             AND search_vector @@ plainto_tsquery('french',$2)
+                           ORDER BY relevance DESC,created_at DESC LIMIT $3""",
+                        personal_user_id, personal_query[:500], 5,
+                    )
+                    for row in rows:
+                        key = str(row["id"])
+                        candidate = dict(row)
+                        existing = personal_hits_by_id.get(key)
+                        if existing is None or float(candidate.get("relevance") or 0) > float(existing.get("relevance") or 0):
+                            personal_hits_by_id[key] = candidate
+                for hit in sorted(
+                    personal_hits_by_id.values(),
+                    key=lambda item: -float(item.get("relevance") or 0),
+                )[:10]:
+                    excerpt = re.sub(r"</?b>", "", str(hit.get("excerpt") or ""), flags=re.IGNORECASE)
+                    if not excerpt.strip():
+                        continue
+                    personal_sources.append({
+                        "source_type": "PERSONAL_DOCUMENT",
+                        "source_id": str(hit["id"]),
+                        "title": str(hit.get("title") or "Document personnel"),
+                        "document_type": str(hit.get("document_type") or "PERSONAL_REFERENCE"),
+                        "collectivity_scope": str(hit.get("collectivity_scope") or "UNCLASSIFIED"),
+                        "validation_status": str(hit.get("validation_status") or "COLLECTED_UNVERIFIED"),
+                        "effective_from": hit["effective_from"].isoformat() if hit.get("effective_from") else None,
+                        "effective_to": hit["effective_to"].isoformat() if hit.get("effective_to") else None,
+                        "excerpt": excerpt[:2500],
+                        "content_kind": "EXCERPT",
+                        "source_status": "USER_UPLOADED_PRIVATE_UNVERIFIED",
+                        "temporal_status": "PERSONAL_DOCUMENT_VALIDITY_UNVERIFIED",
+                        "reference_role": "PERSONAL_CONTEXT_ONLY",
+                        "claim_eligible": False,
+                        "official_source": False,
+                        "transfer_status": (
+                            "TRANSMITTED_FOR_THIS_REQUEST"
+                            if allow_local_documents else "NOT_TRANSMITTED"
+                        ),
+                        "legal_assurance": {
+                            "authority_label": "Document personnel non vérifié",
+                            "usable_for_conclusion": False,
+                            "usable_for_interpretation": False,
+                            "reference_role": "PERSONAL_CONTEXT_ONLY",
+                        },
+                    })
+            except Exception:
+                logger.warning(
+                    "Échec de la recherche dans le corpus documentaire personnel (request_id=%s).",
+                    request_id,
+                    exc_info=True,
+                )
+
         permanent_sources: list[dict] = []
         permanent_issue = None
         if conn is not None:
@@ -1648,6 +1714,7 @@ class LegalOrchestrator:
             sources.append(response_source)
 
         sources.extend(local_sources)
+        sources.extend(personal_sources)
 
         if found and cgfp_snapshot_fallback and parsed_date is None:
             for hit in found["results"]:
@@ -2015,10 +2082,18 @@ class LegalOrchestrator:
                         and _citation_is_valid(s)
                         and s.get("research_axis_relevant", True) is not False
                     ]
-                    ai_sources = (
+                    base_ai_sources = (
                         cgfp_fallback_sources + verified_sources + context_guidance_sources
                         if verified_sources or cgfp_fallback_sources or context_guidance_sources else []
                     )
+                    personal_context_sources = [
+                        source for source in personal_sources
+                        if allow_local_documents
+                        and source.get("transfer_status") == "TRANSMITTED_FOR_THIS_REQUEST"
+                    ]
+                    # Personal files can supply local factual context only. They
+                    # remain explicitly ineligible as legal claim evidence.
+                    ai_sources = base_ai_sources + personal_context_sources if base_ai_sources else []
                     if ai_sources:
                         answer_started_at = time.perf_counter()
                         ai_result = await analyze_question(

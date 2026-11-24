@@ -67,13 +67,17 @@ services:
       - key: DOCUMENT_STORAGE_BUCKET
         value: cfdt-juris-documents
       - key: AI_API_BASE_URL
-        value: https://br-quiet-bird-bdmov90l-api.ai.c-8.us-east-2.aws.neon.tech/v1
+        value: https://generativelanguage.googleapis.com/v1beta/openai
       - key: AI_API_KEY
         sync: false
       - key: AI_MODEL
-        value: gpt-5-mini
+        value: gemini-2.5-flash
+      - key: AI_FALLBACK_MODELS
+        value: gemini-2.5-flash-lite
       - key: AI_TIMEOUT_SECONDS
         value: "25"
+      - key: AI_LOCAL_DOCUMENTS_IN_CHAT_ENABLED
+        value: "false"
       - key: CGFP_ENABLED
         value: "true"
       - key: LEGIFRANCE_ENVIRONMENT
