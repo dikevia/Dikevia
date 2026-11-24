@@ -64,7 +64,9 @@ self.onmessage = async (event) => {
     const segments = splitForEmbedding(text.slice(0, 5000));
     const vectors = [];
     for (const segment of segments) {
-      const output = await extractor(segment, { pooling: "mean", normalize: true });
+      // FastEmbed uses mean pooling without per-segment normalization for this model.
+      // Normalize only after aggregating all segments, matching the corpus pipeline.
+      const output = await extractor(segment, { pooling: "mean", normalize: false });
       vectors.push(Array.from(output.data, Number));
     }
     const embedding = normalizedMean(vectors);

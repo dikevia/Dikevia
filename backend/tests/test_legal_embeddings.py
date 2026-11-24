@@ -76,7 +76,7 @@ const pipeline = async (task, model, options) => {
     throw new Error('Unexpected model contract');
   }
   return async (segment, settings) => {
-    if (settings.pooling !== 'mean' || settings.normalize !== true) throw new Error('Unexpected pooling contract');
+    if (settings.pooling !== 'mean' || settings.normalize !== false) throw new Error('Unexpected pooling contract');
     seen.push(segment);
     const seed = [...segment].reduce((sum, char) => sum + char.codePointAt(0), 0);
     return { data: Float32Array.from({ length: 384 }, (_, i) => ((seed + i * 17) % 101) / 101 + 0.01) };
