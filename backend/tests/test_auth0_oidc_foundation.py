@@ -327,3 +327,29 @@ def test_auth0_unverified_or_missing_email_is_denied():
     with pytest.raises(HTTPException) as exc:
         _require_verified_auth0_email(no_email)
     assert exc.value.status_code == 403
+
+
+def test_auth0_migration_refuses_existing_subject_with_different_email():
+    import runpy
+
+    migration = runpy.run_path(str(ROOT / "scripts" / "migrate_keycloak_users_to_auth0.py"))
+    validate = migration["validate_existing_auth0_user"]
+
+    validate(None, "auth0|legacy-subject", "agent@example.org")
+    validate(
+        {"user_id": "auth0|legacy-subject", "email": "Agent@Example.org"},
+        "auth0|legacy-subject",
+        "agent@example.org",
+    )
+    with pytest.raises(RuntimeError, match="autre adresse"):
+        validate(
+            {"user_id": "auth0|legacy-subject", "email": "different@example.org"},
+            "auth0|legacy-subject",
+            "agent@example.org",
+        )
+    with pytest.raises(RuntimeError, match="incohérent"):
+        validate(
+            {"user_id": "auth0|other-subject", "email": "agent@example.org"},
+            "auth0|legacy-subject",
+            "agent@example.org",
+        )
