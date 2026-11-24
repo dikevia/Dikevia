@@ -220,7 +220,7 @@ def qualify_legal_question(
         short_status_reply and "titulaire" in current_folded
     ) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
-        r"(?:(?:un|une)\s+)?(?:agent\s+)?titulaire\b",
+        r"(?:(?:un|une)\s+)?(?:(?:agent|fonctionnaire)\s+)?titulaire\b",
         current_folded,
     ):
         status = "TITULAIRE_EXPLICIT"
