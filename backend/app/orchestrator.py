@@ -1711,7 +1711,11 @@ class LegalOrchestrator:
             and s.get("content_kind") == "FULL_TEXT"
             and _citation_is_valid(s)
             and (
-                s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}
+                s.get("temporal_status") in {
+                    "IN_FORCE_ON_REQUESTED_DATE",
+                    "IN_FORCE_ON_FACTS_DATE",
+                    "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+                }
                 or (
                     s.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
                     and s.get("general_info_eligible") is True

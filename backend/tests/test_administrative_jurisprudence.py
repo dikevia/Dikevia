@@ -336,6 +336,23 @@ def test_permanent_legal_version_with_missing_historical_bounds_is_not_assumed_a
     assert explanation and "ne permettent pas de vérifier" in explanation
 
 
+def test_historical_in_force_corpus_version_is_eligible_for_permanent_source_filter():
+    source = {
+        "source_id": "CORPUS_VERSION_HISTORICAL",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "temporal_status": "IN_FORCE_ON_FACTS_DATE",
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "research_axis_relevant": True,
+    }
+    assert source["temporal_status"] in {
+        "IN_FORCE_ON_REQUESTED_DATE",
+        "IN_FORCE_ON_FACTS_DATE",
+        "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+    }
+
+
 def test_imported_administrative_case_law_after_facts_is_kept_as_interpretative():
     from app.orchestrator import _permanent_source_temporal_metadata
 
