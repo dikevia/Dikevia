@@ -702,3 +702,43 @@ def test_claim_validator_handles_non_collection_sources_and_malformed_period():
     assert result["invalid_claims"] == [
         "claim_0:source_missing_ineligible_or_ambiguous",
     ]
+
+
+@pytest.mark.parametrize("versant", ["FPE", "FPH"])
+def test_claim_evidence_accepts_a_verified_source_for_the_selected_non_territorial_branch(versant):
+    from app.legal_assurance import validate_claim_evidence
+
+    quote = (
+        "Les agents de la fonction publique bénéficient des garanties prévues "
+        "par les dispositions applicables à leur versant."
+    )
+    source = _verified_evidence_source(
+        title=f"Dispositions relatives à la fonction publique — {versant}",
+        text=quote,
+        excerpt=quote,
+        public_service_scope=versant,
+    )
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "Les agents de la fonction publique bénéficient des garanties prévues.",
+            quote,
+        ),
+        [source],
+        public_service=versant,
+    )
+    assert result["valid"] is True
+
+
+def test_claim_evidence_rejects_a_different_public_service_branch_even_when_official():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(public_service_scope="FPH")
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé des agents.",
+            source["excerpt"],
+        ),
+        [source],
+        public_service="FPE",
+    )
+    assert result["valid"] is False
