@@ -654,3 +654,20 @@ def test_verified_decree_remains_classified_as_a_primary_norm():
     })
     assert result["authority_level"] == "PRIMARY_LEGAL"
     assert result["normative"] is True
+
+
+def test_assess_source_set_reports_malformed_records_as_incomplete():
+    result = assess_source_set([
+        None,
+        "not-a-source-object",
+        {"document_kind": "DECREE", "temporal_status": "IN_FORCE_ON_REQUESTED_DATE"},
+    ])
+    assert len(result["sources"]) == 1
+    assert result["status"] == "VERIFICATION_INCOMPLETE"
+    assert any("mal formé" in warning for warning in result["warnings"])
+
+
+def test_assess_source_set_does_not_silently_accept_non_list_payload():
+    result = assess_source_set({"source_id": "not-a-list"})
+    assert result["sources"] == []
+    assert result["status"] == "SOURCES_A_EXAMINER"
