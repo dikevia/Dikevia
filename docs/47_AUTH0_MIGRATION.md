@@ -17,6 +17,13 @@ Pour l'API, la durée de vie maximale des access tokens et des tokens implicit/h
 
 Dans l'application SPA, autoriser explicitement les URL de callback, logout et origines réellement utilisées. Pour les environnements Render actuellement identifiés, les origines de production et de staging sont autorisées. Les callback URLs doivent comprendre, pour chaque origine, `/` et `/static/silent-check-sso.html`.
 
+Configuration effectivement enregistrée pour la SPA de développement :
+
+- Allowed Callback URLs : `https://dikevia-commercial-api-l2r8.onrender.com/`, `https://dikevia-commercial-api-l2r8.onrender.com/static/silent-check-sso.html`, `https://dikevia-vector-beta-staging.onrender.com/`, `https://dikevia-vector-beta-staging.onrender.com/static/silent-check-sso.html`.
+- Allowed Logout URLs : `https://dikevia-commercial-api-l2r8.onrender.com/`, `https://dikevia-vector-beta-staging.onrender.com/`.
+- Allowed Web Origins et Allowed Origins (CORS) : `https://dikevia-commercial-api-l2r8.onrender.com`, `https://dikevia-vector-beta-staging.onrender.com`.
+
+
 Ne pas utiliser de wildcard d'origine. Vérifier ces URL dans Render avant de les enregistrer dans Auth0.
 
 La connexion `Username-Password-Authentication` est activée pour la SPA ; `google-oauth2` est désactivée. Les inscriptions restent autorisées. La vérification de l'e-mail à l'inscription par lien est activée, l'adresse e-mail est obligatoire et la protection anti-brute-force améliorée est active. La politique de mot de passe impose au minimum 15 caractères ; la sélection de politique Strong/Good/Excellent est indisponible sur le niveau d'essai actuel. Aucune mise à niveau payante n'a été effectuée.
