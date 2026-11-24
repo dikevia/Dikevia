@@ -46,7 +46,9 @@ def test_fpt_overtime_search_uses_currently_relevant_article_numbers():
     assert "articles 1 et 4" in territorial
     assert "article 5" not in territorial
     reference = next(query for query in queries if "2002-60" in query)
-    assert "articles 3 4 6 et 7" in reference
+    assert "articles 3 4 5 6 7 8 et 9" in reference
+    assert "astreintes" in reference
+    assert "majorations nuit dimanche" in reference
     assert any("91-875" in query and "article 2" in query for query in queries)
     assert "2002-437" not in joined
 
