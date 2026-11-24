@@ -69,11 +69,6 @@ def test_chat_route_loads_bounded_history_but_providers_receive_only_relevant_co
 def test_provider_context_history_excludes_stale_topics_and_keeps_only_the_selected_referent():
     from app.orchestrator import _provider_context_history
 
-    history = [
-        {"role": "user", "content": "Comment fonctionne le CET ?"},
-        {"role": "assistant", "content": "Réponse antérieure."},
-        {"role": "user", "content": "Mon chef refuse mes heures supplémentaires."},
-    ]
     followup_question = "Et pour les contractuels ?\nMon chef refuse mes heures supplémentaires."
     assert _provider_context_history(followup_question, True) == [
         {"role": "user", "content": "Mon chef refuse mes heures supplémentaires."}
