@@ -41,8 +41,17 @@ def test_fifteen_question_pilot_manifest_is_reproducible_and_covers_all_ten_fami
     assert manifest["execution_protocol"]["questions_count"] == 15
     assert manifest["release_gate"]["status"] == "NOT_EVALUATED"
     assert manifest["release_gate"]["gold_answers"] == "HUMAN_VALIDATION_REQUIRED"
+    source_path = repository_root / "docs" / "quality" / "fpt_chatbot_eval_v1.json"
+    source_cases = {
+        case["id"]: case
+        for case in json.loads(source_path.read_text(encoding="utf-8"))["cases"]
+    }
     for case in cases:
         assert case["question"].strip()
         assert case["required_checks"]
         assert case["failure_modes"]
         assert case["gold_answer_status"].startswith("À rédiger et valider")
+        source_case = source_cases[case["id"]]
+        assert case["question"] == source_case["question"]
+        assert case["expected_intent"] == source_case["expected_intent"]
+        assert case["source_review_status"] == source_case["source_review_status"]
