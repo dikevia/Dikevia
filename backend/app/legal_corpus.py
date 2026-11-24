@@ -322,8 +322,18 @@ def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: i
             if depth >= len(items):
                 continue
             item = items[depth]
-            identifier = item.get("source_id")
-            if not isinstance(identifier, str) or not identifier or identifier in seen:
+            # A legal document can have several independently stored versions.
+            # De-duplicate repeated retrievals of the same version, not distinct
+            # versions sharing the document's stable official source_id.
+            version_id = item.get("version_id")
+            identifier = (
+                f"version:{version_id}"
+                if isinstance(version_id, str) and version_id
+                else f"source:{item.get('source_id')}"
+                if isinstance(item.get("source_id"), str) and item.get("source_id")
+                else None
+            )
+            if identifier is None or identifier in seen:
                 continue
             seen.add(identifier)
             selected.append(item)

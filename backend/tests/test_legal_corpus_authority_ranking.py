@@ -40,3 +40,37 @@ async def test_corpus_search_applies_bounded_authority_weight_only_to_verified_o
     assert "MANUALLY_VERIFIED" in conn.query
     assert "SERVICE_PUBLIC_PART" not in conn.query.split("CASE", 1)[1].split("END AS authority_weight", 1)[0]
     assert "INSTITUTIONAL_GUIDANCE" not in conn.query.split("CASE", 1)[1].split("END AS authority_weight", 1)[0]
+
+
+def test_corpus_interleaving_preserves_distinct_versions_of_the_same_document():
+    from app.legal_corpus import interleave_legal_corpus_results
+
+    first_version = {
+        "source_id": "LEGITEXT000000000001",
+        "version_id": "version-2024",
+        "excerpt": "Ancienne rédaction",
+    }
+    second_version = {
+        "source_id": "LEGITEXT000000000001",
+        "version_id": "version-2025",
+        "excerpt": "Nouvelle rédaction",
+    }
+    repeated_first_version = {**first_version, "retrieval_mode": "VECTOR"}
+
+    selected = interleave_legal_corpus_results(
+        [[first_version, second_version], [repeated_first_version]],
+        limit=12,
+    )
+
+    assert selected == [first_version, second_version]
+
+
+def test_corpus_interleaving_falls_back_to_stable_source_id_without_version_id():
+    from app.legal_corpus import interleave_legal_corpus_results
+
+    first = {"source_id": "LEGITEXT000000000001", "excerpt": "Passage lexical"}
+    duplicate = {"source_id": "LEGITEXT000000000001", "excerpt": "Passage vectoriel"}
+
+    selected = interleave_legal_corpus_results([[first], [duplicate]], limit=12)
+
+    assert selected == [first]
