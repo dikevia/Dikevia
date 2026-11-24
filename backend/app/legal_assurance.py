@@ -459,6 +459,21 @@ def _normalized_evidence_text(value: Any) -> str:
     return normalize_evidence_text(value)
 
 
+def _versioned_excerpt_matches_full_text(full_text: str, excerpt: Any) -> bool:
+    """Require every retrieved passage fragment to occur in the hash-verified version."""
+    if not isinstance(full_text, str) or not full_text.strip():
+        return False
+    if not isinstance(excerpt, str) or not excerpt.strip():
+        return False
+    normalized_full = normalize_evidence_text(full_text)
+    fragments = [
+        normalize_evidence_text(fragment)
+        for fragment in re.split(r"\n\s*\n", excerpt)
+        if isinstance(fragment, str) and fragment.strip()
+    ]
+    return bool(fragments) and all(fragment in normalized_full for fragment in fragments)
+
+
 def _evidence_tokens(value: Any) -> set[str]:
     decomposed = unicodedata.normalize("NFKD", str(value or "").casefold())
     plain = "".join(char for char in decomposed if not unicodedata.combining(char))
@@ -533,6 +548,9 @@ def validate_claim_evidence(
                 or not full_text
                 or hashlib.sha256(full_text.encode("utf-8")).hexdigest() != stored_hash.casefold()
                 or integrity.get("text_hash_verified") is not True
+                or not _versioned_excerpt_matches_full_text(
+                    full_text, source.get("excerpt") or source.get("analysis_excerpt")
+                )
             ):
                 continue
         snapshot_fallback_evidence = (

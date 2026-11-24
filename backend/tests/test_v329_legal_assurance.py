@@ -153,6 +153,40 @@ def test_versioned_corpus_claim_requires_matching_full_text_hash_even_if_valid_f
     assert "claim_0:source_missing_ineligible_or_ambiguous" in rejected["invalid_claims"]
 
 
+def test_versioned_corpus_rejects_selected_excerpt_not_present_in_hashed_full_text():
+    import hashlib
+    from app.legal_assurance import validate_claim_evidence
+
+    full_text = (
+        "L'autorité territoriale organise le service et veille à la protection "
+        "de la santé et de la sécurité des agents dans les conditions prévues par les textes."
+    )
+    fabricated_excerpt = (
+        "L'autorité territoriale organise le service et veille à la protection "
+        "de la santé et de la sécurité des agents. "
+        "Elle doit accorder automatiquement une prime de 500 euros."
+    )
+    source = _verified_evidence_source(
+        source_type="LEGIFRANCE_LODA",
+        source_id="CORPUS_VERSION_87654321",
+        version_id="87654321-1234-4234-8234-123456789012",
+        text_sha256=hashlib.sha256(full_text.encode("utf-8")).hexdigest(),
+        full_text=full_text,
+        excerpt=fabricated_excerpt,
+        citation_integrity={"valid": True, "text_hash_verified": True},
+    )
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale doit accorder automatiquement une prime de 500 euros.",
+            "Elle doit accorder automatiquement une prime de 500 euros.",
+            source_id=source["source_id"],
+        ),
+        [source],
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
 def test_claim_evidence_rejects_source_without_valid_citation_integrity():
     from app.legal_assurance import validate_claim_evidence
 
