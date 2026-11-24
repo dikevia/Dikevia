@@ -14,6 +14,7 @@ import time
 import unicodedata
 from urllib.parse import urlparse, quote
 from dataclasses import dataclass
+from typing import Any
 import httpx
 from .config import settings
 from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
