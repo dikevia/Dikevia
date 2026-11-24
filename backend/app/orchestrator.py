@@ -964,11 +964,9 @@ class LegalOrchestrator:
                     query for query in refinement.queries
                     if query.casefold() not in {existing.casefold() for existing in research_queries}
                 ][:2]
-                if refinement.legal_issues:
-                    legal_context["axes_recherche_documentaire"] = list(dict.fromkeys([
-                        *(legal_context.get("axes_recherche_documentaire") or []),
-                        *refinement.legal_issues,
-                    ]))[:10]
+                # Model-generated issue labels are advisory only. Mandatory
+                # coverage axes remain the deterministic axes derived from the
+                # user's question; an LLM refinement cannot invent obligations.
                 if additional_queries:
                     research_queries = [*research_queries, *additional_queries][:7]
                     logger.info(
