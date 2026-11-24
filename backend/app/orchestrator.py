@@ -32,6 +32,11 @@ from .legal_qualification import (
 )
 
 
+def _source_metadata(source: dict) -> dict:
+    value = source.get("raw_metadata")
+    return value if isinstance(value, dict) else {}
+
+
 def _citation_is_valid(source: dict) -> bool:
     if not isinstance(source, dict):
         return False
@@ -1271,7 +1276,7 @@ class LegalOrchestrator:
                         "case_number": item.get("official_number"),
                         "document_kind": source_document_kind, "jurisdiction": item.get("jurisdiction"),
                         "raw_metadata": item.get("raw_metadata") or {},
-                        "jurisprudential_publication_code": (item.get("raw_metadata") or {}).get("publication_code"),
+                        "jurisprudential_publication_code": _source_metadata(item).get("publication_code"),
                         "signature_date": source_decision_date, "decision_date": source_decision_date,
                         "publication_date": item.get("publication_date"),
                         "valid_from": item.get("valid_from"), "valid_to": item.get("valid_to"),
@@ -1401,11 +1406,11 @@ class LegalOrchestrator:
             if response_source.get("source_type") == "CGFP_SNAPSHOT":
                 response_source["reference_role"] = "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
                 response_source["snapshot_modified_at"] = (
-                    (response_source.get("raw_metadata") or {}).get("snapshot_modified_at")
-                    or (response_source.get("raw_metadata") or {}).get("generated_at")
+                    _source_metadata(response_source).get("snapshot_modified_at")
+                    or _source_metadata(response_source).get("generated_at")
                 )
                 response_source["snapshot_verification_status"] = (
-                    (response_source.get("raw_metadata") or {}).get("verification_status")
+                    _source_metadata(response_source).get("verification_status")
                 )
             sources.append(response_source)
 
@@ -1786,7 +1791,7 @@ class LegalOrchestrator:
                         s for s in sources
                         if s.get("source_type") in {"SERVICE_PUBLIC_PART", "INSTITUTIONAL_GUIDANCE"}
                         and s.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY"
-                        and (s.get("legal_assurance") or {}).get("usable_for_interpretation") is True
+                        and (s.get("legal_assurance") if isinstance(s.get("legal_assurance"), dict) else {}).get("usable_for_interpretation") is True
                         and s.get("content_kind") == "FULL_TEXT"
                         and _citation_is_valid(s)
                         and s.get("research_axis_relevant", True) is not False
