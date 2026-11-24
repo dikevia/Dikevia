@@ -1840,3 +1840,16 @@ async def test_entailment_verifier_rejects_unhashable_claim_source_id_before_htt
     )
     assert result["valid"] is False
     assert result["invalid"] == ["claim_0:invalid_source_id"]
+
+
+@pytest.mark.parametrize("versant", ["FPT", "FPE", "FPH"])
+def test_research_planner_does_not_infer_versant_from_profession_or_workplace(versant):
+    import inspect
+    from app.ai_provider import plan_legal_research
+
+    source = inspect.getsource(plan_legal_research)
+    assert "N'infère jamais le versant juridique à partir du seul métier ou lieu de travail" in source
+    assert "Distingue le lieu d'exercice de l'employeur juridique" in source
+    assert "clarification_needed" in source
+    assert "infirmière à l'hôpital" in source
+    assert "professeur dans un lycée" in source
