@@ -1515,6 +1515,7 @@ class LegalOrchestrator:
                         "temporal_status": source_temporal_status,
                         "temporal_explanation": source_temporal_explanation,
                         "source_status": item.get("source_status"),
+                        "version_status": item.get("version_status"),
                         "content_kind": item.get("content_kind"), "excerpt": item.get("excerpt"),
                         "retrieval_scope": item.get("retrieval_scope"),
                         "text": item.get("excerpt") or "", "full_text": item.get("full_text") or "",

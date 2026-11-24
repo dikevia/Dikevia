@@ -834,3 +834,62 @@ async def test_unanswerable_question_does_not_dump_legal_excerpts_into_answer(mo
     assert exact_excerpt[:100] not in response.answer
     assert "plutôt que de recopier des articles" in response.answer
     assert "Sources retrouvées" in response.answer
+
+@pytest.mark.asyncio
+async def test_permanent_corpus_version_status_survives_orchestration_for_general_questions(monkeypatch):
+    import app.orchestrator as module
+
+    _enable_legifrance(monkeypatch, module)
+
+    async def no_code(*args, **kwargs):
+        return []
+
+    async def no_regulatory(*args, **kwargs):
+        return []
+
+    async def no_case_law(*args, **kwargs):
+        return []
+
+    async def permanent(*args, **kwargs):
+        return [{
+            "source_type": "LEGIFRANCE_LEGI",
+            "source_id": "LEGITEXT_REPEALED_001",
+            "title": "Code relatif à la fonction publique territoriale",
+            "document_kind": "CODE",
+            "content_kind": "FULL_TEXT",
+            "excerpt": "Les agents de la fonction publique territoriale bénéficient des garanties prévues par le présent code. " * 3,
+            "full_text": "Les agents de la fonction publique territoriale bénéficient des garanties prévues par le présent code. " * 3,
+            "source_status": "OFFICIAL_TEXT_RETRIEVED",
+            "version_status": "REPEALED",
+            "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
+            "citation_integrity": {"valid": True},
+            "raw_metadata": {},
+        }]
+
+    captured = {}
+
+    async def fake_ai(**kwargs):
+        captured["sources"] = kwargs["sources"]
+        return '{"claims": []}'
+
+    monkeypatch.setattr(module.legifrance, "search_code_articles", no_code)
+    monkeypatch.setattr(module.legifrance, "search_regulatory_texts", no_regulatory)
+    monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
+    monkeypatch.setattr(module, "search_legal_corpus", permanent)
+    monkeypatch.setattr(module, "analyze_question", fake_ai)
+
+    await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            question="Quelles règles encadrent la fonction publique territoriale ?",
+        ),
+        "00000000-0000-0000-0000-000000000001",
+        conn=object(),
+    )
+
+    imported_source = next(
+        source for source in captured["sources"]
+        if source.get("source_id") == "LEGITEXT_REPEALED_001"
+    )
+    assert imported_source["version_status"] == "REPEALED"
+    assert imported_source["general_info_eligible"] is False
