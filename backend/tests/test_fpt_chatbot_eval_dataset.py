@@ -119,3 +119,21 @@ def test_fifteen_question_pilot_runs_through_prepare_review_and_score(tmp_path):
     assert report["status"] == "INCOMPLET"
     assert report["release_gate"]["status"] == "INCOMPLETE"
     assert report["release_gate"]["checks"]["gold_answers_human_validated"] is False
+
+    # Python treats bool as int; a boolean must not count as a human score.
+    reviews[0]["evaluations"]["question_understanding"] = True
+    boolean_review_path = tmp_path / "boolean_annotated.json"
+    boolean_review_path.write_text(json.dumps(reviews), encoding="utf-8")
+    boolean_report_path = tmp_path / "boolean_score.json"
+    boolean_scored = subprocess.run(
+        [sys.executable, str(script), "score", "--dataset", str(dataset),
+         "--responses", str(responses_path), "--reviews", str(boolean_review_path),
+         "--out", str(boolean_report_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert boolean_scored.returncode == 0, boolean_scored.stderr
+    boolean_report = json.loads(boolean_report_path.read_text(encoding="utf-8"))
+    assert boolean_report["questions_evaluees"] == 14
+    assert boolean_report["questions_restantes"] == [ids[0]]
+    assert boolean_report["status"] == "INCOMPLET"
+    assert boolean_report["release_gate"]["status"] == "INCOMPLETE"
