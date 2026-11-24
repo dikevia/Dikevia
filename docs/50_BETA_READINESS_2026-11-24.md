@@ -76,6 +76,7 @@ Ce document distingue les contrôles effectués, les limites connues et les vali
 ## 6. Auth0, facturation et accès commerciaux
 
 - Le tenant de développement Auth0, l'application SPA et l'API existent ; le code backend prend en charge issuer/audience/JWKS et PKCE.
+- Le tenant Auth0 de développement est hébergé en région US-5. Pour un SaaS destiné aux collectivités françaises, ne pas réutiliser ce tenant en production sans analyse préalable de résidence des données, DPA, transferts internationaux, sous-traitants et exigences contractuelles des clients publics. Prévoir un tenant de production distinct dans une région adaptée si l'analyse le requiert.
 - Les listes d'URL autorisées Auth0 doivent encore être resserrées. Aucun parcours de connexion Auth0 réel, aucune migration de comptes Keycloak et aucun basculement production ne sont validés.
 - Keycloak reste explicitement le fournisseur runtime de la bêta.
 - Les quatre offres commerciales sont présentes dans le catalogue de code, mais Stripe et le checkout restent désactivés.
