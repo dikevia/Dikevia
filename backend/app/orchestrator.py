@@ -436,6 +436,36 @@ def _permanent_source_temporal_metadata(
     return status, explanation
 
 
+def _classify_permanent_source_scope(source: dict, target_versant: str) -> dict:
+    """Reuse ingestion-time scope for verified Open Data decisions.
+
+    Administrative decisions are classified against their complete XML text at
+    ingestion. Reclassifying only a retrieved passage can lose the branch marker
+    and silently discard an otherwise qualified decision. Trust that stored
+    result only for the exact official XML ingestion path and verified status.
+    """
+    metadata = source.get("raw_metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
+    stored_scope = str(metadata.get("public_service_scope") or "").upper()
+    trusted_open_data_case = (
+        source.get("source_type") == "OTHER_OFFICIAL"
+        and source.get("document_kind") == "ADMIN_CASELAW"
+        and source.get("source_status") == "OFFICIAL_XML_IMPORTED"
+        and metadata.get("import_method") == "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML"
+        and stored_scope in {"FPT", "FPE", "FPH", "COMMON_PUBLIC_SERVICE"}
+    )
+    if trusted_open_data_case:
+        applicable = stored_scope == "COMMON_PUBLIC_SERVICE" or stored_scope == target_versant
+        evidence = metadata.get("scope_evidence")
+        return {
+            "scope": stored_scope,
+            "evidence": evidence if isinstance(evidence, list) else [],
+            "analysis_eligible": applicable,
+            "claim_eligible": applicable,
+        }
+    return classify_public_service_scope(source, target_versant=target_versant)
+
+
 def _is_usable_permanent_source(source: dict, permanent_source_ids: set) -> bool:
     """Apply the final corpus-source eligibility gate, including historical versions."""
     if (
@@ -1592,7 +1622,7 @@ class LegalOrchestrator:
         for item in permanent_sources:
             response_source = {**item, "source_url": item.get("official_url")}
             # Apply the same French public-service perimeter as live sources.
-            scope_check = classify_public_service_scope(response_source, target_versant=request.public_service)
+            scope_check = _classify_permanent_source_scope(response_source, request.public_service)
             response_source["public_service_scope"] = scope_check["scope"]
             response_source["scope_evidence"] = scope_check["evidence"]
             response_source["analysis_eligible"] = scope_check["analysis_eligible"]

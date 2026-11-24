@@ -717,3 +717,71 @@ def test_open_data_import_rejects_mixed_branch_decisions_even_with_local_employe
         "et un agent hospitalier. Le litige porte sur les garanties disciplinaires."
     )
     assert _public_service_employment_case_law_scope(title, body) is None
+
+def test_verified_admin_open_data_scope_uses_full_decision_ingestion_classification():
+    from app.orchestrator import _classify_permanent_source_scope
+
+    source = {
+        "source_type": "OTHER_OFFICIAL",
+        "document_kind": "ADMIN_CASELAW",
+        "source_status": "OFFICIAL_XML_IMPORTED",
+        # The retrieved passage itself need not repeat the branch marker.
+        "title": "Temps de travail",
+        "excerpt": "Le litige porte sur l'organisation du temps de travail.",
+        "raw_metadata": {
+            "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
+            "public_service_scope": "FPT",
+            "scope_evidence": ["agents territoriaux"],
+        },
+    }
+    fpt = _classify_permanent_source_scope(source, "FPT")
+    assert fpt["scope"] == "FPT"
+    assert fpt["analysis_eligible"] is True
+    assert fpt["claim_eligible"] is True
+
+    fpe = _classify_permanent_source_scope(source, "FPE")
+    assert fpe["scope"] == "FPT"
+    assert fpe["analysis_eligible"] is False
+    assert fpe["claim_eligible"] is False
+
+
+def test_unverified_admin_scope_metadata_is_not_trusted():
+    from app.orchestrator import _classify_permanent_source_scope
+
+    source = {
+        "source_type": "OTHER_OFFICIAL",
+        "document_kind": "ADMIN_CASELAW",
+        "source_status": "IMPORTED_UNVERIFIED",
+        "title": "Temps de travail",
+        "excerpt": "Le litige porte sur l'organisation du temps de travail.",
+        "raw_metadata": {
+            "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
+            "public_service_scope": "FPT",
+            "scope_evidence": ["agents territoriaux"],
+        },
+    }
+    result = _classify_permanent_source_scope(source, "FPT")
+    assert result["scope"] != "FPT"
+    assert result["analysis_eligible"] is False
+
+
+def test_verified_admin_open_data_common_scope_applies_to_all_versants():
+    from app.orchestrator import _classify_permanent_source_scope
+
+    source = {
+        "source_type": "OTHER_OFFICIAL",
+        "document_kind": "ADMIN_CASELAW",
+        "source_status": "OFFICIAL_XML_IMPORTED",
+        "title": "Dispositions communes",
+        "excerpt": "Le litige concerne les trois fonctions publiques.",
+        "raw_metadata": {
+            "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
+            "public_service_scope": "COMMON_PUBLIC_SERVICE",
+            "scope_evidence": ["agents des trois versants"],
+        },
+    }
+    for versant in ("FPT", "FPE", "FPH"):
+        result = _classify_permanent_source_scope(source, versant)
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True
