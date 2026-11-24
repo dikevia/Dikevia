@@ -48,7 +48,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     elif kind == "DILA_CIRCULAIRES":
         kind = "CIRCULAR"
     elif kind == "LEGIFRANCE_API":
-        kind = "CODE"
+        kind = str(source.get("document_kind") or "CODE").upper()
     elif kind.startswith("LEGIFRANCE_"):
         kind = str(source.get("document_kind") or "OTHER").upper()
     # Normalize French API vocabulary to the canonical families used for
