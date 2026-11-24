@@ -201,9 +201,16 @@ def qualify_legal_question(
         r"(contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b",
         current_folded,
     )
-    negative_status = (
+    negative_status_raw = (
         _fold(negative_status_match.group(1))
         if negative_status_match else None
+    )
+    negative_status = (
+        "contractuel" if negative_status_raw and negative_status_raw.startswith("contractuel")
+        else "stagiaire" if negative_status_raw and negative_status_raw.startswith("stagiaire")
+        else "titulaire" if negative_status_raw and negative_status_raw.startswith("titulaire")
+        else "fonctionnaire" if negative_status_raw and negative_status_raw.startswith("fonctionnaire")
+        else None
     )
     short_status_reply = re.fullmatch(
         r"(?:(?:et\s+)?pour\s+les?\s+|et\s+les?\s+)?(?:agent(?:e)?s?\s+)?"
