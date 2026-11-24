@@ -18,7 +18,7 @@ from typing import Any
 import httpx
 from .config import settings
 from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
-from .evidence_text import normalize_evidence_text
+from .evidence_text import bound_evidence_text, normalize_evidence_text
 
 logger = logging.getLogger(__name__)
 
@@ -778,10 +778,10 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "borne_periode": s.get("version_endpoint"),
                     "url_officielle": s.get("official_url") or s.get("source_url"),
                     "pages_pdf": [s.get("page_start"), s.get("page_end")],
-                    "extrait": str(
+                    "extrait": bound_evidence_text(
                         s.get("analysis_excerpt") or s.get("full_text")
                         or s.get("excerpt") or s.get("text") or ""
-                    )[:12000],
+                    ),
                     "statut_source": s.get("source_status"), "type_contenu": s.get("content_kind"),
                     "type_document_local": s.get("local_document_type"), "statut_validation_locale": s.get("validation_status"),
                     "collectivite": s.get("collectivity"), "classement_juridique": _as_mapping(s.get("legal_assurance")),
@@ -1086,13 +1086,13 @@ def validate_entailment_verdicts(payload, claims, sources):
         if not isinstance(support_quote, str) or len(support_quote.strip()) < 20:
             invalid.append(f"verdict_{index}:support_quote_missing")
             continue
-        source_text = str(
+        source_text = bound_evidence_text(
             matched[0].get("analysis_excerpt")
             or matched[0].get("full_text")
             or matched[0].get("excerpt")
             or matched[0].get("text")
             or ""
-        )[:12000]
+        )
         normalized_quote = _normalize_entailment_text(support_quote)
         if normalized_quote not in _normalize_entailment_text(source_text):
             invalid.append(f"verdict_{index}:support_quote_not_in_source")
@@ -1161,7 +1161,7 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             ),
             "",
         )
-        evidence_text = evidence_value[:12000] if evidence_value else ""
+        evidence_text = bound_evidence_text(evidence_value) if evidence_value else ""
         if not evidence_text:
             return {"valid": False, "invalid": [f"claim_{index}:source_has_no_text"]}
         if source.get("version_endpoint") == "START":
