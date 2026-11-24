@@ -235,17 +235,18 @@ def test_member_cannot_reopen_or_modify_a_finalized_legal_dossier(stored_status)
     assert not conn.execute_calls
 
 class ConversationScopeConnection:
-    def __init__(self, public_service="FPT"):
+    def __init__(self, public_service="FPT", conversation_exists=True):
         self.public_service = public_service
-        self.query = None
-        self.args = None
+        self.conversation_exists = conversation_exists
+        self.calls = []
 
     async def fetchrow(self, query, *args):
-        self.query = query
-        self.args = args
-        if self.public_service == "MISSING":
+        self.calls.append((query, args))
+        if "FOR UPDATE" in query:
+            return {"id": args[0]} if self.conversation_exists else None
+        if self.public_service == "NO_MESSAGES":
             return None
-        return {"id": args[0], "public_service": (
+        return {"public_service": (
             None if self.public_service == "NO_METADATA" else self.public_service
         )}
 
@@ -261,8 +262,9 @@ def test_chat_turn_cannot_switch_public_service_inside_existing_conversation():
 
     assert exc.value.status_code == 409
     assert "nouvelle conversation" in exc.value.detail
-    assert "FOR UPDATE OF c" in conn.query
-    assert "m.metadata->>'public_service'" in conn.query
+    assert len(conn.calls) == 2
+    assert "FOR UPDATE" in conn.calls[0][0]
+    assert "metadata->>'public_service'" in conn.calls[1][0]
 
 
 def test_chat_turn_keeps_existing_public_service_in_conversation():
@@ -272,7 +274,7 @@ def test_chat_turn_keeps_existing_public_service_in_conversation():
     asyncio.run(_lock_conversation_for_chat_turn(
         conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPE",
     ))
-    assert "FOR UPDATE OF c" in conn.query
+    assert len(conn.calls) == 2
 
 
 def test_legacy_conversation_without_public_service_defaults_to_fpt():
@@ -284,4 +286,27 @@ def test_legacy_conversation_without_public_service_defaults_to_fpt():
             conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPE",
         ))
     assert exc.value.status_code == 409
+
+def test_empty_conversation_defaults_to_fpt_after_row_lock():
+    from app.main import _lock_conversation_for_chat_turn
+
+    conn = ConversationScopeConnection("NO_MESSAGES")
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(_lock_conversation_for_chat_turn(
+            conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPH",
+        ))
+    assert exc.value.status_code == 409
+    assert len(conn.calls) == 2
+
+
+def test_unknown_conversation_is_rejected_before_reading_branch_metadata():
+    from app.main import _lock_conversation_for_chat_turn
+
+    conn = ConversationScopeConnection(conversation_exists=False)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(_lock_conversation_for_chat_turn(
+            conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPT",
+        ))
+    assert exc.value.status_code == 404
+    assert len(conn.calls) == 1
 
