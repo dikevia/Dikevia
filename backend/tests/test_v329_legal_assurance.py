@@ -176,6 +176,7 @@ def test_claim_evidence_keeps_verified_tenant_document_without_national_scope_fl
         _evidence_claim(
             "L'autorité territoriale veille à la santé des agents.",
             source["excerpt"],
+            source_id=source["source_id"],
         ),
         [source],
     )
