@@ -168,6 +168,7 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
         "personnels hospitaliers", "agent contractuel hospitalier",
         "agent territorial", "agents territoriaux", "fonctionnaire territorial",
         "fonctionnaires territoriaux", "agent contractuel territorial",
+        "agents des trois versants", "agents des trois fonctions publiques",
     )
     hr_subjects = (
         "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
@@ -183,13 +184,26 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
     )
     has_public_employment = any(marker in corpus for marker in public_employment)
     has_hr_subject = any(marker in corpus for marker in hr_subjects)
-    if not (has_public_employment and has_hr_subject):
-        return None
 
     source = {"title": title, "text": body, "document_kind": "ADMIN_CASELAW"}
     fpt_scope = classify_public_service_scope(source, target_versant="FPT")
     if _is_fpt_employment_case_law(title, body, fpt_scope):
+        if fpt_scope.get("scope") == "OUT_OF_SCOPE_OR_UNCONFIRMED":
+            return {
+                "scope": "FPT",
+                "evidence": ["Décision locale portant sur un sujet de gestion des agents publics"],
+                "analysis_eligible": True,
+                "claim_eligible": True,
+            }
+        if fpt_scope.get("scope") in {
+            "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+            "OUT_OF_SCOPE_EUROPEAN_LAW",
+        }:
+            return None
         return fpt_scope
+
+    if not (has_public_employment and has_hr_subject):
+        return None
 
     for branch in ("FPE", "FPH"):
         scope = classify_public_service_scope(source, target_versant=branch)
@@ -209,8 +223,6 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
     """
     import hashlib
     import zipfile
-
-    from .fpt_scope import classify_public_service_scope
 
     if not zip_bytes or len(zip_bytes) > 100 * 1024 * 1024:
         raise ValueError("L'archive Open Data est vide ou dépasse 100 Mo.")
