@@ -19,6 +19,7 @@ import httpx
 from .config import settings
 from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
 from .evidence_text import build_legal_evidence_text, normalize_evidence_text
+from .ai_privacy import redact_direct_identifiers
 
 logger = logging.getLogger(__name__)
 
@@ -599,7 +600,7 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": json.dumps({
-                "question": str(question or "")[:5000],
+                "question": redact_direct_identifiers(str(question or ""))[:5000],
                 "research_axes": [str(axis)[:500] for axis in axes_records[:8] if isinstance(axis, str)],
                 "documents": candidates,
             }, ensure_ascii=False)},
@@ -670,7 +671,7 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
         "Réponds exclusivement en JSON : queries (3 à 5 requêtes lors de la première passe, ou un tableau vide si les résultats fournis couvrent déjà le besoin), legal_issues (1 à 8 sous-questions courtes), extracted_facts (0 à 12 faits avec preuve textuelle), clarification_needed (question ou null)."
     )
     user_payload = {
-        "question": str(question or "")[:5000],
+        "question": redact_direct_identifiers(str(question or ""))[:5000],
         "employer": str(employer or "")[:120],
         "facts_period": period,
         "deterministic_scope_hints_not_legal_evidence": context,
@@ -681,9 +682,9 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
              "excerpt": str(item.get("excerpt") or item.get("text") or item.get("full_text") or "")[:700]}
             for item in evidence_records[:24]
         ],
-        "recent_user_context": [{"content": str(item.get("content", ""))[:1000]} for item in [m for m in history_records if m.get("role") == "user"][-RECENT_USER_CONTEXT_LIMIT:]],
+        "recent_user_context": [{"content": redact_direct_identifiers(str(item.get("content", "")))[:1000]} for item in [m for m in history_records if m.get("role") == "user"][-RECENT_USER_CONTEXT_LIMIT:]],
         "previous_assistant_answer_context_not_legal_evidence": [
-            {"content": str(item.get("content", ""))[-1800:]}
+            {"content": redact_direct_identifiers(str(item.get("content", "")))[-1800:]}
             for item in history_records if item.get("role") == "assistant"
         ][-1:],
     }
@@ -741,12 +742,12 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         "messages": [
             {"role": "system", "content": _system_prompt_for_versant(context.get("versant_fonction_publique", "FPT"))},
             {"role": "user", "content": json.dumps({
-                "question_actuelle": question, "employeur": employer, "date_de_reference_pour_la_recherche": facts_date,
+                "question_actuelle": redact_direct_identifiers(question), "employeur": employer, "date_de_reference_pour_la_recherche": facts_date,
                 "periode_de_la_situation": period or {"exact_date": facts_date},
                 "qualification_juridique_pre_recherche": context,
-                "contexte_questions_utilisateur": [{"content": str(m.get("content", ""))[:1200]} for m in history_records[-12:] if m.get("role") == "user"],
+                "contexte_questions_utilisateur": [{"content": redact_direct_identifiers(str(m.get("content", "")))[:1200]} for m in history_records[-12:] if m.get("role") == "user"],
                 "contexte_reponse_precedente_non_source": [
-                    {"content": str(m.get("content", ""))[-1800:]}
+                    {"content": redact_direct_identifiers(str(m.get("content", "")))[-1800:]}
                     for m in history_records if m.get("role") == "assistant"
                 ][-1:],
                 "extraits_documentaires_valides": [{
@@ -1197,7 +1198,7 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
         "temperature": 0,
         "messages": [
             {"role": "system", "content": ENTAILMENT_SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps({"question_actuelle": question, "versant_selectionne": public_service, "items_to_verify": evidence}, ensure_ascii=False)},
+            {"role": "user", "content": json.dumps({"question_actuelle": redact_direct_identifiers(question), "versant_selectionne": public_service, "items_to_verify": evidence}, ensure_ascii=False)},
         ],
     }
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
