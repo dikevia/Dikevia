@@ -597,3 +597,27 @@ def test_scope_classification_uses_relevant_excerpt_before_unrelated_full_text()
     })
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
+
+def test_generic_ministry_mention_does_not_establish_fpe_source_scope():
+    result = classify_public_service_scope(
+        {
+            "title": "Document administratif",
+            "text": "Les ministères sont invités à transmettre leurs observations.",
+        },
+        target_versant="FPE",
+    )
+    assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
+    assert result["analysis_eligible"] is False
+
+
+def test_generic_medical_personnel_mention_does_not_establish_fph_source_scope():
+    result = classify_public_service_scope(
+        {
+            "title": "Document administratif",
+            "text": "Les personnels médicaux sont invités à transmettre leurs observations.",
+        },
+        target_versant="FPH",
+    )
+    assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
+    assert result["analysis_eligible"] is False
+
