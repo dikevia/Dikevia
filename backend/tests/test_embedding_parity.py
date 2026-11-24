@@ -39,7 +39,7 @@ def test_query_segmentation_matches_the_corpus_embedding_contract():
     corpus = module_from_spec(spec)
     assert spec and spec.loader
     spec.loader.exec_module(corpus)
-    text = ("Une question juridique avec plusieurs conditions et exceptions.\\n" * 40)[:5000]
+    text = ("Une question juridique avec plusieurs conditions et exceptions.\n" * 40)[:5000]
     assert MODULE.split_for_query_embedding(text) == corpus.split_for_embedding(text)
 
 
@@ -106,5 +106,5 @@ def test_parity_example_dataset_covers_varied_query_lengths_and_text():
     items = MODULE.validate_items(payload["items"], "Exemple")
     assert len(items) >= 10
     assert any(len(item["text"]) > 500 for item in items.values())
-    assert any("\\n" in item["text"] for item in items.values())
+    assert any("\n" in item["text"] for item in items.values())
     assert any("é" in item["text"] or "è" in item["text"] for item in items.values())
