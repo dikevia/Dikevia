@@ -544,8 +544,10 @@ def validate_claim_evidence(
         } or source.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY" or source.get("claim_eligible") is False:
             continue
         source_scope = str(source.get("public_service_scope") or "").upper()
+        is_local_document = source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
         if (
-            source.get("analysis_eligible") is False
+            (not is_local_document and source.get("analysis_eligible") is not True)
+            or source.get("analysis_eligible") is False
             or source_scope in {
                 "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
                 "OUT_OF_SCOPE_OR_UNCONFIRMED", "OUT_OF_SCOPE_EUROPEAN_LAW",
