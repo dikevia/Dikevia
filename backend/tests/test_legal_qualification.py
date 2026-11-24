@@ -603,6 +603,27 @@ def test_negated_titularization_is_not_recognized_as_current_titular_status():
     assert qualify_legal_question("Je ne suis plus titularisée.")["agent_status"] == "NOT_SPECIFIED"
 
 
+def test_profession_or_workplace_does_not_infer_agent_status_or_public_service():
+    cases = [
+        "Je suis ATSEM. Quels sont mes droits ?",
+        "Je suis infirmière à l'hôpital. Quels sont mes droits ?",
+        "Je suis professeur dans un lycée. Quels sont mes droits ?",
+    ]
+    for question in cases:
+        result = qualify_legal_question(question, public_service="FPT")
+        assert result["agent_status"] == "NOT_SPECIFIED", question
+        assert result["explicit_self_versant_mismatch"] is None, question
+        assert result["public_service"] == "FPT", question
+
+
+def test_explicit_recent_titularization_overrides_profession_only_ambiguity():
+    result = qualify_legal_question(
+        "Je suis ATSEM et je viens d'être titularisée.",
+        public_service="FPT",
+    )
+    assert result["agent_status"] == "TITULAIRE_EXPLICIT"
+
+
 def test_recent_titularization_is_preserved_in_contextual_followup():
     context = build_contextual_research_context(
         "Peux-tu détailler le deuxième point ?",
