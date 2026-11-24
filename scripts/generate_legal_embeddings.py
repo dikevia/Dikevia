@@ -15,8 +15,19 @@ import unicodedata
 
 MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 DIMENSIONS = 384
+EXPECTED_STAGING_MARKER = "br-billowing-haze-bd5a1cns"
 SEGMENT_CHARS = 500
 SEGMENT_OVERLAP = 60
+
+
+async def assert_staging_database(conn) -> None:
+    marker = await conn.fetchval(
+        "SELECT marker FROM public.dikevia_staging_guard"
+    )
+    if marker != EXPECTED_STAGING_MARKER:
+        raise RuntimeError(
+            "La génération d'embeddings est autorisée uniquement sur la branche staging dédiée."
+        )
 
 
 def split_for_embedding(text: str) -> list[str]:
@@ -80,6 +91,7 @@ async def run(args: argparse.Namespace) -> int:
         identity = await conn.fetchval("SELECT current_user")
         if identity != "cfdt_juris_ingest":
             raise RuntimeError("Connexion PostgreSQL non autorisée pour l'ingestion vectorielle.")
+        await assert_staging_database(conn)
         total = await conn.fetchval(
             """SELECT count(*) FROM legal_chunks
                WHERE embedding_384 IS NULL
