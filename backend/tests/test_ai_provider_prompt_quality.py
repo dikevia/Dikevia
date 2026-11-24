@@ -186,9 +186,10 @@ def test_non_fpt_prompts_preserve_the_same_structured_evidence_contract():
         assert "chaque proposition juridique doit rester rattachée à un extrait précis" in prompt
 
 def test_research_planner_distinguishes_the_user_from_comparative_or_third_party_mentions():
-    from app.ai_provider import _build_research_plan_system_prompt
+    import inspect
+    from app.ai_provider import plan_legal_research
 
-    prompt = _build_research_plan_system_prompt("FPT")
-    assert "Une mention d'un autre versant dans une comparaison ou à propos d'un tiers" in prompt
-    assert "distingue toujours le sujet de la question et la personne dont la situation est décrite" in prompt
+    prompt_source = inspect.getsource(plan_legal_research)
+    assert "Une mention d'un autre versant dans une comparaison ou à propos d'un tiers" in prompt_source
+    assert "distingue toujours le sujet de la question et la personne dont la situation est décrite" in prompt_source
 
