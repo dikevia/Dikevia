@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import hashlib
 import re
+import zipfile
+from io import BytesIO
+import stat
 from dataclasses import dataclass
 from datetime import date
 from pathlib import PurePath
@@ -26,6 +29,9 @@ from .security import Principal
 
 router = APIRouter(prefix="/api/v1/personal-documents", tags=["personal-documents"])
 MAX_FILE_BYTES = 20 * 1024 * 1024
+MAX_ZIP_BYTES = 60 * 1024 * 1024
+MAX_ARCHIVE_DOCUMENTS = 100
+MAX_ARCHIVE_UNCOMPRESSED_BYTES = 120 * 1024 * 1024
 ALLOWED = {
     ".pdf": "application/pdf",
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -155,6 +161,131 @@ async def upload_personal_document(
                 pass
         raise
     return {**dict(row), "id": str(row["id"]), "created_at": row["created_at"].isoformat()}
+
+
+
+@router.post("/import-zip", status_code=201)
+async def import_personal_documents_zip(
+    file: UploadFile = File(...),
+    ctx: PersonalUserContext = Depends(get_personal_user_context),
+):
+    """Import a bounded ZIP archive into the authenticated user's private corpus."""
+    archive_bytes = await file.read(MAX_ZIP_BYTES + 1)
+    if not archive_bytes or len(archive_bytes) > MAX_ZIP_BYTES:
+        raise HTTPException(413, "Archive vide ou supérieure à 60 Mo.")
+    try:
+        archive = zipfile.ZipFile(BytesIO(archive_bytes))
+    except (zipfile.BadZipFile, OSError) as exc:
+        raise HTTPException(415, "Archive ZIP invalide.") from exc
+
+    prepared = []
+    seen_names = set()
+    total_uncompressed = 0
+    try:
+        with archive:
+            infos = [info for info in archive.infolist() if not info.is_dir()]
+            if not infos or len(infos) > MAX_ARCHIVE_DOCUMENTS:
+                raise HTTPException(422, "L'archive doit contenir entre 1 et 100 documents.")
+            for info in infos:
+                raw_name = info.filename.replace("\\", "/")
+                path = PurePath(raw_name)
+                if (
+                    path.is_absolute()
+                    or len(path.parts) != 1
+                    or any(part in {"", ".", ".."} for part in path.parts)
+                    or "\x00" in raw_name
+                    or stat.S_ISLNK(info.external_attr >> 16)
+                    or info.flag_bits & 0x1
+                ):
+                    raise HTTPException(422, "L'archive contient un chemin ou un fichier interdit.")
+                filename = path.name
+                suffix = PurePath(filename).suffix.lower()
+                if suffix not in ALLOWED:
+                    raise HTTPException(415, "L'archive ne doit contenir que des PDF ou DOCX.")
+                if filename.casefold() in seen_names:
+                    raise HTTPException(422, "L'archive contient des noms de fichiers en doublon.")
+                seen_names.add(filename.casefold())
+                if (
+                    info.file_size <= 0
+                    or info.file_size > MAX_FILE_BYTES
+                    or info.compress_type not in {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}
+                    or (info.compress_size == 0 and info.file_size > 0)
+                    or (info.compress_size and info.file_size / info.compress_size > 100)
+                ):
+                    raise HTTPException(413, "Un document dépasse les limites de taille ou de compression.")
+                total_uncompressed += info.file_size
+                if total_uncompressed > MAX_ARCHIVE_UNCOMPRESSED_BYTES:
+                    raise HTTPException(413, "Le volume total décompressé dépasse 120 Mo.")
+                try:
+                    data = archive.read(info)
+                except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
+                    raise HTTPException(415, "Un document de l'archive est illisible.") from exc
+                if len(data) != info.file_size:
+                    raise HTTPException(415, "La taille d'un document extrait est incohérente.")
+                mime_type = ALLOWED[suffix]
+                _validate_upload(filename, mime_type, data)
+                try:
+                    scan = scan_with_clamav(
+                        data, settings.clamav_host, settings.clamav_port,
+                        settings.clamav_timeout_seconds,
+                    )
+                except MalwareDetected as exc:
+                    raise HTTPException(422, "Un document a été rejeté par le contrôle antivirus.") from exc
+                except ScannerUnavailable as exc:
+                    raise HTTPException(503, "Le contrôle antivirus est indisponible ; aucun document n'a été importé.") from exc
+                extracted_text, extraction_status = extract_document_text(data, mime_type)
+                prepared.append({
+                    "id": uuid4(),
+                    "filename": filename,
+                    "title": PurePath(filename).stem[:300],
+                    "mime_type": mime_type,
+                    "data": data,
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "scan_engine": scan.engine,
+                    "extracted_text": extracted_text,
+                    "extraction_status": extraction_status,
+                })
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(415, "L'archive n'a pas pu être contrôlée.") from exc
+
+    stored_keys = []
+    documents = []
+    try:
+        async with ctx.conn.transaction():
+            for item in prepared:
+                storage_key = store_private_file(
+                    ctx.user_id, str(item["id"]), 1, item["data"],
+                    PurePath(item["filename"]).suffix.lower(), item["mime_type"],
+                )
+                stored_keys.append(storage_key)
+                row = await ctx.conn.fetchrow(
+                    """INSERT INTO personal_documents(
+                        id,owner_user_id,title,document_type,original_filename,mime_type,
+                        file_size_bytes,storage_key,sha256,scan_status,scan_engine,scanned_at,
+                        extraction_status,extracted_text,collectivity_scope
+                    ) VALUES(
+                        $1::uuid,$2::uuid,$3,'PERSONAL_REFERENCE',$4,$5,$6,$7,$8,
+                        'CLEAN',$9,now(),$10,$11,'UNCLASSIFIED'
+                    ) RETURNING id,title,original_filename,file_size_bytes,scan_status,
+                        extraction_status,collectivity_scope,created_at""",
+                    str(item["id"]), ctx.user_id, item["title"], item["filename"],
+                    item["mime_type"], len(item["data"]), storage_key, item["sha256"],
+                    item["scan_engine"], item["extraction_status"], item["extracted_text"],
+                )
+                documents.append({
+                    **dict(row), "id": str(row["id"]),
+                    "created_at": row["created_at"].isoformat(),
+                })
+    except Exception:
+        for storage_key in stored_keys:
+            try:
+                delete_private_file(storage_key)
+            except StorageError:
+                pass
+        raise
+    return {"imported_count": len(documents), "documents": documents}
 
 
 @router.get("")

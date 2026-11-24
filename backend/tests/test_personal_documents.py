@@ -13,6 +13,7 @@ def test_personal_document_routes_are_registered():
     paths = set(app.openapi()["paths"])
     assert "/api/v1/personal-documents" in paths
     assert "/api/v1/personal-documents/search" in paths
+    assert "/api/v1/personal-documents/import-zip" in paths
     assert "/api/v1/personal-documents/{document_id}/download" in paths
     assert "/api/v1/personal-documents/{document_id}" in paths
 
@@ -53,3 +54,16 @@ def test_personal_document_migration_has_forced_owner_rls_and_no_org_scope():
     assert "owner_user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid" in migration
     assert "GRANT SELECT, INSERT, DELETE ON personal_documents TO cfdt_juris_app" in migration
     assert "organization_id" not in migration
+
+
+
+def test_personal_zip_import_is_bounded_and_rejects_unsafe_archive_entries():
+    from app.personal_documents import import_personal_documents_zip
+    source = inspect.getsource(import_personal_documents_zip)
+    assert "MAX_ZIP_BYTES" in source
+    assert "MAX_ARCHIVE_DOCUMENTS" in source
+    assert "MAX_ARCHIVE_UNCOMPRESSED_BYTES" in source
+    assert "path.is_absolute()" in source
+    assert "part in {\"\", \".\", \"..\"}" in source
+    assert "scan_with_clamav" in source
+    assert "owner_user_id" in source
