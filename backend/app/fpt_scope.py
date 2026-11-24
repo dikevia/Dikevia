@@ -194,6 +194,19 @@ def classify_public_service_scope(
     title_fpt_hits = [marker for marker in _FPT_MARKERS if _fold(marker) in title_folded]
     title_fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in title_folded]
     title_fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in title_folded]
+    common_scope_hits = [
+        marker for marker in _COMMON_PUBLIC_SERVICE_MARKERS
+        if _fold(marker) in corpus
+    ]
+    # An explicit statement that a provision covers all three branches takes
+    # precedence over a title that names only two of them.
+    if common_scope_hits:
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": common_scope_hits[:3],
+            "analysis_eligible": True,
+            "claim_eligible": True,
+        }
     if title_fpe_hits and title_fph_hits and not title_fpt_hits:
         return {
             "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
@@ -228,11 +241,6 @@ def classify_public_service_scope(
     # A common rule may support analysis for the selected versant only when
     # the source itself explicitly identifies all three branches. Generic
     # public-service wording is not sufficient evidence of cross-branch scope.
-    common_scope_hits = [
-        marker for marker in _COMMON_PUBLIC_SERVICE_MARKERS
-        if _fold(marker) in corpus
-    ]
-
     # When the title does not establish a primary branch, simultaneous State
     # and hospital references in the relevant passage are ambiguous. Do not
     # let the later single-branch fallback silently prefer FPH.
@@ -243,14 +251,6 @@ def classify_public_service_scope(
             "analysis_eligible": False,
             "claim_eligible": False,
         }
-    if common_scope_hits:
-        return {
-            "scope": "COMMON_PUBLIC_SERVICE",
-            "evidence": common_scope_hits[:3],
-            "analysis_eligible": True,
-            "claim_eligible": True,
-        }
-
     # A source containing competing territorial and State/hospital markers
     # is not safe FPT proof, even when one marker appears in its title.
     if title_fpt_hits and (title_fpe_hits or title_fph_hits):
