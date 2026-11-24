@@ -976,6 +976,9 @@ def validate_entailment_verdicts(payload, claims, sources):
             invalid.append(f"verdict_{index}:index_mismatch")
             continue
         source_id = claim.get("source_id")
+        if not isinstance(source_id, str) or not source_id:
+            invalid.append(f"verdict_{index}:invalid_claim_source_id")
+            continue
         if verdict.get("source_id") != source_id:
             invalid.append(f"verdict_{index}:source_id_mismatch")
             continue
@@ -1035,6 +1038,7 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
         return {"valid": False, "invalid": ["missing_or_invalid_claims"]}
     if not isinstance(sources, (list, tuple)):
         return {"valid": False, "invalid": ["missing_or_invalid_sources"]}
+    period = _as_mapping(facts_period)
     source_by_id = {}
     for source in sources:
         if not isinstance(source, dict):
@@ -1044,16 +1048,25 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             source_by_id.setdefault(source_id, []).append(source)
     evidence = []
     for index, claim in enumerate(claims):
-        matches = source_by_id.get(claim.get("source_id"), [])
+        claim_source_id = claim.get("source_id")
+        if not isinstance(claim_source_id, str) or not claim_source_id:
+            return {"valid": False, "invalid": [f"claim_{index}:invalid_source_id"]}
+        matches = source_by_id.get(claim_source_id, [])
         if len(matches) != 1:
             return {"valid": False, "invalid": [f"claim_{index}:source_missing_or_ambiguous"]}
         source = matches[0]
         if source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"} and not allow_local_documents:
             return {"valid": False, "invalid": [f"claim_{index}:local_document_ai_transfer_disabled"]}
-        evidence_text = str(source.get("excerpt") or source.get("text") or "")[:12000]
+        evidence_value = next(
+            (
+                source.get(field) for field in ("excerpt", "text", "full_text")
+                if isinstance(source.get(field), str) and source[field].strip()
+            ),
+            "",
+        )
+        evidence_text = evidence_value[:12000] if evidence_value else ""
         if not evidence_text:
-            evidence_text = str(source.get("full_text") or "")[:1800]
-        period = facts_period or {}
+            return {"valid": False, "invalid": [f"claim_{index}:source_has_no_text"]}
         if source.get("version_endpoint") == "START":
             requested_effective_date = period.get("period_start") or period.get("facts_reference_date")
         elif source.get("version_endpoint") == "END":

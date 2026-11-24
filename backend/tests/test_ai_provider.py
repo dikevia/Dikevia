@@ -1806,3 +1806,37 @@ async def test_metadata_only_retrieval_cannot_suppress_required_research_queries
                 "content_kind": "METADATA",
             }],
         )
+
+
+def test_entailment_verdict_validation_rejects_unhashable_claim_source_ids():
+    from app.ai_provider import validate_entailment_verdicts
+
+    result = validate_entailment_verdicts(
+        {"verdicts": [{
+            "claim_index": 0,
+            "source_id": ["SRC-123"],
+            "verdict": "SUPPORTED",
+            "support_quote": "Une citation suffisamment longue pour le contrôle documentaire.",
+        }]},
+        [{"source_id": ["SRC-123"], "text": "Une citation suffisamment longue pour le contrôle documentaire."}],
+        [{"source_id": "SRC-123", "excerpt": "Une citation suffisamment longue pour le contrôle documentaire."}],
+    )
+    assert result["valid"] is False
+    assert result["invalid"] == ["verdict_0:invalid_claim_source_id"]
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_rejects_unhashable_claim_source_id_before_http(monkeypatch):
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    result = await verify_claim_entailment(
+        question="Question",
+        claims=[{"source_id": ["SRC-123"], "text": "Une affirmation juridique suffisamment longue."}],
+        sources=[{"source_id": "SRC-123", "excerpt": "Une citation suffisamment longue pour le contrôle documentaire."}],
+        facts_period="malformed",
+    )
+    assert result["valid"] is False
+    assert result["invalid"] == ["claim_0:invalid_source_id"]
