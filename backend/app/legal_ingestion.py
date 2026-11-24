@@ -201,10 +201,15 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
         fpt_markers = ("fonction publique territoriale", "agent territorial", "agents territoriaux",
                        "fonctionnaire territorial", "fonctionnaires territoriaux")
         other_branch_markers = (
-            "fonction publique de l etat", "fonctionnaires de l etat",
-            "agents de l etat", "administrations centrales", "services deconcentres de l etat",
-            "fonction publique hospitaliere", "etablissements publics de sante",
-            "centres hospitaliers", "agents contractuels hospitaliers",
+            "fonction publique de l etat", "fonctionnaire de l etat",
+            "fonctionnaires de l etat", "agent de l etat", "agents de l etat",
+            "agent contractuel de l etat", "agents contractuels de l etat",
+            "administration centrale", "administrations centrales",
+            "service deconcentre de l etat", "services deconcentres de l etat",
+            "fonction publique hospitaliere", "etablissement public de sante",
+            "etablissements publics de sante", "centre hospitalier",
+            "centres hospitaliers", "agent hospitalier", "agents hospitaliers",
+            "agent contractuel hospitalier", "agents contractuels hospitaliers",
         )
         has_fpt_evidence = any(any(marker in item for marker in fpt_markers) for item in scope_evidence)
         has_other_branch_evidence = any(
