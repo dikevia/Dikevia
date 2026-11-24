@@ -23,6 +23,35 @@ ARTICLE_ID_RE = re.compile(r"^LEGIARTI\d{12}$")
 logger = logging.getLogger("dikevia.legifrance")
 
 
+def _loda_document_kind(nature: Any, title: str, number: str | None) -> str:
+    """Classify LODA results from the API's nature field; unknown types stay unknown."""
+    nature_text = str(nature or "").strip().upper()
+    title_text = f"{title or ''} {number or ''}".casefold()
+    if "DECRET" in nature_text:
+        return "DECREE"
+    if "ARRETE" in nature_text:
+        return "ORDER"
+    if nature_text.startswith("ORDONNANCE"):
+        return "ORDONNANCE"
+    if nature_text.startswith("LOI"):
+        return "LAW"
+    if nature_text.startswith("CODE"):
+        return "CODE"
+    if "CIRCULAIRE" in nature_text:
+        return "CIRCULAR"
+    if "décret" in title_text or "decret" in title_text:
+        return "DECREE"
+    if "arrêté" in title_text or "arrete" in title_text:
+        return "ORDER"
+    if "ordonnance" in title_text:
+        return "ORDONNANCE"
+    if re.search(r"\\bloi\\b", title_text):
+        return "LAW"
+    if re.search(r"\\bcode\\b", title_text):
+        return "CODE"
+    return "OTHER"
+
+
 class LegifranceUnavailable(RuntimeError):
     """PISTE non configuré, inaccessible ou réponse inexploitable."""
 
@@ -574,12 +603,10 @@ class LegifranceConnector:
             publication = self._iso_date(nested_value(record, ("datePublication", "datePubli")))
             valid_from = self._iso_date(nested_value(record, ("dateDebut", "dateDebutVersion", "dateEffet")))
             valid_to = self._iso_date(nested_value(record, ("dateFin", "dateFinVersion")))
-            kind_raw = (title + " " + (number or "")).lower()
-            kind = "DECREE" if "décret" in kind_raw or "decret" in kind_raw else (
-                "ORDER" if "arrêté" in kind_raw or "arrete" in kind_raw else (
-                "ORDONNANCE" if "ordonnance" in kind_raw else "LAW"))
+            nature = nested_value(record, ("nature", "natureTexte", "typeTexte"))
+            kind = _loda_document_kind(nature, title, number)
             output.append({"source_type": "LEGIFRANCE_LODA", "source_id": identifier,
-                "title": title, "document_kind": kind, "official_number": number, "nor": nor,
+                "title": title, "document_kind": kind, "nature": nature, "official_number": number, "nor": nor,
                 "publisher": nested_value(record, ("emetteur", "ministere", "autorite")),
                 "official_url": f"https://www.legifrance.gouv.fr/loda/id/{identifier}",
                 "signature_date": signature, "publication_date": publication,
