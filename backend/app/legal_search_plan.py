@@ -1052,6 +1052,8 @@ def merge_ai_and_fallback_research_queries(
         for query in (fallback_queries or [])
         if isinstance(query, str) and query.strip()
     ))
+    if not primary:
+        return fallback[:limit]
     if not fallback:
         return primary[:limit]
 
