@@ -81,7 +81,11 @@ async def run(args: argparse.Namespace) -> int:
         if identity != "cfdt_juris_ingest":
             raise RuntimeError("Connexion PostgreSQL non autorisée pour l'ingestion vectorielle.")
         total = await conn.fetchval(
-            "SELECT count(*) FROM legal_chunks WHERE embedding_384 IS NULL"
+            """SELECT count(*) FROM legal_chunks
+               WHERE embedding_384 IS NULL
+                  OR embedding_384_model IS DISTINCT FROM $1
+                  OR embedding_384_dimensions IS DISTINCT FROM $2""",
+            MODEL_NAME, DIMENSIONS,
         )
         print(f"Fragments sans vecteur : {total}")
         if args.dry_run:
@@ -98,9 +102,11 @@ async def run(args: argparse.Namespace) -> int:
                 """SELECT id, content
                    FROM legal_chunks
                    WHERE embedding_384 IS NULL
+                      OR embedding_384_model IS DISTINCT FROM $2
+                      OR embedding_384_dimensions IS DISTINCT FROM $3
                    ORDER BY created_at, id
                    LIMIT $1""",
-                min(args.batch_size, args.max_chunks - processed),
+                min(args.batch_size, args.max_chunks - processed), MODEL_NAME, DIMENSIONS,
             )
             if not rows:
                 break
@@ -139,16 +145,26 @@ async def run(args: argparse.Namespace) -> int:
                            embedding_384_model = $3,
                            embedding_384_dimensions = $4,
                            embedding_384_updated_at = now()
-                       WHERE id = $1 AND embedding_384 IS NULL""",
+                       WHERE id = $1
+                         AND (embedding_384 IS NULL
+                           OR embedding_384_model IS DISTINCT FROM $3
+                           OR embedding_384_dimensions IS DISTINCT FROM $4)""",
                     [(chunk_id, vector, MODEL_NAME, DIMENSIONS) for chunk_id, vector in updates],
                 )
             processed += len(rows)
             print(f"Traités : {processed}/{min(total, args.max_chunks)}")
         remaining = await conn.fetchval(
-            "SELECT count(*) FROM legal_chunks WHERE embedding_384 IS NULL"
+            """SELECT count(*) FROM legal_chunks
+               WHERE embedding_384 IS NULL
+                  OR embedding_384_model IS DISTINCT FROM $1
+                  OR embedding_384_dimensions IS DISTINCT FROM $2""",
+            MODEL_NAME, DIMENSIONS,
         )
         embedded = await conn.fetchval(
-            "SELECT count(*) FROM legal_chunks WHERE embedding_384 IS NOT NULL"
+            """SELECT count(*) FROM legal_chunks
+               WHERE embedding_384 IS NOT NULL
+                 AND embedding_384_model=$1 AND embedding_384_dimensions=$2""",
+            MODEL_NAME, DIMENSIONS,
         )
         print(f"Vecteurs présents : {embedded}; restants : {remaining}")
         return 0 if remaining == 0 or processed >= args.max_chunks else 1
