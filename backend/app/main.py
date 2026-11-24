@@ -991,6 +991,46 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
 
 
+async def _lock_conversation_for_chat_turn(
+    conn, conversation_id: str, organization_id: str, user_id: str,
+    requested_public_service: str,
+) -> None:
+    """Lock an owned conversation and prevent mixing legal branches in its history."""
+    row = await conn.fetchrow(
+        """SELECT c.id,
+            (SELECT COALESCE(NULLIF(m.metadata->>'public_service',''),'FPT')
+             FROM chat_messages m
+             WHERE m.conversation_id=c.id
+               AND m.organization_id=c.organization_id
+               AND m.user_id=c.user_id
+               AND m.role='user'
+             ORDER BY m.created_at,m.id
+             LIMIT 1) AS public_service
+        FROM chat_conversations c
+        WHERE c.id=$1::uuid AND c.organization_id=$2::uuid AND c.user_id=$3::uuid
+        FOR UPDATE OF c""",
+        str(conversation_id), organization_id, user_id,
+    )
+    if not row:
+        raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
+    stored_public_service = str(row["public_service"] or "FPT").upper()
+    requested = str(requested_public_service or "FPT").upper()
+    if stored_public_service != requested:
+        labels = {
+            "FPT": "fonction publique territoriale",
+            "FPE": "fonction publique de l'État",
+            "FPH": "fonction publique hospitalière",
+        }
+        raise HTTPException(
+            409,
+            "Cette conversation est rattachée à la "
+            f"{labels.get(stored_public_service, stored_public_service)}. "
+            "Pour éviter de mélanger des règles juridiques de versants différents, "
+            "démarrez une nouvelle conversation pour la "
+            f"{labels.get(requested, requested)}.",
+        )
+
+
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
 async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity)):
     pool = get_pool()
@@ -1014,13 +1054,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                     payload.question[:157] + ("…" if len(payload.question) > 157 else ""))
                 conversation_id = row["id"]
             else:
-                exists = await conn.fetchval(
-                    """SELECT id FROM chat_conversations
-                    WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
-                    str(conversation_id), ctx.organization_id, ctx.user_id,
+                await _lock_conversation_for_chat_turn(
+                    conn, str(conversation_id), ctx.organization_id, ctx.user_id,
+                    payload.public_service,
                 )
-                if not exists:
-                    raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
             current_message_id = await conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
                 VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
                 str(conversation_id), ctx.user_id, payload.question,
