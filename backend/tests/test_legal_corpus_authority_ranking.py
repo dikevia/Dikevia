@@ -34,6 +34,8 @@ async def test_corpus_search_applies_bounded_authority_weight_only_to_verified_o
     assert "v.version_key" in conn.query
     assert "source_version_id,version_key" in conn.query
     assert "max(rank * authority_weight) AS rank" in conn.query
+    assert "\\n        SELECT version_id" not in conn.query
+    assert "validation.\n        SELECT version_id,string_agg" in conn.query
     assert "THEN 1.15" in conn.query
     assert "WHEN d.source_type IN ('LEGIFRANCE_CETAT','OTHER_OFFICIAL') AND d.document_kind='ADMIN_CASELAW'" in conn.query
     assert "THEN 1.10" in conn.query

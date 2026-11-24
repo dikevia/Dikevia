@@ -448,7 +448,9 @@ async def search_legal_corpus(
         -- Keep only passages selected by lexical/vector relevance. Never append
         -- the document's final chunk: it is often unrelated to the user's question.
         -- Bounded authority adjustment: it cannot replace relevance, temporal validity,
-        -- public-service scope checks or claim-level evidence validation.\n        SELECT version_id,string_agg(content_chunk,E'\\n\\n' ORDER BY chunk_order) AS content,\n          max(rank * authority_weight) AS rank
+        -- public-service scope checks or claim-level evidence validation.
+        SELECT version_id,string_agg(content_chunk,E'\\n\\n' ORDER BY chunk_order) AS content,
+          max(rank * authority_weight) AS rank
         FROM (
           SELECT version_id,content_chunk,rn AS chunk_order,rank,authority_weight
           FROM ranked WHERE rn<=CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
