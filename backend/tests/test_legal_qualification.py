@@ -515,3 +515,36 @@ def test_clarification_status_reply_still_inherits_when_no_new_topic_is_named():
     )
     assert context.is_followup is True
     assert "heures supplémentaires" in context.question
+
+def test_explicit_first_person_versant_mismatch_is_flagged_without_inferring_from_profession():
+    fpe = qualify_legal_question(
+        "Je suis fonctionnaire de l'État et je souhaite connaître mes droits.",
+        public_service="FPT",
+    )
+    fph = qualify_legal_question(
+        "Je suis agent hospitalier et je souhaite connaître mes droits.",
+        public_service="FPT",
+    )
+    ambiguous_profession = qualify_legal_question(
+        "Je suis infirmière à l'hôpital. Quels sont mes droits ?",
+        public_service="FPT",
+    )
+
+    assert fpe["explicit_self_versant_mismatch"] == "FPE"
+    assert fph["explicit_self_versant_mismatch"] == "FPH"
+    assert ambiguous_profession["explicit_self_versant_mismatch"] is None
+
+
+def test_comparative_or_third_party_branch_mention_does_not_create_self_mismatch():
+    comparative = qualify_legal_question(
+        "Quelles différences entre les droits des agents de l'État et des agents territoriaux ?",
+        public_service="FPT",
+    )
+    third_party = qualify_legal_question(
+        "Mon collègue est fonctionnaire de l'État. Quels textes s'appliquent à lui ?",
+        public_service="FPT",
+    )
+
+    assert comparative["explicit_self_versant_mismatch"] is None
+    assert third_party["explicit_self_versant_mismatch"] is None
+
