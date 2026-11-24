@@ -1859,6 +1859,7 @@ class LegalOrchestrator:
                             structured_answer, ai_sources,
                             required_axes=legal_context.get("axes_recherche_documentaire") or None,
                             facts_period=temporal_context,
+                            public_service=request.public_service,
                         )
                         for uncovered_axis in claim_validation.get("uncovered_axes", []):
                             missing.append(f"Aucune source suffisamment pertinente n'a permis de répondre à cette sous-question : {uncovered_axis}")
