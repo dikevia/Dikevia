@@ -60,6 +60,41 @@ async def test_research_planner_clarification_is_returned_before_retrieval(monke
     assert response.sources == []
 
 
+
+@pytest.mark.parametrize("versant", ["FPE", "FPH"])
+@pytest.mark.asyncio
+async def test_non_territorial_scope_clarification_stops_retrieval(monkeypatch, versant):
+    captured = {}
+
+    async def ask_plan(**kwargs):
+        captured["public_service"] = kwargs["legal_context"]["versant_fonction_publique"]
+        return LegalResearchPlan(
+            queries=[],
+            legal_issues=[],
+            clarification_needed="Votre employeur est-il un établissement public de santé, une collectivité ou un employeur privé ?",
+        )
+
+    async def forbidden_retrieval(*args, **kwargs):
+        pytest.fail("La recherche ne doit pas démarrer avant la clarification du versant.")
+
+    monkeypatch.setattr(orchestrator_module, "plan_legal_research", ask_plan)
+    monkeypatch.setattr(orchestrator_module, "search_cgfp", forbidden_retrieval)
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            public_service=versant,
+            question="Je travaille comme infirmière à l'hôpital. Quels sont mes droits ?",
+        ),
+        "00000000-0000-0000-0000-000000000001",
+    )
+
+    assert captured["public_service"] == versant
+    assert response.clarification_question.startswith("Votre employeur")
+    assert response.answer == response.clarification_question
+    assert response.sources == []
+
+
 def test_vector_search_uses_ask_request_not_undefined_payload():
     source = inspect.getsource(LegalOrchestrator.ask)
     tree = ast.parse(textwrap.dedent(source))
