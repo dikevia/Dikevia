@@ -111,7 +111,7 @@ def test_only_allowlisted_public_legal_and_institutional_source_urls_are_kept():
     assert safe_official_url("https://www.cfdt-interco31.fr/")
     assert safe_official_url("https://cfdtinterco35.fr/")
     assert safe_official_url("https://www.cgtservicespublics.fr/")
-    assert safe_official_url("https://www.interco.cfdt.fr/")
+    assert safe_official_url("https://interco.cfdt.fr/")
     assert safe_official_url("https://www.cgtetat.fr/")
     assert safe_official_url("https://sante.cgt.fr/")
     assert safe_official_url("https://www.fo-fonctionnaires.fr/")
