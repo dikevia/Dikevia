@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import shutil
+import struct
+import subprocess
 from pathlib import Path
+
+import pytest
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "generate_legal_embeddings.py"
 SPEC = importlib.util.spec_from_file_location("generate_legal_embeddings", SCRIPT)
@@ -11,7 +17,7 @@ SPEC.loader.exec_module(MODULE)
 
 
 def test_embedding_segments_are_prefixed_and_cover_long_text():
-    text = ("Le fonctionnaire bénéficie des garanties prévues par le code.\n" * 90).strip()
+    text = ("Le fonctionnaire bénéficie des garanties prévues par le code.\\n" * 90).strip()
     segments = MODULE.split_for_embedding(text)
     assert len(segments) > 1
     assert all(segment.strip() for segment in segments)
@@ -33,23 +39,8 @@ def test_model_dimensions_are_explicit():
     assert MODULE.MODEL_NAME == "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     assert MODULE.DIMENSIONS == 384
 
-def test_browser_query_embedding_uses_the_same_segmenting_and_aggregation_contract():
-    worker = (Path(__file__).resolve().parents[2] / "frontend" / "legal-embedding-worker.js").read_text(encoding="utf-8")
-    assert 'const SEGMENT_CHARS = 500;' in worker
-    assert 'const SEGMENT_OVERLAP = 60;' in worker
-    assert '.normalize("NFC")' in worker
-    assert 'pooling: "mean", normalize: true' in worker
-    assert 'const embedding = normalizedMean(vectors);' in worker
-    assert 'const embedding = await extractor(text.slice(0, 5000)' not in worker
 
-
-def test_browser_worker_matches_python_preprocessing_and_aggregation_contract():
-    import json
-    import shutil
-    import subprocess
-
-    import pytest
-
+def test_browser_query_embedding_matches_python_preprocessing_and_aggregation():
     node = shutil.which("node")
     if not node:
         pytest.skip("Node.js is required to execute the browser worker contract test.")
@@ -68,7 +59,7 @@ def test_browser_worker_matches_python_preprocessing_and_aggregation_contract():
     harness = r"""
 const fs = require('node:fs');
 const vm = require('node:vm');
-const source = fs.readFileSync(0, 'utf8');
+const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const messages = [];
 const seen = [];
 const self = { postMessage: value => messages.push(value) };
@@ -83,20 +74,20 @@ const pipeline = async (task, model, options) => {
     return { data: Float32Array.from({ length: 384 }, (_, i) => ((seed + i * 17) % 101) / 101 + 0.01) };
   };
 };
-vm.runInNewContext(source, { self, pipeline, Float32Array, Math, String, Number, Array });
+vm.runInNewContext(input.worker, { self, pipeline, Float32Array, Math, String, Number, Array });
 (async () => {
-  await self.onmessage({ data: { id: 17, text: process.argv[1] } });
+  await self.onmessage({ data: { id: 17, text: input.sample } });
   process.stdout.write(JSON.stringify({ seen, message: messages[0] }));
 })().catch(error => { process.stderr.write(String(error)); process.exit(1); });
 """
     result = subprocess.run(
-        [node, "-e", harness, sample],
-        input=worker,
+        [node, "-e", harness],
+        input=json.dumps({"worker": worker, "sample": sample}, ensure_ascii=False),
         text=True,
         capture_output=True,
-        check=True,
         timeout=15,
     )
+    assert result.returncode == 0, f"Browser worker harness failed: {result.stderr}"
     payload = json.loads(result.stdout)
     expected_segments = MODULE.split_for_embedding(sample[:5000])
     assert payload["seen"] == expected_segments
@@ -105,7 +96,7 @@ vm.runInNewContext(source, { self, pipeline, Float32Array, Math, String, Number,
     for segment in expected_segments:
         seed = sum(ord(char) for char in segment)
         vectors.append([
-            float(__import__("struct").unpack("f", __import__("struct").pack("f", ((seed + i * 17) % 101) / 101 + 0.01))[0])
+            struct.unpack("f", struct.pack("f", ((seed + i * 17) % 101) / 101 + 0.01))[0]
             for i in range(384)
         ])
     expected = MODULE.normalized_mean(vectors)
