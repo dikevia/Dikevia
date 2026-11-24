@@ -8,6 +8,47 @@ from app.jurisprudence import AdministrativeCaseLawConnector
 
 
 @pytest.mark.asyncio
+async def test_piste_oauth_rejection_reports_only_allowlisted_error_code(monkeypatch):
+    from app.legifrance import LegifranceUnavailable
+
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    monkeypatch.setattr(settings, "legifrance_scope", "openid")
+
+    def handler(request):
+        assert request.url.path == "/api/oauth/token"
+        assert request.headers["content-type"].startswith("application/x-www-form-urlencoded")
+        body = request.content.decode("utf-8")
+        assert "grant_type=client_credentials" in body
+        assert "client_id=test-client" in body
+        assert "client_secret=test-secret" in body
+        return httpx.Response(400, json={
+            "error": "invalid_client",
+            "error_description": "Do not expose this description or the supplied secret.",
+        })
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    with pytest.raises(LegifranceUnavailable, match="HTTP 400, code invalid_client") as error:
+        await connector._get_token()
+    assert "test-secret" not in str(error.value)
+    assert "Do not expose" not in str(error.value)
+
+
+def test_piste_oauth_error_code_rejects_untrusted_provider_text():
+    from app.legifrance import _safe_piste_oauth_error_code
+
+    assert _safe_piste_oauth_error_code(
+        httpx.Response(400, json={"error": "invalid_scope"})
+    ) == "invalid_scope"
+    assert _safe_piste_oauth_error_code(
+        httpx.Response(400, json={"error": "invalid_client: secret=leak"})
+    ) is None
+    assert _safe_piste_oauth_error_code(
+        httpx.Response(400, json={"error_description": "invalid_client"})
+    ) is None
+
+
+@pytest.mark.asyncio
 async def test_cetat_search_uses_official_fund_and_returns_only_grounded_ids(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_client_id", "client")
     monkeypatch.setattr(settings, "legifrance_client_secret", "secret")
