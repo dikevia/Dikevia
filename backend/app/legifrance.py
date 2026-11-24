@@ -333,8 +333,6 @@ class LegifranceConnector:
         return " … ".join(sentence for _, sentence in chosen)[:max_chars]
 
     @staticmethod
-    @staticmethod
-    @staticmethod
     def _requested_article_excerpt(text: str, query: str, max_chars: int = 10000) -> str:
         """Prefer exact requested articles or amendment clauses over a truncated whole decree."""
         article_clause = re.search(r"\barticles?\b(.*)", query, re.IGNORECASE)
@@ -756,6 +754,7 @@ class LegifranceConnector:
                 "title": f"{code_name or settings.legifrance_code_name} — {article_label or article_id}",
                 "text": text[:20000],
                 "excerpt": self._relevant_excerpt(text, query.strip(), max_chars=1800),
+                "analysis_excerpt": self._relevant_excerpt(text, query.strip(), max_chars=8000),
                 "effective_date_requested": effective_date.isoformat(),
                 "requested_effective_date": effective_date.isoformat(),
                 "valid_from": valid_from.isoformat() if valid_from else None,
