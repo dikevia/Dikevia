@@ -63,3 +63,17 @@ def test_direct_lookup_checks_every_requested_article_reference():
 def test_direct_lookup_accepts_dotted_article_reference_notation():
     question = "Que prévoit l'article L. 999-999 du CGFP ?"
     assert missing_direct_article_reference(question, []) == "L999-999"
+
+
+def test_malformed_citation_integrity_metadata_does_not_crash_direct_article_lookup():
+    from app.article_lookup import missing_direct_article_reference
+
+    malformed_sources = [
+        {"source_type": "LEGIFRANCE_API", "content_kind": "FULL_TEXT",
+         "article": "L123-4", "citation_integrity": "valid"},
+        {"source_type": "LEGIFRANCE_API", "content_kind": "FULL_TEXT",
+         "article": "L123-4", "citation_integrity": ["valid"]},
+    ]
+    assert missing_direct_article_reference(
+        "Que prévoit l'article L123-4 ?", malformed_sources,
+    ) == "L123-4"
