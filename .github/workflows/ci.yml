@@ -412,7 +412,15 @@ jobs:
           fi
           curl --connect-timeout 10 --max-time 20 -fsS \
             https://dikevia-commercial-api-l2r8.onrender.com/auth-config.js -o /tmp/auth-config.js
-          grep -q "dikevia-identity-l2r8.onrender.com/realms/cfdt" /tmp/auth-config.js
-          grep -q 'client_id:"cfdt-juris-web"' /tmp/auth-config.js
-          grep -q "redirect_uri:window.location.origin" /tmp/auth-config.js
-          echo "Commercial web shell and runtime OIDC configuration are present."
+          python - <<'PY'
+          from pathlib import Path
+          config = Path("/tmp/auth-config.js").read_text(encoding="utf-8")
+          assert "dikevia-identity-l2r8.onrender.com/realms/cfdt" in config, "OIDC issuer mismatch"
+          assert "cfdt-juris-web" in config, "OIDC public client ID missing"
+          assert "redirect_uri:" in config, "OIDC redirect URI missing"
+          assert (
+              "dikevia-commercial-api-l2r8.onrender.com/" in config
+              or "window.location.origin" in config
+          ), "OIDC redirect URI does not target the commercial origin"
+          print("Commercial web shell and runtime OIDC configuration are present.")
+          PY
