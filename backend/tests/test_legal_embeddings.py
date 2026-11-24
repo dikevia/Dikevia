@@ -74,9 +74,11 @@ const pipeline = async (task, model, options) => {
     return { data: Float32Array.from({ length: 384 }, (_, i) => ((seed + i * 17) % 101) / 101 + 0.01) };
   };
 };
-vm.runInNewContext(input.worker, { self, env: { allowLocalModels: true, useBrowserCache: false, backends: { onnx: { wasm: {} } } }, pipeline, Float32Array, Math, String, Number, Array });
+const context = vm.createContext({ self, env: { allowLocalModels: true, useBrowserCache: false, backends: { onnx: { wasm: {} } } }, pipeline, Float32Array, Math, String, Number, Array });
+vm.runInContext(input.worker, context);
 (async () => {
-  await self.onmessage({ data: { id: 17, text: input.sample } });
+  const handler = vm.runInContext("self.onmessage", context);
+  await handler({ data: { id: 17, text: input.sample } });
   process.stdout.write(JSON.stringify({ seen, message: messages[0] }));
 })().catch(error => { process.stderr.write(String(error)); process.exit(1); });
 """
