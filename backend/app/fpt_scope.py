@@ -232,6 +232,17 @@ def classify_public_service_scope(
         marker for marker in _COMMON_PUBLIC_SERVICE_MARKERS
         if _fold(marker) in corpus
     ]
+
+    # When the title does not establish a primary branch, simultaneous State
+    # and hospital references in the relevant passage are ambiguous. Do not
+    # let the later single-branch fallback silently prefer FPH.
+    if fpe_hits and fph_hits and not (title_fpt_hits or title_fpe_hits or title_fph_hits) and not common_scope_hits:
+        return {
+            "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+            "evidence": fpe_hits[:2] + fph_hits[:2],
+            "analysis_eligible": False,
+            "claim_eligible": False,
+        }
     if common_scope_hits:
         return {
             "scope": "COMMON_PUBLIC_SERVICE",
