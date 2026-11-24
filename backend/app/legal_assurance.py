@@ -115,6 +115,27 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             if publisher_type == "PUBLIC_ADMINISTRATION"
             else "PROFESSIONAL_GUIDANCE"
         )
+    elif source_type in {"LEGIFRANCE_CETAT_SEARCH", "LEGIFRANCE_CETAT_FULL_TEXT"}:
+        # A court decision remains jurisprudence even if imported metadata
+        # carries a stale or contradictory PRIMARY_LEGAL label.
+        authority_level = "JURISPRUDENCE"
+    elif source_type == "DILA_CIRCULAIRES":
+        authority_level = "OFFICIAL_INTERPRETIVE"
+    elif source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
+        authority_level = (
+            "LOCAL_NORMATIVE"
+            if kind in {"LOCAL_DELIBERATION", "LOCAL_REGULATION", "LOCAL_PROTOCOL"}
+            else "UNCLASSIFIED"
+        )
+    elif source_type in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}:
+        authority_level = (
+            "PRIMARY_LEGAL"
+            if kind in {
+                "CONSTITUTIONAL", "EUROPEAN_TREATY", "LAW", "CODE",
+                "ORDONNANCE", "DECREE", "ORDER",
+            }
+            else "UNCLASSIFIED"
+        )
     if publisher_type == "TRADE_UNION":
         label = "Doctrine syndicale — non normative"
     elif authority_level == "OFFICIAL_ADMIN_GUIDANCE":
