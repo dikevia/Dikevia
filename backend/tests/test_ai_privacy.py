@@ -29,3 +29,18 @@ def test_identifier_minimization_preserves_legal_references_dates_and_amounts():
 def test_identifier_minimization_handles_empty_and_non_string_values():
     assert redact_direct_identifiers(None) == ""
     assert redact_direct_identifiers("") == ""
+
+
+def test_every_user_text_provider_path_applies_direct_identifier_minimization():
+    import inspect
+
+    from app import ai_provider
+
+    provider_functions = (
+        ai_provider.evaluate_source_relevance,
+        ai_provider.plan_legal_research,
+        ai_provider.analyze_question,
+        ai_provider.verify_claim_entailment,
+    )
+    for function in provider_functions:
+        assert "redact_direct_identifiers" in inspect.getsource(function), function.__name__
