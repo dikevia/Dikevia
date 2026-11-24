@@ -70,12 +70,12 @@ Le frontend charge /auth-config.js, généré côté serveur à partir de ces va
 
 **Ne pas basculer le fournisseur avant d'avoir importé et vérifié les identités.** La base Dikévia associe les utilisateurs à (oidc_issuer, oidc_subject). Une migration qui créerait de nouveaux sujets sans correspondance ferait perdre l'accès aux espaces, même si les adresses e-mail sont identiques.
 
-La compatibilité préparée dans le backend repose sur une importation Auth0 conservant comme user_id la valeur exacte de l'ancien oidc_subject Keycloak. Auth0 préfixe l'identifiant de connexion base de données dans le claim sub (par exemple auth0|<ancien-sujet>). Les variables :
+La compatibilité repose sur une revendication dédiée, ajoutée uniquement aux comptes importés après vérification de leur ancien identifiant : `https://dikevia.invalid/claims/legacy_subject`. Une Action Post Login Auth0 doit copier cette valeur depuis `user_metadata.dikevia_legacy_subject` vers le jeton d'accès uniquement si elle existe. Les variables :
 
-- OIDC_IDENTITY_COMPAT_ISSUER = ancien émetteur Keycloak exact ;
-- OIDC_IDENTITY_SUBJECT_PREFIX=auth0|.
+- `OIDC_IDENTITY_COMPAT_ISSUER` = ancien émetteur Keycloak exact ;
+- `OIDC_IDENTITY_LEGACY_SUBJECT_CLAIM` = `https://dikevia.invalid/claims/legacy_subject`.
 
-permettent au backend de vérifier le jeton avec l'émetteur Auth0, puis de retrouver l'identité interne historique attendue par PostgreSQL. Cette compatibilité ne fonctionne que si l'import Auth0 a réellement conservé les anciens identifiants. Elle ne doit jamais être activée sur la seule base d'une adresse e-mail.
+Le backend conserve l'identité Auth0 native pour tous les nouveaux comptes. Il ne mappe vers l'ancien couple (issuer, subject) que les comptes portant explicitement cette revendication. Cette revendication ne doit être ajoutée qu'après rapprochement fiable de l'ancien identifiant, jamais sur la seule base d'une adresse e-mail.
 
 La reprise des mots de passe n'est pas présumée. Les hashes Keycloak doivent être comparés aux formats acceptés par Auth0 ; si le format n'est pas importable, prévoir une réinitialisation sécurisée des mots de passe. Un échantillon d'utilisateurs doit être testé avant tout import global. Contrôler également les comptes sans e-mail, les doublons et les adresses non vérifiées.
 
