@@ -33,6 +33,8 @@ from .legal_qualification import (
 
 
 def _citation_is_valid(source: dict) -> bool:
+    if not isinstance(source, dict):
+        return False
     integrity = source.get("citation_integrity")
     return isinstance(integrity, dict) and integrity.get("valid") is True
 
