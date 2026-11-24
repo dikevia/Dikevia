@@ -43,6 +43,44 @@ from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
 import httpx
 
+CHAT_SOURCE_METADATA_FIELDS = frozenset({
+    "source_type",
+    "source_id",
+    "official_source_id",
+    "source_version_id",
+    "version_id",
+    "version_key",
+    "text_sha256",
+    "title",
+    "official_number",
+    "case_number",
+    "signature_date",
+    "decision_date",
+    "valid_from",
+    "valid_to",
+    "requested_effective_date",
+    "version_role",
+    "version_endpoint",
+    "version_matches_facts_date",
+    "temporal_status",
+    "temporal_explanation",
+    "source_status",
+    "excerpt",
+    "official_url",
+    "source_url",
+    "article",
+    "page_start",
+    "page_end",
+    "citation_integrity",
+    "collectivity",
+    "local_document_type",
+    "validation_status",
+    "effective_from",
+    "effective_to",
+    "content_kind",
+    "official_source",
+})
+
 logger = logging.getLogger("dikevia.startup")
 logger.setLevel(logging.INFO)
 
@@ -1121,10 +1159,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                         for source in result.sources
                     ),
                     "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
-                        if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
-                            "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
-                            "article", "page_start", "page_end", "citation_integrity", "collectivity",
-                            "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
+                        if k in CHAT_SOURCE_METADATA_FIELDS}
                         for source in result.sources[:30]],
                     "missing_information": result.missing_information, "disclaimer": result.disclaimer,
                     "clarification_question": result.clarification_question, "public_service": payload.public_service},

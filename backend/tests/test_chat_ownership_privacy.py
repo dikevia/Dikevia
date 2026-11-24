@@ -18,6 +18,27 @@ from app.main import (
 )
 
 
+
+def test_persisted_chat_source_metadata_retains_exact_legal_version_provenance():
+    from app.main import CHAT_SOURCE_METADATA_FIELDS
+
+    required = {
+        "source_id",
+        "official_source_id",
+        "source_version_id",
+        "version_id",
+        "version_key",
+        "text_sha256",
+        "valid_from",
+        "valid_to",
+        "requested_effective_date",
+        "version_role",
+        "version_endpoint",
+        "version_matches_facts_date",
+        "citation_integrity",
+    }
+    assert required <= CHAT_SOURCE_METADATA_FIELDS
+
 def test_chat_and_dossier_queries_include_organization_and_owner_filters():
     sources = [
         inspect.getsource(list_chat_conversations),
