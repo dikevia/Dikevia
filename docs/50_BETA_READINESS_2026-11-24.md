@@ -40,9 +40,12 @@ Ce document distingue les contrôles effectués, les limites connues et les vali
 
 - 4 459 documents, 4 459 versions et 5 640 segments.
 - 5 640 embeddings présents, modèle `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, dimension 384.
-- 4 459 versions possèdent un texte intégral et une empreinte SHA-256 ; aucun groupe de doublons exacts par hash n'a été détecté dans l'audit.
+- Les 4 459 versions ont un texte intégral, un `version_key`, une date de récupération et une empreinte SHA-256. Les champs `valid_from`/`valid_to` et `source_version_id` restent absents ; le statut temporel demeure `UNKNOWN`, sans date d'effet inventée. Pour le CGFP, le `version_key` porte le hash du snapshot et la référence de l'article.
+- L'audit a identifié 15 groupes de textes strictement identiques, représentant 20 copies supplémentaires, tous dans le snapshot CGFP mais sous des références d'articles distinctes. Il s'agit d'ancres juridiques distinctes, pas de doublons d'identifiants ; elles sont volontairement conservées pour préserver les citations.
 - Index vectoriel HNSW présent et utilisé par le planificateur SQL.
-- 217 documents de guidance audités : 199 Service Public et 18 ressources institutionnelles. Aucune guidance non normative n'est autorisée à soutenir seule une conclusion juridique.
+- Métadonnées CGFP staging : les 4 242 articles ont reçu `publisher=Légifrance` et leur référence exacte dans `official_number`, dérivées du champ article déjà présent. Le statut reste `UNKNOWN/IMPORTED_UNVERIFIED` et aucune date d'effet n'a été ajoutée.
+- 217 documents de guidance audités : 199 Service Public et 18 ressources institutionnelles. Service Public porte la licence `fr-lo`, l'attribution DILA et une dernière mise à jour de dataset au 21/11/2026 ; son statut de validation juridique reste `NON_VERIFIE`. Les 18 ressources institutionnelles sont autorisées à la réutilisation, mais restent non vérifiées et classées comme guidance non primaire (9 positions syndicales, 8 guides professionnels, 1 guidance administrative officielle).
+- Aucune guidance non normative n'est autorisée à soutenir seule une conclusion juridique.
 - Les sources importées restent `IMPORTED_UNVERIFIED` : leur présence, leur extraction et leur indexation ne les transforment pas en preuves juridiques certifiées.
 - Audit de recherche vectorielle en lecture seule : six questions de contrôle, cinq résultats retournés par question. Ce smoke test vérifie l'exécution et la couverture, pas la pertinence juridique.
 - Parité FastEmbed/Transformers.js : 12 vecteurs comparés, similarité cosinus moyenne 0,9999991. La compatibilité numérique est vérifiée ; la pertinence sémantique métier ne l'est pas.
