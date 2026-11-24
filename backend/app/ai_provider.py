@@ -67,6 +67,12 @@ PROTECTION RENFORCÉE CONTRE L'INJECTION INDIRECTE :
 - N'ajoute aucun fait, règle, délai, montant, condition, exception, numéro d'article, numéro de décret ou référence jurisprudentielle qui ne figure pas dans les sources injectées.
 - Si les sources sont absentes, contradictoires, incomplètes ou insuffisantes pour répondre à un point, écris exactement : « Les textes officiels actuels ne me permettent pas de répondre avec certitude sur ce point précis. » Puis indique précisément quelle pièce ou vérification manque. N'extrapole pas.
 
+RÈGLES RELATIVES AUX DOCUMENTS PERSONNELS PRIVÉS :
+- Une source PERSONAL_DOCUMENT est un extrait d'un fichier privé déposé par l'utilisateur. Elle peut aider à comprendre un contexte local, une organisation de service ou un fait déclaré, mais elle n'est ni vérifiée ni nécessairement à jour.
+- Ne traite jamais un PERSONAL_DOCUMENT comme un texte normatif ou une source juridique. Il ne peut justifier aucun droit, obligation, montant réglementaire, délai, condition statutaire ou conclusion de conformité.
+- Toute règle de droit et toute conclusion juridique doivent être fondées sur les sources officielles admissibles fournies séparément. Si le document personnel semble contredire une source officielle, signale l'écart et demande une vérification humaine.
+- Ne transmets ni ne réutilise le contenu d'un document personnel hors de la demande pour laquelle l'utilisateur a donné son consentement explicite.
+
 RÈGLES DE SOURCES :
 - Les fiches Service-Public, les guides institutionnels, professionnels et syndicaux sont des sources de contexte non normatives. Elles peuvent aider à comprendre le vocabulaire, les démarches et les points à vérifier, mais ne fondent jamais une affirmation juridique, un délai, un droit ou une obligation.
 - Toute affirmation juridique doit être fondée sur un texte juridique ou une décision juridictionnelle admissible, avec citation exacte. En cas de divergence, le texte juridique applicable prévaut ; signale la divergence au lieu de la masquer.
@@ -400,7 +406,7 @@ def _usable_document_sources(sources, *, allow_local_documents: bool = False):
         if not isinstance(source, dict):
             continue
         # Local employer records are private tenant data: never send them to AI by default.
-        is_local_document = source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+        is_local_document = source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT", "PERSONAL_DOCUMENT"}
         if is_local_document and not allow_local_documents:
             continue
         # Search hits are metadata, never evidence, even if they carry a date or snippet.
@@ -431,6 +437,11 @@ def _usable_document_sources(sources, *, allow_local_documents: bool = False):
             except ValueError:
                 continue
         assurance = source.get("legal_assurance") if isinstance(source.get("legal_assurance"), dict) else {}
+        personal_context_only = (
+            source.get("source_type") == "PERSONAL_DOCUMENT"
+            and source.get("claim_eligible") is False
+            and source.get("reference_role") == "PERSONAL_CONTEXT_ONLY"
+        )
         guidance_context_only = (
             source.get("source_type") in {"SERVICE_PUBLIC_PART", "INSTITUTIONAL_GUIDANCE"}
             and source.get("claim_eligible") is False
@@ -442,7 +453,7 @@ def _usable_document_sources(sources, *, allow_local_documents: bool = False):
         )
         # Undated guidance may orient terminology and practical context only.
         # It remains excluded from claim evidence by validate_claim_evidence.
-        if not source_id or (not has_date and not guidance_context_only):
+        if not source_id or (not has_date and not guidance_context_only and not personal_context_only):
             continue
         excerpt = source.get("analysis_excerpt") or source.get("excerpt")
         if not isinstance(excerpt, str) or not excerpt.strip():

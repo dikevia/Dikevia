@@ -81,6 +81,11 @@ CHAT_SOURCE_METADATA_FIELDS = frozenset({
     "content_kind",
     "official_source",
     "legal_assurance",
+    "collectivity_scope",
+    "document_type",
+    "reference_role",
+    "claim_eligible",
+    "transfer_status",
 })
 
 logger = logging.getLogger("dikevia.startup")
@@ -459,7 +464,7 @@ def _ai_safe_conversation_history(rows):
                 continue
             if any(
                 isinstance(source, dict)
-                and source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                and source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT", "PERSONAL_DOCUMENT"}
                 for source in sources
             ):
                 continue
@@ -1132,6 +1137,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 payload.confirm_local_document_ai_transfer
                 and settings.ai_local_documents_in_chat_enabled
             ),
+            personal_user_id=ctx.user_id,
         )
     except Exception:
         failure = _chat_orchestration_failure(conversation_id)
@@ -1158,7 +1164,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 str(conversation_id), ctx.user_id, result.answer,
                 json.dumps({"verification_status": result.verification_status,
                     "contains_local_documents": any(
-                        source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                        source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT", "PERSONAL_DOCUMENT"}
                         for source in result.sources
                     ),
                     "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()

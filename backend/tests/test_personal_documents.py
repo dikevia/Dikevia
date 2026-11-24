@@ -77,3 +77,27 @@ def test_personal_zip_import_streams_entries_and_scans_with_bounded_concurrency(
     assert "asyncio.to_thread" in source
     assert "asyncio.Semaphore(8)" in source
     assert "MAX_ARCHIVE_DOCUMENTS = 50" in inspect.getsource(__import__("app.personal_documents", fromlist=["MAX_ARCHIVE_DOCUMENTS"]))
+
+
+
+def test_personal_documents_are_retrieved_only_with_verified_owner_scope():
+    from app.orchestrator import LegalOrchestrator
+    from app.main import _ai_safe_conversation_history
+    import inspect
+
+    source = inspect.getsource(LegalOrchestrator.ask)
+    assert "personal_user_id" in source
+    assert "owner_user_id=$1::uuid" in source
+    assert "PERSONAL_DOCUMENT" in source
+    assert "claim_eligible" in source
+    assert "sources.extend(personal_sources)" in source
+
+    history = _ai_safe_conversation_history([{
+        "role": "assistant",
+        "content": "Private local document answer",
+        "metadata": {
+            "contains_local_documents": True,
+            "sources": [{"source_type": "PERSONAL_DOCUMENT"}],
+        },
+    }])
+    assert history == []
