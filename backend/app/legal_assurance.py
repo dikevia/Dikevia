@@ -464,9 +464,9 @@ def validate_claim_evidence(
         if not isinstance(source_id, str) or not source_id:
             continue
         source_type = str(source.get("source_type") or "")
-        integrity = source.get("citation_integrity") or {}
+        integrity = source.get("citation_integrity")
         temporal_status = source.get("temporal_status")
-        if integrity.get("valid") is not True:
+        if not isinstance(integrity, dict) or integrity.get("valid") is not True:
             continue
         snapshot_fallback_evidence = (
             source_type == "CGFP_SNAPSHOT"
