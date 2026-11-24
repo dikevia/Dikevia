@@ -2194,3 +2194,20 @@ def test_claim_validation_uses_full_text_beyond_display_excerpt():
         }]
     }, [source])
     assert result["valid"] is True
+
+def test_bounded_legal_evidence_keeps_retrieved_passage_and_document_ending():
+    from app.evidence_text import build_legal_evidence_text
+
+    opening = "OUVERTURE_DU_TEXTE " + ("Disposition initiale. " * 250)
+    selected = "PASSAGE_CENTRAL_PERTINENT " + ("Règle et conditions détaillées. " * 80)
+    ending = "EXCEPTION_FINALE_IMPORTANTE : sauf dérogation expresse prévue au dernier alinéa."
+    full_text = opening + ("Disposition intermédiaire. " * 900) + selected + ("Autres dispositions. " * 500) + ending
+
+    evidence = build_legal_evidence_text(full_text, selected)
+
+    assert len(evidence) <= 12000
+    assert "OUVERTURE_DU_TEXTE" in evidence
+    assert "PASSAGE_CENTRAL_PERTINENT" in evidence
+    assert ending in evidence
+    assert "Autres passages du texte officiel" in evidence
+
