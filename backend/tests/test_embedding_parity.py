@@ -97,3 +97,14 @@ def test_compare_rejects_non_finite_or_wrong_dimension_vectors():
     good = _payload("fastembed", MODULE.MODEL_NAME, [1.0] * 384)
     with pytest.raises(ValueError, match="384 dimensions"):
         MODULE.compare_payloads(bad, good)
+
+def test_parity_example_dataset_covers_varied_query_lengths_and_text():
+    import json
+
+    example = Path(__file__).resolve().parents[2] / "docs" / "quality" / "legal_embedding_parity_inputs.example.json"
+    payload = json.loads(example.read_text(encoding="utf-8"))
+    items = MODULE.validate_items(payload["items"], "Exemple")
+    assert len(items) >= 10
+    assert any(len(item["text"]) > 500 for item in items.values())
+    assert any("\\n" in item["text"] for item in items.values())
+    assert any("é" in item["text"] or "è" in item["text"] for item in items.values())
