@@ -56,4 +56,7 @@ CREATE POLICY personal_documents_owner_isolation ON personal_documents
   USING (owner_user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid)
   WITH CHECK (owner_user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid);
 
+-- Runtime access is limited by RLS to the authenticated OIDC user.
+GRANT SELECT, INSERT, DELETE ON personal_documents TO cfdt_juris_app;
+
 COMMIT;
