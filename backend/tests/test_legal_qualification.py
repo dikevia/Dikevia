@@ -418,3 +418,19 @@ def test_et_pour_new_remuneration_topic_does_not_inherit_working_time_context():
         ["Je suis titulaire. Quels sont mes droits aux heures supplémentaires ?"],
     )
     assert context.is_followup is False
+
+
+def test_et_pour_unknown_named_topic_does_not_inherit_unrelated_context():
+    prior = "Je suis titulaire. Quels sont mes droits aux heures supplémentaires ?"
+    question = "Et pour la disponibilité ?"
+    context = build_contextual_research_context(question, [prior])
+    assert context.is_followup is False
+    assert context.question == question
+
+
+def test_et_pour_contractual_population_remains_a_contextual_scope_change():
+    prior = "Je suis titulaire. Quels sont mes droits aux heures supplémentaires ?"
+    context = build_contextual_research_context("Et pour les contractuels ?", [prior])
+    assert context.is_followup is True
+    assert "heures supplémentaires" in context.question
+

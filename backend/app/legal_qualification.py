@@ -34,6 +34,14 @@ _CLARIFICATION_REPLY = re.compile(
 )
 
 
+_CONTEXTUAL_SCOPE_MODIFIER = re.compile(
+    r"^et pour (?:les? )?(?:agent(?:e)?s? )?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"titulaires?|fonctionnaires?|fpt|fpe|fph|moi|nous|"
+    r"temps partiel|temps complet|temps non complet)\\b",
+    re.IGNORECASE,
+)
+
+
 _CONTEXTUAL_FOLLOWUP = re.compile(
     r"^(?:et\s+(?:pour|si|dans|concernant)\b|"
     r"et\s+(?:les|la|le)\s+(?:agent(?:e)?s?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
@@ -82,6 +90,15 @@ def build_contextual_research_context(
         )
         current_topics = _matched_question_topics(current)
         prior_topics = _matched_question_topics(prior)
+        if (
+            prior_topics
+            and not current_topics
+            and _fold(current).startswith("et pour ")
+            and not _CONTEXTUAL_SCOPE_MODIFIER.match(_fold(current))
+        ):
+            # Unknown named subjects are safer as independent questions than
+            # as accidental continuations of an unrelated legal topic.
+            return ContextualResearchContext(question=current[:500], is_followup=False)
         if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
             # A short "Et pour ..." that names a different legal family is a
             # new question, not a continuation of the previous legal issue.
