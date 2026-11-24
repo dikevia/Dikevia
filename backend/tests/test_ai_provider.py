@@ -2084,7 +2084,7 @@ async def test_ai_analysis_payload_uses_full_text_beyond_display_excerpt(monkeyp
     monkeypatch.setattr(settings, "ai_model", "test-model")
     monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
     captured = {}
-    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 100)
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 1000)
     late_exception = (
         "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
         "après consultation préalable de l'instance compétente."
@@ -2116,7 +2116,10 @@ async def test_ai_analysis_payload_uses_full_text_beyond_display_excerpt(monkeyp
         }],
     )
     payload = json.loads(captured["payload"]["messages"][1]["content"])
-    assert payload["extraits_documentaires_valides"][0]["extrait"] == full_text
+    analysis_evidence = payload["extraits_documentaires_valides"][0]["extrait"]
+    assert len(analysis_evidence) <= 12000
+    assert "Passage intermédiaire non transmis" in analysis_evidence
+    assert late_exception in analysis_evidence
 
 
 @pytest.mark.asyncio
@@ -2128,7 +2131,7 @@ async def test_entailment_verifier_receives_full_text_beyond_display_excerpt(mon
     monkeypatch.setattr(settings, "ai_api_key", "test-key")
     monkeypatch.setattr(settings, "ai_model", "test-model")
     monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
-    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 100)
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 1000)
     late_exception = (
         "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
         "après consultation préalable de l'instance compétente."
@@ -2167,14 +2170,16 @@ async def test_entailment_verifier_receives_full_text_beyond_display_excerpt(mon
         }],
     )
     evidence = json.loads(captured["payload"]["messages"][1]["content"])["items_to_verify"][0]
-    assert evidence["official_text"] == full_text
+    assert len(evidence["official_text"]) <= 12000
+    assert "Passage intermédiaire non transmis" in evidence["official_text"]
+    assert late_exception in evidence["official_text"]
     assert result["valid"] is True
 
 
 def test_claim_validation_uses_full_text_beyond_display_excerpt():
     from app.legal_assurance import validate_claim_evidence
 
-    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 100)
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 1000)
     late_exception = (
         "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
         "après consultation préalable de l'instance compétente."
