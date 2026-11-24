@@ -678,3 +678,34 @@ def test_single_query_budget_prefers_deterministic_official_retrieval():
         max_queries=1,
     )
     assert merged == ["question utilisateur avec expansion juridique officielle"]
+
+
+def test_code_research_queries_never_exceed_the_configured_budget():
+    from app.orchestrator import _build_code_research_queries
+
+    result = _build_code_research_queries(
+        ["axe 1", "axe 2", "axe 3", "axe 4", "axe 5", "axe 6"],
+        ["article L1", "article L2"],
+        max_queries=5,
+    )
+    assert result == ["axe 1", "axe 2", "axe 3", "axe 4", "axe 5"]
+    assert len(result) == 5
+
+
+def test_code_research_queries_use_only_remaining_budget_for_exact_articles():
+    from app.orchestrator import _build_code_research_queries
+
+    result = _build_code_research_queries(
+        ["axe 1", "axe 2"],
+        ["article L1", "article L1", "article L2"],
+        max_queries=3,
+    )
+    assert result == ["axe 1", "axe 2", "article L1"]
+
+
+def test_code_research_query_budget_zero_returns_no_queries():
+    from app.orchestrator import _build_code_research_queries
+
+    assert _build_code_research_queries(
+        ["axe 1"], ["article L1"], max_queries=0,
+    ) == []
