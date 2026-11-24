@@ -10,7 +10,7 @@ from app.personal_documents import (
 
 
 def test_personal_document_routes_are_registered():
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi()["paths"])
     assert "/api/v1/personal-documents" in paths
     assert "/api/v1/personal-documents/search" in paths
     assert "/api/v1/personal-documents/{document_id}/download" in paths
