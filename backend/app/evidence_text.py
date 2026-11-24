@@ -47,10 +47,10 @@ def build_legal_evidence_text(
     excerpt = str(selected_excerpt or "").strip()
     if not full:
         return bound_evidence_text(excerpt, max_chars=max_chars)
-    if len(full) <= max_chars:
-        return full
     if not excerpt:
         return bound_evidence_text(full, max_chars=max_chars)
+    if excerpt in full and len(full) <= max_chars:
+        return full
 
     marker = "\n\n[Autres passages du texte officiel]\n\n"
     if max_chars <= len(marker):
