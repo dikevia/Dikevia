@@ -970,6 +970,23 @@ def build_official_research_axes(question: str) -> list[str]:
         _contains_trigger(folded, trigger)
         for trigger in independent_working_time_triggers
     )
+    medico_social_ihts_markers = (
+        "filiere medico-sociale", "filiere medico-technique",
+        "cadre de sante", "cadres de sante",
+        "cadre territorial de sante", "cadres territoriaux de sante",
+        "cadre de sante paramedical", "cadres de sante paramedicaux",
+        "technicien paramedical", "techniciens paramedicaux",
+        "sage-femme", "sage femme", "sages-femmes", "puericultrice",
+        "puericultrices", "auxiliaire de puericulture",
+        "auxiliaires de puericulture", "masseur-kinesitherapeute",
+        "masseurs-kinesitherapeutes", "orthophoniste", "orthophonistes",
+        "ergotherapeute", "ergotherapeutes", "psychomotricien",
+        "psychomotriciens",
+    )
+    medico_social_ihts_present = ihts_topic_present and any(
+        _contains_trigger(folded, marker)
+        for marker in medico_social_ihts_markers
+    )
     axes_found = []
     therapeutic_part_time_present = _is_therapeutic_part_time_question(original)
     union_assistance_convocation = _is_union_assistance_convocation_question(original)
@@ -1002,6 +1019,11 @@ def build_official_research_axes(question: str) -> list[str]:
             axes_found.extend(axis[:500] for axis in axes[:2])
             continue
         axes_found.append(axes[0][:500])
+    if medico_social_ihts_present:
+        axes_found.append(
+            "IHTS FPT : vérifier l'équivalence exacte du cadre médico-social ou médico-technique "
+            "et l'éventuel contingent mensuel spécifique avant d'appliquer le plafond général"
+        )
     return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
 
 

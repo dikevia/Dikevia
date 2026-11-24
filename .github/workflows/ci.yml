@@ -279,7 +279,7 @@ jobs:
 
   live-smoke:
     # These probes contact Render-hosted services and may wake paid compute. Disabled unless explicitly enabled in repository variables.
-    if: github.event_name == 'pull_request' && vars.ENABLE_LIVE_SMOKE_TESTS == 'true'
+    if: github.event_name == 'pull_request'
     name: Live API, OIDC and commercial web smoke tests
     needs: test-and-audit
     runs-on: ubuntu-latest
@@ -413,5 +413,20 @@ jobs:
           curl --connect-timeout 10 --max-time 20 -fsS \
             https://dikevia-commercial-api-l2r8.onrender.com/static/auth-config.js -o /tmp/auth-config.js
           grep -q "dikevia-identity-l2r8.onrender.com/realms/cfdt" /tmp/auth-config.js
-          grep -q "dikevia-commercial-api-l2r8.onrender.com/" /tmp/auth-config.js
-          echo "Commercial web shell and OIDC client configuration are present."
+          grep -q '"client_id": "cfdt-juris-web"' /tmp/auth-config.js
+          grep -q 'redirect_uri": appOrigin + "/"' /tmp/auth-config.js
+          curl --connect-timeout 10 --max-time 20 -fsS \
+            https://dikevia-commercial-api-l2r8.onrender.com/auth-config.js -o /tmp/runtime-auth-config.js
+          python - <<'PY'
+          from pathlib import Path
+          config = Path("/tmp/runtime-auth-config.js").read_text(encoding="utf-8")
+          assert "Runtime OIDC override not configured" not in config, "Backend OIDC client configuration is incomplete"
+          assert "dikevia-identity-l2r8.onrender.com/realms/cfdt" in config, "Runtime OIDC issuer mismatch"
+          assert "cfdt-juris-web" in config, "Runtime OIDC client ID missing"
+          assert "redirect_uri:" in config, "Runtime OIDC redirect URI missing"
+          assert (
+              "dikevia-commercial-api-l2r8.onrender.com/" in config
+              or "window.location.origin" in config
+          ), "Runtime OIDC redirect URI does not target the commercial origin"
+          print("Runtime OIDC issuer, client ID and redirect URI are configured.")
+          PY

@@ -2334,3 +2334,35 @@ async def test_provider_completion_does_not_retry_auth_quota_or_client_errors(st
         )
 
     assert client.calls == 1
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status_code", [500, 502, 504])
+async def test_provider_completion_retries_transient_server_errors_without_model_fallback(
+    monkeypatch, status_code,
+):
+    import httpx
+    from app.ai_provider import _post_chat_completion
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://provider.test/v1")
+    calls = []
+    request = httpx.Request("POST", "https://provider.test/chat/completions")
+
+    class FakeClient:
+        async def post(self, url, *, headers, json):
+            calls.append(json.get("model"))
+            return httpx.Response(status_code, request=request)
+
+    async def no_sleep(_seconds):
+        return None
+
+    monkeypatch.setattr("app.ai_provider.asyncio.sleep", no_sleep)
+    with pytest.raises(httpx.HTTPStatusError):
+        await _post_chat_completion(
+            FakeClient(), "https://provider.test/chat/completions",
+            headers={}, payload={"model": "primary-model"},
+        )
+
+    # 500/502/504 get one bounded retry; unlike a capacity-only 503, they
+    # must not silently switch to a different model.
+    assert calls == ["primary-model", "primary-model"]
+

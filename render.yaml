@@ -41,7 +41,7 @@ services:
       - key: OIDC_ALGORITHMS
         value: RS256
       - key: OIDC_CLIENT_ID
-        sync: false
+        value: cfdt-juris-web
       - key: OIDC_SCOPES
         value: openid profile email
       - key: OIDC_AUTHORIZATION_AUDIENCE

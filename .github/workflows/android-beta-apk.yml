@@ -2,6 +2,13 @@ name: Dikévia — APK standard et administration
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "android/**"
+      - ".github/workflows/android-beta-apk.yml"
+      - "frontend/**"
   pull_request:
     branches:
       - main
@@ -12,6 +19,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: dikevia-android-beta-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-android-apks:

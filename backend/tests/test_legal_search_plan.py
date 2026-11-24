@@ -709,3 +709,33 @@ def test_code_research_query_budget_zero_returns_no_queries():
     assert _build_code_research_queries(
         ["axe 1"], ["article L1"], max_queries=0,
     ) == []
+
+
+
+def test_medico_social_ihts_exception_becomes_a_mandatory_research_axis():
+    from app.legal_search_plan import build_official_research_axes
+
+    axes = build_official_research_axes(
+        "Je suis cadre de santé paramédical territorial. Quel est mon contingent mensuel d'IHTS ?"
+    )
+    assert len(axes) >= 2
+    assert any("IHTS" in axis for axis in axes)
+    assert any("équivalence exacte" in axis and "contingent mensuel" in axis for axis in axes)
+
+
+def test_general_social_filiere_does_not_trigger_paramedical_ihts_exception_axis():
+    from app.legal_search_plan import build_official_research_axes
+
+    axes = build_official_research_axes(
+        "Je travaille dans la filière sociale territoriale. Quel est mon contingent d'IHTS ?"
+    )
+    assert not any("équivalence exacte" in axis for axis in axes)
+
+
+def test_plural_territorial_medico_social_cadre_names_keep_the_specific_ihts_axis():
+    from app.legal_search_plan import build_official_research_axes
+
+    axes = build_official_research_axes(
+        "Les cadres territoriaux de santé paramédicaux peuvent-ils dépasser le contingent d'IHTS ?"
+    )
+    assert any("équivalence exacte" in axis for axis in axes)
