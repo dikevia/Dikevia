@@ -596,7 +596,7 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
         "retrieved_source_summaries_not_legal_conclusions": [
             {"source_type": item.get("source_type"), "title": item.get("title"), "article": item.get("article"),
              "official_number": item.get("official_number"), "source_id": item.get("source_id"),
-             "excerpt": str(item.get("excerpt") or item.get("text") or "")[:700]}
+             "excerpt": str(item.get("excerpt") or item.get("text") or item.get("full_text") or "")[:700]}
             for item in evidence_records[:24]
         ],
         "recent_user_context": [{"content": str(item.get("content", ""))[:1000]} for item in [m for m in history_records if m.get("role") == "user"][-RECENT_USER_CONTEXT_LIMIT:]],
