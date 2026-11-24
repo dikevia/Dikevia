@@ -172,7 +172,7 @@ _TOPIC_MARKERS = (
         "violence d un usager", "menace d un usager", "usager m a frappe",
         "refuse que je fasse un rapport", "refuse de faire un rapport",
     )),
-    ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "citis", "accident de service",
+    ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "arret maladie", "arrets maladie", "citis", "accident de service",
                                        "maladie professionnelle", "conge longue maladie",
                                        "conge longue duree")),
     ("HARASSMENT_AND_PROTECTION", ("harcelement moral", "harcelement sexuel",
