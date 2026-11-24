@@ -233,3 +233,53 @@ def test_member_cannot_reopen_or_modify_a_finalized_legal_dossier(stored_status)
     assert "réouverture" in exc.value.detail
     assert len(conn.fetchrow_calls) == 1
     assert not conn.execute_calls
+
+class ConversationScopeConnection:
+    def __init__(self, public_service="FPT"):
+        self.public_service = public_service
+        self.query = None
+        self.args = None
+
+    async def fetchrow(self, query, *args):
+        self.query = query
+        self.args = args
+        if self.public_service is None:
+            return None
+        return {"id": args[0], "public_service": self.public_service}
+
+
+def test_chat_turn_cannot_switch_public_service_inside_existing_conversation():
+    from app.main import _lock_conversation_for_chat_turn
+
+    conn = ConversationScopeConnection("FPT")
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(_lock_conversation_for_chat_turn(
+            conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPH",
+        ))
+
+    assert exc.value.status_code == 409
+    assert "nouvelle conversation" in exc.value.detail
+    assert "FOR UPDATE OF c" in conn.query
+    assert "m.metadata->>'public_service'" in conn.query
+
+
+def test_chat_turn_keeps_existing_public_service_in_conversation():
+    from app.main import _lock_conversation_for_chat_turn
+
+    conn = ConversationScopeConnection("FPE")
+    asyncio.run(_lock_conversation_for_chat_turn(
+        conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPE",
+    ))
+    assert "FOR UPDATE OF c" in conn.query
+
+
+def test_legacy_conversation_without_public_service_defaults_to_fpt():
+    from app.main import _lock_conversation_for_chat_turn
+
+    conn = ConversationScopeConnection(None)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(_lock_conversation_for_chat_turn(
+            conn, str(uuid4()), str(uuid4()), str(uuid4()), "FPE",
+        ))
+    assert exc.value.status_code == 404
+
