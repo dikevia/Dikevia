@@ -180,21 +180,21 @@ def build_contextual_research_question(
 
 _EXPLICIT_SELF_VERSANT_PATTERNS = {
     "FPT": (
-        r"\\bje suis (?:un |une )?(?:agent|fonctionnaire) territorial\\b",
-        r"\\bje releve de la fonction publique territoriale\\b",
-        r"\\bmon employeur est (?:la )?(?:mairie|commune|collectivite territoriale)\\b",
+        r"\bje suis (?:un |une )?(?:agent|fonctionnaire) territorial\b",
+        r"\bje releve de la fonction publique territoriale\b",
+        r"\bmon employeur est (?:la )?(?:mairie|commune|collectivite territoriale)\b",
     ),
     "FPE": (
-        r"\\bje suis (?:un |une )?(?:agent|fonctionnaire) de l etat\\b",
-        r"\\bje releve de la fonction publique de l etat\\b",
-        r"\\bje travaille (?:au|dans un|pour un) ministere\\b",
-        r"\\bmon employeur est (?:un )?ministere\\b",
+        r"\bje suis (?:un |une )?(?:agent|fonctionnaire) de l etat\b",
+        r"\bje releve de la fonction publique de l etat\b",
+        r"\bje travaille (?:au|dans un|pour un) ministere\b",
+        r"\bmon employeur est (?:un )?ministere\b",
     ),
     "FPH": (
-        r"\\bje suis (?:un |une )?(?:agent|fonctionnaire) hospitalier\\b",
-        r"\\bje releve de la fonction publique hospitaliere\\b",
-        r"\\bje travaille (?:dans|au sein d un) etablissement public de sante\\b",
-        r"\\bmon employeur est (?:un )?etablissement public de sante\\b",
+        r"\bje suis (?:un |une )?(?:agent|fonctionnaire) hospitalier\b",
+        r"\bje releve de la fonction publique hospitaliere\b",
+        r"\bje travaille (?:dans|au sein d un) etablissement public de sante\b",
+        r"\bmon employeur est (?:un )?etablissement public de sante\b",
     ),
 }
 
