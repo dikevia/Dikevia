@@ -361,3 +361,19 @@ def test_multi_topic_question_exposes_all_detected_topic_families():
     assert result["topic"] == "WORKING_TIME"
     assert "WORKING_TIME" in result["topics"]
     assert "LEAVE" in result["topics"]
+
+
+def test_empty_qualification_question_does_not_raise():
+    result = qualify_legal_question("")
+    assert result["agent_status"] == "NOT_SPECIFIED"
+    assert result["topic"] == "UNCLASSIFIED"
+
+
+def test_negated_first_person_status_is_not_treated_as_confirmed_status():
+    assert qualify_legal_question("Je ne suis pas contractuel.")["agent_status"] == "NOT_SPECIFIED"
+    assert qualify_legal_question("Je ne suis plus fonctionnaire.")["agent_status"] == "NOT_SPECIFIED"
+    assert qualify_legal_question("Je ne travaille pas comme stagiaire.")["agent_status"] == "NOT_SPECIFIED"
+
+
+def test_positive_status_after_negation_is_still_detected_when_explicit():
+    assert qualify_legal_question("Je ne suis pas contractuel, je suis titulaire.")["agent_status"] == "TITULAIRE_EXPLICIT"
