@@ -327,8 +327,9 @@ def validate_answer_citations(
     allowed_authorities: set[str] = set()
     allowed_case_numbers: set[str] = set()
     allowed_ids: set[str] = set()
+    source_records = sources if isinstance(sources, (list, tuple)) else []
 
-    for source in sources or []:
+    for source in source_records:
         if not isinstance(source, dict):
             continue
         integrity = source.get("citation_integrity")
@@ -449,7 +450,12 @@ def validate_claim_evidence(
             "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS",
         }
 
-    required_axes = [axis for axis in (required_axes or []) if isinstance(axis, str) and axis.strip()]
+    required_axes = [
+        axis for axis in (required_axes if isinstance(required_axes, (list, tuple)) else [])
+        if isinstance(axis, str) and axis.strip()
+    ]
+    facts_period = facts_period if isinstance(facts_period, dict) else {}
+    source_records = sources if isinstance(sources, (list, tuple)) else []
     raw_claims = payload["claims"]
     if len(raw_claims) > 12:
         return {
@@ -467,7 +473,7 @@ def validate_claim_evidence(
         "VERIFIED_APPLICABLE",
     }
     eligible_by_id: dict[str, list[dict[str, Any]]] = {}
-    for source in sources or []:
+    for source in source_records:
         if not isinstance(source, dict):
             continue
         source_id = source.get("source_id")
