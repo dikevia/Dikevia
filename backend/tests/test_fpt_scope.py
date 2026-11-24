@@ -237,6 +237,18 @@ def test_plain_language_phrasing_activates_the_same_strict_relevance_filter():
 
 
 
+def test_title_explicitly_covering_fpe_and_fph_is_not_assigned_to_either_branch():
+    source = {
+        "title": "Décret relatif à la fonction publique de l'État et à la fonction publique hospitalière",
+        "text": "Le texte traite des agents de l'État et des personnels hospitaliers.",
+    }
+    for target in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=target)
+        assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+        assert result["analysis_eligible"] is False
+        assert result["claim_eligible"] is False
+
+
 def test_fpe_title_is_not_overridden_by_incidental_fpt_reference_in_body():
     result = classify_public_service_scope({
         "title": "Décret relatif à la fonction publique de l'État",
