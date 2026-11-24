@@ -97,6 +97,8 @@ def validate_dataset(path: str) -> list[dict]:
     if data.get("schema_version") == "1.0" and isinstance(data.get("cases"), list):
         raw_questions = questions_from(data)
         pilot_ids = data.get("case_ids")
+        if "case_ids" in data and not isinstance(pilot_ids, list):
+            raise ValueError("Manifeste invalide : case_ids doit être une liste.")
         if isinstance(pilot_ids, list):
             if (
                 len(pilot_ids) != 15
@@ -305,7 +307,12 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         "repartition_severite": severity_counts,
         "par_domaine": domain_stats,
         "scores_question": question_scores,
-        "methodologie": "Notation humaine documentée, 0=incorrect/absent, 1=partiel, 2=conforme. Le score n'est publiable que si les 100 questions sont évaluées.",
+        "methodologie": (
+            f"Notation humaine documentée sur {len(expected_ids)} cas, "
+            "0=incorrect/absent, 1=partiel, 2=conforme. "
+            "Le score n'est complet que si tous les cas du jeu sont évalués "
+            "et si les réponses de référence sont validées juridiquement."
+        ),
     }
     if canonical:
         gate = dataset.get("release_gate") or {}
