@@ -83,7 +83,8 @@ def test_prompt_uses_the_whole_cgfp_index_as_discovery_and_requires_live_article
 
 
 def test_prompt_obeys_structured_scope_and_ambiguous_contract_status():
-    assert "scope_status vaut OUT_OF_SCOPE_FPE" in SYSTEM_PROMPT
+    assert "scope_status signale la présence d'indices lexicaux" in SYSTEM_PROMPT
+    assert "ne déduis jamais le versant personnel d'une simple mention comparative ou d'un tiers" in SYSTEM_PROMPT
     assert "EMPLOYMENT_STATUS_AMBIGUOUS" in SYSTEM_PROMPT
     assert "un CDD ou un CDI mentionné seul ne suffit pas" in SYSTEM_PROMPT
 
@@ -161,7 +162,8 @@ def test_non_fpt_prompt_requires_explicit_scope_and_blocks_context_only_sources(
     from app.ai_provider import _system_prompt_for_versant, ENTAILMENT_SYSTEM_PROMPT
 
     prompt = _system_prompt_for_versant("FPH")
-    assert "OUT_OF_SCOPE_FPT" in prompt
+    assert "scope_status signale la présence d'indices lexicaux" in prompt
+    assert "ne déduis jamais le versant personnel d'une simple mention comparative ou d'un tiers" in prompt
     assert "GENERAL_PUBLIC_SERVICE" in prompt
     assert "portée commune" in prompt
     assert "versant_selectionne" in ENTAILMENT_SYSTEM_PROMPT
@@ -182,3 +184,11 @@ def test_non_fpt_prompts_preserve_the_same_structured_evidence_contract():
         assert '"uncovered_axes"' in prompt
         assert "MÉTHODE DE COMPRÉHENSION ET DE RESTITUTION" in prompt
         assert "chaque proposition juridique doit rester rattachée à un extrait précis" in prompt
+
+def test_research_planner_distinguishes_the_user_from_comparative_or_third_party_mentions():
+    from app.ai_provider import _build_research_plan_system_prompt
+
+    prompt = _build_research_plan_system_prompt("FPT")
+    assert "Une mention d'un autre versant dans une comparaison ou à propos d'un tiers" in prompt
+    assert "distingue toujours le sujet de la question et la personne dont la situation est décrite" in prompt
+
