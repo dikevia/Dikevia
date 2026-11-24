@@ -177,7 +177,10 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
 
 
 def assess_source_set(sources: list[dict[str, Any]]) -> dict[str, Any]:
-    classified = [{**s, "legal_assurance": classify_legal_source(s)} for s in sources]
+    # Connector payloads are untrusted input: malformed records are ignored
+    # rather than crashing the whole answer pipeline.
+    source_records = [source for source in (sources or []) if isinstance(source, dict)]
+    classified = [{**source, "legal_assurance": classify_legal_source(source)} for source in source_records]
     local = [s for s in classified if s["legal_assurance"]["source_family"].startswith("LOCAL_")]
     national = [s for s in classified if not s["legal_assurance"]["source_family"].startswith("LOCAL_")]
     warnings: list[str] = []
@@ -315,9 +318,11 @@ def validate_answer_citations(
     allowed_case_numbers: set[str] = set()
     allowed_ids: set[str] = set()
 
-    for source in sources:
-        integrity = source.get("citation_integrity") or {}
-        if integrity.get("valid") is not True:
+    for source in sources or []:
+        if not isinstance(source, dict):
+            continue
+        integrity = source.get("citation_integrity")
+        if not isinstance(integrity, dict) or integrity.get("valid") is not True:
             continue
         article = source.get("article")
         if article:
@@ -452,7 +457,9 @@ def validate_claim_evidence(
         "VERIFIED_APPLICABLE",
     }
     eligible_by_id: dict[str, list[dict[str, Any]]] = {}
-    for source in sources:
+    for source in sources or []:
+        if not isinstance(source, dict):
+            continue
         source_id = source.get("source_id")
         if not isinstance(source_id, str) or not source_id:
             continue
