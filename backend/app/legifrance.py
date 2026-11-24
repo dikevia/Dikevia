@@ -127,8 +127,16 @@ class LegifranceConnector:
                     )
                     response.raise_for_status()
                     data = response.json()
+                if not isinstance(data, dict):
+                    raise LegifranceUnavailable("Réponse OAuth PISTE non conforme : objet JSON attendu.")
                 token = data.get("access_token")
-                expires = int(data.get("expires_in", 0))
+                raw_expires = data.get("expires_in", 0)
+                if isinstance(raw_expires, bool) or not isinstance(raw_expires, (int, str)):
+                    raise LegifranceUnavailable("Durée de validité OAuth PISTE invalide.")
+                try:
+                    expires = int(raw_expires)
+                except (TypeError, ValueError) as exc:
+                    raise LegifranceUnavailable("Durée de validité OAuth PISTE invalide.") from exc
                 if not isinstance(token, str) or not token or expires < 1:
                     raise LegifranceUnavailable("Réponse OAuth PISTE incomplète.")
                 self._token = token
@@ -188,8 +196,8 @@ class LegifranceConnector:
                     response = await client.get(urljoin(self.api_base, path), headers=headers)
                     results[path] = response.status_code
                     if response.status_code >= 500:
-                        logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING_UPSTREAM route=%s status=%d body_preview=%s",
-                                       path, response.status_code, response.text[:500])
+                        logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING_UPSTREAM route=%s status=%d",
+                                       path, response.status_code)
                 except httpx.HTTPError:
                     results[path] = "NETWORK_ERROR"
         return results

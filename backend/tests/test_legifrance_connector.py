@@ -173,6 +173,21 @@ async def test_legifrance_nonexistent_article_returns_no_official_result(monkeyp
 
 
 @pytest.mark.asyncio
+async def test_legifrance_rejects_non_object_oauth_response(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json=[{"access_token": "unexpected"}])
+        raise AssertionError("No API request is expected after invalid OAuth JSON")
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    with pytest.raises(LegifranceUnavailable, match="objet JSON attendu"):
+        await connector.ping()
+
+
+@pytest.mark.asyncio
 async def test_legifrance_rejects_incomplete_oauth(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_client_id", "")
     monkeypatch.setattr(settings, "legifrance_client_secret", "")
@@ -473,7 +488,7 @@ async def test_legifrance_ping_falls_back_when_list_route_returns_upstream_500(m
         if request.url.path == "/api/oauth/token":
             return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
         if request.url.path.endswith("/list/ping"):
-            return httpx.Response(500, json={"error": "upstream"})
+            return httpx.Response(500, json={"error": "sensitive-upstream-detail"})
         if request.url.path.endswith("/consult/ping"):
             return httpx.Response(200, text="pong")
         return httpx.Response(404)
@@ -512,7 +527,7 @@ async def test_legifrance_ping_does_not_hide_auth_or_permission_failures(
 
 
 @pytest.mark.asyncio
-async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monkeypatch):
+async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monkeypatch, caplog):
     monkeypatch.setattr(settings, "legifrance_environment", "production")
     monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
     monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
@@ -535,6 +550,7 @@ async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monke
         "consult/ping": 200,
         "list/ping": 500,
     }
+    assert "sensitive-upstream-detail" not in caplog.text
 
 
 @pytest.mark.asyncio
