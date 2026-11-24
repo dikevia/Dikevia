@@ -28,6 +28,8 @@ Sans ce secret, aucune écriture n'est effectuée. Ne jamais utiliser le compte 
 Le registre recense notamment les domaines suivants. Leur statut individuel (candidat, accès examiné, réutilisation approuvée, importé ou indexé) fait foi ; l'inscription d'un domaine ne signifie pas que ses documents sont intégrés :
 
 - **Socle public national** : Légifrance, Service-Public.gouv.fr, data.gouv.fr, DGAFP (`fonction-publique.gouv.fr`), DGCL (`collectivites-locales.gouv.fr`), Info.gouv.fr.
+
+Le SIG / Info.gouv.fr est qualifié comme guidance administrative officielle non normative. Trois ressources ciblées ont été ajoutées au registre : présentation des missions du SIG, page « La marque de l'État » et PDF « Charte d'accessibilité de la communication de l'État » (64 pages, septembre 2022). Les mentions légales du portail prévoient la Licence Ouverte Etalab 2.0 pour les contenus hors droits de tiers, avec attribution de la source et de la date de dernière mise à jour. La collecte porte uniquement sur ces URL précises ; les images et contenus tiers sont exclus. Les trois ressources restent `NOT_COLLECTED` jusqu'au dry-run de contrôle et ne sont pas encore indexées.
 - **CNFPT** : `cnfpt.fr` et `wikiterritorial.cnfpt.fr`.
 - **CIG** : `cig929394.fr` (Petite Couronne) et `cigversailles.fr` (Grande Couronne).
 - **CDG** : `cdg35.fr` / `cdg35.bzh`, `cdg44.fr`, `cdg59.fr` et `cdg69.fr`.
