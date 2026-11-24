@@ -721,6 +721,27 @@ class LegalOrchestrator:
         # "Et pour les contractuels ?" retain the original legal topic.
         legal_context = qualify_legal_question(contextual_question, request.employer, request.public_service)
         legal_context["versant_fonction_publique"] = request.public_service
+        mismatch_versant = legal_context.get("explicit_self_versant_mismatch")
+        if mismatch_versant:
+            labels = {
+                "FPT": "fonction publique territoriale",
+                "FPE": "fonction publique de l'État",
+                "FPH": "fonction publique hospitalière",
+            }
+            clarification = (
+                f"Cette conversation est configurée pour la {labels[request.public_service]}, "
+                f"mais vous indiquez relever de la {labels[mismatch_versant]}. "
+                "Pour éviter de vous présenter des règles d'un autre versant, démarrez "
+                "une nouvelle conversation et sélectionnez le versant correspondant."
+            )
+            return AskResponse(
+                request_id=request_id,
+                verification_status="NON_VERIFIE",
+                answer=clarification,
+                clarification_question=clarification,
+                sources=[],
+                missing_information=[],
+            )
         # Gemini plans the research from the actual facts before any legal source
         # is retrieved. Its output contains search language only, never legal evidence.
         # Deterministic topic templates remain a resilience fallback when the model
