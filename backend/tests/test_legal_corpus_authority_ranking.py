@@ -102,6 +102,41 @@ async def test_corpus_search_preserves_verified_text_hash_and_version_provenance
     assert source["citation_integrity"]["text_hash_verified"] is True
 
 
+@pytest.mark.asyncio
+async def test_upsert_fills_official_source_version_id_when_same_version_is_reingested():
+    from app.legal_corpus import upsert_legal_document
+
+    class WriteConn:
+        def __init__(self):
+            self.fetchrow_calls = []
+            self.execute_calls = []
+
+        async def fetchrow(self, query, *args):
+            self.fetchrow_calls.append((query, args))
+            return {"id": "document-id" if len(self.fetchrow_calls) == 1 else "version-id"}
+
+        async def execute(self, query, *args):
+            self.execute_calls.append((query, args))
+
+    conn = WriteConn()
+    result = await upsert_legal_document(conn, {
+        "source_type": "LEGIFRANCE_LEGI",
+        "source_id": "LEGITEXT000000000001",
+        "source_version_id": "LEGIARTI000000000001",
+        "title": "Code général de la fonction publique",
+        "document_kind": "CODE",
+        "version_key": "2024-01-01",
+        "full_text": "Article L123-1. " + ("Texte juridique vérifié. " * 10),
+        "source_status": "OFFICIAL_TEXT_RETRIEVED",
+    })
+
+    version_query, version_args = conn.fetchrow_calls[1]
+    assert "source_version_id=COALESCE(EXCLUDED.source_version_id,legal_document_versions.source_version_id)" in version_query
+    assert version_args[2] == "LEGIARTI000000000001"
+    assert result["version_id"] == "version-id"
+    assert conn.execute_calls
+
+
 def test_corpus_interleaving_preserves_distinct_versions_of_the_same_document():
     from app.legal_corpus import interleave_legal_corpus_results
 

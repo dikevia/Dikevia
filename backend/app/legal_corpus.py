@@ -169,6 +169,7 @@ async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
       ON CONFLICT(document_id,version_key) DO UPDATE SET
         full_text=CASE WHEN EXCLUDED.full_text<>'' THEN EXCLUDED.full_text ELSE legal_document_versions.full_text END,
+        source_version_id=COALESCE(EXCLUDED.source_version_id,legal_document_versions.source_version_id),
         text_sha256=COALESCE(EXCLUDED.text_sha256,legal_document_versions.text_sha256),
         valid_from=COALESCE(EXCLUDED.valid_from,legal_document_versions.valid_from),
         valid_to=COALESCE(EXCLUDED.valid_to,legal_document_versions.valid_to),
