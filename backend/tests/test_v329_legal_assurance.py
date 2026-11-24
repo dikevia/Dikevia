@@ -671,3 +671,31 @@ def test_assess_source_set_does_not_silently_accept_non_list_payload():
     result = assess_source_set({"source_id": "not-a-list"})
     assert result["sources"] == []
     assert result["status"] == "SOURCES_A_EXAMINER"
+
+
+def test_citation_validator_handles_non_collection_source_payload():
+    from app.legal_assurance import validate_answer_citations
+
+    result = validate_answer_citations(
+        "L'autorité territoriale doit respecter les règles applicables.",
+        42,
+    )
+    assert result["valid"] is False
+    assert "missing_explicit_source_citation" in result["invalid_references"]
+
+
+def test_claim_validator_handles_non_collection_sources_and_malformed_period():
+    result = validate_claim_evidence(
+        {"claims": [{
+            "text": "L'autorité territoriale doit respecter les règles applicables.",
+            "source_id": "SRC-123456",
+            "quote": "L'autorité territoriale doit respecter les règles applicables.",
+        }]},
+        sources=42,
+        required_axes="not-a-list",
+        facts_period="not-a-dictionary",
+    )
+    assert result["valid"] is False
+    assert result["invalid_claims"] == [
+        "claim_0:source_missing_ineligible_or_ambiguous",
+    ]
