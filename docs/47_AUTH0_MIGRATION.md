@@ -15,13 +15,13 @@ Le tenant de développement créé est `dev-brlgaz1yh2de3mjo` (région US-5), é
 
 Pour l'API, la durée de vie maximale des access tokens et des tokens implicit/hybrid est configurée à **900 secondes**. Le backend Dikévia rejette volontairement les jetons dont la durée dépasse 15 minutes.
 
-Dans l'application SPA, autoriser explicitement les URL de callback, logout et origines réellement utilisées. Pour les environnements Render actuellement identifiés, les origines de production et de staging sont autorisées. Les callback URLs doivent comprendre, pour chaque origine, `/` et `/static/silent-check-sso.html`.
+Dans l'application SPA de développement, autoriser uniquement l'origine de staging. Une application Auth0 de développement ne doit pas accepter les callbacks de production ; la production devra utiliser un client Auth0 distinct, configuré dans un environnement/tenant de production séparé. Les callback URLs de staging doivent comprendre `/` et `/static/silent-check-sso.html`.
 
 Configuration effectivement enregistrée pour la SPA de développement :
 
-- Allowed Callback URLs : `https://dikevia-commercial-api-l2r8.onrender.com/`, `https://dikevia-commercial-api-l2r8.onrender.com/static/silent-check-sso.html`, `https://dikevia-vector-beta-staging.onrender.com/`, `https://dikevia-vector-beta-staging.onrender.com/static/silent-check-sso.html`.
-- Allowed Logout URLs : `https://dikevia-commercial-api-l2r8.onrender.com/`, `https://dikevia-vector-beta-staging.onrender.com/`.
-- Allowed Web Origins et Allowed Origins (CORS) : `https://dikevia-commercial-api-l2r8.onrender.com`, `https://dikevia-vector-beta-staging.onrender.com`.
+- État constaté : les quatre listes contiennent actuellement les origines de production et de staging. Cette configuration est trop permissive pour un client de développement.
+- Action de sécurisation obligatoire avant tout déploiement Auth0 sur staging : retirer `https://dikevia-commercial-api-l2r8.onrender.com` de toutes les listes et ne conserver que `https://dikevia-vector-beta-staging.onrender.com` (avec les deux callback paths indiqués ci-dessus).
+- La liste de production ne doit pas être réintroduite dans ce client. Elle nécessitera un client Auth0 de production distinct.
 
 
 Ne pas utiliser de wildcard d'origine. Vérifier ces URL dans Render avant de les enregistrer dans Auth0.
