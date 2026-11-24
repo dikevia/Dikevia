@@ -65,11 +65,25 @@ _CONTEXTUAL_FOLLOWUP = re.compile(
     re.IGNORECASE,
 )
 
+_ASSISTANT_REFERENTIAL_FOLLOWUP = re.compile(
+    r"^(?:"
+    r"(?:peux[- ]tu|pourrais[- ]tu)\s+(?:préciser|détailler|développer|expliquer|reformuler|reprendre)\b|"
+    r"(?:qu['’]entends-tu par|que veux-tu dire par)\b|"
+    r"tu\s+(?:dis|as dit|as indiqué|viens de dire)\b|"
+    r"dans ta réponse\b|"
+    r"(?:et\s+)?(?:le|la)\s+(?:premier|première|deuxième|second|seconde|dernier|dernière|précédent|précédente)\s+"
+    r"(?:point|élément|condition|règle|disposition|argument)\b|"
+    r"(?:ce|cette)\s+(?:point|passage|terme|mot|principe|condition|règle|disposition)\b"
+    r")",
+    re.IGNORECASE,
+)
+
 
 @dataclass(frozen=True)
 class ContextualResearchContext:
     question: str
     is_followup: bool
+    assistant_context: str | None = None
 
 
 def build_contextual_research_context(
@@ -89,6 +103,41 @@ def build_contextual_research_context(
         for item in (prior_user_questions or [])
         if str(item).strip()
     ]
+    if _ASSISTANT_REFERENTIAL_FOLLOWUP.match(current):
+        assistants = [
+            str(item).strip()
+            for item in (prior_assistant_messages or [])
+            if str(item).strip()
+        ]
+        if not prior_questions or not assistants:
+            return ContextualResearchContext(question=current[:500], is_followup=False)
+        prior = next(
+            (
+                item for item in reversed(prior_questions)
+                if not _CONTEXTUAL_FOLLOWUP.match(item)
+            ),
+            prior_questions[-1],
+        )
+        current_topics = _matched_question_topics(current)
+        prior_topics = _matched_question_topics(prior)
+        if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
+            return ContextualResearchContext(question=current[:500], is_followup=False)
+        contextual = f"{current[:300]}\\n{prior[:180]}"
+        if not _EXPLICIT_STATUS_DECLARATION.search(current):
+            for earlier_question in reversed(prior_questions):
+                declaration = _EXPLICIT_STATUS_DECLARATION.search(earlier_question)
+                if declaration:
+                    contextual += (
+                        "\\nContexte de statut déclaré précédemment : "
+                        + declaration.group(0)
+                    )
+                    break
+        return ContextualResearchContext(
+            question=contextual[:500],
+            is_followup=True,
+            assistant_context=assistants[-1][-1800:],
+        )
+
     if _CONTEXTUAL_FOLLOWUP.match(current):
         if not prior_questions:
             return ContextualResearchContext(question=current[:500], is_followup=True)
