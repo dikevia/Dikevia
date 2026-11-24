@@ -34,7 +34,7 @@ def bound_evidence_text(value: object, max_chars: int = 12000, head_chars: int =
     head = min(max(0, head_chars), available)
     tail = available - head
     if tail <= 0:
-        return text[:available] + marker
+        return text[:max_chars]
     return text[:head] + marker + text[-tail:]
 
 def build_legal_evidence_text(
@@ -52,7 +52,7 @@ def build_legal_evidence_text(
     if not excerpt:
         return bound_evidence_text(full, max_chars=max_chars)
 
-    marker = "\\n\\n[Autres passages du texte officiel]\\n\\n"
+    marker = "\n\n[Autres passages du texte officiel]\n\n"
     if max_chars <= len(marker):
         return bound_evidence_text(excerpt or full, max_chars=max_chars)
     excerpt_budget = min(len(excerpt), max(0, max_chars - len(marker) - 3000))
