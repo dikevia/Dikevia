@@ -1526,3 +1526,52 @@ async def test_provider_availability_explicit_transport_bypasses_cache(monkeypat
     await ai_provider.check_provider_availability(transport=object())
 
     assert calls == 2
+
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_accepts_strictly_fenced_json_without_relaxing_verdict_checks(monkeypatch):
+    import httpx
+    import json
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    source = {
+        "source_id": "SRC-IHTS-FENCE",
+        "title": "Règles relatives aux heures supplémentaires",
+        "text": "Les heures supplémentaires peuvent ouvrir droit à compensation selon les règles applicables.",
+    }
+    claim = {
+        "source_id": "SRC-IHTS-FENCE",
+        "text": "Les heures supplémentaires peuvent ouvrir droit à compensation.",
+    }
+
+    def handler(request):
+        payload = {
+            "verdicts": [{
+                "claim_index": 0,
+                "source_id": "SRC-IHTS-FENCE",
+                "verdict": "SUPPORTED",
+                "support_quote": "Les heures supplémentaires peuvent ouvrir droit à compensation",
+            }]
+        }
+        fence = chr(96) * 3
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": fence + "json\n" + json.dumps(payload) + "\n" + fence}}]
+        })
+
+    real_async_client = httpx.AsyncClient
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+
+    result = await verify_claim_entailment(
+        question="Les heures supplémentaires peuvent-elles être compensées ?",
+        claims=[claim],
+        sources=[source],
+    )
+    assert result["valid"] is True
+    assert result["supported_claim_indices"] == [0]
