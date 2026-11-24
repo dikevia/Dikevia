@@ -317,12 +317,21 @@ def test_availability_research_targets_the_selected_versant_decree(versant, expe
     assert expected in queries[0]
 
 
-def test_territorial_health_regulatory_queries_do_not_leak_to_other_versants():
+def test_health_regulatory_queries_stay_with_the_selected_versant():
     import app.orchestrator as module
 
-    for versant in ("FPE", "FPH"):
-        queries = module._build_targeted_regulatory_queries(
-            "Un agent demande un temps partiel thérapeutique après un accident de service.",
-            versant,
-        )
-        assert queries == []
+    fpe = module._build_targeted_regulatory_queries(
+        "Un agent demande un temps partiel thérapeutique après un accident de service.",
+        "FPE",
+    )
+    assert any("86-442" in query and "23-1" in query for query in fpe)
+    assert any("86-442" in query and "47-1" in query for query in fpe)
+    assert not any("87-602" in query or "88-386" in query for query in fpe)
+
+    fph = module._build_targeted_regulatory_queries(
+        "Un agent demande un temps partiel thérapeutique après un accident de service.",
+        "FPH",
+    )
+    assert any("88-386" in query and "13-1" in query for query in fph)
+    assert any("88-386" in query and "35-2" in query for query in fph)
+    assert not any("87-602" in query or "86-442" in query for query in fph)
