@@ -103,6 +103,15 @@ async def _startup_external_diagnostics() -> None:
         settings.legifrance_cetat_fulltext_enabled,
     )
 
+    logger.warning(
+        "DIKEVIA_DIAGNOSTIC INVITATION_PROVISIONING provider=%s smtp_configured=%s "
+        "keycloak_admin_configured=%s keycloak_admin_client_id=%s",
+        settings.oidc_provider,
+        bool(settings.smtp_host and settings.smtp_from),
+        bool(settings.keycloak_admin_base_url and settings.keycloak_admin_client_secret),
+        settings.keycloak_admin_client_id,
+    )
+
     if legifrance.configured:
         probe_date = datetime.now(ZoneInfo("Europe/Paris")).date()
         probes = (
