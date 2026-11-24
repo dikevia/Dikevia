@@ -10,7 +10,7 @@ import unicodedata
 from datetime import date
 from typing import Any
 
-from .evidence_text import bound_evidence_text, build_legal_evidence_text, normalize_evidence_text
+from .evidence_text import build_legal_evidence_text, normalize_evidence_text
 
 # This is a review order, not a universal rule for resolving every conflict.
 _SOURCE_CLASS = {
