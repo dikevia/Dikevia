@@ -10,7 +10,7 @@ import unicodedata
 from datetime import date
 from typing import Any
 
-from .evidence_text import bound_evidence_text, normalize_evidence_text
+from .evidence_text import bound_evidence_text, build_legal_evidence_text, normalize_evidence_text
 
 # This is a review order, not a universal rule for resolving every conflict.
 _SOURCE_CLASS = {
@@ -575,12 +575,9 @@ def validate_claim_evidence(
             "CGFP_SNAPSHOT",
         } and source.get("official_source") is not True:
             continue
-        evidence_text = bound_evidence_text(
-            source.get("analysis_excerpt")
-            or source.get("full_text")
-            or source.get("excerpt")
-            or source.get("text")
-            or ""
+        evidence_text = build_legal_evidence_text(
+            source.get("full_text") or source.get("text") or "",
+            source.get("analysis_excerpt") or source.get("excerpt"),
         )
         normalized_evidence = _normalized_evidence_text(evidence_text)
         if len(normalized_evidence) < 20:
