@@ -74,29 +74,25 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         raw_metadata = {}
     publisher = str(source.get("publisher") or raw_metadata.get("source_name") or "").strip()[:240] or None
     publisher_type = str(source.get("publisher_type") or raw_metadata.get("publisher_type") or "").upper() or None
-    authority_level = str(source.get("authority_level") or raw_metadata.get("authority_level") or "").upper()
-    if authority_level not in {
-        "PRIMARY_LEGAL", "OFFICIAL_ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE",
-        "JURISPRUDENCE", "OFFICIAL_INTERPRETIVE", "LOCAL_NORMATIVE",
-    }:
-        authority_level = {
-            "ADMIN_GUIDANCE": "OFFICIAL_ADMIN_GUIDANCE",
-            "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
-            "ADMIN_CASELAW": "JURISPRUDENCE",
-            "CIRCULAR": "OFFICIAL_INTERPRETIVE",
-            "CONSTITUTIONAL": "PRIMARY_LEGAL",
-            "EUROPEAN_TREATY": "PRIMARY_LEGAL",
-            "LAW": "PRIMARY_LEGAL",
-            "CODE": "PRIMARY_LEGAL",
-            "ORDONNANCE": "PRIMARY_LEGAL",
-            "DECREE": "PRIMARY_LEGAL",
-            "DECRET": "PRIMARY_LEGAL",
-            "ORDER": "PRIMARY_LEGAL",
-            "ARRETE": "PRIMARY_LEGAL",
-            "LOCAL_DELIBERATION": "LOCAL_NORMATIVE",
-            "LOCAL_REGULATION": "LOCAL_NORMATIVE",
-            "LOCAL_PROTOCOL": "LOCAL_NORMATIVE",
-        }.get(kind, "UNCLASSIFIED")
+    # Authority is derived from the normalized document family and trusted
+    # connector provenance. Raw source metadata is descriptive only: it must
+    # never promote guidance or an unknown document to binding law.
+    authority_level = {
+        "ADMIN_GUIDANCE": "OFFICIAL_ADMIN_GUIDANCE",
+        "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
+        "ADMIN_CASELAW": "JURISPRUDENCE",
+        "CIRCULAR": "OFFICIAL_INTERPRETIVE",
+        "CONSTITUTIONAL": "PRIMARY_LEGAL",
+        "EUROPEAN_TREATY": "PRIMARY_LEGAL",
+        "LAW": "PRIMARY_LEGAL",
+        "CODE": "PRIMARY_LEGAL",
+        "ORDONNANCE": "PRIMARY_LEGAL",
+        "DECREE": "PRIMARY_LEGAL",
+        "ORDER": "PRIMARY_LEGAL",
+        "LOCAL_DELIBERATION": "LOCAL_NORMATIVE",
+        "LOCAL_REGULATION": "LOCAL_NORMATIVE",
+        "LOCAL_PROTOCOL": "LOCAL_NORMATIVE",
+    }.get(kind, "UNCLASSIFIED")
     if publisher_type is None:
         source_key = str(raw_metadata.get("source_id") or "").casefold()
         if any(name in source_key for name in ("cfdt", "cgt", "fo-", "cftc", "unsa", "solidaires")):
