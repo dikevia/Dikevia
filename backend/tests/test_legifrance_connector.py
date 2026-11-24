@@ -845,3 +845,23 @@ def test_loda_document_kind_uses_official_nature_and_never_defaults_unknown_to_l
     from app.legifrance import _loda_document_kind
 
     assert _loda_document_kind(nature, title, None) == expected
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "expected"),
+    [
+        ("VIGUEUR", "IN_FORCE"),
+        ("ABROGE", "REPEALED"),
+        ("ABROGÉ", "REPEALED"),
+        ("PÉRIMÉ", "NOT_IN_FORCE"),
+        ("NON EN VIGUEUR", "NOT_IN_FORCE"),
+        ("PLUS EN VIGUEUR", "NOT_IN_FORCE"),
+        ("ABROGÉ PARTIELLEMENT", "UNKNOWN"),
+        ("VIGUEUR DIFFÉRÉE", "UNKNOWN"),
+        (None, "UNKNOWN"),
+    ],
+)
+def test_loda_version_status_does_not_promote_qualified_or_negative_labels(raw_status, expected):
+    from app.legifrance import _loda_version_status
+
+    assert _loda_version_status(raw_status) == expected
