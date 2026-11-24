@@ -73,11 +73,12 @@ def _build_code_research_queries(
     max_queries: int = 5,
 ) -> list[str]:
     """Keep every legal axis; use only spare budget for exact article lookups."""
-    base_queries = list(dict.fromkeys(query for query in research_queries if query))
-    exact_budget = max(0, max_queries - len(base_queries))
+    limit = max(0, int(max_queries))
+    base_queries = list(dict.fromkeys(query for query in research_queries if query))[:limit]
+    exact_budget = max(0, limit - len(base_queries))
     return [
         *base_queries,
-        *[query for query in (cgfp_article_queries or []) if query][:exact_budget],
+        *[query for query in dict.fromkeys(cgfp_article_queries or []) if query][:exact_budget],
     ]
 
 
