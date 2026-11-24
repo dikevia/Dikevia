@@ -293,7 +293,7 @@ def test_non_territorial_contract_and_discipline_question_keeps_both_axes():
 def test_provider_history_includes_previous_assistant_answer_only_when_explicitly_supplied():
     from app.orchestrator import _provider_context_history
 
-    question = "Peux-tu détailler le deuxième point ?\\nMon employeur refuse mes heures supplémentaires."
+    question = "Peux-tu détailler le deuxième point ?\nMon employeur refuse mes heures supplémentaires."
     assistant_context = "Le deuxième point concerne les conditions de récupération."
 
     history = _provider_context_history(
