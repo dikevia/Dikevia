@@ -42,7 +42,8 @@ def missing_direct_article_reference(question: str, sources: list[dict]) -> str 
         return None
 
     verified_refs: set[str] = set()
-    for source in sources or []:
+    source_records = sources if isinstance(sources, (list, tuple)) else []
+    for source in source_records:
         if not isinstance(source, dict):
             continue
         if source.get("source_type") not in {
