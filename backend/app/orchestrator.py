@@ -673,7 +673,8 @@ def _provider_context_history(
     """Pass only the resolved prior user turn and, when needed, a non-source assistant referent."""
     if not is_followup:
         return []
-    parts = str(contextual_question or "").split("\n", 1)
+    normalized_question = str(contextual_question or "").replace("\\n", "\n")
+    parts = normalized_question.split("\n", 1)
     if len(parts) < 2:
         return []
     prior_question = parts[1].split("\n", 1)[0].strip()
