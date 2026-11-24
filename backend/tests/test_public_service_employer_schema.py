@@ -42,3 +42,10 @@ def test_fpt_rejects_non_territorial_employer_value():
 def test_employer_context_is_nonempty_and_bounded(employer):
     with pytest.raises(ValidationError):
         AskRequest(**payload("FPH", employer))
+
+
+@pytest.mark.parametrize("versant", ["FPE", "FPH"])
+@pytest.mark.parametrize("employer", ["VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE"])
+def test_territorial_employers_cannot_be_mixed_with_fpe_or_fph(versant, employer):
+    with pytest.raises(ValidationError):
+        AskRequest(**payload(versant, employer))
