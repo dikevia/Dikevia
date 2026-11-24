@@ -52,7 +52,7 @@ _EXPLICIT_STATUS_DECLARATION = re.compile(
     r"\b(?:(?:je\s+viens\s+d['’]être|j['’]ai\s+été|je\s+suis)\s+(?:(?:un|une|agent(?:e)?)\s+)?titularisé(?:e|s|es)?|"
     r"(?:je\s+suis|je\s+travaille\s+comme|en\s+tant\s+que|mon\s+statut\s+est)\s+"
     r"(?:(?:un|une)\s+)?(?:(?:agent|agente|fonctionnaire)\s+)?"
-    r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b",
+    r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b)",
     re.IGNORECASE,
 )
 

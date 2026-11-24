@@ -1,3 +1,5 @@
+import pytest
+
 from app.legal_qualification import qualify_legal_question, build_contextual_research_context
 
 
