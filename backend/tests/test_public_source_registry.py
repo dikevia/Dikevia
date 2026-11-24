@@ -74,3 +74,44 @@ def test_reuse_approved_public_source_hosts_are_preserved_for_citations():
                 f"Host approved in source registry is missing from legal URL allowlist: {host}"
             )
 
+
+
+def test_sig_info_gouv_pages_are_explicitly_reuse_approved_and_scoped():
+    registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    source = next(item for item in registry["sources"] if item["id"] == "info-gouv")
+    seeds = [item for item in registry["document_seeds"] if item["source_id"] == "info-gouv"]
+    expected = {
+        "sig-missions-2026",
+        "sig-charte-etat-marque",
+        "sig-charte-accessibilite-communication",
+    }
+    assert source["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert source["status"] == "REUSE_APPROVED"
+    assert source["reuse_authorization"]["status"] == "SOURCE_TERMS_CONFIRMED"
+    assert "Etalab 2.0" in source["reuse"]
+    assert {item["id"] for item in seeds} == expected
+    assert all(item["status"] == "REUSE_APPROVED" for item in seeds)
+    assert all(item["reuse_status"] == "REUSE_APPROVED" for item in seeds)
+    assert all(item["content_status"] == "NOT_COLLECTED" for item in seeds)
+    assert all(item["url"].startswith("https://www.info.gouv.fr/") for item in seeds)
+
+
+def test_sig_info_gouv_guidance_cannot_become_primary_legal_evidence():
+    from app.legal_assurance import classify_legal_source
+
+    result = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "ADMIN_GUIDANCE",
+        "publisher": "Service d'information du Gouvernement (SIG)",
+        "source_status": "IMPORTED_UNVERIFIED",
+        "status": "UNKNOWN",
+        "raw_metadata": {
+            "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+            "source_registry_status": "REUSE_APPROVED",
+            "legal_validation_status": "NOT_VERIFIED",
+        },
+    })
+    assert result["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert result["publisher_type"] == "PUBLIC_ADMINISTRATION"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
