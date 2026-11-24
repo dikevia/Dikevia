@@ -304,3 +304,24 @@ def test_provider_history_includes_previous_assistant_answer_only_when_explicitl
         {"role": "assistant", "content": assistant_context},
     ]
     assert _provider_context_history(question, False, assistant_context) == []
+
+
+@pytest.mark.parametrize(
+    ("versant", "employer", "expected"),
+    [
+        ("FPT", "VILLE_SAINT_ETIENNE", True),
+        ("FPT", "SAINT_ETIENNE_METROPOLE", True),
+        ("FPT", "NATIONAL", False),
+        ("FPE", "VILLE_SAINT_ETIENNE", False),
+        ("FPE", "SAINT_ETIENNE_METROPOLE", False),
+        ("FPH", "VILLE_SAINT_ETIENNE", False),
+        ("FPH", "SAINT_ETIENNE_METROPOLE", False),
+        ("FPH", "NATIONAL", False),
+    ],
+)
+def test_local_collectivity_documents_are_retrieved_only_for_fpt_employers(
+    versant, employer, expected,
+):
+    from app.orchestrator import _should_search_local_employer_documents
+
+    assert _should_search_local_employer_documents(versant, employer) is expected

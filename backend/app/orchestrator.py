@@ -310,6 +310,14 @@ LEGAL_CORPUS_CANDIDATE_LIMIT = 12
 LEGAL_CORPUS_INTERLEAVED_LIMIT = 18
 
 
+def _should_search_local_employer_documents(public_service: str, employer: str) -> bool:
+    """Local employer acts currently belong only to the supported FPT employers."""
+    return (
+        str(public_service or "").upper() == "FPT"
+        and str(employer or "").upper() in {"VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE"}
+    )
+
+
 def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
@@ -1253,7 +1261,7 @@ class LegalOrchestrator:
                         )
         local_sources: list[dict] = []
         local_issue = None
-        if request.employer != "NATIONAL":
+        if _should_search_local_employer_documents(request.public_service, request.employer):
             if conn is None:
                 local_issue = "Les documents propres à l'employeur ne sont pas accessibles dans ce contexte."
             else:
@@ -1695,7 +1703,7 @@ class LegalOrchestrator:
             missing.insert(0, "Le snapshot CGFP seul, lorsqu'il existe, reste un repère documentaire et ne peut pas justifier une analyse IA contextualisée.")
             if local_issue:
                 missing.insert(0, local_issue)
-            elif request.employer != "NATIONAL" and not local_sources:
+            elif _should_search_local_employer_documents(request.public_service, request.employer) and not local_sources:
                 missing.insert(0, "Aucun document local correspondant n'a été trouvé pour cet employeur ; vérifier le code de collectivité et les pièces déposées.")
             if any(
                 s.get("source_type") == "LOCAL_DOCUMENT"
