@@ -33,3 +33,60 @@ def test_per_operation_telemetry_does_not_expose_payload_content():
     assert "for usage_event in usage_events:" in main
     assert 'usage["prompt"]' not in main
     assert 'usage["response"]' not in main
+
+
+
+def test_provider_usage_event_records_known_tokens_and_latency(monkeypatch):
+    from app import ai_provider
+
+    events = []
+    monkeypatch.setattr(ai_provider.time, "perf_counter", lambda: 102.5)
+    monkeypatch.setattr(
+        ai_provider.settings,
+        "ai_api_base_url",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+    monkeypatch.setattr(ai_provider.settings, "ai_model", "configured-model")
+
+    ai_provider._record_provider_usage_event(
+        events,
+        "research_planning",
+        100.0,
+        {
+            "model": "actual-model",
+            "usage": {"prompt_tokens": 8, "completion_tokens": 3},
+        },
+    )
+
+    assert events == [{
+        "operation": "research_planning",
+        "provider": "gemini",
+        "model": "actual-model",
+        "prompt_tokens": 8,
+        "completion_tokens": 3,
+        "total_tokens": 11,
+        "latency_ms": 2500,
+        "outcome": "COMPLETED",
+    }]
+
+
+def test_provider_error_usage_event_keeps_unknown_tokens_null(monkeypatch):
+    from app import ai_provider
+
+    events = []
+    monkeypatch.setattr(ai_provider.time, "perf_counter", lambda: 101.0)
+    monkeypatch.setattr(ai_provider.settings, "ai_api_base_url", "https://api.example.test/v1")
+    monkeypatch.setattr(ai_provider.settings, "ai_model", "configured-model")
+
+    ai_provider._record_provider_usage_event(
+        events, "claim_entailment", 100.0, None, "PROVIDER_ERROR"
+    )
+
+    assert len(events) == 1
+    assert events[0]["provider"] == "openai_compatible"
+    assert events[0]["model"] == "configured-model"
+    assert events[0]["prompt_tokens"] is None
+    assert events[0]["completion_tokens"] is None
+    assert events[0]["total_tokens"] is None
+    assert events[0]["latency_ms"] == 1000
+    assert events[0]["outcome"] == "PROVIDER_ERROR"
