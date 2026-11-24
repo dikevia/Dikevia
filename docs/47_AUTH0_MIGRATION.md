@@ -15,14 +15,11 @@ Le tenant de développement créé est `dev-brlgaz1yh2de3mjo` (région US-5), é
 
 Pour l'API, la durée de vie maximale des access tokens et des tokens implicit/hybrid est configurée à **900 secondes**. Le backend Dikévia rejette volontairement les jetons dont la durée dépasse 15 minutes.
 
-Dans l'application SPA, autoriser explicitement les URL de callback, logout et origines réellement utilisées. Pour les environnements Render actuellement identifiés :
-
-- Production : https://dikevia-commercial-api-l2r8.onrender.com/
-- Staging : https://dikevia-vector-beta-staging.onrender.com/
+Dans l'application SPA, autoriser explicitement les URL de callback, logout et origines réellement utilisées. Pour les environnements Render actuellement identifiés, les origines de production et de staging sont autorisées. Les callback URLs doivent comprendre, pour chaque origine, `/` et `/static/silent-check-sso.html`.
 
 Ne pas utiliser de wildcard d'origine. Vérifier ces URL dans Render avant de les enregistrer dans Auth0.
 
-Activer la connexion par base de données Auth0 et l'inscription via Universal Login. Exiger la vérification de l'adresse e-mail. Ne pas activer de connexion sociale pendant la migration initiale : elle compliquerait la correspondance des identités historiques.
+La connexion `Username-Password-Authentication` est activée pour la SPA ; `google-oauth2` est désactivée. Les inscriptions restent autorisées. La vérification de l'e-mail à l'inscription par lien est activée, l'adresse e-mail est obligatoire et la protection anti-brute-force améliorée est active. La politique de mot de passe impose au minimum 15 caractères ; la sélection de politique Strong/Good/Excellent est indisponible sur le niveau d'essai actuel. Aucune mise à niveau payante n'a été effectuée.
 
 ## Claims et identité OIDC
 
@@ -41,8 +38,8 @@ Les variables publiques et privées sont séparées. Les variables suivantes son
 - OIDC_CLIENT_ID=BSpBdDO3IUyG2g5JcHYH29e80JRbnW41 — identifiant public de l'application SPA.
 - OIDC_SCOPES=openid profile email
 - OIDC_AUTHORIZATION_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com
-- OIDC_EMAIL_CLAIM=https://dikevia.invalid/claims/email
-- OIDC_EMAIL_VERIFIED_CLAIM=https://dikevia.invalid/claims/email_verified
+- OIDC_EMAIL_CLAIM=email
+- OIDC_EMAIL_VERIFIED_CLAIM=email_verified
 
 Le frontend charge /auth-config.js, généré côté serveur à partir de ces variables. Seuls l'émetteur, le client ID public, les scopes et l'audience sont transmis au navigateur. Aucun secret client ou Management API ne doit être publié.
 
@@ -58,7 +55,7 @@ La reprise des mots de passe n'est pas présumée. Les hashes Keycloak doivent �
 
 En mode Auth0, le backend n'essaie plus de créer les comptes via l'API d'administration Keycloak. Il envoie l'invitation d'organisation par SMTP ; l'utilisateur crée ou ouvre son compte via Universal Login, puis le backend valide le jeton d'invitation et le claim d'e-mail vérifié.
 
-Les variables SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont donc suffisantes pour l'envoi des invitations Auth0. Aucun secret Management API n'est requis pour ce parcours.
+Les variables SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont nécessaires pour l'envoi des invitations d'organisation par Dikévia. Auth0 gère séparément le lien de vérification d'e-mail de son compte. Aucun secret Management API n'est requis pour ce parcours.
 
 ## Plan de recette avant bascule
 
@@ -73,4 +70,4 @@ Les variables SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont donc suffisantes 
 
 ## État actuel
 
-Le tenant Auth0 de développement, la SPA et l'API sont créés. Les connexions de la SPA sont limitées à la base de données Auth0 ; Google OAuth2 est désactivé pour cette application. La vérification de l'adresse e-mail à l'inscription par lien est activée. Le code Auth0 est préparé dans la branche feat/auth0-oidc-foundation. Aucun compte n'a été importé, aucune variable Render n'a été modifiée, aucun déploiement ni changement de base n'a été effectué. La migration des comptes et la recette réelle restent bloquantes avant la bascule.
+Le tenant Auth0 de développement, la SPA et l'API sont créés. Les connexions de la SPA sont limitées à la base de données Auth0 ; Google OAuth2 est désactivé pour cette application. La vérification de l'adresse e-mail à l'inscription par lien est activée. Le token API et le token implicit/hybrid ont une durée maximale de 900 secondes. Le code Auth0 est préparé dans la branche feat/auth0-oidc-foundation. Aucun compte n'a été importé, aucune variable Render n'a été modifiée, aucun déploiement ni changement de base n'a été effectué. La migration des comptes et la recette réelle restent bloquantes avant la bascule.
