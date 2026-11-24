@@ -35,7 +35,7 @@ _CLARIFICATION_REPLY = re.compile(
 
 
 _CONTEXTUAL_SCOPE_MODIFIER = re.compile(
-    r"^et pour (?:les? )?(?:agent(?:e)?s? )?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"^et pour (?:les? |la )?(?:agent(?:e)?s? )?(?:contractuel(?:le)?s?|stagiaires?|"
     r"titulaires?|fonctionnaires?|fpt|fpe|fph|moi|nous|"
     r"temps partiel|temps complet|temps non complet)\b",
     re.IGNORECASE,

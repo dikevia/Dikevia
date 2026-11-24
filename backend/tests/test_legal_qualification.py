@@ -390,6 +390,14 @@ def test_explicit_positive_status_after_negated_status_is_kept():
     assert qualify_legal_question("Je ne suis pas contractuelle, je suis titulaire.")["agent_status"] == "TITULAIRE_EXPLICIT"
 
 
+
+def test_et_pour_fph_is_a_versant_scope_change_not_a_new_topic():
+    prior = "Comment sont rémunérées les heures supplémentaires dans la FPT ?"
+    context = build_contextual_research_context("Et pour la FPH ?", [prior])
+    assert context.is_followup is True
+    assert "heures supplémentaires" in context.question
+
+
 def test_et_pour_a_new_legal_topic_does_not_inherit_unrelated_context():
     prior = "Je suis titulaire de la FPT. Quels sont mes droits aux IHTS ?"
     context = build_contextual_research_context(
