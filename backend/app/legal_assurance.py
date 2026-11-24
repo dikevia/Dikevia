@@ -575,11 +575,13 @@ def validate_claim_evidence(
             "CGFP_SNAPSHOT",
         } and source.get("official_source") is not True:
             continue
-        evidence_text = (
+        evidence_text = str(
             source.get("analysis_excerpt")
+            or source.get("full_text")
             or source.get("excerpt")
-            or str(source.get("text") or "")[:1800]
-        )
+            or source.get("text")
+            or ""
+        )[:12000]
         normalized_evidence = _normalized_evidence_text(evidence_text)
         if len(normalized_evidence) < 20:
             continue
