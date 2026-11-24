@@ -310,6 +310,19 @@ def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
     return variants
 
 
+def corpus_version_citation_id(source_id: object, version_id: object = None) -> str | None:
+    """Return a unique evidence key for one stored legal-text version."""
+    stable_source_id = str(source_id or "").strip()
+    if not stable_source_id:
+        return None
+    stable_version_id = str(version_id or "").strip()
+    if stable_version_id:
+        # The UUID identifies the exact stored version; keep the official ID
+        # separately for human-readable legal references and provenance.
+        return f"CORPUS_VERSION_{stable_version_id}"
+    return stable_source_id
+
+
 def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: int = 12) -> list[dict]:
     """Keep results from each independent legal sub-question before de-duplication."""
     if not 1 <= limit <= 30:

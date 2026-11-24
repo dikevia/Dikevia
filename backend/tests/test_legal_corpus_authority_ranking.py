@@ -74,3 +74,17 @@ def test_corpus_interleaving_falls_back_to_stable_source_id_without_version_id()
     selected = interleave_legal_corpus_results([[first], [duplicate]], limit=12)
 
     assert selected == [first]
+
+
+def test_corpus_version_citation_ids_distinguish_versions_of_one_official_document():
+    from app.legal_corpus import corpus_version_citation_id
+
+    official_id = "LEGITEXT000000000001"
+    first = corpus_version_citation_id(official_id, "11111111-1111-4111-8111-111111111111")
+    second = corpus_version_citation_id(official_id, "22222222-2222-4222-8222-222222222222")
+
+    assert first != second
+    assert first.startswith("CORPUS_VERSION_")
+    assert second.startswith("CORPUS_VERSION_")
+    assert corpus_version_citation_id(official_id, None) == official_id
+    assert corpus_version_citation_id(None, "11111111-1111-4111-8111-111111111111") is None

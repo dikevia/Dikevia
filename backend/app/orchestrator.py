@@ -1390,8 +1390,16 @@ class LegalOrchestrator:
                     source_temporal_status, source_temporal_explanation = (
                         _permanent_source_temporal_metadata(item, facts_reference_date)
                     )
+                    official_source_id = item.get("source_id")
+                    version_id = item.get("version_id")
                     permanent_sources.append({
-                        "source_type": item.get("source_type"), "source_id": item.get("source_id"),
+                        "source_type": item.get("source_type"),
+                        "source_id": corpus_version_citation_id(official_source_id, version_id),
+                        "official_source_id": official_source_id,
+                        "source_version_id": item.get("source_version_id"),
+                        "version_id": str(version_id) if version_id is not None else None,
+                        "version_key": item.get("version_key"),
+                        "text_sha256": item.get("text_sha256"),
                         "title": item.get("title"), "official_number": item.get("official_number"),
                         "case_number": item.get("official_number"),
                         "document_kind": source_document_kind, "jurisdiction": item.get("jurisdiction"),
