@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     oidc_scopes: str = "openid profile email"
     oidc_authorization_audience: str = ""
     oidc_identity_compat_issuer: str = ""
-    oidc_identity_subject_prefix: str = ""
+    oidc_identity_legacy_subject_claim: str = "https://dikevia.invalid/claims/legacy_subject"
     oidc_email_claim: str = "email"
     oidc_email_verified_claim: str = "email_verified"
     cors_origins: str = ""
@@ -108,12 +108,13 @@ def validate_runtime_configuration(config: Settings) -> None:
             raise RuntimeError("Auth0 exige OIDC_CLIENT_ID et OIDC_AUTHORIZATION_AUDIENCE en production.")
         if config.oidc_authorization_audience != config.oidc_audience:
             raise RuntimeError("OIDC_AUTHORIZATION_AUDIENCE doit être identique à OIDC_AUDIENCE.")
-        if not config.oidc_identity_compat_issuer or not config.oidc_identity_subject_prefix:
-            raise RuntimeError("La migration Auth0 doit préserver les identités Keycloak via OIDC_IDENTITY_COMPAT_ISSUER et OIDC_IDENTITY_SUBJECT_PREFIX.")
+        if not config.oidc_identity_compat_issuer or not config.oidc_identity_legacy_subject_claim:
+            raise RuntimeError("La migration Auth0 exige OIDC_IDENTITY_COMPAT_ISSUER et OIDC_IDENTITY_LEGACY_SUBJECT_CLAIM.")
         if config.oidc_identity_compat_issuer == config.oidc_issuer:
             raise RuntimeError("L'émetteur de compatibilité historique doit être distinct de l'émetteur Auth0.")
-    if bool(config.oidc_identity_compat_issuer) != bool(config.oidc_identity_subject_prefix):
-        raise RuntimeError("OIDC_IDENTITY_COMPAT_ISSUER et OIDC_IDENTITY_SUBJECT_PREFIX doivent être configurés ensemble.")
+    if not config.oidc_identity_legacy_subject_claim:
+        raise RuntimeError("OIDC_IDENTITY_LEGACY_SUBJECT_CLAIM ne peut pas être vide.")
+
     if config.oidc_identity_compat_issuer and not _valid_https_or_local(
         config.oidc_identity_compat_issuer, config.app_env != "production"
     ):
