@@ -77,6 +77,11 @@ def _build_versant_fallback_research(
     )
     branch_query = f"{question} {branch_qualifier}".strip()
     topic_labels = {
+        "UNION_RIGHTS": "droits syndicaux et autorisations spéciales d'absence",
+        "TERMINATION_OF_TITULAR": "fin de fonctions et cessation d'emploi du fonctionnaire",
+        "STAFFING_AND_WORK_CONDITIONS": "effectifs, charge et conditions de travail",
+        "DISCIPLINE": "procédure disciplinaire et sanctions",
+        "CONTRACTUAL_EMPLOYMENT": "contrat, renouvellement et fin de contrat",
         "SICK_LEAVE_AND_SERVICE_INJURY": "congé maladie, accident de service et CITIS",
         "HARASSMENT_AND_PROTECTION": "harcèlement et protection fonctionnelle",
         "REMUNERATION": "rémunération, traitement et indemnités",
