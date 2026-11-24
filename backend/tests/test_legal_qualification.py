@@ -348,3 +348,7 @@ def test_short_pour_les_contractuels_question_remains_a_followup():
     )
     assert context.is_followup is True
     assert "heures supplémentaires" in context.question
+
+
+def test_short_pour_les_contractuels_reply_can_update_status_without_inheriting_topic_errors():
+    assert qualify_legal_question("Pour les contractuels ?")["agent_status"] == "CONTRACTUEL_EXPLICIT"
