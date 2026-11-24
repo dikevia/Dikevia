@@ -1,5 +1,6 @@
 import asyncio
 import json
+import inspect
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from uuid import uuid4
@@ -460,7 +461,7 @@ async def apply_semantic_source_relevance(
             question=question,
             research_axes=research_axes,
             sources=semantic_sources,
-            usage_events=usage_events,
+            **_provider_usage_kwargs(evaluate_source_relevance, usage_events or []),
         )
         for source in sources:
             verdict = semantic_verdicts.get(source.get("source_id"))
@@ -643,6 +644,16 @@ def _compare_official_period_versions(
 
 
 
+def _provider_usage_kwargs(provider_function, events: list[dict]) -> dict:
+    """Keep test doubles and alternate provider adapters compatible with optional telemetry."""
+    try:
+        parameters = inspect.signature(provider_function).parameters.values()
+        supported = any(p.name == "usage_events" or p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters)
+    except (TypeError, ValueError):
+        supported = False
+    return {"usage_events": events} if supported else {}
+
+
 def _immediate_prior_assistant_messages(history: list[dict]) -> list[str]:
     """Only the immediately preceding turn may answer a clarification prompt."""
     if not history or not isinstance(history[-1], dict):
@@ -792,7 +803,7 @@ class LegalOrchestrator:
                 facts_period=temporal_context,
                 legal_context=legal_context,
                 conversation_history=provider_history,
-                usage_events=ai_usage_events,
+                **_provider_usage_kwargs(plan_legal_research, ai_usage_events),
             )
         except AIProviderUnavailable:
             logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
@@ -1083,7 +1094,7 @@ class LegalOrchestrator:
                     conversation_history=provider_history,
                     previous_queries=research_queries,
                     retrieved_evidence=first_pass_evidence,
-                    usage_events=ai_usage_events,
+                    **_provider_usage_kwargs(plan_legal_research, ai_usage_events),
                 )
             except AIProviderUnavailable:
                 refinement = None
@@ -1953,7 +1964,7 @@ class LegalOrchestrator:
                                 public_service=request.public_service,
                                 allow_local_documents=allow_local_documents,
                                 facts_period=temporal_context,
-                                usage_events=ai_usage_events,
+                                **_provider_usage_kwargs(verify_claim_entailment, ai_usage_events),
                             )
                             supported_indices = entailment_validation.get("supported_claim_indices", [])
                             if not entailment_validation.get("valid") and not supported_indices:
