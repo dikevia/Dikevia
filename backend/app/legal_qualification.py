@@ -30,6 +30,8 @@ _CLARIFICATION_REPLY = re.compile(
     r"à\s+temps\b|à\s+\d{1,3}\s*%|"
     r"en\s+(?:cdi|cdd|catégorie\s+[abc]|classe\s+normale)\b|"
     r"titulaire\b|contractuel(?:le)?\b|stagiaire\b|fonctionnaire\b|"
+    r"je\s+viens\s+d['’]être\s+(?:agent\s+)?titularisé(?:e|s|es)?\b|"
+    r"j['’]ai\s+été\s+(?:agent\s+)?titularisé(?:e|s|es)?\b|"
     r"agent\b|temps\s+(?:partiel|complet|non\s+complet)\b)",
     re.IGNORECASE,
 )
@@ -47,7 +49,8 @@ _CONTEXTUAL_SCOPE_MODIFIER = re.compile(
 # genuine follow-ups. Population questions and third-party descriptions do not
 # become facts about the current user.
 _EXPLICIT_STATUS_DECLARATION = re.compile(
-    r"\b(?:je\s+suis|je\s+travaille\s+comme|en\s+tant\s+que|mon\s+statut\s+est)\s+"
+    r"\b(?:(?:je\s+viens\s+d['’]être|j['’]ai\s+été|je\s+suis)\s+(?:(?:un|une|agent(?:e)?)\s+)?titularisé(?:e|s|es)?|"
+    r"(?:je\s+suis|je\s+travaille\s+comme|en\s+tant\s+que|mon\s+statut\s+est)\s+"
     r"(?:(?:un|une)\s+)?(?:(?:agent|agente|fonctionnaire)\s+)?"
     r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b",
     re.IGNORECASE,
@@ -372,6 +375,11 @@ def qualify_legal_question(
         else "fonctionnaire" if negative_status_raw and negative_status_raw.startswith("fonctionnaire")
         else None
     )
+    negative_titularization = bool(re.search(
+        r"\bje\s+(?:ne\s+)?(?:suis|viens\s+d\s+etre|ai\s+ete)\s+"
+        r"(?:pas|plus|jamais)\s+(?:agent\s+)?titularise(?:e|s|es)?\b",
+        current_folded,
+    ))
     short_status_reply = re.fullmatch(
         r"(?:(?:et\s+)?pour\s+les?\s+|et\s+les?\s+)?(?:agent(?:e)?s?\s+)?"
         r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\s*\??",
@@ -393,13 +401,15 @@ def qualify_legal_question(
         current_folded,
     )):
         status = "STAGIAIRE_EXPLICIT"
-    elif negative_status != "titulaire" and ((
-        short_status_reply and "titulaire" in current_folded
-    ) or re.search(
+    elif negative_status != "titulaire" and not negative_titularization and (
+        re.search(
+            r"\b(?:je viens d etre|j ai ete|je suis) (?:agent )?titularise(?:e|s|es)?\b",
+            current_folded,
+        ) or (short_status_reply and "titulaire" in current_folded) or re.search(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
         r"(?:(?:un|une)\s+)?(?:(?:agent|fonctionnaire)\s+)?titulaire\b",
         current_folded,
-    )):
+    ))):
         status = "TITULAIRE_EXPLICIT"
     elif negative_status != "fonctionnaire" and ((
         short_status_reply and "fonctionnaire" in current_folded

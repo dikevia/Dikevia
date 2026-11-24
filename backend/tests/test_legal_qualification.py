@@ -583,3 +583,29 @@ def test_referential_followup_does_not_inherit_an_unrelated_previous_answer():
 
     assert context.is_followup is False
     assert context.assistant_context is None
+
+
+@pytest.mark.parametrize("question", [
+    "Je viens d'être titularisé.",
+    "Je viens d'être titularisée.",
+    "J'ai été titularisé récemment.",
+    "Je suis titularisé depuis hier.",
+])
+def test_recent_titularization_is_recognized_as_explicit_titular_status(question):
+    result = qualify_legal_question(question)
+    assert result["agent_status"] == "TITULAIRE_EXPLICIT"
+
+
+def test_negated_titularization_is_not_recognized_as_current_titular_status():
+    assert qualify_legal_question("Je ne suis pas titularisé.")["agent_status"] == "NOT_SPECIFIED"
+    assert qualify_legal_question("Je ne suis plus titularisée.")["agent_status"] == "NOT_SPECIFIED"
+
+
+def test_recent_titularization_is_preserved_in_contextual_followup():
+    context = build_contextual_research_context(
+        "Peux-tu détailler le deuxième point ?",
+        ["Je viens d'être titularisé. Quels sont mes droits aux congés annuels ?"],
+        ["Le deuxième point concerne le calcul des droits. Voici les règles."],
+    )
+    assert context.is_followup is True
+    assert "titularisé" in context.question
