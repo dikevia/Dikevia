@@ -126,6 +126,15 @@ def test_prompt_never_assumes_generic_public_service_sources_apply_to_fpt():
 
 
 
+def test_fpt_prompt_requires_pedagogical_explanations_not_a_bare_list_of_references():
+    from app.ai_provider import SYSTEM_PROMPT
+
+    assert "explication pédagogique autonome" in SYSTEM_PROMPT
+    assert "termes juridiques indispensables" in SYSTEM_PROMPT
+    assert "Évite de répéter une règle" in SYSTEM_PROMPT
+    assert "liste de références sans explication" in SYSTEM_PROMPT
+
+
 def test_prompt_requires_each_claim_to_be_bound_to_an_exact_research_axis():
     assert '"axis": "valeur exacte d\'un axe de axes_recherche_documentaire"' in SYSTEM_PROMPT
     assert '"uncovered_axes": []' in SYSTEM_PROMPT
