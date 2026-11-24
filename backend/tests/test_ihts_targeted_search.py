@@ -69,3 +69,13 @@ def test_medico_social_specific_ihts_exception_is_not_added_to_other_versants():
     question = "Je suis cadre de santé paramédical et j'effectue des heures supplémentaires."
     assert _build_targeted_regulatory_queries(question, "FPE") == []
     assert _build_targeted_regulatory_queries(question, "FPH") == []
+
+
+def test_medico_social_ihts_detection_handles_official_territorial_cadre_wording():
+    questions = [
+        "Je suis cadre territorial de santé paramédical, quel contingent d'IHTS ?",
+        "Je suis puéricultrice territoriale, quelles règles d'heures supplémentaires ?",
+    ]
+    for question in questions:
+        queries = _build_targeted_regulatory_queries(question, "FPT")
+        assert any("2002-598" in query for query in queries)
