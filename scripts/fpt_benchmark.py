@@ -271,9 +271,13 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
 
     reviewed = len(question_scores)
     average_score = round(sum(x["score"] for x in question_scores) / reviewed, 3) if reviewed else None
+    gold_answers_validated = (
+        dataset.get("release_gate", {}).get("gold_answers") == "HUMAN_VALIDATED"
+        or all(q.get("gold_answer_status") == "HUMAN_VALIDATED" for q in questions)
+    )
     result = {
         "benchmark": "Dikévia — benchmark FPT",
-        "status": "INCOMPLET" if reviewed != len(expected_ids) else "COMPLET",
+        "status": "COMPLET" if reviewed == len(expected_ids) and gold_answers_validated else "INCOMPLET",
         "questions_total": len(expected_ids),
         "questions_evaluees": reviewed,
         "questions_restantes": unreviewed,
@@ -293,10 +297,6 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         gate = dataset.get("release_gate") or {}
         relevance_rate = sum(relevance_values) / reviewed if reviewed else None
         source_support_rate = sum(source_support_values) / reviewed if reviewed else None
-        gold_answers_validated = (
-            dataset.get("release_gate", {}).get("gold_answers") == "HUMAN_VALIDATED"
-            or all(q.get("gold_answer_status") == "HUMAN_VALIDATED" for q in questions)
-        )
         checks = {
             "gold_answers_human_validated": gold_answers_validated,
             "no_critical_failures": severity_counts["critique"] == 0,
