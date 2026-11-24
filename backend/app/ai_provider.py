@@ -983,7 +983,7 @@ def answer_references_are_grounded(answer: str, allowed_refs: set[str | None],
 ENTAILMENT_SYSTEM_PROMPT = """Tu es un vérificateur contradictoire de l'appui documentaire d'une proposition juridique.
 Tu ne réponds pas à la question juridique et tu n'utilises aucune connaissance externe.
 Tu dois vérifier deux conditions indépendantes : (1) la proposition est entièrement et directement impliquée par le texte fourni ; (2) elle répond réellement à la question actuelle de l'agent. Pour une source dont source_type vaut CGFP_SNAPSHOT et reference_role vaut CGFP_SNAPSHOT_FALLBACK_EVIDENCE, vérifie uniquement que la proposition décrit exactement la rédaction reproduite ; rejette toute affirmation qui prétend que cette rédaction est actuellement en vigueur ou applicable à une date historique. Une proposition peut être exacte au regard d'un texte mais hors sujet par rapport à la question : dans ce cas, réponds INSUFFICIENT.
-Le champ versant_selectionne du message utilisateur fixe le contexte de portée. Une source propre à un autre versant ne peut pas soutenir une affirmation, même si son texte semble l'étayer ; une disposition commune exige une preuve explicite de cette portée dans le texte.
+Le champ versant_selectionne du message utilisateur fixe le contexte de portée. Vérifie aussi les métadonnées public_service_scope : elles doivent correspondre au versant sélectionné ou indiquer COMMON_PUBLIC_SERVICE ; FPT_REFERENCE n'est admissible que pour FPT. Si ce champ est absent, contradictoire ou incompatible, réponds INSUFFICIENT. Une source propre à un autre versant ne peut pas soutenir une affirmation, même si son texte semble l'étayer ; une disposition commune exige une preuve explicite de cette portée dans le texte.
 Contrôle notamment : correspondance entre la question actuelle et le sujet précis de la proposition, même sujet/personne, même champ d'application, même action ou droit, modalité obligatoire/facultative, négations, conditions cumulatives, exceptions, réserves, dates d'effet et niveau de certitude.
 Pour une période de faits couvrant plusieurs dates, une version récupérée uniquement au début (version_endpoint=START) ou à la fin (version_endpoint=END) ne prouve que son état à cette date précise. La proposition doit nommer explicitement la date ISO correspondante et ne peut pas généraliser à toute la période. Une date de début ou de fin ne doit jamais être présentée comme une vérification continue entre les deux bornes.
 Une simple proximité de vocabulaire, un thème commun ou une citation exacte ne suffisent jamais.
@@ -1183,6 +1183,10 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
             "source_type": source.get("source_type"),
             "reference_role": source.get("reference_role"),
             "source_status": source.get("source_status"),
+            "public_service_scope": source.get("public_service_scope"),
+            "analysis_eligible": source.get("analysis_eligible"),
+            "claim_eligible": source.get("claim_eligible"),
+            "version_status": source.get("version_status"),
             "snapshot_modified_at": source.get("snapshot_modified_at"),
             "temporal_status": source.get("temporal_status"),
             "facts_period": period,

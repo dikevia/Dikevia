@@ -912,6 +912,11 @@ async def test_entailment_verifier_receives_current_question_for_relevance_check
         "source_id": "SRC-IHTS-1",
         "title": "Règles relatives aux heures supplémentaires",
         "text": source_text,
+        "public_service_scope": "FPT",
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "version_status": "IN_FORCE",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
     }
     claim = {
         "source_id": "SRC-IHTS-1",
@@ -945,8 +950,15 @@ async def test_entailment_verifier_receives_current_question_for_relevance_check
         sources=[source],
     )
 
-    verifier_question = json.loads(captured["payload"]["messages"][1]["content"])["question_actuelle"]
+    verifier_payload = json.loads(captured["payload"]["messages"][1]["content"])
+    verifier_question = verifier_payload["question_actuelle"]
     assert verifier_question == "Mon employeur peut-il refuser de compenser mes heures supplémentaires ?"
+    evidence = verifier_payload["items_to_verify"][0]
+    assert evidence["public_service_scope"] == "FPT"
+    assert evidence["analysis_eligible"] is True
+    assert evidence["claim_eligible"] is True
+    assert evidence["version_status"] == "IN_FORCE"
+    assert evidence["temporal_status"] == "IN_FORCE_ON_REQUESTED_DATE"
     # A source that only says compensation may be possible does not answer
     # whether the employer may refuse in this agent's specific question.
     assert result["valid"] is False
