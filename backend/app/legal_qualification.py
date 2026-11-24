@@ -409,7 +409,7 @@ def qualify_legal_question(
         r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
         r"(?:(?:un|une)\s+)?(?:(?:agent|fonctionnaire)\s+)?titulaire\b",
         current_folded,
-    ))):
+    )):
         status = "TITULAIRE_EXPLICIT"
     elif negative_status != "fonctionnaire" and ((
         short_status_reply and "fonctionnaire" in current_folded
