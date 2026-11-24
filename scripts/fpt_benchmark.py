@@ -68,6 +68,25 @@ def questions_from(data: Any) -> list[dict]:
     return data
 
 
+def records_by_id(data: Any, label: str) -> dict[str, dict]:
+    """Validate a response/review collection before indexing it by case ID."""
+    if isinstance(data, dict):
+        data = data.get("responses")
+    if not isinstance(data, list):
+        raise ValueError(f"Le fichier {label} doit contenir une liste JSON.")
+    indexed: dict[str, dict] = {}
+    for item in data:
+        if not isinstance(item, dict):
+            raise ValueError(f"Chaque élément du fichier {label} doit être un objet JSON.")
+        item_id = item.get("id")
+        if not isinstance(item_id, str) or not item_id:
+            raise ValueError(f"Chaque élément du fichier {label} doit avoir un identifiant texte non vide.")
+        if item_id in indexed:
+            raise ValueError(f"Le fichier {label} contient des identifiants dupliqués : {item_id}.")
+        indexed[item_id] = item
+    return indexed
+
+
 def validate_dataset(path: str) -> list[dict]:
     data = load_json(path)
     if not isinstance(data, dict):
@@ -161,14 +180,7 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
     questions = validate_dataset(dataset_path)
     dimensions = dimensions_for_dataset(dataset)
     canonical = dimensions == CANONICAL_DIMENSIONS
-    responses = load_json(responses_path)
-    if isinstance(responses, dict):
-        responses = responses.get("responses")
-    if not isinstance(responses, list):
-        raise ValueError("Les réponses doivent être une liste JSON ou un objet {responses:[...]}.")
-    by_id = {r.get("id"): r for r in responses if isinstance(r, dict)}
-    if len(by_id) != len(responses):
-        raise ValueError("Identifiants de réponses dupliqués ou réponse mal formée.")
+    by_id = records_by_id(load_json(responses_path), "réponses")
     expected = set(expected_ids_for_dataset(dataset))
     if set(by_id) != expected:
         raise ValueError(json.dumps({
@@ -213,18 +225,12 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
     canonical = dimensions == CANONICAL_DIMENSIONS
     max_points = len(dimensions) * 2
     # Ensure responses are complete even if the review sheet was edited manually.
-    responses = load_json(responses_path)
-    if isinstance(responses, dict):
-        responses = responses.get("responses")
     expected_ids = set(expected_ids_for_dataset(dataset))
-    response_ids = {r.get("id") for r in responses if isinstance(r, dict)}
-    if response_ids != expected_ids or len(responses) != len(expected_ids):
+    response_by_id = records_by_id(load_json(responses_path), "réponses")
+    if set(response_by_id) != expected_ids:
         raise ValueError(f"Le fichier de réponses doit contenir exactement une réponse pour chacun des {len(expected_ids)} cas du jeu.")
-    reviews = load_json(reviews_path)
-    if not isinstance(reviews, list):
-        raise ValueError("Le fichier de revue doit être une liste JSON.")
-    review_by_id = {r.get("id"): r for r in reviews if isinstance(r, dict)}
-    if len(review_by_id) != len(reviews) or len(review_by_id) != len(expected_ids) or set(review_by_id) != expected_ids:
+    review_by_id = records_by_id(load_json(reviews_path), "revue")
+    if set(review_by_id) != expected_ids:
         raise ValueError(f"Le fichier de revue doit contenir exactement une évaluation par question ({len(expected_ids)} cas).")
 
     totals = {d: 0 for d in dimensions}
