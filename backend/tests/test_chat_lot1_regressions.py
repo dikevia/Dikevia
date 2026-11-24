@@ -325,3 +325,23 @@ def test_local_collectivity_documents_are_retrieved_only_for_fpt_employers(
     from app.orchestrator import _should_search_local_employer_documents
 
     assert _should_search_local_employer_documents(versant, employer) is expected
+
+
+@pytest.mark.parametrize(
+    ("versant", "employer", "expected"),
+    [
+        ("FPT", "VILLE_SAINT_ETIENNE", "VILLE_SAINT_ETIENNE"),
+        ("FPT", "SAINT_ETIENNE_METROPOLE", "SAINT_ETIENNE_METROPOLE"),
+        ("FPT", "NATIONAL", "NATIONAL"),
+        ("FPE", "VILLE_SAINT_ETIENNE", "NATIONAL"),
+        ("FPE", "SAINT_ETIENNE_METROPOLE", "NATIONAL"),
+        ("FPH", "VILLE_SAINT_ETIENNE", "NATIONAL"),
+        ("FPH", "SAINT_ETIENNE_METROPOLE", "NATIONAL"),
+    ],
+)
+def test_fpe_fph_research_never_inherits_fpt_only_employer_selector(
+    versant, employer, expected,
+):
+    from app.orchestrator import _effective_employer_for_versant
+
+    assert _effective_employer_for_versant(versant, employer) == expected

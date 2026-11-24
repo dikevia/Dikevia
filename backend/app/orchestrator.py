@@ -318,6 +318,11 @@ def _should_search_local_employer_documents(public_service: str, employer: str) 
     )
 
 
+def _effective_employer_for_versant(public_service: str, employer: str) -> str:
+    """Do not pass an FPT-only employer selector as the legal employer in FPE/FPH."""
+    return str(employer or "NATIONAL") if str(public_service or "").upper() == "FPT" else "NATIONAL"
+
+
 def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
@@ -779,7 +784,7 @@ class LegalOrchestrator:
                 )
         # Qualification must use the resolved referent so follow-ups such as
         # "Et pour les contractuels ?" retain the original legal topic.
-        legal_context = qualify_legal_question(contextual_question, request.employer, request.public_service)
+        legal_context = qualify_legal_question(contextual_question, _effective_employer_for_versant(request.public_service, request.employer), request.public_service)
         legal_context["versant_fonction_publique"] = request.public_service
         mismatch_versant = legal_context.get("explicit_self_versant_mismatch")
         if mismatch_versant:
@@ -813,7 +818,7 @@ class LegalOrchestrator:
         try:
             research_plan = await plan_legal_research(
                 question=contextual_question,
-                employer=request.employer,
+                employer=_effective_employer_for_versant(request.public_service, request.employer),
                 facts_period=temporal_context,
                 legal_context=legal_context,
                 conversation_history=provider_history,
@@ -1749,7 +1754,7 @@ class LegalOrchestrator:
         missing.extend(search_warnings)
         if local_issue:
             missing.insert(0, local_issue)
-        elif request.employer != "NATIONAL" and not local_sources:
+        elif _should_search_local_employer_documents(request.public_service, request.employer) and not local_sources:
             missing.insert(0, "Aucun document local correspondant n'a été trouvé pour cet employeur ; vérifier le code de collectivité et les pièces déposées.")
         if any(s.get("source_type") == "LOCAL_DOCUMENT" and s.get("temporal_status") != "VERIFIED_APPLICABLE"
                for s in local_sources):
