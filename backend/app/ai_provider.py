@@ -22,6 +22,11 @@ from .evidence_text import normalize_evidence_text
 logger = logging.getLogger(__name__)
 
 
+def _as_mapping(value: Any) -> dict:
+    """Return untrusted nested metadata only when it is a mapping."""
+    return value if isinstance(value, dict) else {}
+
+
 def _log_provider_failure(operation: str, exc: Exception) -> None:
     """Log actionable provider diagnostics without logging credentials or request payloads."""
     if isinstance(exc, httpx.HTTPStatusError):
@@ -480,7 +485,8 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
         return {}
     candidates = []
-    for source in (sources or [])[:30]:
+    source_records = sources if isinstance(sources, (list, tuple)) else []
+    for source in source_records[:30]:
         if not isinstance(source, dict) or not isinstance(source.get("source_id"), str):
             continue
         if source.get("content_kind") == "METADATA":
@@ -629,22 +635,22 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                 "extraits_documentaires_valides": [{
                     "type_source": s.get("source_type"), "identifiant_source": s.get("source_id"),
                     "titre": s.get("title"), "article": s.get("article"),
-                    "famille_source": (s.get("legal_assurance") or {}).get("source_family"),
-                    "qualification_source": (s.get("legal_assurance") or {}).get("source_family_label"),
-                    "niveau_autorite": (s.get("legal_assurance") or {}).get("authority_level"),
-                    "libelle_autorite": (s.get("legal_assurance") or {}).get("authority_label"),
-                    "editeur": (s.get("legal_assurance") or {}).get("publisher") or s.get("publisher"),
-                    "categorie_editeur": (s.get("legal_assurance") or {}).get("publisher_type"),
-                    "source_normative": (s.get("legal_assurance") or {}).get("normative"),
+                    "famille_source": _as_mapping(s.get("legal_assurance")).get("source_family"),
+                    "qualification_source": _as_mapping(s.get("legal_assurance")).get("source_family_label"),
+                    "niveau_autorite": _as_mapping(s.get("legal_assurance")).get("authority_level"),
+                    "libelle_autorite": _as_mapping(s.get("legal_assurance")).get("authority_label"),
+                    "editeur": _as_mapping(s.get("legal_assurance")).get("publisher") or s.get("publisher"),
+                    "categorie_editeur": _as_mapping(s.get("legal_assurance")).get("publisher_type"),
+                    "source_normative": _as_mapping(s.get("legal_assurance")).get("normative"),
                     "perimetre_fonction_publique": s.get("public_service_scope"),
                     "indices_perimetre": s.get("scope_evidence"),
                     "numero_officiel": s.get("official_number"), "juridiction": s.get("jurisdiction"),
                     "portee_extrait": s.get("retrieval_scope"),
-                    "code_publication_jurisprudentielle": s.get("jurisprudential_publication_code") or (s.get("raw_metadata") or {}).get("publication_code"),
-                    "numero_ecli": (s.get("raw_metadata") or {}).get("ecli"),
-                    "type_decision": (s.get("raw_metadata") or {}).get("decision_type"),
-                    "solution_decision": (s.get("raw_metadata") or {}).get("solution"),
-                    "type_recours": (s.get("raw_metadata") or {}).get("recourse_type"),
+                    "code_publication_jurisprudentielle": s.get("jurisprudential_publication_code") or _as_mapping(s.get("raw_metadata")).get("publication_code"),
+                    "numero_ecli": _as_mapping(s.get("raw_metadata")).get("ecli"),
+                    "type_decision": _as_mapping(s.get("raw_metadata")).get("decision_type"),
+                    "solution_decision": _as_mapping(s.get("raw_metadata")).get("solution"),
+                    "type_recours": _as_mapping(s.get("raw_metadata")).get("recourse_type"),
                     "date_signature": str(s.get("signature_date") or ""),
                     "date_publication": str(s.get("publication_date") or ""),
                     "date_decision": str(s.get("decision_date") or ""),
