@@ -39,3 +39,8 @@ def test_beta_capacity_migration_has_a_reversible_down_script():
     rollback = ROOT / "database/migrations/rollback/019_temporary_beta_user_cap.down.sql"
     assert migration.is_file()
     assert rollback.is_file()
+
+
+def test_production_blueprint_disables_quota_consuming_startup_probes():
+    render = (ROOT / "render.yaml").read_text()
+    assert '      - key: STARTUP_EXTERNAL_DIAGNOSTICS_ENABLED\n        value: "false"' in render
