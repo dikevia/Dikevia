@@ -396,8 +396,12 @@ async def search_legal_corpus(
         SELECT c.id chunk_id,c.version_id,c.ordinal,
           (2.0 * ts_rank_cd(c.search_vector,st.original_query)
              + ts_rank_cd(c.search_vector,st.expansion_query)) lexical_score
-        FROM legal_chunks c CROSS JOIN search_terms st
+        FROM legal_chunks c
+        JOIN legal_document_versions v ON v.id=c.version_id
+        CROSS JOIN search_terms st
         WHERE c.content_kind='FULL_TEXT'
+          AND (v.valid_from IS NULL OR v.valid_from <= $5::date)
+          AND (v.valid_to IS NULL OR v.valid_to >= $5::date)
           AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
       ), lexical_ranked AS (
         SELECT chunk_id,version_id,ordinal,
@@ -407,7 +411,10 @@ async def search_legal_corpus(
         SELECT c.id chunk_id,c.version_id,c.ordinal,
           row_number() OVER(ORDER BY c.embedding_384 <=> $4::vector) candidate_rank
         FROM legal_chunks c
+        JOIN legal_document_versions v ON v.id=c.version_id
         WHERE $4::vector IS NOT NULL
+          AND (v.valid_from IS NULL OR v.valid_from <= $5::date)
+          AND (v.valid_to IS NULL OR v.valid_to >= $5::date)
           AND c.embedding_384 IS NOT NULL
           AND c.embedding_384_model='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
           AND c.embedding_384_dimensions=384
@@ -469,7 +476,7 @@ async def search_legal_corpus(
       SELECT metadata.*,selected_chunks.content,selected_chunks.rank
       FROM document_metadata metadata JOIN selected_chunks USING(version_id)
       ORDER BY selected_chunks.rank DESC,metadata.publication_date DESC NULLS LAST LIMIT $3
-    """, query.strip(), expansion_expression, limit, vector_literal)
+    """, query.strip(), expansion_expression, limit, vector_literal, requested_date)
     results = []
     for row in rows:
         item = dict(row)
