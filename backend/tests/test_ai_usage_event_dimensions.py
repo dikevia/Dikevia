@@ -97,3 +97,23 @@ def test_entailment_provider_failure_does_not_overwrite_successful_answer_usage(
     source = (ROOT / "backend" / "app" / "orchestrator.py").read_text(encoding="utf-8")
     assert "if ai_usage is None and settings.ai_api_base_url and settings.ai_model:" in source
     assert "Do not overwrite it." in source
+
+
+
+def test_metering_rollback_preserves_existing_outcome_contract():
+    rollback = (
+        ROOT / "database" / "migrations" / "rollback"
+        / "027_ai_usage_event_dimensions.down.sql"
+    ).read_text(encoding="utf-8")
+    assert "SET outcome = 'STRUCTURED_OUTPUT_RECEIVED'" in rollback
+    assert "WHERE outcome = 'COMPLETED'" in rollback
+    for outcome in (
+        "STRUCTURED_OUTPUT_RECEIVED",
+        "REJECTED_UNSUPPORTED_CLAIMS",
+        "ABSTAINED_NO_SUPPORTED_CLAIMS",
+        "REJECTED_UNSUPPORTED_ENTAILMENT",
+        "ANSWERED_WITH_PARTIAL_VERIFIED_CLAIMS",
+        "ANSWERED_WITH_VERIFIED_QUOTES_AND_ENTAILMENT_CHECK",
+        "REJECTED_AMBIGUOUS_SOURCE",
+    ):
+        assert f"'{outcome}'" in rollback
