@@ -268,9 +268,43 @@ app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifes
 if settings.cors_origins:
     app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.cors_origins.split(",")],
         allow_credentials=True, allow_methods=["GET","POST","PUT","PATCH","DELETE"],
-        allow_headers=["Authorization","Content-Type","X-Organization-ID"])
+        allow_headers=["Authorization","Content-Type","X-Organization-ID","X-OIDC-ID-Token"])
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
+
+
+@app.get("/auth-config.js", include_in_schema=False)
+async def browser_oidc_configuration():
+    """Expose only public OIDC client settings; never return provider secrets."""
+    if not settings.oidc_client_id or not settings.oidc_issuer:
+        return Response(
+            "/* Runtime OIDC override not configured; use the static fallback. */",
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-store"},
+        )
+    redirect_origin = settings.invitation_base_url.rstrip("/") if settings.invitation_base_url else ""
+    redirect_uri = json.dumps(redirect_origin + "/") if redirect_origin else "window.location.origin + '/'"
+    silent_redirect_uri = (
+        json.dumps(redirect_origin + "/static/silent-check-sso.html")
+        if redirect_origin else "window.location.origin + '/static/silent-check-sso.html'"
+    )
+    script = (
+        "window.CFDT_JURIS_OIDC = Object.freeze({"
+        f"issuer:{json.dumps(settings.oidc_issuer)},"
+        f"client_id:{json.dumps(settings.oidc_client_id)},"
+        f"redirect_uri:{redirect_uri},"
+        f"silent_redirect_uri:{silent_redirect_uri},"
+        f"scopes:{json.dumps(settings.oidc_scopes)},"
+        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)}"
+        "});"
+    )
+    return Response(
+        script,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
+
 orchestrator = LegalOrchestrator()
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
 
@@ -2012,15 +2046,21 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
     keycloak_user_id = None
     smtp_ready = bool(settings.smtp_host and settings.smtp_from)
     keycloak_ready = bool(settings.keycloak_admin_base_url and settings.keycloak_admin_client_secret)
-    if smtp_ready and keycloak_ready:
+    auth0_ready = settings.oidc_provider == "auth0" and bool(settings.oidc_client_id)
+    if smtp_ready and (keycloak_ready or auth0_ready):
         try:
-            admin = KeycloakAdmin(KeycloakAdminConfig(
-                base_url=settings.keycloak_admin_base_url, realm=settings.keycloak_admin_realm,
-                client_id=settings.keycloak_admin_client_id, client_secret=settings.keycloak_admin_client_secret,
-                timeout=settings.keycloak_admin_timeout_seconds))
-            keycloak_user_id, created_in_keycloak, email_verified = await admin.ensure_user(email)
-            if not email_verified:
-                await admin.send_verification(keycloak_user_id, settings.invitation_base_url.rstrip("/") + "/", created_in_keycloak)
+            if settings.oidc_provider == "keycloak":
+                admin = KeycloakAdmin(KeycloakAdminConfig(
+                    base_url=settings.keycloak_admin_base_url, realm=settings.keycloak_admin_realm,
+                    client_id=settings.keycloak_admin_client_id, client_secret=settings.keycloak_admin_client_secret,
+                    timeout=settings.keycloak_admin_timeout_seconds))
+                keycloak_user_id, created_in_keycloak, email_verified = await admin.ensure_user(email)
+                if not email_verified:
+                    await admin.send_verification(
+                        keycloak_user_id, settings.invitation_base_url.rstrip("/") + "/", created_in_keycloak
+                    )
+            # Auth0 handles account creation and email verification through Universal Login.
+            # Dikévia sends only its own single-use organization invitation token.
             organization = await ctx.conn.fetchrow("SELECT display_name FROM organizations WHERE id=$1::uuid", ctx.organization_id)
             organization_name = organization["display_name"] if organization else "votre organisation"
             invite_url = f"{settings.invitation_base_url.rstrip('/')}/?invitation_token={token}"
@@ -2030,7 +2070,7 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
             delivery = "SMTP_EMAIL_SENT"
         except Exception:
             await ctx.conn.execute("UPDATE invitations SET status='REVOKED' WHERE id=$1::uuid", row["id"])
-            raise HTTPException(503, "L'invitation n'a pas été envoyée. Vérifiez Keycloak et le serveur SMTP.")
+            raise HTTPException(503, "L'invitation n'a pas été envoyée. Vérifiez le fournisseur d'identité et le serveur SMTP.")
     await ctx.conn.execute("""
       INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
       VALUES($1::uuid,$2::uuid,'INVITATION_CREATED','invitation',$3::uuid,jsonb_build_object('role',$4,'email',$5,'delivery',$6))
@@ -2038,7 +2078,8 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
     result = {"id": str(row["id"]), "email": row["email_normalized"], "role": row["role"],
               "status": row["status"], "expires_at": row["expires_at"], "delivery": delivery}
     if delivery == "SMTP_EMAIL_SENT":
-        result["keycloak_user_id"] = keycloak_user_id
+        if keycloak_user_id:
+            result["keycloak_user_id"] = keycloak_user_id
     else:
         result["invitation_token"] = token
         result["warning"] = "Le provisionnement automatique n'est pas configuré. Transmettez ce jeton par un canal sûr."

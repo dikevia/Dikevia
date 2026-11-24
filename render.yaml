@@ -30,14 +30,30 @@ services:
         sync: false
       - key: PLATFORM_ADMIN_DATABASE_URL
         sync: false
+      - key: OIDC_PROVIDER
+        sync: false
       - key: OIDC_ISSUER
-        value: https://dikevia-identity-l2r8.onrender.com/realms/cfdt
+        sync: false
       - key: OIDC_AUDIENCE
-        value: cfdt-juris-api
+        sync: false
       - key: OIDC_JWKS_URL
-        value: https://dikevia-identity-l2r8.onrender.com/realms/cfdt/protocol/openid-connect/certs
+        sync: false
       - key: OIDC_ALGORITHMS
         value: RS256
+      - key: OIDC_CLIENT_ID
+        sync: false
+      - key: OIDC_SCOPES
+        value: openid profile email
+      - key: OIDC_AUTHORIZATION_AUDIENCE
+        sync: false
+      - key: OIDC_IDENTITY_COMPAT_ISSUER
+        sync: false
+      - key: OIDC_IDENTITY_SUBJECT_PREFIX
+        value: auth0|
+      - key: OIDC_EMAIL_CLAIM
+        value: email
+      - key: OIDC_EMAIL_VERIFIED_CLAIM
+        value: email_verified
       - key: CORS_ORIGINS
         value: https://dikevia-commercial-api-l2r8.onrender.com
       - key: AWS_ENDPOINT_URL_S3

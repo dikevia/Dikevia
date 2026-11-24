@@ -13,6 +13,12 @@ def test_render_api_image_uses_origin_scoped_oidc_configuration():
     assert '"redirect_uri": appOrigin + "/"' in auth
     assert '"silent_redirect_uri": appOrigin + "/static/silent-check-sso.html"' in auth
     assert "cfdt-juris-web" in auth
+    api = (ROOT / "backend/app/main.py").read_text()
+    browser_auth = (ROOT / "frontend/oidc-auth.js").read_text()
+    assert '@app.get("/auth-config.js"' in api
+    assert "OIDC_AUTHORIZATION_AUDIENCE" in (ROOT / "render.yaml").read_text()
+    assert "params.audience=cfg.audience" in browser_auth
+    assert "Preserve the issuer exactly as advertised by discovery" in browser_auth
 
 
 def test_render_keycloak_realm_and_api_redirect_origins_match():

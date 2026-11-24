@@ -3,10 +3,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_invitation_uses_server_side_keycloak_and_smtp_only():
+def test_invitation_supports_keycloak_and_auth0_server_side_delivery():
     main = (ROOT / "backend/app/main.py").read_text()
     assert "KeycloakAdmin(" in main
     assert "await admin.ensure_user(email)" in main
+    assert 'settings.oidc_provider == "auth0"' in main
+    assert "Auth0 handles account creation and email verification through Universal Login." in main
     assert "await asyncio.to_thread(send_invitation_email" in main
     assert 'delivery = "SMTP_EMAIL_SENT"' in main
     assert 'result["invitation_token"] = token' in main  # manual fallback only
