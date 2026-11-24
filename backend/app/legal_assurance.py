@@ -103,7 +103,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             kind == "PROFESSIONAL_GUIDANCE"
             and (
                 source_key in {"dgafp", "dgcl"}
-                or "direction générale de l'administration et de la fonction publique" in publisher.casefold()
+                or "direction générale de l'administration et de la fonction publique" in (publisher or "").casefold()
             )
         ):
             publisher_type = "PUBLIC_ADMINISTRATION"
