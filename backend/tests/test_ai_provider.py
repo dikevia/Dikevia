@@ -1656,3 +1656,18 @@ def test_entailment_verdict_validation_fails_closed_on_malformed_inputs():
     assert validate_entailment_verdicts(
         {"verdicts": [valid_verdict]}, [valid_claim], None,
     )["invalid"] == ["verdict_0:source_missing_or_ambiguous"]
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_rejects_malformed_claim_and_source_collections(monkeypatch):
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    assert (await verify_claim_entailment(
+        question="Question", claims=[None], sources=[],
+    ))["invalid"] == ["missing_or_invalid_claims"]
+    assert (await verify_claim_entailment(
+        question="Question", claims=[{"source_id": "SRC-123"}], sources=None,
+    ))["invalid"] == ["missing_or_invalid_sources"]
