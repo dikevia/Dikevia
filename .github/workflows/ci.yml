@@ -270,6 +270,8 @@ jobs:
                   await conn.close()
           asyncio.run(main())
           PY
+      - name: Audit real staging guidance eligibility and provenance
+        run: PYTHONPATH=backend python scripts/audit_staging_guidance_eligibility.py
 
   live-smoke:
     # These probes contact Render-hosted services and may wake paid compute. Disabled unless explicitly enabled in repository variables.

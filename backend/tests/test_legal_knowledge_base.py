@@ -67,6 +67,43 @@ def test_guidance_sources_are_context_only_and_never_ground_legal_claims():
     assert result["claims"] == []
 
 
+def test_institutional_guidance_preserves_union_identity_and_non_normative_label():
+    union = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "ADMIN_GUIDANCE",
+        "publisher": "Fédération CFDT Interco",
+        "raw_metadata": {
+            "source_id": "cfdt-interco",
+            "authority_level": "TRADE_UNION_POSITION",
+        },
+    })
+    assert union["publisher_type"] == "TRADE_UNION"
+    assert union["authority_level"] == "PROFESSIONAL_GUIDANCE"
+    assert union["source_family_label"] == "Doctrine syndicale — non normative"
+    assert union["normative"] is False
+    assert union["claim_eligible"] is False
+    assert union["usable_for_conclusion"] is False
+    assert union["reference_role"] == "NON_NORMATIVE_CONTEXT_ONLY"
+
+
+def test_dgafp_guidance_remains_official_but_non_normative():
+    source = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "ADMIN_GUIDANCE",
+        "publisher": "Direction générale de l'administration et de la fonction publique",
+        "raw_metadata": {
+            "source_id": "dgafp",
+            "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+        },
+    })
+    assert source["publisher_type"] == "PUBLIC_ADMINISTRATION"
+    assert source["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert source["normative"] is False
+    assert source["claim_eligible"] is False
+    assert source["usable_for_conclusion"] is False
+    assert source["reference_role"] == "NON_NORMATIVE_CONTEXT_ONLY"
+
+
 def test_imported_cgfp_snapshot_can_support_bounded_general_claim_with_provenance():
     source = {
         "source_type": "CGFP_SNAPSHOT", "source_id": "CGFP:article:L1234-1",
