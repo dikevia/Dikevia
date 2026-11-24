@@ -90,3 +90,10 @@ def test_provider_error_usage_event_keeps_unknown_tokens_null(monkeypatch):
     assert events[0]["total_tokens"] is None
     assert events[0]["latency_ms"] == 1000
     assert events[0]["outcome"] == "PROVIDER_ERROR"
+
+
+
+def test_entailment_provider_failure_does_not_overwrite_successful_answer_usage():
+    source = (ROOT / "backend" / "app" / "orchestrator.py").read_text(encoding="utf-8")
+    assert "if ai_usage is None and settings.ai_api_base_url and settings.ai_model:" in source
+    assert "Do not overwrite it." in source

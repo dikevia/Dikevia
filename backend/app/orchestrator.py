@@ -2058,7 +2058,10 @@ class LegalOrchestrator:
                 except AIProviderUnavailable:
                     ai_answer = None
                     # Record a provider attempt even when it fails; token usage remains unknown.
-                    if settings.ai_api_base_url and settings.ai_model:
+                    if ai_usage is None and settings.ai_api_base_url and settings.ai_model:
+                        # The answer-generation event already exists when the later
+                        # entailment call fails; its own PROVIDER_ERROR event is
+                        # recorded by verify_claim_entailment. Do not overwrite it.
                         ai_usage = {
                             "provider": "gemini" if settings.ai_api_base_url and "generativelanguage.googleapis.com" in settings.ai_api_base_url else "openai_compatible",
                             "model": settings.ai_model[:160],
