@@ -195,3 +195,12 @@ def test_research_planner_distinguishes_the_user_from_comparative_or_third_party
     assert "Une mention d'un autre versant dans une comparaison ou à propos d'un tiers" in prompt_source
     assert "distingue toujours le sujet de la question et la personne dont la situation est décrite" in prompt_source
 
+def test_all_versants_explain_current_rules_and_source_based_procedures_without_overclaiming():
+    from app.ai_provider import _system_prompt_for_versant
+
+    for versant in ("FPT", "FPE", "FPH"):
+        prompt = _system_prompt_for_versant(versant)
+        assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in prompt
+        assert "Ne demande pas automatiquement la date des faits" in prompt
+        assert "procédures, autorités compétentes, délais et conditions expressément documentés" in prompt
+        assert "ne propose aucune stratégie personnelle" in prompt
