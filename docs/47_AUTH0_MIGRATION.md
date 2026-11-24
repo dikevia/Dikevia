@@ -40,11 +40,11 @@ Les variables publiques et privées sont séparées. Les variables suivantes son
 
 - OIDC_PROVIDER=auth0
 - OIDC_ISSUER=https://dev-brlgaz1yh2de3mjo.us.auth0.com/ — conserver la barre oblique finale exacte.
-- OIDC_AUDIENCE=urn:dikevia:api:development
+- OIDC_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com — identifiant exact de l'API déclaré dans Auth0.
 - OIDC_JWKS_URL=https://dev-brlgaz1yh2de3mjo.us.auth0.com/.well-known/jwks.json
 - OIDC_CLIENT_ID=BSpBdDO3IUyG2g5JcHYH29e80JRbnW41 — identifiant public de l'application SPA.
 - OIDC_SCOPES=openid profile email
-- OIDC_AUTHORIZATION_AUDIENCE=urn:dikevia:api:development
+- OIDC_AUTHORIZATION_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com — doit être strictement identique à OIDC_AUDIENCE.
 - OIDC_EMAIL_CLAIM=email
 - OIDC_EMAIL_VERIFIED_CLAIM=email_verified
 
@@ -76,6 +76,12 @@ Les variables SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont nécessaires pour
 6. Tester déconnexion, retour de session, APK Android, console d'administration et accès fondateur.
 7. Tester le parcours complet sur staging. Garder Keycloak disponible pour le retour arrière.
 8. Ne changer les variables de production qu'après validation documentée du staging.
+
+## Contrôles bloquants avant tout test Auth0
+
+- L'identifiant d'API déclaré dans le tenant est `https://dikevia-commercial-api-l2r8.onrender.com` : l'audience du backend et le paramètre `audience` du frontend doivent reprendre exactement cette valeur. Ne pas utiliser un identifiant `urn:` non déclaré dans le tenant.
+- Les URL de callback, logout, Web Origins et CORS du client SPA de développement contiennent encore les origines de production et de staging. Cette configuration est trop permissive. Avant toute recette, retirer les origines de production du client de développement et conserver uniquement celles du staging.
+- Aucun test d'authentification ne doit être lancé avant vérification de la consommation Auth0 et du respect du plafond de 50 % du quota disponible. Le benchmark métier de 15 questions ne doit pas être confondu avec 15 authentifications : il faut réutiliser une session authentifiée et éviter une nouvelle connexion pour chaque question.
 
 ## État actuel
 
