@@ -243,22 +243,21 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
     domain_stats: dict[str, dict[str, int]] = {}
     for q in questions:
         review = review_by_id[q["id"]]
-        ratings = review.get("evaluations") or {}
-        valid = True
+        ratings = review.get("evaluations")
+        valid = isinstance(ratings, dict)
+        if not valid:
+            ratings = {}
         points = 0
         for dim in dimensions:
             value = ratings.get(dim)
-            if value not in (0, 1, 2):
+            # bool is a subclass of int in Python; reject it explicitly.
+            if type(value) is not int or value not in (0, 1, 2):
                 valid = False
                 continue
-            totals[dim] += value
-            dimension_counts[dim] += 1
             points += value
         severity = review.get("severite")
-        if severity not in SEVERITY:
+        if not isinstance(severity, str) or severity not in SEVERITY:
             valid = False
-        else:
-            severity_counts[severity] += 1
         if canonical:
             question_relevance = review.get("question_relevance")
             source_support = review.get("source_support")
@@ -267,6 +266,10 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         if not valid:
             unreviewed.append(q["id"])
             continue
+        for dim in dimensions:
+            totals[dim] += ratings[dim]
+            dimension_counts[dim] += 1
+        severity_counts[severity] += 1
         if canonical:
             relevance_values.append(question_relevance)
             source_support_values.append(source_support)
@@ -281,8 +284,9 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
 
     reviewed = len(question_scores)
     average_score = round(sum(x["score"] for x in question_scores) / reviewed, 3) if reviewed else None
+    dataset_gate = dataset.get("release_gate")
     gold_answers_validated = (
-        dataset.get("release_gate", {}).get("gold_answers") == "HUMAN_VALIDATED"
+        (isinstance(dataset_gate, dict) and dataset_gate.get("gold_answers") == "HUMAN_VALIDATED")
         or all(q.get("gold_answer_status") == "HUMAN_VALIDATED" for q in questions)
     )
     result = {
