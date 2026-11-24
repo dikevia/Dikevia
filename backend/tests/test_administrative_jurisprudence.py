@@ -392,6 +392,51 @@ def test_imported_administrative_case_law_without_facts_date_is_not_excluded():
     assert explanation is None
 
 
+def test_permanent_case_law_decision_before_or_on_facts_date_passes_source_gate():
+    from app.orchestrator import _is_usable_permanent_source
+
+    source = {
+        "source_id": "CORPUS_CASE_LAW_BEFORE_FACTS",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "research_axis_relevant": True,
+        "temporal_status": "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+    }
+    assert _is_usable_permanent_source(source, {source["source_id"]}) is True
+
+
+def test_permanent_case_law_with_verified_date_and_no_facts_date_passes_source_gate():
+    from app.orchestrator import _is_usable_permanent_source
+
+    source = {
+        "source_id": "CORPUS_CASE_LAW_CURRENT_CONTEXT",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "research_axis_relevant": True,
+        "temporal_status": "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
+    }
+    assert _is_usable_permanent_source(source, {source["source_id"]}) is True
+
+
+def test_permanent_case_law_after_facts_remains_excluded_from_conclusive_source_gate():
+    from app.orchestrator import _is_usable_permanent_source
+
+    source = {
+        "source_id": "CORPUS_CASE_LAW_AFTER_FACTS",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "research_axis_relevant": True,
+        "temporal_status": "DECISION_POSTERIOR_TO_FACTS",
+    }
+    assert _is_usable_permanent_source(source, {source["source_id"]}) is False
+
+
 def test_period_analysis_keeps_later_case_law_and_endpoint_valid_local_documents():
     from app.orchestrator import _source_allowed_for_period_analysis
 

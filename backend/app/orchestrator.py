@@ -452,6 +452,8 @@ def _is_usable_permanent_source(source: dict, permanent_source_ids: set) -> bool
         "IN_FORCE_ON_REQUESTED_DATE",
         "IN_FORCE_ON_FACTS_DATE",
         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+        "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
     }:
         return True
     return (
