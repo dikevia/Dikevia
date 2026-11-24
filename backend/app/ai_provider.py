@@ -559,6 +559,10 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
     evidence_records = [
         item for item in retrieved_evidence
         if isinstance(item, dict)
+        and any(
+            isinstance(item.get(field), str) and item[field].strip()
+            for field in ("excerpt", "text", "full_text")
+        )
     ] if isinstance(retrieved_evidence, (list, tuple)) else []
     query_records = previous_queries if isinstance(previous_queries, (list, tuple)) else []
     selected_versant = str(context.get("versant_fonction_publique") or "FPT").upper()
