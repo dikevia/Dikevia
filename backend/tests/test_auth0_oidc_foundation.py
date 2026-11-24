@@ -301,3 +301,29 @@ def test_auth0_legacy_mapping_requires_exact_existing_database_identity(
     assert mapped.subject == expected_subject
     assert mapped.email == principal.email
     assert mapped.email_verified is True
+
+
+def test_auth0_unverified_or_missing_email_is_denied():
+    from app.dependencies import _require_verified_auth0_email
+
+    verified = security.Principal(
+        subject="auth0|user", issuer="https://tenant.eu.auth0.com/",
+        email="agent@example.test", email_verified=True,
+    )
+    assert _require_verified_auth0_email(verified) == verified
+
+    unverified = security.Principal(
+        subject="auth0|user", issuer="https://tenant.eu.auth0.com/",
+        email="agent@example.test", email_verified=False,
+    )
+    with pytest.raises(HTTPException) as exc:
+        _require_verified_auth0_email(unverified)
+    assert exc.value.status_code == 403
+
+    no_email = security.Principal(
+        subject="auth0|user", issuer="https://tenant.eu.auth0.com/",
+        email=None, email_verified=False,
+    )
+    with pytest.raises(HTTPException) as exc:
+        _require_verified_auth0_email(no_email)
+    assert exc.value.status_code == 403
