@@ -632,3 +632,21 @@ def test_recent_titularization_is_preserved_in_contextual_followup():
     )
     assert context.is_followup is True
     assert "titularisé" in context.question
+
+
+def test_refused_part_time_is_not_misclassified_as_a_leave_followup():
+    from app.legal_qualification import (
+        build_contextual_research_context,
+        qualify_legal_question,
+    )
+
+    question = "Et si on me refuse mon temps partiel ?"
+    context = build_contextual_research_context(
+        question,
+        ["Combien de jours de congé annuel ai-je ?", "Et pour les contractuels ?"],
+    )
+
+    assert context.is_followup is False
+    assert context.question == question
+    qualification = qualify_legal_question(context.question)
+    assert qualification["topic"] == "WORKING_TIME"

@@ -293,8 +293,9 @@ _TOPIC_MARKERS = (
                                 "terme du contrat", "contrat arrive a son terme",
                                 "mon contrat arrive a son terme", "non renouvellement", "refuse le renouvellement",
                                 "refus de renouvellement", "refus du renouvellement")),
-    ("WORKING_TIME", ("temps de travail", "duree du travail", "heures supplementaires",
-                      "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
+    ("WORKING_TIME", ("temps de travail", "duree du travail", "temps partiel",
+                      "temps non complet", "heures supplementaires", "heures sup",
+                      "ihts", "astreinte", "annualisation", "repos compensateur",
                       "travail de nuit", "travail le dimanche", "venir le dimanche",
                       "travailler le dimanche", "venir travailler le dimanche")),
     ("WORKPLACE_INCIDENT_AND_AGENT_PROTECTION", (
