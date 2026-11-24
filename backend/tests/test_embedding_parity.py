@@ -31,6 +31,34 @@ def test_text_hash_normalizes_unicode_and_limits_query_length():
     assert MODULE.text_hash("a" * 5000 + "x") == MODULE.text_hash("a" * 5000 + "y")
 
 
+def test_query_segmentation_matches_the_corpus_embedding_contract():
+    from importlib.util import spec_from_file_location, module_from_spec
+
+    corpus_script = Path(__file__).resolve().parents[2] / "scripts" / "generate_legal_embeddings.py"
+    spec = spec_from_file_location("generate_legal_embeddings_for_parity", corpus_script)
+    corpus = module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(corpus)
+    text = ("Une question juridique avec plusieurs conditions et exceptions.\\n" * 40)[:5000]
+    assert MODULE.split_for_query_embedding(text) == corpus.split_for_embedding(text)
+
+
+def test_query_embedding_averages_segment_vectors_before_normalizing():
+    class FakeModel:
+        def __init__(self):
+            self.seen = []
+
+        def embed(self, segments):
+            self.seen.extend(segments)
+            return iter([[3.0] + [0.0] * 383, [0.0, 4.0] + [0.0] * 382])
+
+    model = FakeModel()
+    vector = MODULE.embed_query_text(model, "Première partie. " + "Deuxième partie.")
+    assert len(model.seen) == 1
+    assert vector[0] == pytest.approx(1.0)
+    assert vector[1] == pytest.approx(0.0)
+
+
 def test_cosine_similarity_of_identical_vectors_is_one():
     vector = [1.0] + [0.0] * 383
     assert MODULE.cosine_similarity(vector, vector) == pytest.approx(1.0)

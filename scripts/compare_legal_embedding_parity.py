@@ -22,7 +22,7 @@ MAX_QUERY_CHARS = 5000
 
 
 def text_hash(value: str) -> str:
-    normalized = unicodedata.normalize("NFC", value[:MAX_QUERY_CHARS])
+    normalized = unicodedata.normalize("NFC", value)[:MAX_QUERY_CHARS]
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
@@ -118,6 +118,51 @@ def load_json(path: str) -> dict[str, Any]:
     return value
 
 
+def split_for_query_embedding(value: str) -> list[str]:
+    """Mirror the browser worker's NFC, 500-character overlapping segmentation."""
+    text = unicodedata.normalize("NFC", str(value or ""))[:MAX_QUERY_CHARS].strip()
+    if not text:
+        return []
+    segments: list[str] = []
+    start = 0
+    while start < len(text):
+        end = min(len(text), start + 500)
+        if end < len(text):
+            midpoint = start + 250
+            newline = text.rfind("\\n", start + 250, end)
+            sentence = text.rfind(". ", start + 250, end)
+            boundary = max(newline, sentence)
+            if boundary > start:
+                end = boundary + 1
+        piece = " ".join(text[start:end].split()).strip()
+        if piece:
+            segments.append(piece)
+        if end >= len(text):
+            break
+        start = max(start + 1, end - 60)
+    return segments
+
+
+def embed_query_text(model: Any, text: str) -> list[float]:
+    segments = split_for_query_embedding(text)
+    if not segments:
+        raise ValueError("Question vide après normalisation.")
+    vectors = list(model.embed(segments))
+    if len(vectors) != len(segments):
+        raise RuntimeError("FastEmbed a retourné un nombre inattendu de vecteurs.")
+    dimensions = len(vectors[0]) if vectors else 0
+    if dimensions != DIMENSIONS or any(len(vector) != dimensions for vector in vectors):
+        raise RuntimeError("Dimensions FastEmbed incohérentes.")
+    values = [
+        sum(float(vector[index]) for vector in vectors) / len(vectors)
+        for index in range(dimensions)
+    ]
+    norm = math.sqrt(sum(value * value for value in values))
+    if not math.isfinite(norm) or norm == 0:
+        raise RuntimeError("FastEmbed a produit un vecteur nul ou invalide.")
+    return [value / norm for value in values]
+
+
 def generate_fastembed(input_path: str, output_path: str) -> None:
     payload = load_json(input_path)
     items = validate_items(payload.get("items"), "Entrée")
@@ -127,13 +172,9 @@ def generate_fastembed(input_path: str, output_path: str) -> None:
         raise RuntimeError("FastEmbed absent. Installer backend/requirements-embeddings.txt.") from exc
     model = TextEmbedding(model_name=MODEL_NAME)
     ids = list(items)
-    texts = [items[key]["text"][:MAX_QUERY_CHARS] for key in ids]
-    vectors = list(model.embed(texts))
-    if len(vectors) != len(ids):
-        raise RuntimeError("FastEmbed a retourné un nombre inattendu de vecteurs.")
     output_items = []
-    for identifier, vector in zip(ids, vectors):
-        values = [float(value) for value in vector]
+    for identifier in ids:
+        values = embed_query_text(model, items[identifier]["text"])
         if len(values) != DIMENSIONS or any(not math.isfinite(value) for value in values):
             raise RuntimeError(f"Vecteur FastEmbed invalide pour {identifier}.")
         output_items.append({
