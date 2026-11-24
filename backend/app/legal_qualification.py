@@ -122,13 +122,13 @@ def build_contextual_research_context(
         prior_topics = _matched_question_topics(prior)
         if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
             return ContextualResearchContext(question=current[:500], is_followup=False)
-        contextual = f"{current[:300]}\\n{prior[:180]}"
+        contextual = f"{current[:300]}\n{prior[:180]}"
         if not _EXPLICIT_STATUS_DECLARATION.search(current):
             for earlier_question in reversed(prior_questions):
                 declaration = _EXPLICIT_STATUS_DECLARATION.search(earlier_question)
                 if declaration:
                     contextual += (
-                        "\\nContexte de statut déclaré précédemment : "
+                        "\nContexte de statut déclaré précédemment : "
                         + declaration.group(0)
                     )
                     break
