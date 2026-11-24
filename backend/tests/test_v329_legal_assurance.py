@@ -634,3 +634,23 @@ def test_claim_validation_rejects_non_object_citation_integrity_metadata():
         )
         assert result["valid"] is False
         assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
+
+
+def test_case_law_is_not_mislabeled_as_a_normative_text():
+    result = classify_legal_source({
+        "source_type": "LEGIFRANCE_CETAT_FULL_TEXT",
+        "temporal_status": "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
+        "content_kind": "FULL_TEXT",
+    })
+    assert result["authority_level"] == "JURISPRUDENCE"
+    assert result["usable_for_interpretation"] is True
+    assert result["normative"] is False
+
+
+def test_verified_decree_remains_classified_as_a_primary_norm():
+    result = classify_legal_source({
+        "document_kind": "DECREE",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == "PRIMARY_LEGAL"
+    assert result["normative"] is True
