@@ -27,19 +27,42 @@ def parse_facts_date(value: str | None) -> date | None:
 
 def validate_snapshot_citation(citation: dict[str, Any], article: dict[str, Any]) -> dict[str, Any]:
     """Retourne un rapport vérifiable par code, sans faire confiance au modèle."""
+    citation = citation if isinstance(citation, dict) else {}
+    article = article if isinstance(article, dict) else {}
     expected_ref = str(article.get("article", "")).upper()
     cited_ref = str(citation.get("article", "")).upper()
     expected_source = str(article.get("source_id", ""))
     cited_source = str(citation.get("source_id", ""))
-    excerpt = str(citation.get("excerpt", "")).strip()
-    full_text = str(article.get("text", ""))
-    try:
-        page_start = int(citation.get("page_start"))
-        page_end = int(citation.get("page_end"))
-    except (TypeError, ValueError):
-        page_start = page_end = -1
-    page_match = (page_start == int(article.get("page_start", -2))
-                  and page_end == int(article.get("page_end", -2)))
+    excerpt_value = citation.get("excerpt")
+    text_value = article.get("text")
+    excerpt = excerpt_value.strip() if isinstance(excerpt_value, str) else ""
+    full_text = text_value if isinstance(text_value, str) else ""
+
+    def positive_page(value: Any) -> int | None:
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, int):
+            number = value
+        elif isinstance(value, str) and value.strip().isdigit():
+            number = int(value.strip())
+        else:
+            return None
+        return number if number >= 1 else None
+
+    cited_page_start = positive_page(citation.get("page_start"))
+    cited_page_end = positive_page(citation.get("page_end"))
+    expected_page_start = positive_page(article.get("page_start"))
+    expected_page_end = positive_page(article.get("page_end"))
+    page_match = bool(
+        cited_page_start is not None
+        and cited_page_end is not None
+        and expected_page_start is not None
+        and expected_page_end is not None
+        and cited_page_start == expected_page_start
+        and cited_page_end == expected_page_end
+        and cited_page_end >= cited_page_start
+        and expected_page_end >= expected_page_start
+    )
     # Les extraits du moteur peuvent être raccourcis avec une ellipse aux bords.
     excerpt_core = re.sub(r"\s+", " ", excerpt).strip(" …")
     full_core = re.sub(r"\s+", " ", full_text).strip()
