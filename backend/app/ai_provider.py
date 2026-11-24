@@ -299,8 +299,7 @@ def _record_provider_usage_event(events, operation: str, started_at: float, data
     if total_tokens is None and prompt_tokens is not None and completion_tokens is not None:
         total_tokens = prompt_tokens + completion_tokens
     model = payload.get("model") if isinstance(payload.get("model"), str) else settings.ai_model
-    base = str(settings.ai_api_base_url or "").lower()
-    provider = "gemini" if "generativelanguage.googleapis.com" in base else "openai_compatible"
+    provider = "gemini" if _is_gemini_provider() else "openai_compatible"
     events.append({
         "operation": operation,
         "provider": provider,
