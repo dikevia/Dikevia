@@ -48,12 +48,12 @@ services:
         sync: false
       - key: OIDC_IDENTITY_COMPAT_ISSUER
         sync: false
-      - key: OIDC_IDENTITY_LEGACY_SUBJECT_CLAIM
-        value: https://dikevia.invalid/claims/legacy_subject
+      - key: OIDC_IDENTITY_SUBJECT_PREFIX
+        value: auth0|
       - key: OIDC_EMAIL_CLAIM
-        value: https://dikevia.invalid/claims/email
+        value: email
       - key: OIDC_EMAIL_VERIFIED_CLAIM
-        value: https://dikevia.invalid/claims/email_verified
+        value: email_verified
       - key: CORS_ORIGINS
         value: https://dikevia-commercial-api-l2r8.onrender.com
       - key: AWS_ENDPOINT_URL_S3
