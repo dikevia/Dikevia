@@ -461,7 +461,7 @@ async def apply_semantic_source_relevance(
             question=question,
             research_axes=research_axes,
             sources=semantic_sources,
-            **_provider_usage_kwargs(evaluate_source_relevance, usage_events or []),
+            **_provider_usage_kwargs(evaluate_source_relevance, usage_events if usage_events is not None else []),
         )
         for source in sources:
             verdict = semantic_verdicts.get(source.get("source_id"))
