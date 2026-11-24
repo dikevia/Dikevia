@@ -45,9 +45,9 @@ def _loda_document_kind(nature: Any, title: str, number: str | None) -> str:
         return "ORDER"
     if "ordonnance" in title_text:
         return "ORDONNANCE"
-    if re.search(r"\\bloi\\b", title_text):
+    if re.search(r"\bloi\b", title_text):
         return "LAW"
-    if re.search(r"\\bcode\\b", title_text):
+    if re.search(r"\bcode\b", title_text):
         return "CODE"
     return "OTHER"
 

@@ -836,6 +836,8 @@ async def test_legifrance_bounds_concurrent_requests_and_refreshes_oauth_once(mo
         ("CIRCULAIRE", "Instruction", "CIRCULAR"),
         ("NATURE_INCONNUE", "Acte administratif non qualifié", "OTHER"),
         (None, "Décret n° 2002-60", "DECREE"),
+        (None, "Loi n° 2024-100", "LAW"),
+        (None, "Code général de la fonction publique", "CODE"),
         (None, "Acte administratif non qualifié", "OTHER"),
     ],
 )
