@@ -1575,3 +1575,43 @@ async def test_entailment_verifier_accepts_strictly_fenced_json_without_relaxing
     )
     assert result["valid"] is True
     assert result["supported_claim_indices"] == [0]
+
+
+
+def test_research_plan_parser_accepts_strictly_fenced_json():
+    payload = """```json
+    {"queries": ["recherche juridique ciblée sur le mécanisme applicable"],
+     "legal_issues": ["Fondement et conditions du mécanisme"]}
+    ```"""
+    plan = _parse_research_plan(payload)
+    assert plan is not None
+    assert len(plan.queries) == 1
+
+
+@pytest.mark.asyncio
+async def test_source_relevance_evaluator_accepts_fenced_json(monkeypatch):
+    import httpx
+    from app.ai_provider import evaluate_source_relevance
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(200, json={"choices": [{
+            "message": {"content": ' ```json\n{"items":[{"source_id":"DOC-FENCE","verdict":"DIRECT"}]}\n``` '}
+        }]})
+
+    real_async_client = httpx.AsyncClient
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+
+    result = await evaluate_source_relevance(
+        question="Question sur le régime juridique",
+        research_axes=["fondement juridique"],
+        sources=[{"source_id":"DOC-FENCE","source_type":"LEGIFRANCE_API",
+                  "title":"Texte officiel","excerpt":"Le texte fixe les conditions applicables."}],
+    )
+    assert result == {"DOC-FENCE":"DIRECT"}
