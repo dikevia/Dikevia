@@ -79,8 +79,12 @@ def validate_dataset(path: str) -> list[dict]:
         raw_questions = questions_from(data)
         pilot_ids = data.get("case_ids")
         if isinstance(pilot_ids, list):
-            if len(pilot_ids) != 15 or len(set(pilot_ids)) != 15:
-                raise ValueError("Manifeste pilote invalide : exactement 15 identifiants distincts sont requis.")
+            if (
+                len(pilot_ids) != 15
+                or any(not isinstance(item, str) or item not in EXPECTED_IDS for item in pilot_ids)
+                or len(set(pilot_ids)) != 15
+            ):
+                raise ValueError("Manifeste pilote invalide : exactement 15 identifiants FPT distincts et connus sont requis.")
             ids = [q.get("id") for q in raw_questions]
             if ids != pilot_ids:
                 raise ValueError("Manifeste pilote invalide : ordre des cases différent de case_ids.")
