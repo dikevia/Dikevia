@@ -77,3 +77,12 @@ def test_malformed_citation_integrity_metadata_does_not_crash_direct_article_loo
     assert missing_direct_article_reference(
         "Que prévoit l'article L123-4 ?", malformed_sources,
     ) == "L123-4"
+
+
+def test_direct_article_lookup_handles_non_collection_source_payload():
+    from app.article_lookup import missing_direct_article_reference
+
+    assert missing_direct_article_reference(
+        "Que prévoit l'article L123-4 ?",
+        42,
+    ) == "L123-4"
