@@ -1671,3 +1671,18 @@ async def test_entailment_verifier_rejects_malformed_claim_and_source_collection
     assert (await verify_claim_entailment(
         question="Question", claims=[{"source_id": "SRC-123"}], sources=None,
     ))["invalid"] == ["missing_or_invalid_sources"]
+
+
+def test_source_relevance_verdict_parser_ignores_unhashable_and_malformed_values():
+    from app.ai_provider import validate_source_relevance_verdicts
+
+    result = validate_source_relevance_verdicts(
+        {"items": [
+            {"source_id": ["SRC-1"], "verdict": "DIRECT"},
+            {"source_id": "SRC-1", "verdict": ["DIRECT"]},
+            {"source_id": "SRC-1", "verdict": "DIRECT"},
+        ]},
+        [{"source_id": "SRC-1"}],
+    )
+    assert result == {"SRC-1": "DIRECT"}
+    assert validate_source_relevance_verdicts({"items": []}, None) == {}
