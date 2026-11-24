@@ -638,3 +638,32 @@ def test_compound_query_reserves_each_detected_fallback_axis_within_budget():
     assert merged[:2] == ai_queries[:2]
     assert fallback_queries[1:] == merged[2:]
     assert all(axis_query in merged for axis_query in fallback_queries[1:])
+
+
+
+def test_ai_plan_always_keeps_one_deterministic_fallback_when_only_broad_query_exists():
+    ai_queries = [
+        "plan IA priorité 1",
+        "plan IA priorité 2",
+        "plan IA priorité 3",
+    ]
+    fallback_queries = ["question utilisateur enrichie"]
+    merged = merge_ai_and_fallback_research_queries(
+        ai_queries, fallback_queries, [], max_queries=3,
+    )
+    assert merged == [
+        "plan IA priorité 1",
+        "plan IA priorité 2",
+        "question utilisateur enrichie",
+    ]
+
+
+def test_deterministic_fallback_is_used_when_ai_plan_is_empty():
+    fallback_queries = [
+        "question utilisateur enrichie",
+        "axe secours heures supplémentaires",
+    ]
+    merged = merge_ai_and_fallback_research_queries(
+        [], fallback_queries, ["axe juridique heures supplémentaires"], max_queries=3,
+    )
+    assert merged == fallback_queries
