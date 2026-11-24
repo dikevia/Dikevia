@@ -117,4 +117,5 @@ def test_fifteen_question_pilot_runs_through_prepare_review_and_score(tmp_path):
     assert report["questions_total"] == 15
     assert report["questions_evaluees"] == 15
     assert report["status"] == "COMPLET"
-    assert report["release_gate"]["status"] == "PASS"
+    assert report["release_gate"]["status"] == "INCOMPLETE"
+    assert report["release_gate"]["checks"]["gold_answers_human_validated"] is False
