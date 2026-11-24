@@ -124,6 +124,12 @@ def build_contextual_research_context(
                     ),
                     prior_questions[-1],
                 )
+                current_topics = _matched_question_topics(current)
+                prior_topics = _matched_question_topics(prior)
+                if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
+                    # A substantive new legal topic must not be mistaken for
+                    # an answer merely because it starts with "Je suis".
+                    return ContextualResearchContext(question=current[:500], is_followup=False)
                 clarification = " ".join(fragments[-1].split())[-200:]
                 contextual = (
                     f"{current[:100]}\n{prior[:160]}\n"

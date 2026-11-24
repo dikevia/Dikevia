@@ -442,3 +442,26 @@ def test_et_pour_contractual_population_remains_a_contextual_scope_change():
     assert context.is_followup is True
     assert "heures supplémentaires" in context.question
 
+
+
+
+def test_substantive_new_topic_starting_with_je_suis_does_not_inherit_old_context():
+    prior = "Mon chef refuse de payer mes heures supplémentaires."
+    question = "Je suis en arrêt maladie depuis trois mois. Quels sont mes droits ?"
+    context = build_contextual_research_context(
+        question,
+        [prior],
+        ["Pour préciser votre situation, êtes-vous titulaire ou contractuel ?"],
+    )
+    assert context.is_followup is False
+    assert context.question == question
+
+
+def test_clarification_status_reply_still_inherits_when_no_new_topic_is_named():
+    context = build_contextual_research_context(
+        "Je suis agent contractuel en CDD.",
+        ["Mon chef refuse de payer mes heures supplémentaires."],
+        ["Êtes-vous titulaire ou contractuel ?"],
+    )
+    assert context.is_followup is True
+    assert "heures supplémentaires" in context.question
