@@ -85,7 +85,7 @@ services:
       - key: PRIVATE_INSTANCE_MODE
         value: "false"
       - key: BETA_MAX_USERS
-        value: "1"
+        value: "100"
       - key: CHAT_RATE_LIMIT_PER_MINUTE
         value: "10"
       - key: DOCUMENT_MAX_SIZE_MB
