@@ -1984,3 +1984,92 @@ async def test_ai_analysis_payload_prefers_expanded_analysis_excerpt(monkeypatch
     payload = json.loads(captured["payload"]["messages"][1]["content"])
     source = payload["extraits_documentaires_valides"][0]
     assert source["extrait"] == analysis_excerpt
+
+@pytest.mark.asyncio
+async def test_ai_answer_payload_keeps_prior_assistant_context_separate_from_legal_evidence(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import analyze_question
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"claims": []}'}}], "usage": {}},
+        )
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    previous_user = "Mon employeur refuse mes heures supplémentaires."
+    previous_assistant = "Le deuxième point concerne les conditions de récupération."
+    await analyze_question(
+        question="Peux-tu détailler le deuxième point ?\\n" + previous_user,
+        employer="NATIONAL",
+        facts_date="2026-11-24",
+        conversation_history=[
+            {"role": "user", "content": previous_user},
+            {"role": "assistant", "content": previous_assistant},
+        ],
+        sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678",
+            "requested_effective_date": "2026-11-24",
+            "excerpt": "Extrait officiel suffisamment long pour l'analyse documentaire.",
+        }],
+    )
+
+    payload = json.loads(captured["payload"]["messages"][1]["content"])
+    assert payload["contexte_questions_utilisateur"] == [{"content": previous_user}]
+    assert payload["contexte_reponse_precedente_non_source"] == [{"content": previous_assistant}]
+    assert previous_assistant not in json.dumps(payload["extraits_documentaires_valides"], ensure_ascii=False)
+
+
+@pytest.mark.asyncio
+async def test_research_planner_payload_keeps_prior_assistant_context_non_evidentiary(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import plan_legal_research
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{
+            "message": {"content": json.dumps({
+                "queries": ["heures supplémentaires fonction publique"],
+                "legal_issues": ["Conditions de récupération des heures supplémentaires"],
+                "extracted_facts": [],
+                "clarification_needed": None,
+            })}
+        }], "usage": {}})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    previous_assistant = "Le deuxième point concerne les conditions de récupération."
+    await plan_legal_research(
+        question="Peux-tu détailler le deuxième point ?\\nMon employeur refuse mes heures supplémentaires.",
+        employer="NATIONAL",
+        conversation_history=[
+            {"role": "user", "content": "Mon employeur refuse mes heures supplémentaires."},
+            {"role": "assistant", "content": previous_assistant},
+        ],
+    )
+
+    payload = json.loads(captured["payload"]["messages"][1]["content"])
+    assert payload["previous_assistant_answer_context_not_legal_evidence"] == [
+        {"content": previous_assistant}
+    ]
