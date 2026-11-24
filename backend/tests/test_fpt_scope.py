@@ -273,6 +273,22 @@ def test_fph_title_is_not_overridden_by_incidental_fpt_reference_in_body():
     assert result["analysis_eligible"] is False
 
 
+def test_fpe_and_fph_body_without_primary_title_is_rejected_as_ambiguous():
+    source = {
+        "title": "Document administratif",
+        "text": (
+            "Les agents de la fonction publique de l'État et les personnels "
+            "de la fonction publique hospitalière sont concernés par des "
+            "dispositions distinctes."
+        ),
+    }
+    for target in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=target)
+        assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+        assert result["analysis_eligible"] is False
+        assert result["claim_eligible"] is False
+
+
 def test_mixed_versant_body_without_primary_scope_is_not_assumed_fpt():
     result = classify_public_service_scope({
         "title": "Dispositions communes aux agents publics",
