@@ -1240,7 +1240,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
     except (ValueError, OSError) as exc:
         raise HTTPException(503, "Le corpus national n'a pas pu être interrogé.") from exc
     national_sources = [{**item, "source_url": item.get("official_url")} for item in national
-        if item.get("content_kind") == "FULL_TEXT" and (item.get("citation_integrity") or {}).get("valid")]
+        if item.get("content_kind") == "FULL_TEXT" and isinstance(item.get("citation_integrity"), dict) and item["citation_integrity"].get("valid") is True]
     sources = [local_source] + national_sources
     assurance = assess_source_set(sources)
     local_assurance = assurance["sources"][0].get("legal_assurance", {})
