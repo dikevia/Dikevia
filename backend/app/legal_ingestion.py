@@ -187,6 +187,31 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
 
     source = {"title": title, "text": body, "document_kind": "ADMIN_CASELAW"}
     fpt_scope = classify_public_service_scope(source, target_versant="FPT")
+    # A local employer and an HR subject can establish a territorial link only
+    # when the same decision does not contain competing branch-specific markers.
+    # Otherwise the local-employer fallback below would incorrectly override an
+    # unresolved FPT/FPE or FPT/FPH conflict during corpus ingestion.
+    if fpt_scope.get("scope") in {
+        "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+        "OUT_OF_SCOPE_EUROPEAN_LAW",
+    }:
+        return None
+    if fpt_scope.get("scope") == "OUT_OF_SCOPE_OR_UNCONFIRMED":
+        scope_evidence = [str(item).casefold() for item in fpt_scope.get("evidence", [])]
+        fpt_markers = ("fonction publique territoriale", "agent territorial", "agents territoriaux",
+                       "fonctionnaire territorial", "fonctionnaires territoriaux")
+        other_branch_markers = (
+            "fonction publique de l etat", "fonctionnaires de l etat",
+            "agents de l etat", "administrations centrales", "services deconcentres de l etat",
+            "fonction publique hospitaliere", "etablissements publics de sante",
+            "centres hospitaliers", "agents contractuels hospitaliers",
+        )
+        has_fpt_evidence = any(any(marker in item for marker in fpt_markers) for item in scope_evidence)
+        has_other_branch_evidence = any(
+            any(marker in item for marker in other_branch_markers) for item in scope_evidence
+        )
+        if has_fpt_evidence and has_other_branch_evidence:
+            return None
     if _is_fpt_employment_case_law(title, body, fpt_scope):
         if fpt_scope.get("scope") == "OUT_OF_SCOPE_OR_UNCONFIRMED":
             return {
@@ -195,11 +220,6 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
                 "analysis_eligible": True,
                 "claim_eligible": True,
             }
-        if fpt_scope.get("scope") in {
-            "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
-            "OUT_OF_SCOPE_EUROPEAN_LAW",
-        }:
-            return None
         return fpt_scope
 
     if not (has_public_employment and has_hr_subject):

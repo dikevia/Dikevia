@@ -711,3 +711,40 @@ def test_unrecognized_document_cannot_be_promoted_by_raw_authority_metadata():
     assert result["authority_level"] == "UNCLASSIFIED"
     assert result["normative"] is False
     assert result["claim_eligible"] is False
+
+def test_admin_case_law_ingestion_rejects_competing_fpt_and_fpe_scope_even_with_local_employer():
+    from app.legal_ingestion import _public_service_employment_case_law_scope
+
+    title = "Décision relative au temps de travail"
+    body = (
+        "Un agent territorial de la commune et un agent de l'État contestent "
+        "l'organisation du temps de travail. Le litige concerne leurs conditions "
+        "de travail et la rémunération des agents publics."
+    )
+    assert _public_service_employment_case_law_scope(title, body) is None
+
+
+@pytest.mark.parametrize(
+    ("title", "body", "expected_scope"),
+    [
+        (
+            "Décision relative à la gestion des agents",
+            "Un agent contractuel de l'État conteste son temps de travail dans une administration centrale.",
+            "FPE",
+        ),
+        (
+            "Décision relative à la gestion des agents",
+            "Un agent contractuel hospitalier conteste son temps de travail dans un centre hospitalier.",
+            "FPH",
+        ),
+    ],
+)
+def test_admin_case_law_ingestion_preserves_unambiguous_fpe_and_fph_scope(
+    title, body, expected_scope,
+):
+    from app.legal_ingestion import _public_service_employment_case_law_scope
+
+    result = _public_service_employment_case_law_scope(title, body)
+    assert result is not None
+    assert result["scope"] == expected_scope
+    assert result["analysis_eligible"] is True
