@@ -576,3 +576,38 @@ def test_claim_evidence_flags_duplicate_uncovered_axis_declarations():
     assert result["partial"] is True
     assert result["uncovered_axes"] == ["rémunération"]
     assert "duplicate_uncovered_research_axis" in result["invalid_claims"]
+
+
+def test_source_set_ignores_malformed_connector_records():
+    result = assess_source_set([
+        None,
+        "not-a-source-object",
+        {"document_kind": "DECREE", "temporal_status": "IN_FORCE_ON_REQUESTED_DATE"},
+    ])
+    assert len(result["sources"]) == 1
+    assert result["sources"][0]["legal_assurance"]["source_family"] == "DECREE"
+
+
+def test_citation_validation_fails_closed_on_malformed_source_records():
+    from app.legal_assurance import validate_answer_citations
+
+    result = validate_answer_citations(
+        "La règle est applicable.",
+        [None, "not-a-source-object", {"source_id": "LEGIARTI000000000123", "citation_integrity": "valid"}],
+    )
+    assert result["valid"] is False
+    assert "missing_explicit_source_citation" in result["invalid_references"]
+
+
+def test_claim_validation_fails_closed_on_malformed_source_records():
+    from app.legal_assurance import validate_claim_evidence
+
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé des agents.",
+            "L'autorité territoriale organise le service et veille à la protection de la santé et de la sécurité des agents dans les conditions prévues par les textes.",
+        ),
+        [None, "not-a-source-object", {"source_id": "LEGIARTI000000000123", "citation_integrity": "valid"}],
+    )
+    assert result["valid"] is False
+    assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
