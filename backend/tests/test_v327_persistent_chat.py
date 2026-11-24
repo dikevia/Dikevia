@@ -90,17 +90,16 @@ def test_multi_turn_followup_preserves_an_explicit_status_from_an_earlier_user_t
 
     history = [
         "Je suis agent contractuel en CDD.",
-        "Quels sont les délais de préavis en cas de fin de contrat ?",
+        "Quels sont mes droits en cas de fin de contrat ?",
     ]
-    resolved = build_contextual_research_context("Et en cas de maladie ?", history)
+    resolved = build_contextual_research_context("Et dans ce cas ?", history)
     assert resolved.is_followup is True
     assert "Contexte de statut déclaré précédemment : Je suis agent contractuel" in resolved.question
     assert qualify_legal_question(resolved.question)["agent_status"] == "CONTRACTUEL_EXPLICIT"
     provider_history = _provider_context_history(resolved.question, True)
-    assert len(provider_history) == 1
-    assert "Contexte de statut déclaré précédemment" in provider_history[0]["content"]
-
-
+    assert provider_history == [
+        {"role": "user", "content": "Quels sont mes droits en cas de fin de contrat ?"}
+    ]
 def test_independent_question_does_not_inherit_a_previously_declared_status():
     from app.legal_qualification import build_contextual_research_context
 
