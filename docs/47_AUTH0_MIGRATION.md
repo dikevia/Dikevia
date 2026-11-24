@@ -24,31 +24,11 @@ Ne pas utiliser de wildcard d'origine. Vérifier ces URL dans Render avant de le
 
 Activer la connexion par base de données Auth0 et l'inscription via Universal Login. Exiger la vérification de l'adresse e-mail. Ne pas activer de connexion sociale pendant la migration initiale : elle compliquerait la correspondance des identités historiques.
 
-## Claims nécessaires
+## Claims et identité OIDC
 
-L'API a besoin de l'adresse e-mail et de son état de vérification dans l'access token, notamment pour accepter une invitation. Auth0 recommande les claims personnalisés namespacés. Créer une Action **Post Login**, puis la déployer et l'ajouter au flux :
+Le navigateur utilise Authorization Code + PKCE et reçoit un access token pour l'API ainsi qu'un ID token OIDC. Le frontend vérifie le nonce, l'émetteur et l'audience de l'ID token, puis transmet ce dernier à l'API dans l'en-tête `X-OIDC-ID-Token`. L'API vérifie à nouveau sa signature, son émetteur, son audience et l'identité `sub` identique à celle de l'access token. L'adresse e-mail et `email_verified` proviennent de cet ID token signé.
 
-~~~javascript
-exports.onExecutePostLogin = async (event, api) => {
-  if (!event.authorization) return;
-
-  const namespace = "https://dikevia.invalid/claims";
-
-  if (typeof event.user.email === "string") {
-    api.accessToken.setCustomClaim(
-      `${namespace}/email`,
-      event.user.email
-    );
-  }
-
-  api.accessToken.setCustomClaim(
-    `${namespace}/email_verified`,
-    event.user.email_verified === true
-  );
-};
-~~~
-
-Le namespace .invalid est volontairement non résolvable : il identifie les claims sans dépendre d'un domaine tiers. Les noms configurés dans OIDC_EMAIL_CLAIM et OIDC_EMAIL_VERIFIED_CLAIM doivent correspondre exactement.
+Aucune Action Auth0 personnalisée n'est nécessaire pour les claims standard `email` et `email_verified`. Le flux n'accorde aucun rôle ni droit dans Auth0 : les autorisations restent exclusivement dans PostgreSQL.
 
 ## Variables Render
 
@@ -56,11 +36,11 @@ Les variables publiques et privées sont séparées. Les variables suivantes son
 
 - OIDC_PROVIDER=auth0
 - OIDC_ISSUER=https://TENANT.eu.auth0.com/ — conserver la barre oblique finale exacte.
-- OIDC_AUDIENCE=urn:dikevia:api
+- OIDC_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com
 - OIDC_JWKS_URL=https://TENANT.eu.auth0.com/.well-known/jwks.json
 - OIDC_CLIENT_ID — identifiant public de l'application SPA.
 - OIDC_SCOPES=openid profile email
-- OIDC_AUTHORIZATION_AUDIENCE=urn:dikevia:api
+- OIDC_AUTHORIZATION_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com
 - OIDC_EMAIL_CLAIM=https://dikevia.invalid/claims/email
 - OIDC_EMAIL_VERIFIED_CLAIM=https://dikevia.invalid/claims/email_verified
 
@@ -70,12 +50,7 @@ Le frontend charge /auth-config.js, généré côté serveur à partir de ces va
 
 **Ne pas basculer le fournisseur avant d'avoir importé et vérifié les identités.** La base Dikévia associe les utilisateurs à (oidc_issuer, oidc_subject). Une migration qui créerait de nouveaux sujets sans correspondance ferait perdre l'accès aux espaces, même si les adresses e-mail sont identiques.
 
-La compatibilité repose sur une revendication dédiée, ajoutée uniquement aux comptes importés après vérification de leur ancien identifiant : `https://dikevia.invalid/claims/legacy_subject`. Une Action Post Login Auth0 doit copier cette valeur depuis `user_metadata.dikevia_legacy_subject` vers le jeton d'accès uniquement si elle existe. Les variables :
-
-- `OIDC_IDENTITY_COMPAT_ISSUER` = ancien émetteur Keycloak exact ;
-- `OIDC_IDENTITY_LEGACY_SUBJECT_CLAIM` = `https://dikevia.invalid/claims/legacy_subject`.
-
-Le backend conserve l'identité Auth0 native pour tous les nouveaux comptes. Il ne mappe vers l'ancien couple (issuer, subject) que les comptes portant explicitement cette revendication. Cette revendication ne doit être ajoutée qu'après rapprochement fiable de l'ancien identifiant, jamais sur la seule base d'une adresse e-mail.
+La correspondance historique est résolue côté API par une recherche PostgreSQL sous RLS : pour un sujet Auth0 de la connexion base de données commençant par `auth0|`, le backend retire ce préfixe uniquement pour vérifier si le couple exact (ancien émetteur Keycloak, ancien sujet) existe encore et correspond à un compte actif. Si le compte historique existe, le backend réutilise cette identité ; sinon, il conserve intégralement l'identité Auth0 native. Aucun rapprochement par adresse e-mail, aucune revendication fournie par l'utilisateur et aucune Action Auth0 ne sont utilisés. Le lookup est limité au sujet signé du jeton et à la politique RLS PostgreSQL.
 
 La reprise des mots de passe n'est pas présumée. Les hashes Keycloak doivent être comparés aux formats acceptés par Auth0 ; si le format n'est pas importable, prévoir une réinitialisation sécurisée des mots de passe. Un échantillon d'utilisateurs doit être testé avant tout import global. Contrôler également les comptes sans e-mail, les doublons et les adresses non vérifiées.
 
@@ -87,9 +62,9 @@ Les variables SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont donc suffisantes 
 
 ## Plan de recette avant bascule
 
-1. Créer et configurer le tenant Auth0, l'application SPA, l'API et l'Action Post Login.
+1. Créer et configurer le tenant Auth0, l'application SPA et l'API.
 2. Importer un compte pilote en conservant son ancien oidc_subject.
-3. Vérifier découverte OIDC, exactitude de iss, audience, JWKS, signature, expiration et claims d'e-mail.
+3. Vérifier découverte OIDC, exactitude de iss, audience, JWKS, signature, nonce, expiration et ID token.
 4. Vérifier qu'un compte historique retrouve exactement ses organisations et ses rôles.
 5. Tester un nouveau compte, l'acceptation d'une invitation, un compte non vérifié, un compte désactivé et un compte sans adhésion.
 6. Tester déconnexion, retour de session, APK Android, console d'administration et accès fondateur.
@@ -98,4 +73,4 @@ Les variables SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont donc suffisantes 
 
 ## État actuel
 
-Le code de base Auth0 est préparé dans la branche feat/auth0-oidc-foundation. Aucun tenant Auth0 n'a été créé ou configuré, aucun compte n'a été importé, aucune variable Render n'a été modifiée et aucun déploiement ni changement de base n'a été effectué. La migration des comptes et la recette réelle restent bloquantes avant la bascule.
+Le tenant Auth0 de développement, la SPA et l'API sont créés. Le code Auth0 est préparé dans la branche feat/auth0-oidc-foundation. Aucun compte n'a été importé, aucune variable Render n'a été modifiée, aucun déploiement ni changement de base n'a été effectué. La migration des comptes et la recette réelle restent bloquantes avant la bascule.
