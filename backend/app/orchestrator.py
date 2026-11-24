@@ -610,7 +610,7 @@ def _compare_official_period_versions(
 
 
 def _provider_context_history(
-    history: list[dict], contextual_question: str, is_followup: bool,
+    contextual_question: str, is_followup: bool,
 ) -> list[dict]:
     """Give providers only the immediately relevant prior user turn.
 
@@ -620,10 +620,10 @@ def _provider_context_history(
     """
     if not is_followup:
         return []
-    parts = str(contextual_question or "").split("\\n", 1)
+    parts = str(contextual_question or "").split("\n", 1)
     if len(parts) < 2:
         return []
-    prior_question = parts[1].split("\\n", 1)[0].strip()
+    prior_question = parts[1].split("\n", 1)[0].strip()
     if not prior_question:
         return []
     return [{"role": "user", "content": prior_question[:1200]}]
@@ -685,7 +685,7 @@ class LegalOrchestrator:
         )
         contextual_question = contextual_research_context.question
         is_followup = contextual_research_context.is_followup
-        provider_history = _provider_context_history(history, contextual_question, is_followup)
+        provider_history = _provider_context_history(contextual_question, is_followup)
         targeted_clarification = clarification_for_union_assistance_summons(contextual_question)
         if targeted_clarification:
             return AskResponse(

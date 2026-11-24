@@ -74,11 +74,11 @@ def test_provider_context_history_excludes_stale_topics_and_keeps_only_the_selec
         {"role": "assistant", "content": "Réponse antérieure."},
         {"role": "user", "content": "Mon chef refuse mes heures supplémentaires."},
     ]
-    followup_question = "Et pour les contractuels ?\\nMon chef refuse mes heures supplémentaires."
-    assert _provider_context_history(history, followup_question, True) == [
+    followup_question = "Et pour les contractuels ?\nMon chef refuse mes heures supplémentaires."
+    assert _provider_context_history(followup_question, True) == [
         {"role": "user", "content": "Mon chef refuse mes heures supplémentaires."}
     ]
-    assert _provider_context_history(history, "Quels sont les congés annuels ?", False) == []
+    assert _provider_context_history("Quels sont les congés annuels ?", False) == []
 
 
 def test_short_answer_uses_previous_assistant_clarification_without_losing_legal_topic():
