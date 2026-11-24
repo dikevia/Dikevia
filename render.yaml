@@ -80,6 +80,14 @@ services:
         value: "false"
       - key: AI_LOCAL_DOCUMENTS_IN_CHAT_ENABLED
         value: "false"
+      - key: OIDC_PROVIDER
+        value: keycloak
+      - key: VECTOR_SEARCH_ENABLED
+        value: "false"
+      - key: AI_LOCAL_DOCUMENT_REVIEW_ENABLED
+        value: "false"
+      - key: STRIPE_BILLING_ENABLED
+        value: "false"
       - key: CGFP_ENABLED
         value: "true"
       - key: LEGIFRANCE_ENVIRONMENT
