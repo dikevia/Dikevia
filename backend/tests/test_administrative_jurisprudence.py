@@ -289,6 +289,53 @@ def test_undated_personal_case_is_not_misclassified_as_general_information():
     assert _analysis_mode(personal, True) == "CASE_SPECIFIC"
 
 
+def test_permanent_legal_version_is_checked_against_historical_facts_date():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "CODE",
+        "requested_date": date(2026, 11, 24),
+        "valid_from": date(2020, 1, 1),
+        "valid_to": date(2024, 12, 31),
+        "version_status": "REPEALED",
+        "temporal_status": "NO_LONGER_IN_FORCE",
+    }
+    status, explanation = _permanent_source_temporal_metadata(item, date(2024, 6, 1))
+    assert status == "IN_FORCE_ON_FACTS_DATE"
+    assert explanation and "couvrent le 2024-06-01" in explanation
+
+
+def test_permanent_legal_version_is_rejected_outside_its_validity_period():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "LAW",
+        "requested_date": date(2026, 11, 24),
+        "valid_from": date(2025, 1, 1),
+        "valid_to": date(2025, 12, 31),
+        "temporal_status": "NO_LONGER_IN_FORCE",
+    }
+    before, _ = _permanent_source_temporal_metadata(item, date(2024, 12, 31))
+    after, _ = _permanent_source_temporal_metadata(item, date(2026, 1, 1))
+    assert before == "NOT_YET_EFFECTIVE"
+    assert after == "NO_LONGER_IN_FORCE"
+
+
+def test_permanent_legal_version_with_missing_historical_bounds_is_not_assumed_applicable():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "CODE",
+        "requested_date": date(2026, 11, 24),
+        "valid_from": None,
+        "valid_to": None,
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    }
+    status, explanation = _permanent_source_temporal_metadata(item, date(2024, 6, 1))
+    assert status == "TEMPORAL_SCOPE_INCOMPLETE"
+    assert explanation and "ne permettent pas de vérifier" in explanation
+
+
 def test_imported_administrative_case_law_after_facts_is_kept_as_interpretative():
     from app.orchestrator import _permanent_source_temporal_metadata
 

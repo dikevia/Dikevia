@@ -187,6 +187,36 @@ def test_versioned_corpus_rejects_selected_excerpt_not_present_in_hashed_full_te
     assert "claim_0:source_missing_ineligible_or_ambiguous" in result["invalid_claims"]
 
 
+def test_claim_evidence_accepts_corpus_version_verified_for_historical_facts_date():
+    import hashlib
+    from app.legal_assurance import validate_claim_evidence
+
+    full_text = (
+        "L'autorité territoriale organise le service et veille à la protection "
+        "de la santé et de la sécurité des agents dans les conditions prévues par les textes."
+    )
+    source = _verified_evidence_source(
+        source_type="LEGIFRANCE_LODA",
+        source_id="CORPUS_VERSION_FACTS_DATE",
+        version_id="12345678-1234-4234-8234-123456789012",
+        text_sha256=hashlib.sha256(full_text.encode("utf-8")).hexdigest(),
+        full_text=full_text,
+        temporal_status="IN_FORCE_ON_FACTS_DATE",
+        excerpt=full_text,
+        citation_integrity={"valid": True, "text_hash_verified": True},
+    )
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé et à la sécurité des agents.",
+            "L'autorité territoriale organise le service et veille à la protection de la santé et de la sécurité des agents",
+            source_id=source["source_id"],
+        ),
+        [source],
+        facts_period={"facts_reference_date": "2024-06-01"},
+    )
+    assert result["valid"] is True
+
+
 def test_claim_evidence_rejects_source_without_valid_citation_integrity():
     from app.legal_assurance import validate_claim_evidence
 

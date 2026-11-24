@@ -367,7 +367,8 @@ def _permanent_source_temporal_metadata(
 ) -> tuple[str | None, str | None]:
     status = item.get("temporal_status")
     explanation = None
-    if item.get("document_kind") == "ADMIN_CASELAW":
+    document_kind = str(item.get("document_kind") or "").upper()
+    if document_kind == "ADMIN_CASELAW":
         raw_date = item.get("signature_date")
         if status == "DECISION_POSTERIOR_TO_REQUESTED_DATE":
             return (
@@ -386,6 +387,52 @@ def _permanent_source_temporal_metadata(
             explanation = (
                 "Date de décision non vérifiée : ne pas lui attribuer de portée temporelle certaine."
             )
+    elif facts_reference_date and document_kind in {
+        "CODE", "LAW", "ORDONNANCE", "DECREE", "ORDER",
+    }:
+        raw_requested_date = item.get("requested_date")
+        try:
+            retrieved_for_date = (
+                raw_requested_date
+                if isinstance(raw_requested_date, date)
+                else date.fromisoformat(str(raw_requested_date)[:10])
+            )
+        except (TypeError, ValueError):
+            retrieved_for_date = None
+        if retrieved_for_date != facts_reference_date:
+            valid_from = item.get("valid_from")
+            valid_to = item.get("valid_to")
+            try:
+                valid_from = (
+                    valid_from if isinstance(valid_from, date)
+                    else date.fromisoformat(str(valid_from)[:10]) if valid_from else None
+                )
+                valid_to = (
+                    valid_to if isinstance(valid_to, date)
+                    else date.fromisoformat(str(valid_to)[:10]) if valid_to else None
+                )
+            except (TypeError, ValueError):
+                valid_from = valid_to = None
+            if valid_from and facts_reference_date < valid_from:
+                status = "NOT_YET_EFFECTIVE"
+                explanation = (
+                    f"Cette version n'était pas encore applicable au {facts_reference_date.isoformat()}."
+                )
+            elif valid_to and facts_reference_date > valid_to:
+                status = "NO_LONGER_IN_FORCE"
+                explanation = (
+                    f"La période de validité enregistrée pour cette version était terminée au {facts_reference_date.isoformat()}."
+                )
+            elif valid_from and valid_to:
+                status = "IN_FORCE_ON_FACTS_DATE"
+                explanation = (
+                    f"Les bornes de validité enregistrées pour cette version couvrent le {facts_reference_date.isoformat()}."
+                )
+            else:
+                status = "TEMPORAL_SCOPE_INCOMPLETE"
+                explanation = (
+                    "Les bornes de validité de cette version ne permettent pas de vérifier son applicabilité à la date des faits."
+                )
     return status, explanation
 
 

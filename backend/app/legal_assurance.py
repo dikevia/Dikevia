@@ -150,7 +150,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     non_normative = kind in {"ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE"}
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
-        "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "IN_FORCE_ON_REQUESTED_DATE", "IN_FORCE_ON_FACTS_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
         "VERSION_RETRIEVED_AT_REQUESTED_DATE",
         "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
         "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
@@ -516,7 +516,7 @@ def validate_claim_evidence(
         }
 
     eligible_statuses = {
-        "IN_FORCE_ON_REQUESTED_DATE",
+        "IN_FORCE_ON_REQUESTED_DATE", "IN_FORCE_ON_FACTS_DATE",
         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
         "VERSION_RETRIEVED_AT_REQUESTED_DATE",
         "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
