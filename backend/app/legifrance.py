@@ -629,6 +629,17 @@ class LegifranceConnector:
             publication = self._iso_date(nested_value(record, ("datePublication", "datePubli")))
             valid_from = self._iso_date(nested_value(record, ("dateDebut", "dateDebutVersion", "dateEffet")))
             valid_to = self._iso_date(nested_value(record, ("dateFin", "dateFinVersion")))
+            if (
+                (valid_from is not None and valid_from > effective_date)
+                or (valid_to is not None and valid_to < effective_date)
+            ):
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_LODA_REJECTED_DATE id=%s requested_date=%s valid_from=%s valid_to=%s",
+                    identifier, effective_date.isoformat(),
+                    valid_from.isoformat() if valid_from else None,
+                    valid_to.isoformat() if valid_to else None,
+                )
+                continue
             nature = nested_value(record, ("nature", "natureTexte", "typeTexte"))
             kind = _loda_document_kind(nature, title, number)
             output.append({"source_type": "LEGIFRANCE_LODA", "source_id": identifier,

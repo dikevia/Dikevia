@@ -670,6 +670,56 @@ async def test_loda_search_consults_matching_official_text_at_requested_date(mon
     assert any(path.endswith("/consult/legiPart") for path in seen)
 
 
+
+@pytest.mark.parametrize(
+    ("valid_from", "valid_to"),
+    [
+        ("2026-12-01", None),
+        (None, "2026-11-18"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_loda_search_rejects_metadata_validity_bounds_outside_requested_date(
+    monkeypatch, valid_from, valid_to,
+):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    requested_date = date(2026, 11, 19)
+    expected_stamp = int(datetime(2026, 11, 19, tzinfo=timezone.utc).timestamp() * 1000)
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            assert payload["recherche"]["filtres"][0] == {
+                "facette": "DATE_VERSION", "singleDate": expected_stamp,
+            }
+            record = {
+                "id": "LEGITEXT000012345678_01-01-2023",
+                "titre": "Décret n° 2002-60 relatif aux agents publics",
+                "nature": "DECRET",
+            }
+            if valid_from is not None:
+                record["dateDebut"] = valid_from
+            if valid_to is not None:
+                record["dateFin"] = valid_to
+            return httpx.Response(200, json={"results": [record]})
+        if request.url.path.endswith("/consult/legiPart"):
+            body = json.loads(request.content)
+            assert body == {"date": expected_stamp, "textId": "LEGITEXT000012345678"}
+            return httpx.Response(200, json={"text": {
+                "id": "LEGITEXT000012345678_01-01-2023",
+                "texte": "Texte réglementaire officiel suffisamment long pour être conservé dans ce test. " * 2,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    assert await connector.search_regulatory_texts(
+        "décret 2002-60 relatif aux agents publics", requested_date,
+    ) == []
+
+
 @pytest.mark.asyncio
 async def test_loda_search_rejects_mismatched_consulted_identifier(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
