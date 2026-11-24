@@ -178,6 +178,36 @@ def build_contextual_research_question(
     ).question
 
 
+_EXPLICIT_SELF_VERSANT_PATTERNS = {
+    "FPT": (
+        r"\\bje suis (?:un |une )?(?:agent|fonctionnaire) territorial\\b",
+        r"\\bje releve de la fonction publique territoriale\\b",
+        r"\\bmon employeur est (?:la )?(?:mairie|commune|collectivite territoriale)\\b",
+    ),
+    "FPE": (
+        r"\\bje suis (?:un |une )?(?:agent|fonctionnaire) de l etat\\b",
+        r"\\bje releve de la fonction publique de l etat\\b",
+        r"\\bje travaille (?:au|dans un|pour un) ministere\\b",
+        r"\\bmon employeur est (?:un )?ministere\\b",
+    ),
+    "FPH": (
+        r"\\bje suis (?:un |une )?(?:agent|fonctionnaire) hospitalier\\b",
+        r"\\bje releve de la fonction publique hospitaliere\\b",
+        r"\\bje travaille (?:dans|au sein d un) etablissement public de sante\\b",
+        r"\\bmon employeur est (?:un )?etablissement public de sante\\b",
+    ),
+}
+
+
+def _explicit_self_versant(question: str) -> str | None:
+    """Return a branch only when the user explicitly describes their own employer/status."""
+    folded = _fold(str(question or "").splitlines()[0])
+    for versant, patterns in _EXPLICIT_SELF_VERSANT_PATTERNS.items():
+        if any(re.search(pattern, folded) for pattern in patterns):
+            return versant
+    return None
+
+
 _TOPIC_MARKERS = (
     ("UNION_RIGHTS", ("droit syndical", "droits syndicaux", "syndicat", "representant du personnel",
                       "representants du personnel", "representant syndical", "representants syndicaux",
@@ -379,6 +409,13 @@ def qualify_legal_question(
             scope_evidence = matched[:3]
             break
 
+    explicit_self_versant = _explicit_self_versant(question)
+    scope_mismatch_versant = (
+        explicit_self_versant
+        if explicit_self_versant and explicit_self_versant != public_service
+        else None
+    )
+
     local_employer_selected = bool(employer and employer != "NATIONAL")
     priorities = [
         "CODE_GENERAL_FONCTION_PUBLIQUE",
@@ -392,6 +429,7 @@ def qualify_legal_question(
         "target_legal_field": {"FPT": "FRENCH_TERRITORIAL_PUBLIC_SERVICE", "FPE": "FRENCH_STATE_PUBLIC_SERVICE", "FPH": "FRENCH_HOSPITAL_PUBLIC_SERVICE"}[public_service],
         "scope_status": scope_status,
         "scope_evidence": scope_evidence,
+        "explicit_self_versant_mismatch": scope_mismatch_versant,
         "topic": topic,
         "topics": matched_topics,
         "agent_status": status,
