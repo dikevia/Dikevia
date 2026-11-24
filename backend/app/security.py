@@ -74,6 +74,56 @@ def _reason_from_exception(exc: Exception) -> tuple[str, int]:
     return f"internal_{type(exc).__name__}", 401
 
 
+
+MAX_ID_TOKEN_LENGTH = 16_384
+MAX_ID_TOKEN_LIFETIME_SECONDS = 86_400
+
+
+def verify_identity_token(token: str, access_principal: Principal) -> Principal:
+    """Validate the OIDC ID token against the same subject as the API access token."""
+    if not token or len(token) > MAX_ID_TOKEN_LENGTH:
+        raise reject("id_token_empty_or_too_long")
+    if not settings.oidc_client_id:
+        raise reject("oidc_client_id_missing", 503, "Configuration OIDC incomplète.")
+    algorithms = [a.strip() for a in settings.oidc_algorithms.split(",") if a.strip()]
+    try:
+        key = jwks_client(settings.oidc_jwks_url).get_signing_key_from_jwt(token)
+        claims = jwt.decode(
+            token, key.key, algorithms=algorithms,
+            audience=settings.oidc_client_id, issuer=settings.oidc_issuer,
+            options={"require": ["exp", "iat", "iss", "sub", "aud"], "verify_signature": True},
+            leeway=30,
+        )
+        subject, issuer = claims.get("sub"), claims.get("iss")
+        issued_at, expires_at = claims.get("iat"), claims.get("exp")
+        if subject != access_principal.subject or issuer != access_principal.issuer:
+            raise reject("id_token_subject_or_issuer_mismatch")
+        if not isinstance(issued_at, (int, float)) or not isinstance(expires_at, (int, float)):
+            raise reject("id_token_time_claims_invalid")
+        if expires_at <= issued_at or expires_at - issued_at > MAX_ID_TOKEN_LIFETIME_SECONDS:
+            raise reject("id_token_lifetime_invalid")
+        audiences = claims.get("aud")
+        if isinstance(audiences, list) and len(audiences) > 1 and claims.get("azp") != settings.oidc_client_id:
+            raise reject("id_token_authorized_party_mismatch")
+        email = claims.get("email")
+        if email is not None and (not isinstance(email, str) or len(email) > 320):
+            email = None
+        return Principal(
+            subject=access_principal.subject,
+            issuer=access_principal.issuer,
+            email=email or access_principal.email,
+            email_verified=claims.get("email_verified") is True,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        reason, status = _reason_from_exception(exc)
+        if status == 503:
+            raise reject(reason, 503, "Service d'identité momentanément indisponible. Réessayez.")
+        raise reject("id_token_" + reason)
+
+
+
 def verify_access_token(token: str) -> Principal:
     if not settings.oidc_issuer or not settings.oidc_audience or not settings.oidc_jwks_url:
         raise reject("oidc_not_configured", 503, "Authentification OIDC non configurée.")
@@ -111,10 +161,10 @@ def verify_access_token(token: str) -> Principal:
         if expires_at - issued_at > MAX_ACCESS_TOKEN_LIFETIME_SECONDS:
             raise reject("lifetime_excessive")
 
-        email = claims.get("email")
+        email = claims.get(getattr(settings, "oidc_email_claim", "email"))
         if email is not None and (not isinstance(email, str) or len(email) > 320):
             email = None
-        verified = claims.get("email_verified") is True
+        verified = claims.get(getattr(settings, "oidc_email_verified_claim", "email_verified")) is True
         return Principal(
             subject=subject,
             issuer=issuer,

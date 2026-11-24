@@ -8,6 +8,47 @@ from app.jurisprudence import AdministrativeCaseLawConnector
 
 
 @pytest.mark.asyncio
+async def test_piste_oauth_rejection_reports_only_allowlisted_error_code(monkeypatch):
+    from app.legifrance import LegifranceUnavailable
+
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    monkeypatch.setattr(settings, "legifrance_scope", "openid")
+
+    def handler(request):
+        assert request.url.path == "/api/oauth/token"
+        assert request.headers["content-type"].startswith("application/x-www-form-urlencoded")
+        body = request.content.decode("utf-8")
+        assert "grant_type=client_credentials" in body
+        assert "client_id=test-client" in body
+        assert "client_secret=test-secret" in body
+        return httpx.Response(400, json={
+            "error": "invalid_client",
+            "error_description": "Do not expose this description or the supplied secret.",
+        })
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    with pytest.raises(LegifranceUnavailable, match="HTTP 400, code invalid_client") as error:
+        await connector._get_token()
+    assert "test-secret" not in str(error.value)
+    assert "Do not expose" not in str(error.value)
+
+
+def test_piste_oauth_error_code_rejects_untrusted_provider_text():
+    from app.legifrance import _safe_piste_oauth_error_code
+
+    assert _safe_piste_oauth_error_code(
+        httpx.Response(400, json={"error": "invalid_scope"})
+    ) == "invalid_scope"
+    assert _safe_piste_oauth_error_code(
+        httpx.Response(400, json={"error": "invalid_client: secret=leak"})
+    ) is None
+    assert _safe_piste_oauth_error_code(
+        httpx.Response(400, json={"error_description": "invalid_client"})
+    ) is None
+
+
+@pytest.mark.asyncio
 async def test_cetat_search_uses_official_fund_and_returns_only_grounded_ids(monkeypatch):
     monkeypatch.setattr(settings, "legifrance_client_id", "client")
     monkeypatch.setattr(settings, "legifrance_client_secret", "secret")
@@ -289,6 +330,70 @@ def test_undated_personal_case_is_not_misclassified_as_general_information():
     assert _analysis_mode(personal, True) == "CASE_SPECIFIC"
 
 
+def test_permanent_legal_version_is_checked_against_historical_facts_date():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "CODE",
+        "requested_date": date(2026, 11, 24),
+        "valid_from": date(2020, 1, 1),
+        "valid_to": date(2024, 12, 31),
+        "version_status": "REPEALED",
+        "temporal_status": "NO_LONGER_IN_FORCE",
+    }
+    status, explanation = _permanent_source_temporal_metadata(item, date(2024, 6, 1))
+    assert status == "IN_FORCE_ON_FACTS_DATE"
+    assert explanation and "couvrent le 2024-06-01" in explanation
+
+
+def test_permanent_legal_version_is_rejected_outside_its_validity_period():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "LAW",
+        "requested_date": date(2026, 11, 24),
+        "valid_from": date(2025, 1, 1),
+        "valid_to": date(2025, 12, 31),
+        "temporal_status": "NO_LONGER_IN_FORCE",
+    }
+    before, _ = _permanent_source_temporal_metadata(item, date(2024, 12, 31))
+    after, _ = _permanent_source_temporal_metadata(item, date(2026, 1, 1))
+    assert before == "NOT_YET_EFFECTIVE"
+    assert after == "NO_LONGER_IN_FORCE"
+
+
+def test_permanent_legal_version_with_missing_historical_bounds_is_not_assumed_applicable():
+    from app.orchestrator import _permanent_source_temporal_metadata
+
+    item = {
+        "document_kind": "CODE",
+        "requested_date": date(2026, 11, 24),
+        "valid_from": None,
+        "valid_to": None,
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    }
+    status, explanation = _permanent_source_temporal_metadata(item, date(2024, 6, 1))
+    assert status == "TEMPORAL_SCOPE_INCOMPLETE"
+    assert explanation and "ne permettent pas de vérifier" in explanation
+
+
+def test_historical_in_force_corpus_version_passes_final_orchestrator_source_gate():
+    from app.orchestrator import _is_usable_permanent_source
+
+    source = {
+        "source_id": "CORPUS_VERSION_HISTORICAL",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "temporal_status": "IN_FORCE_ON_FACTS_DATE",
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "research_axis_relevant": True,
+    }
+    assert _is_usable_permanent_source(source, {source["source_id"]}) is True
+    source["temporal_status"] = "NO_LONGER_IN_FORCE"
+    assert _is_usable_permanent_source(source, {source["source_id"]}) is False
+
+
 def test_imported_administrative_case_law_after_facts_is_kept_as_interpretative():
     from app.orchestrator import _permanent_source_temporal_metadata
 
@@ -326,6 +431,51 @@ def test_imported_administrative_case_law_without_facts_date_is_not_excluded():
     status, explanation = _permanent_source_temporal_metadata(item, None)
     assert status == "DECISION_DATE_VERIFIED_NO_FACTS_DATE"
     assert explanation is None
+
+
+def test_permanent_case_law_decision_before_or_on_facts_date_passes_source_gate():
+    from app.orchestrator import _is_usable_permanent_source
+
+    source = {
+        "source_id": "CORPUS_CASE_LAW_BEFORE_FACTS",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "research_axis_relevant": True,
+        "temporal_status": "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+    }
+    assert _is_usable_permanent_source(source, {source["source_id"]}) is True
+
+
+def test_permanent_case_law_with_verified_date_and_no_facts_date_passes_source_gate():
+    from app.orchestrator import _is_usable_permanent_source
+
+    source = {
+        "source_id": "CORPUS_CASE_LAW_CURRENT_CONTEXT",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "research_axis_relevant": True,
+        "temporal_status": "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
+    }
+    assert _is_usable_permanent_source(source, {source["source_id"]}) is True
+
+
+def test_permanent_case_law_after_facts_remains_excluded_from_conclusive_source_gate():
+    from app.orchestrator import _is_usable_permanent_source
+
+    source = {
+        "source_id": "CORPUS_CASE_LAW_AFTER_FACTS",
+        "content_kind": "FULL_TEXT",
+        "citation_integrity": {"valid": True},
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "research_axis_relevant": True,
+        "temporal_status": "DECISION_POSTERIOR_TO_FACTS",
+    }
+    assert _is_usable_permanent_source(source, {source["source_id"]}) is False
 
 
 def test_period_analysis_keeps_later_case_law_and_endpoint_valid_local_documents():
@@ -465,7 +615,7 @@ def test_open_data_search_results_mark_only_relevance_selected_passages():
 
 
 
-def test_administrative_open_data_import_excludes_explicit_state_public_service_decisions():
+def test_administrative_open_data_import_includes_explicit_state_public_service_decisions():
     from io import BytesIO
     import zipfile
     from app.legal_ingestion import parse_administrative_open_data_zip
@@ -481,7 +631,9 @@ def test_administrative_open_data_import_excludes_explicit_state_public_service_
     archive_bytes = BytesIO()
     with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("CE_2024002_20240510.xml", xml)
-    assert parse_administrative_open_data_zip(archive_bytes.getvalue(), "CE_202405.zip") == []
+    records = parse_administrative_open_data_zip(archive_bytes.getvalue(), "CE_202405.zip")
+    assert len(records) == 1
+    assert records[0]["raw_metadata"]["public_service_scope"] == "FPE"
 
 
 def test_administrative_open_data_import_rejects_xml_entity_declarations():
@@ -574,3 +726,103 @@ def test_open_data_case_law_filter_keeps_local_authority_hr_disputes():
         {"scope": "OUT_OF_SCOPE_OR_UNCONFIRMED", "analysis_eligible": False},
     )
 
+
+
+def test_administrative_open_data_import_accepts_explicit_hospital_employment_decisions():
+    from io import BytesIO
+    import zipfile
+    from app.legal_ingestion import parse_administrative_open_data_zip
+
+    xml = """<Decision>
+      <Identification>TA_2024003_20240512.xml</Identification>
+      <Code_Juridiction>TA69</Code_Juridiction>
+      <Nom_Juridiction>Tribunal administratif de Lyon</Nom_Juridiction>
+      <Numero_Dossier>2400003</Numero_Dossier>
+      <Date_Lecture>2024-05-12</Date_Lecture>
+      <Texte_Integral><p>Un agent hospitalier d'un établissement public de santé conteste une décision relative à son accident de service au regard des règles propres à la fonction publique hospitalière.</p></Texte_Integral>
+    </Decision>""".encode("utf-8")
+    archive_bytes = BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("TA_2024003_20240512.xml", xml)
+    records = parse_administrative_open_data_zip(archive_bytes.getvalue(), "TA_202405.zip")
+    assert len(records) == 1
+    assert records[0]["raw_metadata"]["public_service_scope"] == "FPH"
+
+
+def test_open_data_import_rejects_mixed_branch_decisions_even_with_local_employer_context():
+    from app.legal_ingestion import _public_service_employment_case_law_scope
+
+    title = "Décision relative à la fonction publique territoriale et à la fonction publique hospitalière"
+    body = (
+        "La commune a pris une décision disciplinaire concernant un agent territorial "
+        "et un agent hospitalier. Le litige porte sur les garanties disciplinaires."
+    )
+    assert _public_service_employment_case_law_scope(title, body) is None
+
+def test_verified_admin_open_data_scope_uses_full_decision_ingestion_classification():
+    from app.orchestrator import _classify_permanent_source_scope
+
+    source = {
+        "source_type": "OTHER_OFFICIAL",
+        "document_kind": "ADMIN_CASELAW",
+        "source_status": "OFFICIAL_XML_IMPORTED",
+        # The retrieved passage itself need not repeat the branch marker.
+        "title": "Temps de travail",
+        "excerpt": "Le litige porte sur l'organisation du temps de travail.",
+        "raw_metadata": {
+            "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
+            "public_service_scope": "FPT",
+            "scope_evidence": ["agents territoriaux"],
+        },
+    }
+    fpt = _classify_permanent_source_scope(source, "FPT")
+    assert fpt["scope"] == "FPT"
+    assert fpt["analysis_eligible"] is True
+    assert fpt["claim_eligible"] is True
+
+    fpe = _classify_permanent_source_scope(source, "FPE")
+    assert fpe["scope"] == "FPT"
+    assert fpe["analysis_eligible"] is False
+    assert fpe["claim_eligible"] is False
+
+
+def test_unverified_admin_scope_metadata_is_not_trusted():
+    from app.orchestrator import _classify_permanent_source_scope
+
+    source = {
+        "source_type": "OTHER_OFFICIAL",
+        "document_kind": "ADMIN_CASELAW",
+        "source_status": "IMPORTED_UNVERIFIED",
+        "title": "Temps de travail",
+        "excerpt": "Le litige porte sur l'organisation du temps de travail.",
+        "raw_metadata": {
+            "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
+            "public_service_scope": "FPT",
+            "scope_evidence": ["agents territoriaux"],
+        },
+    }
+    result = _classify_permanent_source_scope(source, "FPT")
+    assert result["scope"] != "FPT"
+    assert result["analysis_eligible"] is False
+
+
+def test_verified_admin_open_data_common_scope_applies_to_all_versants():
+    from app.orchestrator import _classify_permanent_source_scope
+
+    source = {
+        "source_type": "OTHER_OFFICIAL",
+        "document_kind": "ADMIN_CASELAW",
+        "source_status": "OFFICIAL_XML_IMPORTED",
+        "title": "Dispositions communes",
+        "excerpt": "Le litige concerne les trois fonctions publiques.",
+        "raw_metadata": {
+            "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
+            "public_service_scope": "COMMON_PUBLIC_SERVICE",
+            "scope_evidence": ["agents des trois versants"],
+        },
+    }
+    for versant in ("FPT", "FPE", "FPH"):
+        result = _classify_permanent_source_scope(source, versant)
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True

@@ -1,0 +1,80 @@
+name: Legal embedding parity
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/generate_transformersjs_parity.mjs"
+      - "scripts/compare_legal_embedding_parity.py"
+      - "backend/requirements-embeddings.txt"
+      - "docs/quality/legal_embedding_parity_inputs.example.json"
+      - ".github/workflows/legal-embedding-parity.yml"
+permissions:
+  contents: read
+concurrency:
+  group: legal-embedding-parity-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compare-models:
+    name: Compare FastEmbed and Transformers.js (isolated, no database)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-embeddings.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install FastEmbed CPU runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements-embeddings.txt
+          python -m pip check
+      - name: Install Transformers.js runtime
+        run: npm install --no-save --no-package-lock --onnxruntime-node-install-cuda=skip @huggingface/transformers@3.7.2
+      - name: Generate FastEmbed reference vectors
+        run: |
+          python scripts/compare_legal_embedding_parity.py generate-fastembed \
+            --input docs/quality/legal_embedding_parity_inputs.example.json \
+            --output fastembed-legal-embeddings.json
+      - name: Generate Transformers.js vectors using the production query contract
+        run: |
+          node scripts/generate_transformersjs_parity.mjs \
+            docs/quality/legal_embedding_parity_inputs.example.json \
+            transformersjs-legal-embeddings.json
+      - name: Compare vectors and write numerical report
+        run: |
+          python scripts/compare_legal_embedding_parity.py compare \
+            --browser transformersjs-legal-embeddings.json \
+            --fastembed fastembed-legal-embeddings.json \
+            --output legal-embedding-parity-report.json
+      - name: Display comparison summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("legal-embedding-parity-report.json").read_text(encoding="utf-8"))
+          print(json.dumps({
+              "status": report["status"],
+              "model_pair": report["model_pair"],
+              "count": report["count"],
+              "cosine_min": report["cosine_min"],
+              "cosine_mean": report["cosine_mean"],
+              "cosine_max": report["cosine_max"],
+              "interpretation": report["interpretation"],
+          }, ensure_ascii=False, indent=2))
+          PY
+      - name: Upload numerical report and raw exports
+        uses: actions/upload-artifact@v4
+        with:
+          name: legal-embedding-parity-${{ github.run_id }}
+          path: |
+            legal-embedding-parity-report.json
+            fastembed-legal-embeddings.json
+            transformersjs-legal-embeddings.json
+          if-no-files-found: error
+          retention-days: 14

@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -23,3 +25,204 @@ def test_fpt_chatbot_evaluation_dataset_has_100_unique_cases_and_explicit_review
 
     assert "pas des réponses juridiques certifiées" in dataset["important_limit"]
     assert dataset["release_gate"]["no_critical_failures"] is True
+
+
+def test_fifteen_question_pilot_manifest_is_reproducible_and_covers_all_ten_families():
+    repository_root = Path(__file__).resolve().parents[2]
+    manifest_path = repository_root / "docs" / "quality" / "fpt_pilot_15_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    cases = manifest["cases"]
+    ids = manifest["case_ids"]
+    assert len(cases) == 15
+    assert len(ids) == 15
+    assert len(set(ids)) == 15
+    assert [case["id"] for case in cases] == ids
+    assert len({case["category"] for case in cases}) == 10
+    assert manifest["execution_protocol"]["authenticated_session_count"] == 1
+    assert manifest["execution_protocol"]["questions_count"] == 15
+    assert manifest["release_gate"]["status"] == "NOT_EVALUATED"
+    assert manifest["release_gate"]["gold_answers"] == "HUMAN_VALIDATION_REQUIRED"
+    source_path = repository_root / "docs" / "quality" / "fpt_chatbot_eval_v1.json"
+    source_cases = {
+        case["id"]: case
+        for case in json.loads(source_path.read_text(encoding="utf-8"))["cases"]
+    }
+    for case in cases:
+        assert case["question"].strip()
+        assert case["required_checks"]
+        assert case["failure_modes"]
+        assert case["gold_answer_status"].startswith("À rédiger et valider")
+        source_case = source_cases[case["id"]]
+        assert case["question"] == source_case["question"]
+        assert case["expected_intent"] == source_case["expected_intent"]
+        assert case["source_review_status"] == source_case["source_review_status"]
+
+
+
+def test_fifteen_question_pilot_runs_through_prepare_review_and_score(tmp_path):
+    repository_root = Path(__file__).resolve().parents[2]
+    script = repository_root / "scripts" / "fpt_benchmark.py"
+    dataset = repository_root / "docs" / "quality" / "fpt_pilot_15_v1.json"
+    manifest = json.loads(dataset.read_text(encoding="utf-8"))
+    ids = manifest["case_ids"]
+
+    validated = subprocess.run(
+        [sys.executable, str(script), "validate", "--dataset", str(dataset)],
+        capture_output=True, text=True, check=False,
+    )
+    assert validated.returncode == 0, validated.stderr
+    assert "15 questions" in validated.stdout
+
+    responses_path = tmp_path / "responses.json"
+    responses_path.write_text(json.dumps({
+        "responses": [
+            {"id": case_id, "answer": "Réponse de test", "sources": [], "verification_status": "PARTIAL"}
+            for case_id in ids
+        ]
+    }), encoding="utf-8")
+    review_path = tmp_path / "review.json"
+    prepared = subprocess.run(
+        [sys.executable, str(script), "prepare-review", "--dataset", str(dataset),
+         "--responses", str(responses_path), "--out", str(review_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert prepared.returncode == 0, prepared.stderr
+    reviews = json.loads(review_path.read_text(encoding="utf-8"))
+    assert len(reviews) == 15
+    assert [item["id"] for item in reviews] == ids
+
+    for item in reviews:
+        item["evaluations"] = {
+            "question_understanding": 2,
+            "research_coverage": 2,
+            "source_relevance": 2,
+            "legal_accuracy": 2,
+            "synthesis_fidelity": 2,
+        }
+        item["question_relevance"] = True
+        item["source_support"] = True
+        item["severite"] = "conforme"
+    annotated_path = tmp_path / "annotated.json"
+    annotated_path.write_text(json.dumps(reviews), encoding="utf-8")
+    report_path = tmp_path / "score.json"
+    scored = subprocess.run(
+        [sys.executable, str(script), "score", "--dataset", str(dataset),
+         "--responses", str(responses_path), "--reviews", str(annotated_path),
+         "--out", str(report_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert scored.returncode == 0, scored.stderr
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["questions_total"] == 15
+    assert report["questions_evaluees"] == 15
+    assert report["status"] == "INCOMPLET"
+    assert report["release_gate"]["status"] == "INCOMPLETE"
+    assert report["release_gate"]["checks"]["gold_answers_human_validated"] is False
+
+    # Python treats bool as int; a boolean must not count as a human score.
+    reviews[0]["evaluations"]["question_understanding"] = True
+    boolean_review_path = tmp_path / "boolean_annotated.json"
+    boolean_review_path.write_text(json.dumps(reviews), encoding="utf-8")
+    boolean_report_path = tmp_path / "boolean_score.json"
+    boolean_scored = subprocess.run(
+        [sys.executable, str(script), "score", "--dataset", str(dataset),
+         "--responses", str(responses_path), "--reviews", str(boolean_review_path),
+         "--out", str(boolean_report_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert boolean_scored.returncode == 0, boolean_scored.stderr
+    boolean_report = json.loads(boolean_report_path.read_text(encoding="utf-8"))
+    assert boolean_report["questions_evaluees"] == 14
+    assert boolean_report["questions_restantes"] == [ids[0]]
+    assert boolean_report["status"] == "INCOMPLET"
+    assert boolean_report["release_gate"]["status"] == "INCOMPLETE"
+
+
+
+def test_benchmark_rejects_non_string_case_ids_without_crashing(tmp_path):
+    repository_root = Path(__file__).resolve().parents[2]
+    source = repository_root / "docs" / "quality" / "fpt_chatbot_eval_v1.json"
+    manifest = json.loads(source.read_text(encoding="utf-8"))
+    manifest["cases"][0]["id"] = ["FPT-001"]
+    malformed_path = tmp_path / "malformed_ids.json"
+    malformed_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    script = repository_root / "scripts" / "fpt_benchmark.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "validate", "--dataset", str(malformed_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 2
+    assert "identifiant texte non vide" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_benchmark_rejects_invalid_release_thresholds(tmp_path):
+    repository_root = Path(__file__).resolve().parents[2]
+    source = repository_root / "docs" / "quality" / "fpt_pilot_15_v1.json"
+    manifest = json.loads(source.read_text(encoding="utf-8"))
+    manifest["release_gate"]["minimum_question_relevance_rate"] = True
+    malformed_path = tmp_path / "malformed_threshold.json"
+    malformed_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    script = repository_root / "scripts" / "fpt_benchmark.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "validate", "--dataset", str(malformed_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 2
+    assert "minimum_question_relevance_rate" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+
+def test_explicit_manifest_gold_gate_cannot_be_overridden_by_case_labels(tmp_path):
+    repository_root = Path(__file__).resolve().parents[2]
+    source = repository_root / "docs" / "quality" / "fpt_pilot_15_v1.json"
+    manifest = json.loads(source.read_text(encoding="utf-8"))
+    # Deliberately contradictory metadata: the manifest still requires human
+    # validation even if every individual case is accidentally marked validated.
+    for case in manifest["cases"]:
+        case["gold_answer_status"] = "HUMAN_VALIDATED"
+    manifest["release_gate"]["gold_answers"] = "HUMAN_VALIDATION_REQUIRED"
+    dataset_path = tmp_path / "contradictory_manifest.json"
+    dataset_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    ids = manifest["case_ids"]
+    responses_path = tmp_path / "responses.json"
+    responses_path.write_text(json.dumps({
+        "responses": [{"id": case_id, "answer": "Réponse", "sources": []} for case_id in ids]
+    }), encoding="utf-8")
+    reviews_path = tmp_path / "reviews.json"
+    reviews_path.write_text(json.dumps([
+        {
+            "id": case_id,
+            "evaluations": {
+                "question_understanding": 2,
+                "research_coverage": 2,
+                "source_relevance": 2,
+                "legal_accuracy": 2,
+                "synthesis_fidelity": 2,
+            },
+            "question_relevance": True,
+            "source_support": True,
+            "severite": "conforme",
+        }
+        for case_id in ids
+    ]), encoding="utf-8")
+
+    report_path = tmp_path / "report.json"
+    script = repository_root / "scripts" / "fpt_benchmark.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "score", "--dataset", str(dataset_path),
+         "--responses", str(responses_path), "--reviews", str(reviews_path),
+         "--out", str(report_path)],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["questions_evaluees"] == 15
+    assert report["status"] == "INCOMPLET"
+    assert report["release_gate"]["status"] == "INCOMPLETE"
+    assert report["release_gate"]["checks"]["gold_answers_human_validated"] is False

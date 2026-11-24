@@ -57,14 +57,68 @@ def test_conversation_history_supports_ten_exchange_context_and_resolves_followu
         "Comment fonctionne le CET ?", prior
     ) == "Comment fonctionne le CET ?"
 
-def test_chat_route_loads_twenty_messages_and_ai_planner_keeps_ten_user_turns():
+def test_chat_route_loads_bounded_history_but_providers_receive_only_relevant_context():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     orchestrator = (ROOT / "backend/app/orchestrator.py").read_text(encoding="utf-8")
-    provider = (ROOT / "backend/app/ai_provider.py").read_text(encoding="utf-8")
     assert "ORDER BY created_at DESC,id DESC LIMIT $3" in main
     assert "CONVERSATION_HISTORY_MESSAGE_LIMIT" in main
     assert "[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]" in orchestrator
-    assert "[-RECENT_USER_CONTEXT_LIMIT:]" in provider
+    assert "conversation_history=provider_history" in orchestrator
+
+
+def test_only_the_immediately_previous_assistant_turn_can_supply_a_clarification():
+    from app.orchestrator import _immediate_prior_assistant_messages
+
+    history_with_filtered_local_reply = [
+        {"role": "assistant", "content": "Êtes-vous titulaire ou contractuel ?"},
+        {"role": "user", "content": "Que prévoit le règlement intérieur ?"},
+    ]
+    assert _immediate_prior_assistant_messages(history_with_filtered_local_reply) == []
+
+    history_with_current_clarification = [
+        {"role": "user", "content": "Je suis en CITIS après un accident de service."},
+        {"role": "assistant", "content": "Êtes-vous titulaire ou contractuel ?"},
+    ]
+    assert _immediate_prior_assistant_messages(history_with_current_clarification) == [
+        "Êtes-vous titulaire ou contractuel ?"
+    ]
+
+
+def test_multi_turn_followup_preserves_an_explicit_status_from_an_earlier_user_turn():
+    from app.legal_qualification import build_contextual_research_context, qualify_legal_question
+    from app.orchestrator import _provider_context_history
+
+    history = [
+        "Je suis agent contractuel en CDD.",
+        "Quels sont mes droits en cas de fin de contrat ?",
+    ]
+    resolved = build_contextual_research_context("Et dans ce cas ?", history)
+    assert resolved.is_followup is True
+    assert "Contexte de statut déclaré précédemment : Je suis agent contractuel" in resolved.question
+    assert qualify_legal_question(resolved.question)["agent_status"] == "CONTRACTUEL_EXPLICIT"
+    provider_history = _provider_context_history(resolved.question, True)
+    assert provider_history == [
+        {"role": "user", "content": "Quels sont mes droits en cas de fin de contrat ?"}
+    ]
+def test_independent_question_does_not_inherit_a_previously_declared_status():
+    from app.legal_qualification import build_contextual_research_context
+
+    resolved = build_contextual_research_context(
+        "Comment fonctionne le compte épargne-temps ?",
+        ["Je suis agent contractuel en CDD.", "Quels sont mes droits aux heures supplémentaires ?"],
+    )
+    assert resolved.is_followup is False
+    assert "Contexte de statut déclaré précédemment" not in resolved.question
+
+
+def test_provider_context_history_excludes_stale_topics_and_keeps_only_the_selected_referent():
+    from app.orchestrator import _provider_context_history
+
+    followup_question = "Et pour les contractuels ?\nMon chef refuse mes heures supplémentaires."
+    assert _provider_context_history(followup_question, True) == [
+        {"role": "user", "content": "Mon chef refuse mes heures supplémentaires."}
+    ]
+    assert _provider_context_history("Quels sont les congés annuels ?", False) == []
 
 
 def test_short_answer_uses_previous_assistant_clarification_without_losing_legal_topic():

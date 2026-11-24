@@ -22,24 +22,62 @@ RECENT_USER_CONTEXT_LIMIT = 10
 
 _CLARIFICATION_REPLY = re.compile(
     r"^(?:oui\b|non\b|exactement\b|c['’]est\s+(?:ça|bien\s+ça)\b|"
-    r"je\s+suis\b|je\s+travaille\b|mon\s+statut\b|"
+    r"je\s+suis\s+(?:(?:un|une|agent(?:e)?\s+)?(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b)|"
+    r"je\s+travaille\s+(?:comme|en\s+tant\s+que)\b|mon\s+statut\b|"
     r"depuis\s+(?:le\s+)?(?:\d|janvier\b|février\b|mars\b|avril\b|"
     r"mai\b|juin\b|juillet\b|août\b|septembre\b|octobre\b|"
     r"novembre\b|décembre\b)|"
     r"à\s+temps\b|à\s+\d{1,3}\s*%|"
     r"en\s+(?:cdi|cdd|catégorie\s+[abc]|classe\s+normale)\b|"
     r"titulaire\b|contractuel(?:le)?\b|stagiaire\b|fonctionnaire\b|"
+    r"je\s+viens\s+d['’]être\s+(?:agent\s+)?titularisé(?:e|s|es)?\b|"
+    r"j['’]ai\s+été\s+(?:agent\s+)?titularisé(?:e|s|es)?\b|"
     r"agent\b|temps\s+(?:partiel|complet|non\s+complet)\b)",
+    re.IGNORECASE,
+)
+
+
+_CONTEXTUAL_SCOPE_MODIFIER = re.compile(
+    r"^et pour (?:les? |la )?(?:agent(?:e)?s? )?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"titulaires?|fonctionnaires?|fpt|fpe|fph|moi|nous|"
+    r"temps partiel|temps complet|temps non complet)\b",
+    re.IGNORECASE,
+)
+
+
+# Carry only an explicitly declared first-person public-agent status across
+# genuine follow-ups. Population questions and third-party descriptions do not
+# become facts about the current user.
+_EXPLICIT_STATUS_DECLARATION = re.compile(
+    r"\b(?:(?:je\s+viens\s+d['’]être|j['’]ai\s+été|je\s+suis)\s+(?:(?:un|une|agent(?:e)?)\s+)?titularisé(?:e|s|es)?|"
+    r"(?:je\s+suis|je\s+travaille\s+comme|en\s+tant\s+que|mon\s+statut\s+est)\s+"
+    r"(?:(?:un|une)\s+)?(?:(?:agent|agente|fonctionnaire)\s+)?"
+    r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b)",
     re.IGNORECASE,
 )
 
 
 _CONTEXTUAL_FOLLOWUP = re.compile(
     r"^(?:et\s+(?:pour|si|dans|concernant)\b|"
-    r"et\s+(?:les|la|le)\s+(?:agents?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"et\s+(?:les|la|le)\s+(?:agent(?:e)?s?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
     r"titulaires?|fonctionnaires?)\b|"
-    r"dans ce cas\b|pour les\b|pour la\b|pour le\b|"
+    r"pour\s+les?\s+(?:agent(?:e)?s?\s+)?(?:contractuel(?:le)?s?|stagiaires?|"
+    r"titulaires?|fonctionnaires?)\s*\??$|"
+    r"dans ce cas\b|"
     r"qu['’]en est-il\b|quid\b|même chose\b|cela\b|ça\b)",
+    re.IGNORECASE,
+)
+
+_ASSISTANT_REFERENTIAL_FOLLOWUP = re.compile(
+    r"^(?:"
+    r"(?:peux[- ]tu|pourrais[- ]tu)\s+(?:préciser|détailler|développer|expliquer|reformuler|reprendre)\b|"
+    r"(?:qu['’]entends-tu par|que veux-tu dire par)\b|"
+    r"tu\s+(?:dis|as dit|as indiqué|viens de dire)\b|"
+    r"dans ta réponse\b|"
+    r"(?:et\s+)?(?:le|la)\s+(?:premier|première|deuxième|second|seconde|dernier|dernière|précédent|précédente)\s+"
+    r"(?:point|élément|condition|règle|disposition|argument)\b|"
+    r"(?:ce|cette)\s+(?:point|passage|terme|mot|principe|condition|règle|disposition)\b"
+    r")",
     re.IGNORECASE,
 )
 
@@ -48,6 +86,7 @@ _CONTEXTUAL_FOLLOWUP = re.compile(
 class ContextualResearchContext:
     question: str
     is_followup: bool
+    assistant_context: str | None = None
 
 
 def build_contextual_research_context(
@@ -67,6 +106,41 @@ def build_contextual_research_context(
         for item in (prior_user_questions or [])
         if str(item).strip()
     ]
+    if _ASSISTANT_REFERENTIAL_FOLLOWUP.match(current):
+        assistants = [
+            str(item).strip()
+            for item in (prior_assistant_messages or [])
+            if str(item).strip()
+        ]
+        if not prior_questions or not assistants:
+            return ContextualResearchContext(question=current[:500], is_followup=False)
+        prior = next(
+            (
+                item for item in reversed(prior_questions)
+                if not _CONTEXTUAL_FOLLOWUP.match(item)
+            ),
+            prior_questions[-1],
+        )
+        current_topics = _matched_question_topics(current)
+        prior_topics = _matched_question_topics(prior)
+        if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
+            return ContextualResearchContext(question=current[:500], is_followup=False)
+        contextual = f"{current[:300]}\n{prior[:180]}"
+        if not _EXPLICIT_STATUS_DECLARATION.search(current):
+            for earlier_question in reversed(prior_questions):
+                declaration = _EXPLICIT_STATUS_DECLARATION.search(earlier_question)
+                if declaration:
+                    contextual += (
+                        "\nContexte de statut déclaré précédemment : "
+                        + declaration.group(0)
+                    )
+                    break
+        return ContextualResearchContext(
+            question=contextual[:500],
+            is_followup=True,
+            assistant_context=assistants[-1][-1800:],
+        )
+
     if _CONTEXTUAL_FOLLOWUP.match(current):
         if not prior_questions:
             return ContextualResearchContext(question=current[:500], is_followup=True)
@@ -78,7 +152,34 @@ def build_contextual_research_context(
             ),
             prior_questions[-1],
         )
-        contextual = f"{current[:300]}\n{prior[:180]}"[:500]
+        current_topics = _matched_question_topics(current)
+        prior_topics = _matched_question_topics(prior)
+        if (
+            prior_topics
+            and not current_topics
+            and _fold(current).startswith("et pour ")
+            and not _CONTEXTUAL_SCOPE_MODIFIER.match(_fold(current))
+        ):
+            # Unknown named subjects are safer as independent questions than
+            # as accidental continuations of an unrelated legal topic.
+            return ContextualResearchContext(question=current[:500], is_followup=False)
+        if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
+            # A short "Et pour ..." that names a different legal family is a
+            # new question, not a continuation of the previous legal issue.
+            return ContextualResearchContext(question=current[:500], is_followup=False)
+        contextual = f"{current[:300]}\n{prior[:180]}"
+        # Retain a first-person status declared in an earlier user turn across
+        # a genuine follow-up, unless the current turn declares a new status.
+        if not _EXPLICIT_STATUS_DECLARATION.search(current):
+            for earlier_question in reversed(prior_questions):
+                declaration = _EXPLICIT_STATUS_DECLARATION.search(earlier_question)
+                if declaration:
+                    contextual += (
+                        "\nContexte de statut déclaré précédemment : "
+                        + declaration.group(0)
+                    )
+                    break
+        contextual = contextual[:500]
         return ContextualResearchContext(question=contextual, is_followup=True)
 
     # A short answer such as "oui" or "contractuel" is contextual only when
@@ -99,6 +200,12 @@ def build_contextual_research_context(
                     ),
                     prior_questions[-1],
                 )
+                current_topics = _matched_question_topics(current)
+                prior_topics = _matched_question_topics(prior)
+                if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
+                    # A substantive new legal topic must not be mistaken for
+                    # an answer merely because it starts with "Je suis".
+                    return ContextualResearchContext(question=current[:500], is_followup=False)
                 clarification = " ".join(fragments[-1].split())[-200:]
                 contextual = (
                     f"{current[:100]}\n{prior[:160]}\n"
@@ -121,6 +228,37 @@ def build_contextual_research_question(
         prior_user_questions=prior_user_questions,
         prior_assistant_messages=prior_assistant_messages,
     ).question
+
+
+_EXPLICIT_SELF_VERSANT_PATTERNS = {
+    "FPT": (
+        r"\bje suis (?:un |une )?(?:agent|fonctionnaire) territorial\b",
+        r"\bje releve de la fonction publique territoriale\b",
+        r"\bmon employeur est (?:(?:la|une) )?(?:mairie|commune|collectivite territoriale)\b",
+    ),
+    "FPE": (
+        r"\bje suis (?:un |une )?(?:agent|fonctionnaire) (?:public )?de l etat\b",
+        r"\bje releve de la fonction publique de l etat\b",
+        r"\bje travaille (?:au|dans un|pour un) ministere\b",
+        r"\bmon employeur est (?:un )?ministere\b",
+    ),
+    "FPH": (
+        r"\bje suis (?:un |une )?(?:agent|fonctionnaire) hospitalier\b",
+        r"\bje releve de la fonction publique hospitaliere\b",
+        r"\bje travaille (?:dans un|au sein d un) etablissement public de sante\b",
+        r"\bmon employeur est (?:un )?etablissement public de sante\b",
+    ),
+}
+
+
+def _explicit_self_versant(question: str) -> str | None:
+    """Return a branch only when the user explicitly describes their own employer/status."""
+    question_lines = str(question or "").splitlines()
+    folded = _fold(question_lines[0] if question_lines else "")
+    for versant, patterns in _EXPLICIT_SELF_VERSANT_PATTERNS.items():
+        if any(re.search(pattern, folded) for pattern in patterns):
+            return versant
+    return None
 
 
 _TOPIC_MARKERS = (
@@ -152,10 +290,12 @@ _TOPIC_MARKERS = (
     # Status is classified independently below: the word "contractuel" must not mask the actual topic.
     ("CONTRACTUAL_EMPLOYMENT", ("renouvellement de contrat", "fin de contrat",
                                 "licenciement contractuel", "recrutement contractuel",
-                                "terme du contrat", "non renouvellement", "refuse le renouvellement",
+                                "terme du contrat", "contrat arrive a son terme",
+                                "mon contrat arrive a son terme", "non renouvellement", "refuse le renouvellement",
                                 "refus de renouvellement", "refus du renouvellement")),
-    ("WORKING_TIME", ("temps de travail", "duree du travail", "heures supplementaires",
-                      "heures sup", "ihts", "astreinte", "annualisation", "repos compensateur",
+    ("WORKING_TIME", ("temps de travail", "duree du travail", "temps partiel",
+                      "temps non complet", "heures supplementaires", "heures sup",
+                      "ihts", "astreinte", "annualisation", "repos compensateur",
                       "travail de nuit", "travail le dimanche", "venir le dimanche",
                       "travailler le dimanche", "venir travailler le dimanche")),
     ("WORKPLACE_INCIDENT_AND_AGENT_PROTECTION", (
@@ -164,7 +304,7 @@ _TOPIC_MARKERS = (
         "violence d un usager", "menace d un usager", "usager m a frappe",
         "refuse que je fasse un rapport", "refuse de faire un rapport",
     )),
-    ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "citis", "accident de service",
+    ("SICK_LEAVE_AND_SERVICE_INJURY", ("conge maladie", "arret maladie", "arrets maladie", "citis", "accident de service",
                                        "maladie professionnelle", "conge longue maladie",
                                        "conge longue duree")),
     ("HARASSMENT_AND_PROTECTION", ("harcelement moral", "harcelement sexuel",
@@ -173,7 +313,23 @@ _TOPIC_MARKERS = (
                       "rifseep", "ifse", "nbi", "prime", "indemnite")),
     ("LEAVE", ("conges annuels", "conge annuel", "poser des conges", "prendre des conges",
                "compte epargne temps", "autorisation speciale d absence")),
+    ("RETIREMENT", ("retraite", "pension", "liquidation des droits", "age legal de depart",
+                    "depart a la retraite", "retraite progressive", "carriere longue")),
+    ("TELEWORK", ("teletravail", "tele travailler", "jours de teletravail", "autorisation de teletravail")),
+    ("PROFESSIONAL_TRAINING", ("formation professionnelle", "formation continue", "conge de formation",
+                               "cpf", "compte personnel de formation", "bilan de competences")),
+    ("CAREER_AND_PROMOTION", ("avancement de grade", "promotion interne", "avancement d echelon",
+                              "entretien professionnel", "evaluation professionnelle", "mobilite interne")),
+    ("AVAILABILITY", ("mise en disponibilite", "demande de disponibilite", "disponibilite d office",
+                      "disponibilite pour convenances personnelles", "disponibilite")),
 )
+
+def _matched_question_topics(question: str) -> set[str]:
+    folded = _fold(question)
+    return {
+        candidate for candidate, markers in _TOPIC_MARKERS
+        if any(_fold(marker) in folded for marker in markers)
+    }
 
 
 def qualify_legal_question(
@@ -181,21 +337,86 @@ def qualify_legal_question(
 ) -> dict:
     """Return conservative pre-research routing hints; never a legal conclusion."""
     folded = _fold(question)
-    topic = "UNCLASSIFIED"
-    for candidate, markers in _TOPIC_MARKERS:
-        if any(_fold(marker) in folded for marker in markers):
-            topic = candidate
-            break
+    matched_topics = [
+        candidate for candidate, markers in _TOPIC_MARKERS
+        if any(_fold(marker) in folded for marker in markers)
+    ]
+    topic = matched_topics[0] if matched_topics else "UNCLASSIFIED"
 
-    if re.search(r"\b(agent|agents|je suis)\s+contractuel(le)?s?\b|\bcontractuel(le)?s?\b", folded):
+    # Status describes the user's own situation, not a third party or a
+    # population mentioned in the question. Use only the current turn's first
+    # line so prior conversation context cannot overwrite a new status.
+    current_lines = str(question or "").splitlines()
+    current_line = current_lines[0] if current_lines else ""
+    # Only the contextualizer may add this dedicated line, based on an
+    # explicit first-person declaration in a previous user turn.
+    if not _EXPLICIT_STATUS_DECLARATION.search(current_line):
+        inherited_status = next((
+            line.split(":", 1)[1].strip()
+            for line in current_lines[1:]
+            if line.startswith("Contexte de statut déclaré précédemment :") and ":" in line
+        ), None)
+        if inherited_status:
+            current_line = inherited_status
+    current_folded = _fold(current_line)
+    negative_status_match = re.search(
+        r"\bje\s+(?:ne\s+)?(?:suis|travaille)\s+(?:pas|plus|jamais)\s+"
+        r"(?:comme\s+)?(?:(?:un|une|agent(?:e)?)\s+)?"
+        r"(contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b",
+        current_folded,
+    )
+    negative_status_raw = (
+        _fold(negative_status_match.group(1))
+        if negative_status_match else None
+    )
+    negative_status = (
+        "contractuel" if negative_status_raw and negative_status_raw.startswith("contractuel")
+        else "stagiaire" if negative_status_raw and negative_status_raw.startswith("stagiaire")
+        else "titulaire" if negative_status_raw and negative_status_raw.startswith("titulaire")
+        else "fonctionnaire" if negative_status_raw and negative_status_raw.startswith("fonctionnaire")
+        else None
+    )
+    negative_titularization = bool(re.search(
+        r"\bje\s+(?:ne\s+)?(?:suis|viens\s+d\s+etre|ai\s+ete)\s+"
+        r"(?:pas|plus|jamais)\s+(?:agent\s+)?titularise(?:e|s|es)?\b",
+        current_folded,
+    ))
+    short_status_reply = re.fullmatch(
+        r"(?:(?:et\s+)?pour\s+les?\s+|et\s+les?\s+)?(?:agent(?:e)?s?\s+)?"
+        r"(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\s*\??",
+        current_folded,
+    )
+    if negative_status != "contractuel" and ((
+        short_status_reply and re.search(r"contractuel", current_folded)
+    ) or re.search(
+        r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
+        r"(?:(?:un|une)\s+)?(?:(?:agent|agente)\s+)?contractuel(?:le)?s?\b",
+        current_folded,
+    )):
         status = "CONTRACTUEL_EXPLICIT"
-    elif re.search(r"\b(stagiaire|fonctionnaire stagiaire)\b", folded):
+    elif negative_status != "stagiaire" and ((
+        short_status_reply and "stagiaire" in current_folded
+    ) or re.search(
+        r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
+        r"(?:(?:un|une)\s+)?(?:fonctionnaire\s+)?stagiaire\b",
+        current_folded,
+    )):
         status = "STAGIAIRE_EXPLICIT"
-    elif re.search(r"\b(titulaire|fonctionnaire titulaire)\b", folded):
+    elif negative_status != "titulaire" and not negative_titularization and (
+        re.search(
+            r"\b(?:je viens d etre|j ai ete|je suis) (?:agent )?titularise(?:e|s|es)?\b",
+            current_folded,
+        ) or (short_status_reply and "titulaire" in current_folded) or re.search(
+        r"\b(?:je suis|je travaille comme|en tant qu|en tant que|mon statut est)\s+"
+        r"(?:(?:un|une)\s+)?(?:(?:agent|fonctionnaire)\s+)?titulaire\b",
+        current_folded,
+    )):
         status = "TITULAIRE_EXPLICIT"
-    elif re.search(r"\bfonctionnaire\b", folded):
+    elif negative_status != "fonctionnaire" and ((
+        short_status_reply and "fonctionnaire" in current_folded
+    ) or re.search(r"\bje suis fonctionnaire\b", current_folded)):
         status = "FONCTIONNAIRE_STATUS_UNSPECIFIED"
-    elif re.search(r"\b(cdd|cdi)\b", folded):
+    elif re.search(r"\b(?:je suis|je travaille) en (?:cdd|cdi)\b", current_folded):
         # A CDD/CDI alone does not establish public-agent contractual status.
         status = "EMPLOYMENT_STATUS_AMBIGUOUS"
     else:
@@ -250,6 +471,13 @@ def qualify_legal_question(
             scope_evidence = matched[:3]
             break
 
+    explicit_self_versant = _explicit_self_versant(question)
+    scope_mismatch_versant = (
+        explicit_self_versant
+        if explicit_self_versant and explicit_self_versant != public_service
+        else None
+    )
+
     local_employer_selected = bool(employer and employer != "NATIONAL")
     priorities = [
         "CODE_GENERAL_FONCTION_PUBLIQUE",
@@ -263,7 +491,9 @@ def qualify_legal_question(
         "target_legal_field": {"FPT": "FRENCH_TERRITORIAL_PUBLIC_SERVICE", "FPE": "FRENCH_STATE_PUBLIC_SERVICE", "FPH": "FRENCH_HOSPITAL_PUBLIC_SERVICE"}[public_service],
         "scope_status": scope_status,
         "scope_evidence": scope_evidence,
+        "explicit_self_versant_mismatch": scope_mismatch_versant,
         "topic": topic,
+        "topics": matched_topics,
         "agent_status": status,
         "public_service": public_service,
         "employer_document_scope": (

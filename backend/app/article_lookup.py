@@ -42,15 +42,16 @@ def missing_direct_article_reference(question: str, sources: list[dict]) -> str 
         return None
 
     verified_refs: set[str] = set()
-    for source in sources or []:
+    source_records = sources if isinstance(sources, (list, tuple)) else []
+    for source in source_records:
         if not isinstance(source, dict):
             continue
         if source.get("source_type") not in {
             "LEGIFRANCE_API", "CGFP_SNAPSHOT",
         }:
             continue
-        integrity = source.get("citation_integrity") or {}
-        if integrity.get("valid") is not True:
+        integrity = source.get("citation_integrity")
+        if not isinstance(integrity, dict) or integrity.get("valid") is not True:
             continue
         if source.get("content_kind") == "METADATA":
             continue

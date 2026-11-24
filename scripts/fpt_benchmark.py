@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,18 @@ CANONICAL_DIMENSIONS = (
 
 def dimensions_for_dataset(dataset: Any) -> tuple[str, ...]:
     return CANONICAL_DIMENSIONS if isinstance(dataset, dict) and dataset.get("schema_version") == "1.0" else DIMENSIONS
+
+
+def expected_ids_for_dataset(dataset: Any) -> list[str]:
+    """Return declared case IDs; keep the canonical 100-case dataset strict."""
+    if isinstance(dataset, dict) and isinstance(dataset.get("case_ids"), list):
+        ids = dataset["case_ids"]
+        if not ids or any(not isinstance(item, str) or not item for item in ids):
+            raise ValueError("Métadonnées invalides : case_ids doit être une liste non vide.")
+        if len(ids) != len(set(ids)):
+            raise ValueError("Métadonnées invalides : case_ids contient des doublons.")
+        return ids
+    return EXPECTED_IDS
 SEVERITY = {"conforme", "mineur", "majeur", "critique"}
 
 
@@ -56,6 +69,46 @@ def questions_from(data: Any) -> list[dict]:
     return data
 
 
+def records_by_id(data: Any, label: str) -> dict[str, dict]:
+    """Validate a response/review collection before indexing it by case ID."""
+    if isinstance(data, dict):
+        data = data.get("responses")
+    if not isinstance(data, list):
+        raise ValueError(f"Le fichier {label} doit contenir une liste JSON.")
+    indexed: dict[str, dict] = {}
+    for item in data:
+        if not isinstance(item, dict):
+            raise ValueError(f"Chaque élément du fichier {label} doit être un objet JSON.")
+        item_id = item.get("id")
+        if not isinstance(item_id, str) or not item_id:
+            raise ValueError(f"Chaque élément du fichier {label} doit avoir un identifiant texte non vide.")
+        if item_id in indexed:
+            raise ValueError(f"Le fichier {label} contient des identifiants dupliqués : {item_id}.")
+        indexed[item_id] = item
+    return indexed
+
+
+
+def _validate_release_thresholds(gate: dict[str, Any]) -> None:
+    """Reject malformed release thresholds before score calculation."""
+    thresholds = {
+        "minimum_average_score": (8.5, 0.0, 10.0),
+        "minimum_question_relevance_rate": (0.95, 0.0, 1.0),
+        "minimum_source_support_rate": (0.98, 0.0, 1.0),
+    }
+    for key, (default, minimum, maximum) in thresholds.items():
+        value = gate.get(key, default)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or not minimum <= value <= maximum
+        ):
+            raise ValueError(
+                f"Configuration release_gate invalide : {key} doit être un nombre compris entre {minimum} et {maximum}."
+            )
+
+
 def validate_dataset(path: str) -> list[dict]:
     data = load_json(path)
     if not isinstance(data, dict):
@@ -64,9 +117,27 @@ def validate_dataset(path: str) -> list[dict]:
     # Support the actual repository benchmark (schema 1.0) as well as the
     # earlier normalized FPT_Juridique_100_Questions format.
     if data.get("schema_version") == "1.0" and isinstance(data.get("cases"), list):
-        if data.get("case_count") != 100:
-            raise ValueError("Métadonnées invalides : case_count doit être égal à 100.")
         raw_questions = questions_from(data)
+        pilot_ids = data.get("case_ids")
+        if "case_ids" in data and not isinstance(pilot_ids, list):
+            raise ValueError("Manifeste invalide : case_ids doit être une liste.")
+        if isinstance(pilot_ids, list):
+            if (
+                len(pilot_ids) != 15
+                or any(not isinstance(item, str) or item not in EXPECTED_IDS for item in pilot_ids)
+                or len(set(pilot_ids)) != 15
+            ):
+                raise ValueError("Manifeste pilote invalide : exactement 15 identifiants FPT distincts et connus sont requis.")
+            ids = [q.get("id") for q in raw_questions]
+            if ids != pilot_ids:
+                raise ValueError("Manifeste pilote invalide : ordre des cases différent de case_ids.")
+        elif data.get("case_count") != 100:
+            raise ValueError("Métadonnées invalides : case_count doit être égal à 100.")
+        release_gate = data.get("release_gate")
+        if not isinstance(release_gate, dict):
+            raise ValueError("Manifeste invalide : release_gate doit être un objet JSON.")
+        _validate_release_thresholds(release_gate)
+
         required = {"id", "category", "question", "expected_intent", "required_checks",
                     "failure_modes", "gold_answer_status"}
         malformed = [
@@ -74,10 +145,13 @@ def validate_dataset(path: str) -> list[dict]:
             for q in raw_questions if required - q.keys()
         ]
         ids = [q.get("id") for q in raw_questions]
+        if any(not isinstance(item_id, str) or not item_id for item_id in ids):
+            raise ValueError("Jeu invalide : chaque question doit avoir un identifiant texte non vide.")
         duplicates = sorted({x for x in ids if ids.count(x) > 1})
-        missing = [x for x in EXPECTED_IDS if x not in ids]
-        unexpected = [x for x in ids if x not in EXPECTED_IDS]
-        if len(raw_questions) != 100 or duplicates or missing or unexpected or malformed:
+        expected_ids = pilot_ids if isinstance(pilot_ids, list) else EXPECTED_IDS
+        missing = [x for x in expected_ids if x not in ids]
+        unexpected = [x for x in ids if x not in expected_ids]
+        if len(raw_questions) != len(expected_ids) or duplicates or missing or unexpected or malformed:
             raise ValueError(json.dumps({
                 "question_count": len(raw_questions), "duplicates": duplicates,
                 "missing_ids": missing, "unexpected_ids": unexpected,
@@ -107,6 +181,8 @@ def validate_dataset(path: str) -> list[dict]:
         raise ValueError("Métadonnées invalides : benchmark_name ou total_questions.")
     questions = questions_from(data)
     ids = [q.get("id") for q in questions]
+    if any(not isinstance(item_id, str) or not item_id for item_id in ids):
+        raise ValueError("Jeu invalide : chaque question doit avoir un identifiant texte non vide.")
     duplicates = sorted({x for x in ids if ids.count(x) > 1})
     missing = [x for x in EXPECTED_IDS if x not in ids]
     unexpected = [x for x in ids if x not in EXPECTED_IDS]
@@ -137,15 +213,8 @@ def prepare_review(dataset_path: str, responses_path: str, output_path: str) -> 
     questions = validate_dataset(dataset_path)
     dimensions = dimensions_for_dataset(dataset)
     canonical = dimensions == CANONICAL_DIMENSIONS
-    responses = load_json(responses_path)
-    if isinstance(responses, dict):
-        responses = responses.get("responses")
-    if not isinstance(responses, list):
-        raise ValueError("Les réponses doivent être une liste JSON ou un objet {responses:[...]}.")
-    by_id = {r.get("id"): r for r in responses if isinstance(r, dict)}
-    if len(by_id) != len(responses):
-        raise ValueError("Identifiants de réponses dupliqués ou réponse mal formée.")
-    expected = set(EXPECTED_IDS)
+    by_id = records_by_id(load_json(responses_path), "réponses")
+    expected = set(expected_ids_for_dataset(dataset))
     if set(by_id) != expected:
         raise ValueError(json.dumps({
             "missing_response_ids": sorted(expected - set(by_id)),
@@ -189,18 +258,13 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
     canonical = dimensions == CANONICAL_DIMENSIONS
     max_points = len(dimensions) * 2
     # Ensure responses are complete even if the review sheet was edited manually.
-    responses = load_json(responses_path)
-    if isinstance(responses, dict):
-        responses = responses.get("responses")
-    response_ids = {r.get("id") for r in responses if isinstance(r, dict)}
-    if response_ids != set(EXPECTED_IDS) or len(responses) != 100:
-        raise ValueError("Le fichier de réponses doit contenir exactement une réponse pour chacun des FPT-001–FPT-100.")
-    reviews = load_json(reviews_path)
-    if not isinstance(reviews, list):
-        raise ValueError("Le fichier de revue doit être une liste JSON.")
-    review_by_id = {r.get("id"): r for r in reviews if isinstance(r, dict)}
-    if len(review_by_id) != 100 or set(review_by_id) != set(EXPECTED_IDS):
-        raise ValueError("Le fichier de revue doit contenir exactement une évaluation par question FPT-001–FPT-100.")
+    expected_ids = set(expected_ids_for_dataset(dataset))
+    response_by_id = records_by_id(load_json(responses_path), "réponses")
+    if set(response_by_id) != expected_ids:
+        raise ValueError(f"Le fichier de réponses doit contenir exactement une réponse pour chacun des {len(expected_ids)} cas du jeu.")
+    review_by_id = records_by_id(load_json(reviews_path), "revue")
+    if set(review_by_id) != expected_ids:
+        raise ValueError(f"Le fichier de revue doit contenir exactement une évaluation par question ({len(expected_ids)} cas).")
 
     totals = {d: 0 for d in dimensions}
     dimension_counts = {d: 0 for d in dimensions}
@@ -212,22 +276,21 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
     domain_stats: dict[str, dict[str, int]] = {}
     for q in questions:
         review = review_by_id[q["id"]]
-        ratings = review.get("evaluations") or {}
-        valid = True
+        ratings = review.get("evaluations")
+        valid = isinstance(ratings, dict)
+        if not valid:
+            ratings = {}
         points = 0
         for dim in dimensions:
             value = ratings.get(dim)
-            if value not in (0, 1, 2):
+            # bool is a subclass of int in Python; reject it explicitly.
+            if type(value) is not int or value not in (0, 1, 2):
                 valid = False
                 continue
-            totals[dim] += value
-            dimension_counts[dim] += 1
             points += value
         severity = review.get("severite")
-        if severity not in SEVERITY:
+        if not isinstance(severity, str) or severity not in SEVERITY:
             valid = False
-        else:
-            severity_counts[severity] += 1
         if canonical:
             question_relevance = review.get("question_relevance")
             source_support = review.get("source_support")
@@ -236,6 +299,10 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         if not valid:
             unreviewed.append(q["id"])
             continue
+        for dim in dimensions:
+            totals[dim] += ratings[dim]
+            dimension_counts[dim] += 1
+        severity_counts[severity] += 1
         if canonical:
             relevance_values.append(question_relevance)
             source_support_values.append(source_support)
@@ -250,10 +317,19 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
 
     reviewed = len(question_scores)
     average_score = round(sum(x["score"] for x in question_scores) / reviewed, 3) if reviewed else None
+    dataset_gate = dataset.get("release_gate")
+    # An explicit manifest-level decision is authoritative. Per-case labels
+    # are only a fallback for legacy datasets without this gate field.
+    if isinstance(dataset_gate, dict) and "gold_answers" in dataset_gate:
+        gold_answers_validated = dataset_gate.get("gold_answers") == "HUMAN_VALIDATED"
+    else:
+        gold_answers_validated = all(
+            q.get("gold_answer_status") == "HUMAN_VALIDATED" for q in questions
+        )
     result = {
-        "benchmark": "Dikévia — 100 questions FPT",
-        "status": "COMPLET" if reviewed == 100 else "INCOMPLET",
-        "questions_total": 100,
+        "benchmark": "Dikévia — benchmark FPT",
+        "status": "COMPLET" if reviewed == len(expected_ids) and gold_answers_validated else "INCOMPLET",
+        "questions_total": len(expected_ids),
         "questions_evaluees": reviewed,
         "questions_restantes": unreviewed,
         "score_global_percent": round(sum(x["score"] for x in question_scores) / (max_points * reviewed) * 100, 2) if reviewed else None,
@@ -266,23 +342,29 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
         "repartition_severite": severity_counts,
         "par_domaine": domain_stats,
         "scores_question": question_scores,
-        "methodologie": "Notation humaine documentée, 0=incorrect/absent, 1=partiel, 2=conforme. Le score n'est publiable que si les 100 questions sont évaluées.",
+        "methodologie": (
+            f"Notation humaine documentée sur {len(expected_ids)} cas, "
+            "0=incorrect/absent, 1=partiel, 2=conforme. "
+            "Le score n'est complet que si tous les cas du jeu sont évalués "
+            "et si les réponses de référence sont validées juridiquement."
+        ),
     }
     if canonical:
-        gate = dataset.get("release_gate") or {}
+        gate = dataset["release_gate"]
         relevance_rate = sum(relevance_values) / reviewed if reviewed else None
         source_support_rate = sum(source_support_values) / reviewed if reviewed else None
         checks = {
+            "gold_answers_human_validated": gold_answers_validated,
             "no_critical_failures": severity_counts["critique"] == 0,
             "minimum_average_score": average_score is not None and average_score >= float(gate.get("minimum_average_score", 8.5)),
             "minimum_question_relevance_rate": relevance_rate is not None and relevance_rate >= float(gate.get("minimum_question_relevance_rate", 0.95)),
             "minimum_source_support_rate": source_support_rate is not None and source_support_rate >= float(gate.get("minimum_source_support_rate", 0.98)),
-            "all_high_risk_cases_human_reviewed": reviewed == 100,
+            "all_high_risk_cases_human_reviewed": reviewed == len(expected_ids),
         }
         result["question_relevance_rate"] = round(relevance_rate, 4) if relevance_rate is not None else None
         result["source_support_rate"] = round(source_support_rate, 4) if source_support_rate is not None else None
         result["release_gate"] = {
-            "status": "INCOMPLETE" if reviewed < 100 else ("PASS" if all(checks.values()) else "FAIL"),
+            "status": "INCOMPLETE" if reviewed < len(expected_ids) or not gold_answers_validated else ("PASS" if all(checks.values()) else "FAIL"),
             "checks": checks,
         }
     Path(output_path).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -292,9 +374,9 @@ def score(dataset_path: str, responses_path: str, reviews_path: str, output_path
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    v = sub.add_parser("validate", help="Valide le JSON FPT-001–FPT-100")
+    v = sub.add_parser("validate", help="Valide le jeu FPT de 100 questions ou le manifeste pilote de 15 questions")
     v.add_argument("--dataset", required=True)
-    p = sub.add_parser("prepare-review", help="Construit la grille d'évaluation à partir des 100 réponses")
+    p = sub.add_parser("prepare-review", help="Construit la grille de revue à partir des réponses du jeu fourni")
     p.add_argument("--dataset", required=True)
     p.add_argument("--responses", required=True)
     p.add_argument("--out", required=True)
@@ -307,7 +389,7 @@ def main() -> int:
     try:
         if args.command == "validate":
             questions = validate_dataset(args.dataset)
-            print(f"OK — {len(questions)} questions, FPT-001 à FPT-100, champs obligatoires présents.")
+            print(f"OK — {len(questions)} questions, identifiants et champs obligatoires vérifiés.")
         elif args.command == "prepare-review":
             prepare_review(args.dataset, args.responses, args.out)
             print(f"Grille créée : {args.out}")

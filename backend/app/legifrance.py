@@ -22,6 +22,78 @@ TOKEN_TTL_SAFETY_SECONDS = 60
 ARTICLE_ID_RE = re.compile(r"^LEGIARTI\d{12}$")
 logger = logging.getLogger("dikevia.legifrance")
 
+PISTE_OAUTH_ERROR_CODES = {
+    "invalid_request", "invalid_client", "invalid_grant",
+    "unauthorized_client", "unsupported_grant_type", "invalid_scope",
+    "access_denied", "temporarily_unavailable",
+}
+
+
+def _safe_piste_oauth_error_code(response: httpx.Response) -> str | None:
+    """Extract only documented OAuth error identifiers; never expose provider descriptions."""
+    try:
+        payload = response.json()
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    value = payload.get("error")
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().lower()
+    return normalized if normalized in PISTE_OAUTH_ERROR_CODES else None
+
+
+
+def _loda_document_kind(nature: Any, title: str, number: str | None) -> str:
+    """Classify LODA results from the API's nature field; unknown types stay unknown."""
+    nature_text = str(nature or "").strip().upper()
+    title_text = f"{title or ''} {number or ''}".casefold()
+    if "DECRET" in nature_text:
+        return "DECREE"
+    if "ARRETE" in nature_text:
+        return "ORDER"
+    if nature_text.startswith("ORDONNANCE"):
+        return "ORDONNANCE"
+    if nature_text.startswith("LOI"):
+        return "LAW"
+    if nature_text.startswith("CODE"):
+        return "CODE"
+    if "CIRCULAIRE" in nature_text:
+        return "CIRCULAR"
+    if "décret" in title_text or "decret" in title_text:
+        return "DECREE"
+    if "arrêté" in title_text or "arrete" in title_text:
+        return "ORDER"
+    if "ordonnance" in title_text:
+        return "ORDONNANCE"
+    if re.search(r"\bloi\b", title_text):
+        return "LAW"
+    if re.search(r"\bcode\b", title_text):
+        return "CODE"
+    return "OTHER"
+
+
+def _loda_version_status(value: Any) -> str:
+    """Map only unambiguous Légifrance legal-state labels to a status."""
+    import unicodedata
+
+    raw = unicodedata.normalize("NFKD", str(value or "").upper())
+    normalized = "".join(char for char in raw if not unicodedata.combining(char))
+    normalized = re.sub(r"[^A-Z0-9]+", " ", normalized).strip()
+    if not normalized:
+        return "UNKNOWN"
+    if "PARTIEL" in normalized:
+        return "UNKNOWN"
+    if re.search(r"\bABROG", normalized):
+        return "REPEALED"
+    if re.search(r"\b(?:PERIME|CADUC|ANNULE|ANNULEE)\b", normalized):
+        return "NOT_IN_FORCE"
+    if re.search(r"\b(?:NON|PLUS)\s+(?:EN\s+)?VIGUEUR\b", normalized):
+        return "NOT_IN_FORCE"
+    # Qualified or ambiguous labels remain unknown; dated retrieval is tracked separately.
+    return "IN_FORCE" if normalized == "VIGUEUR" else "UNKNOWN"
+
 
 class LegifranceUnavailable(RuntimeError):
     """PISTE non configuré, inaccessible ou réponse inexploitable."""
@@ -77,17 +149,31 @@ class LegifranceConnector:
                     )
                     response.raise_for_status()
                     data = response.json()
+                if not isinstance(data, dict):
+                    raise LegifranceUnavailable("Réponse OAuth PISTE non conforme : objet JSON attendu.")
                 token = data.get("access_token")
-                expires = int(data.get("expires_in", 0))
+                raw_expires = data.get("expires_in", 0)
+                if isinstance(raw_expires, bool) or not isinstance(raw_expires, (int, str)):
+                    raise LegifranceUnavailable("Durée de validité OAuth PISTE invalide.")
+                try:
+                    expires = int(raw_expires)
+                except (TypeError, ValueError) as exc:
+                    raise LegifranceUnavailable("Durée de validité OAuth PISTE invalide.") from exc
                 if not isinstance(token, str) or not token or expires < 1:
                     raise LegifranceUnavailable("Réponse OAuth PISTE incomplète.")
                 self._token = token
                 self._token_expires_at = time.monotonic() + expires
                 return token
             except httpx.HTTPStatusError as exc:
-                # Log only the HTTP status; never expose OAuth response bodies or credentials.
+                # OAuth descriptions may echo configuration details: retain only an allowlisted code.
+                error_code = _safe_piste_oauth_error_code(exc.response)
+                logger.warning(
+                    "PISTE_OAUTH_TOKEN_REJECTED status=%d error_code=%s",
+                    exc.response.status_code, error_code or "unspecified",
+                )
+                suffix = f", code {error_code}" if error_code else ""
                 raise LegifranceUnavailable(
-                    f"Refus OAuth PISTE (HTTP {exc.response.status_code})."
+                    f"Refus OAuth PISTE (HTTP {exc.response.status_code}{suffix})."
                 ) from exc
             except (httpx.HTTPError, ValueError, TypeError) as exc:
                 raise LegifranceUnavailable("Échec réseau ou réponse OAuth PISTE invalide.") from exc
@@ -138,8 +224,8 @@ class LegifranceConnector:
                     response = await client.get(urljoin(self.api_base, path), headers=headers)
                     results[path] = response.status_code
                     if response.status_code >= 500:
-                        logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING_UPSTREAM route=%s status=%d body_preview=%s",
-                                       path, response.status_code, response.text[:500])
+                        logger.warning("DIKEVIA_DIAGNOSTIC PISTE_PING_UPSTREAM route=%s status=%d",
+                                       path, response.status_code)
                 except httpx.HTTPError:
                     results[path] = "NETWORK_ERROR"
         return results
@@ -282,8 +368,6 @@ class LegifranceConnector:
         chosen.sort(key=lambda item: item[0])
         return " … ".join(sentence for _, sentence in chosen)[:max_chars]
 
-    @staticmethod
-    @staticmethod
     @staticmethod
     def _requested_article_excerpt(text: str, query: str, max_chars: int = 10000) -> str:
         """Prefer exact requested articles or amendment clauses over a truncated whole decree."""
@@ -567,19 +651,27 @@ class LegifranceConnector:
                 else nested_value(record, ("numero", "num"))
             )
             nor = nested_value(record, ("nor", "NOR"))
-            status_raw = (nested_value(record, ("etat", "etatJuridique", "status", "etatTexte")) or "").upper()
-            status = "IN_FORCE" if any(token in status_raw for token in ("VIGUEUR", "EN VIGUEUR")) else (
-                "REPEALED" if "ABROG" in status_raw else ("NOT_IN_FORCE" if "PERIME" in status_raw else "UNKNOWN"))
+            status_raw = nested_value(record, ("etat", "etatJuridique", "status", "etatTexte"))
+            status = _loda_version_status(status_raw)
             signature = self._iso_date(nested_value(record, ("dateTexte", "dateSignature", "date")))
             publication = self._iso_date(nested_value(record, ("datePublication", "datePubli")))
             valid_from = self._iso_date(nested_value(record, ("dateDebut", "dateDebutVersion", "dateEffet")))
             valid_to = self._iso_date(nested_value(record, ("dateFin", "dateFinVersion")))
-            kind_raw = (title + " " + (number or "")).lower()
-            kind = "DECREE" if "décret" in kind_raw or "decret" in kind_raw else (
-                "ORDER" if "arrêté" in kind_raw or "arrete" in kind_raw else (
-                "ORDONNANCE" if "ordonnance" in kind_raw else "LAW"))
+            if (
+                (valid_from is not None and valid_from > effective_date)
+                or (valid_to is not None and valid_to < effective_date)
+            ):
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_LODA_REJECTED_DATE id=%s requested_date=%s valid_from=%s valid_to=%s",
+                    identifier, effective_date.isoformat(),
+                    valid_from.isoformat() if valid_from else None,
+                    valid_to.isoformat() if valid_to else None,
+                )
+                continue
+            nature = nested_value(record, ("nature", "natureTexte", "typeTexte"))
+            kind = _loda_document_kind(nature, title, number)
             output.append({"source_type": "LEGIFRANCE_LODA", "source_id": identifier,
-                "title": title, "document_kind": kind, "official_number": number, "nor": nor,
+                "title": title, "document_kind": kind, "nature": nature, "official_number": number, "nor": nor,
                 "publisher": nested_value(record, ("emetteur", "ministere", "autorite")),
                 "official_url": f"https://www.legifrance.gouv.fr/loda/id/{identifier}",
                 "signature_date": signature, "publication_date": publication,
@@ -703,12 +795,28 @@ class LegifranceConnector:
             valid_to = self._iso_date(self._first_value(
                 article_metadata, ("dateFin", "dateFinVersion", "dateFinApplication")
             ))
+            # DATE_VERSION is the primary temporal selector. If the consulted
+            # article also exposes explicit validity bounds, they must not
+            # contradict the requested date; reject rather than label a
+            # contradictory snapshot as applicable.
+            if (
+                (valid_from is not None and valid_from > effective_date)
+                or (valid_to is not None and valid_to < effective_date)
+            ):
+                logger.warning(
+                    "DIKEVIA_DIAGNOSTIC PISTE_GET_ARTICLE_REJECTED_DATE id=%s requested_date=%s valid_from=%s valid_to=%s",
+                    article_id, effective_date.isoformat(),
+                    valid_from.isoformat() if valid_from else None,
+                    valid_to.isoformat() if valid_to else None,
+                )
+                continue
             articles.append({
                 "source_type": "LEGIFRANCE_API", "source_id": article_id, "article": article_label,
                 "article_id": article_id, "source_version_id": article_id,
                 "title": f"{code_name or settings.legifrance_code_name} — {article_label or article_id}",
                 "text": text[:20000],
                 "excerpt": self._relevant_excerpt(text, query.strip(), max_chars=1800),
+                "analysis_excerpt": self._relevant_excerpt(text, query.strip(), max_chars=8000),
                 "effective_date_requested": effective_date.isoformat(),
                 "requested_effective_date": effective_date.isoformat(),
                 "valid_from": valid_from.isoformat() if valid_from else None,

@@ -1005,6 +1005,28 @@ def build_official_research_axes(question: str) -> list[str]:
     return list(dict.fromkeys(axes_found)) if len(axes_found) > 1 else []
 
 
+def select_required_research_axes(deterministic_axes: list[str] | None) -> list[str]:
+    """Keep mandatory coverage axes tied to deterministic analysis of the user's question.
+
+    Model-generated issue labels are useful planning hints, but they are not a
+    reliable basis for mandatory coverage checks: they may be unsearched,
+    duplicative, or phrased differently from the validated research axes.
+    """
+    selected: list[str] = []
+    seen: set[str] = set()
+    for axis in deterministic_axes or []:
+        if not isinstance(axis, str):
+            continue
+        normalized = " ".join(axis.split())[:500]
+        if len(normalized) < 8 or normalized.casefold() in seen:
+            continue
+        seen.add(normalized.casefold())
+        selected.append(normalized)
+        if len(selected) >= 10:
+            break
+    return selected
+
+
 def merge_ai_and_fallback_research_queries(
     ai_queries: list[str],
     fallback_queries: list[str],
@@ -1030,17 +1052,26 @@ def merge_ai_and_fallback_research_queries(
         for query in (fallback_queries or [])
         if isinstance(query, str) and query.strip()
     ))
-    # Always retain one bounded fallback retrieval query: even a single-topic
-    # model plan can omit the central mechanism. Compound questions reserve a
-    # second focused fallback axis. The first fallback query is the broad user
-    # query; only subsequent focused queries are eligible for this reserve.
-    if len(fallback) < 2:
-        return primary[:limit] or fallback[:limit]
+    if not primary:
+        return fallback[:limit]
+    if not fallback:
+        return primary[:limit]
 
-    reserve_count = 2 if len(fallback_axes or []) >= 2 else 1
-    reserved = fallback[1:1 + min(reserve_count, limit - 1)]
+    # Keep one deterministic fallback even when the planner produced only the
+    # broad user query. When focused fallback queries exist, reserve one for
+    # each independently detected legal axis; never let a model-only plan
+    # consume the entire retrieval budget.
+    if limit == 1:
+        # With a one-query budget, prefer deterministic retrieval over an
+        # unverified model plan: this is the only route to official sources.
+        reserved = fallback[:1]
+    elif len(fallback) == 1:
+        reserved = fallback[:1]
+    else:
+        reserve_count = max(1, min(len(fallback_axes or []), len(fallback) - 1, limit - 1))
+        reserved = fallback[1:1 + reserve_count]
     primary_budget = max(0, limit - len(reserved))
-    ordered = [*primary[:primary_budget], *reserved, *primary[primary_budget:]]
+    ordered = [*primary[:primary_budget], *reserved, *primary[primary_budget:], *fallback]
     merged: list[str] = []
     seen: set[str] = set()
     for query in ordered:

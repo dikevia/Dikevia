@@ -1,10 +1,12 @@
 import asyncio
 import json
+import inspect
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from uuid import uuid4
 import logging
 import re
+import time
 
 from .schemas import AskRequest, AskResponse
 from .config import settings
@@ -15,13 +17,14 @@ from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, parse_structured_answer, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
-from .legal_corpus import search_legal_corpus, select_multi_source_chunks
+from .legal_corpus import search_legal_corpus, select_multi_source_chunks, corpus_version_citation_id
 from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
 from .legal_search_plan import (
     build_official_search_queries,
     build_official_research_axes,
+    select_required_research_axes,
     merge_ai_and_fallback_research_queries,
     clarification_for_union_assistance_summons,
 )
@@ -29,6 +32,18 @@ from .legal_qualification import (
     qualify_legal_question, build_contextual_research_context,
     CONVERSATION_HISTORY_MESSAGE_LIMIT,
 )
+
+
+def _source_metadata(source: dict) -> dict:
+    value = source.get("raw_metadata")
+    return value if isinstance(value, dict) else {}
+
+
+def _citation_is_valid(source: dict) -> bool:
+    if not isinstance(source, dict):
+        return False
+    integrity = source.get("citation_integrity")
+    return isinstance(integrity, dict) and integrity.get("valid") is True
 
 
 def _cgfp_article_fpt_eligible(article_ref: str, target_versant: str = "FPT") -> bool:
@@ -63,6 +78,36 @@ def _build_versant_fallback_research(
         else "fonction publique hospitalière"
     )
     branch_query = f"{question} {branch_qualifier}".strip()
+    topic_labels = {
+        "UNION_RIGHTS": "droits syndicaux et autorisations spéciales d'absence",
+        "TERMINATION_OF_TITULAR": "fin de fonctions et cessation d'emploi du fonctionnaire",
+        "STAFFING_AND_WORK_CONDITIONS": "effectifs, charge et conditions de travail",
+        "DISCIPLINE": "procédure disciplinaire et sanctions",
+        "CONTRACTUAL_EMPLOYMENT": "contrat, renouvellement et fin de contrat",
+        "SICK_LEAVE_AND_SERVICE_INJURY": "congé maladie, accident de service et CITIS",
+        "HARASSMENT_AND_PROTECTION": "harcèlement et protection fonctionnelle",
+        "REMUNERATION": "rémunération, traitement et indemnités",
+        "LEAVE": "congés et autorisations d'absence",
+        "RETIREMENT": "retraite et pension",
+        "TELEWORK": "télétravail",
+        "PROFESSIONAL_TRAINING": "formation professionnelle",
+        "CAREER_AND_PROMOTION": "carrière et avancement",
+        "AVAILABILITY": "disponibilité",
+        "WORKING_TIME": "temps de travail, heures supplémentaires et astreintes",
+        "WORKPLACE_INCIDENT_AND_AGENT_PROTECTION": "agression par un usager et protection de l'agent",
+    }
+    topics = qualify_legal_question(
+        question, public_service=public_service,
+    ).get("topics") or []
+    focused_axes = [
+        f"{question} — {topic_labels[topic]} — {branch_qualifier}"
+        for topic in topics if topic in topic_labels
+    ][:4]
+    if len(focused_axes) > 1:
+        # Keep one broad fallback, then one deterministic query/coverage axis
+        # per independently recognized legal family. The merge routine reserves
+        # these focused axes so model-generated queries cannot hide a subtopic.
+        return [branch_query, *focused_axes], focused_axes
     return [branch_query], [branch_query]
 
 
@@ -72,11 +117,12 @@ def _build_code_research_queries(
     max_queries: int = 5,
 ) -> list[str]:
     """Keep every legal axis; use only spare budget for exact article lookups."""
-    base_queries = list(dict.fromkeys(query for query in research_queries if query))
-    exact_budget = max(0, max_queries - len(base_queries))
+    limit = max(0, int(max_queries))
+    base_queries = list(dict.fromkeys(query for query in research_queries if query))[:limit]
+    exact_budget = max(0, limit - len(base_queries))
     return [
         *base_queries,
-        *[query for query in (cgfp_article_queries or []) if query][:exact_budget],
+        *[query for query in dict.fromkeys(cgfp_article_queries or []) if query][:exact_budget],
     ]
 
 
@@ -126,9 +172,35 @@ def _build_targeted_regulatory_queries(
         queries.extend([
             "décret n° 2000-815 du 25 août 2000 articles 3 et 4 durée du travail cycles de travail heures supplémentaires fonction publique",
             "décret n° 2001-623 du 12 juillet 2001 articles 1 et 4 cycles de travail fonction publique territoriale délibération comité social territorial",
-            "décret n° 2002-60 du 14 janvier 2002 articles 3 4 6 et 7 repos compensateur définition heures supplémentaires contingent indemnisation IHTS",
+            "décret n° 2002-60 du 14 janvier 2002 articles 3 4 5 6 7 8 et 9 repos compensateur définition heures supplémentaires exclusivité contingent calcul majorations nuit dimanche astreintes IHTS",
             "décret n° 91-875 du 6 septembre 1991 article 2 liste des emplois ouvrant droit aux IHTS délibération organe délibérant fonction publique territoriale",
         ])
+
+        # Some territorial medico-social/medico-technical cadres follow a
+        # specific equivalence route and a 20-hour monthly ceiling. Do not
+        # generalize this exception to the whole social/health sector: retrieve
+        # the exact territorial equivalences and hospital-reference texts.
+        medico_social_ihts = any(marker in folded for marker in (
+            "filière médico-sociale", "filiere medico-sociale",
+            "filière médico-technique", "filiere medico-technique",
+            "cadre de santé", "cadre de sante",
+            "cadre territorial de santé", "cadre territorial de sante",
+            "cadres territoriaux de santé", "cadres territoriaux de sante",
+            "cadre de santé paramédical", "cadre de sante paramedical",
+            "technicien paramédical", "technicien paramedical",
+            "sage-femme", "sage femme", "puéricultrice", "puericultrice",
+            "auxiliaire de puériculture", "auxiliaire de puericulture",
+            "masseur-kinésithérapeute", "masseur-kinesitherapeute",
+            "orthophoniste", "ergothérapeute", "ergotherapeute",
+            "psychomotricien", "20 heures", "20h",
+        ))
+        if medico_social_ihts:
+            queries.extend([
+                "décret n° 91-875 du 6 septembre 1991 annexes 1 et 2 fonctions médico-sociales cadres d'emplois territoriaux corps de référence IHTS",
+                "décret n° 98-1057 du 16 novembre 1998 article 1 régime indemnitaire personnels paramédicaux civils ministère de la défense",
+                "décret n° 2002-598 du 25 avril 2002 articles 6 7 et 8 contingent 20 heures IHTS équivalence fonction publique territoriale",
+                "arrêté du 25 avril 2002 liste des corps grades emplois éligibles IHTS article 1",
+            ])
 
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
@@ -238,6 +310,19 @@ LEGAL_CORPUS_CANDIDATE_LIMIT = 12
 LEGAL_CORPUS_INTERLEAVED_LIMIT = 18
 
 
+def _should_search_local_employer_documents(public_service: str, employer: str) -> bool:
+    """Local employer acts currently belong only to the supported FPT employers."""
+    return (
+        str(public_service or "").upper() == "FPT"
+        and str(employer or "").upper() in {"VILLE_SAINT_ETIENNE", "SAINT_ETIENNE_METROPOLE"}
+    )
+
+
+def _effective_employer_for_versant(public_service: str, employer: str) -> str:
+    """Do not pass an FPT-only employer selector as the legal employer in FPE/FPH."""
+    return str(employer or "NATIONAL") if str(public_service or "").upper() == "FPT" else "NATIONAL"
+
+
 def _france_today() -> date:
     return datetime.now(ZoneInfo("Europe/Paris")).date()
 
@@ -282,7 +367,8 @@ def _permanent_source_temporal_metadata(
 ) -> tuple[str | None, str | None]:
     status = item.get("temporal_status")
     explanation = None
-    if item.get("document_kind") == "ADMIN_CASELAW":
+    document_kind = str(item.get("document_kind") or "").upper()
+    if document_kind == "ADMIN_CASELAW":
         raw_date = item.get("signature_date")
         if status == "DECISION_POSTERIOR_TO_REQUESTED_DATE":
             return (
@@ -301,7 +387,110 @@ def _permanent_source_temporal_metadata(
             explanation = (
                 "Date de décision non vérifiée : ne pas lui attribuer de portée temporelle certaine."
             )
+    elif facts_reference_date and document_kind in {
+        "CODE", "LAW", "ORDONNANCE", "DECREE", "ORDER",
+    }:
+        raw_requested_date = item.get("requested_date")
+        try:
+            retrieved_for_date = (
+                raw_requested_date
+                if isinstance(raw_requested_date, date)
+                else date.fromisoformat(str(raw_requested_date)[:10])
+            )
+        except (TypeError, ValueError):
+            retrieved_for_date = None
+        if retrieved_for_date != facts_reference_date:
+            valid_from = item.get("valid_from")
+            valid_to = item.get("valid_to")
+            try:
+                valid_from = (
+                    valid_from if isinstance(valid_from, date)
+                    else date.fromisoformat(str(valid_from)[:10]) if valid_from else None
+                )
+                valid_to = (
+                    valid_to if isinstance(valid_to, date)
+                    else date.fromisoformat(str(valid_to)[:10]) if valid_to else None
+                )
+            except (TypeError, ValueError):
+                valid_from = valid_to = None
+            if valid_from and facts_reference_date < valid_from:
+                status = "NOT_YET_EFFECTIVE"
+                explanation = (
+                    f"Cette version n'était pas encore applicable au {facts_reference_date.isoformat()}."
+                )
+            elif valid_to and facts_reference_date > valid_to:
+                status = "NO_LONGER_IN_FORCE"
+                explanation = (
+                    f"La période de validité enregistrée pour cette version était terminée au {facts_reference_date.isoformat()}."
+                )
+            elif valid_from and valid_to:
+                status = "IN_FORCE_ON_FACTS_DATE"
+                explanation = (
+                    f"Les bornes de validité enregistrées pour cette version couvrent le {facts_reference_date.isoformat()}."
+                )
+            else:
+                status = "TEMPORAL_SCOPE_INCOMPLETE"
+                explanation = (
+                    "Les bornes de validité de cette version ne permettent pas de vérifier son applicabilité à la date des faits."
+                )
     return status, explanation
+
+
+def _classify_permanent_source_scope(source: dict, target_versant: str) -> dict:
+    """Reuse ingestion-time scope for verified Open Data decisions.
+
+    Administrative decisions are classified against their complete XML text at
+    ingestion. Reclassifying only a retrieved passage can lose the branch marker
+    and silently discard an otherwise qualified decision. Trust that stored
+    result only for the exact official XML ingestion path and verified status.
+    """
+    metadata = source.get("raw_metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
+    stored_scope = str(metadata.get("public_service_scope") or "").upper()
+    trusted_open_data_case = (
+        source.get("source_type") == "OTHER_OFFICIAL"
+        and source.get("document_kind") == "ADMIN_CASELAW"
+        and source.get("source_status") == "OFFICIAL_XML_IMPORTED"
+        and metadata.get("import_method") == "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML"
+        and stored_scope in {"FPT", "FPE", "FPH", "COMMON_PUBLIC_SERVICE"}
+    )
+    if trusted_open_data_case:
+        applicable = stored_scope == "COMMON_PUBLIC_SERVICE" or stored_scope == target_versant
+        evidence = metadata.get("scope_evidence")
+        return {
+            "scope": stored_scope,
+            "evidence": evidence if isinstance(evidence, list) else [],
+            "analysis_eligible": applicable,
+            "claim_eligible": applicable,
+        }
+    return classify_public_service_scope(source, target_versant=target_versant)
+
+
+def _is_usable_permanent_source(source: dict, permanent_source_ids: set) -> bool:
+    """Apply the final corpus-source eligibility gate, including historical versions."""
+    if (
+        source.get("source_id") not in permanent_source_ids
+        or source.get("content_kind") != "FULL_TEXT"
+        or not _citation_is_valid(source)
+        or source.get("analysis_eligible") is not True
+        or source.get("claim_eligible", True) is False
+        or source.get("research_axis_relevant", True) is False
+    ):
+        return False
+    temporal_status = source.get("temporal_status")
+    if temporal_status in {
+        "IN_FORCE_ON_REQUESTED_DATE",
+        "IN_FORCE_ON_FACTS_DATE",
+        "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+        "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
+    }:
+        return True
+    return (
+        temporal_status == "TEMPORAL_SCOPE_INCOMPLETE"
+        and source.get("general_info_eligible") is True
+        and source.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
+    )
 
 
 def classify_question_intent(question: str) -> str:
@@ -371,6 +560,7 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
 async def apply_semantic_source_relevance(
     *, question: str, research_axes: list[str], sources: list[dict],
     target_versant: str = "FPT", allow_local_documents: bool = False,
+    usage_events: list[dict] | None = None,
 ) -> None:
     """Apply Gemini relevance verdicts while preserving lexical fallback on provider failure."""
     for source in sources:
@@ -388,6 +578,7 @@ async def apply_semantic_source_relevance(
             question=question,
             research_axes=research_axes,
             sources=semantic_sources,
+            **_provider_usage_kwargs(evaluate_source_relevance, usage_events if usage_events is not None else []),
         )
         for source in sources:
             verdict = semantic_verdicts.get(source.get("source_id"))
@@ -570,9 +761,56 @@ def _compare_official_period_versions(
 
 
 
+def _provider_usage_kwargs(provider_function, events: list[dict]) -> dict:
+    """Keep test doubles and alternate provider adapters compatible with optional telemetry."""
+    try:
+        parameters = inspect.signature(provider_function).parameters.values()
+        supported = any(p.name == "usage_events" or p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters)
+    except (TypeError, ValueError):
+        supported = False
+    return {"usage_events": events} if supported else {}
+
+
+def _immediate_prior_assistant_messages(history: list[dict]) -> list[str]:
+    """Only the immediately preceding turn may answer a clarification prompt."""
+    if not history or not isinstance(history[-1], dict):
+        return []
+    latest = history[-1]
+    if latest.get("role") != "assistant":
+        return []
+    content = str(latest.get("content") or "").strip()
+    return [content[:1200]] if content else []
+
+
+def _provider_context_history(
+    contextual_question: str,
+    is_followup: bool,
+    assistant_context: str | None = None,
+) -> list[dict]:
+    """Pass only the resolved prior user turn and, when needed, a non-source assistant referent."""
+    if not is_followup:
+        return []
+    normalized_question = str(contextual_question or "").replace("\\n", "\n")
+    parts = normalized_question.split("\n", 1)
+    if len(parts) < 2:
+        return []
+    prior_question = parts[1].split("\n", 1)[0].strip()
+    if not prior_question:
+        return []
+    history = [{"role": "user", "content": prior_question[:1200]}]
+    if isinstance(assistant_context, str) and assistant_context.strip():
+        history.append({
+            "role": "assistant",
+            "content": assistant_context.strip()[-1800:],
+        })
+    return history
+
+
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None) -> AskResponse:
         request_id = str(uuid4())
+        ai_usage_events: list[dict] = []
+        answer_started_at = None
         try:
             legacy_date = parse_facts_date(request.facts_date)
             period_start = parse_facts_date(request.facts_start_date) or legacy_date
@@ -617,14 +855,16 @@ class LegalOrchestrator:
         history = (conversation_history or [])[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]
         prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"]
         current_question = request.question.strip()
-        prior_assistant_messages = [
-            str(m.get("content", ""))[:1200] for m in history if m.get("role") == "assistant"
-        ]
+        prior_assistant_messages = _immediate_prior_assistant_messages(history)
         contextual_research_context = build_contextual_research_context(
             current_question, prior_user_questions, prior_assistant_messages,
         )
         contextual_question = contextual_research_context.question
         is_followup = contextual_research_context.is_followup
+        provider_history = _provider_context_history(
+            contextual_question, is_followup,
+            assistant_context=contextual_research_context.assistant_context,
+        )
         targeted_clarification = clarification_for_union_assistance_summons(contextual_question)
         if targeted_clarification:
             return AskResponse(
@@ -648,8 +888,29 @@ class LegalOrchestrator:
                 )
         # Qualification must use the resolved referent so follow-ups such as
         # "Et pour les contractuels ?" retain the original legal topic.
-        legal_context = qualify_legal_question(contextual_question, request.employer, request.public_service)
+        legal_context = qualify_legal_question(contextual_question, _effective_employer_for_versant(request.public_service, request.employer), request.public_service)
         legal_context["versant_fonction_publique"] = request.public_service
+        mismatch_versant = legal_context.get("explicit_self_versant_mismatch")
+        if mismatch_versant:
+            labels = {
+                "FPT": "fonction publique territoriale",
+                "FPE": "fonction publique de l'État",
+                "FPH": "fonction publique hospitalière",
+            }
+            clarification = (
+                f"Cette conversation est configurée pour la {labels[request.public_service]}, "
+                f"mais vous indiquez relever de la {labels[mismatch_versant]}. "
+                "Pour éviter de vous présenter des règles d'un autre versant, démarrez "
+                "une nouvelle conversation et sélectionnez le versant correspondant."
+            )
+            return AskResponse(
+                request_id=request_id,
+                verification_status="NON_VERIFIE",
+                answer=clarification,
+                clarification_question=clarification,
+                sources=[],
+                missing_information=[],
+            )
         # Gemini plans the research from the actual facts before any legal source
         # is retrieved. Its output contains search language only, never legal evidence.
         # Deterministic topic templates remain a resilience fallback when the model
@@ -661,10 +922,11 @@ class LegalOrchestrator:
         try:
             research_plan = await plan_legal_research(
                 question=contextual_question,
-                employer=request.employer,
+                employer=_effective_employer_for_versant(request.public_service, request.employer),
                 facts_period=temporal_context,
                 legal_context=legal_context,
-                conversation_history=history,
+                conversation_history=provider_history,
+                **_provider_usage_kwargs(plan_legal_research, ai_usage_events),
             )
         except AIProviderUnavailable:
             logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
@@ -678,12 +940,13 @@ class LegalOrchestrator:
                 clarification_question=clarification,
                 sources=[],
                 missing_information=[],
+                ai_usage_events=ai_usage_events,
             )
         if research_plan is not None:
             research_queries = merge_ai_and_fallback_research_queries(
                 research_plan.queries, fallback_queries, fallback_axes, max_queries=5,
             )
-            research_axes = research_plan.legal_issues or fallback_axes
+            research_axes = select_required_research_axes(fallback_axes)
             legal_context["strategie_recherche"] = "PLANIFIEE_PAR_IA_AVANT_CONSULTATION"
             legal_context["axes_recherche_documentaire"] = research_axes
             legal_context["clarification_recherche"] = research_plan.clarification_needed
@@ -948,12 +1211,13 @@ class LegalOrchestrator:
             try:
                 refinement = await plan_legal_research(
                     question=contextual_question,
-                    employer=request.employer,
+                    employer=_effective_employer_for_versant(request.public_service, request.employer),
                     facts_period=temporal_context,
                     legal_context=legal_context,
-                    conversation_history=history,
+                    conversation_history=provider_history,
                     previous_queries=research_queries,
                     retrieved_evidence=first_pass_evidence,
+                    **_provider_usage_kwargs(plan_legal_research, ai_usage_events),
                 )
             except AIProviderUnavailable:
                 refinement = None
@@ -963,11 +1227,9 @@ class LegalOrchestrator:
                     query for query in refinement.queries
                     if query.casefold() not in {existing.casefold() for existing in research_queries}
                 ][:2]
-                if refinement.legal_issues:
-                    legal_context["axes_recherche_documentaire"] = list(dict.fromkeys([
-                        *(legal_context.get("axes_recherche_documentaire") or []),
-                        *refinement.legal_issues,
-                    ]))[:10]
+                # Model-generated issue labels are advisory only. Mandatory
+                # coverage axes remain the deterministic axes derived from the
+                # user's question; an LLM refinement cannot invent obligations.
                 if additional_queries:
                     research_queries = [*research_queries, *additional_queries][:7]
                     logger.info(
@@ -1108,7 +1370,7 @@ class LegalOrchestrator:
                         )
         local_sources: list[dict] = []
         local_issue = None
-        if request.employer != "NATIONAL":
+        if _should_search_local_employer_documents(request.public_service, request.employer):
             if conn is None:
                 local_issue = "Les documents propres à l'employeur ne sont pas accessibles dans ce contexte."
             else:
@@ -1183,6 +1445,72 @@ class LegalOrchestrator:
                     logger.exception("Échec de la recherche dans le corpus local tenant-scoped.")
                     local_issue = "La recherche dans les documents de l'employeur n'a pas pu être exécutée."
 
+
+        personal_sources: list[dict] = []
+        if conn is not None and personal_user_id:
+            try:
+                personal_hits_by_id: dict[str, dict] = {}
+                for personal_query in research_queries:
+                    rows = await conn.fetch(
+                        """SELECT id,title,document_type,collectivity_scope,validation_status,
+                                  effective_from,effective_to,
+                                  ts_rank(search_vector,plainto_tsquery('french',$2)) relevance,
+                                  ts_headline('french',extracted_text,plainto_tsquery('french',$2),
+                                    'MaxWords=90,MinWords=20,ShortWord=2,HighlightAll=false') excerpt
+                           FROM personal_documents
+                           WHERE owner_user_id=$1::uuid AND scan_status='CLEAN'
+                             AND extraction_status='EXTRACTED'
+                             AND search_vector @@ plainto_tsquery('french',$2)
+                           ORDER BY relevance DESC,created_at DESC LIMIT $3""",
+                        personal_user_id, personal_query[:500], 5,
+                    )
+                    for row in rows:
+                        key = str(row["id"])
+                        candidate = dict(row)
+                        existing = personal_hits_by_id.get(key)
+                        if existing is None or float(candidate.get("relevance") or 0) > float(existing.get("relevance") or 0):
+                            personal_hits_by_id[key] = candidate
+                for hit in sorted(
+                    personal_hits_by_id.values(),
+                    key=lambda item: -float(item.get("relevance") or 0),
+                )[:10]:
+                    excerpt = re.sub(r"</?b>", "", str(hit.get("excerpt") or ""), flags=re.IGNORECASE)
+                    if not excerpt.strip():
+                        continue
+                    personal_sources.append({
+                        "source_type": "PERSONAL_DOCUMENT",
+                        "source_id": str(hit["id"]),
+                        "title": str(hit.get("title") or "Document personnel"),
+                        "document_type": str(hit.get("document_type") or "PERSONAL_REFERENCE"),
+                        "collectivity_scope": str(hit.get("collectivity_scope") or "UNCLASSIFIED"),
+                        "validation_status": str(hit.get("validation_status") or "COLLECTED_UNVERIFIED"),
+                        "effective_from": hit["effective_from"].isoformat() if hit.get("effective_from") else None,
+                        "effective_to": hit["effective_to"].isoformat() if hit.get("effective_to") else None,
+                        "excerpt": excerpt[:2500],
+                        "content_kind": "EXCERPT",
+                        "source_status": "USER_UPLOADED_PRIVATE_UNVERIFIED",
+                        "temporal_status": "PERSONAL_DOCUMENT_VALIDITY_UNVERIFIED",
+                        "reference_role": "PERSONAL_CONTEXT_ONLY",
+                        "claim_eligible": False,
+                        "official_source": False,
+                        "transfer_status": (
+                            "TRANSMITTED_FOR_THIS_REQUEST"
+                            if allow_local_documents else "NOT_TRANSMITTED"
+                        ),
+                        "legal_assurance": {
+                            "authority_label": "Document personnel non vérifié",
+                            "usable_for_conclusion": False,
+                            "usable_for_interpretation": False,
+                            "reference_role": "PERSONAL_CONTEXT_ONLY",
+                        },
+                    })
+            except Exception:
+                logger.warning(
+                    "Échec de la recherche dans le corpus documentaire personnel (request_id=%s).",
+                    request_id,
+                    exc_info=True,
+                )
+
         permanent_sources: list[dict] = []
         permanent_issue = None
         if conn is not None:
@@ -1232,19 +1560,28 @@ class LegalOrchestrator:
                     source_temporal_status, source_temporal_explanation = (
                         _permanent_source_temporal_metadata(item, facts_reference_date)
                     )
+                    official_source_id = item.get("source_id")
+                    version_id = item.get("version_id")
                     permanent_sources.append({
-                        "source_type": item.get("source_type"), "source_id": item.get("source_id"),
+                        "source_type": item.get("source_type"),
+                        "source_id": corpus_version_citation_id(official_source_id, version_id),
+                        "official_source_id": official_source_id,
+                        "source_version_id": item.get("source_version_id"),
+                        "version_id": str(version_id) if version_id is not None else None,
+                        "version_key": item.get("version_key"),
+                        "text_sha256": item.get("text_sha256"),
                         "title": item.get("title"), "official_number": item.get("official_number"),
                         "case_number": item.get("official_number"),
                         "document_kind": source_document_kind, "jurisdiction": item.get("jurisdiction"),
                         "raw_metadata": item.get("raw_metadata") or {},
-                        "jurisprudential_publication_code": (item.get("raw_metadata") or {}).get("publication_code"),
+                        "jurisprudential_publication_code": _source_metadata(item).get("publication_code"),
                         "signature_date": source_decision_date, "decision_date": source_decision_date,
                         "publication_date": item.get("publication_date"),
                         "valid_from": item.get("valid_from"), "valid_to": item.get("valid_to"),
                         "temporal_status": source_temporal_status,
                         "temporal_explanation": source_temporal_explanation,
                         "source_status": item.get("source_status"),
+                        "version_status": item.get("version_status"),
                         "content_kind": item.get("content_kind"), "excerpt": item.get("excerpt"),
                         "retrieval_scope": item.get("retrieval_scope"),
                         "text": item.get("excerpt") or "", "full_text": item.get("full_text") or "",
@@ -1352,7 +1689,7 @@ class LegalOrchestrator:
         for item in permanent_sources:
             response_source = {**item, "source_url": item.get("official_url")}
             # Apply the same French public-service perimeter as live sources.
-            scope_check = classify_public_service_scope(response_source, target_versant=request.public_service)
+            scope_check = _classify_permanent_source_scope(response_source, request.public_service)
             response_source["public_service_scope"] = scope_check["scope"]
             response_source["scope_evidence"] = scope_check["evidence"]
             response_source["analysis_eligible"] = scope_check["analysis_eligible"]
@@ -1368,15 +1705,16 @@ class LegalOrchestrator:
             if response_source.get("source_type") == "CGFP_SNAPSHOT":
                 response_source["reference_role"] = "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
                 response_source["snapshot_modified_at"] = (
-                    (response_source.get("raw_metadata") or {}).get("snapshot_modified_at")
-                    or (response_source.get("raw_metadata") or {}).get("generated_at")
+                    _source_metadata(response_source).get("snapshot_modified_at")
+                    or _source_metadata(response_source).get("generated_at")
                 )
                 response_source["snapshot_verification_status"] = (
-                    (response_source.get("raw_metadata") or {}).get("verification_status")
+                    _source_metadata(response_source).get("verification_status")
                 )
             sources.append(response_source)
 
         sources.extend(local_sources)
+        sources.extend(personal_sources)
 
         if found and cgfp_snapshot_fallback and parsed_date is None:
             for hit in found["results"]:
@@ -1493,21 +1831,7 @@ class LegalOrchestrator:
         sources = filter_irrelevant_sources_for_display(sources)
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
-            s for s in sources
-            if s.get("source_id") in permanent_source_ids
-            and s.get("content_kind") == "FULL_TEXT"
-            and (s.get("citation_integrity") or {}).get("valid") is True
-            and (
-                s.get("temporal_status") in {"IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE"}
-                or (
-                    s.get("temporal_status") == "TEMPORAL_SCOPE_INCOMPLETE"
-                    and s.get("general_info_eligible") is True
-                    and s.get("version_status") not in {"REPEALED", "NOT_IN_FORCE"}
-                )
-            )
-            and s.get("analysis_eligible") is True
-            and s.get("claim_eligible", True) is not False
-            and s.get("research_axis_relevant", True) is not False
+            s for s in sources if _is_usable_permanent_source(s, permanent_source_ids)
         ]
         usable_official = [
             s for s in sources
@@ -1515,13 +1839,13 @@ class LegalOrchestrator:
                 "LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT",
             }
             and s.get("content_kind") != "METADATA"
-            and (s.get("citation_integrity") or {}).get("valid") is True
+            and _citation_is_valid(s)
             and s.get("analysis_eligible") is True
             and s.get("claim_eligible", True) is not False
             and s.get("research_axis_relevant", True) is not False
         ]
         usable_local = [s for s in local_sources
-            if (s.get("citation_integrity") or {}).get("valid") is True
+            if _citation_is_valid(s)
             and s.get("temporal_status") == "VERIFIED_APPLICABLE"
             and s.get("research_axis_relevant", True) is not False]
         usable_snapshot_fallback = [
@@ -1530,7 +1854,7 @@ class LegalOrchestrator:
             and s.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
             and s.get("general_info_eligible") is True
             and s.get("research_axis_relevant") is True
-            and (s.get("citation_integrity") or {}).get("valid") is True
+            and _citation_is_valid(s)
         ]
         if not usable_official and not usable_permanent and not usable_local and not usable_snapshot_fallback:
             missing = ["Aucune disposition législative ou réglementaire exploitable n'a été récupérée.",
@@ -1550,7 +1874,7 @@ class LegalOrchestrator:
             missing.insert(0, "Le snapshot CGFP seul, lorsqu'il existe, reste un repère documentaire et ne peut pas justifier une analyse IA contextualisée.")
             if local_issue:
                 missing.insert(0, local_issue)
-            elif request.employer != "NATIONAL" and not local_sources:
+            elif _should_search_local_employer_documents(request.public_service, request.employer) and not local_sources:
                 missing.insert(0, "Aucun document local correspondant n'a été trouvé pour cet employeur ; vérifier le code de collectivité et les pièces déposées.")
             if any(
                 s.get("source_type") == "LOCAL_DOCUMENT"
@@ -1596,7 +1920,7 @@ class LegalOrchestrator:
         missing.extend(search_warnings)
         if local_issue:
             missing.insert(0, local_issue)
-        elif request.employer != "NATIONAL" and not local_sources:
+        elif _should_search_local_employer_documents(request.public_service, request.employer) and not local_sources:
             missing.insert(0, "Aucun document local correspondant n'a été trouvé pour cet employeur ; vérifier le code de collectivité et les pièces déposées.")
         if any(s.get("source_type") == "LOCAL_DOCUMENT" and s.get("temporal_status") != "VERIFIED_APPLICABLE"
                for s in local_sources):
@@ -1717,7 +2041,7 @@ class LegalOrchestrator:
                         if s.get("source_type") not in {"LEGIFRANCE_CETAT_SEARCH", "CGFP_SNAPSHOT"}
                         and s.get("research_axis_relevant", True) is not False
                         and s.get("content_kind") != "METADATA"
-                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and _citation_is_valid(s)
                         and (
                             s.get("temporal_status") in eligible_temporal_statuses
                             or (
@@ -1747,36 +2071,48 @@ class LegalOrchestrator:
                         and s.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
                         and s.get("general_info_eligible") is True
                         and s.get("research_axis_relevant") is True
-                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and _citation_is_valid(s)
                     ]
                     context_guidance_sources = [
                         s for s in sources
                         if s.get("source_type") in {"SERVICE_PUBLIC_PART", "INSTITUTIONAL_GUIDANCE"}
                         and s.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY"
-                        and (s.get("legal_assurance") or {}).get("usable_for_interpretation") is True
+                        and (s.get("legal_assurance") if isinstance(s.get("legal_assurance"), dict) else {}).get("usable_for_interpretation") is True
                         and s.get("content_kind") == "FULL_TEXT"
-                        and (s.get("citation_integrity") or {}).get("valid") is True
+                        and _citation_is_valid(s)
                         and s.get("research_axis_relevant", True) is not False
                     ]
-                    ai_sources = (
+                    base_ai_sources = (
                         cgfp_fallback_sources + verified_sources + context_guidance_sources
                         if verified_sources or cgfp_fallback_sources or context_guidance_sources else []
                     )
+                    personal_context_sources = [
+                        source for source in personal_sources
+                        if allow_local_documents
+                        and source.get("transfer_status") == "TRANSMITTED_FOR_THIS_REQUEST"
+                    ]
+                    # Personal files can supply local factual context only. They
+                    # remain explicitly ineligible as legal claim evidence.
+                    ai_sources = base_ai_sources + personal_context_sources if base_ai_sources else []
                     if ai_sources:
+                        answer_started_at = time.perf_counter()
                         ai_result = await analyze_question(
                             question=contextual_question,
-                            employer=request.employer,
+                            employer=_effective_employer_for_versant(request.public_service, request.employer),
                             facts_date=effective_date.isoformat(),
                             facts_period=temporal_context,
                             sources=ai_sources,
-                            conversation_history=history,
+                            conversation_history=provider_history,
                             legal_context=legal_context,
                             allow_local_documents=allow_local_documents,
                         )
                         if isinstance(ai_result, AIAnalysisResult):
                             raw_ai_content = ai_result.content
                             ai_usage = {
-                                "provider": "openai_compatible", "model": ai_result.model,
+                                "provider": "gemini" if settings.ai_api_base_url and "generativelanguage.googleapis.com" in settings.ai_api_base_url else "openai_compatible",
+                                "model": ai_result.model,
+                                "operation": "answer_generation",
+                                "latency_ms": max(0, round((time.perf_counter() - answer_started_at) * 1000)) if answer_started_at is not None else None,
                                 "prompt_tokens": ai_result.prompt_tokens,
                                 "completion_tokens": ai_result.completion_tokens,
                                 "total_tokens": ai_result.total_tokens,
@@ -1790,6 +2126,7 @@ class LegalOrchestrator:
                             structured_answer, ai_sources,
                             required_axes=legal_context.get("axes_recherche_documentaire") or None,
                             facts_period=temporal_context,
+                            public_service=request.public_service,
                         )
                         for uncovered_axis in claim_validation.get("uncovered_axes", []):
                             missing.append(f"Aucune source suffisamment pertinente n'a permis de répondre à cette sous-question : {uncovered_axis}")
@@ -1820,6 +2157,7 @@ class LegalOrchestrator:
                                 public_service=request.public_service,
                                 allow_local_documents=allow_local_documents,
                                 facts_period=temporal_context,
+                                **_provider_usage_kwargs(verify_claim_entailment, ai_usage_events),
                             )
                             supported_indices = entailment_validation.get("supported_claim_indices", [])
                             if not entailment_validation.get("valid") and not supported_indices:
@@ -1913,9 +2251,15 @@ class LegalOrchestrator:
                 except AIProviderUnavailable:
                     ai_answer = None
                     # Record a provider attempt even when it fails; token usage remains unknown.
-                    if settings.ai_api_base_url and settings.ai_model:
+                    if ai_usage is None and settings.ai_api_base_url and settings.ai_model:
+                        # The answer-generation event already exists when the later
+                        # entailment call fails; its own PROVIDER_ERROR event is
+                        # recorded by verify_claim_entailment. Do not overwrite it.
                         ai_usage = {
-                            "provider": "openai_compatible", "model": settings.ai_model[:160],
+                            "provider": "gemini" if settings.ai_api_base_url and "generativelanguage.googleapis.com" in settings.ai_api_base_url else "openai_compatible",
+                            "model": settings.ai_model[:160],
+                            "operation": "answer_generation",
+                            "latency_ms": max(0, round((time.perf_counter() - answer_started_at) * 1000)) if answer_started_at is not None else None,
                             "prompt_tokens": None, "completion_tokens": None,
                             "total_tokens": None, "outcome": "PROVIDER_ERROR",
                         }
@@ -2004,9 +2348,12 @@ class LegalOrchestrator:
             source.pop("full_text", None)
             if isinstance(source.get("text"), str):
                 source["text"] = source.get("excerpt") or source["text"][:1800]
+        if ai_usage is not None:
+            ai_usage_events.append(dict(ai_usage))
         return AskResponse(
             request_id=request_id,
             verification_status="PARTIELLEMENT_VERIFIE" if ai_answer else "NON_VERIFIE",
             answer=answer, sources=sources, missing_information=missing, ai_usage=ai_usage,
+            ai_usage_events=ai_usage_events,
             clarification_question=None,
         )

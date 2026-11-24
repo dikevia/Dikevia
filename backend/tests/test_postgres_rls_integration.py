@@ -325,6 +325,28 @@ async def _run_administrative_case_law_search_sql_scenario():
         # document/version and replace, not duplicate, its indexed chunks.
         await upsert_legal_document(admin, item)
         await upsert_legal_document(admin, item)
+        future_text = ("Agent territorial temps de travail agent territorial temps de travail. " * 30)
+        future_item = {
+            **item,
+            "version_key": version_key + "-future",
+            "valid_from": date(2027, 1, 1),
+            "valid_to": date(2027, 12, 31),
+            "full_text": future_text,
+        }
+        await upsert_legal_document(admin, future_item)
+        # Populate deterministic vectors on both versions to execute the real
+        # pgvector branch and prove that a future version cannot crowd out facts.
+        embedding_literal = "[" + ",".join(["1"] + ["0"] * 383) + "]"
+        await admin.execute("""
+            UPDATE legal_chunks c
+            SET embedding_384=$2::vector,
+                embedding_384_model='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+                embedding_384_dimensions=384
+            FROM legal_document_versions v
+            JOIN legal_documents d ON d.id=v.document_id
+            WHERE c.version_id=v.id
+              AND d.source_type='OTHER_OFFICIAL' AND d.source_id=$1
+        """, source_id, embedding_literal)
         persisted = await admin.fetchrow("""
             SELECT count(DISTINCT d.id) AS documents,
                    count(DISTINCT v.id) AS versions,
@@ -336,14 +358,15 @@ async def _run_administrative_case_law_search_sql_scenario():
         """, source_id)
         from app.legal_corpus import split_text
         assert persisted["documents"] == 1
-        assert persisted["versions"] == 1
-        assert persisted["chunks"] == len(split_text(full_text))
+        assert persisted["versions"] == 2
+        assert persisted["chunks"] == len(split_text(full_text)) + len(split_text(future_text))
 
         results = await search_legal_corpus(
             admin, "agent territorial temps de travail", date(2026, 11, 21), limit=6,
         )
         item = next(result for result in results if result["source_id"] == source_id)
         assert item["document_kind"] == "ADMIN_CASELAW"
+        assert item["version_key"] == version_key
         assert item["temporal_status"] == "DECISION_AVAILABLE_BY_REQUESTED_DATE"
         assert item["citation_integrity"]["text_hash_verified"] is True
         assert item["citation_integrity"]["valid"] is True
@@ -351,6 +374,19 @@ async def _run_administrative_case_law_search_sql_scenario():
             "RELEVANCE_SELECTED_PASSAGES_FROM_HASH_VERIFIED_FULL_TEXT"
         )
         assert "MARQUEUR_FINAL_DECISION_CI" not in item["excerpt"]
+
+        # This query has no lexical overlap with the document: the row must be
+        # recovered by pgvector, and the returned metadata must identify hybrid mode.
+        vector_results = await search_legal_corpus(
+            admin, "astreinte sans correspondance lexicale", date(2026, 11, 21),
+            limit=6, query_embedding=[1.0] + [0.0] * 383,
+        )
+        vector_item = next(result for result in vector_results if result["source_id"] == source_id)
+        assert vector_item["version_key"] == version_key
+        assert all(result["version_key"] != future_item["version_key"] for result in vector_results)
+        assert vector_item["retrieval_mode"] == "HYBRID_LEXICAL_VECTOR"
+        assert vector_item["citation_integrity"]["text_hash_verified"] is True
+        assert vector_item["citation_integrity"]["valid"] is True
     finally:
         await admin.execute(
             "DELETE FROM legal_documents WHERE source_type='OTHER_OFFICIAL' AND source_id=$1",
@@ -474,3 +510,69 @@ async def _run_transaction_local_context_reset_scenario():
 
 def test_postgresql_transaction_local_tenant_context_is_cleared_on_connection_reuse():
     asyncio.run(_run_transaction_local_context_reset_scenario())
+
+
+async def _run_personal_document_owner_rls_scenario():
+    """Private document rows must be visible only to their verified owner UUID."""
+    import asyncpg
+
+    owner_a, owner_b = uuid.uuid4(), uuid.uuid4()
+    doc_a, doc_b, forbidden_doc = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    issuer = "https://personal-doc-rls.test"
+    admin = await asyncpg.connect(ADMIN_URL)
+    runtime = await asyncpg.connect(RUNTIME_URL)
+    try:
+        await admin.execute(
+            """INSERT INTO users(id,oidc_issuer,oidc_subject,email,status)
+               VALUES($1,$2,$3,$4,'ACTIVE'),($5,$2,$6,$7,'ACTIVE')""",
+            owner_a, issuer, "owner-a-" + owner_a.hex, owner_a.hex + "@example.test",
+            owner_b, "owner-b-" + owner_b.hex, owner_b.hex + "@example.test",
+        )
+        await admin.execute(
+            """INSERT INTO personal_documents(
+                id,owner_user_id,title,original_filename,mime_type,file_size_bytes,
+                storage_key,sha256,scan_status,scan_engine,scanned_at,
+                extraction_status,extracted_text
+            ) VALUES
+                ($1,$2,'Private A','a.pdf','application/pdf',10,$3,$4,'CLEAN','CI',now(),'EXTRACTED','Texte privé A'),
+                ($5,$6,'Private B','b.pdf','application/pdf',10,$7,$8,'CLEAN','CI',now(),'EXTRACTED','Texte privé B')""",
+            doc_a, owner_a, "personal-test/" + str(doc_a), "a" * 64,
+            doc_b, owner_b, "personal-test/" + str(doc_b), "b" * 64,
+        )
+
+        async with runtime.transaction():
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(owner_a))
+            visible_a = await runtime.fetch(
+                "SELECT id FROM personal_documents ORDER BY id"
+            )
+            assert [row["id"] for row in visible_a] == [doc_a]
+            # RLS WITH CHECK must reject an attempted cross-owner insert.
+            with pytest.raises(asyncpg.exceptions.InsufficientPrivilegeError):
+                await runtime.execute(
+                    """INSERT INTO personal_documents(
+                        id,owner_user_id,title,original_filename,mime_type,file_size_bytes,
+                        storage_key,sha256,scan_status,scan_engine,scanned_at,
+                        extraction_status,extracted_text
+                    ) VALUES($1,$2,'Forbidden','x.pdf','application/pdf',10,$3,$4,
+                        'CLEAN','CI',now(),'EXTRACTED','Should not be inserted')""",
+                    forbidden_doc, owner_b, "personal-test/" + str(forbidden_doc), "c" * 64,
+                )
+
+        async with runtime.transaction():
+            await runtime.execute("SELECT set_config('app.current_user_id',$1,true)", str(owner_b))
+            visible_b = await runtime.fetch(
+                "SELECT id FROM personal_documents ORDER BY id"
+            )
+            assert [row["id"] for row in visible_b] == [doc_b]
+    finally:
+        await admin.execute(
+            "DELETE FROM personal_documents WHERE id = ANY($1::uuid[])",
+            [doc_a, doc_b, forbidden_doc],
+        )
+        await admin.execute("DELETE FROM users WHERE id = ANY($1::uuid[])", [owner_a, owner_b])
+        await runtime.close()
+        await admin.close()
+
+
+def test_postgresql_personal_documents_are_isolated_by_owner_rls():
+    asyncio.run(_run_personal_document_owner_rls_scenario())

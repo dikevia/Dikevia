@@ -146,6 +146,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f database/migrations/024_legal_embeddings_multilingual_384.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/025_credit_wallet_foundation.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/026_platform_founder_entitlements.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/027_ai_usage_event_dimensions.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/028_personal_user_documents.sql
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend
@@ -270,6 +272,10 @@ jobs:
                   await conn.close()
           asyncio.run(main())
           PY
+      - name: Audit real staging guidance eligibility and provenance
+        run: PYTHONPATH=backend python scripts/audit_staging_guidance_eligibility.py
+      - name: Smoke-test vector-only retrieval on real staging corpus
+        run: PYTHONPATH=backend:scripts python scripts/audit_staging_vector_retrieval.py
 
   live-smoke:
     # These probes contact Render-hosted services and may wake paid compute. Disabled unless explicitly enabled in repository variables.

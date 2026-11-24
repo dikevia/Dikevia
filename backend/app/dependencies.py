@@ -4,8 +4,9 @@ from uuid import UUID
 from fastapi import Depends, Header, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from .security import verify_access_token, Principal, auth_log
+from .security import verify_access_token, verify_identity_token, Principal, auth_log
 from .db import get_pool
+from .config import settings
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -19,13 +20,71 @@ class TenantContext:
     conn: object | None
 
 
-async def get_principal(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+def _require_verified_auth0_email(principal: Principal) -> Principal:
+    if not principal.email or not principal.email_verified:
+        auth_log.warning("auth_rejected reason=email_not_verified status=403")
+        raise HTTPException(
+            403,
+            "Adresse e-mail non vérifiée. Ouvrez le lien de vérification reçu par e-mail puis reconnectez-vous.",
+        )
+    return principal
+
+
+async def _resolve_auth0_legacy_identity(principal: Principal) -> Principal:
+    """Map only Auth0 DB users whose exact legacy identity still exists in Dikévia."""
+    if settings.oidc_provider != "auth0" or not settings.oidc_identity_compat_issuer:
+        return principal
+    prefix = settings.oidc_identity_subject_prefix
+    if not prefix or not principal.subject.startswith(prefix):
+        return principal
+    legacy_subject = principal.subject[len(prefix):]
+    if not legacy_subject:
+        return principal
+    # The lookup is constrained by PostgreSQL RLS to this exact candidate
+    # identity. No email matching or user-supplied legacy claim is trusted.
+    try:
+        async with get_pool().acquire() as conn:
+            async with conn.transaction():
+                await conn.execute(
+                    "SELECT set_config('app.oidc_issuer',$1,true)",
+                    settings.oidc_identity_compat_issuer,
+                )
+                await conn.execute(
+                    "SELECT set_config('app.oidc_subject',$1,true)",
+                    legacy_subject,
+                )
+                row = await conn.fetchrow(
+                    "SELECT id FROM users WHERE oidc_issuer=$1 AND oidc_subject=$2 AND status='ACTIVE'",
+                    settings.oidc_identity_compat_issuer, legacy_subject,
+                )
+    except Exception:
+        auth_log.error("auth_rejected reason=legacy_identity_lookup_unavailable status=503")
+        raise HTTPException(503, "Vérification de l'identité historique momentanément indisponible.")
+    if not row:
+        return principal
+    return Principal(
+        subject=legacy_subject,
+        issuer=settings.oidc_identity_compat_issuer,
+        email=principal.email,
+        email_verified=principal.email_verified,
+    )
+
+
+async def get_principal(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    x_oidc_id_token: str | None = Header(default=None, alias="X-OIDC-ID-Token"),
+):
     if credentials is None or credentials.scheme.lower() != "bearer":
-        # HTTPBearer(auto_error=False) returns None for a missing or unsupported
-        # authorization scheme. Do not log the raw header or credentials.
         auth_log.warning("auth_rejected reason=bearer_missing status=401")
         raise HTTPException(401, "Authentification requise.")
-    return verify_access_token(credentials.credentials)
+    principal = verify_access_token(credentials.credentials)
+    if settings.oidc_provider == "auth0":
+        if not x_oidc_id_token:
+            raise HTTPException(401, "Jeton d'identité OIDC manquant. Reconnectez-vous.")
+        principal = verify_identity_token(x_oidc_id_token, principal)
+        principal = _require_verified_auth0_email(principal)
+        principal = await _resolve_auth0_legacy_identity(principal)
+    return principal
 
 
 async def get_tenant_context(

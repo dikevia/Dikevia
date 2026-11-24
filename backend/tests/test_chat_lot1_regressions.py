@@ -60,6 +60,41 @@ async def test_research_planner_clarification_is_returned_before_retrieval(monke
     assert response.sources == []
 
 
+
+@pytest.mark.parametrize("versant", ["FPE", "FPH"])
+@pytest.mark.asyncio
+async def test_non_territorial_scope_clarification_stops_retrieval(monkeypatch, versant):
+    captured = {}
+
+    async def ask_plan(**kwargs):
+        captured["public_service"] = kwargs["legal_context"]["versant_fonction_publique"]
+        return LegalResearchPlan(
+            queries=[],
+            legal_issues=[],
+            clarification_needed="Votre employeur est-il un établissement public de santé, une collectivité ou un employeur privé ?",
+        )
+
+    async def forbidden_retrieval(*args, **kwargs):
+        pytest.fail("La recherche ne doit pas démarrer avant la clarification du versant.")
+
+    monkeypatch.setattr(orchestrator_module, "plan_legal_research", ask_plan)
+    monkeypatch.setattr(orchestrator_module, "search_cgfp", forbidden_retrieval)
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            public_service=versant,
+            question="Je travaille comme infirmière à l'hôpital. Quels sont mes droits ?",
+        ),
+        "00000000-0000-0000-0000-000000000001",
+    )
+
+    assert captured["public_service"] == versant
+    assert response.clarification_question.startswith("Votre employeur")
+    assert response.answer == response.clarification_question
+    assert response.sources == []
+
+
 def test_vector_search_uses_ask_request_not_undefined_payload():
     source = inspect.getsource(LegalOrchestrator.ask)
     tree = ast.parse(textwrap.dedent(source))
@@ -200,3 +235,124 @@ def test_chat_route_persists_a_controlled_response_when_orchestration_raises():
     assert "logger.exception(" in ask_source
     assert "INSERT INTO chat_messages" in ask_source
     assert "result.answer" in ask_source
+
+@pytest.mark.asyncio
+async def test_explicit_self_reported_other_versant_stops_research_before_retrieval(monkeypatch):
+    async def forbidden_plan(**kwargs):
+        pytest.fail("Aucune planification ne doit être lancée après un décalage explicite de versant.")
+
+    async def forbidden_retrieval(*args, **kwargs):
+        pytest.fail("Aucune recherche documentaire ne doit démarrer pour le mauvais versant.")
+
+    monkeypatch.setattr(orchestrator_module, "plan_legal_research", forbidden_plan)
+    monkeypatch.setattr(orchestrator_module, "search_cgfp", forbidden_retrieval)
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(
+            employer="NATIONAL",
+            public_service="FPT",
+            question="Je suis fonctionnaire de l'État et mon employeur refuse ma demande.",
+        ),
+        "00000000-0000-0000-0000-000000000001",
+    )
+
+    assert response.verification_status == "NON_VERIFIE"
+    assert response.clarification_question
+    assert "fonction publique de l'État" in response.clarification_question
+    assert "nouvelle conversation" in response.answer
+    assert response.sources == []
+
+@pytest.mark.parametrize(
+    ("versant", "label"),
+    [("FPE", "fonction publique de l'État"), ("FPH", "fonction publique hospitalière")],
+)
+def test_non_territorial_compound_questions_keep_independent_research_axes(versant, label):
+    from app.orchestrator import _build_versant_fallback_research
+
+    question = "Mon congé maladie est refusé et ma prime n'est pas versée."
+    queries, axes = _build_versant_fallback_research(question, versant)
+
+    assert len(axes) == 2
+    assert all(label in axis for axis in axes)
+    assert all("décret 87-602" not in query and "décret 2002-60" not in query for query in queries)
+    assert all("congé maladie" in axis or "rémunération" in axis for axis in axes)
+
+def test_non_territorial_contract_and_discipline_question_keeps_both_axes():
+    from app.orchestrator import _build_versant_fallback_research
+
+    queries, axes = _build_versant_fallback_research(
+        "Mon contrat arrive à son terme et une procédure disciplinaire est engagée.",
+        "FPE",
+    )
+
+    assert len(axes) == 2
+    assert any("contrat, renouvellement et fin de contrat" in axis for axis in axes)
+    assert any("procédure disciplinaire et sanctions" in axis for axis in axes)
+    assert all("fonction publique de l'État" in axis for axis in axes)
+
+def test_provider_history_includes_previous_assistant_answer_only_when_explicitly_supplied():
+    from app.orchestrator import _provider_context_history
+
+    question = "Peux-tu détailler le deuxième point ?\nMon employeur refuse mes heures supplémentaires."
+    assistant_context = "Le deuxième point concerne les conditions de récupération."
+
+    history = _provider_context_history(
+        question, True, assistant_context=assistant_context,
+    )
+    assert history == [
+        {"role": "user", "content": "Mon employeur refuse mes heures supplémentaires."},
+        {"role": "assistant", "content": assistant_context},
+    ]
+    assert _provider_context_history(question, False, assistant_context) == []
+
+
+@pytest.mark.parametrize(
+    ("versant", "employer", "expected"),
+    [
+        ("FPT", "VILLE_SAINT_ETIENNE", True),
+        ("FPT", "SAINT_ETIENNE_METROPOLE", True),
+        ("FPT", "NATIONAL", False),
+        ("FPE", "VILLE_SAINT_ETIENNE", False),
+        ("FPE", "SAINT_ETIENNE_METROPOLE", False),
+        ("FPH", "VILLE_SAINT_ETIENNE", False),
+        ("FPH", "SAINT_ETIENNE_METROPOLE", False),
+        ("FPH", "NATIONAL", False),
+    ],
+)
+def test_local_collectivity_documents_are_retrieved_only_for_fpt_employers(
+    versant, employer, expected,
+):
+    from app.orchestrator import _should_search_local_employer_documents
+
+    assert _should_search_local_employer_documents(versant, employer) is expected
+
+
+@pytest.mark.parametrize(
+    ("versant", "employer", "expected"),
+    [
+        ("FPT", "VILLE_SAINT_ETIENNE", "VILLE_SAINT_ETIENNE"),
+        ("FPT", "SAINT_ETIENNE_METROPOLE", "SAINT_ETIENNE_METROPOLE"),
+        ("FPT", "NATIONAL", "NATIONAL"),
+        ("FPE", "VILLE_SAINT_ETIENNE", "NATIONAL"),
+        ("FPE", "SAINT_ETIENNE_METROPOLE", "NATIONAL"),
+        ("FPH", "VILLE_SAINT_ETIENNE", "NATIONAL"),
+        ("FPH", "SAINT_ETIENNE_METROPOLE", "NATIONAL"),
+    ],
+)
+def test_fpe_fph_research_never_inherits_fpt_only_employer_selector(
+    versant, employer, expected,
+):
+    from app.orchestrator import _effective_employer_for_versant
+
+    assert _effective_employer_for_versant(versant, employer) == expected
+
+
+def test_all_ai_research_and_answer_stages_receive_versant_consistent_employer():
+    import inspect
+
+    from app.orchestrator import LegalOrchestrator
+
+    source = inspect.getsource(LegalOrchestrator.ask)
+    assert source.count(
+        "_effective_employer_for_versant(request.public_service, request.employer)"
+    ) == 4

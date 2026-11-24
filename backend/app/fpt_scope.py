@@ -40,28 +40,47 @@ _FPT_MARKERS = (
 _FPH_MARKERS = (
     "fonction publique hospitaliere",
     "etablissements publics de sante",
-    "personnels hospitaliers",
-    "personnels medicaux",
-    "directeur d hopital",
+    "etablissement public de sante",
     "centres hospitaliers",
+    "centre hospitalier",
+    "agent hospitalier",
+    "agents hospitaliers",
+    "personnel hospitalier",
+    "personnels hospitaliers",
+    "agent contractuel hospitalier",
+    "agents contractuels hospitaliers",
     "decret n 91 155",
     "decret 91 155",
     "loi n 86 33",
     "loi 86 33",
-    "agents contractuels hospitaliers",
 )
 
 _FPE_MARKERS = (
     "fonction publique de l etat",
+    "fonctionnaire de l etat",
     "fonctionnaires de l etat",
+    "agent de l etat",
     "agents de l etat",
+    "administration centrale",
     "administrations centrales",
+    "service deconcentre de l etat",
     "services deconcentres de l etat",
-    "ministeres",
+    "agent contractuel de l etat",
     "agents contractuels de l etat",
     "decret n 86 83",
     "decret 86 83",
 )
+
+# These words can occur as incidental context and do not establish a
+# branch by themselves. They may contribute to an ambiguity check when a
+# strong marker for another branch is also present.
+_FPH_CONTEXT_MARKERS = (
+    "personnels hospitaliers",
+    "personnels medicaux",
+    "directeur d hopital",
+)
+_FPE_CONTEXT_MARKERS = ("ministeres",)
+
 
 _LOCAL_EMPLOYER_MARKERS = (
     "commune", "mairie", "centre communal d action sociale",
@@ -187,6 +206,8 @@ def classify_public_service_scope(
     fpt_hits = [marker for marker in _FPT_MARKERS if _fold(marker) in corpus]
     fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in corpus]
     fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in corpus]
+    fph_context_hits = [marker for marker in _FPH_CONTEXT_MARKERS if _fold(marker) in corpus]
+    fpe_context_hits = [marker for marker in _FPE_CONTEXT_MARKERS if _fold(marker) in corpus]
 
     # A territorial reference buried in the body must not override a source
     # whose title identifies it as an FPE/FPH instrument. Titles are a stronger
@@ -194,6 +215,26 @@ def classify_public_service_scope(
     title_fpt_hits = [marker for marker in _FPT_MARKERS if _fold(marker) in title_folded]
     title_fpe_hits = [marker for marker in _FPE_MARKERS if _fold(marker) in title_folded]
     title_fph_hits = [marker for marker in _FPH_MARKERS if _fold(marker) in title_folded]
+    common_scope_hits = [
+        marker for marker in _COMMON_PUBLIC_SERVICE_MARKERS
+        if _fold(marker) in corpus
+    ]
+    # An explicit statement that a provision covers all three branches takes
+    # precedence over a title that names only two of them.
+    if common_scope_hits:
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": common_scope_hits[:3],
+            "analysis_eligible": True,
+            "claim_eligible": True,
+        }
+    if title_fpe_hits and title_fph_hits and not title_fpt_hits:
+        return {
+            "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+            "evidence": title_fpe_hits[:2] + title_fph_hits[:2],
+            "analysis_eligible": False,
+            "claim_eligible": False,
+        }
     if (title_fpe_hits or title_fph_hits) and not title_fpt_hits:
         title_scope = "FPH" if title_fph_hits else "FPE"
         return {
@@ -221,18 +262,19 @@ def classify_public_service_scope(
     # A common rule may support analysis for the selected versant only when
     # the source itself explicitly identifies all three branches. Generic
     # public-service wording is not sufficient evidence of cross-branch scope.
-    common_scope_hits = [
-        marker for marker in _COMMON_PUBLIC_SERVICE_MARKERS
-        if _fold(marker) in corpus
-    ]
-    if common_scope_hits:
+    # When the title does not establish a primary branch, simultaneous State
+    # and hospital references in the relevant passage are ambiguous. Do not
+    # let the later single-branch fallback silently prefer FPH.
+    if (
+        fpe_hits and (fph_hits or fph_context_hits)
+        or fph_hits and (fpe_hits or fpe_context_hits)
+    ) and not (title_fpt_hits or title_fpe_hits or title_fph_hits) and not common_scope_hits:
         return {
-            "scope": "COMMON_PUBLIC_SERVICE",
-            "evidence": common_scope_hits[:3],
-            "analysis_eligible": True,
-            "claim_eligible": True,
+            "scope": "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+            "evidence": fpe_hits[:2] + fph_hits[:2] + fpe_context_hits[:1] + fph_context_hits[:1],
+            "analysis_eligible": False,
+            "claim_eligible": False,
         }
-
     # A source containing competing territorial and State/hospital markers
     # is not safe FPT proof, even when one marker appears in its title.
     if title_fpt_hits and (title_fpe_hits or title_fph_hits):
@@ -245,10 +287,10 @@ def classify_public_service_scope(
 
     # If the body contains competing versant markers and the title does not
     # identify a territorial instrument, its primary scope is unresolved.
-    if fpt_hits and (fpe_hits or fph_hits) and not title_fpt_hits:
+    if fpt_hits and (fpe_hits or fph_hits or fpe_context_hits or fph_context_hits) and not title_fpt_hits:
         return {
             "scope": "OUT_OF_SCOPE_OR_UNCONFIRMED",
-            "evidence": (fpt_hits[:2] + fpe_hits[:1] + fph_hits[:1]),
+            "evidence": (fpt_hits[:2] + fpe_hits[:1] + fph_hits[:1] + fpe_context_hits[:1] + fph_context_hits[:1]),
             "analysis_eligible": False,
         }
 

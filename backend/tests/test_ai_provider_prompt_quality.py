@@ -1,4 +1,4 @@
-from app.ai_provider import SYSTEM_PROMPT
+from app.ai_provider import SYSTEM_PROMPT, _system_prompt_for_versant
 
 
 def test_prompt_prioritizes_understanding_the_current_request_over_lexical_matches():
@@ -83,7 +83,8 @@ def test_prompt_uses_the_whole_cgfp_index_as_discovery_and_requires_live_article
 
 
 def test_prompt_obeys_structured_scope_and_ambiguous_contract_status():
-    assert "scope_status vaut OUT_OF_SCOPE_FPE" in SYSTEM_PROMPT
+    assert "scope_status signale la présence d'indices lexicaux" in SYSTEM_PROMPT
+    assert "ne déduis jamais le versant personnel d'une simple mention comparative ou d'un tiers" in SYSTEM_PROMPT
     assert "EMPLOYMENT_STATUS_AMBIGUOUS" in SYSTEM_PROMPT
     assert "un CDD ou un CDI mentionné seul ne suffit pas" in SYSTEM_PROMPT
 
@@ -125,6 +126,15 @@ def test_prompt_never_assumes_generic_public_service_sources_apply_to_fpt():
 
 
 
+def test_fpt_prompt_requires_pedagogical_explanations_not_a_bare_list_of_references():
+    from app.ai_provider import SYSTEM_PROMPT
+
+    assert "explication pédagogique autonome" in SYSTEM_PROMPT
+    assert "termes juridiques indispensables" in SYSTEM_PROMPT
+    assert "Évite de répéter une règle" in SYSTEM_PROMPT
+    assert "liste de références sans explication" in SYSTEM_PROMPT
+
+
 def test_prompt_requires_each_claim_to_be_bound_to_an_exact_research_axis():
     assert '"axis": "valeur exacte d\'un axe de axes_recherche_documentaire"' in SYSTEM_PROMPT
     assert '"uncovered_axes": []' in SYSTEM_PROMPT
@@ -161,8 +171,60 @@ def test_non_fpt_prompt_requires_explicit_scope_and_blocks_context_only_sources(
     from app.ai_provider import _system_prompt_for_versant, ENTAILMENT_SYSTEM_PROMPT
 
     prompt = _system_prompt_for_versant("FPH")
-    assert "OUT_OF_SCOPE_FPT" in prompt
+    assert "scope_status signale la présence d'indices lexicaux" in prompt
+    assert "ne déduis jamais le versant personnel d'une simple mention comparative ou d'un tiers" in prompt
     assert "GENERAL_PUBLIC_SERVICE" in prompt
     assert "portée commune" in prompt
+    assert "la situation de la personne dont les droits sont demandés" in prompt
+    assert "une mention comparative ou une question portant sur un tiers ne suffit pas" in prompt
     assert "versant_selectionne" in ENTAILMENT_SYSTEM_PROMPT
     assert "Une source propre à un autre versant ne peut pas soutenir une affirmation" in ENTAILMENT_SYSTEM_PROMPT
+
+
+
+def test_non_fpt_prompts_preserve_the_same_structured_evidence_contract():
+    from app.ai_provider import _system_prompt_for_versant
+
+    for versant in ("FPE", "FPH"):
+        prompt = _system_prompt_for_versant(versant)
+        assert "FORMAT DE SORTIE OBLIGATOIRE — JSON STRICT" in prompt
+        assert '"claims"' in prompt
+        assert '"source_id"' in prompt
+        assert '"axis"' in prompt
+        assert '"quote"' in prompt
+        assert '"uncovered_axes"' in prompt
+        assert "MÉTHODE DE COMPRÉHENSION ET DE RESTITUTION" in prompt
+        assert "chaque proposition juridique doit rester rattachée à un extrait précis" in prompt
+
+def test_research_planner_distinguishes_the_user_from_comparative_or_third_party_mentions():
+    import inspect
+    from app.ai_provider import plan_legal_research
+
+    prompt_source = inspect.getsource(plan_legal_research)
+    assert "Une mention d'un autre versant dans une comparaison ou à propos d'un tiers" in prompt_source
+    assert "distingue toujours le sujet de la question et la personne dont la situation est décrite" in prompt_source
+
+def test_all_versants_explain_current_rules_and_source_based_procedures_without_overclaiming():
+    from app.ai_provider import _system_prompt_for_versant
+
+    for versant in ("FPT", "FPE", "FPH"):
+        prompt = _system_prompt_for_versant(versant)
+        assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in prompt
+        assert "Ne demande pas automatiquement la date des faits" in prompt
+        assert "procédures, autorités compétentes, délais et conditions expressément documentés" in prompt
+        assert "ne propose aucune stratégie personnelle" in prompt
+
+
+def test_fpt_prompt_explains_documented_procedures_without_personal_strategy():
+    assert "même si l'utilisateur n'a pas explicitement demandé" in SYSTEM_PROMPT
+    assert "l'autorité compétente" in SYSTEM_PROMPT
+    assert "jamais comme une stratégie ou une recommandation personnalisée" in SYSTEM_PROMPT
+    assert "Ne suggère aucune action individuelle" in SYSTEM_PROMPT
+
+
+def test_fpe_and_fph_prompts_explain_documented_procedures_without_personal_strategy():
+    for versant in ("FPE", "FPH"):
+        prompt = _system_prompt_for_versant(versant)
+        assert "même sans demande explicite de démarches" in prompt
+        assert "l'autorité compétente" in prompt
+        assert "jamais d'une recommandation d'action ou d'une stratégie individuelle" in prompt

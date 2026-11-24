@@ -115,9 +115,12 @@ def safe_official_url(value: str | None) -> str | None:
         # Exact HTTPS hosts of the explicitly selected and approved guidance corpus.
         "cdg35.bzh", "www.cdg35.bzh",
         "uffa.cfdt.fr",
+        "interco.cfdt.fr",
         "cfdt-interco31.fr", "www.cfdt-interco31.fr",
         "cfdtinterco35.fr", "www.cfdtinterco35.fr",
         "cgtservicespublics.fr", "www.cgtservicespublics.fr",
+        "cgtetat.fr", "www.cgtetat.fr",
+        "sante.cgt.fr", "www.sante.cgt.fr",
         "fo-fonctionnaires.fr", "www.fo-fonctionnaires.fr",
         "cftc.fr", "www.cftc.fr", "ledecodeur.cftc.fr",
         "unsa-fp.org", "www.unsa-fp.org",
@@ -166,6 +169,7 @@ async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
       ON CONFLICT(document_id,version_key) DO UPDATE SET
         full_text=CASE WHEN EXCLUDED.full_text<>'' THEN EXCLUDED.full_text ELSE legal_document_versions.full_text END,
+        source_version_id=COALESCE(EXCLUDED.source_version_id,legal_document_versions.source_version_id),
         text_sha256=COALESCE(EXCLUDED.text_sha256,legal_document_versions.text_sha256),
         valid_from=COALESCE(EXCLUDED.valid_from,legal_document_versions.valid_from),
         valid_to=COALESCE(EXCLUDED.valid_to,legal_document_versions.valid_to),
@@ -307,6 +311,19 @@ def expand_legal_query(query: str, max_variants: int = 6) -> list[str]:
     return variants
 
 
+def corpus_version_citation_id(source_id: object, version_id: object = None) -> str | None:
+    """Return a unique evidence key for one stored legal-text version."""
+    stable_source_id = str(source_id or "").strip()
+    if not stable_source_id:
+        return None
+    stable_version_id = str(version_id or "").strip()
+    if stable_version_id:
+        # The UUID identifies the exact stored version; keep the official ID
+        # separately for human-readable legal references and provenance.
+        return f"CORPUS_VERSION_{stable_version_id}"
+    return stable_source_id
+
+
 def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: int = 12) -> list[dict]:
     """Keep results from each independent legal sub-question before de-duplication."""
     if not 1 <= limit <= 30:
@@ -319,8 +336,18 @@ def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: i
             if depth >= len(items):
                 continue
             item = items[depth]
-            identifier = item.get("source_id")
-            if not isinstance(identifier, str) or not identifier or identifier in seen:
+            # A legal document can have several independently stored versions.
+            # De-duplicate repeated retrievals of the same version, not distinct
+            # versions sharing the document's stable official source_id.
+            version_id = item.get("version_id")
+            identifier = (
+                f"version:{version_id}"
+                if isinstance(version_id, str) and version_id
+                else f"source:{item.get('source_id')}"
+                if isinstance(item.get("source_id"), str) and item.get("source_id")
+                else None
+            )
+            if identifier is None or identifier in seen:
                 continue
             seen.add(identifier)
             selected.append(item)
@@ -369,8 +396,12 @@ async def search_legal_corpus(
         SELECT c.id chunk_id,c.version_id,c.ordinal,
           (2.0 * ts_rank_cd(c.search_vector,st.original_query)
              + ts_rank_cd(c.search_vector,st.expansion_query)) lexical_score
-        FROM legal_chunks c CROSS JOIN search_terms st
+        FROM legal_chunks c
+        JOIN legal_document_versions v ON v.id=c.version_id
+        CROSS JOIN search_terms st
         WHERE c.content_kind='FULL_TEXT'
+          AND (v.valid_from IS NULL OR v.valid_from <= $5::date)
+          AND (v.valid_to IS NULL OR v.valid_to >= $5::date)
           AND (c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query)
       ), lexical_ranked AS (
         SELECT chunk_id,version_id,ordinal,
@@ -380,8 +411,13 @@ async def search_legal_corpus(
         SELECT c.id chunk_id,c.version_id,c.ordinal,
           row_number() OVER(ORDER BY c.embedding_384 <=> $4::vector) candidate_rank
         FROM legal_chunks c
+        JOIN legal_document_versions v ON v.id=c.version_id
         WHERE $4::vector IS NOT NULL
+          AND (v.valid_from IS NULL OR v.valid_from <= $5::date)
+          AND (v.valid_to IS NULL OR v.valid_to >= $5::date)
           AND c.embedding_384 IS NOT NULL
+          AND c.embedding_384_model='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+          AND c.embedding_384_dimensions=384
           AND c.content_kind='FULL_TEXT'
         ORDER BY c.embedding_384 <=> $4::vector
         LIMIT 120
@@ -398,8 +434,21 @@ async def search_legal_corpus(
       ), ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
-          d.source_status,d.raw_metadata,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
+          d.source_status,d.raw_metadata,v.source_version_id,v.version_key,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
           c.anchor,c.content content_chunk,c.content_kind,c.ordinal,candidate_scores.rank,
+          CASE
+            WHEN d.source_type IN ('LEGIFRANCE_LEGI','LEGIFRANCE_LODA','LEGIFRANCE_JORF','OTHER_OFFICIAL')
+              AND d.document_kind IN ('CODE','LAW','ORDONNANCE','DECREE','ORDER','JOURNAL_OFFICIEL')
+              AND d.source_status IN ('OFFICIAL_TEXT_RETRIEVED','OFFICIAL_TEXT_ID_VERIFIED','OFFICIAL_XML_IMPORTED','MANUALLY_VERIFIED')
+              THEN 1.15
+            WHEN d.source_type IN ('LEGIFRANCE_CETAT','OTHER_OFFICIAL') AND d.document_kind='ADMIN_CASELAW'
+              AND d.source_status IN ('OFFICIAL_TEXT_RETRIEVED','OFFICIAL_TEXT_ID_VERIFIED','OFFICIAL_XML_IMPORTED','MANUALLY_VERIFIED')
+              THEN 1.10
+            WHEN d.source_type='DILA_CIRCULAIRES' AND d.document_kind='CIRCULAR'
+              AND d.source_status IN ('OFFICIAL_TEXT_RETRIEVED','OFFICIAL_TEXT_ID_VERIFIED','OFFICIAL_XML_IMPORTED','MANUALLY_VERIFIED')
+              THEN 1.05
+            ELSE 1.0
+          END AS authority_weight,
           row_number() OVER(PARTITION BY v.id ORDER BY candidate_scores.rank DESC,c.ordinal) rn
         FROM candidate_scores
         JOIN legal_chunks c ON c.id=candidate_scores.chunk_id
@@ -408,23 +457,26 @@ async def search_legal_corpus(
       ), selected_chunks AS (
         -- Keep only passages selected by lexical/vector relevance. Never append
         -- the document's final chunk: it is often unrelated to the user's question.
-        SELECT version_id,string_agg(content_chunk,E'\n\n' ORDER BY chunk_order) AS content,max(rank) AS rank
+        -- Bounded authority adjustment: it cannot replace relevance, temporal validity,
+        -- public-service scope checks or claim-level evidence validation.
+        SELECT version_id,string_agg(content_chunk,E'\\n\\n' ORDER BY chunk_order) AS content,
+          max(rank * authority_weight) AS rank
         FROM (
-          SELECT version_id,content_chunk,rn AS chunk_order,rank
+          SELECT version_id,content_chunk,rn AS chunk_order,rank,authority_weight
           FROM ranked WHERE rn<=CASE WHEN document_kind='ADMIN_CASELAW' THEN 1 ELSE 2 END
         ) selected_passages
         GROUP BY version_id
       ), document_metadata AS (
         SELECT DISTINCT ON (version_id) document_id,version_id,source_type,source_id,title,document_kind,
           official_number,jurisdiction,official_url,signature_date,publication_date,document_status,
-          source_status,raw_metadata,valid_from,valid_to,version_status,raw_payload,full_text,text_sha256,
+          source_status,raw_metadata,source_version_id,version_key,valid_from,valid_to,version_status,raw_payload,full_text,text_sha256,
           anchor,content_kind
         FROM ranked ORDER BY version_id,rank DESC,ordinal
       )
       SELECT metadata.*,selected_chunks.content,selected_chunks.rank
       FROM document_metadata metadata JOIN selected_chunks USING(version_id)
       ORDER BY selected_chunks.rank DESC,metadata.publication_date DESC NULLS LAST LIMIT $3
-    """, query.strip(), expansion_expression, limit, vector_literal)
+    """, query.strip(), expansion_expression, limit, vector_literal, requested_date)
     results = []
     for row in rows:
         item = dict(row)
@@ -456,7 +508,7 @@ async def search_legal_corpus(
         )
         item["retrieval_mode"] = "HYBRID_LEXICAL_VECTOR" if vector_literal is not None else "LEXICAL_ONLY"
         full_text = item.pop("full_text")
-        expected_hash = item.pop("text_sha256")
+        expected_hash = item.get("text_sha256")
         actual_hash = sha256_text(full_text) if full_text else None
         hash_verified = bool(expected_hash and actual_hash and expected_hash.strip() == actual_hash)
         item.pop("raw_payload", None)

@@ -40,6 +40,53 @@ async def test_legifrance_oauth_ping_and_article_roundtrip(monkeypatch):
     assert any(path.endswith("/search") for _, path in seen)
     assert any(path.endswith("/list/ping") for _, path in seen)
 
+
+@pytest.mark.parametrize(
+    ("valid_from", "valid_to"),
+    [
+        ("2026-12-01", None),
+        (None, "2026-11-18"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_legifrance_rejects_article_validity_bounds_outside_requested_date(
+    monkeypatch, valid_from, valid_to,
+):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    requested_date = date(2026, 11, 19)
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            assert payload["fond"] == "CODE_DATE"
+            assert payload["recherche"]["filtres"][1] == {
+                "facette": "DATE_VERSION",
+                "singleDate": int(datetime(2026, 11, 19, tzinfo=timezone.utc).timestamp() * 1000),
+            }
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            article = {
+                "id": ARTICLE_ID,
+                "num": "L. 123-4",
+                "nomCode": "Code général de la fonction publique",
+                "texte": "Disposition officielle suffisamment longue pour le test.",
+            }
+            if valid_from is not None:
+                article["dateDebut"] = valid_from
+            if valid_to is not None:
+                article["dateFin"] = valid_to
+            return httpx.Response(200, json={"article": article})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    assert await connector.search_code_articles(
+        "article L. 123-4", requested_date,
+    ) == []
+
+
 @pytest.mark.parametrize(
     ("requested_ref", "returned_num"),
     [
@@ -170,6 +217,21 @@ async def test_legifrance_nonexistent_article_returns_no_official_result(monkeyp
     connector = LegifranceConnector(transport=httpx.MockTransport(handler))
     results = await connector.search_code_articles("article L999-999", date(2026, 11, 19))
     assert results == []
+
+
+@pytest.mark.asyncio
+async def test_legifrance_rejects_non_object_oauth_response(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json=[{"access_token": "unexpected"}])
+        raise AssertionError("No API request is expected after invalid OAuth JSON")
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    with pytest.raises(LegifranceUnavailable, match="objet JSON attendu"):
+        await connector.ping()
 
 
 @pytest.mark.asyncio
@@ -473,7 +535,7 @@ async def test_legifrance_ping_falls_back_when_list_route_returns_upstream_500(m
         if request.url.path == "/api/oauth/token":
             return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
         if request.url.path.endswith("/list/ping"):
-            return httpx.Response(500, json={"error": "upstream"})
+            return httpx.Response(500, json={"error": "sensitive-upstream-detail"})
         if request.url.path.endswith("/consult/ping"):
             return httpx.Response(200, text="pong")
         return httpx.Response(404)
@@ -512,7 +574,7 @@ async def test_legifrance_ping_does_not_hide_auth_or_permission_failures(
 
 
 @pytest.mark.asyncio
-async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monkeypatch):
+async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monkeypatch, caplog):
     monkeypatch.setattr(settings, "legifrance_environment", "production")
     monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
     monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
@@ -535,6 +597,7 @@ async def test_legifrance_ping_diagnostics_checks_all_routes_independently(monke
         "consult/ping": 200,
         "list/ping": 500,
     }
+    assert "sensitive-upstream-detail" not in caplog.text
 
 
 @pytest.mark.asyncio
@@ -605,6 +668,56 @@ async def test_loda_search_consults_matching_official_text_at_requested_date(mon
     assert source["full_text"] == full_text.strip()
     assert "indemnités horaires" in source["excerpt"]
     assert any(path.endswith("/consult/legiPart") for path in seen)
+
+
+
+@pytest.mark.parametrize(
+    ("valid_from", "valid_to"),
+    [
+        ("2026-12-01", None),
+        (None, "2026-11-18"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_loda_search_rejects_metadata_validity_bounds_outside_requested_date(
+    monkeypatch, valid_from, valid_to,
+):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    requested_date = date(2026, 11, 19)
+    expected_stamp = int(datetime(2026, 11, 19, tzinfo=timezone.utc).timestamp() * 1000)
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            payload = json.loads(request.content)
+            assert payload["recherche"]["filtres"][0] == {
+                "facette": "DATE_VERSION", "singleDate": expected_stamp,
+            }
+            record = {
+                "id": "LEGITEXT000012345678_01-01-2023",
+                "titre": "Décret n° 2002-60 relatif aux agents publics",
+                "nature": "DECRET",
+            }
+            if valid_from is not None:
+                record["dateDebut"] = valid_from
+            if valid_to is not None:
+                record["dateFin"] = valid_to
+            return httpx.Response(200, json={"results": [record]})
+        if request.url.path.endswith("/consult/legiPart"):
+            body = json.loads(request.content)
+            assert body == {"date": expected_stamp, "textId": "LEGITEXT000012345678"}
+            return httpx.Response(200, json={"text": {
+                "id": "LEGITEXT000012345678_01-01-2023",
+                "texte": "Texte réglementaire officiel suffisamment long pour être conservé dans ce test. " * 2,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    assert await connector.search_regulatory_texts(
+        "décret 2002-60 relatif aux agents publics", requested_date,
+    ) == []
 
 
 @pytest.mark.asyncio
@@ -824,3 +937,81 @@ async def test_legifrance_bounds_concurrent_requests_and_refreshes_oauth_once(mo
     assert all(result == {"ok": True} for result in results)
     assert transport.token_calls == 1
     assert transport.max_active <= 4
+
+
+@pytest.mark.parametrize(
+    ("nature", "title", "expected"),
+    [
+        ("DECRET", "Texte réglementaire", "DECREE"),
+        ("ARRETE", "Texte réglementaire", "ORDER"),
+        ("LOI", "Texte législatif", "LAW"),
+        ("ORDONNANCE", "Texte", "ORDONNANCE"),
+        ("CIRCULAIRE", "Instruction", "CIRCULAR"),
+        ("NATURE_INCONNUE", "Acte administratif non qualifié", "OTHER"),
+        (None, "Décret n° 2002-60", "DECREE"),
+        (None, "Loi n° 2024-100", "LAW"),
+        (None, "Code général de la fonction publique", "CODE"),
+        (None, "Acte administratif non qualifié", "OTHER"),
+    ],
+)
+def test_loda_document_kind_uses_official_nature_and_never_defaults_unknown_to_law(
+    nature, title, expected,
+):
+    from app.legifrance import _loda_document_kind
+
+    assert _loda_document_kind(nature, title, None) == expected
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "expected"),
+    [
+        ("VIGUEUR", "IN_FORCE"),
+        ("ABROGE", "REPEALED"),
+        ("ABROGÉ", "REPEALED"),
+        ("PÉRIMÉ", "NOT_IN_FORCE"),
+        ("NON EN VIGUEUR", "NOT_IN_FORCE"),
+        ("PLUS EN VIGUEUR", "NOT_IN_FORCE"),
+        ("ABROGÉ PARTIELLEMENT", "UNKNOWN"),
+        ("VIGUEUR DIFFÉRÉE", "UNKNOWN"),
+        (None, "UNKNOWN"),
+    ],
+)
+def test_loda_version_status_does_not_promote_qualified_or_negative_labels(raw_status, expected):
+    from app.legifrance import _loda_version_status
+
+    assert _loda_version_status(raw_status) == expected
+
+@pytest.mark.asyncio
+async def test_code_article_keeps_compact_display_excerpt_and_expanded_analysis_excerpt(monkeypatch):
+    monkeypatch.setattr(settings, "legifrance_client_id", "test-client")
+    monkeypatch.setattr(settings, "legifrance_client_secret", "test-secret")
+    clauses = [
+        f"La rémunération et les indemnités des agents sont encadrées par la disposition numéro {index}."
+        for index in range(35)
+    ]
+    exception = "Toutefois, l'indemnité de rémunération n'est pas due lorsque les conditions prévues ne sont pas réunies."
+    full_text = "\\n".join(["Article L. 123-4.", *clauses, exception])
+
+    def handler(request):
+        if request.url.path == "/api/oauth/token":
+            return httpx.Response(200, json={"access_token": "unit-token", "expires_in": 3600})
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"results": [{"id": ARTICLE_ID}]})
+        if request.url.path.endswith("/consult/getArticle"):
+            return httpx.Response(200, json={"article": {
+                "id": ARTICLE_ID, "num": "L. 123-4",
+                "nomCode": "Code général de la fonction publique",
+                "texte": full_text,
+            }})
+        return httpx.Response(404)
+
+    connector = LegifranceConnector(transport=httpx.MockTransport(handler))
+    results = await connector.search_code_articles(
+        "article L. 123-4 rémunération indemnité", date(2026, 11, 24),
+    )
+
+    assert len(results) == 1
+    assert len(results[0]["excerpt"]) <= 1800
+    assert len(results[0]["analysis_excerpt"]) > 1800
+    assert exception in results[0]["analysis_excerpt"]
+    assert exception not in results[0]["excerpt"]

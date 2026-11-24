@@ -10,6 +10,7 @@
   const cfg = window.CFDT_JURIS_OIDC;
   if (!cfg || !cfg.issuer || !cfg.client_id || !cfg.redirect_uri) return;
   let accessToken = null;
+  let idToken = null;
   let expiresAt = 0;
   let discovery = null;
   let silentCheckInFlight = null;
@@ -20,19 +21,30 @@
   };
   const base64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes)))
     .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  function decodeJwtPayload(token) {
+    const part = String(token || '').split('.')[1];
+    if (!part) throw new Error('Jeton d’identité OIDC mal formé.');
+    const base64 = part.replace(/-/g,'+').replace(/_/g,'/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+    const bytes = Uint8Array.from(atob(padded), char => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
   async function challenge(verifier) {
     return base64url(await crypto.subtle.digest('SHA-256', encoder.encode(verifier)));
   }
   async function metadata() {
     if (discovery) return discovery;
-    const issuer = cfg.issuer.replace(/\/$/,'');
+    // Preserve the issuer exactly as advertised by discovery. Auth0 issuers
+    // normally end with '/', and that slash is part of the JWT iss claim.
+    const issuer = cfg.issuer;
+    const discoveryUrl = issuer.replace(/\/+$/,'')+'/.well-known/openid-configuration';
     if (!issuer.startsWith('https://') && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(issuer))
       throw new Error('L’émetteur OIDC doit utiliser HTTPS.');
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),210000);
     let response;
     try {
-      response=await fetch(issuer+'/.well-known/openid-configuration',{cache:'no-store',signal:controller.signal});
+      response=await fetch(discoveryUrl,{cache:'no-store',signal:controller.signal});
     } catch(error) {
       if(error.name==='AbortError') throw new Error('Le fournisseur d’identité met trop de temps à répondre.');
       throw error;
@@ -44,12 +56,13 @@
     discovery = data;
     return data;
   }
-  function authorizationUrl(oidc, redirectUri, state, verifier, prompt) {
+  function authorizationUrl(oidc, redirectUri, state, verifier, prompt, nonce) {
     const params = {
       client_id:cfg.client_id,response_type:'code',redirect_uri:redirectUri,
-      scope:cfg.scopes||'openid profile email',state,
+      scope:cfg.scopes||'openid profile email',state,nonce,
       code_challenge_method:'S256'
     };
+    if (cfg.audience) params.audience=cfg.audience;
     return challenge(verifier).then(value => {
       params.code_challenge=value;
       if (prompt) params.prompt=prompt;
@@ -62,11 +75,12 @@
     const pending = new URLSearchParams(window.location.search).get('invitation_token');
     if (pending) sessionStorage.setItem('cfdt_pending_invitation', pending);
     const oidc = await metadata();
-    const state = random(24), verifier = random(48);
+    const state = random(24), verifier = random(48), nonce = random(24);
     sessionStorage.setItem('cfdt_oidc_state',state);
     sessionStorage.setItem('cfdt_oidc_verifier',verifier);
+    sessionStorage.setItem('cfdt_oidc_nonce',nonce);
     sessionStorage.setItem('cfdt_oidc_flow','interactive');
-    const url=await authorizationUrl(oidc,cfg.redirect_uri,state,verifier,prompt);
+    const url=await authorizationUrl(oidc,cfg.redirect_uri,state,verifier,prompt,nonce);
     window.location.assign(url);
   }
   async function login() {
@@ -81,7 +95,11 @@
     if (!pendingInvitation) return;
     const accepted = await fetch('/api/v1/invitations/accept', {
       method:'POST',cache:'no-store',
-      headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
+      headers:{
+        'Authorization':'Bearer '+accessToken,
+        'X-OIDC-ID-Token':idToken,
+        'Content-Type':'application/json'
+      },
       body:JSON.stringify({token:pendingInvitation})
     });
     if (accepted.ok) {
@@ -92,7 +110,7 @@
       window.dispatchEvent(new CustomEvent('cfdt:invitation-error',{detail:{message:detail.detail||'Impossible d’accepter l’invitation.'}}));
     }
   }
-  async function exchangeCode(code,verifier,redirectUri) {
+  async function exchangeCode(code,verifier,redirectUri,expectedNonce) {
     const oidc=await metadata();
     const body=new URLSearchParams({
       grant_type:'authorization_code',client_id:cfg.client_id,code,
@@ -112,8 +130,14 @@
     } finally { clearTimeout(timeout); }
     if(!response.ok) throw new Error('Échange du code OIDC refusé. Vérifiez les URI autorisées et le support CORS du fournisseur.');
     const data=await response.json();
-    if(!data.access_token||!Number.isFinite(data.expires_in)) throw new Error('Réponse OIDC incomplète.');
+    if(!data.access_token||!data.id_token||!Number.isFinite(data.expires_in)) throw new Error('Réponse OIDC incomplète.');
+    const identityClaims=decodeJwtPayload(data.id_token);
+    const identityAudiences=Array.isArray(identityClaims.aud)?identityClaims.aud:[identityClaims.aud];
+    if(!expectedNonce||identityClaims.nonce!==expectedNonce||identityClaims.iss!==cfg.issuer||
+       !identityAudiences.includes(cfg.client_id)||typeof identityClaims.sub!=='string'||!identityClaims.sub)
+      throw new Error('Jeton d’identité OIDC incohérent. Relancez la connexion.');
     accessToken=data.access_token;
+    idToken=data.id_token;
     expiresAt=Date.now()+data.expires_in*1000;
     sessionStorage.removeItem('cfdt_oidc_silent_failed');
     await acceptPendingInvitation();
@@ -125,10 +149,12 @@
     const state=params.get('state');
     const expected=sessionStorage.getItem('cfdt_oidc_state');
     const verifier=sessionStorage.getItem('cfdt_oidc_verifier');
+    const expectedNonce=sessionStorage.getItem('cfdt_oidc_nonce');
     sessionStorage.removeItem('cfdt_oidc_state');
     sessionStorage.removeItem('cfdt_oidc_verifier');
+    sessionStorage.removeItem('cfdt_oidc_nonce');
     sessionStorage.removeItem('cfdt_oidc_flow');
-    if(!state||!expected||state!==expected||(code&&!verifier)){
+    if(!state||!expected||state!==expected||(code&&(!verifier||!expectedNonce))){
       cleanCallbackUrl();
       throw new Error('État OIDC invalide. Relancez la connexion.');
     }
@@ -140,7 +166,7 @@
       }
       throw new Error(params.get('error_description')||'Le fournisseur d’identité a refusé la connexion ('+error+').');
     }
-    try { await exchangeCode(code,verifier,cfg.redirect_uri); }
+    try { await exchangeCode(code,verifier,cfg.redirect_uri,expectedNonce); }
     finally { cleanCallbackUrl(); }
     return true;
   }
@@ -152,11 +178,12 @@
       const callback=new URL(redirectUri,window.location.href);
       if(callback.origin!==window.location.origin) return false;
       const oidc=await metadata();
-      const state=random(24),verifier=random(48);
+      const state=random(24),verifier=random(48),nonce=random(24);
       sessionStorage.setItem('cfdt_oidc_state',state);
       sessionStorage.setItem('cfdt_oidc_verifier',verifier);
+      sessionStorage.setItem('cfdt_oidc_nonce',nonce);
       sessionStorage.setItem('cfdt_oidc_flow','silent');
-      const authUrl=await authorizationUrl(oidc,redirectUri,state,verifier,'none');
+      const authUrl=await authorizationUrl(oidc,redirectUri,state,verifier,'none',nonce);
       const frame=document.createElement('iframe');
       frame.setAttribute('aria-hidden','true');
       frame.tabIndex=-1;
@@ -184,6 +211,7 @@
       if(!result){
         sessionStorage.removeItem('cfdt_oidc_state');
         sessionStorage.removeItem('cfdt_oidc_verifier');
+        sessionStorage.removeItem('cfdt_oidc_nonce');
         sessionStorage.removeItem('cfdt_oidc_flow');
         sessionStorage.setItem('cfdt_oidc_silent_failed','1');
         return false;
@@ -192,6 +220,7 @@
       if(returned.origin!==window.location.origin||returned.pathname!==callback.pathname){
         sessionStorage.removeItem('cfdt_oidc_state');
         sessionStorage.removeItem('cfdt_oidc_verifier');
+        sessionStorage.removeItem('cfdt_oidc_nonce');
         sessionStorage.removeItem('cfdt_oidc_flow');
         throw new Error('Retour OIDC silencieux provenant d’une origine inattendue.');
       }
@@ -199,10 +228,12 @@
       const code=params.get('code'),error=params.get('error'),returnedState=params.get('state');
       const expected=sessionStorage.getItem('cfdt_oidc_state');
       const storedVerifier=sessionStorage.getItem('cfdt_oidc_verifier');
+      const expectedNonce=sessionStorage.getItem('cfdt_oidc_nonce');
       sessionStorage.removeItem('cfdt_oidc_state');
       sessionStorage.removeItem('cfdt_oidc_verifier');
+      sessionStorage.removeItem('cfdt_oidc_nonce');
       sessionStorage.removeItem('cfdt_oidc_flow');
-      if(!returnedState||!expected||returnedState!==expected||(code&&!storedVerifier))
+      if(!returnedState||!expected||returnedState!==expected||(code&&(!storedVerifier||!expectedNonce)))
         throw new Error('État OIDC silencieux invalide.');
       if(error){
         if(['login_required','interaction_required','consent_required'].includes(error)){
@@ -212,7 +243,7 @@
         throw new Error('Restauration SSO impossible : '+error+'.');
       }
       if(!code||!storedVerifier) return false;
-      await exchangeCode(code,storedVerifier,redirectUri);
+      await exchangeCode(code,storedVerifier,redirectUri,expectedNonce);
       return true;
     })().finally(()=>{silentCheckInFlight=null;});
     return silentCheckInFlight;
@@ -242,11 +273,16 @@
       }
       return null;
     },
+    async getIdentityToken(){
+      await ready;
+      return idToken;
+    },
     async login(){await ready.catch(()=>{});return login();},
     async logout(){
-      accessToken=null;expiresAt=0;
+      accessToken=null;idToken=null;expiresAt=0;
       sessionStorage.removeItem('cfdt_oidc_state');
       sessionStorage.removeItem('cfdt_oidc_verifier');
+      sessionStorage.removeItem('cfdt_oidc_nonce');
       sessionStorage.removeItem('cfdt_oidc_flow');
       sessionStorage.removeItem('cfdt_oidc_silent_failed');
       const oidc=await metadata().catch(()=>null);

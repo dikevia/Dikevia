@@ -223,6 +223,42 @@
       "prior_assistant_messages": [],
       "inherit": true,
       "topic_fragment": "heures supplémentaires"
+    },
+    {
+      "id": "CHAT-021",
+      "question": "Et pour la retraite ?",
+      "prior_user_questions": [
+        "Mon chef me demande de faire des heures supplémentaires après mes horaires."
+      ],
+      "prior_assistant_messages": [],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-022",
+      "question": "Et pour le télétravail ?",
+      "prior_user_questions": [
+        "Je suis en CITIS après un accident de service."
+      ],
+      "prior_assistant_messages": [],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-023",
+      "question": "Et pour la formation professionnelle ?",
+      "prior_user_questions": [
+        "Mon employeur refuse mes heures supplémentaires."
+      ],
+      "prior_assistant_messages": [],
+      "inherit": false
+    },
+    {
+      "id": "CHAT-024",
+      "question": "Et pour l'avancement de grade ?",
+      "prior_user_questions": [
+        "Je suis en arrêt maladie depuis trois mois."
+      ],
+      "prior_assistant_messages": [],
+      "inherit": false
     }
   ]
 }

@@ -894,7 +894,8 @@ def test_system_prompt_requires_neutral_documentary_explanations_without_case_ad
     assert "strictement fidèle au texte ou à la décision citée" in SYSTEM_PROMPT
     assert "Ne donne aucun avis personnel" in SYSTEM_PROMPT
     assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
-    assert "N'ajoute pas de démarches à entreprendre, de recommandations ou de conseils pratiques" in SYSTEM_PROMPT
+    assert "Présente ces éléments comme une explication documentaire générale" in SYSTEM_PROMPT
+    assert "Ne suggère aucune action individuelle, aucun recours à engager ni aucune stratégie personnelle" in SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio
@@ -911,6 +912,11 @@ async def test_entailment_verifier_receives_current_question_for_relevance_check
         "source_id": "SRC-IHTS-1",
         "title": "Règles relatives aux heures supplémentaires",
         "text": source_text,
+        "public_service_scope": "FPT",
+        "analysis_eligible": True,
+        "claim_eligible": True,
+        "version_status": "IN_FORCE",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
     }
     claim = {
         "source_id": "SRC-IHTS-1",
@@ -944,8 +950,15 @@ async def test_entailment_verifier_receives_current_question_for_relevance_check
         sources=[source],
     )
 
-    verifier_question = json.loads(captured["payload"]["messages"][1]["content"])["question_actuelle"]
+    verifier_payload = json.loads(captured["payload"]["messages"][1]["content"])
+    verifier_question = verifier_payload["question_actuelle"]
     assert verifier_question == "Mon employeur peut-il refuser de compenser mes heures supplémentaires ?"
+    evidence = verifier_payload["items_to_verify"][0]
+    assert evidence["public_service_scope"] == "FPT"
+    assert evidence["analysis_eligible"] is True
+    assert evidence["claim_eligible"] is True
+    assert evidence["version_status"] == "IN_FORCE"
+    assert evidence["temporal_status"] == "IN_FORCE_ON_REQUESTED_DATE"
     # A source that only says compensation may be possible does not answer
     # whether the employer may refuse in this agent's specific question.
     assert result["valid"] is False
@@ -1409,6 +1422,64 @@ async def test_chat_completion_retries_once_after_transient_503(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_gemini_503_uses_flash_lite_fallback_after_primary_retry(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
+
+    calls = []
+    def handler(request):
+        body = json.loads(request.content)
+        calls.append(body["model"])
+        if body["model"] == "gemini-2.5-flash":
+            return httpx.Response(503, request=request, json={"error": {"message": "high demand"}})
+        return httpx.Response(200, request=request, json={"choices": [{"message": {"content": "ok"}}]})
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client, "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={"Authorization": "Bearer test"}, payload={"model": "gemini-2.5-flash"},
+        )
+
+    assert response.status_code == 200
+    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+
+
+@pytest.mark.asyncio
+async def test_gemini_503_fallback_is_not_used_for_non_gemini_provider(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
+
+    calls = []
+    def handler(request):
+        calls.append(json.loads(request.content)["model"])
+        return httpx.Response(503, request=request)
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(httpx.HTTPStatusError):
+            await ai_provider._post_chat_completion(
+                client, "https://example.test/v1/chat/completions",
+                headers={}, payload={"model": "configured-model"},
+            )
+    assert calls == ["configured-model", "configured-model"]
+
+
+@pytest.mark.asyncio
 async def test_chat_completion_does_not_retry_auth_or_quota_errors(monkeypatch):
     import httpx
     from app import ai_provider
@@ -1526,3 +1597,740 @@ async def test_provider_availability_explicit_transport_bypasses_cache(monkeypat
     await ai_provider.check_provider_availability(transport=object())
 
     assert calls == 2
+
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_accepts_strictly_fenced_json_without_relaxing_verdict_checks(monkeypatch):
+    import httpx
+    import json
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    source = {
+        "source_id": "SRC-IHTS-FENCE",
+        "title": "Règles relatives aux heures supplémentaires",
+        "text": "Les heures supplémentaires peuvent ouvrir droit à compensation selon les règles applicables.",
+    }
+    claim = {
+        "source_id": "SRC-IHTS-FENCE",
+        "text": "Les heures supplémentaires peuvent ouvrir droit à compensation.",
+    }
+
+    def handler(request):
+        payload = {
+            "verdicts": [{
+                "claim_index": 0,
+                "source_id": "SRC-IHTS-FENCE",
+                "verdict": "SUPPORTED",
+                "support_quote": "Les heures supplémentaires peuvent ouvrir droit à compensation",
+            }]
+        }
+        fence = chr(96) * 3
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": fence + "json\n" + json.dumps(payload) + "\n" + fence}}]
+        })
+
+    real_async_client = httpx.AsyncClient
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+
+    result = await verify_claim_entailment(
+        question="Les heures supplémentaires peuvent-elles être compensées ?",
+        claims=[claim],
+        sources=[source],
+    )
+    assert result["valid"] is True
+    assert result["supported_claim_indices"] == [0]
+
+
+
+def test_research_plan_parser_accepts_strictly_fenced_json():
+    payload = """```json
+    {"queries": ["recherche juridique ciblée sur le mécanisme applicable"],
+     "legal_issues": ["Fondement et conditions du mécanisme"]}
+    ```"""
+    plan = _parse_research_plan(payload)
+    assert plan is not None
+    assert len(plan.queries) == 1
+
+
+@pytest.mark.asyncio
+async def test_source_relevance_evaluator_accepts_fenced_json(monkeypatch):
+    import httpx
+    from app.ai_provider import evaluate_source_relevance
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(200, json={"choices": [{
+            "message": {"content": ' ```json\n{"items":[{"source_id":"DOC-FENCE","verdict":"DIRECT"}]}\n``` '}
+        }]})
+
+    real_async_client = httpx.AsyncClient
+    def fake_async_client(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_async_client(*args, **kwargs)
+    monkeypatch.setattr(httpx, "AsyncClient", fake_async_client)
+
+    result = await evaluate_source_relevance(
+        question="Question sur le régime juridique",
+        research_axes=["fondement juridique"],
+        sources=[{"source_id":"DOC-FENCE","source_type":"LEGIFRANCE_API",
+                  "title":"Texte officiel","excerpt":"Le texte fixe les conditions applicables."}],
+    )
+    assert result == {"DOC-FENCE":"DIRECT"}
+
+
+def test_usable_sources_reject_malformed_citation_integrity_metadata():
+    from app.ai_provider import _usable_document_sources
+
+    base = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000012345678",
+        "requested_effective_date": "2026-11-21",
+        "excerpt": "Extrait officiel daté suffisamment long pour une analyse documentaire.",
+    }
+    malformed = [
+        {**base, "citation_integrity": "valid"},
+        {**base, "citation_integrity": ["valid"]},
+        {**base, "citation_integrity": 1},
+    ]
+    assert _usable_document_sources(malformed) == []
+
+
+def test_entailment_verdict_validation_fails_closed_on_malformed_inputs():
+    from app.ai_provider import validate_entailment_verdicts
+
+    valid_claim = {
+        "source_id": "SRC-123456",
+        "text": "Les heures supplémentaires ouvrent droit à compensation.",
+    }
+    valid_verdict = {
+        "claim_index": 0,
+        "source_id": "SRC-123456",
+        "verdict": "SUPPORTED",
+        "support_quote": "Les heures supplémentaires ouvrent droit à compensation.",
+    }
+    assert validate_entailment_verdicts(
+        {"verdicts": [valid_verdict]}, [None], [],
+    )["invalid"] == ["missing_or_invalid_claims"]
+    assert validate_entailment_verdicts(
+        {"verdicts": [valid_verdict]}, [valid_claim], [None, "bad-source"],
+    )["invalid"] == ["verdict_0:source_missing_or_ambiguous"]
+    assert validate_entailment_verdicts(
+        {"verdicts": [valid_verdict]}, [valid_claim], None,
+    )["invalid"] == ["verdict_0:source_missing_or_ambiguous"]
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_rejects_malformed_claim_and_source_collections(monkeypatch):
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    assert (await verify_claim_entailment(
+        question="Question", claims=[None], sources=[],
+    ))["invalid"] == ["missing_or_invalid_claims"]
+    assert (await verify_claim_entailment(
+        question="Question", claims=[{"source_id": "SRC-123"}], sources=None,
+    ))["invalid"] == ["missing_or_invalid_sources"]
+
+
+def test_source_relevance_verdict_parser_ignores_unhashable_and_malformed_values():
+    from app.ai_provider import validate_source_relevance_verdicts
+
+    result = validate_source_relevance_verdicts(
+        {"items": [
+            {"source_id": ["SRC-1"], "verdict": "DIRECT"},
+            {"source_id": "SRC-1", "verdict": ["DIRECT"]},
+            {"source_id": "SRC-1", "verdict": "DIRECT"},
+        ]},
+        [{"source_id": "SRC-1"}],
+    )
+    assert result == {"SRC-1": "DIRECT"}
+    assert validate_source_relevance_verdicts({"items": []}, None) == {}
+
+
+@pytest.mark.asyncio
+async def test_ai_payload_ignores_malformed_nested_source_metadata(monkeypatch):
+    import json
+    import httpx
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": json.dumps({"claims": []})}}],
+            "usage": {},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    await analyze_question(
+        question="Question sur un agent territorial",
+        employer="NATIONAL",
+        facts_date="2026-01-01",
+        sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678",
+            "requested_effective_date": "2026-01-01",
+            "excerpt": "Extrait officiel suffisamment long pour l'analyse documentaire.",
+            "raw_metadata": "not-json-object",
+            "legal_assurance": "malformed",
+        }],
+    )
+    source = json.loads(
+        captured["payload"]["messages"][1]["content"]
+    )["extraits_documentaires_valides"][0]
+    assert source["code_publication_jurisprudentielle"] is None
+    assert source["numero_ecli"] is None
+    assert source["niveau_autorite"] is None
+
+
+@pytest.mark.asyncio
+async def test_research_planner_sanitizes_malformed_optional_context(monkeypatch):
+    import httpx
+    from app.ai_provider import plan_legal_research
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(200, json={
+            "choices": [{
+                "message": {"content": json.dumps({
+                    "queries": ["droit au congé annuel fonction publique territoriale"],
+                    "legal_issues": ["conditions du congé annuel"],
+                    "extracted_facts": [],
+                })}
+            }],
+            "usage": {},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    result = await plan_legal_research(
+        question="Quels sont mes droits aux congés annuels ?",
+        employer="NATIONAL",
+        facts_period="malformed",
+        legal_context="malformed",
+        conversation_history=[None, "bad-history-record", {"role": "user", "content": "Question précédente"}],
+        previous_queries="not-a-list",
+        retrieved_evidence={"not": "a-list"},
+    )
+    assert result is not None
+    assert result.queries == ["droit au congé annuel fonction publique territoriale"]
+
+
+@pytest.mark.asyncio
+async def test_metadata_only_retrieval_cannot_suppress_required_research_queries(monkeypatch):
+    import httpx
+    from app.ai_provider import plan_legal_research, AIProviderUnavailable
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(200, json={
+            "choices": [{
+                "message": {"content": json.dumps({
+                    "queries": [],
+                    "legal_issues": ["conditions d'application"],
+                    "extracted_facts": [],
+                })}
+            }],
+            "usage": {},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    with pytest.raises(AIProviderUnavailable):
+        await plan_legal_research(
+            question="Quels sont mes droits ?",
+            employer="NATIONAL",
+            retrieved_evidence=[{
+                "source_id": "SEARCH-HIT-001",
+                "title": "Résultat de recherche",
+                "content_kind": "METADATA",
+            }],
+        )
+
+
+def test_entailment_verdict_validation_rejects_unhashable_claim_source_ids():
+    from app.ai_provider import validate_entailment_verdicts
+
+    result = validate_entailment_verdicts(
+        {"verdicts": [{
+            "claim_index": 0,
+            "source_id": ["SRC-123"],
+            "verdict": "SUPPORTED",
+            "support_quote": "Une citation suffisamment longue pour le contrôle documentaire.",
+        }]},
+        [{"source_id": ["SRC-123"], "text": "Une citation suffisamment longue pour le contrôle documentaire."}],
+        [{"source_id": "SRC-123", "excerpt": "Une citation suffisamment longue pour le contrôle documentaire."}],
+    )
+    assert result["valid"] is False
+    assert result["invalid"] == ["verdict_0:invalid_claim_source_id"]
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_rejects_unhashable_claim_source_id_before_http(monkeypatch):
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-token")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://gateway.example/v1")
+    result = await verify_claim_entailment(
+        question="Question",
+        claims=[{"source_id": ["SRC-123"], "text": "Une affirmation juridique suffisamment longue."}],
+        sources=[{"source_id": "SRC-123", "excerpt": "Une citation suffisamment longue pour le contrôle documentaire."}],
+        facts_period="malformed",
+    )
+    assert result["valid"] is False
+    assert result["invalid"] == ["claim_0:invalid_source_id"]
+
+
+@pytest.mark.parametrize("versant", ["FPT", "FPE", "FPH"])
+def test_research_planner_does_not_infer_versant_from_profession_or_workplace(versant):
+    import inspect
+    from app.ai_provider import plan_legal_research
+
+    source = inspect.getsource(plan_legal_research)
+    assert "N'infère jamais le versant juridique à partir du seul métier ou lieu de travail" in source
+    assert "Distingue le lieu d'exercice de l'employeur juridique" in source
+    assert "clarification_needed" in source
+    assert "infirmière à l'hôpital" in source
+    assert "professeur dans un lycée" in source
+
+
+
+@pytest.mark.asyncio
+async def test_research_planner_records_provider_tokens_and_latency(monkeypatch):
+    import httpx
+    from app.ai_provider import plan_legal_research
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "configured-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(200, json={
+            "model": "actual-model",
+            "choices": [{
+                "message": {"content": json.dumps({
+                    "queries": ["congé annuel fonction publique territoriale"],
+                    "legal_issues": ["conditions du congé annuel"],
+                    "extracted_facts": [],
+                })}
+            }],
+            "usage": {"prompt_tokens": 120, "completion_tokens": 35, "total_tokens": 155},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    events = []
+    result = await plan_legal_research(
+        question="Quels sont mes droits aux congés annuels ?",
+        employer="NATIONAL",
+        usage_events=events,
+    )
+
+    assert result is not None
+    assert len(events) == 1
+    event = events[0]
+    assert event["operation"] == "research_planning"
+    assert event["provider"] == "openai_compatible"
+    assert event["model"] == "actual-model"
+    assert event["prompt_tokens"] == 120
+    assert event["completion_tokens"] == 35
+    assert event["total_tokens"] == 155
+    assert event["latency_ms"] >= 0
+    assert event["outcome"] == "COMPLETED"
+
+
+@pytest.mark.asyncio
+async def test_research_planner_records_provider_failure_with_unknown_usage(monkeypatch):
+    import httpx
+    from app.ai_provider import plan_legal_research, AIProviderUnavailable
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "configured-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(503, json={"error": "unavailable"})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    events = []
+    with pytest.raises(AIProviderUnavailable):
+        await plan_legal_research(
+            question="Quels sont mes droits ?",
+            employer="NATIONAL",
+            usage_events=events,
+        )
+
+    assert len(events) == 1
+    event = events[0]
+    assert event["operation"] == "research_planning"
+    assert event["provider"] == "openai_compatible"
+    assert event["model"] == "configured-model"
+    assert event["prompt_tokens"] is None
+    assert event["completion_tokens"] is None
+    assert event["total_tokens"] is None
+    assert event["latency_ms"] >= 0
+    assert event["outcome"] == "PROVIDER_ERROR"
+
+@pytest.mark.asyncio
+async def test_ai_analysis_payload_prefers_expanded_analysis_excerpt(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import analyze_question
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"claims": []}'}}], "usage": {}},
+        )
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    display_excerpt = "Extrait court destiné à l'affichage."
+    analysis_excerpt = (
+        display_excerpt + " " +
+        "Clause complémentaire, condition et exception juridique conservées dans le dossier d'analyse."
+    )
+
+    await analyze_question(
+        question="Question de test sur une disposition",
+        employer="NATIONAL",
+        facts_date="2026-11-24",
+        sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678",
+            "requested_effective_date": "2026-11-24",
+            "excerpt": display_excerpt,
+            "analysis_excerpt": analysis_excerpt,
+        }],
+    )
+
+    payload = json.loads(captured["payload"]["messages"][1]["content"])
+    source = payload["extraits_documentaires_valides"][0]
+    assert source["extrait"] == analysis_excerpt
+
+@pytest.mark.asyncio
+async def test_ai_answer_payload_keeps_prior_assistant_context_separate_from_legal_evidence(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import analyze_question
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"claims": []}'}}], "usage": {}},
+        )
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    previous_user = "Mon employeur refuse mes heures supplémentaires."
+    previous_assistant = "Le deuxième point concerne les conditions de récupération."
+    await analyze_question(
+        question="Peux-tu détailler le deuxième point ?\n" + previous_user,
+        employer="NATIONAL",
+        facts_date="2026-11-24",
+        conversation_history=[
+            {"role": "user", "content": previous_user},
+            {"role": "assistant", "content": previous_assistant},
+        ],
+        sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678",
+            "requested_effective_date": "2026-11-24",
+            "excerpt": "Extrait officiel suffisamment long pour l'analyse documentaire.",
+        }],
+    )
+
+    payload = json.loads(captured["payload"]["messages"][1]["content"])
+    assert payload["contexte_questions_utilisateur"] == [{"content": previous_user}]
+    assert payload["contexte_reponse_precedente_non_source"] == [{"content": previous_assistant}]
+    assert previous_assistant not in json.dumps(payload["extraits_documentaires_valides"], ensure_ascii=False)
+
+
+@pytest.mark.asyncio
+async def test_research_planner_payload_keeps_prior_assistant_context_non_evidentiary(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import plan_legal_research
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{
+            "message": {"content": json.dumps({
+                "queries": ["heures supplémentaires fonction publique"],
+                "legal_issues": ["Conditions de récupération des heures supplémentaires"],
+                "extracted_facts": [],
+                "clarification_needed": None,
+            })}
+        }], "usage": {}})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    previous_assistant = "Le deuxième point concerne les conditions de récupération."
+    await plan_legal_research(
+        question="Peux-tu détailler le deuxième point ?\nMon employeur refuse mes heures supplémentaires.",
+        employer="NATIONAL",
+        conversation_history=[
+            {"role": "user", "content": "Mon employeur refuse mes heures supplémentaires."},
+            {"role": "assistant", "content": previous_assistant},
+        ],
+    )
+
+    payload = json.loads(captured["payload"]["messages"][1]["content"])
+    assert payload["previous_assistant_answer_context_not_legal_evidence"] == [
+        {"content": previous_assistant}
+    ]
+
+@pytest.mark.asyncio
+async def test_ai_analysis_payload_uses_full_text_beyond_display_excerpt(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import analyze_question
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    captured = {}
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 1000)
+    late_exception = (
+        "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
+        "après consultation préalable de l'instance compétente."
+    )
+    full_text = display_excerpt + late_exception
+
+    def handler(request):
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": '{"claims": []}'}}],
+            "usage": {},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    await analyze_question(
+        question="Quelles sont les conditions et dérogations applicables ?",
+        employer="NATIONAL",
+        facts_date="2026-11-24",
+        sources=[{
+            "source_type": "LEGIFRANCE_API",
+            "source_id": "LEGIARTI000012345678",
+            "excerpt": display_excerpt,
+            "full_text": full_text,
+            "requested_effective_date": "2026-11-24",
+        }],
+    )
+    payload = json.loads(captured["payload"]["messages"][1]["content"])
+    analysis_evidence = payload["extraits_documentaires_valides"][0]["extrait"]
+    assert len(analysis_evidence) <= 12000
+    assert "Passage intermédiaire non transmis" in analysis_evidence
+    assert late_exception in analysis_evidence
+
+
+@pytest.mark.asyncio
+async def test_entailment_verifier_receives_full_text_beyond_display_excerpt(monkeypatch):
+    import json
+    import httpx
+    from app.ai_provider import verify_claim_entailment
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 1000)
+    late_exception = (
+        "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
+        "après consultation préalable de l'instance compétente."
+    )
+    full_text = display_excerpt + late_exception
+    captured = {}
+
+    def handler(request):
+        payload = json.loads(request.content)
+        captured["payload"] = payload
+        return httpx.Response(200, json={"choices": [{
+            "message": {"content": json.dumps({"verdicts": [{
+                "claim_index": 0,
+                "source_id": "SRC-LATE-EXCEPTION",
+                "verdict": "SUPPORTED",
+                "support_quote": late_exception,
+            }]})}
+        }], "usage": {}})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    result = await verify_claim_entailment(
+        question="La dérogation est-elle possible ?",
+        claims=[{
+            "source_id": "SRC-LATE-EXCEPTION",
+            "text": late_exception,
+        }],
+        sources=[{
+            "source_id": "SRC-LATE-EXCEPTION",
+            "source_type": "LEGIFRANCE_API",
+            "excerpt": display_excerpt,
+            "full_text": full_text,
+        }],
+    )
+    evidence = json.loads(captured["payload"]["messages"][1]["content"])["items_to_verify"][0]
+    assert len(evidence["official_text"]) <= 12000
+    assert "Passage intermédiaire non transmis" in evidence["official_text"]
+    assert late_exception in evidence["official_text"]
+    assert result["valid"] is True
+
+
+def test_claim_validation_uses_full_text_beyond_display_excerpt():
+    from app.legal_assurance import validate_claim_evidence
+
+    display_excerpt = "Début du texte officiel. " + ("Disposition générale. " * 1000)
+    late_exception = (
+        "Toutefois, par dérogation, l'autorité territoriale peut accorder une mesure "
+        "après consultation préalable de l'instance compétente."
+    )
+    source = _claim_source(excerpt=display_excerpt, full_text=display_excerpt + late_exception)
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": late_exception,
+            "source_id": source["source_id"],
+            "quote": late_exception,
+        }]
+    }, [source])
+    assert result["valid"] is True
+
+def test_bounded_legal_evidence_keeps_retrieved_passage_and_document_ending():
+    from app.evidence_text import build_legal_evidence_text
+
+    opening = "OUVERTURE_DU_TEXTE " + ("Disposition initiale. " * 250)
+    selected = "PASSAGE_CENTRAL_PERTINENT " + ("Règle et conditions détaillées. " * 80)
+    ending = "EXCEPTION_FINALE_IMPORTANTE : sauf dérogation expresse prévue au dernier alinéa."
+    full_text = opening + ("Disposition intermédiaire. " * 900) + selected + ("Autres dispositions. " * 500) + ending
+
+    evidence = build_legal_evidence_text(full_text, selected)
+
+    assert len(evidence) <= 12000
+    assert "OUVERTURE_DU_TEXTE" in evidence
+    assert "PASSAGE_CENTRAL_PERTINENT" in evidence
+    assert ending in evidence
+    assert "Autres passages du texte officiel" in evidence
+
+@pytest.mark.asyncio
+async def test_provider_completion_retries_one_transient_server_error(monkeypatch):
+    import httpx
+    from app.ai_provider import _post_chat_completion
+
+    responses = [
+        httpx.Response(503, request=httpx.Request("POST", "https://provider.test/chat/completions")),
+        httpx.Response(200, json={"choices": []}, request=httpx.Request("POST", "https://provider.test/chat/completions")),
+    ]
+
+    class FakeClient:
+        calls = 0
+
+        async def post(self, url, *, headers, json):
+            self.calls += 1
+            return responses.pop(0)
+
+    async def no_sleep(_):
+        return None
+
+    monkeypatch.setattr("app.ai_provider.asyncio.sleep", no_sleep)
+    client = FakeClient()
+    response = await _post_chat_completion(
+        client, "https://provider.test/chat/completions", headers={}, payload={}
+    )
+
+    assert response.status_code == 200
+    assert client.calls == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status_code", [401, 403, 429, 400])
+async def test_provider_completion_does_not_retry_auth_quota_or_client_errors(status_code):
+    import httpx
+    from app.ai_provider import _post_chat_completion
+
+    class FakeClient:
+        calls = 0
+
+        async def post(self, url, *, headers, json):
+            self.calls += 1
+            return httpx.Response(
+                status_code,
+                request=httpx.Request("POST", "https://provider.test/chat/completions"),
+            )
+
+    client = FakeClient()
+    with pytest.raises(httpx.HTTPStatusError):
+        await _post_chat_completion(
+            client, "https://provider.test/chat/completions", headers={}, payload={}
+        )
+
+    assert client.calls == 1

@@ -144,16 +144,110 @@ def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) ->
                 and has_public_employment and has_hr_subject)
 
 
-def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> list[dict[str, Any]]:
-    """Import only dated, full-text decisions whose content is relevant to FPT.
 
+def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str, Any] | None:
+    """Identify a decision tied to HR law in exactly one public-service branch.
+
+    FPT keeps its stricter local-employer relevance rule. FPE and FPH require
+    explicit branch evidence plus both an employment subject and an HR topic.
+    Explicitly common rules may be retained only when the text says they cover
+    the three public-service branches.
+    """
+    import unicodedata
+
+    from .fpt_scope import classify_public_service_scope
+
+    corpus = unicodedata.normalize("NFKD", f"{title} {body}".casefold())
+    corpus = "".join(char for char in corpus if not unicodedata.combining(char))
+    corpus = re.sub(r"[^a-z0-9]+", " ", corpus)
+    corpus = re.sub(r"\s+", " ", corpus).strip()
+    public_employment = (
+        "agent public", "agents publics", "fonctionnaire", "fonctionnaires",
+        "agent de l etat", "agents de l etat", "agent contractuel de l etat",
+        "agent hospitalier", "agents hospitaliers", "personnel hospitalier",
+        "personnels hospitaliers", "agent contractuel hospitalier",
+        "agent territorial", "agents territoriaux", "fonctionnaire territorial",
+        "fonctionnaires territoriaux", "agent contractuel territorial",
+        "agents des trois versants", "agents des trois fonctions publiques",
+    )
+    hr_subjects = (
+        "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
+        "agissement sexiste", "agissements sexistes", "sanction disciplinaire",
+        "conseil de discipline", "temps de travail", "duree du travail",
+        "conge de maladie", "conge maladie", "accident de service",
+        "maladie professionnelle", "droit syndical", "droits syndicaux",
+        "decharge d activite de service", "autorisation speciale d absence",
+        "traitement indiciaire", "regime indemnitaire", "remuneration",
+        "detachement", "disponibilite", "retraite d office",
+        "carriere d un agent", "service des ressources humaines",
+        "direction des ressources humaines",
+    )
+    has_public_employment = any(marker in corpus for marker in public_employment)
+    has_hr_subject = any(marker in corpus for marker in hr_subjects)
+
+    source = {"title": title, "text": body, "document_kind": "ADMIN_CASELAW"}
+    fpt_scope = classify_public_service_scope(source, target_versant="FPT")
+    # A local employer and an HR subject can establish a territorial link only
+    # when the same decision does not contain competing branch-specific markers.
+    # Otherwise the local-employer fallback below would incorrectly override an
+    # unresolved FPT/FPE or FPT/FPH conflict during corpus ingestion.
+    if fpt_scope.get("scope") in {
+        "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+        "OUT_OF_SCOPE_EUROPEAN_LAW",
+    }:
+        return None
+    if fpt_scope.get("scope") == "OUT_OF_SCOPE_OR_UNCONFIRMED":
+        scope_evidence = [str(item).casefold() for item in fpt_scope.get("evidence", [])]
+        fpt_markers = ("fonction publique territoriale", "agent territorial", "agents territoriaux",
+                       "fonctionnaire territorial", "fonctionnaires territoriaux")
+        other_branch_markers = (
+            "fonction publique de l etat", "fonctionnaire de l etat",
+            "fonctionnaires de l etat", "agent de l etat", "agents de l etat",
+            "agent contractuel de l etat", "agents contractuels de l etat",
+            "administration centrale", "administrations centrales",
+            "service deconcentre de l etat", "services deconcentres de l etat",
+            "fonction publique hospitaliere", "etablissement public de sante",
+            "etablissements publics de sante", "centre hospitalier",
+            "centres hospitaliers", "agent hospitalier", "agents hospitaliers",
+            "agent contractuel hospitalier", "agents contractuels hospitaliers",
+        )
+        has_fpt_evidence = any(any(marker in item for marker in fpt_markers) for item in scope_evidence)
+        has_other_branch_evidence = any(
+            any(marker in item for marker in other_branch_markers) for item in scope_evidence
+        )
+        if has_fpt_evidence and has_other_branch_evidence:
+            return None
+    if _is_fpt_employment_case_law(title, body, fpt_scope):
+        if fpt_scope.get("scope") == "OUT_OF_SCOPE_OR_UNCONFIRMED":
+            return {
+                "scope": "FPT",
+                "evidence": ["Décision locale portant sur un sujet de gestion des agents publics"],
+                "analysis_eligible": True,
+                "claim_eligible": True,
+            }
+        return fpt_scope
+
+    if not (has_public_employment and has_hr_subject):
+        return None
+
+    for branch in ("FPE", "FPH"):
+        scope = classify_public_service_scope(source, target_versant=branch)
+        if scope.get("analysis_eligible") is True and scope.get("scope") in {
+            branch, "COMMON_PUBLIC_SERVICE",
+        }:
+            return scope
+    return None
+
+def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> list[dict[str, Any]]:
+    """Import dated, full-text administrative decisions relevant to public-service HR law.
+
+    Branch-specific decisions require explicit FPT, FPE or FPH scope evidence;
+    explicitly common rules may be retained when their three-branch scope is stated.
     The official portal publishes monthly ZIP archives, not an API. XML files are
     parsed in-place (never extracted), with strict archive and XML resource limits.
     """
     import hashlib
     import zipfile
-
-    from .fpt_scope import classify_public_service_scope
 
     if not zip_bytes or len(zip_bytes) > 100 * 1024 * 1024:
         raise ValueError("L'archive Open Data est vide ou dépasse 100 Mo.")
@@ -213,17 +307,9 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                 continue
 
             title = f"Décision du {court_name} n° {case_number} du {decision_date.isoformat()}"
-            scope = classify_public_service_scope({"title": title, "text": body, "document_kind": "ADMIN_CASELAW"})
-            if not _is_fpt_employment_case_law(title, body, scope):
+            scope = _public_service_employment_case_law_scope(title, body)
+            if scope is None:
                 continue
-            # A local-employer HR decision can be relevant even when the broad
-            # corpus classifier cannot confidently label it from generic terms.
-            if scope.get("scope") == "OUT_OF_SCOPE_OR_UNCONFIRMED":
-                scope = {
-                    "scope": "FPT",
-                    "evidence": ["Décision locale portant sur un sujet de gestion des agents publics"],
-                    "analysis_eligible": True,
-                }
 
             ecli = value("Numero_ECLI", "NumeroECLI", max_length=160)
             identification = value("Identification", max_length=250) or info.filename
@@ -239,7 +325,7 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             source_digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
             body_digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
             if len(records) >= 1000:
-                raise ValueError("L'archive contient plus de 1 000 décisions FPT pertinentes ; découpez l'import en archives mensuelles plus petites.")
+                raise ValueError("L'archive contient plus de 1 000 décisions pertinentes ; découpez l'import en archives mensuelles plus petites.")
             records.append({
                 "source_type": "OTHER_OFFICIAL",
                 "source_id": "OPEN_DATA_JA_" + source_digest,

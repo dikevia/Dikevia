@@ -467,9 +467,15 @@ def test_merged_research_queries_respect_the_five_query_budget():
         max_queries=5,
     )
     assert len(merged) == 5
-    assert merged[:3] == ["axe IA 1", "axe IA 2", "axe IA 3"]
-    assert "recherche de secours 2" in merged
-    assert "recherche de secours 3" in merged
+    # Three independently detected legal axes outrank the third generic AI
+    # query: retain two AI queries plus all three focused fallback searches.
+    assert merged == [
+        "axe IA 1",
+        "axe IA 2",
+        "recherche de secours 2",
+        "recherche de secours 3",
+        "recherche de secours 4",
+    ]
 
 def test_therapeutic_part_time_after_citis_has_a_dedicated_cgfp_and_fpt_decree_axis():
     question = (
@@ -568,3 +574,138 @@ def test_agent_assaulted_by_service_user_retrieves_protection_and_workplace_safe
     assert any("santé sécurité travail" in axis for axis in axes)
     assert any("rapport circonstancié" in axis for axis in axes)
     assert len(axes) >= 2
+
+
+def test_required_research_axes_are_deduplicated_and_bounded():
+    from app.legal_search_plan import select_required_research_axes
+
+    axes = select_required_research_axes([
+        "  axe juridique A   ",
+        "axe juridique A",
+        "axe juridique B",
+        "",
+        None,
+    ])
+    assert axes == ["axe juridique A", "axe juridique B"]
+
+
+def test_required_research_axes_never_depend_on_model_generated_issue_labels():
+    from app.legal_search_plan import select_required_research_axes
+
+    # The orchestrator supplies only deterministic axes derived from the
+    # user's wording; LLM planning labels are intentionally not accepted here.
+    deterministic_axes = build_official_research_axes(
+        "Je suis titulaire. Je suis agressé par un usager et mon chef refuse le rapport."
+    )
+    selected = select_required_research_axes(deterministic_axes)
+    assert selected == deterministic_axes
+    assert all(axis in deterministic_axes for axis in selected)
+
+
+def test_orchestrator_does_not_promote_llm_refinement_labels_to_required_axes():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "orchestrator.py").read_text()
+    assert "refinement.legal_issues" not in source
+    assert "research_axes = select_required_research_axes(fallback_axes)" in source
+
+
+def test_compound_query_reserves_each_detected_fallback_axis_within_budget():
+    fallback_queries = [
+        "question large initiale",
+        "axe secours heures supplementaires",
+        "axe secours accident de service",
+        "axe secours droits syndicaux",
+    ]
+    fallback_axes = [
+        "axe obligatoire heures supplementaires",
+        "axe obligatoire accident de service",
+        "axe obligatoire droits syndicaux",
+    ]
+    ai_queries = [
+        "plan IA sujet A",
+        "plan IA sujet B",
+        "plan IA sujet C",
+        "plan IA sujet D",
+        "plan IA sujet E",
+    ]
+
+    merged = merge_ai_and_fallback_research_queries(
+        ai_queries, fallback_queries, fallback_axes, max_queries=5,
+    )
+
+    assert len(merged) == 5
+    assert merged[:2] == ai_queries[:2]
+    assert fallback_queries[1:] == merged[2:]
+    assert all(axis_query in merged for axis_query in fallback_queries[1:])
+
+
+
+def test_ai_plan_always_keeps_one_deterministic_fallback_when_only_broad_query_exists():
+    ai_queries = [
+        "plan IA priorité 1",
+        "plan IA priorité 2",
+        "plan IA priorité 3",
+    ]
+    fallback_queries = ["question utilisateur enrichie"]
+    merged = merge_ai_and_fallback_research_queries(
+        ai_queries, fallback_queries, [], max_queries=3,
+    )
+    assert merged == [
+        "plan IA priorité 1",
+        "plan IA priorité 2",
+        "question utilisateur enrichie",
+    ]
+
+
+def test_deterministic_fallback_is_used_when_ai_plan_is_empty():
+    fallback_queries = [
+        "question utilisateur enrichie",
+        "axe secours heures supplémentaires",
+    ]
+    merged = merge_ai_and_fallback_research_queries(
+        [], fallback_queries, ["axe juridique heures supplémentaires"], max_queries=3,
+    )
+    assert merged == fallback_queries
+
+
+
+def test_single_query_budget_prefers_deterministic_official_retrieval():
+    merged = merge_ai_and_fallback_research_queries(
+        ["plan IA non vérifié"],
+        ["question utilisateur avec expansion juridique officielle"],
+        [],
+        max_queries=1,
+    )
+    assert merged == ["question utilisateur avec expansion juridique officielle"]
+
+
+def test_code_research_queries_never_exceed_the_configured_budget():
+    from app.orchestrator import _build_code_research_queries
+
+    result = _build_code_research_queries(
+        ["axe 1", "axe 2", "axe 3", "axe 4", "axe 5", "axe 6"],
+        ["article L1", "article L2"],
+        max_queries=5,
+    )
+    assert result == ["axe 1", "axe 2", "axe 3", "axe 4", "axe 5"]
+    assert len(result) == 5
+
+
+def test_code_research_queries_use_only_remaining_budget_for_exact_articles():
+    from app.orchestrator import _build_code_research_queries
+
+    result = _build_code_research_queries(
+        ["axe 1", "axe 2"],
+        ["article L1", "article L1", "article L2"],
+        max_queries=3,
+    )
+    assert result == ["axe 1", "axe 2", "article L1"]
+
+
+def test_code_research_query_budget_zero_returns_no_queries():
+    from app.orchestrator import _build_code_research_queries
+
+    assert _build_code_research_queries(
+        ["axe 1"], ["article L1"], max_queries=0,
+    ) == []

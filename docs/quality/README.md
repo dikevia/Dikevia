@@ -18,6 +18,11 @@ La cartographie signale expressément les points nécessitant des vérifications
 
 Le script `scripts/fpt_benchmark.py prepare-review` reporte ces références candidates et les avertissements de portée dans la grille de revue humaine. Tous les cas conservent le statut « validation juridique humaine requise ». La présence d'une source candidate ne signifie ni que l'article exact a été vérifié pour la question ni que la réponse juridique est validée.
 
+
+## Pilote de recette en 15 questions
+
+Le manifeste `fpt_pilot_15_v1.json` sélectionne 15 cas répartis sur les dix familles du jeu de 100 questions. Il fixe un protocole reproductible, avec une seule session authentifiée et un contexte neutre identique. Il ne contient pas de vérité juridique certifiée : les réponses de référence restent à établir ou valider par un référent juridique FPT. Le statut du pilote reste `NOT_EVALUATED` tant que les réponses réelles et leur revue ne sont pas consignées.
+
 ## Régressions conversationnelles
 
 Le fichier `conversation_regression_v1.json` ajoute 20 scénarios multi-tours couvrant :
@@ -71,3 +76,16 @@ Les seuils du JSON sont des objectifs de recette, pas des performances acquises.
 ## Familles couvertes
 
 10 familles de 10 questions : rémunération/temps de travail, congés/absences, maladie/protection sociale, carrière/rémunération, discipline/droits de la défense, protection fonctionnelle, droits syndicaux, CST/formation spécialisée, télétravail/santé/sécurité, mobilité/fin de fonctions.
+
+
+### Exécuter le pilote de 15 questions
+
+Le script hors ligne accepte directement le manifeste pilote, sans modifier le jeu complet de 100 questions :
+
+```bash
+python scripts/fpt_benchmark.py validate --dataset docs/quality/fpt_pilot_15_v1.json
+python scripts/fpt_benchmark.py prepare-review --dataset docs/quality/fpt_pilot_15_v1.json --responses pilot_responses.json --out pilot_review.json
+python scripts/fpt_benchmark.py score --dataset docs/quality/fpt_pilot_15_v1.json --responses pilot_responses.json --reviews pilot_review.json --out pilot_score.json
+```
+
+Le fichier de réponses doit contenir exactement une réponse par identifiant du manifeste. La grille générée reprend les critères et avertissements du cas. Le score du pilote porte uniquement sur ces 15 cas et ne remplace pas le benchmark de 100 questions. Le statut de validation juridique humaine reste obligatoire ; les seuils du rapport ne constituent pas une certification juridique. Le calculateur rejette les notes booléennes et les évaluations mal formées ; une grille incomplète conserve le statut `INCOMPLET`.

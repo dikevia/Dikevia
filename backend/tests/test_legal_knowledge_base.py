@@ -67,6 +67,43 @@ def test_guidance_sources_are_context_only_and_never_ground_legal_claims():
     assert result["claims"] == []
 
 
+def test_institutional_guidance_preserves_union_identity_and_non_normative_label():
+    union = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "ADMIN_GUIDANCE",
+        "publisher": "Fédération CFDT Interco",
+        "raw_metadata": {
+            "source_id": "cfdt-interco",
+            "authority_level": "TRADE_UNION_POSITION",
+        },
+    })
+    assert union["publisher_type"] == "TRADE_UNION"
+    assert union["authority_level"] == "PROFESSIONAL_GUIDANCE"
+    assert union["source_family_label"] == "Doctrine syndicale — non normative"
+    assert union["normative"] is False
+    assert union["claim_eligible"] is False
+    assert union["usable_for_conclusion"] is False
+    assert union["reference_role"] == "NON_NORMATIVE_CONTEXT_ONLY"
+
+
+def test_dgafp_guidance_remains_official_but_non_normative():
+    source = classify_legal_source({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "document_kind": "ADMIN_GUIDANCE",
+        "publisher": "Direction générale de l'administration et de la fonction publique",
+        "raw_metadata": {
+            "source_id": "dgafp",
+            "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
+        },
+    })
+    assert source["publisher_type"] == "PUBLIC_ADMINISTRATION"
+    assert source["authority_level"] == "OFFICIAL_ADMIN_GUIDANCE"
+    assert source["normative"] is False
+    assert source["claim_eligible"] is False
+    assert source["usable_for_conclusion"] is False
+    assert source["reference_role"] == "NON_NORMATIVE_CONTEXT_ONLY"
+
+
 def test_imported_cgfp_snapshot_can_support_bounded_general_claim_with_provenance():
     source = {
         "source_type": "CGFP_SNAPSHOT", "source_id": "CGFP:article:L1234-1",
@@ -76,6 +113,7 @@ def test_imported_cgfp_snapshot_can_support_bounded_general_claim_with_provenanc
         "content_kind": "FULL_TEXT", "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
         "general_info_eligible": True, "citation_integrity": {"valid": True},
         "reference_role": "CGFP_SNAPSHOT_FALLBACK_EVIDENCE",
+        "public_service_scope": "FPT",
         "snapshot_modified_at": "2026-10-31",
         "snapshot_verification_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
         "source_status": "IMPORTED_UNVERIFIED",
@@ -111,6 +149,9 @@ def test_only_allowlisted_public_legal_and_institutional_source_urls_are_kept():
     assert safe_official_url("https://www.cfdt-interco31.fr/")
     assert safe_official_url("https://cfdtinterco35.fr/")
     assert safe_official_url("https://www.cgtservicespublics.fr/")
+    assert safe_official_url("https://interco.cfdt.fr/")
+    assert safe_official_url("https://www.cgtetat.fr/")
+    assert safe_official_url("https://sante.cgt.fr/")
     assert safe_official_url("https://www.fo-fonctionnaires.fr/")
     assert safe_official_url("https://www.cftc.fr/")
     assert safe_official_url("https://ledecodeur.cftc.fr/")
@@ -337,8 +378,9 @@ async def test_search_prioritizes_original_terms_over_fpt_expansions():
     assert "c.search_vector @@ st.original_query OR c.search_vector @@ st.expansion_query" in conn.query
     assert conn.args[0] == original
     assert "IHTS" in conn.args[1]
-    assert len(conn.args) == 4
+    assert len(conn.args) == 5
     assert conn.args[3] is None
+    assert conn.args[4] == date(2026, 1, 1)
 
 
 def test_incomplete_dates_allow_general_information_but_not_verified_conclusion():
@@ -420,9 +462,16 @@ def test_ask_request_validates_optional_client_embedding_shape_and_values():
     from app.schemas import AskRequest
 
     base = {"employer": "NATIONAL", "question": "Question juridique suffisamment longue"}
-    valid = AskRequest(**base, query_embedding=[0.0] * 383 + [1.0])
+    model = "Xenova/paraphrase-multilingual-MiniLM-L12-v2"
+    valid = AskRequest(**base, query_embedding_model=model, query_embedding=[0.0] * 383 + [1.0])
     assert len(valid.query_embedding) == 384
     assert AskRequest(**base).query_embedding is None
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding=[0.0] * 383 + [1.0])
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding_model="unknown/model", query_embedding=[0.0] * 383 + [1.0])
+    with pytest.raises(ValueError):
+        AskRequest(**base, query_embedding_model=model)
     with pytest.raises(ValueError):
         AskRequest(**base, query_embedding=[0.0] * 383)
     with pytest.raises(ValueError):
@@ -509,22 +558,22 @@ def test_institutional_guidance_source_type_cannot_be_promoted_by_document_kind(
 
 
 @pytest.mark.parametrize(
-    ("document_kind", "expected_authority"),
+    ("document_kind", "expected_authority", "expected_normative"),
     [
-        ("CODE", "PRIMARY_LEGAL"),
-        ("LAW", "PRIMARY_LEGAL"),
-        ("DECREE", "PRIMARY_LEGAL"),
-        ("DECRET", "PRIMARY_LEGAL"),
-        ("ORDER", "PRIMARY_LEGAL"),
-        ("ARRETE", "PRIMARY_LEGAL"),
-        ("ADMIN_CASELAW", "JURISPRUDENCE"),
-        ("CIRCULAR", "OFFICIAL_INTERPRETIVE"),
-        ("LOCAL_DELIBERATION", "LOCAL_NORMATIVE"),
-        ("LOCAL_REGULATION", "LOCAL_NORMATIVE"),
+        ("CODE", "PRIMARY_LEGAL", True),
+        ("LAW", "PRIMARY_LEGAL", True),
+        ("DECREE", "PRIMARY_LEGAL", True),
+        ("DECRET", "PRIMARY_LEGAL", True),
+        ("ORDER", "PRIMARY_LEGAL", True),
+        ("ARRETE", "PRIMARY_LEGAL", True),
+        ("ADMIN_CASELAW", "JURISPRUDENCE", False),
+        ("CIRCULAR", "OFFICIAL_INTERPRETIVE", False),
+        ("LOCAL_DELIBERATION", "LOCAL_NORMATIVE", True),
+        ("LOCAL_REGULATION", "LOCAL_NORMATIVE", True),
     ],
 )
 def test_known_legal_document_kinds_receive_correct_authority_level(
-    document_kind, expected_authority,
+    document_kind, expected_authority, expected_normative,
 ):
     result = classify_legal_source({
         "source_type": "LEGIFRANCE_API" if document_kind in {"CODE", "LAW", "DECREE", "DECRET", "ORDER", "ARRETE"} else "OTHER",
@@ -534,7 +583,7 @@ def test_known_legal_document_kinds_receive_correct_authority_level(
     })
     assert result["authority_level"] == expected_authority
     assert result["claim_eligible"] is True
-    assert result["normative"] is True
+    assert result["normative"] is expected_normative
 
 
 def test_unknown_document_kind_remains_unclassified_and_not_claim_eligible():
@@ -646,3 +695,102 @@ def test_fpt_scope_guard_does_not_accept_fph_only_source_as_fpt_evidence():
     assert result["scope"] == "FPH"
     assert result["analysis_eligible"] is False
     assert result["claim_eligible"] is False
+
+
+@pytest.mark.parametrize(
+    ("document_kind", "expected_family", "minimum_priority"),
+    [
+        ("DECRET", "DECREE", 65),
+        ("ARRETE", "ORDER", 60),
+        ("LOI", "LAW", 80),
+    ],
+)
+def test_french_document_kind_aliases_keep_canonical_source_rank(
+    document_kind, expected_family, minimum_priority,
+):
+    result = classify_legal_source({
+        "source_type": "LEGIFRANCE_API",
+        "document_kind": document_kind,
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["source_family"] == expected_family
+    assert result["review_priority"] >= minimum_priority
+    assert result["normative"] is True
+
+
+@pytest.mark.parametrize(
+    ("source_type", "document_kind", "expected_authority", "expected_normative"),
+    [
+        ("LEGIFRANCE_CETAT_FULL_TEXT", "ADMIN_CASELAW", "JURISPRUDENCE", False),
+        ("DILA_CIRCULAIRES", "CIRCULAR", "OFFICIAL_INTERPRETIVE", False),
+        ("LOCAL_COLLECTIVITY_DOCUMENT", "LOCAL_DOCUMENT", "LOCAL_NORMATIVE", True),
+        ("LEGIFRANCE_API", "DECRET", "PRIMARY_LEGAL", True),
+    ],
+)
+def test_trusted_source_provenance_overrides_contradictory_authority_metadata(
+    source_type, document_kind, expected_authority, expected_normative,
+):
+    source = {
+        "source_type": source_type,
+        "document_kind": document_kind,
+        "authority_level": "PRIMARY_LEGAL" if source_type != "LEGIFRANCE_API" else "PROFESSIONAL_GUIDANCE",
+        "raw_metadata": {"authority_level": "PRIMARY_LEGAL"},
+        "local_document_type": "REGLEMENT_TEMPS_TRAVAIL",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    }
+    result = classify_legal_source(source)
+    assert result["authority_level"] == expected_authority
+    assert result["normative"] is expected_normative
+    if source_type == "LEGIFRANCE_CETAT_FULL_TEXT":
+        assert result["claim_eligible"] is True
+        assert result["usable_for_interpretation"] is True
+
+
+def test_unrecognized_document_cannot_be_promoted_by_raw_authority_metadata():
+    result = classify_legal_source({
+        "source_type": "UNRECOGNIZED_CONNECTOR",
+        "document_kind": "UNKNOWN_DOCUMENT_KIND",
+        "authority_level": "PRIMARY_LEGAL",
+        "raw_metadata": {"authority_level": "PRIMARY_LEGAL"},
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == "UNCLASSIFIED"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
+
+def test_admin_case_law_ingestion_rejects_competing_fpt_and_fpe_scope_even_with_local_employer():
+    from app.legal_ingestion import _public_service_employment_case_law_scope
+
+    title = "Décision relative au temps de travail"
+    body = (
+        "Un agent territorial de la commune et un agent de l'État contestent "
+        "l'organisation du temps de travail. Le litige concerne leurs conditions "
+        "de travail et la rémunération des agents publics."
+    )
+    assert _public_service_employment_case_law_scope(title, body) is None
+
+
+@pytest.mark.parametrize(
+    ("title", "body", "expected_scope"),
+    [
+        (
+            "Décision relative à la gestion des agents",
+            "Un agent contractuel de l'État conteste son temps de travail dans une administration centrale.",
+            "FPE",
+        ),
+        (
+            "Décision relative à la gestion des agents",
+            "Un agent contractuel hospitalier conteste son temps de travail dans un centre hospitalier.",
+            "FPH",
+        ),
+    ],
+)
+def test_admin_case_law_ingestion_preserves_unambiguous_fpe_and_fph_scope(
+    title, body, expected_scope,
+):
+    from app.legal_ingestion import _public_service_employment_case_law_scope
+
+    result = _public_service_employment_case_law_scope(title, body)
+    assert result is not None
+    assert result["scope"] == expected_scope
+    assert result["analysis_eligible"] is True

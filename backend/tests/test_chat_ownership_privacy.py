@@ -18,6 +18,28 @@ from app.main import (
 )
 
 
+
+def test_persisted_chat_source_metadata_retains_exact_legal_version_provenance():
+    from app.main import CHAT_SOURCE_METADATA_FIELDS
+
+    required = {
+        "source_id",
+        "official_source_id",
+        "source_version_id",
+        "version_id",
+        "version_key",
+        "text_sha256",
+        "valid_from",
+        "valid_to",
+        "requested_effective_date",
+        "version_role",
+        "version_endpoint",
+        "version_matches_facts_date",
+        "citation_integrity",
+        "legal_assurance",
+    }
+    assert required <= CHAT_SOURCE_METADATA_FIELDS
+
 def test_chat_and_dossier_queries_include_organization_and_owner_filters():
     sources = [
         inspect.getsource(list_chat_conversations),
@@ -134,6 +156,19 @@ def test_local_documents_are_excluded_from_ai_payload_without_consent():
     assert {item["source_id"] for item in _usable_document_sources(
         [local, official], allow_local_documents=True
     )} == {"local-1", "official-1"}
+
+
+def test_research_planner_never_receives_local_tenant_documents():
+    from app.ai_provider import _planner_evidence_records
+
+    records = _planner_evidence_records([
+        {"source_type": "LEGIFRANCE_LODA", "source_id": "official-1", "excerpt": "Texte officiel."},
+        {"source_type": "LOCAL_DOCUMENT", "source_id": "local-1", "excerpt": "Règlement interne."},
+        {"source_type": "LOCAL_COLLECTIVITY_DOCUMENT", "source_id": "local-2", "text": "Délibération locale."},
+        {"source_type": "LEGIFRANCE_LODA", "source_id": "empty-1", "excerpt": "   "},
+    ])
+
+    assert [item["source_id"] for item in records] == ["official-1"]
 
 
 def test_local_document_entailment_is_rejected_without_consent(monkeypatch):

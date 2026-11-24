@@ -14,7 +14,7 @@ def test_oidc_login_can_be_retried_after_callback_failure():
 
 def test_oidc_restores_existing_keycloak_session_without_persisting_tokens():
     auth = (ROOT / "frontend/oidc-auth.js").read_text(encoding="utf-8")
-    assert "authorizationUrl(oidc,redirectUri,state,verifier,'none')" in auth
+    assert "authorizationUrl(oidc,redirectUri,state,verifier,'none',nonce)" in auth
     assert "silentCheckSso()" in auth
     assert "frame.src=authUrl;" in auth
     assert "code_challenge_method:'S256'" in auth

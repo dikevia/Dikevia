@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dikévia — comparaison des embeddings</title>
+<style>
+body{font:16px system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;color:#17221f}
+textarea{width:100%;min-height:14rem;font:13px ui-monospace,monospace}
+button,input{margin:.5rem 0;padding:.6rem}
+pre{white-space:pre-wrap;background:#f3f5f4;padding:1rem;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<h1>Comparaison des embeddings Dikévia</h1>
+<p>Outil de mesure local. Les textes sont traités dans le navigateur ; le modèle est téléchargé depuis Hugging Face lors de la première exécution. Aucun texte n'est envoyé à une API Dikévia.</p>
+<p><label>Fichier JSON de référence FastEmbed : <input id="file" type="file" accept="application/json,.json"></label></p>
+<button id="run" disabled>Calculer les vecteurs navigateur</button>
+<pre id="status">Sélectionnez le fichier généré par compare_legal_embedding_parity.py.</pre>
+<textarea id="output" placeholder="L'export navigateur apparaîtra ici." readonly></textarea>
+<button id="download" disabled>Télécharger l'export navigateur</button>
+<script type="module">
+import { env, pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2";
+const MODEL="Xenova/paraphrase-multilingual-MiniLM-L12-v2";
+const status=document.querySelector("#status");
+const output=document.querySelector("#output");
+const run=document.querySelector("#run");
+const download=document.querySelector("#download");
+let reference=null;
+env.allowLocalModels=false;
+env.useBrowserCache=true;
+if(env.backends?.onnx?.wasm) env.backends.onnx.wasm.numThreads=1;
+function split(value){
+ const text=String(value||"").normalize("NFC").trim(); if(!text)return [];
+ const segments=[];let start=0;
+ while(start<text.length){
+  let end=Math.min(text.length,start+500);
+  if(end<text.length){
+   const midpoint=start+250;
+   const newline=text.lastIndexOf("\n",end-1);
+   const sentence=text.lastIndexOf(". ",end-1);
+   const boundary=Math.max(newline>=midpoint?newline:-1,sentence>=midpoint?sentence:-1);
+   if(boundary>start)end=boundary+1;
+  }
+  const piece=text.slice(start,end).replace(/\s+/gu," ").trim();
+  if(piece)segments.push(piece);
+  if(end>=text.length)break;
+  start=Math.max(start+1,end-60);
+ }
+ return segments;
+}
+function aggregate(vectors){
+ if(!vectors.length)throw Error("Aucun segment.");
+ const mean=Array.from({length:384},(_,i)=>vectors.reduce((sum,v)=>sum+v[i],0)/vectors.length);
+ const norm=Math.sqrt(mean.reduce((sum,v)=>sum+v*v,0));
+ if(!Number.isFinite(norm)||norm===0)throw Error("Vecteur invalide.");
+ return mean.map(v=>v/norm);
+}
+async function hash(text){
+ const bytes=new TextEncoder().encode(text.normalize("NFC").slice(0,5000));
+ const digest=await crypto.subtle.digest("SHA-256",bytes);
+ return [...new Uint8Array(digest)].map(v=>v.toString(16).padStart(2,"0")).join("");
+}
+document.querySelector("#file").addEventListener("change",async e=>{
+ try{
+  reference=JSON.parse(await e.target.files[0].text());
+  if(reference.engine!=="fastembed"||reference.dimensions!==384||!Array.isArray(reference.items)||!reference.items.length)throw Error("Fichier FastEmbed invalide.");
+  run.disabled=false;status.textContent=reference.items.length+" questions chargées. Prêt à calculer.";
+ }catch(error){reference=null;run.disabled=true;status.textContent=String(error);}
+});
+run.addEventListener("click",async()=>{
+ run.disabled=true;download.disabled=true;output.value="";
+ try{
+  status.textContent="Chargement du modèle…";
+  const extractor=await pipeline("feature-extraction",MODEL,{quantized:false});
+  const items=[];
+  for(let index=0;index<reference.items.length;index++){
+   const item=reference.items[index];
+   status.textContent="Calcul "+(index+1)+"/"+reference.items.length+" : "+item.id;
+   const vectors=[];
+   for(const segment of split(item.text.slice(0,5000))){
+    const result=await extractor(segment,{pooling:"mean",normalize:false});
+    vectors.push(Array.from(result.data,Number));
+   }
+   const normalizedText=item.text.normalize("NFC").slice(0,5000);
+   items.push({id:item.id,text:item.text,text_sha256:await hash(normalizedText),embedding:aggregate(vectors)});
+  }
+  const result={engine:"transformers.js",model:MODEL,dimensions:384,transformers_js_version:"3.7.2",quantized:false,items};
+  output.value=JSON.stringify(result,null,2);
+  download.disabled=false;status.textContent="Calcul terminé. Téléchargez l'export puis comparez-le à l'export FastEmbed.";
+ }catch(error){status.textContent="Échec : "+String(error?.message||error);}
+ finally{run.disabled=false;}
+});
+download.addEventListener("click",()=>{
+ const blob=new Blob([output.value+"\n"],{type:"application/json"});
+ const url=URL.createObjectURL(blob);const a=document.createElement("a");
+ a.href=url;a.download="browser-legal-embeddings.json";a.click();URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>

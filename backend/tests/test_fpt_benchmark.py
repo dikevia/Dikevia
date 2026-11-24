@@ -84,7 +84,9 @@ def test_prepare_review_and_score_require_all_100_real_answers_and_reviews(tmp_p
     result = benchmark.score(
         str(dataset_path), str(responses_path), str(review_path), str(results_path)
     )
-    assert result["status"] == "COMPLET"
+    # Complete scoring is not legal validation: this fixture has no human-validated gold answers.
+    assert result["status"] == "INCOMPLET"
+    assert result["questions_total"] == 100
     assert result["questions_evaluees"] == 100
     assert result["score_global_percent"] == 100.0
     assert sum(item["reviewed"] for item in result["par_domaine"].values()) == 100
@@ -138,4 +140,6 @@ def test_canonical_benchmark_review_uses_its_declared_five_dimension_release_gat
     review_path.write_text(json.dumps(review), encoding="utf-8")
     result = benchmark.score(str(dataset_path), str(responses_path), str(review_path), str(results_path))
     assert result["score_global_sur_max"] == 10.0
-    assert result["release_gate"]["status"] == "PASS"
+    assert result["status"] == "INCOMPLET"
+    assert result["release_gate"]["status"] == "INCOMPLETE"
+    assert result["release_gate"]["checks"]["gold_answers_human_validated"] is False

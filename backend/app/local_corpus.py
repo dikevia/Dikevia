@@ -8,6 +8,7 @@ sont toutes contrôlées.
 from __future__ import annotations
 
 from datetime import date
+import re
 from typing import Any
 
 
@@ -122,6 +123,10 @@ async def search_local_documents(
 
         hash_matches = bool(row["sha256"] and row["extracted_sha256"] and
                             str(row["sha256"]).strip() == str(row["extracted_sha256"]).strip())
+        # PostgreSQL ts_headline wraps matches in <b> tags by default.
+        # Strip only those presentation markers so exact evidence quotes and
+        # the user-facing excerpt contain the underlying document text.
+        excerpt = re.sub(r"</?b>", "", row["excerpt"] or "", flags=re.IGNORECASE)
         results.append({
             "source_type": "LOCAL_DOCUMENT",
             "source_id": f"LOCAL-DOC:{row['id']}",
@@ -140,8 +145,8 @@ async def search_local_documents(
             "collectivity_code": row["collectivity_code"],
             "source_status": "TENANT_DOCUMENT_TEXT_EXTRACTED",
             "content_kind": "FULL_TEXT",
-            "excerpt": row["excerpt"] or "",
-            "text": row["excerpt"] or "",
+            "excerpt": excerpt,
+            "text": excerpt,
             "relevance": float(row["relevance"]),
             "citation_integrity": {
                 "valid": hash_matches and row["extraction_status"] == "EXTRACTED",

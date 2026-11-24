@@ -225,13 +225,15 @@ def test_cgfp_live_article_discovery_keeps_up_to_six_relevant_subtopics(monkeypa
     ]
 
 
-def test_code_research_budget_never_drops_a_recognized_subquestion():
+def test_code_research_budget_preserves_priority_without_exceeding_limit():
     from app.orchestrator import _build_code_research_queries
 
     axes = [f"axe juridique {number}" for number in range(1, 7)]
     exact_articles = [f"article L{number}" for number in range(1, 7)]
     result = _build_code_research_queries(axes, exact_articles, max_queries=5)
-    assert result == axes
+    assert result == axes[:5]
+    assert len(result) <= 5
+    assert not any(query in result for query in exact_articles)
 
     result_with_spare_capacity = _build_code_research_queries(
         axes[:3], exact_articles, max_queries=5
@@ -529,3 +531,36 @@ def test_cgfp_text_cleanup_removes_running_headers_and_only_trailing_navigation(
     assert "Dernière modification" not in cleaned
     assert "Titre II : Dispositions suivantes" not in cleaned
     assert "Chapitre Ier : Dispositions générales" in cleaned
+
+
+def test_snapshot_citation_integrity_rejects_missing_or_invalid_page_metadata():
+    from app.cgfp import get_cgfp_article
+    from app.legal_validation import validate_snapshot_citation
+
+    article = get_cgfp_article("L4")
+    citation = {
+        "source_id": article["source_id"],
+        "article": "L4",
+        "excerpt": article["text"][:300],
+    }
+    assert validate_snapshot_citation(citation, article)["valid"] is False
+
+    malformed_article = {
+        **article,
+        "page_start": "not-a-page",
+        "page_end": None,
+    }
+    report = validate_snapshot_citation({
+        **citation, "page_start": "not-a-page", "page_end": None,
+    }, malformed_article)
+    assert report["valid"] is False
+    assert report["checks"]["pdf_page_range"] is False
+
+
+def test_snapshot_citation_integrity_handles_non_mapping_payloads():
+    from app.legal_validation import validate_snapshot_citation
+
+    result = validate_snapshot_citation(None, "not-an-article")
+    assert result["valid"] is False
+    assert result["checks"]["source_identity"] is False
+    assert result["checks"]["pdf_page_range"] is False

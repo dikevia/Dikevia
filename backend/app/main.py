@@ -41,7 +41,52 @@ from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_da
 from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
+from .personal_documents import router as personal_documents_router
 import httpx
+
+CHAT_SOURCE_METADATA_FIELDS = frozenset({
+    "source_type",
+    "source_id",
+    "official_source_id",
+    "source_version_id",
+    "version_id",
+    "version_key",
+    "text_sha256",
+    "title",
+    "official_number",
+    "case_number",
+    "signature_date",
+    "decision_date",
+    "valid_from",
+    "valid_to",
+    "requested_effective_date",
+    "version_role",
+    "version_endpoint",
+    "version_matches_facts_date",
+    "temporal_status",
+    "temporal_explanation",
+    "source_status",
+    "excerpt",
+    "official_url",
+    "source_url",
+    "article",
+    "page_start",
+    "page_end",
+    "citation_integrity",
+    "collectivity",
+    "local_document_type",
+    "validation_status",
+    "effective_from",
+    "effective_to",
+    "content_kind",
+    "official_source",
+    "legal_assurance",
+    "collectivity_scope",
+    "document_type",
+    "reference_role",
+    "claim_eligible",
+    "transfer_status",
+})
 
 logger = logging.getLogger("dikevia.startup")
 logger.setLevel(logging.INFO)
@@ -268,9 +313,44 @@ app = FastAPI(title="Dikevia API", version="3.38.0", debug=settings.debug, lifes
 if settings.cors_origins:
     app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.cors_origins.split(",")],
         allow_credentials=True, allow_methods=["GET","POST","PUT","PATCH","DELETE"],
-        allow_headers=["Authorization","Content-Type","X-Organization-ID"])
+        allow_headers=["Authorization","Content-Type","X-Organization-ID","X-OIDC-ID-Token"])
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
+app.include_router(personal_documents_router)
+
+
+@app.get("/auth-config.js", include_in_schema=False)
+async def browser_oidc_configuration():
+    """Expose only public OIDC client settings; never return provider secrets."""
+    if not settings.oidc_client_id or not settings.oidc_issuer:
+        return Response(
+            "/* Runtime OIDC override not configured; use the static fallback. */",
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-store"},
+        )
+    redirect_origin = settings.invitation_base_url.rstrip("/") if settings.invitation_base_url else ""
+    redirect_uri = json.dumps(redirect_origin + "/") if redirect_origin else "window.location.origin + '/'"
+    silent_redirect_uri = (
+        json.dumps(redirect_origin + "/static/silent-check-sso.html")
+        if redirect_origin else "window.location.origin + '/static/silent-check-sso.html'"
+    )
+    script = (
+        "window.CFDT_JURIS_OIDC = Object.freeze({"
+        f"issuer:{json.dumps(settings.oidc_issuer)},"
+        f"client_id:{json.dumps(settings.oidc_client_id)},"
+        f"redirect_uri:{redirect_uri},"
+        f"silent_redirect_uri:{silent_redirect_uri},"
+        f"scopes:{json.dumps(settings.oidc_scopes)},"
+        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)}"
+        "});"
+    )
+    return Response(
+        script,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
+
 orchestrator = LegalOrchestrator()
 case_law_connector = AdministrativeCaseLawConnector(legifrance)
 
@@ -285,11 +365,13 @@ async def record_ai_usage_event(conn, organization_id, user_id, request_id, usag
     try:
         async with conn.transaction():
             await conn.execute("""INSERT INTO ai_usage_events(
-                organization_id,user_id,request_id,provider,model,prompt_tokens,
-                completion_tokens,total_tokens,outcome)
-                VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
-            """, organization_id, user_id, request_id, usage["provider"], usage["model"],
-                usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
+                organization_id,user_id,request_id,operation,provider,model,prompt_tokens,
+                completion_tokens,total_tokens,latency_ms,outcome)
+                VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9,$10,$11)
+            """, organization_id, user_id, request_id, usage.get("operation", "answer_generation"),
+                usage["provider"], usage["model"], usage.get("prompt_tokens"),
+                usage.get("completion_tokens"), usage.get("total_tokens"), usage.get("latency_ms"),
+                usage["outcome"])
     except Exception as exc:
         logging.getLogger(__name__).warning(
             "AI usage metering write failed; request processing continues (error_type=%s)",
@@ -382,7 +464,7 @@ def _ai_safe_conversation_history(rows):
                 continue
             if any(
                 isinstance(source, dict)
-                and source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                and source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT", "PERSONAL_DOCUMENT"}
                 for source in sources
             ):
                 continue
@@ -957,6 +1039,54 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
     return {"id": str(row["id"]), "content": decode_jsonb(row["content"]), "created_at": row["created_at"], "updated_at": row["updated_at"]}
 
 
+async def _lock_conversation_for_chat_turn(
+    conn, conversation_id: str, organization_id: str, user_id: str,
+    requested_public_service: str,
+) -> None:
+    """Lock an owned conversation and prevent mixing legal branches in its history."""
+    conversation = await conn.fetchrow(
+        """SELECT id FROM chat_conversations
+        WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid
+        FOR UPDATE""",
+        str(conversation_id), organization_id, user_id,
+    )
+    if not conversation:
+        raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
+    # Read the first message in a separate statement after acquiring the row
+    # lock. Under READ COMMITTED this gets a fresh snapshot, including a first
+    # message committed by a concurrent request that was waiting on the lock.
+    first_message = await conn.fetchrow(
+        """SELECT COALESCE(NULLIF(metadata->>'public_service',''),'FPT') AS public_service
+        FROM chat_messages
+        WHERE conversation_id=$1::uuid AND organization_id=$2::uuid
+          AND user_id=$3::uuid AND role='user'
+        ORDER BY created_at,id
+        LIMIT 1""",
+        str(conversation_id), organization_id, user_id,
+    )
+    requested = str(requested_public_service or "FPT").upper()
+    # An empty pre-created conversation has no branch yet: its first turn
+    # selects the branch. Legacy conversations with messages but no metadata
+    # remain FPT by default for backward compatibility.
+    stored_public_service = str(
+        first_message["public_service"] or "FPT"
+    ).upper() if first_message else requested
+    if stored_public_service != requested:
+        labels = {
+            "FPT": "fonction publique territoriale",
+            "FPE": "fonction publique de l'État",
+            "FPH": "fonction publique hospitalière",
+        }
+        raise HTTPException(
+            409,
+            "Cette conversation est rattachée à la "
+            f"{labels.get(stored_public_service, stored_public_service)}. "
+            "Pour éviter de mélanger des règles juridiques de versants différents, "
+            "démarrez une nouvelle conversation pour la "
+            f"{labels.get(requested, requested)}.",
+        )
+
+
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
 async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity)):
     pool = get_pool()
@@ -980,13 +1110,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                     payload.question[:157] + ("…" if len(payload.question) > 157 else ""))
                 conversation_id = row["id"]
             else:
-                exists = await conn.fetchval(
-                    """SELECT id FROM chat_conversations
-                    WHERE id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
-                    str(conversation_id), ctx.organization_id, ctx.user_id,
+                await _lock_conversation_for_chat_turn(
+                    conn, str(conversation_id), ctx.organization_id, ctx.user_id,
+                    payload.public_service,
                 )
-                if not exists:
-                    raise HTTPException(404, "Conversation introuvable dans cet espace utilisateur.")
             current_message_id = await conn.fetchval("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
                 VALUES($1::uuid,$2::uuid,$3::uuid,'user',$4,$5::jsonb) RETURNING id""", ctx.organization_id,
                 str(conversation_id), ctx.user_id, payload.question,
@@ -1010,6 +1137,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 payload.confirm_local_document_ai_transfer
                 and settings.ai_local_documents_in_chat_enabled
             ),
+            personal_user_id=ctx.user_id,
         )
     except Exception:
         failure = _chat_orchestration_failure(conversation_id)
@@ -1024,23 +1152,23 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
     async with pool.acquire() as conn:
         async with conn.transaction():
             await _set_tenant_rls_context(conn, ctx)
-            if result.ai_usage is not None:
+            usage_events = list(result.ai_usage_events or [])
+            if not usage_events and result.ai_usage is not None:
+                usage_events = [result.ai_usage]
+            for usage_event in usage_events:
                 await record_ai_usage_event(
-                    conn, ctx.organization_id, ctx.user_id, result.request_id, result.ai_usage
+                    conn, ctx.organization_id, ctx.user_id, result.request_id, usage_event
                 )
             await conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
                 VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
                 str(conversation_id), ctx.user_id, result.answer,
                 json.dumps({"verification_status": result.verification_status,
                     "contains_local_documents": any(
-                        source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+                        source.get("source_type") in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT", "PERSONAL_DOCUMENT"}
                         for source in result.sources
                     ),
                     "sources": [{k: (str(v)[:2500] if isinstance(v, str) else v) for k, v in source.items()
-                        if k in {"source_type", "source_id", "title", "official_number", "case_number", "signature_date",
-                            "decision_date", "temporal_status", "source_status", "excerpt", "official_url", "source_url",
-                            "article", "page_start", "page_end", "citation_integrity", "collectivity",
-                            "local_document_type", "validation_status", "effective_from", "effective_to", "content_kind"}}
+                        if k in CHAT_SOURCE_METADATA_FIELDS}
                         for source in result.sources[:30]],
                     "missing_information": result.missing_information, "disclaimer": result.disclaimer,
                     "clarification_question": result.clarification_question, "public_service": payload.public_service},
@@ -1206,7 +1334,7 @@ async def review_local_rule_compliance(document_id: str, q: str,
     except (ValueError, OSError) as exc:
         raise HTTPException(503, "Le corpus national n'a pas pu être interrogé.") from exc
     national_sources = [{**item, "source_url": item.get("official_url")} for item in national
-        if item.get("content_kind") == "FULL_TEXT" and (item.get("citation_integrity") or {}).get("valid")]
+        if item.get("content_kind") == "FULL_TEXT" and isinstance(item.get("citation_integrity"), dict) and item["citation_integrity"].get("valid") is True]
     sources = [local_source] + national_sources
     assurance = assess_source_set(sources)
     local_assurance = assurance["sources"][0].get("legal_assurance", {})
@@ -2012,15 +2140,21 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
     keycloak_user_id = None
     smtp_ready = bool(settings.smtp_host and settings.smtp_from)
     keycloak_ready = bool(settings.keycloak_admin_base_url and settings.keycloak_admin_client_secret)
-    if smtp_ready and keycloak_ready:
+    auth0_ready = settings.oidc_provider == "auth0" and bool(settings.oidc_client_id)
+    if smtp_ready and (keycloak_ready or auth0_ready):
         try:
-            admin = KeycloakAdmin(KeycloakAdminConfig(
-                base_url=settings.keycloak_admin_base_url, realm=settings.keycloak_admin_realm,
-                client_id=settings.keycloak_admin_client_id, client_secret=settings.keycloak_admin_client_secret,
-                timeout=settings.keycloak_admin_timeout_seconds))
-            keycloak_user_id, created_in_keycloak, email_verified = await admin.ensure_user(email)
-            if not email_verified:
-                await admin.send_verification(keycloak_user_id, settings.invitation_base_url.rstrip("/") + "/", created_in_keycloak)
+            if settings.oidc_provider == "keycloak":
+                admin = KeycloakAdmin(KeycloakAdminConfig(
+                    base_url=settings.keycloak_admin_base_url, realm=settings.keycloak_admin_realm,
+                    client_id=settings.keycloak_admin_client_id, client_secret=settings.keycloak_admin_client_secret,
+                    timeout=settings.keycloak_admin_timeout_seconds))
+                keycloak_user_id, created_in_keycloak, email_verified = await admin.ensure_user(email)
+                if not email_verified:
+                    await admin.send_verification(
+                        keycloak_user_id, settings.invitation_base_url.rstrip("/") + "/", created_in_keycloak
+                    )
+            # Auth0 handles account creation and email verification through Universal Login.
+            # Dikévia sends only its own single-use organization invitation token.
             organization = await ctx.conn.fetchrow("SELECT display_name FROM organizations WHERE id=$1::uuid", ctx.organization_id)
             organization_name = organization["display_name"] if organization else "votre organisation"
             invite_url = f"{settings.invitation_base_url.rstrip('/')}/?invitation_token={token}"
@@ -2030,7 +2164,7 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
             delivery = "SMTP_EMAIL_SENT"
         except Exception:
             await ctx.conn.execute("UPDATE invitations SET status='REVOKED' WHERE id=$1::uuid", row["id"])
-            raise HTTPException(503, "L'invitation n'a pas été envoyée. Vérifiez Keycloak et le serveur SMTP.")
+            raise HTTPException(503, "L'invitation n'a pas été envoyée. Vérifiez le fournisseur d'identité et le serveur SMTP.")
     await ctx.conn.execute("""
       INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
       VALUES($1::uuid,$2::uuid,'INVITATION_CREATED','invitation',$3::uuid,jsonb_build_object('role',$4,'email',$5,'delivery',$6))
@@ -2038,7 +2172,8 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
     result = {"id": str(row["id"]), "email": row["email_normalized"], "role": row["role"],
               "status": row["status"], "expires_at": row["expires_at"], "delivery": delivery}
     if delivery == "SMTP_EMAIL_SENT":
-        result["keycloak_user_id"] = keycloak_user_id
+        if keycloak_user_id:
+            result["keycloak_user_id"] = keycloak_user_id
     else:
         result["invitation_token"] = token
         result["warning"] = "Le provisionnement automatique n'est pas configuré. Transmettez ce jeton par un canal sûr."

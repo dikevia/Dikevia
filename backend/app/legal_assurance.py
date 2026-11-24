@@ -5,12 +5,13 @@ legality or resolve conflicts without a complete legal analysis.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
 from datetime import date
 from typing import Any
 
-from .evidence_text import normalize_evidence_text
+from .evidence_text import build_legal_evidence_text, normalize_evidence_text
 
 # This is a review order, not a universal rule for resolving every conflict.
 _SOURCE_CLASS = {
@@ -48,9 +49,12 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     elif kind == "DILA_CIRCULAIRES":
         kind = "CIRCULAR"
     elif kind == "LEGIFRANCE_API":
-        kind = "CODE"
+        kind = str(source.get("document_kind") or "CODE").upper()
     elif kind.startswith("LEGIFRANCE_"):
         kind = str(source.get("document_kind") or "OTHER").upper()
+    # Normalize French API vocabulary to the canonical families used for
+    # source ranking; authority and review priority must tell the same story.
+    kind = {"DECRET": "DECREE", "ARRETE": "ORDER", "LOI": "LAW"}.get(kind, kind)
     if kind in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
         doc_type = str(source.get("local_document_type") or "").upper()
         if "DELIB" in doc_type:
@@ -71,34 +75,38 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         raw_metadata = {}
     publisher = str(source.get("publisher") or raw_metadata.get("source_name") or "").strip()[:240] or None
     publisher_type = str(source.get("publisher_type") or raw_metadata.get("publisher_type") or "").upper() or None
-    authority_level = str(source.get("authority_level") or raw_metadata.get("authority_level") or "").upper()
-    if authority_level not in {
-        "PRIMARY_LEGAL", "OFFICIAL_ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE",
-        "JURISPRUDENCE", "OFFICIAL_INTERPRETIVE", "LOCAL_NORMATIVE",
-    }:
-        authority_level = {
-            "ADMIN_GUIDANCE": "OFFICIAL_ADMIN_GUIDANCE",
-            "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
-            "ADMIN_CASELAW": "JURISPRUDENCE",
-            "CIRCULAR": "OFFICIAL_INTERPRETIVE",
-            "CONSTITUTIONAL": "PRIMARY_LEGAL",
-            "EUROPEAN_TREATY": "PRIMARY_LEGAL",
-            "LAW": "PRIMARY_LEGAL",
-            "CODE": "PRIMARY_LEGAL",
-            "ORDONNANCE": "PRIMARY_LEGAL",
-            "DECREE": "PRIMARY_LEGAL",
-            "DECRET": "PRIMARY_LEGAL",
-            "ORDER": "PRIMARY_LEGAL",
-            "ARRETE": "PRIMARY_LEGAL",
-            "LOCAL_DELIBERATION": "LOCAL_NORMATIVE",
-            "LOCAL_REGULATION": "LOCAL_NORMATIVE",
-            "LOCAL_PROTOCOL": "LOCAL_NORMATIVE",
-        }.get(kind, "UNCLASSIFIED")
+    # Authority is derived from the normalized document family and trusted
+    # connector provenance. Raw source metadata is descriptive only: it must
+    # never promote guidance or an unknown document to binding law.
+    authority_level = {
+        "ADMIN_GUIDANCE": "OFFICIAL_ADMIN_GUIDANCE",
+        "PROFESSIONAL_GUIDANCE": "PROFESSIONAL_GUIDANCE",
+        "ADMIN_CASELAW": "JURISPRUDENCE",
+        "CIRCULAR": "OFFICIAL_INTERPRETIVE",
+        "CONSTITUTIONAL": "PRIMARY_LEGAL",
+        "EUROPEAN_TREATY": "PRIMARY_LEGAL",
+        "LAW": "PRIMARY_LEGAL",
+        "CODE": "PRIMARY_LEGAL",
+        "ORDONNANCE": "PRIMARY_LEGAL",
+        "DECREE": "PRIMARY_LEGAL",
+        "ORDER": "PRIMARY_LEGAL",
+        "LOCAL_DELIBERATION": "LOCAL_NORMATIVE",
+        "LOCAL_REGULATION": "LOCAL_NORMATIVE",
+        "LOCAL_PROTOCOL": "LOCAL_NORMATIVE",
+    }.get(kind, "UNCLASSIFIED")
     if publisher_type is None:
         source_key = str(raw_metadata.get("source_id") or "").casefold()
         if any(name in source_key for name in ("cfdt", "cgt", "fo-", "cftc", "unsa", "solidaires")):
             publisher_type = "TRADE_UNION"
         elif kind == "ADMIN_GUIDANCE" or authority_level == "OFFICIAL_ADMIN_GUIDANCE":
+            publisher_type = "PUBLIC_ADMINISTRATION"
+        elif (
+            kind == "PROFESSIONAL_GUIDANCE"
+            and (
+                source_key in {"dgafp", "dgcl"}
+                or "direction générale de l'administration et de la fonction publique" in (publisher or "").casefold()
+            )
+        ):
             publisher_type = "PUBLIC_ADMINISTRATION"
         elif kind == "PROFESSIONAL_GUIDANCE":
             publisher_type = "PROFESSIONAL_BODY"
@@ -112,6 +120,27 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
             if publisher_type == "PUBLIC_ADMINISTRATION"
             else "PROFESSIONAL_GUIDANCE"
         )
+    elif source_type in {"LEGIFRANCE_CETAT_SEARCH", "LEGIFRANCE_CETAT_FULL_TEXT"}:
+        # A court decision remains jurisprudence even if imported metadata
+        # carries a stale or contradictory PRIMARY_LEGAL label.
+        authority_level = "JURISPRUDENCE"
+    elif source_type == "DILA_CIRCULAIRES":
+        authority_level = "OFFICIAL_INTERPRETIVE"
+    elif source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
+        authority_level = (
+            "LOCAL_NORMATIVE"
+            if kind in {"LOCAL_DELIBERATION", "LOCAL_REGULATION", "LOCAL_PROTOCOL"}
+            else "UNCLASSIFIED"
+        )
+    elif source_type in {"LEGIFRANCE_API", "LEGIFRANCE_LODA"}:
+        authority_level = (
+            "PRIMARY_LEGAL"
+            if kind in {
+                "CONSTITUTIONAL", "EUROPEAN_TREATY", "LAW", "CODE",
+                "ORDONNANCE", "DECREE", "ORDER",
+            }
+            else "UNCLASSIFIED"
+        )
     if publisher_type == "TRADE_UNION":
         label = "Doctrine syndicale — non normative"
     elif authority_level == "OFFICIAL_ADMIN_GUIDANCE":
@@ -121,7 +150,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     non_normative = kind in {"ADMIN_GUIDANCE", "PROFESSIONAL_GUIDANCE"}
     status = str(source.get("temporal_status") or source.get("validation_status") or "UNKNOWN")
     usable = status in {
-        "IN_FORCE_ON_REQUESTED_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        "IN_FORCE_ON_REQUESTED_DATE", "IN_FORCE_ON_FACTS_DATE", "DECISION_AVAILABLE_BY_REQUESTED_DATE",
         "VERSION_RETRIEVED_AT_REQUESTED_DATE",
         "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
         "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
@@ -156,7 +185,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "publisher_type": publisher_type,
         "review_priority": rank,
         "temporal_or_validation_status": status,
-        "normative": not non_normative and authority_level != "UNCLASSIFIED",
+        "normative": authority_level in {"PRIMARY_LEGAL", "LOCAL_NORMATIVE"},
         "claim_eligible": (
             not non_normative
             and authority_level != "UNCLASSIFIED"
@@ -177,10 +206,27 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
 
 
 def assess_source_set(sources: list[dict[str, Any]]) -> dict[str, Any]:
-    classified = [{**s, "legal_assurance": classify_legal_source(s)} for s in sources]
+    # Connector payloads are untrusted input: malformed records are ignored
+    # rather than crashing the whole answer pipeline.
+    valid_collection = isinstance(sources, (list, tuple))
+    raw_sources = sources if valid_collection else []
+    source_records = [source for source in raw_sources if isinstance(source, dict)]
+    malformed_count = len(raw_sources) - len(source_records)
+    invalid_collection = sources is not None and not valid_collection
+    classified = [{**source, "legal_assurance": classify_legal_source(source)} for source in source_records]
     local = [s for s in classified if s["legal_assurance"]["source_family"].startswith("LOCAL_")]
     national = [s for s in classified if not s["legal_assurance"]["source_family"].startswith("LOCAL_")]
     warnings: list[str] = []
+    if invalid_collection:
+        warnings.append(
+            "La collection de sources reçue n'a pas le format attendu ; "
+            "la vérification documentaire est incomplète."
+        )
+    if malformed_count:
+        warnings.append(
+            f"{malformed_count} enregistrement(s) de source mal formé(s) ont été écartés ; "
+            "la vérification documentaire est incomplète."
+        )
     if local and national:
         warnings.append("Des sources nationales et locales sont présentes : comparer leur champ d'application, leur date d'effet et leur compatibilité. Leur coexistence ne prouve pas une contradiction.")
     if any(
@@ -314,10 +360,13 @@ def validate_answer_citations(
     allowed_authorities: set[str] = set()
     allowed_case_numbers: set[str] = set()
     allowed_ids: set[str] = set()
+    source_records = sources if isinstance(sources, (list, tuple)) else []
 
-    for source in sources:
-        integrity = source.get("citation_integrity") or {}
-        if integrity.get("valid") is not True:
+    for source in source_records:
+        if not isinstance(source, dict):
+            continue
+        integrity = source.get("citation_integrity")
+        if not isinstance(integrity, dict) or integrity.get("valid") is not True:
             continue
         article = source.get("article")
         if article:
@@ -410,6 +459,21 @@ def _normalized_evidence_text(value: Any) -> str:
     return normalize_evidence_text(value)
 
 
+def _versioned_excerpt_matches_full_text(full_text: str, excerpt: Any) -> bool:
+    """Require every retrieved passage fragment to occur in the hash-verified version."""
+    if not isinstance(full_text, str) or not full_text.strip():
+        return False
+    if not isinstance(excerpt, str) or not excerpt.strip():
+        return False
+    normalized_full = normalize_evidence_text(full_text)
+    fragments = [
+        normalize_evidence_text(fragment)
+        for fragment in re.split(r"\n\s*\n", excerpt)
+        if isinstance(fragment, str) and fragment.strip()
+    ]
+    return bool(fragments) and all(fragment in normalized_full for fragment in fragments)
+
+
 def _evidence_tokens(value: Any) -> set[str]:
     decomposed = unicodedata.normalize("NFKD", str(value or "").casefold())
     plain = "".join(char for char in decomposed if not unicodedata.combining(char))
@@ -419,7 +483,7 @@ def _evidence_tokens(value: Any) -> set[str]:
 
 def validate_claim_evidence(
     payload: Any, sources: list[dict[str, Any]], required_axes: list[str] | None = None,
-    facts_period: dict[str, Any] | None = None,
+    facts_period: dict[str, Any] | None = None, public_service: str = "FPT",
 ) -> dict[str, Any]:
     """Fail closed unless each generated legal claim quotes its own eligible source.
 
@@ -434,7 +498,15 @@ def validate_claim_evidence(
             "verification_scope": "EXACT_QUOTE_SOURCE_DATE_SCOPE_NUMERIC_AND_LEXICAL_RELEVANCE_CHECKS",
         }
 
-    required_axes = [axis for axis in (required_axes or []) if isinstance(axis, str) and axis.strip()]
+    required_axes = [
+        axis for axis in (required_axes if isinstance(required_axes, (list, tuple)) else [])
+        if isinstance(axis, str) and axis.strip()
+    ]
+    facts_period = facts_period if isinstance(facts_period, dict) else {}
+    selected_versant = str(public_service or "FPT").upper()
+    if selected_versant not in {"FPT", "FPE", "FPH"}:
+        selected_versant = "FPT"
+    source_records = sources if isinstance(sources, (list, tuple)) else []
     raw_claims = payload["claims"]
     if len(raw_claims) > 12:
         return {
@@ -444,7 +516,7 @@ def validate_claim_evidence(
         }
 
     eligible_statuses = {
-        "IN_FORCE_ON_REQUESTED_DATE",
+        "IN_FORCE_ON_REQUESTED_DATE", "IN_FORCE_ON_FACTS_DATE",
         "DECISION_AVAILABLE_BY_REQUESTED_DATE",
         "VERSION_RETRIEVED_AT_REQUESTED_DATE",
         "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
@@ -452,15 +524,35 @@ def validate_claim_evidence(
         "VERIFIED_APPLICABLE",
     }
     eligible_by_id: dict[str, list[dict[str, Any]]] = {}
-    for source in sources:
+    for source in source_records:
+        if not isinstance(source, dict):
+            continue
         source_id = source.get("source_id")
         if not isinstance(source_id, str) or not source_id:
             continue
         source_type = str(source.get("source_type") or "")
-        integrity = source.get("citation_integrity") or {}
+        integrity = source.get("citation_integrity")
         temporal_status = source.get("temporal_status")
-        if integrity.get("valid") is not True:
+        if not isinstance(integrity, dict) or integrity.get("valid") is not True:
             continue
+        # Versioned corpus evidence must independently match its stored full-text
+        # digest at the claim-validation boundary. A caller-provided "valid" flag
+        # alone must never authorize a quote from a different or stale version.
+        if source.get("version_id") is not None:
+            stored_hash = source.get("text_sha256")
+            full_text = source.get("full_text")
+            if (
+                not isinstance(stored_hash, str)
+                or not re.fullmatch(r"[0-9a-fA-F]{64}", stored_hash)
+                or not isinstance(full_text, str)
+                or not full_text
+                or hashlib.sha256(full_text.encode("utf-8")).hexdigest() != stored_hash.casefold()
+                or integrity.get("text_hash_verified") is not True
+                or not _versioned_excerpt_matches_full_text(
+                    full_text, source.get("excerpt") or source.get("analysis_excerpt")
+                )
+            ):
+                continue
         snapshot_fallback_evidence = (
             source_type == "CGFP_SNAPSHOT"
             and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
@@ -485,13 +577,27 @@ def validate_claim_evidence(
             "GENERAL_PUBLIC_SERVICE_CONTEXT_ONLY",
         } or source.get("reference_role") == "NON_NORMATIVE_CONTEXT_ONLY" or source.get("claim_eligible") is False:
             continue
+        source_scope = str(source.get("public_service_scope") or "").upper()
+        is_local_document = source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+        allowed_scopes = {selected_versant, "COMMON_PUBLIC_SERVICE"}
+        if selected_versant == "FPT":
+            allowed_scopes.add("FPT_REFERENCE")
+        # National legal evidence must carry an explicit, previously qualified
+        # public-service scope. A missing scope is not proof of cross-branch
+        # applicability. Tenant-scoped local documents are the narrow exception:
+        # their employer and validation workflow establish the FPT context.
+        missing_national_scope = not is_local_document and source_scope not in allowed_scopes
         if (
-            source.get("analysis_eligible") is False
-            or source.get("public_service_scope") in {
+            (not is_local_document and not snapshot_fallback_evidence and source.get("analysis_eligible") is not True)
+            or source.get("analysis_eligible") is False
+            or missing_national_scope
+            or source_scope in {
                 "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
-                "FPH", "FPE", "OUT_OF_SCOPE_OR_UNCONFIRMED",
-                "OUT_OF_SCOPE_EUROPEAN_LAW", "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
+                "OUT_OF_SCOPE_OR_UNCONFIRMED", "OUT_OF_SCOPE_EUROPEAN_LAW",
+                "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE",
             }
+            or (source_scope in {"FPT", "FPE", "FPH"} and source_scope != selected_versant)
+            or (source_scope == "FPT_REFERENCE" and selected_versant != "FPT")
         ):
             continue
         general_information_only = (
@@ -512,7 +618,10 @@ def validate_claim_evidence(
             "CGFP_SNAPSHOT",
         } and source.get("official_source") is not True:
             continue
-        evidence_text = source.get("excerpt") or str(source.get("text") or "")[:1800]
+        evidence_text = build_legal_evidence_text(
+            source.get("full_text") or source.get("text") or "",
+            source.get("analysis_excerpt") or source.get("excerpt"),
+        )
         normalized_evidence = _normalized_evidence_text(evidence_text)
         if len(normalized_evidence) < 20:
             continue

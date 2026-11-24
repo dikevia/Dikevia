@@ -52,7 +52,7 @@ Règles de traitement :
 
 Périmètre initial inscrit au registre : CFDT Fonctions Publiques (UFFA), CFDT Interco, CGT Fonction publique, FO Fonction publique, CFTC, UNSA Fonction Publique et Solidaires Fonction publique. Les pages et documents restent candidats tant que collecte, fraîcheur, portée et réutilisation ne sont pas contrôlées.
 
-Le Guide de l'agent public 2026 CFDT Interco est identifié via sa page de présentation du 22 octobre 2026 et le PDF intégral hébergé par CFDT Interco 35 (`https://cfdtinterco35.fr/wp-content/uploads/2026/04/Guide-de-lagent-public-2026-PDF.pdf`). Le PDF est enregistré comme ressource distincte et a été téléchargé/extrait avec succès en dry-run le 22 novembre 2026 : 68 pages, 181 469 caractères. L'original et le JSON d'extraction sont conservés dans l'artefact GitHub Actions ; les empreintes SHA-256 sont consignées dans le registre. Son état est `EXTRACTED_NOT_IMPORTED` et ses droits de réutilisation restent `REVIEW_REQUIRED`.
+Le Guide de l'agent public 2026 CFDT Interco est identifié via sa page de présentation du 22 octobre 2026 et le PDF intégral hébergé par CFDT Interco 35 (`https://cfdtinterco35.fr/wp-content/uploads/2026/04/Guide-de-lagent-public-2026-PDF.pdf`). Le PDF a été téléchargé/extrait en dry-run le 22 novembre 2026 : 68 pages, 181 469 caractères. Au contrôle du 24 novembre, la page de présentation et le PDF figurent tous deux dans la base Neon de staging ; leur réutilisation est approuvée, mais leur statut reste `IMPORTED_UNVERIFIED`, `UNKNOWN` et `NOT_VERIFIED` sur le plan juridique. Ils ne constituent pas des preuves normatives et ne sont pas déclarés importés en production.
 
 ### Résultat de collecte vérifié — 22 novembre 2026
 
@@ -60,7 +60,27 @@ Le workflow a téléchargé et extrait :
 - **199 fiches Service-Public Fonction publique**, soit environ 4,45 millions de caractères ; 194 comportent des références juridiques extraites ;
 - **18 ressources institutionnelles et syndicales** (6 PDF et 12 pages HTML : DGAFP, CDG35, CIG Petite Couronne, CDG59, CDG69, CNFPT, CFDT, CGT, FO, CFTC, UNSA et Solidaires), dont 241 pages PDF et environ 590 000 caractères.
 
-Les empreintes SHA-256 des textes extraits ont été contrôlées. Les fiches Service-Public sont préparées comme `ADMIN_GUIDANCE`, `IMPORTED_UNVERIFIED`, avec version et dates d'effet inconnues. Les ressources professionnelles restent `EXTRACTED_NOT_IMPORTED` et `REVIEW_REQUIRED` pour la réutilisation. Les 8 pages syndicales collectées sont également `EXTRACTED_NOT_IMPORTED` et `REVIEW_REQUIRED` ; leurs empreintes de texte et de téléchargement sont consignées dans le registre. Le PDF du Guide de l'agent public 2026 a depuis été extrait en dry-run : 68 pages et 181 469 caractères. Il est comptabilisé parmi les 18 ressources ci-dessus, mais reste exclu de PostgreSQL tant que les droits de réutilisation ne sont pas validés. La page Solidaires extraite ne contient que 890 caractères : elle est à considérer comme une collecte partielle, à approfondir. Aucun de ces documents n'est encore présent dans PostgreSQL.
+Les empreintes SHA-256 des textes extraits ont été contrôlées. Les fiches Service-Public sont préparées comme `ADMIN_GUIDANCE`, `IMPORTED_UNVERIFIED`, avec version et dates d'effet inconnues. Les ressources professionnelles et syndicales ne sont importées que lorsque leur réutilisation est explicitement approuvée. La page Solidaires extraite ne contient que 890 caractères : elle reste une collecte partielle, à approfondir.
+
+### État d'intégration vérifié sur Neon staging — 24 novembre 2026
+
+Une vérification en lecture seule de la branche Neon de staging `br-billowing-haze-bd5a1cns` a établi la composition suivante :
+
+| Famille | Documents | Fragments |
+|---|---:|---:|
+| Snapshot CGFP | 4 242 | 4 253 |
+| Fiches Service-Public | 199 | 1 226 |
+| Ressources institutionnelles, professionnelles et syndicales | 18 | 161 |
+| **Total** | **4 459** | **5 640** |
+
+Les 5 640 fragments disposent d'un embedding 384 dimensions conforme au modèle `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` ; aucune incohérence de modèle ou de dimension n'a été détectée. Le workflow de staging a confirmé cette couverture et n'a pas eu besoin de régénérer les vecteurs.
+Le même workflow exécute un contrôle de retrieval vectoriel seul sur quatre questions techniques. Il vérifie le modèle, le SQL, les dates et la disponibilité de résultats réels ; il ne certifie pas la pertinence juridique ni le classement métier.
+
+Pour les 199 fiches Service-Public et les 18 ressources complémentaires, les documents restent `IMPORTED_UNVERIFIED` et leur statut juridique reste `UNKNOWN`. Les 18 ressources complémentaires ont un statut de réutilisation `REUSE_APPROVED`, mais leur validation juridique reste `NOT_VERIFIED`. Les sources syndicales restent identifiées dans le registre comme `TRADE_UNION_POSITION` ; en base, elles sont stockées sous `INSTITUTIONAL_GUIDANCE` avec les métadonnées d'éditeur nécessaires à leur classement comme doctrine syndicale non normative.
+
+Le moteur les traite comme contexte documentaire non normatif : `claim_eligible=false`, `reference_role=NON_NORMATIVE_CONTEXT_ONLY` et `usable_for_conclusion=false`. Elles peuvent aider à expliquer ou contextualiser une réponse, mais ne peuvent pas fonder seules une affirmation juridique ni remplacer une référence officielle. Des tests automatisés vérifient cette séparation.
+
+**Périmètre de cette vérification : staging uniquement.** Aucune base de production n'a été interrogée ; il ne faut donc pas déduire de ces chiffres que les mêmes documents sont présents en production. La présence en base et la vectorisation ne valent ni validation juridique, ni validation complète de la pertinence du retrieval.
 
 Le script `scripts/import_service_public_to_legal_corpus.py` :
 - télécharge les métadonnées du jeu de données et l'archive ZIP courante ;

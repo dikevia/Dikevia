@@ -14,7 +14,7 @@ def test_conversation_regression_fixture_has_twenty_unique_cases():
     data = json.loads(FIXTURE.read_text(encoding="utf-8"))
     cases = data["cases"]
     ids = [case["id"] for case in cases]
-    assert len(cases) == 20
+    assert len(cases) == 24
     assert len(ids) == len(set(ids))
 
 

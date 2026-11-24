@@ -237,6 +237,33 @@ def test_plain_language_phrasing_activates_the_same_strict_relevance_filter():
 
 
 
+def test_explicit_three_branch_scope_overrides_title_naming_only_two_branches():
+    source = {
+        "title": "Décret relatif à la fonction publique de l'État et à la fonction publique hospitalière",
+        "text": (
+            "Les dispositions du présent article s'appliquent aux agents des trois "
+            "versants de la fonction publique."
+        ),
+    }
+    for target in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=target)
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True
+
+
+def test_title_explicitly_covering_fpe_and_fph_is_not_assigned_to_either_branch():
+    source = {
+        "title": "Décret relatif à la fonction publique de l'État et à la fonction publique hospitalière",
+        "text": "Le texte traite des agents de l'État et des personnels hospitaliers.",
+    }
+    for target in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=target)
+        assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+        assert result["analysis_eligible"] is False
+        assert result["claim_eligible"] is False
+
+
 def test_fpe_title_is_not_overridden_by_incidental_fpt_reference_in_body():
     result = classify_public_service_scope({
         "title": "Décret relatif à la fonction publique de l'État",
@@ -259,6 +286,22 @@ def test_fph_title_is_not_overridden_by_incidental_fpt_reference_in_body():
     })
     assert result["scope"] == "FPH"
     assert result["analysis_eligible"] is False
+
+
+def test_fpe_and_fph_body_without_primary_title_is_rejected_as_ambiguous():
+    source = {
+        "title": "Document administratif",
+        "text": (
+            "Les agents de la fonction publique de l'État et les personnels "
+            "de la fonction publique hospitalière sont concernés par des "
+            "dispositions distinctes."
+        ),
+    }
+    for target in ("FPT", "FPE", "FPH"):
+        result = classify_public_service_scope(source, target_versant=target)
+        assert result["scope"] == "MIXED_OR_CONFLICTING_PUBLIC_SERVICE_SCOPE"
+        assert result["analysis_eligible"] is False
+        assert result["claim_eligible"] is False
 
 
 def test_mixed_versant_body_without_primary_scope_is_not_assumed_fpt():
@@ -554,3 +597,27 @@ def test_scope_classification_uses_relevant_excerpt_before_unrelated_full_text()
     })
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
+
+def test_generic_ministry_mention_does_not_establish_fpe_source_scope():
+    result = classify_public_service_scope(
+        {
+            "title": "Document administratif",
+            "text": "Les ministères sont invités à transmettre leurs observations.",
+        },
+        target_versant="FPE",
+    )
+    assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
+    assert result["analysis_eligible"] is False
+
+
+def test_generic_medical_personnel_mention_does_not_establish_fph_source_scope():
+    result = classify_public_service_scope(
+        {
+            "title": "Document administratif",
+            "text": "Les personnels médicaux sont invités à transmettre leurs observations.",
+        },
+        target_versant="FPH",
+    )
+    assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
+    assert result["analysis_eligible"] is False
+
