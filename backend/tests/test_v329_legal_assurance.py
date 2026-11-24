@@ -781,3 +781,25 @@ def test_claim_evidence_rejects_a_different_public_service_branch_even_when_offi
         public_service="FPE",
     )
     assert result["valid"] is False
+
+def test_claim_evidence_can_quote_beyond_the_compact_display_excerpt():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(
+        excerpt="Extrait court réservé à l'affichage.",
+        analysis_excerpt=(
+            "L'autorité territoriale organise le service et veille à la protection "
+            "de la santé et de la sécurité des agents dans les conditions prévues par les textes. "
+            "Cette phrase figure au-delà de l'extrait court et reste vérifiable."
+        ),
+    )
+    quote = "Cette phrase figure au-delà de l'extrait court et reste vérifiable."
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "Cette phrase figure au-delà de l'extrait court et reste vérifiable.",
+            quote,
+        ),
+        [source],
+    )
+
+    assert result["valid"] is True
