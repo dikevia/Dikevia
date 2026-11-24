@@ -116,17 +116,20 @@ def verify_access_token(token: str) -> Principal:
             email = None
         verified = claims.get(getattr(settings, "oidc_email_verified_claim", "email_verified")) is True
         canonical_subject = subject
-        compat_prefix = getattr(settings, "oidc_identity_subject_prefix", "")
-        compat_issuer = getattr(settings, "oidc_identity_compat_issuer", "")
-        if bool(compat_prefix) != bool(compat_issuer):
-            raise reject("sub_compat_mapping_incomplete", 503, "La correspondance d'identité est incomplète.")
         canonical_issuer = issuer
-        if compat_prefix:
-            if not canonical_subject.startswith(compat_prefix):
-                raise reject("sub_compat_prefix_missing")
-            canonical_subject = canonical_subject[len(compat_prefix):]
-            if not canonical_subject:
-                raise reject("sub_compat_mapping_invalid")
+        # Only explicitly imported accounts are mapped to the former Keycloak
+        # identity. New Auth0 users retain their native issuer and subject.
+        legacy_claim = getattr(settings, "oidc_identity_legacy_subject_claim",
+                               "https://dikevia.invalid/claims/legacy_subject")
+        legacy_subject = claims.get(legacy_claim)
+        compat_issuer = getattr(settings, "oidc_identity_compat_issuer", "")
+        if legacy_subject is not None:
+            if not isinstance(legacy_subject, str) or not legacy_subject.strip() or len(legacy_subject) > 255:
+                raise reject("legacy_subject_claim_invalid")
+            if not compat_issuer:
+                raise reject("legacy_subject_mapping_not_configured", 503,
+                             "La correspondance d'identité historique n'est pas configurée.")
+            canonical_subject = legacy_subject.strip()
             canonical_issuer = compat_issuer
         return Principal(
             subject=canonical_subject,
