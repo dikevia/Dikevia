@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MIGRATION = ROOT / "database" / "migrations" / "020_ai_usage_outcome_contract.sql"
+MIGRATION = ROOT / "database" / "migrations" / "027_ai_usage_event_dimensions.sql"
 
 
 def _outcomes_emitted_by_application():

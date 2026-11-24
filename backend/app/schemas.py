@@ -51,6 +51,7 @@ class AskResponse(BaseModel):
     disclaimer: str = "Information juridique assistée, à valider humainement."
     # Internal metering data; excluded from every public API serialization.
     ai_usage: dict | None = Field(default=None, exclude=True)
+    ai_usage_events: list[dict] = Field(default_factory=list, exclude=True)
 
 class InvitationCreate(BaseModel):
     email: EmailStr

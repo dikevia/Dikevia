@@ -319,11 +319,13 @@ async def record_ai_usage_event(conn, organization_id, user_id, request_id, usag
     try:
         async with conn.transaction():
             await conn.execute("""INSERT INTO ai_usage_events(
-                organization_id,user_id,request_id,provider,model,prompt_tokens,
-                completion_tokens,total_tokens,outcome)
-                VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9)
-            """, organization_id, user_id, request_id, usage["provider"], usage["model"],
-                usage["prompt_tokens"], usage["completion_tokens"], usage["total_tokens"], usage["outcome"])
+                organization_id,user_id,request_id,operation,provider,model,prompt_tokens,
+                completion_tokens,total_tokens,latency_ms,outcome)
+                VALUES($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9,$10,$11)
+            """, organization_id, user_id, request_id, usage.get("operation", "answer_generation"),
+                usage["provider"], usage["model"], usage.get("prompt_tokens"),
+                usage.get("completion_tokens"), usage.get("total_tokens"), usage.get("latency_ms"),
+                usage["outcome"])
     except Exception as exc:
         logging.getLogger(__name__).warning(
             "AI usage metering write failed; request processing continues (error_type=%s)",
@@ -1103,9 +1105,12 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
     async with pool.acquire() as conn:
         async with conn.transaction():
             await _set_tenant_rls_context(conn, ctx)
-            if result.ai_usage is not None:
+            usage_events = list(result.ai_usage_events or [])
+            if not usage_events and result.ai_usage is not None:
+                usage_events = [result.ai_usage]
+            for usage_event in usage_events:
                 await record_ai_usage_event(
-                    conn, ctx.organization_id, ctx.user_id, result.request_id, result.ai_usage
+                    conn, ctx.organization_id, ctx.user_id, result.request_id, usage_event
                 )
             await conn.execute("""INSERT INTO chat_messages(organization_id,conversation_id,user_id,role,content,metadata)
                 VALUES($1::uuid,$2::uuid,$3::uuid,'assistant',$4,$5::jsonb)""", ctx.organization_id,
