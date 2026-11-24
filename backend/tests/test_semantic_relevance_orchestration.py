@@ -110,3 +110,53 @@ def test_targeted_regulatory_queries_name_the_exact_modified_articles():
 
     tpt = _build_targeted_regulatory_queries("Je demande un temps partiel thérapeutique.")
     assert any("article 3 modifie articles 13-2 et 13-5" in query for query in tpt)
+
+
+def test_targeted_citis_and_therapeutic_part_time_queries_are_branch_specific():
+    from app.orchestrator import _build_targeted_regulatory_queries
+
+    fpe_citis = _build_targeted_regulatory_queries(
+        "Je demande un CITIS après un accident de service imputable au service.",
+        "FPE",
+    )
+    assert any("86-442" in query and "47-1" in query and "CITIS" in query for query in fpe_citis)
+    assert not any("87-602" in query or "88-386" in query for query in fpe_citis)
+
+    fpe_tpt = _build_targeted_regulatory_queries(
+        "Je souhaite un temps partiel thérapeutique.",
+        "FPE",
+    )
+    assert any("86-442" in query and "23-1" in query and "23-14" in query for query in fpe_tpt)
+    assert not any("87-602" in query or "88-386" in query for query in fpe_tpt)
+
+    fph_citis = _build_targeted_regulatory_queries(
+        "Je demande un CITIS après un accident de service imputable au service.",
+        "FPH",
+    )
+    assert any("88-386" in query and "35-2" in query and "35-3" in query for query in fph_citis)
+    assert not any("87-602" in query or "86-442" in query for query in fph_citis)
+
+    fph_tpt = _build_targeted_regulatory_queries(
+        "Je souhaite un temps partiel thérapeutique.",
+        "FPH",
+    )
+    assert any("88-386" in query and "13-1" in query and "13-14" in query for query in fph_tpt)
+    assert not any("87-602" in query or "86-442" in query for query in fph_tpt)
+
+
+def test_targeted_fpt_health_queries_do_not_inherit_fpe_or_fph_decrees():
+    from app.orchestrator import _build_targeted_regulatory_queries
+
+    fpt_citis = _build_targeted_regulatory_queries(
+        "Je demande un CITIS après un accident de service imputable au service.",
+        "FPT",
+    )
+    assert any("87-602" in query for query in fpt_citis)
+    assert not any("86-442" in query or "88-386" in query for query in fpt_citis)
+
+    fpt_tpt = _build_targeted_regulatory_queries(
+        "Je souhaite un temps partiel thérapeutique.",
+        "FPT",
+    )
+    assert any("87-602" in query and "13-2" in query for query in fpt_tpt)
+    assert not any("86-442" in query or "88-386" in query for query in fpt_tpt)
