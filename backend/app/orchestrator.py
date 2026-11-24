@@ -152,10 +152,9 @@ def _build_targeted_regulatory_queries(
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
         "invalidite temporaire imputable au service",
-    )) or (
-        "accident de service" in folded and
-        ("imputable au service" in folded or "maladie professionnelle" in folded)
-    )
+    )) or any(marker in folded for marker in (
+        "accident de service", "accident de trajet", "maladie professionnelle",
+    ))
     therapeutic_part_time = any(marker in folded for marker in (
         "temps partiel thérapeutique", "temps partiel therapeutique",
         "temps partiel pour raison thérapeutique",
