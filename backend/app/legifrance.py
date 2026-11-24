@@ -52,6 +52,27 @@ def _loda_document_kind(nature: Any, title: str, number: str | None) -> str:
     return "OTHER"
 
 
+def _loda_version_status(value: Any) -> str:
+    """Map only unambiguous Légifrance legal-state labels to a status."""
+    import unicodedata
+
+    raw = unicodedata.normalize("NFKD", str(value or "").upper())
+    normalized = "".join(char for char in raw if not unicodedata.combining(char))
+    normalized = re.sub(r"[^A-Z0-9]+", " ", normalized).strip()
+    if not normalized:
+        return "UNKNOWN"
+    if "PARTIEL" in normalized:
+        return "UNKNOWN"
+    if re.search(r"\bABROG", normalized):
+        return "REPEALED"
+    if re.search(r"\b(?:PERIME|CADUC|ANNULE|ANNULEE)\b", normalized):
+        return "NOT_IN_FORCE"
+    if re.search(r"\b(?:NON|PLUS)\s+(?:EN\s+)?VIGUEUR\b", normalized):
+        return "NOT_IN_FORCE"
+    # Qualified or ambiguous labels remain unknown; dated retrieval is tracked separately.
+    return "IN_FORCE" if normalized == "VIGUEUR" else "UNKNOWN"
+
+
 class LegifranceUnavailable(RuntimeError):
     """PISTE non configuré, inaccessible ou réponse inexploitable."""
 
@@ -596,9 +617,8 @@ class LegifranceConnector:
                 else nested_value(record, ("numero", "num"))
             )
             nor = nested_value(record, ("nor", "NOR"))
-            status_raw = (nested_value(record, ("etat", "etatJuridique", "status", "etatTexte")) or "").upper()
-            status = "IN_FORCE" if any(token in status_raw for token in ("VIGUEUR", "EN VIGUEUR")) else (
-                "REPEALED" if "ABROG" in status_raw else ("NOT_IN_FORCE" if "PERIME" in status_raw else "UNKNOWN"))
+            status_raw = nested_value(record, ("etat", "etatJuridique", "status", "etatTexte"))
+            status = _loda_version_status(status_raw)
             signature = self._iso_date(nested_value(record, ("dateTexte", "dateSignature", "date")))
             publication = self._iso_date(nested_value(record, ("datePublication", "datePubli")))
             valid_from = self._iso_date(nested_value(record, ("dateDebut", "dateDebutVersion", "dateEffet")))
