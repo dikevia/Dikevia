@@ -1615,3 +1615,20 @@ async def test_source_relevance_evaluator_accepts_fenced_json(monkeypatch):
                   "title":"Texte officiel","excerpt":"Le texte fixe les conditions applicables."}],
     )
     assert result == {"DOC-FENCE":"DIRECT"}
+
+
+def test_usable_sources_reject_malformed_citation_integrity_metadata():
+    from app.ai_provider import _usable_document_sources
+
+    base = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000012345678",
+        "requested_effective_date": "2026-11-21",
+        "excerpt": "Extrait officiel daté suffisamment long pour une analyse documentaire.",
+    }
+    malformed = [
+        {**base, "citation_integrity": "valid"},
+        {**base, "citation_integrity": ["valid"]},
+        {**base, "citation_integrity": 1},
+    ]
+    assert _usable_document_sources(malformed) == []
