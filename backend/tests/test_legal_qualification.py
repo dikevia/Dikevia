@@ -377,3 +377,14 @@ def test_negated_first_person_status_is_not_treated_as_confirmed_status():
 
 def test_positive_status_after_negation_is_still_detected_when_explicit():
     assert qualify_legal_question("Je ne suis pas contractuel, je suis titulaire.")["agent_status"] == "TITULAIRE_EXPLICIT"
+
+
+def test_negated_feminine_and_plural_statuses_are_not_misclassified_as_positive():
+    assert qualify_legal_question("Je ne suis pas contractuelle.")["agent_status"] == "NOT_SPECIFIED"
+    assert qualify_legal_question("Je ne suis pas stagiaire.")["agent_status"] == "NOT_SPECIFIED"
+    assert qualify_legal_question("Je ne suis pas titulaire.")["agent_status"] == "NOT_SPECIFIED"
+    assert qualify_legal_question("Je ne suis pas fonctionnaire.")["agent_status"] == "NOT_SPECIFIED"
+
+
+def test_explicit_positive_status_after_negated_status_is_kept():
+    assert qualify_legal_question("Je ne suis pas contractuelle, je suis titulaire.")["agent_status"] == "TITULAIRE_EXPLICIT"
