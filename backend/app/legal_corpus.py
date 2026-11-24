@@ -498,7 +498,7 @@ async def search_legal_corpus(
         )
         item["retrieval_mode"] = "HYBRID_LEXICAL_VECTOR" if vector_literal is not None else "LEXICAL_ONLY"
         full_text = item.pop("full_text")
-        expected_hash = item.pop("text_sha256")
+        expected_hash = item.get("text_sha256")
         actual_hash = sha256_text(full_text) if full_text else None
         hash_verified = bool(expected_hash and actual_hash and expected_hash.strip() == actual_hash)
         item.pop("raw_payload", None)

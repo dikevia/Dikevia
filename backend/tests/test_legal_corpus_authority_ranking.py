@@ -6,14 +6,15 @@ from app.legal_corpus import search_legal_corpus
 
 
 class FakeConn:
-    def __init__(self):
+    def __init__(self, rows=None):
         self.query = None
         self.args = None
+        self.rows = rows or []
 
     async def fetch(self, query, *args):
         self.query = query
         self.args = args
-        return []
+        return self.rows
 
 
 @pytest.mark.asyncio
@@ -45,6 +46,60 @@ async def test_corpus_search_applies_bounded_authority_weight_only_to_verified_o
     assert "MANUALLY_VERIFIED" in conn.query
     assert "SERVICE_PUBLIC_PART" not in conn.query.split("CASE", 1)[1].split("END AS authority_weight", 1)[0]
     assert "INSTITUTIONAL_GUIDANCE" not in conn.query.split("CASE", 1)[1].split("END AS authority_weight", 1)[0]
+
+
+@pytest.mark.asyncio
+async def test_corpus_search_preserves_verified_text_hash_and_version_provenance():
+    from app.legal_corpus import sha256_text
+
+    full_text = (
+        "L'agent public bénéficie des dispositions applicables prévues par le présent article. "
+        "Le texte précise les conditions et les garanties statutaires."
+    )
+    stored_hash = sha256_text(full_text)
+    conn = FakeConn([{
+        "document_id": "00000000-0000-0000-0000-000000000101",
+        "version_id": "00000000-0000-0000-0000-000000000202",
+        "source_type": "LEGIFRANCE_LEGI",
+        "source_id": "LEGITEXT000000000001",
+        "title": "Code général de la fonction publique",
+        "document_kind": "CODE",
+        "official_number": "CGFP",
+        "jurisdiction": "FR",
+        "official_url": "https://www.legifrance.gouv.fr/",
+        "signature_date": None,
+        "publication_date": date(2024, 1, 1),
+        "document_status": "UNKNOWN",
+        "source_status": "OFFICIAL_TEXT_RETRIEVED",
+        "raw_metadata": {},
+        "source_version_id": "LEGIARTI000000000001",
+        "version_key": "2024-01-01",
+        "valid_from": date(2024, 1, 1),
+        "valid_to": date(2024, 12, 31),
+        "version_status": "IN_FORCE",
+        "raw_payload": {"requested_date": "2024-06-01"},
+        "full_text": full_text,
+        "text_sha256": stored_hash,
+        "anchor": "Article L123-1",
+        "content_kind": "FULL_TEXT",
+        "ordinal": 0,
+        "content": full_text,
+        "rank": 0.5,
+    }])
+
+    results = await search_legal_corpus(
+        conn, "conditions statutaires", date(2024, 6, 1), limit=12
+    )
+
+    assert len(results) == 1
+    source = results[0]
+    assert source["text_sha256"] == stored_hash
+    assert source["source_version_id"] == "LEGIARTI000000000001"
+    assert source["version_key"] == "2024-01-01"
+    assert source["version_id"] == "00000000-0000-0000-0000-000000000202"
+    assert source["full_text"] == full_text
+    assert source["citation_integrity"]["valid"] is True
+    assert source["citation_integrity"]["text_hash_verified"] is True
 
 
 def test_corpus_interleaving_preserves_distinct_versions_of_the_same_document():
