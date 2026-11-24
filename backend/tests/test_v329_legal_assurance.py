@@ -667,10 +667,11 @@ def test_assess_source_set_reports_malformed_records_as_incomplete():
     assert any("mal formé" in warning for warning in result["warnings"])
 
 
-def test_assess_source_set_does_not_silently_accept_non_list_payload():
+def test_assess_source_set_reports_non_list_payload_as_incomplete():
     result = assess_source_set({"source_id": "not-a-list"})
     assert result["sources"] == []
-    assert result["status"] == "SOURCES_A_EXAMINER"
+    assert result["status"] == "VERIFICATION_INCOMPLETE"
+    assert any("format attendu" in warning for warning in result["warnings"])
 
 
 def test_citation_validator_handles_non_collection_source_payload():
