@@ -546,7 +546,7 @@ def validate_claim_evidence(
         source_scope = str(source.get("public_service_scope") or "").upper()
         is_local_document = source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
         if (
-            (not is_local_document and source.get("analysis_eligible") is not True)
+            (not is_local_document and not snapshot_fallback_evidence and source.get("analysis_eligible") is not True)
             or source.get("analysis_eligible") is False
             or source_scope in {
                 "SCOPE_TO_VERIFY", "GENERAL_PUBLIC_SERVICE",
