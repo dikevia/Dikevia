@@ -41,6 +41,7 @@ from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_da
 from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
+from .personal_documents import router as personal_documents_router
 import httpx
 
 CHAT_SOURCE_METADATA_FIELDS = frozenset({
@@ -310,6 +311,7 @@ if settings.cors_origins:
         allow_headers=["Authorization","Content-Type","X-Organization-ID","X-OIDC-ID-Token"])
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
+app.include_router(personal_documents_router)
 
 
 @app.get("/auth-config.js", include_in_schema=False)
