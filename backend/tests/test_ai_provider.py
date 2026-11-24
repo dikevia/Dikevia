@@ -1768,3 +1768,41 @@ async def test_research_planner_sanitizes_malformed_optional_context(monkeypatch
     )
     assert result is not None
     assert result.queries == ["droit au congé annuel fonction publique territoriale"]
+
+
+@pytest.mark.asyncio
+async def test_metadata_only_retrieval_cannot_suppress_required_research_queries(monkeypatch):
+    import httpx
+    from app.ai_provider import plan_legal_research, AIProviderUnavailable
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(settings, "ai_model", "test-model")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://example.test/v1")
+
+    def handler(request):
+        return httpx.Response(200, json={
+            "choices": [{
+                "message": {"content": json.dumps({
+                    "queries": [],
+                    "legal_issues": ["conditions d'application"],
+                    "extracted_facts": [],
+                })}
+            }],
+            "usage": {},
+        })
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai_provider.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    with pytest.raises(AIProviderUnavailable):
+        await plan_legal_research(
+            question="Quels sont mes droits ?",
+            employer="NATIONAL",
+            retrieved_evidence=[{
+                "source_id": "SEARCH-HIT-001",
+                "title": "Résultat de recherche",
+                "content_kind": "METADATA",
+            }],
+        )
