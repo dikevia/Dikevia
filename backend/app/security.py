@@ -112,7 +112,7 @@ def verify_identity_token(token: str, access_principal: Principal) -> Principal:
             subject=access_principal.subject,
             issuer=access_principal.issuer,
             email=email or access_principal.email,
-            email_verified=(claims.get("email_verified") is True) or access_principal.email_verified,
+            email_verified=claims.get("email_verified") is True,
         )
     except HTTPException:
         raise
