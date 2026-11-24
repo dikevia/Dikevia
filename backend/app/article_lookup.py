@@ -49,8 +49,8 @@ def missing_direct_article_reference(question: str, sources: list[dict]) -> str 
             "LEGIFRANCE_API", "CGFP_SNAPSHOT",
         }:
             continue
-        integrity = source.get("citation_integrity") or {}
-        if integrity.get("valid") is not True:
+        integrity = source.get("citation_integrity")
+        if not isinstance(integrity, dict) or integrity.get("valid") is not True:
             continue
         if source.get("content_kind") == "METADATA":
             continue
