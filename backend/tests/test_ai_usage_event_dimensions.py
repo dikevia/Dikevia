@@ -31,5 +31,5 @@ def test_per_operation_telemetry_does_not_expose_payload_content():
     assert "ai_usage_events: list[dict] = Field(default_factory=list, exclude=True)" in schema
     assert "usage.get(\"operation\", \"answer_generation\")" in main
     assert "for usage_event in usage_events:" in main
-    assert "usage["prompt"]" not in main
-    assert "usage["response"]" not in main
+    assert 'usage["prompt"]' not in main
+    assert 'usage["response"]' not in main
