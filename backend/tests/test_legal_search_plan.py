@@ -602,3 +602,33 @@ def test_orchestrator_does_not_promote_llm_refinement_labels_to_required_axes():
     source = (Path(__file__).resolve().parents[1] / "app" / "orchestrator.py").read_text()
     assert "refinement.legal_issues" not in source
     assert "research_axes = select_required_research_axes(fallback_axes)" in source
+
+
+def test_compound_query_reserves_each_detected_fallback_axis_within_budget():
+    fallback_queries = [
+        "question large initiale",
+        "axe secours heures supplementaires",
+        "axe secours accident de service",
+        "axe secours droits syndicaux",
+    ]
+    fallback_axes = [
+        "axe obligatoire heures supplementaires",
+        "axe obligatoire accident de service",
+        "axe obligatoire droits syndicaux",
+    ]
+    ai_queries = [
+        "plan IA sujet A",
+        "plan IA sujet B",
+        "plan IA sujet C",
+        "plan IA sujet D",
+        "plan IA sujet E",
+    ]
+
+    merged = merge_ai_and_fallback_research_queries(
+        ai_queries, fallback_queries, fallback_axes, max_queries=5,
+    )
+
+    assert len(merged) == 5
+    assert merged[:2] == ai_queries[:2]
+    assert fallback_queries[1:] == merged[2:]
+    assert all(axis_query in merged for axis_query in fallback_queries[1:])
