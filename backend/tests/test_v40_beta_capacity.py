@@ -15,7 +15,7 @@ def test_beta_user_cap_defaults_to_one_and_is_configurable():
 
 def test_production_blueprint_uses_piste_production_credentials():
     render = (ROOT / "render.yaml").read_text()
-    assert '      - key: LEGIFRANCE_ENVIRONMENT\\n        value: production' in render
+    assert '      - key: LEGIFRANCE_ENVIRONMENT\n        value: production' in render
 
 
 def test_beta_user_cap_is_enforced_for_invites_and_acceptance():
