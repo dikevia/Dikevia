@@ -695,3 +695,16 @@ def test_trusted_source_provenance_overrides_contradictory_authority_metadata(
     if source_type == "LEGIFRANCE_CETAT_FULL_TEXT":
         assert result["claim_eligible"] is True
         assert result["usable_for_interpretation"] is True
+
+
+def test_unrecognized_document_cannot_be_promoted_by_raw_authority_metadata():
+    result = classify_legal_source({
+        "source_type": "UNRECOGNIZED_CONNECTOR",
+        "document_kind": "UNKNOWN_DOCUMENT_KIND",
+        "authority_level": "PRIMARY_LEGAL",
+        "raw_metadata": {"authority_level": "PRIMARY_LEGAL"},
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+    })
+    assert result["authority_level"] == "UNCLASSIFIED"
+    assert result["normative"] is False
+    assert result["claim_eligible"] is False
