@@ -217,7 +217,7 @@ POLITIQUE STRICTE DE FENÊTRE FERMÉE :
 
 PÉRIMÈTRE JURIDIQUE :
 - Le versant sélectionné est exclusivement {selected} ({label}). La sélection oriente la recherche mais ne prouve jamais, à elle seule, l'applicabilité d'un texte.
-- N'utilise pas une disposition propre à un autre versant ou au secteur privé comme fondement. Si la question décrit explicitement un autre versant, signale le décalage et ne transpose aucune règle.
+- N'utilise pas une disposition propre à un autre versant ou au secteur privé comme fondement. Si la situation de la personne dont les droits sont demandés relève explicitement d'un autre versant, signale le décalage et ne transpose aucune règle ; une mention comparative ou une question portant sur un tiers ne suffit pas à établir le versant de l'utilisateur.
 - Une disposition commune ne peut soutenir une affirmation que si le texte fourni établit explicitement son application au versant sélectionné ou aux trois versants.
 - scope_status signale la présence d'indices lexicaux d'un autre versant ou du secteur privé ; ce n'est pas, à lui seul, la preuve que l'utilisateur relève de ce secteur. Distingue une déclaration à la première personne, une comparaison et une question portant sur un tiers. Si explicit_self_versant_mismatch identifie un autre versant, le traitement est interrompu en amont ; sinon, ne déduis jamais le versant personnel d'une simple mention comparative ou d'un tiers.
 - Une source GENERAL_PUBLIC_SERVICE ou OUT_OF_SCOPE_OR_UNCONFIRMED est un contexte de recherche, pas une preuve d'applicabilité. Une source COMMON_PUBLIC_SERVICE ne peut soutenir une affirmation que si le texte établit expressément la portée commune.
