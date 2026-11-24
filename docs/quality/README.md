@@ -76,3 +76,16 @@ Les seuils du JSON sont des objectifs de recette, pas des performances acquises.
 ## Familles couvertes
 
 10 familles de 10 questions : rémunération/temps de travail, congés/absences, maladie/protection sociale, carrière/rémunération, discipline/droits de la défense, protection fonctionnelle, droits syndicaux, CST/formation spécialisée, télétravail/santé/sécurité, mobilité/fin de fonctions.
+
+
+### Exécuter le pilote de 15 questions
+
+Le script hors ligne accepte directement le manifeste pilote, sans modifier le jeu complet de 100 questions :
+
+```bash
+python scripts/fpt_benchmark.py validate --dataset docs/quality/fpt_pilot_15_v1.json
+python scripts/fpt_benchmark.py prepare-review --dataset docs/quality/fpt_pilot_15_v1.json --responses pilot_responses.json --out pilot_review.json
+python scripts/fpt_benchmark.py score --dataset docs/quality/fpt_pilot_15_v1.json --responses pilot_responses.json --reviews pilot_review.json --out pilot_score.json
+```
+
+Le fichier de réponses doit contenir exactement une réponse par identifiant du manifeste. La grille générée reprend les critères et avertissements du cas. Le score du pilote porte uniquement sur ces 15 cas et ne remplace pas le benchmark de 100 questions. Le statut de validation juridique humaine reste obligatoire ; les seuils du rapport ne constituent pas une certification juridique.
