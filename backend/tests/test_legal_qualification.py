@@ -388,3 +388,33 @@ def test_negated_feminine_and_plural_statuses_are_not_misclassified_as_positive(
 
 def test_explicit_positive_status_after_negated_status_is_kept():
     assert qualify_legal_question("Je ne suis pas contractuelle, je suis titulaire.")["agent_status"] == "TITULAIRE_EXPLICIT"
+
+
+def test_et_pour_a_new_legal_topic_does_not_inherit_unrelated_context():
+    prior = "Je suis titulaire de la FPT. Quels sont mes droits aux IHTS ?"
+    context = build_contextual_research_context(
+        "Et pour les congés annuels ?",
+        [prior],
+        ["Les règles relatives aux IHTS sont..."],
+    )
+    assert context.is_followup is False
+    assert context.question == "Et pour les congés annuels ?"
+
+
+def test_et_pour_same_legal_topic_keeps_conversational_context():
+    prior = "Je suis titulaire de la FPT. Quels sont mes droits aux IHTS ?"
+    context = build_contextual_research_context(
+        "Et pour les astreintes ?",
+        [prior],
+        ["Les règles relatives aux IHTS sont..."],
+    )
+    assert context.is_followup is True
+    assert "IHTS" in context.question
+
+
+def test_et_pour_new_remuneration_topic_does_not_inherit_working_time_context():
+    context = build_contextual_research_context(
+        "Et pour les primes ?",
+        ["Je suis titulaire. Quels sont mes droits aux heures supplémentaires ?"],
+    )
+    assert context.is_followup is False

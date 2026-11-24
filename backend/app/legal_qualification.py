@@ -80,6 +80,12 @@ def build_contextual_research_context(
             ),
             prior_questions[-1],
         )
+        current_topics = _matched_question_topics(current)
+        prior_topics = _matched_question_topics(prior)
+        if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
+            # A short "Et pour ..." that names a different legal family is a
+            # new question, not a continuation of the previous legal issue.
+            return ContextualResearchContext(question=current[:500], is_followup=False)
         contextual = f"{current[:300]}\n{prior[:180]}"[:500]
         return ContextualResearchContext(question=contextual, is_followup=True)
 
@@ -176,6 +182,13 @@ _TOPIC_MARKERS = (
     ("LEAVE", ("conges annuels", "conge annuel", "poser des conges", "prendre des conges",
                "compte epargne temps", "autorisation speciale d absence")),
 )
+
+def _matched_question_topics(question: str) -> set[str]:
+    folded = _fold(question)
+    return {
+        candidate for candidate, markers in _TOPIC_MARKERS
+        if any(_fold(marker) in folded for marker in markers)
+    }
 
 
 def qualify_legal_question(
