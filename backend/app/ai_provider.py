@@ -310,6 +310,21 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
     raise RuntimeError("Unreachable provider retry state")
 
 
+def _planner_evidence_records(retrieved_evidence):
+    """Keep private tenant documents out of planner requests, even if passed by a future caller."""
+    if not isinstance(retrieved_evidence, (list, tuple)):
+        return []
+    return [
+        item for item in retrieved_evidence
+        if isinstance(item, dict)
+        and item.get("source_type") not in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}
+        and any(
+            isinstance(item.get(field), str) and item[field].strip()
+            for field in ("excerpt", "text", "full_text")
+        )
+    ]
+
+
 def _usable_document_sources(sources, *, allow_local_documents: bool = False):
     """Keep only identified, dated documents with meaningful retrieved text."""
     if not isinstance(sources, (list, tuple)):
@@ -584,14 +599,10 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
         item for item in conversation_history
         if isinstance(item, dict)
     ] if isinstance(conversation_history, (list, tuple)) else []
-    evidence_records = [
-        item for item in retrieved_evidence
-        if isinstance(item, dict)
-        and any(
-            isinstance(item.get(field), str) and item[field].strip()
-            for field in ("excerpt", "text", "full_text")
-        )
-    ] if isinstance(retrieved_evidence, (list, tuple)) else []
+    # Planner refinement uses national discovery evidence only. Local tenant
+    # documents are excluded unconditionally; their separate consent flow applies
+    # only to the dedicated analysis/review path.
+    evidence_records = _planner_evidence_records(retrieved_evidence)
     query_records = previous_queries if isinstance(previous_queries, (list, tuple)) else []
     selected_versant = str(context.get("versant_fonction_publique") or "FPT").upper()
     selected_label = _PUBLIC_SERVICE_LABELS.get(selected_versant, _PUBLIC_SERVICE_LABELS["FPT"])
