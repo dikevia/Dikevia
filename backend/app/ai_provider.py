@@ -606,7 +606,7 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
             data = response.json()
         content = data["choices"][0]["message"]["content"]
         plan = _parse_research_plan(
-            content, allow_empty=bool(retrieved_evidence), question=question,
+            content, allow_empty=bool(evidence_records), question=question,
         )
         if plan is None:
             raise AIProviderUnavailable("Le plan de recherche juridique généré est invalide.")
