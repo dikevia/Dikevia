@@ -21,3 +21,18 @@ def normalize_evidence_text(value: object) -> str:
     """Normalize Unicode composition, selected typography and whitespace."""
     normalized = unicodedata.normalize("NFC", str(value or "")).translate(_TYPOGRAPHIC_TRANSLATION)
     return re.sub(r"\s+", " ", normalized).strip()
+
+def bound_evidence_text(value: object, max_chars: int = 12000, head_chars: int = 9000) -> str:
+    """Bound evidence sent to a model while retaining both the opening and closing provisions."""
+    text = str(value or "").strip()
+    if max_chars <= 0:
+        return ""
+    if len(text) <= max_chars:
+        return text
+    marker = "\\n\\n[Passage intermédiaire non transmis]\\n\\n"
+    available = max(0, max_chars - len(marker))
+    head = min(max(0, head_chars), available)
+    tail = available - head
+    if tail <= 0:
+        return text[:available] + marker
+    return text[:head] + marker + text[-tail:]
