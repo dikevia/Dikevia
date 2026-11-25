@@ -697,3 +697,24 @@ def test_cgfp_l532_9_is_fpt_specific_report_to_disciplinary_board():
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
     assert result["claim_eligible"] is True
+
+
+def test_cgfp_individual_file_composition_and_access_are_common_public_service_rights():
+    from app.fpt_scope import classify_public_service_scope
+
+    composition = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L137-1",
+        "article": "L137-1",
+        "text": "Le dossier individuel de l'agent public doit comporter toutes les pièces intéressant la situation administrative de l'intéressé, enregistrées, numérotées et classées sans discontinuité.",
+    })
+    access = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L137-4",
+        "article": "L137-4",
+        "text": "Tout agent public a accès à son dossier individuel.",
+    })
+    for result in (composition, access):
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True
