@@ -1,5 +1,6 @@
 from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
 from app.orchestrator import (
+    apply_semantic_source_relevance,
     filter_irrelevant_sources_for_display,
     _source_relevant_to_any_research_axis,
 )
@@ -447,3 +448,37 @@ def test_union_assistance_topic_does_not_match_generic_union_representative_righ
     assert "UNION_ASSISTANCE" in _matched_topic_families(question)
     assert is_topic_relevant_source(question, unrelated) is False
 
+
+
+def test_semantic_direct_verdict_cannot_override_cmo_citis_exclusion(monkeypatch):
+    import asyncio
+    import app.orchestrator as orchestrator
+
+    async def fake_evaluate_source_relevance(**kwargs):
+        return {"citis": "DIRECT"}
+
+    monkeypatch.setattr(orchestrator, "evaluate_source_relevance", fake_evaluate_source_relevance)
+    question = (
+        "Je suis fonctionnaire territorial titulaire. Quelles sont les règles "
+        "du congé de maladie ordinaire, notamment le jour de carence et le maintien de rémunération ?"
+    )
+    source = {
+        "source_id": "citis",
+        "title": "Code général de la fonction publique — article L822-21",
+        "article": "L822-21",
+        "text": (
+            "Le fonctionnaire en activité a droit à un congé pour invalidité "
+            "temporaire imputable au service lorsque son incapacité temporaire "
+            "de travail est consécutive à un accident reconnu imputable au service."
+        ),
+    }
+
+    asyncio.run(apply_semantic_source_relevance(
+        question=question,
+        research_axes=[question],
+        sources=[source],
+        target_versant="FPT",
+    ))
+
+    assert source["research_axis_relevant"] is False
+    assert source["semantic_relevance"] == "BLOCKED_BY_TOPIC_GUARD"

@@ -609,8 +609,15 @@ async def apply_semantic_source_relevance(
         for source in sources:
             verdict = semantic_verdicts.get(source.get("source_id"))
             if verdict in {"DIRECT", "CONTEXTUAL"}:
-                source["research_axis_relevant"] = True
-                source["semantic_relevance"] = verdict
+                # Semantic similarity may recover broad or cross-cutting sources,
+                # but it must never override a deterministic legal-mechanism
+                # exclusion (for example CITIS for an ordinary CMO question).
+                if is_topic_relevant_source(question, source, target_versant=target_versant):
+                    source["research_axis_relevant"] = True
+                    source["semantic_relevance"] = verdict
+                else:
+                    source["research_axis_relevant"] = False
+                    source["semantic_relevance"] = "BLOCKED_BY_TOPIC_GUARD"
             elif verdict == "UNCERTAIN":
                 # Uncertainty is not positive relevance evidence: keep the lexical result.
                 source["semantic_relevance"] = verdict
