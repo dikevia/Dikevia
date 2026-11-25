@@ -1502,7 +1502,8 @@
         "accessibilite",
         "communication_publique",
         "FALC"
-      ]
+      ],
+      "collection_note": "Dry-run du 24/11/2026 réussi : PDF téléchargé et texte extrait (64 pages, 85 022 caractères). SHA-256 du fichier : 2769053883943eccafc9707febc32daf088a295f41b326608aca99a2e05fde58. Aucune écriture PostgreSQL ; content_status reste NOT_COLLECTED jusqu’à l’import contrôlé."
     },
     {
       "id": "sig-charte-usage-responsable-ia-2026",
@@ -1524,7 +1525,8 @@
         "biais",
         "accessibilite",
         "souverainete_numerique"
-      ]
+      ],
+      "collection_note": "Dry-run du 24/11/2026 réussi : PDF téléchargé et texte extrait (49 pages, 69 101 caractères). SHA-256 du fichier : e870ea079281b65ea395fc7956a7fb4043f4a0e407465606dc9b502bd1f2b912. Aucune écriture PostgreSQL ; content_status reste NOT_COLLECTED jusqu’à l’import contrôlé."
     }
   ]
 }
