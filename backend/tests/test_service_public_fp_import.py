@@ -19,6 +19,7 @@ def _archive() -> zipfile.ZipFile:
       <FilDAriane><Niveau ID="N19806"/></FilDAriane>
       <BlocCas type="FPT"><Titre>Fonction publique territoriale</Titre><Texte>Temps partiel pour raison thérapeutique.</Texte></BlocCas>
       <Reference ID="LEGIARTI000000000001" type="article">Code général de la fonction publique</Reference>
+      <Reference ID="R57657" type="internal">Référence Service-Public interne</Reference>
     </Fiche>""".encode("utf-8")
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
@@ -73,12 +74,18 @@ def test_extracts_only_function_public_fiches_and_preserves_legal_context():
     fiche = next(item for item in fiches if item["fiche_id"] == "F12345")
     generic_title_fiche = next(item for item in fiches if item["fiche_id"] == "F12346")
     assert generic_title_fiche["titre_courant"] == "Droits a conges annuels"
+    assert generic_title_fiche["references_juridiques"][0]["source_reference_id"] == "D85-1250"
+    assert "id_legifrance" not in generic_title_fiche["references_juridiques"][0]
     hospital_fiche = next(item for item in fiches if item["fiche_id"] == "F12347")
     assert hospital_fiche["versants_detectes"] == ["FPH", "FPT"]
     assert fiche["titre_courant"] == "Temps partiel thérapeutique dans la fonction publique"
     assert fiche["versants_detectes"] == ["FPT"]
     assert "temps partiel pour raison thérapeutique" in fiche["contenu"].lower()
+    assert fiche["references_juridiques"][0]["source_reference_id"] == "LEGIARTI000000000001"
     assert fiche["references_juridiques"][0]["id_legifrance"] == "LEGIARTI000000000001"
+    internal_ref = next(item for item in fiche["references_juridiques"] if item["source_reference_id"] == "R57657")
+    assert "id_legifrance" not in internal_ref
+    assert internal_ref["libelle"] == "Référence Service-Public interne"
     assert fiche["statut_validation_juridique"] == "NON_VERIFIE"
 
 
