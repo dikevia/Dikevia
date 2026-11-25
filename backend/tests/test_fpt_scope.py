@@ -621,3 +621,41 @@ def test_generic_medical_personnel_mention_does_not_establish_fph_source_scope()
     assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
     assert result["analysis_eligible"] is False
 
+
+
+def test_report_and_individual_file_articles_have_explicit_legal_scope():
+    common_articles = ("L532-4", "R137-16")
+    for article in common_articles:
+        result = classify_public_service_scope({
+            "title": f"Code général de la fonction publique — article {article}",
+            "article": article,
+            "text": "Disposition relative aux garanties du dossier individuel et de la procédure disciplinaire.",
+            "source_type": "LEGIFRANCE_API",
+        })
+        assert result["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert result["analysis_eligible"] is True
+        assert result["claim_eligible"] is True
+
+    territorial_report = classify_public_service_scope({
+        "title": "Code général de la fonction publique — article L532-9",
+        "article": "L532-9",
+        "text": "Lors d'une procédure disciplinaire, l'autorité territoriale saisit le conseil de discipline par un rapport.",
+        "source_type": "LEGIFRANCE_API",
+    })
+    assert territorial_report["scope"] == "FPT"
+    assert territorial_report["analysis_eligible"] is True
+    assert territorial_report["claim_eligible"] is True
+
+
+def test_report_question_triggers_exact_live_cgfp_article_lookups():
+    from app.orchestrator import _build_targeted_cgfp_article_queries
+
+    queries = _build_targeted_cgfp_article_queries(
+        "Mon chef a fait un rapport contre moi, puis-je le contester ?",
+        public_service="FPT",
+    )
+    assert queries == ["article L532-4", "article L532-9", "article R137-16"]
+    assert _build_targeted_cgfp_article_queries(
+        "Mon chef a fait un rapport contre moi, puis-je le contester ?",
+        public_service="FPE",
+    ) == []
