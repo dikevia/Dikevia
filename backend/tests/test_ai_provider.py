@@ -2366,3 +2366,61 @@ async def test_provider_completion_retries_transient_server_errors_without_model
     # must not silently switch to a different model.
     assert calls == ["primary-model", "primary-model"]
 
+@pytest.mark.asyncio
+async def test_gemini_model_not_found_uses_only_configured_fallback_model(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-fallback-model")
+    calls = []
+
+    def handler(request):
+        model = json.loads(request.content)["model"]
+        calls.append(model)
+        if model == "gemini-primary-model":
+            return httpx.Response(
+                404, request=request,
+                json={"error": {"status": "NOT_FOUND", "message": "models/gemini-primary-model is not found"}},
+            )
+        return httpx.Response(
+            200, request=request,
+            json={"choices": [{"message": {"content": "ok"}}]},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={"Authorization": "Bearer test"},
+            payload={"model": "gemini-primary-model"},
+        )
+
+    assert response.status_code == 200
+    assert calls == ["gemini-primary-model", "gemini-fallback-model"]
+
+
+@pytest.mark.asyncio
+async def test_gemini_unrelated_404_does_not_try_another_model(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-fallback-model")
+    calls = []
+
+    def handler(request):
+        calls.append(json.loads(request.content)["model"])
+        return httpx.Response(404, request=request, json={"error": {"message": "route not found"}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(httpx.HTTPStatusError):
+            await ai_provider._post_chat_completion(
+                client,
+                "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                headers={"Authorization": "Bearer test"},
+                payload={"model": "gemini-primary-model"},
+            )
+
+    assert calls == ["gemini-primary-model"]
+

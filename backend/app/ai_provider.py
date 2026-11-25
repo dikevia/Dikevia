@@ -38,9 +38,9 @@ def _log_provider_failure(operation: str, exc: Exception) -> None:
             detail = detail.replace(settings.ai_api_key, "[REDACTED]")
         detail = detail[:400]
         logger.warning(
-            "AI_PROVIDER_REQUEST_FAILED provider=%s operation=%s http_status=%s detail=%s",
+            "AI_PROVIDER_REQUEST_FAILED provider=%s model=%s operation=%s http_status=%s detail=%s",
             "gemini" if _is_gemini_provider() else "openai_compatible",
-            operation, response.status_code, detail,
+            settings.ai_model or "not-configured", operation, response.status_code, detail,
         )
         return
     logger.warning(
@@ -336,12 +336,39 @@ class AIAnalysisRefusedNoSources(RuntimeError):
     pass
 
 
-async def _post_chat_completion(client, url: str, *, headers: dict, payload: dict):
-    """Bounded retry plus one configured Gemini model fallback for capacity-only 503s.
+def _is_gemini_model_not_found_response(response: httpx.Response) -> bool:
+    """Recognize a model-specific 404 without mistaking a broken API route for one."""
+    if response.status_code != 404:
+        return False
+    try:
+        payload = response.json()
+    except ValueError:
+        return False
+    records = payload if isinstance(payload, list) else [payload]
+    fragments = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        error = record.get("error")
+        if isinstance(error, dict):
+            fragments.extend(str(error.get(key) or "") for key in ("status", "code", "message"))
+        elif isinstance(error, str):
+            fragments.append(error)
+        fragments.extend(str(record.get(key) or "") for key in ("status", "code", "message"))
+    detail = " ".join(fragments).casefold()
+    return "model" in detail and any(
+        marker in detail for marker in (
+            "not found", "not supported", "does not exist", "unknown model",
+        )
+    )
 
-    Authentication, quota and request errors are never retried or redirected to
-    another model. The fallback uses the same provider, credentials and prompt;
-    downstream source/citation/claim validation remains unchanged.
+
+async def _post_chat_completion(client, url: str, *, headers: dict, payload: dict):
+    """Bounded retries plus configured Gemini fallbacks for capacity or missing-model errors.
+
+    Authentication, quota and unrelated route/request errors are never retried or
+    redirected to another model. The fallback uses the same provider, credentials
+    and prompt; downstream source/citation/claim validation remains unchanged.
     """
     transient_statuses = {500, 502, 503, 504}
     primary_model = payload.get("model")
@@ -359,8 +386,12 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
         request_payload = dict(payload)
         if model:
             request_payload["model"] = model
+        model_not_found = False
         for attempt in range(max_attempts):
             response = await client.post(url, headers=headers, json=request_payload)
+            if _is_gemini_provider() and _is_gemini_model_not_found_response(response):
+                model_not_found = True
+                break
             if response.status_code not in transient_statuses:
                 response.raise_for_status()
                 return response
@@ -373,7 +404,7 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
                 await asyncio.sleep(0.6)
                 continue
             response.raise_for_status()
-        if response.status_code == 503:
+        if response.status_code == 503 or model_not_found:
             continue
     response.raise_for_status()
 
