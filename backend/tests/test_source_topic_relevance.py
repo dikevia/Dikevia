@@ -605,6 +605,17 @@ def test_cmo_keeps_decree_87_602_article_from_structured_article_metadata():
     assert is_topic_relevant_source(question, source) is True
 
 
+def test_cmo_keeps_decree_87_602_article_from_formatted_article_number_metadata():
+    question = "Fonctionnaire territorial : règles du congé de maladie ordinaire et maintien de rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Décret n° 87-602 du 30 juillet 1987",
+        "article_number": "Article 15 du décret",
+        "text": "Le comité médical examine la situation du fonctionnaire en congé de maladie.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
 def test_cmo_rejects_generic_rifseep_document_as_remuneration_evidence():
     question = "Fonctionnaire territorial : congé de maladie ordinaire et maintien de rémunération"
     source = {
