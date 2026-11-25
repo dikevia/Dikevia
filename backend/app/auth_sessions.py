@@ -1,5 +1,9 @@
 """Opt-in BFF for OIDC: opaque HttpOnly cookie, encrypted server-side tokens."""
-import base64, hashlib, json, logging, secrets
+import base64
+import hashlib
+import json
+import logging
+import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode, urlparse
 import httpx
@@ -123,7 +127,8 @@ async def login():
 
 @router.post("/callback")
 async def callback(request: Request):
-    _enabled(); require_same_origin(request)
+    _enabled()
+    require_same_origin(request)
     flow_cookie = request.cookies.get(FLOW_COOKIE)
     if not flow_cookie:
         raise HTTPException(401, "Flux de connexion absent ou expiré.")
@@ -193,7 +198,7 @@ async def _refresh(pool, digest):
                             "grant_type":"refresh_token","client_id":settings.oidc_client_id,"refresh_token":refresh})
                     if response.status_code != 200:
                         raise ValueError()
-                    tokens=response.json()
+                    tokens = response.json()
                     access=tokens.get("access_token"); expires=tokens.get("expires_in")
                     if not isinstance(access,str) or not access or not isinstance(expires,int) or not 1<=expires<=86400:
                         raise ValueError()
@@ -204,12 +209,15 @@ async def _refresh(pool, digest):
                     identity=tokens.get("id_token")
                     if identity:
                         ident=verify_identity_token(identity,principal)
-                        if settings.oidc_provider=="auth0" and not ident.email_verified:
+                        if settings.oidc_provider == "auth0" and not ident.email_verified:
                             raise ValueError()
-                        id_cipher=encrypt_session_value(identity,"identity")
-                        email=ident.email or row["email"]; verified=ident.email_verified
+                        id_cipher = encrypt_session_value(identity, "identity")
+                        email = ident.email or row["email"]
+                        verified = ident.email_verified
                     else:
-                        id_cipher=row["id_token_ciphertext"]; email=row["email"]; verified=row["email_verified"]
+                        id_cipher = row["id_token_ciphertext"]
+                        email = row["email"]
+                        verified = row["email_verified"]
                     result=await conn.fetchrow("""UPDATE oidc_sessions SET access_token_ciphertext=$2,
                     id_token_ciphertext=$3,refresh_token_ciphertext=$4,access_expires_at=$5,
                     email=$6,email_verified=$7,last_seen_at=now()
@@ -230,15 +238,20 @@ async def get_session_principal(request: Request) -> Principal:
     cookie=request.cookies.get(SESSION_COOKIE)
     if not cookie:
         raise HTTPException(401,"Session absente. Connectez-vous.")
-    try: digest=hash_session_cookie(cookie)
-    except ValueError: raise HTTPException(401,"Session invalide.")
+    try:
+        digest = hash_session_cookie(cookie)
+    except ValueError:
+        raise HTTPException(401, "Session invalide.")
     pool=get_pool()
     row=await pool.fetchrow("SELECT * FROM oidc_sessions WHERE session_token_hash=$1 AND revoked_at IS NULL",digest)
-    if not row: raise HTTPException(401,"Session expirée ou révoquée.")
+    if not row:
+        raise HTTPException(401, "Session expirée ou révoquée.")
     if row["access_expires_at"]<=datetime.now(timezone.utc)+timedelta(seconds=60):
         row=await _refresh(pool,digest)
-    try: principal=verify_access_token(decrypt_session_value(row["access_token_ciphertext"],"access"))
-    except Exception: raise HTTPException(401,"Session invalide. Reconnectez-vous.")
+    try:
+        principal = verify_access_token(decrypt_session_value(row["access_token_ciphertext"], "access"))
+    except Exception:
+        raise HTTPException(401, "Session invalide. Reconnectez-vous.")
     if principal.issuer!=row["oidc_issuer"] or principal.subject!=row["oidc_subject"]:
         raise HTTPException(401,"Identité de session incohérente.")
     await pool.execute("""UPDATE oidc_sessions SET last_seen_at=now() WHERE session_token_hash=$1
@@ -255,11 +268,13 @@ async def session(request: Request):
 
 @router.post("/logout")
 async def logout(request: Request):
-    _enabled(); _origin(request)
+    _enabled()
+    require_same_origin(request)
     cookie=request.cookies.get(SESSION_COOKIE); logout_url=None
     if cookie:
         try:
-            digest=hash_session_cookie(cookie); pool=get_pool()
+            digest = hash_session_cookie(cookie)
+            pool = get_pool()
             row=await pool.fetchrow("SELECT refresh_token_ciphertext FROM oidc_sessions WHERE session_token_hash=$1 AND revoked_at IS NULL",digest)
             await pool.execute("UPDATE oidc_sessions SET revoked_at=now() WHERE session_token_hash=$1 AND revoked_at IS NULL",digest)
             if row:
@@ -272,7 +287,8 @@ async def logout(request: Request):
                 except Exception: log.warning("oidc_provider_revocation_failed")
                 if metadata.get("end_session_endpoint"):
                     logout_url=metadata["end_session_endpoint"]+"?"+urlencode({"client_id":settings.oidc_client_id,"post_logout_redirect_uri":_redirect_uri()})
-        except ValueError: pass
+        except ValueError:
+            pass
     result=JSONResponse({"logged_out":True,"logout_url":logout_url})
     result.delete_cookie(SESSION_COOKIE,path="/",httponly=True,secure=settings.app_env=="production",samesite="lax")
     _cookies(result)
