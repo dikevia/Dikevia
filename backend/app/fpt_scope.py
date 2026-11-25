@@ -730,6 +730,12 @@ def is_topic_relevant_source(
         ):
             return False
 
+    if "REPORT_HIERARCHICAL_CONTESTATION" in question_topics and not (
+        {"REPORT_HIERARCHICAL_CONTESTATION", "INDIVIDUAL_FILE", "DISCIPLINE", "PROFESSIONAL_EVALUATION"}
+        & source_topics
+    ):
+        return False
+
     if question_topics & source_topics:
         return True
 
