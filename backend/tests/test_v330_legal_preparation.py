@@ -663,16 +663,29 @@ async def test_current_date_repere_sources_are_not_labelled_applicable_without_f
     async def code_sources(*args, **kwargs):
         return [{
             "source_type": "LEGIFRANCE_API", "source_id": "LEGIARTI000000000001",
-            "article": "L123-4", "title": "Article L123-4", "text": "Texte officiel.",
-            "excerpt": "Texte officiel.",
+            "article": "L123-4", "title": "Article L123-4",
+            "text": (
+                "Le présent article fixe les règles applicables aux fonctionnaires territoriaux "
+                "et aux collectivités territoriales. " * 4
+            ),
+            "excerpt": (
+                "Le présent article fixe les règles applicables aux fonctionnaires territoriaux "
+                "et aux collectivités territoriales. " * 4
+            ),
         }]
 
     async def loda_sources(*args, **kwargs):
         return [{
             "source_type": "LEGIFRANCE_LODA", "source_id": "LEGITEXT000000000001",
-            "title": "Décret", "document_kind": "DECREE",
-            "full_text": "Texte officiel du décret. " * 5,
-            "excerpt": "Texte officiel du décret.",
+            "title": "Décret relatif aux fonctionnaires territoriaux", "document_kind": "DECREE",
+            "full_text": (
+                "Le présent décret fixe les règles applicables aux fonctionnaires territoriaux "
+                "et aux collectivités territoriales. " * 5
+            ),
+            "excerpt": (
+                "Le présent décret fixe les règles applicables aux fonctionnaires territoriaux "
+                "et aux collectivités territoriales. " * 5
+            ),
         }]
 
     async def no_case_law(*args, **kwargs):
