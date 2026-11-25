@@ -45,6 +45,8 @@ def test_server_sessions_are_opt_in_and_require_encryption_and_https_redirect():
         oidc_server_sessions_enabled=True,
         oidc_client_id="cfdt-juris-web",
         oidc_issuer="https://identity.example/realms/cfdt",
+        oidc_audience="dikevia-api",
+        oidc_jwks_url="https://identity.example/realms/cfdt/protocol/openid-connect/certs",
         oidc_redirect_uri="https://dikevia.example/",
         oidc_session_encryption_key=bytes(range(32)).hex(),
     )

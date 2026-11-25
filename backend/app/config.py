@@ -118,17 +118,6 @@ def validate_runtime_configuration(config: Settings) -> None:
         except ValueError as exc:
             raise RuntimeError("OIDC_SESSION_ENCRYPTION_KEY doit représenter exactement 32 octets.") from exc
 
-    if config.oidc_server_sessions_enabled:
-        if not config.oidc_client_id or not config.oidc_issuer:
-            raise RuntimeError("Les sessions OIDC serveur exigent OIDC_CLIENT_ID et OIDC_ISSUER.")
-        if not config.oidc_redirect_uri.startswith("https://"):
-            raise RuntimeError("OIDC_REDIRECT_URI doit être une URL HTTPS en production.")
-        from .auth_session_crypto import decode_encryption_key
-        try:
-            decode_encryption_key(config.oidc_session_encryption_key)
-        except ValueError as exc:
-            raise RuntimeError("OIDC_SESSION_ENCRYPTION_KEY doit représenter exactement 32 octets.") from exc
-
     scopes = [scope for scope in config.oidc_scopes.split() if scope]
     if not scopes or "openid" not in scopes:
         raise RuntimeError("OIDC_SCOPES doit inclure le scope openid.")
