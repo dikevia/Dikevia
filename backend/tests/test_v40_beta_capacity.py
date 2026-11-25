@@ -46,9 +46,11 @@ def test_production_blueprint_disables_quota_consuming_startup_probes():
     assert '      - key: STARTUP_EXTERNAL_DIAGNOSTICS_ENABLED\n        value: "false"' in render
 
 
-def test_production_blueprint_pins_identity_and_disabled_features():
+def test_production_blueprint_keeps_identity_provider_in_render_environment():
     render = (ROOT / "render.yaml").read_text()
-    assert '      - key: OIDC_PROVIDER\n        value: keycloak' in render
+    api_service = render.split("  - type: web", 2)[1].split("  - type: web", 1)[0]
+    assert api_service.count("- key: OIDC_PROVIDER") == 1
+    assert "- key: OIDC_PROVIDER\n        sync: false" in api_service
     assert '      - key: VECTOR_SEARCH_ENABLED\n        value: "false"' in render
     assert '      - key: AI_LOCAL_DOCUMENT_REVIEW_ENABLED\n        value: "false"' in render
     assert '      - key: STRIPE_BILLING_ENABLED\n        value: "false"' in render

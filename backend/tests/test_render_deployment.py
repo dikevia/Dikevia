@@ -46,3 +46,10 @@ def test_render_keycloak_container_uses_expected_version_and_health_support():
     assert dockerfile.startswith("FROM quay.io/keycloak/keycloak:26.8.2")
     assert "KC_HEALTH_ENABLED=true" in dockerfile
     assert "KC_PROXY_HEADERS=xforwarded" in dockerfile
+
+
+def test_render_blueprint_declares_oidc_provider_exactly_once():
+    blueprint = (ROOT / "render.yaml").read_text()
+    api_service = blueprint.split("  - type: web", 2)[1].split("  - type: web", 1)[0]
+    assert api_service.count("- key: OIDC_PROVIDER") == 1
+    assert "- key: OIDC_PROVIDER\n        sync: false" in api_service
