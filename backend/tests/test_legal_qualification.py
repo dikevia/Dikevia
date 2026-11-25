@@ -650,3 +650,9 @@ def test_refused_part_time_is_not_misclassified_as_a_leave_followup():
     assert context.question == question
     qualification = qualify_legal_question(context.question)
     assert qualification["topic"] == "WORKING_TIME"
+
+
+def test_hierarchical_report_contestation_is_qualified_separately_from_annual_evaluation():
+    result = qualify_legal_question("Mon chef a fait un rapport contre moi, puis-je le contester ?")
+    assert result["topic"] == "REPORT_HIERARCHICAL_CONTESTATION"
+    assert "REPORT_HIERARCHICAL_CONTESTATION" in result["topics"]
