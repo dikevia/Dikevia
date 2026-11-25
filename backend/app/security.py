@@ -1,4 +1,5 @@
 import logging
+import time
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -182,3 +183,52 @@ def verify_access_token(token: str) -> Principal:
                 "Service d'identité momentanément indisponible. Réessayez.",
             )
         raise reject(reason)
+
+
+MAX_LEGACY_ID_TOKEN_LENGTH = 16_384
+MAX_LEGACY_ID_TOKEN_LIFETIME_SECONDS = 900
+MAX_LEGACY_ID_TOKEN_AGE_SECONDS = 600
+
+
+def verify_legacy_keycloak_id_token(token: str, expected_nonce: str) -> Principal:
+    """Validate the second proof: a fresh Keycloak ID token for the exact legacy realm/client."""
+    issuer = settings.oidc_identity_compat_issuer.rstrip("/")
+    client_id = settings.oidc_legacy_client_id
+    if not issuer or not client_id:
+        raise reject("legacy_oidc_not_configured", 503, "Vérification de l'ancien compte non configurée.")
+    if not token or len(token) > MAX_LEGACY_ID_TOKEN_LENGTH:
+        raise reject("legacy_id_token_empty_or_too_long")
+    if not expected_nonce or len(expected_nonce) > 256:
+        raise reject("legacy_nonce_invalid")
+    jwks_url = issuer + "/protocol/openid-connect/certs"
+    try:
+        key = jwks_client(jwks_url).get_signing_key_from_jwt(token)
+        claims = jwt.decode(
+            token, key.key, algorithms=["RS256"], audience=client_id, issuer=issuer,
+            options={"require": ["exp", "iat", "iss", "sub", "aud", "nonce"], "verify_signature": True},
+            leeway=15,
+        )
+        subject = claims.get("sub")
+        issued_at, expires_at = claims.get("iat"), claims.get("exp")
+        if not isinstance(subject, str) or not subject or len(subject) > 255:
+            raise reject("legacy_subject_invalid")
+        if claims.get("nonce") != expected_nonce:
+            raise reject("legacy_nonce_mismatch")
+        if not isinstance(issued_at, (int, float)) or not isinstance(expires_at, (int, float)):
+            raise reject("legacy_token_time_invalid")
+        now = time.time()
+        if issued_at > now + 15 or now - issued_at > MAX_LEGACY_ID_TOKEN_AGE_SECONDS:
+            raise reject("legacy_token_not_fresh")
+        if expires_at <= issued_at or expires_at - issued_at > MAX_LEGACY_ID_TOKEN_LIFETIME_SECONDS:
+            raise reject("legacy_token_lifetime_invalid")
+        audiences = claims.get("aud")
+        if isinstance(audiences, list) and len(audiences) > 1 and claims.get("azp") != client_id:
+            raise reject("legacy_authorized_party_mismatch")
+        return Principal(subject=subject, issuer=issuer)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        reason, status = _reason_from_exception(exc)
+        if status == 503:
+            raise reject("legacy_" + reason, 503, "Ancien fournisseur d'identité momentanément indisponible.")
+        raise reject("legacy_" + reason)
