@@ -44,6 +44,12 @@ services:
         value: cfdt-juris-web
       - key: OIDC_SCOPES
         value: openid
+      - key: OIDC_SERVER_SESSIONS_ENABLED
+        value: "false"
+      - key: OIDC_SESSION_ENCRYPTION_KEY
+        sync: false
+      - key: OIDC_REDIRECT_URI
+        value: https://dikevia-commercial-api-l2r8.onrender.com/
       - key: OIDC_AUTHORIZATION_AUDIENCE
         sync: false
       - key: OIDC_IDENTITY_COMPAT_ISSUER

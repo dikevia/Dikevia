@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from .security import verify_access_token, verify_identity_token, Principal, auth_log
 from .db import get_pool
 from .config import settings
-from .auth_sessions import get_session_principal, SESSION_COOKIE
+from .auth_sessions import get_session_principal, SESSION_COOKIE, require_same_origin
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -77,6 +77,8 @@ async def get_principal(
     x_oidc_id_token: str | None = Header(default=None, alias="X-OIDC-ID-Token"),
 ):
     if settings.oidc_server_sessions_enabled and request.cookies.get(SESSION_COOKIE):
+        if request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
+            require_same_origin(request)
         principal = await get_session_principal(request)
         if settings.oidc_provider == "auth0":
             principal = _require_verified_auth0_email(principal)

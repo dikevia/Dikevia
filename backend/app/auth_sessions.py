@@ -2,7 +2,7 @@
 import base64, hashlib, json, logging, secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode, urlparse
-import httpx, jwt
+import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from .auth_session_crypto import decrypt_session_value, encrypt_session_value, hash_session_cookie
@@ -39,7 +39,7 @@ def _redirect_uri():
     return uri
 
 
-def _origin(request):
+def require_same_origin(request):
     origin = request.headers.get("origin", "").rstrip("/")
     allowed = {x.strip().rstrip("/") for x in settings.cors_origins.split(",") if x.strip()}
     if not origin or origin not in allowed:
@@ -123,7 +123,7 @@ async def login():
 
 @router.post("/callback")
 async def callback(request: Request):
-    _enabled(); _origin(request)
+    _enabled(); require_same_origin(request)
     flow_cookie = request.cookies.get(FLOW_COOKIE)
     if not flow_cookie:
         raise HTTPException(401, "Flux de connexion absent ou expiré.")
