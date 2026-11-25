@@ -135,6 +135,16 @@ def test_auth0_runtime_configuration_is_server_supplied_and_has_no_secret():
     assert "client_secret" not in main[main.index('@app.get("/auth-config.js"'):main.index("orchestrator = LegalOrchestrator()")].lower()
 
 
+def test_google_social_login_is_explicitly_available_without_changing_default_login():
+    frontend = (ROOT / "frontend/index.html").read_text()
+    oidc = (ROOT / "frontend/oidc-auth.js").read_text()
+    assert 'id="loginGoogle"' in frontend
+    assert "auth.loginWithGoogle()" in frontend
+    assert "async loginWithGoogle()" in oidc
+    assert "beginAuthorization('select_account', 'google-oauth2')" in oidc
+    assert "params.connection=connection" in oidc
+    assert "async login(){await ready.catch(()=>{});return login();}" in oidc
+
 def test_auth0_does_not_strip_unrelated_subjects(monkeypatch):
     issuer = "https://tenant.eu.auth0.com/"
     audience = "urn:dikevia:api"
