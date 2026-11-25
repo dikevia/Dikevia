@@ -791,9 +791,11 @@ def test_hierarchical_report_dispute_keeps_individual_file_and_disciplinary_path
     queries = build_official_search_queries(question)
     axes = build_official_research_axes(question)
 
-    assert len(axes) == 2
+    assert len(axes) == 3
+    assert len(queries) == 4
     assert any("dossier individuel" in axis for axis in axes)
     assert any("procedure disciplinaire" in axis for axis in axes)
+    assert any("jurisprudence administrative" in axis for axis in axes)
     assert all(axis in " ".join(queries) for axis in axes)
     joined = " ".join(queries)
     assert "L532-4" in joined
