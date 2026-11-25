@@ -1671,7 +1671,9 @@ async def ingest_administrative_open_data_zip(file: UploadFile = File(...), admi
     if len(raw) > 100 * 1024 * 1024:
         raise HTTPException(413, "Archive ZIP limitée à 100 Mo.")
     try:
-        items = parse_administrative_open_data_zip(raw, file.filename)
+        # XML parsing is CPU- and memory-intensive. Keep it off the ASGI event
+        # loop so /health and /ready remain responsive during large archives.
+        items = await asyncio.to_thread(parse_administrative_open_data_zip, raw, file.filename)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     if not items:
