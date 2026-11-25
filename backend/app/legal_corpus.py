@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 CHUNK_SIZE = 4200
 CHUNK_OVERLAP = 300
+VECTOR_HNSW_EF_SEARCH = 120
 
 
 def sha256_text(value: str) -> str:
@@ -398,7 +399,7 @@ async def search_legal_corpus(
     variants = expand_legal_query(query.strip())
     # The original wording keeps twice the lexical weight; curated variants widen recall.
     expansion_expression = " OR ".join(variants[1:])
-    rows = await conn.fetch("""
+    sql = """
       WITH search_terms AS (
         SELECT websearch_to_tsquery('french',$1) AS original_query,
                websearch_to_tsquery('french',$2) AS expansion_query
@@ -486,7 +487,17 @@ async def search_legal_corpus(
       SELECT metadata.*,selected_chunks.content,selected_chunks.rank
       FROM document_metadata metadata JOIN selected_chunks USING(version_id)
       ORDER BY selected_chunks.rank DESC,metadata.publication_date DESC NULLS LAST LIMIT $3
-    """, query.strip(), expansion_expression, limit, vector_literal, requested_date)
+    """
+    query_args = (query.strip(), expansion_expression, limit, vector_literal, requested_date)
+    if vector_literal is not None:
+        # pgvector defaults hnsw.ef_search to 40. Our hybrid query asks for up to
+        # 120 vector candidates; raise the candidate breadth only for this
+        # transaction so filtered scans do not silently under-fill retrieval.
+        async with conn.transaction():
+            await conn.execute(f"SET LOCAL hnsw.ef_search = {VECTOR_HNSW_EF_SEARCH}")
+            rows = await conn.fetch(sql, *query_args)
+    else:
+        rows = await conn.fetch(sql, *query_args)
     results = []
     for row in rows:
         item = dict(row)
