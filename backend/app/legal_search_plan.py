@@ -18,6 +18,16 @@ _DIRECT_ARTICLE_LOOKUP = re.compile(
 # territorial public-service source families and their implementing texts.
 _TOPIC_EXPANSIONS = (
     (
+        ("rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+         "mon chef a fait un rapport", "mon superieur a fait un rapport",
+         "rapport a charge", "rapport defavorable", "rapport circonstancie",
+         "contester un rapport de mon chef", "contester le rapport de mon superieur"),
+        "fonctionnaire territorial rapport hierarchique redige par superieur autorite territoriale "
+        "dossier individuel communication consultation acces aux pieces observations agent "
+        "rapport circonstancie signalement procedure disciplinaire droits de la defense "
+        "distinguer rapport informatif document verse au dossier et decision faisant grief",
+    ),
+    (
         ("accompagne d un syndicat", "accompagne par un syndicat",
          "accompagne d un representant syndical", "accompagne par un representant syndical",
          "assiste par un representant syndical", "venir avec mon syndicat",
@@ -399,6 +409,16 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
 # not claims about the applicable law. Keep the number small to control latency
 # and provider load while avoiding a single overloaded keyword string.
 _TOPIC_RESEARCH_AXES = (
+    (
+        ("rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+         "mon chef a fait un rapport", "mon superieur a fait un rapport",
+         "rapport a charge", "rapport defavorable", "rapport circonstancie",
+         "contester un rapport de mon chef", "contester le rapport de mon superieur"),
+        (
+            "fonction publique territoriale rapport hierarchique superieur dossier individuel communication consultation acces aux pieces observations agent",
+            "fonctionnaire territorial rapport utilise dans procedure disciplinaire droits de la defense consultation dossier assistance defenseur de son choix",
+        ),
+    ),
     (
         ("accompagne d un syndicat", "accompagne par un syndicat",
          "accompagne d un representant syndical", "accompagne par un representant syndical",
