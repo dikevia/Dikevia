@@ -145,6 +145,14 @@ def _theme_ids(root: ET.Element) -> set[str]:
     return ids
 
 
+def _is_legifrance_reference_id(value: str) -> bool:
+    """Accept only recognizable Légifrance identifiers, never DILA-local IDs."""
+    return bool(re.fullmatch(
+        r"(?:LEGIARTI|LEGITEXT|JORFTEXT|JORFARTI|CETATEXT)\d{8,}",
+        value.strip().upper(),
+    ))
+
+
 def _extract_references(root: ET.Element) -> list[dict[str, str]]:
     references: list[dict[str, str]] = []
     seen: set[tuple[str, str, str]] = set()
@@ -157,11 +165,16 @@ def _extract_references(root: ET.Element) -> list[dict[str, str]]:
         item = (ref_id.strip(), ref_type.strip(), label)
         if item not in seen:
             seen.add(item)
-            references.append({
-                "id_legifrance": item[0],
+            reference = {
+                # The XML identifier belongs to the source dataset unless its
+                # syntax independently proves that it is a Légifrance ID.
+                "source_reference_id": item[0],
                 "type": item[1],
                 "libelle": item[2],
-            })
+            }
+            if _is_legifrance_reference_id(item[0]):
+                reference["id_legifrance"] = item[0].upper()
+            references.append(reference)
     return references
 
 

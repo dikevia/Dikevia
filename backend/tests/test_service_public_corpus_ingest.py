@@ -21,8 +21,11 @@ def _fiche():
         "theme_ids": ["N19806"],
         "versants_detectes": ["FPT"],
         "references_juridiques": [
-            {"id_legifrance": "LEGIARTI000000000001", "type": "article",
-             "libelle": "Code général de la fonction publique"}
+            {"source_reference_id": "LEGIARTI000000000001",
+             "id_legifrance": "LEGIARTI000000000001", "type": "article",
+             "libelle": "Code général de la fonction publique"},
+            {"source_reference_id": "R57657", "type": "internal",
+             "libelle": "Référence Service-Public interne"},
         ],
     }
 
@@ -57,7 +60,11 @@ def test_service_public_fiche_maps_to_unverified_guidance_not_primary_law():
     assert item["raw_metadata"]["resource_checksum"] == "sha1:abc123"
     assert item["raw_metadata"]["corpus_role"] == "ADMINISTRATIVE_GUIDANCE_NOT_PRIMARY_LEGAL_AUTHORITY"
     assert importer.sha256_text(item["full_text"]) == item["raw_version_payload"]["content_sha256"]
-    assert item["raw_metadata"]["references_juridiques"][0]["id_legifrance"] == "LEGIARTI000000000001"
+    references = item["raw_metadata"]["references_juridiques"]
+    assert references[0]["source_reference_id"] == "LEGIARTI000000000001"
+    assert references[0]["id_legifrance"] == "LEGIARTI000000000001"
+    assert references[1]["source_reference_id"] == "R57657"
+    assert "id_legifrance" not in references[1]
 
 
 def test_service_public_version_key_changes_when_content_changes():
