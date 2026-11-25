@@ -76,6 +76,8 @@ def to_corpus_item(fiche: dict, provenance: dict) -> dict:
             "versants_detectes": fiche.get("versants_detectes") or [],
             "references_juridiques": fiche.get("references_juridiques") or [],
             "statut_validation_juridique": "NON_VERIFIE",
+            "owner_trust_status": "TRUSTED_BY_PROJECT_OWNER",
+            "owner_trust_confirmed_at": "2026-11-25",
             "corpus_role": "ADMINISTRATIVE_GUIDANCE_NOT_PRIMARY_LEGAL_AUTHORITY",
         },
         "raw_version_payload": {
