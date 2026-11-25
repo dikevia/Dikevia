@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     oidc_authorization_audience: str = ""
     oidc_identity_compat_issuer: str = ""
     oidc_identity_subject_prefix: str = "auth0|"
+    oidc_legacy_client_id: str = ""
     oidc_email_claim: str = "email"
     oidc_email_verified_claim: str = "email_verified"
     cors_origins: str = ""
