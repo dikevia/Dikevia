@@ -372,14 +372,10 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
     """
     transient_statuses = {500, 502, 503, 504}
     primary_model = payload.get("model")
-    fallback_models = []
-    if _is_gemini_provider():
-        configured = getattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
-        if isinstance(configured, str):
-            fallback_models = [
-                item.strip() for item in configured.split(",")
-                if item.strip() and item.strip() != primary_model
-            ][:2]
+    fallback_models = (
+        _gemini_fallback_model_candidates(primary_model)
+        if _is_gemini_provider() else []
+    )
 
     models = [(primary_model, 2)] + [(model, 1) for model in fallback_models]
     for model, max_attempts in models:
@@ -892,6 +888,28 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         raise AIProviderUnavailable("Le fournisseur IA est temporairement indisponible.") from exc
 
 
+_GEMINI_RETIRED_MODEL_FALLBACKS = {
+    # Google reports this model as unavailable to new users and recommends
+    # the current Flash-Lite generation in its 404 response.
+    "gemini-2.5-flash-lite": "gemini-3.5-flash-lite",
+}
+
+
+def _gemini_fallback_model_candidates(primary_model: str | None) -> list[str]:
+    """Resolve configured fallback IDs, migrating the retired Flash-Lite alias."""
+    configured = getattr(settings, "ai_fallback_models", "gemini-3.5-flash-lite")
+    raw_models = configured.split(",") if isinstance(configured, str) else []
+    candidates = []
+    for raw_model in raw_models:
+        model = raw_model.strip()
+        if not model:
+            continue
+        model = _GEMINI_RETIRED_MODEL_FALLBACKS.get(model, model)
+        if model != primary_model and model not in candidates:
+            candidates.append(model)
+    return candidates[:2]
+
+
 async def _check_provider_availability_uncached(*, transport: httpx.AsyncBaseTransport | None = None) -> dict:
     """Check model availability through a read-only provider endpoint; never generate text."""
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
@@ -903,19 +921,24 @@ async def _check_provider_availability_uncached(*, transport: httpx.AsyncBaseTra
         ) as client:
             if _is_gemini_provider():
                 # Native Gemini models.get is read-only and accepts the key in a header.
-                model_name = quote(settings.ai_model, safe="")
-                response = await client.get(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}",
-                    headers={"x-goog-api-key": settings.ai_api_key, "Accept": "application/json"},
-                )
-                if response.status_code == 404:
-                    return {"status": "MODEL_NOT_FOUND"}
-                response.raise_for_status()
-                payload = response.json()
-                methods = payload.get("supportedGenerationMethods", []) if isinstance(payload, dict) else []
-                if isinstance(methods, list) and "generateContent" in methods:
-                    return {"status": "AVAILABLE"}
-                return {"status": "MODEL_NOT_GENERATIVE"}
+                # If the configured primary model was retired, check only explicitly
+                # configured fallbacks before reporting the provider unavailable.
+                model_candidates = [settings.ai_model, *_gemini_fallback_model_candidates(settings.ai_model)]
+                for candidate in model_candidates:
+                    model_name = quote(candidate, safe="")
+                    response = await client.get(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}",
+                        headers={"x-goog-api-key": settings.ai_api_key, "Accept": "application/json"},
+                    )
+                    if response.status_code == 404:
+                        continue
+                    response.raise_for_status()
+                    payload = response.json()
+                    methods = payload.get("supportedGenerationMethods", []) if isinstance(payload, dict) else []
+                    if isinstance(methods, list) and "generateContent" in methods:
+                        return {"status": "AVAILABLE"}
+                    return {"status": "MODEL_NOT_GENERATIVE"}
+                return {"status": "MODEL_NOT_FOUND"}
             response = await client.get(
                 base + "/models",
                 headers={"Authorization": f"Bearer {settings.ai_api_key}", "Accept": "application/json"},
