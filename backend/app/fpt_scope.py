@@ -175,6 +175,27 @@ def classify_public_service_scope(
             "analysis_eligible": True,
             "claim_eligible": official_live_article,
         }
+    # CGFP L. 137-1 and L. 137-4 establish the composition and access
+    # guarantees for every public agent's individual file.
+    if title_folded.startswith("code general de la fonction publique") and article_ref in {
+        "l137 1", "l137 4",
+    }:
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        article_evidence = (
+            "Article L. 137-1 du CGFP : le dossier individuel comporte toutes les pièces intéressant la situation administrative de l'agent, enregistrées, numérotées et classées sans discontinuité"
+            if article_ref == "l137 1"
+            else "Article L. 137-4 du CGFP : tout agent public a accès à son dossier individuel"
+        )
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                article_evidence,
+                "Droit applicable à l'agent public, sous réserve de vérifier les modalités de communication pertinentes",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+
     # CGFP L. 532-4 sets the disciplinary-file disclosure and defence
     # guarantees applicable to civil servants across the three public-service
     # branches. The current wording has been in force since 1 October 2025.
