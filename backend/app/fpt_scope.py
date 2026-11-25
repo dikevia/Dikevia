@@ -611,7 +611,26 @@ def is_topic_relevant_source(
     source_text = " ".join(str(source.get(key) or "") for key in (
         "title", "article", "official_number", "excerpt", "text", "full_text"
     ))
+    source_corpus = _fold(source_text[:500_000])
     source_topics = _matched_topic_families(source_text[:500_000])
+    source_article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
+    # Some primary texts belong to the CMO mechanism by their codified/legal
+    # position even though their operative wording only says "congé de maladie".
+    if (
+        title_folded.startswith("code general de la fonction publique")
+        and source_article_ref in {f"l822 {number}" for number in range(1, 6)}
+    ):
+        source_topics.add("ORDINARY_SICK_LEAVE")
+    if (
+        "loi n 2017 1837" in title_folded
+        and "article 115" in source_corpus
+    ):
+        source_topics.add("ORDINARY_SICK_LEAVE")
+    if (
+        "decret n 87 602" in title_folded
+        and ("article 14" in source_corpus or "article 15" in source_corpus)
+    ):
+        source_topics.add("ORDINARY_SICK_LEAVE")
     # Do not let the similar wording "extra hours" merge two distinct FPT
     # regimes: decree 2004-777 concerns part-time IHTS conditions, while
     # decree 2020-592 governs complementary hours for permanent non-complete
@@ -661,6 +680,14 @@ def is_topic_relevant_source(
         "CITIS" in source_topics
         and "CITIS" not in question_topics
         and ("SICK_LEAVE" in question_topics or "ORDINARY_SICK_LEAVE" in question_topics)
+    ):
+        return False
+    # An explicit CMO question must not be satisfied by unrelated annual-leave
+    # material that happens to mention illness. Keep only CMO-specific texts
+    # and remuneration provisions that can address the pay sub-question.
+    if (
+        "ORDINARY_SICK_LEAVE" in question_topics
+        and not ({"ORDINARY_SICK_LEAVE", "REMUNERATION"} & source_topics)
     ):
         return False
 
