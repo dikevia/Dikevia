@@ -1,4 +1,4 @@
-from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
+from app.fpt_scope import _matched_topic_families, classify_public_service_scope, is_topic_relevant_source
 from app.orchestrator import (
     _build_code_research_queries,
     _build_targeted_cgfp_article_queries,
