@@ -624,3 +624,16 @@ def test_cgfp_l111_1_snapshot_is_not_promoted_to_live_claim_evidence():
     assert scope["analysis_eligible"] is True
     assert scope["claim_eligible"] is False
 
+
+
+def test_hierarchical_report_question_keeps_individual_file_and_disciplinary_sources_only():
+    from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
+
+    question = "Mon chef a fait un rapport contre moi, puis-je le contester ?"
+    file_source = {"title": "Communication du dossier individuel", "text": "L agent peut demander la communication des pièces de son dossier individuel."}
+    discipline_source = {"title": "Garanties de la procédure disciplinaire", "text": "Le fonctionnaire poursuivi a droit à la communication intégrale de son dossier."}
+    unrelated = {"title": "Organisation du Conseil supérieur de la fonction publique territoriale", "text": "Le conseil se réunit quatre fois par an."}
+    assert "REPORT_HIERARCHICAL_CONTESTATION" in _matched_topic_families(question)
+    assert is_topic_relevant_source(question, file_source) is True
+    assert is_topic_relevant_source(question, discipline_source) is True
+    assert is_topic_relevant_source(question, unrelated) is False
