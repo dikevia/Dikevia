@@ -55,7 +55,8 @@ def split_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) 
 
 def temporal_status(valid_from: date | None, valid_to: date | None, requested: date,
                     document_kind: str | None = None, signature_date: date | None = None,
-                    raw_payload: dict | None = None, version_status: str | None = None) -> str:
+                    raw_payload: dict | None = None, version_status: str | None = None,
+                    source_version_id: str | None = None) -> str:
     if document_kind == "ADMIN_CASELAW":
         if not signature_date:
             return "TEMPORAL_SCOPE_INCOMPLETE"
@@ -85,7 +86,9 @@ def temporal_status(valid_from: date | None, valid_to: date | None, requested: d
             imported_for_date
             and version_status == "UNKNOWN"
             and (raw_payload or {}).get("date_filter") == "DATE_VERSION"
-            and (raw_payload or {}).get("matching_consulted_id")
+            and str((raw_payload or {}).get("matching_consulted_id") or "").strip().casefold()
+                == str(source_version_id or "").strip().casefold()
+            and bool(str(source_version_id or "").strip())
         ):
             return "VERSION_RETRIEVED_AT_REQUESTED_DATE"
     if valid_from and requested < valid_from:
@@ -93,6 +96,13 @@ def temporal_status(valid_from: date | None, valid_to: date | None, requested: d
     if valid_to and requested > valid_to:
         return "NO_LONGER_IN_FORCE"
     if valid_from and valid_to:
+        # For normative instruments, a bounded interval alone is not enough:
+        # require an independently verified IN_FORCE version status before
+        # presenting the text as applicable on the requested date.
+        if document_kind in {"CODE", "LAW", "ORDONNANCE", "DECREE", "ORDER"}:
+            if version_status == "IN_FORCE":
+                return "IN_FORCE_ON_REQUESTED_DATE"
+            return "TEMPORAL_SCOPE_INCOMPLETE"
         return "IN_FORCE_ON_REQUESTED_DATE"
     return "TEMPORAL_SCOPE_INCOMPLETE"
 
@@ -481,7 +491,8 @@ async def search_legal_corpus(
     for row in rows:
         item = dict(row)
         item["temporal_status"] = temporal_status(item.get("valid_from"), item.get("valid_to"), requested_date,
-            item.get("document_kind"), item.get("signature_date"), item.get("raw_payload"), item.get("version_status"))
+            item.get("document_kind"), item.get("signature_date"), item.get("raw_payload"),
+            item.get("version_status"), source_version_id=item.get("source_version_id"))
         item["requested_date"] = requested_date.isoformat()
         metadata = item.get("raw_metadata")
         if isinstance(metadata, str):
