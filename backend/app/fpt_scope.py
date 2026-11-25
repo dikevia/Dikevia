@@ -454,8 +454,8 @@ _TOPIC_FAMILIES = {
         "grand pere decede", "grand mere decedee", "grand parent decede",
         "obseques", "autorisation d absence pour deces", "conge pour deces",
         "conge de deuil", "justificatif de deces", "acte de deces",
-        "justificatif de lien familial", "preuve du lien de parente",
-        "livret de famille",
+        # A kinship document alone does not establish a bereavement question.
+
     ),
     "UNION_ASSISTANCE": (
         "accompagnement syndical", "assistance syndicale",
