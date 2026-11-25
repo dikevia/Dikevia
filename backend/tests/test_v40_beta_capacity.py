@@ -9,13 +9,13 @@ def test_beta_user_cap_defaults_to_one_and_is_configurable():
     env = (ROOT / "deploy/.env.example").read_text()
     assert "beta_max_users: int = 1" in config
     assert "BETA_MAX_USERS" in config
-    assert '      - key: BETA_MAX_USERS\\n        value: "100"' in render
+    assert '      - key: BETA_MAX_USERS\n        value: "100"' in render
     assert "BETA_MAX_USERS=1" in env
 
 
 def test_production_blueprint_uses_piste_production_credentials():
     render = (ROOT / "render.yaml").read_text()
-    assert '      - key: LEGIFRANCE_ENVIRONMENT\\n        value: production' in render
+    assert '      - key: LEGIFRANCE_ENVIRONMENT\n        value: production' in render
 
 
 def test_beta_user_cap_is_enforced_for_invites_and_acceptance():
@@ -43,14 +43,14 @@ def test_beta_capacity_migration_has_a_reversible_down_script():
 
 def test_production_blueprint_disables_quota_consuming_startup_probes():
     render = (ROOT / "render.yaml").read_text()
-    assert '      - key: STARTUP_EXTERNAL_DIAGNOSTICS_ENABLED\\n        value: "false"' in render
+    assert '      - key: STARTUP_EXTERNAL_DIAGNOSTICS_ENABLED\n        value: "false"' in render
 
 
 def test_production_blueprint_keeps_identity_provider_in_render_environment():
     render = (ROOT / "render.yaml").read_text()
     api_service = render.split("  - type: web", 2)[1].split("  - type: web", 1)[0]
     assert api_service.count("- key: OIDC_PROVIDER") == 1
-    assert "- key: OIDC_PROVIDER\\n        sync: false" in api_service
-    assert '      - key: VECTOR_SEARCH_ENABLED\\n        value: "false"' in render
-    assert '      - key: AI_LOCAL_DOCUMENT_REVIEW_ENABLED\\n        value: "false"' in render
-    assert '      - key: STRIPE_BILLING_ENABLED\\n        value: "false"' in render
+    assert "- key: OIDC_PROVIDER\n        sync: false" in api_service
+    assert '      - key: VECTOR_SEARCH_ENABLED\n        value: "false"' in render
+    assert '      - key: AI_LOCAL_DOCUMENT_REVIEW_ENABLED\n        value: "false"' in render
+    assert '      - key: STRIPE_BILLING_ENABLED\n        value: "false"' in render
