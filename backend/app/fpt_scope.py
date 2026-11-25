@@ -703,11 +703,27 @@ def is_topic_relevant_source(
     # An explicit CMO question must not be satisfied by unrelated annual-leave
     # material that happens to mention illness. Keep only CMO-specific texts
     # and remuneration provisions that can address the pay sub-question.
-    if (
-        "ORDINARY_SICK_LEAVE" in question_topics
-        and not ({"ORDINARY_SICK_LEAVE", "REMUNERATION"} & source_topics)
-    ):
-        return False
+    if "ORDINARY_SICK_LEAVE" in question_topics:
+        # A generic pay document (RIFSEEP, NBI, indemnities, etc.) must not
+        # satisfy a CMO remuneration question merely because it contains
+        # remuneration vocabulary. Accept pay evidence only when its legal
+        # identity ties it to the CMO provisions or their implementing texts.
+        cmo_pay_evidence = (
+            source_article_ref in {f"l822 {number}" for number in range(1, 6)}
+            or (
+                "loi n 2017 1837" in title_folded
+                and "article 115" in source_corpus
+            )
+            or (
+                "decret n 87 602" in title_folded
+                and source_article_number in {"14", "15"}
+            )
+            or "decret n 2025 197" in title_folded
+        )
+        if "ORDINARY_SICK_LEAVE" not in source_topics and not (
+            "REMUNERATION" in source_topics and cmo_pay_evidence
+        ):
+            return False
 
     if question_topics & source_topics:
         return True
