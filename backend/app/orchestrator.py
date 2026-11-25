@@ -833,7 +833,7 @@ def _provider_context_history(
 
 
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, corpus_conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None, corpus_conn=None) -> AskResponse:
         request_id = str(uuid4())
         ai_usage_events: list[dict] = []
         answer_started_at = None
