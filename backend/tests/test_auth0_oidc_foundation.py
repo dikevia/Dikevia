@@ -539,3 +539,10 @@ def test_browser_implements_separate_pkce_legacy_proof_and_explicit_link_action(
     assert "/api/v1/auth/link-legacy/complete" in oidc
     assert 'id="linkLegacy"' in html
     assert "auth.linkLegacy()" in html
+
+
+
+def test_legacy_keycloak_link_requests_only_required_openid_scope():
+    oidc = (ROOT / "frontend/oidc-auth.js").read_text()
+    assert "scope:'openid',state,nonce,code_challenge_method:'S256'" in oidc
+    assert "scope:'openid profile email',state,nonce,code_challenge_method:'S256'" not in oidc
