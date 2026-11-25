@@ -149,6 +149,21 @@ def _build_targeted_regulatory_queries(
         }
         queries.extend(branch_availability_articles.get(public_service, ()))
 
+    ordinary_sick_leave = any(marker in folded for marker in (
+        "congé de maladie ordinaire", "conge de maladie ordinaire",
+        "maladie ordinaire", "jour de carence", "jours de carence",
+        "cmo",
+    ))
+    if public_service == "FPT" and ordinary_sick_leave:
+        # These are exact statutory entry points for a territorial civil
+        # servant's ordinary sick leave. Search them independently of the
+        # lexical CGFP snapshot so nearby CITIS articles cannot monopolize
+        # the live Légifrance result set.
+        queries.extend([
+            "décret n° 87-602 du 30 juillet 1987 articles 14 et 15 congé de maladie fonctionnaires territoriaux",
+            "loi n° 2017-1837 du 30 décembre 2017 article 115 jour de carence agents publics fonctionnaires territoriaux",
+        ])
+
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
         "invalidite temporaire imputable au service",
@@ -1219,6 +1234,16 @@ class LegalOrchestrator:
         found, cgfp_issue = await search_cgfp_index()
         cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
         cgfp_article_queries = _cgfp_article_discovery_queries(found, request.public_service)
+        if request.public_service == "FPT" and any(marker in _fold(contextual_question) for marker in (
+            "conge de maladie ordinaire", "maladie ordinaire", "jour de carence",
+            "jours de carence", "cmo",
+        )):
+            # Exact article lookups are additional to, not replacements for,
+            # the full-text and snapshot discovery paths.
+            cgfp_article_queries = list(dict.fromkeys([
+                *cgfp_article_queries,
+                "article L822-1", "article L822-2", "article L822-3", "article L822-5",
+            ]))
 
         # Official legal texts and administrative case law remain the
         # authoritative verification path.
