@@ -1715,7 +1715,7 @@ class LegalOrchestrator:
                 "page_start": None, "page_end": None, "content_kind": "FULL_TEXT",
                 "general_info_eligible": parsed_date is None,
                 "citation_integrity": {
-                    "valid": bool(item.get("source_id") and len(item.get("text") or "") >= 80),
+                    "valid": bool(item.get("source_id") and str(item.get("text") or "").strip()),
                     "verification_scope": "PISTE_CODE_DATE_ID_AND_FULL_TEXT",
                 }})
 
