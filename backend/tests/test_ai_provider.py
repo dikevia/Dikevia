@@ -1454,6 +1454,38 @@ async def test_gemini_503_uses_flash_lite_fallback_after_primary_retry(monkeypat
 
 
 @pytest.mark.asyncio
+async def test_gemini_timeout_retries_primary_then_uses_configured_fallback(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-3.5-flash-lite")
+    calls = []
+
+    def handler(request):
+        model = json.loads(request.content)["model"]
+        calls.append(model)
+        if model == "gemini-2.5-flash":
+            raise httpx.ReadTimeout("simulated timeout", request=request)
+        return httpx.Response(200, request=request, json={"choices": [{"message": {"content": "ok"}}]})
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(ai_provider.asyncio, "sleep", no_wait)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={"Authorization": "Bearer test"},
+            payload={"model": "gemini-2.5-flash"},
+        )
+
+    assert response.status_code == 200
+    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite"]
+
+
+@pytest.mark.asyncio
 async def test_gemini_503_fallback_is_not_used_for_non_gemini_provider(monkeypatch):
     import httpx
     from app import ai_provider
