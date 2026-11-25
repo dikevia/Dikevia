@@ -116,12 +116,27 @@ def _build_targeted_cgfp_article_queries(question: str, public_service: str = "F
     if str(public_service or "").upper() != "FPT":
         return []
     folded = _fold(str(question or ""))
-    if not any(marker in folded for marker in (
+    queries: list[str] = []
+    if any(marker in folded for marker in (
         "conge de maladie ordinaire", "maladie ordinaire",
         "jour de carence", "jours de carence", "cmo",
     )):
-        return []
-    return [f"article L822-{number}" for number in range(1, 6)]
+        queries.extend(f"article L822-{number}" for number in range(1, 6))
+    if any(marker in folded for marker in (
+        "rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+        "mon chef a fait un rapport", "mon superieur a fait un rapport",
+        "rapport a charge", "rapport defavorable", "rapport circonstancie",
+        "contester un rapport de mon chef", "contester le rapport de mon superieur",
+    )):
+        # Exact live article lookups keep the ordinary individual-file route
+        # distinct from the statutory disciplinary guarantees and the
+        # territorial report sent to the disciplinary board.
+        queries.extend([
+            "article L532-4",
+            "article L532-9",
+            "article R137-16",
+        ])
+    return list(dict.fromkeys(queries))
 
 
 def _build_code_research_queries(
