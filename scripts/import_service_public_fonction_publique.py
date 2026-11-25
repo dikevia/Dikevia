@@ -148,7 +148,7 @@ def _theme_ids(root: ET.Element) -> set[str]:
 def _is_legifrance_reference_id(value: str) -> bool:
     """Accept only recognizable Légifrance identifiers, never DILA-local IDs."""
     return bool(re.fullmatch(
-        r"(?:LEGIARTI|LEGITEXT|JORFTEXT|JORFARTI|CETATEXT)\\d{8,}",
+        r"(?:LEGIARTI|LEGITEXT|JORFTEXT|JORFARTI|CETATEXT)\d{8,}",
         value.strip().upper(),
     ))
 
