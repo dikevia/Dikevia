@@ -295,3 +295,73 @@ def test_contractual_availability_question_rejects_titular_sick_leave_source():
         "text": "Le congé de longue durée concerne les fonctionnaires titulaires.",
     }
     assert is_topic_relevant_source(question, source) is False
+
+def test_bereavement_question_rejects_unrelated_cgfp_and_generic_leave_hits():
+    question = (
+        "Un agent demande une autorisation d'absence après le décès de son grand-père. "
+        "La direction peut-elle exiger le livret de famille ?"
+    )
+    unrelated = [
+        {
+            "title": "Code général de la fonction publique — article L542-8",
+            "article": "L542-8",
+            "text": "Dispositions relatives aux emplois fonctionnels et à leur cessation.",
+        },
+        {
+            "title": "Congé de longue durée",
+            "text": "Dispositions relatives au congé de longue durée pour raison de santé.",
+        },
+        {
+            "title": "Autorisation spéciale d'absence syndicales",
+            "text": "Dispositions relatives aux absences liées à l'exercice du droit syndical.",
+        },
+    ]
+    relevant = {
+        "title": "Autorisation d'absence pour décès d'un membre de la famille",
+        "text": (
+            "Les autorisations d'absence pour décès d'un proche et les justificatifs "
+            "du lien familial doivent être examinés selon les dispositions applicables."
+        ),
+    }
+    assert "FAMILY_BEREAVEMENT" in _matched_topic_families(question)
+    assert all(is_topic_relevant_source(question, source) is False for source in unrelated)
+    assert is_topic_relevant_source(question, relevant) is True
+
+
+def test_union_assistance_question_rejects_unrelated_union_administration_sources():
+    question = (
+        "Un agent convoqué par sa hiérarchie peut-il bénéficier d'un accompagnement syndical ?"
+    )
+    unrelated = {
+        "title": "Autorisations spéciales d'absence syndicales",
+        "text": "Modalités des absences accordées pour congrès et réunions statutaires.",
+    }
+    relevant = {
+        "title": "Garanties disciplinaires et assistance du fonctionnaire",
+        "text": (
+            "Dans la procédure disciplinaire, le fonctionnaire peut être assisté "
+            "par un défenseur de son choix."
+        ),
+    }
+    assert "UNION_ASSISTANCE" in _matched_topic_families(question)
+    assert is_topic_relevant_source(question, unrelated) is False
+    assert is_topic_relevant_source(question, relevant) is True
+
+
+def test_aggression_by_service_user_keeps_functional_protection_but_rejects_disciplinary_report_rules():
+    question = (
+        "Un agent a été agressé par un usager et son chef refuse de déclarer l'incident. "
+        "Quels sont ses droits ?"
+    )
+    relevant = {
+        "title": "Protection fonctionnelle des agents victimes d'une agression",
+        "text": "La protection fonctionnelle concerne les agents victimes de violences ou d'agressions.",
+    }
+    unrelated = {
+        "title": "Rapport disciplinaire",
+        "text": "Le rapport établi par le supérieur hiérarchique peut être versé au dossier disciplinaire.",
+    }
+    assert "AGGRESSION_AGENT_PROTECTION" in _matched_topic_families(question)
+    assert is_topic_relevant_source(question, relevant) is True
+    assert is_topic_relevant_source(question, unrelated) is False
+

@@ -446,6 +446,28 @@ _TOPIC_FAMILIES = {
         "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
         "agissement sexiste",
     ),
+    "FAMILY_BEREAVEMENT": (
+        "deces d un proche", "deces d un membre de la famille",
+        "deces d un ascendant", "deces du grand pere", "deces de la grand mere",
+        "grand pere", "grand mere", "grand parent", "obseques",
+        "autorisation d absence pour deces", "conge pour deces",
+        "conge de deuil", "justificatif de deces", "acte de deces",
+        "justificatif de lien familial", "preuve du lien de parente",
+        "livret de famille",
+    ),
+    "UNION_ASSISTANCE": (
+        "accompagnement syndical", "assistance syndicale",
+        "assistance d un representant syndical", "representant syndical",
+        "se faire assister", "assistance par un defenseur",
+        "assistance du fonctionnaire", "droits de la defense",
+        "entretien disciplinaire", "entretien prealable",
+        "convocation a un entretien hierarchique",
+    ),
+    "AGGRESSION_AGENT_PROTECTION": (
+        "agression", "agresse par un usager", "agressions",
+        "violence", "menace d un usager", "insulte d un usager",
+        "incident avec un usager", "signalement d agression",
+    ),
     "TERMINATION_OF_TITULAR": (
         # Query-side expressions must classify the question too; keep generic
         # "titulaire" out of this family because it also appears in unrelated
@@ -566,6 +588,21 @@ def is_topic_relevant_source(
     ):
         return False
 
+    # A specific bereavement/kinship-proof question must not be satisfied by
+    # an unrelated leave provision merely because both mention absence.
+    if (
+        "FAMILY_BEREAVEMENT" in question_topics
+        and "FAMILY_BEREAVEMENT" not in source_topics
+    ):
+        return False
+    # Generic union-rights material is not proof of a right to assistance at
+    # a particular kind of meeting. Keep disciplinary procedure material as
+    # a related lead, but reject unrelated union administration provisions.
+    if (
+        "UNION_ASSISTANCE" in question_topics
+        and not ({"UNION_ASSISTANCE", "DISCIPLINE"} & source_topics)
+    ):
+        return False
     if question_topics & source_topics:
         return True
 
@@ -583,6 +620,9 @@ def is_topic_relevant_source(
         "CONTRACT_CDI_SIX_YEARS",
         "AVAILABILITY",
         "CONTRACTUAL_STATUS",
+        "FAMILY_BEREAVEMENT",
+        "UNION_ASSISTANCE",
+        "AGGRESSION_AGENT_PROTECTION",
     }
     if str(target_versant or "FPT").upper() == "FPT" and question_topics & strict_topics:
         # For annual-appraisal questions only, an unclassified procedural
@@ -600,6 +640,10 @@ def is_topic_relevant_source(
         "WORKING_TIME": {"REMUNERATION"},
         "REMUNERATION": {"WORKING_TIME", "SICK_LEAVE"},
         "SICK_LEAVE": {"REMUNERATION"},
+        "AGGRESSION_AGENT_PROTECTION": {
+            "FUNCTIONAL_PROTECTION", "SICK_LEAVE", "STAFFING_AND_WORK_CONDITIONS",
+        },
+        "UNION_ASSISTANCE": {"DISCIPLINE"},
     }
     return any(
         source_family in related_families.get(question_family, set())
