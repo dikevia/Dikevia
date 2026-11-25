@@ -1944,7 +1944,9 @@ class LegalOrchestrator:
         # the legal-source family and the limitations attached to each document.
         sources = assess_source_set(sources)["sources"]
         # Hide topic-mismatched hits before early returns and user-facing rendering.
-        sources = filter_irrelevant_sources_for_display(\n            sources, question=request.question, target_versant=request.public_service,\n        )
+        sources = filter_irrelevant_sources_for_display(
+            sources, question=request.question, target_versant=request.public_service,
+        )
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
             s for s in sources if _is_usable_permanent_source(s, permanent_source_ids)
@@ -2456,7 +2458,9 @@ class LegalOrchestrator:
         # Apply the display filter after legal analysis and validation. The
         # earlier relevance guard already excluded explicitly unrelated sources
         # from the AI evidence set; this final pass controls returned source cards.
-        sources = filter_irrelevant_sources_for_display(sources)
+        sources = filter_irrelevant_sources_for_display(
+            sources, question=request.question, target_versant=request.public_service,
+        )
 
         # Keep full texts server-side for checks/analysis, but return only bounded
         # excerpts to the browser and conversation history.
