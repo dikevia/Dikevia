@@ -865,3 +865,43 @@ html.dikevia-standard-app .juris-message.assistant.is-generating .juris-avatar:b
  html.dikevia-standard-app .juris-welcome-icon,html.dikevia-standard-app .juris-brand-mark:after,
  html.dikevia-standard-app .juris-message.assistant .juris-avatar:before { animation:none!important; }
 }
+
+
+/* Private attachments in the conversational composer */
+html.dikevia-standard-app .ask-attachment-preview {
+  display:flex;flex-wrap:wrap;gap:8px;max-width:900px;margin:0 auto 8px;
+}
+html.dikevia-standard-app .ask-attachment-preview:empty { display:none; }
+html.dikevia-standard-app .ask-attachment-chip {
+  display:inline-flex;align-items:center;gap:9px;max-width:100%;padding:7px 9px 7px 12px;
+  border:1px solid #dfe8f2;border-radius:11px;background:rgba(255,255,255,.92);
+  color:#536b86;font-size:11px;box-shadow:0 2px 8px rgba(43,67,97,.035);
+}
+html.dikevia-standard-app .ask-attachment-chip span {
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(54vw,340px);
+}
+html.dikevia-standard-app .ask-attachment-chip button {
+  display:grid;place-items:center;width:21px;height:21px;padding:0;border:0;border-radius:50%;
+  background:#f0f4f8;color:#7a899b;font-size:16px;line-height:1;cursor:pointer;
+}
+html.dikevia-standard-app .attachment-consent {
+  max-width:900px;margin:0 auto 9px;padding:10px 13px;border:1px solid #e3eaf2;
+  border-radius:11px;background:#f1f6fc;color:#637890;font-size:11px;line-height:1.55;
+}
+html.dikevia-standard-app .attachment-consent label {
+  display:flex;align-items:flex-start;gap:9px;cursor:pointer;
+}
+html.dikevia-standard-app .attachment-consent input { margin-top:2px;accent-color:#668fbd; }
+html.dikevia-standard-app .juris-input-row .ask-attach-button {
+  flex:0 0 35px;width:35px;height:35px;border:1px solid #e2e9f1;border-radius:50%;
+  background:#f5f8fc;color:#7894b5;box-shadow:none;font-size:21px;font-weight:400;
+}
+html.dikevia-standard-app .juris-input-row .ask-attach-button:hover {
+  background:#edf4fc;border-color:#cbdced;color:#527eaf;
+}
+html.dikevia-standard-app .juris-input-row .ask-attach-button:disabled { opacity:.5; }
+@media(max-width:760px) {
+  html.dikevia-standard-app .ask-attachment-preview { padding:0 10px; }
+  html.dikevia-standard-app .attachment-consent { margin:0 10px 8px; }
+  html.dikevia-standard-app .ask-attachment-chip span { max-width:58vw; }
+}
