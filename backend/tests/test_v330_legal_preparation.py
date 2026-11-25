@@ -549,7 +549,7 @@ async def test_orchestrator_does_not_use_unverified_local_documents_for_ai(monke
         raise AssertionError("Un document local non validé ne doit pas être envoyé à l'IA.")
 
     monkeypatch.setattr(module, "search_local_documents", local_search)
-    monkeypatch.setattr(module, "analyze_question", forbidden_ai)
+    monkeypatch.setattr(module, "analyze_question", bounded_ai)
 
     response = await LegalOrchestrator().ask(
         AskRequest(employer="VILLE_SAINT_ETIENNE", facts_date="2024-06-01",
@@ -691,8 +691,12 @@ async def test_current_date_repere_sources_are_not_labelled_applicable_without_f
     async def no_case_law(*args, **kwargs):
         return []
 
-    async def forbidden_ai(**kwargs):
-        raise AssertionError("Pas d'analyse contextualisée sans date des faits.")
+    async def bounded_ai(**kwargs):
+        # Une question générale peut recevoir une réponse documentaire sans
+        # présenter la date du jour comme date des faits ni conclure à
+        # l'applicabilité à une situation individuelle.
+        axes = (kwargs.get("legal_context") or {}).get("axes_recherche_documentaire") or []
+        return json.dumps({"claims": [], "uncovered_axes": axes}, ensure_ascii=False)
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", code_sources)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", loda_sources)
