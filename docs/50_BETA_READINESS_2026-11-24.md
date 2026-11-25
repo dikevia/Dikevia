@@ -14,6 +14,7 @@ Ce document distingue les contrôles effectués, les limites connues et les vali
 - **Diagnostic non conclu :** il n'est pas possible d'attribuer avec certitude le 503 à un démarrage à froid, à la mémoire, à la connexion DB ou à une autre cause. Aucun redémarrage manuel, changement de configuration ou changement de plan n'a été déclenché. La disponibilité OIDC doit être revalidée avant une démonstration nécessitant une connexion.
 - Ce contrôle opérationnel est distinct des smoke tests OIDC précédemment réussis ; ces derniers ne prouvent pas que le fournisseur d'identité répond actuellement.
 - **Résultat du contrôle de clôture après démarrage :** `GET /health/ready` a renvoyé `status=UP`, avec les contrôles `Graceful Shutdown`, `Keycloak database connections async health check` et `Keycloak Initialized` tous à `UP`. La découverte OIDC du realm `cfdt` a ensuite renvoyé l'issuer attendu et les endpoints d'autorisation, de jeton et JWKS. Le 503 transitoire est donc résolu à ce contrôle ; une vraie connexion utilisateur reste à tester.
+- Le script public navigateur `/auth-config.js` a également été contrôlé : il expose l'issuer Keycloak de production, le client public `cfdt-juris-web`, le redirect URI sur l'origine courante, le scope `openid profile email` et l'audience `cfdt-juris-api`. Le JWKS du realm répond avec une clé de signature RS256. Aucun secret n'est exposé par ce point de configuration.
 
 ## 1. Production et sécurité opérationnelle
 
