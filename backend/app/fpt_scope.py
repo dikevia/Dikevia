@@ -627,8 +627,8 @@ def is_topic_relevant_source(
         and "article 115" in source_corpus
     ):
         source_topics.add("ORDINARY_SICK_LEAVE")
-    source_article_number_raw = str(
-        source.get("article") or source.get("article_id") or source.get("article_number") or ""
+    source_article_number_raw = " ".join(
+        str(source.get(key) or "") for key in ("article", "article_id", "article_number")
     )
     # Retrieval adapters expose this field inconsistently: "14", "Article 14",
     # "article 14 du décret", or a structured "article_number". Normalize the
