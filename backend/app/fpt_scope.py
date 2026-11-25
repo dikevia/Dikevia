@@ -412,8 +412,19 @@ def is_ihts_relevant_source(
 _TOPIC_FAMILIES = {
     "SICK_LEAVE": (
         "conge maladie", "conge de maladie", "conge longue maladie",
-        "conge longue duree", "citis", "accident de service",
-        "maladie professionnelle", "arret maladie",
+        "conge longue duree", "maladie professionnelle", "arret maladie",
+    ),
+    # Ordinary sick leave (CMO) and service-related leave (CITIS) are
+    # legally distinct mechanisms. A lexical hit on "congé de maladie"
+    # must not make a CITIS provision evidence for a CMO question.
+    "ORDINARY_SICK_LEAVE": (
+        "conge de maladie ordinaire", "maladie ordinaire", "cmo",
+        "jour de carence", "jours de carence",
+    ),
+    "CITIS": (
+        "citis", "conge pour invalidite temporaire imputable au service",
+        "invalidite temporaire imputable au service", "accident de service",
+        "accident de trajet", "maladie contractee en service",
     ),
     "LEAVE": (
         "conges annuels", "conge annuel", "conges bonifies",
@@ -607,6 +618,17 @@ def is_topic_relevant_source(
         and not ({"UNION_ASSISTANCE", "DISCIPLINE"} & source_topics)
     ):
         return False
+    # Never cross-match ordinary sick leave with CITIS. Both mechanisms
+    # contain the words "congé" and "maladie", but their conditions and
+    # remuneration rules are different. A CITIS source remains available
+    # only when the question actually concerns service-related incapacity.
+    if (
+        "CITIS" in source_topics
+        and "CITIS" not in question_topics
+        and ("SICK_LEAVE" in question_topics or "ORDINARY_SICK_LEAVE" in question_topics)
+    ):
+        return False
+
     if question_topics & source_topics:
         return True
 
