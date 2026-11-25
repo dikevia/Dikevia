@@ -168,6 +168,17 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
     # cannot by itself establish which rule was applicable on the facts date.
     # Keep these two uses separate instead of exposing one ambiguous boolean.
     post_facts_decision = status == "DECISION_POSTERIOR_TO_FACTS" and kind == "ADMIN_CASELAW"
+    temporal_limit = None
+    if status == "VERSION_RETRIEVED_AT_REQUESTED_DATE":
+        temporal_limit = (
+            "Version officielle retrouvée par le filtre temporel Légifrance et concordance "
+            "de l'identifiant ; le statut distinct d'entrée en vigueur n'est pas renseigné."
+        )
+    elif post_facts_decision:
+        temporal_limit = (
+            "Décision postérieure aux faits : utilisable comme éclairage interprétatif, "
+            "mais pas comme preuve autonome de la règle applicable à la date des faits."
+        )
     return {
         "source_family": kind,
         "source_family_label": label,
@@ -196,11 +207,7 @@ def classify_legal_source(source: dict[str, Any]) -> dict[str, Any]:
         "usable_for_general_information": general_information_only,
         "usable_for_interpretation": non_normative or ((usable or post_facts_decision) and kind == "ADMIN_CASELAW"),
         "usable_for_facts_date_conclusion": usable and not post_facts_decision and not non_normative,
-        "temporal_limit": (
-            "Décision postérieure aux faits : utilisable comme éclairage interprétatif, "
-            "mais pas comme preuve autonome de la règle applicable à la date des faits."
-            if post_facts_decision else None
-        ),
+        "temporal_limit": temporal_limit,
         "limitation": "Classement indicatif pour organiser la vérification ; ne tranche ni la hiérarchie complète ni la légalité du document.",
     }
 
