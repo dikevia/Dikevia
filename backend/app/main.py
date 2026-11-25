@@ -378,7 +378,7 @@ async def browser_oidc_configuration():
         f"redirect_uri:{redirect_uri},"
         f"silent_redirect_uri:{silent_redirect_uri},"
         f"scopes:{json.dumps(settings.oidc_scopes)},"
-        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)},",
+        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)},"
         f"server_sessions_enabled:{str(settings.oidc_server_sessions_enabled).lower()}"
         "});"
     )
