@@ -1075,7 +1075,8 @@ def build_official_research_axes(question: str) -> list[str]:
         # dimensions. Preserve both axes instead of collapsing each tuple to
         # its first query (which silently discarded the second dimension).
         if (
-            "convocation par ma hierarchie" in triggers
+            "rapport hierarchique" in triggers
+            or "convocation par ma hierarchie" in triggers
             or "agresse par un usager" in triggers
             or any(trigger in matched_triggers for trigger in (
                 "deces d un grand pere", "deces d une grand mere",
