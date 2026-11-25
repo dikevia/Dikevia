@@ -122,7 +122,7 @@ def _build_targeted_cgfp_article_queries(question: str, public_service: str = "F
     ))
     if not ordinary_sick_leave:
         return []
-    return ["article L822-1", "article L822-2", "article L822-3", "article L822-5"]
+    return [f"article L822-{number}" for number in range(1, 6)]
 
 
 def _build_code_research_queries(
@@ -1122,10 +1122,10 @@ class LegalOrchestrator:
             targeted_cmo_articles = _build_targeted_cgfp_article_queries(
                 contextual_question, request.public_service,
             )
-            # For explicit CMO questions, reserve four of the eight code-query
+            # For explicit CMO questions, reserve five of the eight code-query
             # slots for exact L. 822 provisions. Broad discovery must not crowd
             # out the very articles that answer the user's question.
-            code_query_inputs = research_queries[:4] if targeted_cmo_articles else research_queries
+            code_query_inputs = research_queries[:3] if targeted_cmo_articles else research_queries
             code_research_queries = _build_code_research_queries(
                 code_query_inputs, cgfp_article_queries, max_queries=8,
             )
