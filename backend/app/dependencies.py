@@ -12,6 +12,10 @@ from .auth_sessions import get_session_principal, SESSION_COOKIE, require_same_o
 bearer = HTTPBearer(auto_error=False)
 
 
+async def _current_request(request: Request) -> Request:
+    return request
+
+
 @dataclass
 class TenantContext:
     principal: Principal
@@ -74,9 +78,9 @@ async def _resolve_auth0_legacy_identity(principal: Principal) -> Principal:
 async def get_principal(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     x_oidc_id_token: str | None = Header(default=None, alias="X-OIDC-ID-Token"),
-    request: Request | None = None,
+    request: Request = Depends(_current_request),
 ):
-    if request is not None and settings.oidc_server_sessions_enabled and request.cookies.get(SESSION_COOKIE):
+    if isinstance(request, Request) and settings.oidc_server_sessions_enabled and request.cookies.get(SESSION_COOKIE):
         if request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
             require_same_origin(request)
         principal = await get_session_principal(request)
