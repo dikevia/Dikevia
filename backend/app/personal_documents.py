@@ -123,13 +123,16 @@ async def upload_personal_document(
         raise HTTPException(413, "La taille maximale d'un document est de 20 Mo.")
     suffix, mime_type = _validate_upload(file.filename or "", file.content_type or "", data)
     try:
-        scan = scan_with_clamav(data, settings.clamav_host, settings.clamav_port, settings.clamav_timeout_seconds)
+        scan = await asyncio.to_thread(
+            scan_with_clamav, data, settings.clamav_host,
+            settings.clamav_port, settings.clamav_timeout_seconds,
+        )
     except MalwareDetected as exc:
         raise HTTPException(422, "Le document a été rejeté par le contrôle antivirus.") from exc
     except ScannerUnavailable as exc:
         raise HTTPException(503, "Le contrôle antivirus est indisponible ; aucun document n'a été enregistré.") from exc
 
-    extracted_text, extraction_status = extract_document_text(data, mime_type)
+    extracted_text, extraction_status = await asyncio.to_thread(extract_document_text, data, mime_type)
     digest = hashlib.sha256(data).hexdigest()
     document_id = uuid4()
     storage_key = None
