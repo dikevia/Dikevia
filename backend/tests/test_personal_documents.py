@@ -101,3 +101,36 @@ def test_personal_documents_are_retrieved_only_with_verified_owner_scope():
         },
     }])
     assert history == []
+
+
+def test_chat_attachment_ids_are_bounded_and_require_per_request_transfer_consent():
+    from uuid import uuid4
+    import pytest
+    from pydantic import ValidationError
+    from app.schemas import AskRequest
+
+    document_id = uuid4()
+    with pytest.raises(ValidationError):
+        AskRequest(question="Analyse ce document", personal_document_ids=[document_id])
+
+    request = AskRequest(
+        question="Analyse ce document",
+        personal_document_ids=[document_id],
+        confirm_local_document_ai_transfer=True,
+    )
+    assert request.personal_document_ids == [document_id]
+
+    with pytest.raises(ValidationError):
+        AskRequest(
+            question="Analyse ces documents",
+            personal_document_ids=[uuid4() for _ in range(6)],
+            confirm_local_document_ai_transfer=True,
+        )
+
+
+def test_chat_personal_document_retrieval_is_limited_to_attached_ids_when_provided():
+    from app.orchestrator import LegalOrchestrator
+    source = inspect.getsource(LegalOrchestrator.ask)
+    assert "id=ANY($2::uuid[])" in source
+    assert "request.personal_document_ids" in source
+    assert "owner_user_id=$1::uuid" in source
