@@ -609,8 +609,11 @@ def question_needs_case_date(question: str) -> bool:
     """Compatibility wrapper: identify a personal case without requiring its date."""
     return classify_question_intent(question) == "PERSONAL_CASE"
 
-def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
-    """Exclude sources explicitly unrelated to every independently searched axis."""
+def filter_irrelevant_sources_for_display(
+    sources: list[dict], question: str | None = None,
+    target_versant: str = "FPT",
+) -> list[dict]:
+    """Exclude sources unrelated to the user's recognized legal topic before display."""
     return [
         source for source in sources
         if source.get("analysis_eligible") is not False
@@ -618,6 +621,10 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
         and source.get(
             "research_axis_relevant",
             source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False,
+        )
+        and (
+            not question
+            or is_topic_relevant_source(question, source, target_versant=target_versant)
         )
     ]
 
@@ -1937,7 +1944,7 @@ class LegalOrchestrator:
         # the legal-source family and the limitations attached to each document.
         sources = assess_source_set(sources)["sources"]
         # Hide topic-mismatched hits before early returns and user-facing rendering.
-        sources = filter_irrelevant_sources_for_display(sources)
+        sources = filter_irrelevant_sources_for_display(\n            sources, question=request.question, target_versant=request.public_service,\n        )
         permanent_source_ids = {s.get("source_id") for s in permanent_sources if s.get("source_id")}
         usable_permanent = [
             s for s in sources if _is_usable_permanent_source(s, permanent_source_ids)
