@@ -22,12 +22,12 @@ def production_base():
         database_url="postgresql://cfdt_juris_app:app@db/app",
         legal_corpus_ingest_database_url="postgresql://cfdt_juris_ingest:ingest@db/app",
         platform_admin_database_url="postgresql://cfdt_juris_platform_admin:platform@db/app",
-        oidc_issuer="https://tenant.eu.auth0.com/",
-        oidc_audience="urn:dikevia:api",
-        oidc_jwks_url="https://tenant.eu.auth0.com/.well-known/jwks.json",
+        oidc_issuer="https://dev-brlgaz1yh2de3mjo.us.auth0.com/",
+        oidc_audience="https://api.dikevia.fr",
+        oidc_jwks_url="https://dev-brlgaz1yh2de3mjo.us.auth0.com/.well-known/jwks.json",
         oidc_provider="auth0",
         oidc_client_id="public-spa-client-id",
-        oidc_authorization_audience="urn:dikevia:api",
+        oidc_authorization_audience="https://api.dikevia.fr",
         oidc_email_claim="https://dikevia.invalid/claims/email",
         oidc_email_verified_claim="https://dikevia.invalid/claims/email_verified",
         oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
@@ -43,6 +43,10 @@ def production_base():
 
 def test_auth0_production_configuration_requires_public_client_and_api_audience():
     base = production_base()
+    assert base["oidc_issuer"] == "https://dev-brlgaz1yh2de3mjo.us.auth0.com/"
+    assert base["oidc_audience"] == "https://api.dikevia.fr"
+    assert base["oidc_jwks_url"] == "https://dev-brlgaz1yh2de3mjo.us.auth0.com/.well-known/jwks.json"
+    assert base["oidc_authorization_audience"] == "https://api.dikevia.fr"
     validate_runtime_configuration(Settings(**base))
 
     missing_client = {**base, "oidc_client_id": ""}
@@ -50,7 +54,7 @@ def test_auth0_production_configuration_requires_public_client_and_api_audience(
         validate_runtime_configuration(Settings(**missing_client))
 
     missing_audience = {**base, "oidc_authorization_audience": ""}
-    with pytest.raises(RuntimeError, match="OIDC_CLIENT_ID"):
+    with pytest.raises(RuntimeError, match="OIDC_AUTHORIZATION_AUDIENCE"):
         validate_runtime_configuration(Settings(**missing_audience))
 
     mismatched_audience = {**base, "oidc_authorization_audience": "urn:other:api"}
@@ -81,7 +85,7 @@ class FakeJwks:
 
 def test_auth0_access_token_retains_native_subject_for_database_checked_mapping(monkeypatch):
     issuer = "https://tenant.eu.auth0.com/"
-    audience = "urn:dikevia:api"
+    audience = "https://api.dikevia.fr"
     old_issuer = "https://dikevia-identity-l2r8.onrender.com/realms/cfdt"
     settings = SimpleNamespace(
         oidc_issuer=issuer,
@@ -137,7 +141,7 @@ def test_auth0_runtime_configuration_is_server_supplied_and_has_no_secret():
 
 def test_auth0_does_not_strip_unrelated_subjects(monkeypatch):
     issuer = "https://tenant.eu.auth0.com/"
-    audience = "urn:dikevia:api"
+    audience = "https://api.dikevia.fr"
     settings = SimpleNamespace(
         oidc_issuer=issuer,
         oidc_audience=audience,
@@ -166,7 +170,7 @@ def test_auth0_without_legacy_mapping_keeps_native_auth0_subject(monkeypatch):
     issuer = "https://tenant.eu.auth0.com/"
     settings = SimpleNamespace(
         oidc_issuer=issuer,
-        oidc_audience="urn:dikevia:api",
+        oidc_audience="https://api.dikevia.fr",
         oidc_jwks_url="https://tenant.eu.auth0.com/.well-known/jwks.json",
         oidc_algorithms="RS256",
         oidc_email_claim="email",
@@ -178,7 +182,7 @@ def test_auth0_without_legacy_mapping_keeps_native_auth0_subject(monkeypatch):
     monkeypatch.setattr(security, "jwks_client", lambda _url: FakeJwks())
     now = int(time.time())
     token = jwt.encode(
-        {"iss": issuer, "aud": "urn:dikevia:api", "sub": "auth0|new-user",
+        {"iss": issuer, "aud": "https://api.dikevia.fr", "sub": "auth0|new-user",
          "iat": now, "exp": now + 300},
         KEY, algorithm="RS256",
     )

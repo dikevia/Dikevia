@@ -11,7 +11,7 @@ Le navigateur reste un client public OIDC Authorization Code + PKCE. Aucun secre
 Le tenant de développement créé est `dev-brlgaz1yh2de3mjo` (région US-5), émetteur `https://dev-brlgaz1yh2de3mjo.us.auth0.com/`. Il contient deux objets :
 
 1. Une application **Single Page Application** nommée **Dikévia Web SPA - Development** (Client ID `BSpBdDO3IUyG2g5JcHYH29e80JRbnW41`).
-2. Une API nommée **Dikévia API - Development**, identifiant **https://dikevia-commercial-api-l2r8.onrender.com**, algorithme de signature RS256.
+2. Une API nommée **Dikévia Backend API**, identifiant **https://api.dikevia.fr**, algorithme de signature RS256.
 
 Pour l'API, la durée de vie maximale des access tokens et des tokens implicit/hybrid est configurée à **900 secondes**. Le backend Dikévia rejette volontairement les jetons dont la durée dépasse 15 minutes.
 
@@ -19,9 +19,8 @@ Dans l'application SPA de développement, autoriser uniquement l'origine de stag
 
 Configuration effectivement enregistrée pour la SPA de développement :
 
-- État constaté : les quatre listes contiennent actuellement les origines de production et de staging. Cette configuration est trop permissive pour un client de développement.
-- Action de sécurisation obligatoire avant tout déploiement Auth0 sur staging : retirer `https://dikevia-commercial-api-l2r8.onrender.com` de toutes les listes et ne conserver que `https://dikevia-vector-beta-staging.onrender.com` (avec les deux callback paths indiqués ci-dessus).
-- La liste de production ne doit pas être réintroduite dans ce client. Elle nécessitera un client Auth0 de production distinct.
+- État confirmé le 25 novembre 2026 : les quatre listes ont été enregistrées avec uniquement l’origine `https://dikevia-vector-beta-staging.onrender.com` ; les callbacks autorisés sont `/` et `/static/silent-check-sso.html`. Les origines de production ont été retirées.
+- Cette SPA reste réservée au staging. La production nécessitera un client Auth0 distinct.
 
 Ne pas utiliser de wildcard d'origine. Vérifier ces URL dans Render avant de les enregistrer dans Auth0.
 
@@ -39,11 +38,11 @@ Les variables publiques et privées sont séparées. Les valeurs de l'audience c
 
 - `OIDC_PROVIDER=auth0`
 - `OIDC_ISSUER=https://dev-brlgaz1yh2de3mjo.us.auth0.com/` — conserver la barre oblique finale exacte.
-- `OIDC_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com` — identifiant exact de l'API déclaré dans Auth0.
+- `OIDC_AUDIENCE=https://api.dikevia.fr` — identifiant exact de l'API déclaré dans Auth0.
 - `OIDC_JWKS_URL=https://dev-brlgaz1yh2de3mjo.us.auth0.com/.well-known/jwks.json`
 - `OIDC_CLIENT_ID=BSpBdDO3IUyG2g5JcHYH29e80JRbnW41` — identifiant public de l'application SPA.
 - `OIDC_SCOPES=openid profile email`
-- `OIDC_AUTHORIZATION_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com` — strictement identique à `OIDC_AUDIENCE`.
+- `OIDC_AUTHORIZATION_AUDIENCE=https://api.dikevia.fr` — strictement identique à `OIDC_AUDIENCE`.
 - `OIDC_EMAIL_CLAIM=email`
 - `OIDC_EMAIL_VERIFIED_CLAIM=email_verified`
 
