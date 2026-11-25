@@ -612,6 +612,7 @@ def is_topic_relevant_source(
         "title", "article", "official_number", "excerpt", "text", "full_text"
     ))
     source_corpus = _fold(source_text[:500_000])
+    title_folded = _fold(str(source.get("title") or ""))
     source_topics = _matched_topic_families(source_text[:500_000])
     source_article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     # Some primary texts belong to the CMO mechanism by their codified/legal
