@@ -488,6 +488,8 @@ def test_semantic_direct_verdict_cannot_override_cmo_citis_exclusion(monkeypatch
 
 
 def test_cgfp_ordinary_sick_leave_articles_are_eligible_for_fpt_claims():
+    from app.fpt_scope import classify_public_service_scope
+
     for number in range(1, 6):
         article = {
             "source_type": "LEGIFRANCE_API",
