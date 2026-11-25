@@ -1429,7 +1429,7 @@ async def test_gemini_503_uses_flash_lite_fallback_after_primary_retry(monkeypat
     monkeypatch.setattr(settings, "ai_api_key", "test-key")
     monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash")
     monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
-    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-3.5-flash-lite")
 
     calls = []
     def handler(request):
@@ -1450,7 +1450,7 @@ async def test_gemini_503_uses_flash_lite_fallback_after_primary_retry(monkeypat
         )
 
     assert response.status_code == 200
-    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite"]
 
 
 @pytest.mark.asyncio
@@ -2365,4 +2365,160 @@ async def test_provider_completion_retries_transient_server_errors_without_model
     # 500/502/504 get one bounded retry; unlike a capacity-only 503, they
     # must not silently switch to a different model.
     assert calls == ["primary-model", "primary-model"]
+
+@pytest.mark.asyncio
+async def test_gemini_model_not_found_uses_only_configured_fallback_model(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-fallback-model")
+    calls = []
+
+    def handler(request):
+        model = json.loads(request.content)["model"]
+        calls.append(model)
+        if model == "gemini-primary-model":
+            return httpx.Response(
+                404, request=request,
+                json={"error": {"status": "NOT_FOUND", "message": "This model models/gemini-primary-model is no longer available to new users. Please update your code to use models/gemini-fallback-model."}},
+            )
+        return httpx.Response(
+            200, request=request,
+            json={"choices": [{"message": {"content": "ok"}}]},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={"Authorization": "Bearer test"},
+            payload={"model": "gemini-primary-model"},
+        )
+
+    assert response.status_code == 200
+    assert calls == ["gemini-primary-model", "gemini-fallback-model"]
+
+
+@pytest.mark.asyncio
+async def test_retired_gemini_flash_lite_alias_is_replaced_by_current_fallback(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
+    calls = []
+
+    def handler(request):
+        model = json.loads(request.content)["model"]
+        calls.append(model)
+        if model == "gemini-2.5-flash-lite":
+            return httpx.Response(
+                404, request=request,
+                json={"error": {"status": "NOT_FOUND", "message": "This model is no longer available to new users"}},
+            )
+        return httpx.Response(
+            200, request=request,
+            json={"choices": [{"message": {"content": "ok"}}]},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={"Authorization": "Bearer test"},
+            payload={"model": "gemini-2.5-flash-lite"},
+        )
+
+    assert response.status_code == 200
+    assert calls == ["gemini-2.5-flash-lite", "gemini-3.5-flash-lite"]
+
+
+@pytest.mark.asyncio
+async def test_gemini_availability_uses_current_fallback_after_retired_primary(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_key", "test-gemini-key")
+    monkeypatch.setattr(settings, "ai_model", "gemini-2.5-flash-lite")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.path.rsplit("/", 1)[-1])
+        if calls[-1] == "gemini-2.5-flash-lite":
+            return httpx.Response(404, request=request, json={"error": {"status": "NOT_FOUND"}})
+        return httpx.Response(200, request=request, json={
+            "name": "models/gemini-3.5-flash-lite",
+            "supportedGenerationMethods": ["generateContent"],
+        })
+
+    result = await ai_provider._check_provider_availability_uncached(
+        transport=httpx.MockTransport(handler)
+    )
+    assert result == {"status": "AVAILABLE"}
+    assert calls == ["gemini-2.5-flash-lite", "gemini-3.5-flash-lite"]
+
+
+@pytest.mark.asyncio
+async def test_gemini_unrelated_404_does_not_try_another_model(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-fallback-model")
+    calls = []
+
+    def handler(request):
+        calls.append(json.loads(request.content)["model"])
+        return httpx.Response(404, request=request, json={"error": {"message": "route not found"}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(httpx.HTTPStatusError):
+            await ai_provider._post_chat_completion(
+                client,
+                "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                headers={"Authorization": "Bearer test"},
+                payload={"model": "gemini-primary-model"},
+            )
+
+    assert calls == ["gemini-primary-model"]
+
+@pytest.mark.asyncio
+async def test_gemini_model_not_found_array_error_payload_uses_configured_fallback(monkeypatch):
+    import httpx
+    from app import ai_provider
+
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://generativelanguage.googleapis.com/v1beta/openai")
+    monkeypatch.setattr(settings, "ai_fallback_models", "gemini-fallback-model")
+    calls = []
+
+    def handler(request):
+        model = json.loads(request.content)["model"]
+        calls.append(model)
+        if model == "gemini-primary-model":
+            return httpx.Response(
+                404,
+                request=request,
+                json=[{"error": {
+                    "status": "NOT_FOUND",
+                    "message": "This model is no longer available to new users.",
+                }}],
+            )
+        return httpx.Response(
+            200, request=request,
+            json={"choices": [{"message": {"content": "ok"}}]},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={"Authorization": "Bearer test"},
+            payload={"model": "gemini-primary-model"},
+        )
+
+    assert response.status_code == 200
+    assert calls == ["gemini-primary-model", "gemini-fallback-model"]
 
