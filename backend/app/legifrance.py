@@ -283,6 +283,44 @@ class LegifranceConnector:
             "operateur": "ET",
         }
 
+    @staticmethod
+    def _loda_cross_search_field(query: str) -> dict | None:
+        """Build the documented nested LODA_DATE cross-word query as a recall fallback."""
+        stopwords = {
+            "dans", "avec", "pour", "sans", "sous", "entre", "chez", "être", "avoir",
+            "quel", "quelle", "quels", "quelles", "comment", "quand", "est", "sont",
+            "les", "des", "une", "un", "du", "de", "la", "le", "et", "ou", "sur",
+            "aux", "par", "qui", "que", "quoi", "dont", "leur", "leurs", "ses",
+            "son", "sa", "ce", "cet", "cette", "ces", "agent", "agents", "fonction",
+            "publique", "territoriale", "territoriaux", "territorial",
+        }
+        terms = []
+        for token in re.findall(r"[A-Za-zÀ-ÿ]{4,}", query.casefold()):
+            if token not in stopwords and token not in terms:
+                terms.append(token)
+            if len(terms) == 2:
+                break
+        if len(terms) < 2:
+            return None
+        # This nested criterion shape is the one documented by DILA for
+        # cross-word searches in the LODA_DATE corpus.
+        cross_criterion = {
+            "criteres": [{
+                "typeRecherche": "UN_DES_MOTS",
+                "valeur": terms[0],
+                "operateur": "ET",
+            }],
+            "operateur": "ET",
+            "proximite": 2,
+            "typeRecherche": "UN_DES_MOTS",
+            "valeur": terms[1],
+        }
+        return {
+            "typeChamp": "ALL",
+            "criteres": [cross_criterion],
+            "operateur": "ET",
+        }
+
     def _search_payload(
         self, query: str, effective_date: date, code_name: str | None = None,
         *, precise: bool = False,
@@ -558,8 +596,8 @@ class LegifranceConnector:
             for key in ("id", "idTexte", "id_text", "textId")
         )
         if not has_legal_text_id and not number_match:
-            # Precision-first retrieval protects relevance; the documented broad
-            # mode is a recall fallback only when the precise pass found no text.
+            # Precision-first retrieval protects relevance; broad OR is the
+            # first recall fallback when the exact all-words pass finds nothing.
             broad_field = {
                 "typeChamp": "ALL",
                 "criteres": [self._keyword_criterion(query.strip(), precise=False)],
@@ -567,6 +605,22 @@ class LegifranceConnector:
             }
             broad_payload = {**payload, "recherche": {**payload["recherche"], "champs": [broad_field]}}
             found = await self._request("POST", "/search", json_body=broad_payload)
+            has_legal_text_id = any(
+                isinstance(node.get(key), (str, int))
+                and re.fullmatch(r"LEGITEXT\\d{12}", str(node[key]).split("_", 1)[0])
+                for node in self._walk_dicts(found)
+                for key in ("id", "idTexte", "id_text", "textId")
+            )
+            if not has_legal_text_id:
+                # DILA also documents a nested cross-word query for LODA_DATE.
+                # It is attempted only after both normal strategies return no ID.
+                cross_field = self._loda_cross_search_field(query.strip())
+                if cross_field is not None:
+                    cross_payload = {
+                        **payload,
+                        "recherche": {**payload["recherche"], "champs": [cross_field]},
+                    }
+                    found = await self._request("POST", "/search", json_body=cross_payload)
         nodes = list(self._walk_dicts(found))
         records: list[dict] = []
         seen: set[str] = set()
