@@ -654,7 +654,7 @@ def test_report_question_triggers_exact_live_cgfp_article_lookups():
         "Mon chef a fait un rapport contre moi, puis-je le contester ?",
         public_service="FPT",
     )
-    assert queries == ["article L532-4", "article L532-9", "article R137-16"]
+    assert queries == ["article L137-4", "article L532-4", "article L532-9"]
     assert _build_targeted_cgfp_article_queries(
         "Mon chef a fait un rapport contre moi, puis-je le contester ?",
         public_service="FPE",
