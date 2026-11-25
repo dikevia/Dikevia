@@ -549,7 +549,7 @@ async def test_orchestrator_does_not_use_unverified_local_documents_for_ai(monke
         raise AssertionError("Un document local non validé ne doit pas être envoyé à l'IA.")
 
     monkeypatch.setattr(module, "search_local_documents", local_search)
-    monkeypatch.setattr(module, "analyze_question", bounded_ai)
+    monkeypatch.setattr(module, "analyze_question", forbidden_ai)
 
     response = await LegalOrchestrator().ask(
         AskRequest(employer="VILLE_SAINT_ETIENNE", facts_date="2024-06-01",
@@ -701,7 +701,7 @@ async def test_current_date_repere_sources_are_not_labelled_applicable_without_f
     monkeypatch.setattr(module.legifrance, "search_code_articles", code_sources)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", loda_sources)
     monkeypatch.setattr(module.case_law_connector, "search", no_case_law)
-    monkeypatch.setattr(module, "analyze_question", forbidden_ai)
+    monkeypatch.setattr(module, "analyze_question", bounded_ai)
 
     response = await LegalOrchestrator().ask(
         AskRequest(employer="NATIONAL", question="Quels textes encadrent les agents territoriaux ?"),
