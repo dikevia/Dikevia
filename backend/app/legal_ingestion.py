@@ -238,6 +238,38 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
             return scope
     return None
 
+_ADMIN_OPEN_DATA_ARCHIVES = {
+    "CE": ("DCE", date(2021, 9, 1)),
+    "CAA": ("DCA", date(2022, 3, 1)),
+    "TA": ("DTA", date(2022, 6, 1)),
+}
+
+
+def administrative_open_data_archive_url(
+    court: str, year: int, month: int, *, today: date | None = None,
+) -> str:
+    """Build a fixed-host monthly archive URL; never accept caller-supplied URLs."""
+    normalized_court = str(court or "").strip().upper()
+    archive = _ADMIN_OPEN_DATA_ARCHIVES.get(normalized_court)
+    if archive is None:
+        raise ValueError("La juridiction doit être CE, CAA ou TA.")
+    if not isinstance(year, int) or not isinstance(month, int) or not 1 <= month <= 12:
+        raise ValueError("L'année ou le mois de l'archive est invalide.")
+    try:
+        requested_month = date(year, month, 1)
+    except ValueError as exc:
+        raise ValueError("L'année de l'archive est invalide.") from exc
+    folder, first_available = archive
+    current_month = date((today or date.today()).year, (today or date.today()).month, 1)
+    if requested_month < first_available or requested_month > current_month:
+        raise ValueError("Aucune archive mensuelle n'est attendue pour cette période.")
+    prefix = normalized_court
+    return (
+        "https://opendata.justice-administrative.fr/"
+        f"{folder}/{year}/{month:02d}/{prefix}_{year}{month:02d}.zip"
+    )
+
+
 def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> list[dict[str, Any]]:
     """Import dated, full-text administrative decisions relevant to public-service HR law.
 
