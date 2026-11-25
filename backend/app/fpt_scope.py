@@ -167,6 +167,7 @@ def classify_public_service_scope(
         title_folded.startswith("code general de la fonction publique")
         and article_ref in {f"l822 {number}" for number in range(1, 6)}
     ):
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
         return {
             "scope": "COMMON_PUBLIC_SERVICE",
             "evidence": [
@@ -174,7 +175,22 @@ def classify_public_service_scope(
                 "Champ du CGFP applicable aux fonctionnaires des trois versants",
             ],
             "analysis_eligible": True,
-            "claim_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+
+    # Article 115 of the 2017 Finance Act is the statutory basis for the
+    # one-day waiting period for public agents. Only the exact law and its
+    # Article 115 may be treated as common public-service claim evidence.
+    if (
+        "loi n 2017 1837" in title_folded
+        and "article 115" in corpus
+        and ("agents publics" in corpus or "agent public" in corpus)
+    ):
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": ["Article 115 de la loi n° 2017-1837 : délai de carence des agents publics"],
+            "analysis_eligible": True,
+            "claim_eligible": source.get("source_type") == "LEGIFRANCE_LODA",
         }
 
     # CITIS provisions remain contextual until their branch-specific scope and
