@@ -17,6 +17,7 @@ class AskRequest(BaseModel):
     situation_ongoing: bool = False
     question: str = Field(min_length=1, max_length=5000)
     confirm_local_document_ai_transfer: bool = False
+    confirm_personal_document_ai_transfer: bool = False
     personal_document_ids: list[UUID] = Field(default_factory=list, max_length=5)
     # The model identifier travels with the vector so incompatible client encoders fail closed.
     query_embedding_model: Literal["Xenova/paraphrase-multilingual-MiniLM-L12-v2"] | None = None
@@ -62,7 +63,7 @@ class AskRequest(BaseModel):
             raise ValueError("Le vecteur et son identifiant de modèle doivent être fournis ensemble.")
         if len(set(self.personal_document_ids)) != len(self.personal_document_ids):
             raise ValueError("Une même pièce jointe ne peut pas être sélectionnée plusieurs fois.")
-        if self.personal_document_ids and not self.confirm_local_document_ai_transfer:
+        if self.personal_document_ids and not self.confirm_personal_document_ai_transfer:
             raise ValueError("Confirmez la transmission des pièces jointes au fournisseur IA pour cette demande.")
         return self
 
