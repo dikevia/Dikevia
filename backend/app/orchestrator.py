@@ -132,9 +132,9 @@ def _build_targeted_cgfp_article_queries(question: str, public_service: str = "F
         # distinct from the statutory disciplinary guarantees and the
         # territorial report sent to the disciplinary board.
         queries.extend([
+            "article L137-4",
             "article L532-4",
             "article L532-9",
-            "article R137-16",
         ])
     return list(dict.fromkeys(queries))
 
