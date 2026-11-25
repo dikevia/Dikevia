@@ -614,6 +614,7 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     return [
         source for source in sources
         if source.get("analysis_eligible") is not False
+        and source.get("reference_role") != "SNAPSHOT_DISCOVERY_ONLY"
         and source.get(
             "research_axis_relevant",
             source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False,
