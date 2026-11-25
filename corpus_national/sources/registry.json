@@ -1561,6 +1561,9 @@
     "status": "TRUSTED_BY_PROJECT_OWNER",
     "confirmed_at": "2026-11-25",
     "scope": "Authenticity and reliability of all source organisations, official connectors and documents registered for Dikévia, as explicitly designated by the project owner.",
-    "note": "This trust designation is distinct from document ingestion state, legal authority level, legal effect, temporal applicability and local scope. It must never be used to infer an unknown legal status or to promote guidance to a normative source."
+    "note": "This trust designation is distinct from document ingestion state, legal authority level, legal effect, temporal applicability and local scope. It must never be used to infer an unknown legal status or to promote guidance to a normative source. PISTE is trusted as the access connector to official legal data; the legal authority remains the issuing public authority and the retrieved text/version.",
+    "trusted_access_providers": [
+      "PISTE"
+    ]
   }
 }
