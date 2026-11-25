@@ -784,3 +784,14 @@ def test_grandparent_death_still_triggers_bereavement_and_kinship_proof_axes():
     assert any("deces grand parent" in query or "deces grand pere" in query for query in queries)
     assert any("livret de famille" in query for query in queries)
     assert any("justificatif" in axis for axis in axes)
+
+
+def test_hierarchical_report_dispute_keeps_individual_file_and_disciplinary_paths_mandatory():
+    question = "Mon chef a fait un rapport contre moi, puis-je le contester ?"
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+
+    assert len(axes) == 2
+    assert any("dossier individuel" in axis for axis in axes)
+    assert any("procedure disciplinaire" in axis for axis in axes)
+    assert all(axis in " ".join(queries) for axis in axes)
