@@ -607,7 +607,7 @@ class LegifranceConnector:
             found = await self._request("POST", "/search", json_body=broad_payload)
             has_legal_text_id = any(
                 isinstance(node.get(key), (str, int))
-                and re.fullmatch(r"LEGITEXT\\d{12}", str(node[key]).split("_", 1)[0])
+                and re.fullmatch(r"LEGITEXT\d{12}", str(node[key]).split("_", 1)[0])
                 for node in self._walk_dicts(found)
                 for key in ("id", "idTexte", "id_text", "textId")
             )
