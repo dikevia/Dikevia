@@ -537,12 +537,11 @@ def _period_source(endpoint="START"):
         "valid_to": "2024-12-31",
     }
 
- 
+
 def test_date_retrieved_version_exposes_its_distinct_status_limitation():
     result = classify_legal_source(_period_source())
     assert result["usable_for_conclusion"] is True
     assert "statut distinct d'entrée en vigueur n'est pas renseigné" in result["temporal_limit"]
-
 
 
 def test_claim_may_be_scoped_to_the_verified_start_endpoint():
