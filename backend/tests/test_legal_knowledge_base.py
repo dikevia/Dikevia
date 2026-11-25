@@ -22,6 +22,27 @@ def test_clean_text_and_hash_are_deterministic():
     assert sha256_text("juris") != sha256_text("JURIS")
 
 
+def test_date_filtered_version_requires_matching_consulted_and_stored_ids():
+    requested = date(2025, 1, 1)
+    payload = {
+        "requested_date": "2025-01-01",
+        "date_filter": "DATE_VERSION",
+        "matching_consulted_id": "LEGITEXT000000000099",
+    }
+    assert temporal_status(
+        None, None, requested, "DECREE", raw_payload=payload,
+        version_status="UNKNOWN",
+    ) == "TEMPORAL_SCOPE_INCOMPLETE"
+    assert temporal_status(
+        None, None, requested, "DECREE", raw_payload=payload,
+        version_status="UNKNOWN", source_version_id="LEGITEXT000000000100",
+    ) == "TEMPORAL_SCOPE_INCOMPLETE"
+    assert temporal_status(
+        None, None, requested, "DECREE", raw_payload=payload,
+        version_status="UNKNOWN", source_version_id="LEGITEXT000000000099",
+    ) == "VERSION_RETRIEVED_AT_REQUESTED_DATE"
+
+
 def test_temporal_status_is_conservative_when_dates_missing():
     requested = date(2025, 1, 1)
     assert temporal_status(date(2024, 1, 1), date(2025, 1, 1), requested) == "IN_FORCE_ON_REQUESTED_DATE"
@@ -339,6 +360,7 @@ async def test_loda_date_filtered_consult_preserves_unknown_status_and_marks_ret
         signature_date=result[0]["signature_date"],
         raw_payload=result[0]["raw_version_payload"],
         version_status=result[0]["version_status"],
+        source_version_id=result[0]["source_version_id"],
     ) == "VERSION_RETRIEVED_AT_REQUESTED_DATE"
     assert result[0]["raw_version_payload"]["matching_consulted_id"] == "LEGITEXT000000000099"
 
