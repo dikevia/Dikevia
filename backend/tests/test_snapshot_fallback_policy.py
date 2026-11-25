@@ -63,3 +63,27 @@ def test_live_legal_source_is_not_changed_by_snapshot_policy():
     )
 
     assert result == source
+
+
+def test_snapshot_discovery_only_source_is_not_shown_as_answer_evidence():
+    from app.orchestrator import filter_irrelevant_sources_for_display
+
+    sources = [
+        {
+            "source_id": "snapshot",
+            "source_type": "CGFP_SNAPSHOT",
+            "reference_role": "SNAPSHOT_DISCOVERY_ONLY",
+            "analysis_eligible": True,
+            "research_axis_relevant": True,
+        },
+        {
+            "source_id": "live",
+            "source_type": "LEGIFRANCE_API",
+            "analysis_eligible": True,
+            "research_axis_relevant": True,
+        },
+    ]
+
+    visible = filter_irrelevant_sources_for_display(sources)
+
+    assert [source["source_id"] for source in visible] == ["live"]
