@@ -1,5 +1,7 @@
 from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
 from app.orchestrator import (
+    _build_targeted_cgfp_article_queries,
+    _build_targeted_regulatory_queries,
     apply_semantic_source_relevance,
     filter_irrelevant_sources_for_display,
     _source_relevant_to_any_research_axis,
@@ -482,3 +484,37 @@ def test_semantic_direct_verdict_cannot_override_cmo_citis_exclusion(monkeypatch
 
     assert source["research_axis_relevant"] is False
     assert source["semantic_relevance"] == "BLOCKED_BY_TOPIC_GUARD"
+
+
+def test_cgfp_ordinary_sick_leave_articles_are_eligible_for_fpt_claims():
+    for number in range(1, 6):
+        article = {
+            "title": f"Code général de la fonction publique — article L822-{number}",
+            "article": f"L822-{number}",
+            "text": "Le fonctionnaire en activité bénéficie des dispositions relatives au congé de maladie et à sa rémunération.",
+        }
+        scope = classify_public_service_scope(article, target_versant="FPT")
+        assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert scope["analysis_eligible"] is True
+        assert scope["claim_eligible"] is True
+
+
+def test_cmo_questions_trigger_exact_cgfp_and_fpt_implementing_text_searches():
+    question = (
+        "Je suis fonctionnaire territorial titulaire. Quelles sont les règles "
+        "du congé de maladie ordinaire, notamment le jour de carence et le maintien de rémunération ?"
+    )
+    assert _build_targeted_cgfp_article_queries(question, "FPT") == [
+        "article L822-1", "article L822-2", "article L822-3", "article L822-5",
+    ]
+    regulatory = _build_targeted_regulatory_queries(question, "FPT")
+    assert any("décret n° 87-602" in item and "articles 14 et 15" in item for item in regulatory)
+    assert any("loi n° 2017-1837" in item and "article 115" in item for item in regulatory)
+
+
+def test_cmo_exact_queries_are_not_leaked_to_other_public_service_branches():
+    question = "Quelles sont les règles du congé de maladie ordinaire et du jour de carence ?"
+    assert _build_targeted_cgfp_article_queries(question, "FPE") == []
+    assert _build_targeted_cgfp_article_queries(question, "FPH") == []
+    assert _build_targeted_regulatory_queries(question, "FPE") == []
+    assert _build_targeted_regulatory_queries(question, "FPH") == []
