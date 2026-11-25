@@ -33,6 +33,14 @@ def test_temporal_status_is_conservative_when_dates_missing():
     assert temporal_status(None, None, requested, "ADMIN_CASELAW", date(2025, 6, 1)) == "DECISION_POSTERIOR_TO_REQUESTED_DATE"
     assert temporal_status(None, None, requested, "DECREE", raw_payload={"requested_date": "2025-01-01"}, version_status="IN_FORCE") == "IN_FORCE_ON_REQUESTED_DATE"
     assert temporal_status(None, None, requested, "DECREE", raw_payload='{"requested_date":"2025-01-01"}', version_status="IN_FORCE") == "IN_FORCE_ON_REQUESTED_DATE"
+    assert temporal_status(
+        date(2024, 1, 1), date(2025, 12, 31), requested,
+        "DECREE", version_status="UNKNOWN",
+    ) == "TEMPORAL_SCOPE_INCOMPLETE"
+    assert temporal_status(
+        date(2024, 1, 1), date(2025, 12, 31), requested,
+        "DECREE", version_status="IN_FORCE",
+    ) == "IN_FORCE_ON_REQUESTED_DATE"
 
 
 def test_guidance_sources_are_context_only_and_never_ground_legal_claims():
