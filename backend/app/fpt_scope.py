@@ -158,6 +158,35 @@ def classify_public_service_scope(
             "analysis_eligible": True,
             "claim_eligible": official_live_article,
         }
+    # CGFP L. 822-1 to L. 822-5 contain ordinary sick-leave statutory provisions.
+    # Only a live Légifrance article may support a claim; snapshots remain contextual.
+    if (
+        title_folded.startswith("code general de la fonction publique")
+        and article_ref in {f"l822 {number}" for number in range(1, 6)}
+    ):
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                f"Article {article_ref.upper()} du CGFP : dispositions relatives aux congés de maladie",
+                "Champ commun aux fonctionnaires des trois versants, sous réserve du texte applicable",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+
+    if (
+        "loi n 2017 1837" in title_folded
+        and "article 115" in corpus
+        and ("agents publics" in corpus or "agent public" in corpus)
+    ):
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": ["Article 115 de la loi n° 2017-1837 : délai de carence des agents publics"],
+            "analysis_eligible": True,
+            "claim_eligible": source.get("source_type") == "LEGIFRANCE_LODA",
+        }
+
     # CITIS provisions remain contextual until their branch-specific scope and
     # implementing rules have been independently established.
     if target_versant == "FPT" and article_ref in {
@@ -576,7 +605,39 @@ def is_topic_relevant_source(
     source_text = " ".join(str(source.get(key) or "") for key in (
         "title", "article", "official_number", "excerpt", "text", "full_text"
     ))
+    source_corpus = _fold(source_text[:500_000])
+    title_folded = _fold(str(source.get("title") or ""))
     source_topics = _matched_topic_families(source_text[:500_000])
+    source_article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
+    if (
+        title_folded.startswith("code general de la fonction publique")
+        and source_article_ref in {f"l822 {number}" for number in range(1, 6)}
+    ):
+        source_topics.add("ORDINARY_SICK_LEAVE")
+    if "loi n 2017 1837" in title_folded and "article 115" in source_corpus:
+        source_topics.add("ORDINARY_SICK_LEAVE")
+    source_article_number_raw = " ".join(
+        str(source.get(key) or "") for key in ("article", "article_id", "article_number")
+    )
+    source_article_number_match = re.search(r"\b(14|15)\b", _fold(source_article_number_raw))
+    source_article_number = source_article_number_match.group(1) if source_article_number_match else ""
+    if (
+        "decret n 87 602" in title_folded
+        and (
+            source_article_number in {"14", "15"}
+            or "article 14" in source_corpus
+            or "article 15" in source_corpus
+        )
+    ):
+        source_topics.add("ORDINARY_SICK_LEAVE")
+    if (
+        "decret n 2025 197" in title_folded
+        and any(marker in source_corpus for marker in (
+            "conge de maladie", "maladie ordinaire", "90 %", "90 pour cent",
+            "trois premiers mois", "trois premiers mois de conge",
+        ))
+    ):
+        source_topics.add("ORDINARY_SICK_LEAVE")
     # Do not let the similar wording "extra hours" merge two distinct FPT
     # regimes: decree 2004-777 concerns part-time IHTS conditions, while
     # decree 2020-592 governs complementary hours for permanent non-complete
@@ -628,6 +689,18 @@ def is_topic_relevant_source(
         and ("SICK_LEAVE" in question_topics or "ORDINARY_SICK_LEAVE" in question_topics)
     ):
         return False
+
+    if "ORDINARY_SICK_LEAVE" in question_topics:
+        cmo_pay_evidence = (
+            source_article_ref in {f"l822 {number}" for number in range(1, 6)}
+            or ("loi n 2017 1837" in title_folded and "article 115" in source_corpus)
+            or ("decret n 87 602" in title_folded and source_article_number in {"14", "15"})
+            or "decret n 2025 197" in title_folded
+        )
+        if "ORDINARY_SICK_LEAVE" not in source_topics and not (
+            "REMUNERATION" in source_topics and cmo_pay_evidence
+        ):
+            return False
 
     if question_topics & source_topics:
         return True
