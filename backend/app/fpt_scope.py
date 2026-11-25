@@ -627,9 +627,26 @@ def is_topic_relevant_source(
         and "article 115" in source_corpus
     ):
         source_topics.add("ORDINARY_SICK_LEAVE")
+    source_article_number = _fold(str(
+        source.get("article") or source.get("article_id") or source.get("article_number") or ""
+    )).strip()
     if (
         "decret n 87 602" in title_folded
-        and ("article 14" in source_corpus or "article 15" in source_corpus)
+        and (
+            source_article_number in {"14", "15"}
+            or "article 14" in source_corpus
+            or "article 15" in source_corpus
+        )
+    ):
+        source_topics.add("ORDINARY_SICK_LEAVE")
+    # The 2025 remuneration reform is CMO-specific even when the indexed
+    # excerpt omits the full phrase "congé de maladie ordinaire".
+    if (
+        "decret n 2025 197" in title_folded
+        and any(marker in source_corpus for marker in (
+            "conge de maladie", "maladie ordinaire", "90 %", "90 pour cent",
+            "trois premiers mois", "trois premiers mois de conge",
+        ))
     ):
         source_topics.add("ORDINARY_SICK_LEAVE")
     # Do not let the similar wording "extra hours" merge two distinct FPT
