@@ -52,6 +52,10 @@ def test_temporal_status_is_conservative_when_dates_missing():
     ) == "TEMPORAL_SCOPE_INCOMPLETE"
     assert temporal_status(
         date(2024, 1, 1), date(2025, 12, 31), requested,
+        "LAW", version_status="UNKNOWN",
+    ) == "TEMPORAL_SCOPE_INCOMPLETE"
+    assert temporal_status(
+        date(2024, 1, 1), date(2025, 12, 31), requested,
         "DECREE", version_status="IN_FORCE",
     ) == "IN_FORCE_ON_REQUESTED_DATE"
 
