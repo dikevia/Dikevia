@@ -798,7 +798,9 @@ def test_hierarchical_report_dispute_keeps_individual_file_and_disciplinary_path
     assert any("jurisprudence administrative" in axis for axis in axes)
     assert all(axis in " ".join(queries) for axis in axes)
     joined = " ".join(queries)
+    assert "L137-1" in joined
+    assert "L137-4" in joined
     assert "L532-4" in joined
     assert "L532-9" in joined
-    assert "R137-16" in joined
+    assert "R137-16" not in joined
     assert "89-677" in joined
