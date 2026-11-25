@@ -116,7 +116,7 @@ def test_chat_attachment_ids_are_bounded_and_require_per_request_transfer_consen
     request = AskRequest(
         question="Analyse ce document",
         personal_document_ids=[document_id],
-        confirm_local_document_ai_transfer=True,
+        confirm_personal_document_ai_transfer=True,
     )
     assert request.personal_document_ids == [document_id]
 
@@ -124,7 +124,7 @@ def test_chat_attachment_ids_are_bounded_and_require_per_request_transfer_consen
         AskRequest(
             question="Analyse ces documents",
             personal_document_ids=[uuid4() for _ in range(6)],
-            confirm_local_document_ai_transfer=True,
+            confirm_personal_document_ai_transfer=True,
         )
 
 
@@ -158,3 +158,10 @@ def test_selected_attachments_are_loaded_by_owner_id_and_bounded_excerpt():
     assert "left(extracted_text,6000)" in source
     assert "request.personal_document_ids" in source
     assert "owner_user_id=$1::uuid" in source
+
+
+def test_personal_attachment_consent_is_independent_from_employer_document_consent():
+    from app.orchestrator import LegalOrchestrator
+    source = inspect.getsource(LegalOrchestrator.ask)
+    assert "if allow_personal_documents else \"NOT_TRANSMITTED\"" in source
+    assert "if allow_personal_documents" in source
