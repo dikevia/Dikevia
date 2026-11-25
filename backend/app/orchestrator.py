@@ -1628,6 +1628,9 @@ class LegalOrchestrator:
             try:
                 stored_by_query = []
                 stored_search_failed = False
+                # Vector retrieval is an optional recall enhancement. A vector
+                # failure must not downgrade successful lexical retrieval to a
+                # corpus-wide partial-failure state.
                 # One asyncpg connection cannot run concurrent queries; keep the
                 # independent corpus searches sequential on this tenant-safe connection.
                 for query in research_queries:
@@ -1652,10 +1655,18 @@ class LegalOrchestrator:
                             query_embedding=request.query_embedding,
                         )
                     except Exception as exc:
-                        logger.warning("Recherche vectorielle indisponible ; maintien du repli lexical : %r", exc)
-                        stored_search_failed = True
+                        logger.warning(
+                            "Recherche vectorielle indisponible ; les résultats lexicaux sont conservés (%s).",
+                            type(exc).__name__,
+                        )
                     else:
-                        stored_by_query.insert(0, vector_results if isinstance(vector_results, list) else [])
+                        if isinstance(vector_results, list):
+                            stored_by_query.insert(0, vector_results)
+                        else:
+                            logger.warning(
+                                "Recherche vectorielle ignorée : format de résultat inattendu (%s).",
+                                type(vector_results).__name__,
+                            )
                 stored = select_multi_source_chunks(
                     stored_by_query, limit=LEGAL_CORPUS_INTERLEAVED_LIMIT,
                 )
