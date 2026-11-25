@@ -591,7 +591,7 @@ def test_live_cgfp_l111_1_is_common_public_service_claim_evidence():
     }
     scope = classify_public_service_scope(source, target_versant="FPT")
     source.update(scope)
-    assert source["public_service_scope"] == "COMMON_PUBLIC_SERVICE"
+    assert source["scope"] == "COMMON_PUBLIC_SERVICE"
     assert source["analysis_eligible"] is True
     assert source["claim_eligible"] is True
 
