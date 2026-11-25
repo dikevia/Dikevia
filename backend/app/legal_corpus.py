@@ -489,14 +489,17 @@ async def search_legal_corpus(
       ORDER BY selected_chunks.rank DESC,metadata.publication_date DESC NULLS LAST LIMIT $3
     """
     query_args = (query.strip(), expansion_expression, limit, vector_literal, requested_date)
-    if vector_literal is not None:
+    transaction_factory = getattr(conn, "transaction", None)
+    if vector_literal is not None and callable(transaction_factory):
         # pgvector defaults hnsw.ef_search to 40. Our hybrid query asks for up to
         # 120 vector candidates; raise the candidate breadth only for this
         # transaction so filtered scans do not silently under-fill retrieval.
-        async with conn.transaction():
+        async with transaction_factory():
             await conn.execute(f"SET LOCAL hnsw.ef_search = {VECTOR_HNSW_EF_SEARCH}")
             rows = await conn.fetch(sql, *query_args)
     else:
+        # Lightweight test doubles and compatible connection adapters may not
+        # expose asyncpg's transaction context; keep their retrieval path usable.
         rows = await conn.fetch(sql, *query_args)
     results = []
     for row in rows:
