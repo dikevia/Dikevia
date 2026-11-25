@@ -1,10 +1,18 @@
 # Dikévia — état de préparation de la bêta
 
-**Contrôle actualisé : 24 novembre 2026, 23:30 UTC**  
+**Contrôle actualisé : 25 novembre 2026, 04:05 UTC**  
 **Branche commerciale :** `feature/dikevia-v3.38.5-cgfp-chat`  
 **Dernier commit commercial observé en production :** `f9aadba451e67157ae41ade32190d5eaa0e5bed5`
 
 Ce document distingue les contrôles effectués, les limites connues et les validations encore nécessaires. Il ne constitue ni une certification juridique ni une garantie de capacité.
+
+## Contrôle opérationnel complémentaire — 25 novembre 2026
+
+- Le déploiement API du commit `f9aadba451e67157ae41ade32190d5eaa0e5bed5` est confirmé `live`. Après réveil à froid, `GET /ready` a répondu avec `status=ready` et la même révision ; la page racine a répondu HTTP 200. Ces contrôles ne valident pas une session utilisateur ni le chatbot.
+- Le service Keycloak n'était pas marqué suspendu par Render. Après sollicitation, son processus a commencé à démarrer à 04:04:14 UTC. Le dernier journal observé à 04:04:31 UTC signalait une option de cache non disponible, puis aucune ligne de démarrage complet n'était visible.
+- Les contrôles directs de `/health/ready` et de la découverte OIDC `/realms/cfdt/.well-known/openid-configuration` ont continué à répondre HTTP 503 après plusieurs tentatives. La branche Neon de production était `ready`, mais aucune connexion Keycloak active n'était visible dans `pg_stat_activity` lors du dernier contrôle.
+- **Diagnostic non conclu :** il n'est pas possible d'attribuer avec certitude le 503 à un démarrage à froid, à la mémoire, à la connexion DB ou à une autre cause. Aucun redémarrage manuel, changement de configuration ou changement de plan n'a été déclenché. La disponibilité OIDC doit être revalidée avant une démonstration nécessitant une connexion.
+- Ce contrôle opérationnel est distinct des smoke tests OIDC précédemment réussis ; ces derniers ne prouvent pas que le fournisseur d'identité répond actuellement.
 
 ## 1. Production et sécurité opérationnelle
 
