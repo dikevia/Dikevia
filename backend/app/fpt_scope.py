@@ -562,6 +562,17 @@ _TOPIC_FAMILIES = {
         "comite social territorial", "formation specialisee",
         "comite technique", "instance de dialogue social",
     ),
+    "REPORT_HIERARCHICAL_CONTESTATION": (
+        "rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+        "mon chef a fait un rapport", "mon superieur a fait un rapport",
+        "rapport a charge", "rapport defavorable", "rapport circonstancie",
+        "contester un rapport de mon chef", "contester le rapport de mon superieur",
+    ),
+    "INDIVIDUAL_FILE": (
+        "dossier individuel", "communication du dossier", "consultation du dossier",
+        "acces au dossier", "pieces du dossier", "documents verses au dossier",
+        "verse au dossier individuel",
+    ),
     "PROFESSIONAL_EVALUATION": (
         "entretien professionnel", "evaluation professionnelle", "evaluation annuelle",
         "compte rendu d evaluation", "compte rendu d entretien",
@@ -733,6 +744,7 @@ def is_topic_relevant_source(
         # generic references to evaluating risks, health, senior civil-service
         # jobs or skills are not evidence about the annual FPT appraisal report.
         "PROFESSIONAL_EVALUATION",
+        "REPORT_HIERARCHICAL_CONTESTATION",
         "CONTRACT_CDI_SIX_YEARS",
         "AVAILABILITY",
         "CONTRACTUAL_STATUS",
@@ -750,6 +762,10 @@ def is_topic_relevant_source(
                     "FUNCTIONAL_PROTECTION", "SICK_LEAVE",
                     "STAFFING_AND_WORK_CONDITIONS",
                 } & source_topics)
+            )
+            or (
+                "REPORT_HIERARCHICAL_CONTESTATION" in question_topics
+                and bool({"INDIVIDUAL_FILE", "DISCIPLINE", "PROFESSIONAL_EVALUATION"} & source_topics)
             )
             or (
                 "UNION_ASSISTANCE" in question_topics
@@ -777,6 +793,9 @@ def is_topic_relevant_source(
             "FUNCTIONAL_PROTECTION", "SICK_LEAVE", "STAFFING_AND_WORK_CONDITIONS",
         },
         "UNION_ASSISTANCE": {"DISCIPLINE"},
+        "REPORT_HIERARCHICAL_CONTESTATION": {
+            "INDIVIDUAL_FILE", "DISCIPLINE", "PROFESSIONAL_EVALUATION",
+        },
     }
     return any(
         source_family in related_families.get(question_family, set())
