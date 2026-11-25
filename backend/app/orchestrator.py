@@ -12,7 +12,7 @@ from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
+from .fpt_scope import _fold, _matched_topic_families, classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, parse_structured_answer, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -111,6 +111,18 @@ def _build_versant_fallback_research(
     return [branch_query], [branch_query]
 
 
+def _build_targeted_cgfp_article_queries(question: str, public_service: str = "FPT") -> list[str]:
+    if str(public_service or "").upper() != "FPT":
+        return []
+    folded = _fold(str(question or ""))
+    if not any(marker in folded for marker in (
+        "conge de maladie ordinaire", "maladie ordinaire",
+        "jour de carence", "jours de carence", "cmo",
+    )):
+        return []
+    return [f"article L822-{number}" for number in range(1, 6)]
+
+
 def _build_code_research_queries(
     research_queries: list[str],
     cgfp_article_queries: list[str] | None = None,
@@ -148,6 +160,16 @@ def _build_targeted_regulatory_queries(
             ),
         }
         queries.extend(branch_availability_articles.get(public_service, ()))
+
+    ordinary_sick_leave = any(marker in folded for marker in (
+        "congé de maladie ordinaire", "conge de maladie ordinaire",
+        "maladie ordinaire", "jour de carence", "jours de carence", "cmo",
+    ))
+    if public_service == "FPT" and ordinary_sick_leave:
+        queries.extend([
+            "décret n° 87-602 du 30 juillet 1987 articles 14 et 15 congé de maladie fonctionnaires territoriaux",
+            "loi n° 2017-1837 du 30 décembre 2017 article 115 jour de carence agents publics fonctionnaires territoriaux",
+        ])
 
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
@@ -575,7 +597,8 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     """Exclude sources explicitly unrelated to every independently searched axis."""
     return [
         source for source in sources
-        if source.get(
+        if source.get("analysis_eligible") is not False
+        and source.get(
             "research_axis_relevant",
             source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False,
         )
@@ -631,8 +654,11 @@ async def apply_semantic_source_relevance(
 
 def _source_relevant_to_any_research_axis(
     research_queries: list[str], source: dict, target_versant: str = "FPT",
+    question: str | None = None,
 ) -> bool:
-    """Require topic relevance while applying FPT-only safeguards to FPT questions."""
+    if question and "ORDINARY_SICK_LEAVE" in _matched_topic_families(question):
+        if not is_topic_relevant_source(question, source, target_versant=target_versant):
+            return False
     return any(
         is_topic_relevant_source(query, source, target_versant=target_versant)
         and is_ihts_relevant_source(query, source, target_versant=target_versant)
@@ -642,13 +668,16 @@ def _source_relevant_to_any_research_axis(
 
 def _source_relevant_for_target(
     research_queries: list[str], source: dict, target_versant: str,
+    question: str | None = None,
 ) -> bool:
-    # Keep the historical two-argument FPT call contract for existing adapters
-    # and tests; FPE/FPH must not inherit FPT-specific retrieval guards.
     if str(target_versant or "FPT").upper() == "FPT":
-        return _source_relevant_to_any_research_axis(research_queries, source)
+        if question is None:
+            return _source_relevant_to_any_research_axis(research_queries, source)
+        return _source_relevant_to_any_research_axis(
+            research_queries, source, question=question,
+        )
     return _source_relevant_to_any_research_axis(
-        research_queries, source, target_versant,
+        research_queries, source, target_versant, question=question,
     )
 
 
@@ -1092,8 +1121,14 @@ class LegalOrchestrator:
             # additional budget for up to three exact CGFP article lookups.
             # Exact article calls are essential when lexical discovery identifies
             # a provision whose title/body does not repeat the user's wording.
+            targeted_cmo_articles = _build_targeted_cgfp_article_queries(
+                contextual_question, request.public_service,
+            )
+            code_query_inputs = research_queries[:3] if targeted_cmo_articles else research_queries
             code_research_queries = _build_code_research_queries(
-                research_queries, cgfp_article_queries, max_queries=8,
+                code_query_inputs,
+                [*targeted_cmo_articles, *cgfp_article_queries],
+                max_queries=8,
             )
             # These targeted, exact-number queries are sent only to the LODA
             # regulatory-text endpoint. They do not consume the CGFP or CETAT
@@ -1218,7 +1253,10 @@ class LegalOrchestrator:
         # used as a fallback only when live CGFP retrieval is unavailable.
         found, cgfp_issue = await search_cgfp_index()
         cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
-        cgfp_article_queries = _cgfp_article_discovery_queries(found, request.public_service)
+        cgfp_article_queries = list(dict.fromkeys([
+            *_build_targeted_cgfp_article_queries(contextual_question, request.public_service),
+            *_cgfp_article_discovery_queries(found, request.public_service),
+        ]))
 
         # Official legal texts and administrative case law remain the
         # authoritative verification path.
@@ -1823,6 +1861,7 @@ class LegalOrchestrator:
         for source in sources:
             source["research_axis_relevant"] = _source_relevant_for_target(
                 research_queries, source, request.public_service,
+                question=contextual_question,
             )
 
 
