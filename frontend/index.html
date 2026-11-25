@@ -632,7 +632,7 @@ $('#refreshPlatform').addEventListener('click',()=>loadPlatform().catch(e=>msg('
  const button=$('#ingestAllOpenDataArchives');button.disabled=true;
  const current=new Date();const endYear=current.getUTCFullYear(),endMonth=current.getUTCMonth()+1;
  const starts=[['CE',2021,6],['CAA',2022,3],['TA',2022,6]];
- const totals={archives:0,imported:0,rejected:0,missing:0,failed:0};const failures=[];
+ const totals={archives:0,imported:0,rejected:0,missing:0,noRelevant:0,failed:0};const failures=[];
  const monthLabel=(y,m)=>String(y)+'-'+String(m).padStart(2,'0');
  try{
   for(const [court,startYear,startMonth] of starts){
@@ -643,7 +643,7 @@ $('#refreshPlatform').addEventListener('click',()=>loadPlatform().catch(e=>msg('
     let result=null,lastError=null;
     for(let attempt=0;attempt<2;attempt++){
      try{result=await api('/api/v1/platform/legal-corpus/ingest/administrative-open-data-archive?'+params.toString(),{method:'POST'});lastError=null;break;}
-     catch(err){lastError=err;if(err.status===404){totals.missing++;lastError=null;break;}if(attempt===0&&(!err.status||err.status>=500)){await new Promise(resolve=>setTimeout(resolve,1500));continue;}break;}
+     catch(err){lastError=err;if(err.status===404){totals.missing++;lastError=null;break;}if(err.status===422&&String(err.message||'').includes('Aucune décision intégrale pertinente')){totals.noRelevant++;lastError=null;break;}if(attempt===0&&(!err.status||err.status>=500)){await new Promise(resolve=>setTimeout(resolve,1500));continue;}break;}
     }
     if(result){totals.archives++;totals.imported+=Number(result.records_imported||0);totals.rejected+=Number(result.records_rejected||0);}
     else if(lastError){totals.failed++;if(failures.length<30)failures.push(court+' '+period+': '+lastError.message);}
@@ -651,7 +651,7 @@ $('#refreshPlatform').addEventListener('click',()=>loadPlatform().catch(e=>msg('
     m++;if(m===13){m=1;y++;}
    }
   }
-  const summary='Import terminé · '+totals.archives+' archive(s) traitée(s) · '+totals.imported+' décision(s) importée(s) · '+totals.rejected+' rejetée(s) · '+totals.missing+' archive(s) non publiée(s) · '+totals.failed+' erreur(s).';
+  const summary='Import terminé · '+totals.archives+' archive(s) traitée(s) · '+totals.imported+' décision(s) importée(s) · '+totals.rejected+' rejetée(s) · '+totals.missing+' archive(s) non publiée(s) · '+totals.noRelevant+' archive(s) sans décision pertinente détectée · '+totals.failed+' erreur(s).';
   msg('#legalCorpusMessage',summary+(failures.length?' Détails : '+failures.join(' | '):''));
   await loadCorpusRuns();
  }catch(err){msg('#legalCorpusMessage','Import interrompu : '+err.message,true);await loadCorpusRuns().catch(()=>{});}
