@@ -134,3 +134,27 @@ def test_chat_personal_document_retrieval_is_limited_to_attached_ids_when_provid
     assert "id=ANY($2::uuid[])" in source
     assert "request.personal_document_ids" in source
     assert "owner_user_id=$1::uuid" in source
+
+
+def test_personal_upload_offloads_antivirus_and_text_extraction_from_asgi_loop():
+    source = inspect.getsource(upload_personal_document)
+    assert "await asyncio.to_thread(" in source
+    assert "scan_with_clamav" in source
+    assert "extract_document_text" in source
+
+
+def test_chat_attachment_analysis_fails_closed_when_feature_is_disabled():
+    from app.main import ask
+    source = inspect.getsource(ask)
+    assert "payload.personal_document_ids" in source
+    assert "settings.ai_local_documents_in_chat_enabled" in source
+    assert "aucun document n'a été transmis" in source
+
+
+def test_selected_attachments_are_loaded_by_owner_id_and_bounded_excerpt():
+    from app.orchestrator import LegalOrchestrator
+    source = inspect.getsource(LegalOrchestrator.ask)
+    assert "id=ANY($2::uuid[])" in source
+    assert "left(extracted_text,6000)" in source
+    assert "request.personal_document_ids" in source
+    assert "owner_user_id=$1::uuid" in source
