@@ -490,6 +490,7 @@ def test_semantic_direct_verdict_cannot_override_cmo_citis_exclusion(monkeypatch
 def test_cgfp_ordinary_sick_leave_articles_are_eligible_for_fpt_claims():
     for number in range(1, 6):
         article = {
+            "source_type": "LEGIFRANCE_API",
             "title": f"Code général de la fonction publique — article L822-{number}",
             "article": f"L822-{number}",
             "text": "Le fonctionnaire en activité bénéficie des dispositions relatives au congé de maladie et à sa rémunération.",
@@ -498,6 +499,31 @@ def test_cgfp_ordinary_sick_leave_articles_are_eligible_for_fpt_claims():
         assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
         assert scope["analysis_eligible"] is True
         assert scope["claim_eligible"] is True
+
+
+def test_cgfp_cmo_snapshot_is_context_only_not_claim_evidence():
+    snapshot = {
+        "source_type": "CGFP_SNAPSHOT",
+        "title": "Code général de la fonction publique — article L822-3",
+        "article": "L822-3",
+        "text": "Le fonctionnaire en congé de maladie perçoit 90 % de son traitement pendant trois mois.",
+    }
+    scope = classify_public_service_scope(snapshot, target_versant="FPT")
+    assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
+    assert scope["analysis_eligible"] is True
+    assert scope["claim_eligible"] is False
+
+
+def test_law_2017_1837_article_115_is_common_public_service_claim_evidence():
+    law = {
+        "source_type": "LEGIFRANCE_LODA",
+        "title": "Loi n° 2017-1837 du 30 décembre 2017 de finances pour 2018",
+        "text": "Article 115. Les agents publics civils et les militaires en congé de maladie bénéficient du maintien de leur rémunération à compter du deuxième jour.",
+    }
+    scope = classify_public_service_scope(law, target_versant="FPT")
+    assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
+    assert scope["analysis_eligible"] is True
+    assert scope["claim_eligible"] is True
 
 
 def test_cmo_questions_trigger_exact_cgfp_and_fpt_implementing_text_searches():
