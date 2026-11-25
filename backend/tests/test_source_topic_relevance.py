@@ -202,6 +202,69 @@ def test_required_answer_axes_include_only_distinct_recognized_legal_topics():
     assert build_official_research_axes(general) == []
 
 
+def test_report_contestation_display_hides_unrelated_legal_sources():
+    question = (
+        "Mon chef a fait un rapport circonstancié contre moi, "
+        "il dit que je lui ai mal parlé, comment me défendre ?"
+    )
+    sources = [
+        {
+            "source_id": "individual-file",
+            "title": "Code général de la fonction publique — article L137-4",
+            "article": "L137-4",
+            "text": "Tout agent public a accès à son dossier individuel.",
+            "analysis_eligible": True,
+            "research_axis_relevant": True,
+        },
+        {
+            "source_id": "discipline-defence",
+            "title": "Code général de la fonction publique — article L532-4",
+            "article": "L532-4",
+            "text": (
+                "Le fonctionnaire à l'encontre duquel une procédure disciplinaire "
+                "est engagée a droit à la communication de son dossier."
+            ),
+            "analysis_eligible": True,
+            "research_axis_relevant": True,
+        },
+        {
+            "source_id": "discipline-report",
+            "title": "Code général de la fonction publique — article L532-9",
+            "article": "L532-9",
+            "text": (
+                "Lors d'une procédure disciplinaire, l'autorité territoriale saisit "
+                "le conseil de discipline par un rapport précisant les faits reprochés."
+            ),
+            "analysis_eligible": True,
+            "research_axis_relevant": True,
+        },
+        {
+            "source_id": "unrelated-csfpt",
+            "title": "Code général de la fonction publique — article L244-1",
+            "article": "L244-1",
+            "text": "Le Conseil supérieur de la fonction publique territoriale est saisi pour avis.",
+            "analysis_eligible": True,
+            "research_axis_relevant": True,
+        },
+        {
+            "source_id": "unrelated-training",
+            "title": "Code général de la fonction publique — article L422-21",
+            "article": "L422-21",
+            "text": "La formation professionnelle tout au long de la vie comprend plusieurs actions.",
+            "analysis_eligible": True,
+            "research_axis_relevant": True,
+        },
+    ]
+
+    visible = filter_irrelevant_sources_for_display(
+        sources, question=question, target_versant="FPT",
+    )
+
+    assert {source["source_id"] for source in visible} == {
+        "individual-file", "discipline-defence", "discipline-report",
+    }
+
+
 def test_annual_professional_evaluation_rejects_unrelated_evaluation_hits():
     question = (
         "Mon agent de maîtrise m'a fait une évaluation annuelle à charge, "
