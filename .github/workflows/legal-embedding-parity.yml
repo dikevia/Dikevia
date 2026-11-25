@@ -2,7 +2,7 @@ name: Legal embedding parity
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, feature/dikevia-v3.38.5-cgfp-chat]
     paths:
       - "scripts/generate_transformersjs_parity.mjs"
       - "scripts/compare_legal_embedding_parity.py"
