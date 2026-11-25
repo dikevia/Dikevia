@@ -621,6 +621,22 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     ]
 
 
+def _apply_cgfp_snapshot_fallback_policy(
+    source: dict, *, fallback_enabled: bool, facts_date_present: bool,
+) -> dict:
+    """Prevent corpus snapshots from competing with a relevant live Légifrance article."""
+    result = dict(source)
+    if result.get("source_type") != "CGFP_SNAPSHOT":
+        return result
+    if fallback_enabled and not facts_date_present:
+        result["reference_role"] = "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+        return result
+    result["reference_role"] = "SNAPSHOT_DISCOVERY_ONLY"
+    result["claim_eligible"] = False
+    result["general_info_eligible"] = False
+    return result
+
+
 
 async def apply_semantic_source_relevance(
     *, question: str, research_axes: list[str], sources: list[dict],
@@ -1679,8 +1695,8 @@ class LegalOrchestrator:
                         # when no repeal is explicitly recorded; never infer historical effect.
                         "general_info_eligible": parsed_date is None,
                         "reference_role": (
-                            "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
-                            if item.get("source_type") == "CGFP_SNAPSHOT" and parsed_date is None
+                            "SNAPSHOT_DISCOVERY_ONLY"
+                            if item.get("source_type") == "CGFP_SNAPSHOT"
                             else item.get("reference_role")
                         ),
                     })
@@ -1790,7 +1806,11 @@ class LegalOrchestrator:
                 response_source["claim_eligible"] = False
                 response_source["reference_role"] = "NON_NORMATIVE_CONTEXT_ONLY"
             if response_source.get("source_type") == "CGFP_SNAPSHOT":
-                response_source["reference_role"] = "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
+                response_source = _apply_cgfp_snapshot_fallback_policy(
+                    response_source,
+                    fallback_enabled=cgfp_snapshot_fallback,
+                    facts_date_present=parsed_date is not None,
+                )
                 response_source["snapshot_modified_at"] = (
                     _source_metadata(response_source).get("snapshot_modified_at")
                     or _source_metadata(response_source).get("generated_at")
