@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS oidc_sessions (
   refresh_token_ciphertext bytea NOT NULL,
   access_expires_at timestamptz NOT NULL,
   refresh_expires_at timestamptz,
+  email text,
+  email_verified boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   last_seen_at timestamptz NOT NULL DEFAULT now(),
   revoked_at timestamptz,
