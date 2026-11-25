@@ -1656,7 +1656,7 @@ async def ingest_administrative_open_data_archive(
     raw = response.content
     if len(raw) > 100 * 1024 * 1024:
         raise HTTPException(413, "Archive ZIP limitée à 100 Mo.")
-    if not raw.startswith(b"PK\\x03\\x04"):
+    if not raw.startswith(b"PK" + bytes((3, 4))):
         raise HTTPException(502, "La ressource téléchargée n'est pas une archive ZIP reconnue.")
     filename = archive_url.rsplit("/", 1)[-1]
     uploaded = UploadFile(filename=filename, file=BytesIO(raw))
