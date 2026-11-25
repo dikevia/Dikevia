@@ -31,17 +31,43 @@ def _require_verified_auth0_email(principal: Principal) -> Principal:
 
 
 async def _resolve_auth0_legacy_identity(principal: Principal) -> Principal:
-    """Map only Auth0 DB users whose exact legacy identity still exists in Dikévia."""
+    """Resolve Auth0 DB compatibility subjects and link Google only via verified email."""
     if settings.oidc_provider != "auth0" or not settings.oidc_identity_compat_issuer:
         return principal
+
+    # Google social subjects are opaque and cannot be inferred from the former
+    # Keycloak subject. A narrowly scoped SECURITY DEFINER function performs
+    # the unique, verified-email match without weakening the users RLS policy.
+    if principal.subject.startswith("google-oauth2|"):
+        if not principal.email or not principal.email_verified:
+            return principal
+        try:
+            async with get_pool().acquire() as conn:
+                async with conn.transaction():
+                    linked_user_id = await conn.fetchval(
+                        "SELECT public.link_auth0_google_legacy_user($1,$2,$3,$4)",
+                        principal.issuer,
+                        principal.subject,
+                        principal.email,
+                        principal.email_verified,
+                    )
+        except Exception:
+            auth_log.error("auth_rejected reason=google_legacy_identity_link_unavailable status=503")
+            raise HTTPException(
+                503,
+                "Vérification du compte historique momentanément indisponible.",
+            )
+        if linked_user_id is None:
+            return principal
+        return principal
+
+    # Auth0 Database connections may retain the former subject as their suffix.
     prefix = settings.oidc_identity_subject_prefix
     if not prefix or not principal.subject.startswith(prefix):
         return principal
     legacy_subject = principal.subject[len(prefix):]
     if not legacy_subject:
         return principal
-    # The lookup is constrained by PostgreSQL RLS to this exact candidate
-    # identity. No email matching or user-supplied legacy claim is trusted.
     try:
         async with get_pool().acquire() as conn:
             async with conn.transaction():
