@@ -418,6 +418,7 @@ _TOPIC_RESEARCH_AXES = (
         (
             "fonction publique territoriale rapport hierarchique superieur dossier individuel communication consultation acces aux pieces observations agent CGFP R137-16",
             "fonctionnaire territorial rapport utilise dans procedure disciplinaire CGFP L532-4 L532-9 decret 89-677 articles 4 et 5 droits de la defense consultation dossier assistance defenseur de son choix",
+            "jurisprudence administrative fonctionnaire territorial rapport hierarchique note rapport preparatoire recours recevabilite decision faisant grief contestation rapport",
         ),
     ),
     (
@@ -914,7 +915,19 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         r"\b(?:et|ainsi que|par ailleurs|de plus|egalement)\b|[;?]\s*(?:et|puis|ensuite)\b",
         folded,
     ))
-    query_limit = max(1, min(max_queries, 4 if _is_professional_evaluation_question(original) else 3))
+    report_dispute_present = any(
+        _contains_trigger(folded, marker)
+        for marker in (
+            "rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+            "mon chef a fait un rapport", "mon superieur a fait un rapport",
+            "rapport a charge", "rapport defavorable", "rapport circonstancie",
+            "contester un rapport de mon chef", "contester le rapport de mon superieur",
+        )
+    )
+    query_limit = max(
+        1,
+        min(max_queries, 4 if (_is_professional_evaluation_question(original) or report_dispute_present) else 3),
+    )
     if explicit_compound and len(matched_axes) >= 3:
         query_limit = min(max_queries, len(matched_axes) + 1)
 
@@ -1088,7 +1101,7 @@ def build_official_research_axes(question: str) -> list[str]:
                 "grand parent decede", "obseques", "autorisation d absence pour deces",
             ))
         ):
-            axes_found.extend(axis[:500] for axis in axes[:2])
+            axes_found.extend(axis[:500] for axis in axes[:3])
             continue
         axes_found.append(axes[0][:500])
     if medico_social_ihts_present:
