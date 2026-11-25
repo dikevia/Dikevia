@@ -365,3 +365,20 @@ def test_aggression_by_service_user_keeps_functional_protection_but_rejects_disc
     assert is_topic_relevant_source(question, relevant) is True
     assert is_topic_relevant_source(question, unrelated) is False
 
+def test_aggression_question_keeps_a_functional_protection_source_without_aggression_wording():
+    question = "Un agent a été agressé par un usager. Peut-il demander la protection fonctionnelle ?"
+    source = {
+        "title": "Protection fonctionnelle des agents publics",
+        "text": "L'administration protège l'agent contre les attaques subies dans l'exercice des fonctions.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_union_assistance_question_keeps_disciplinary_defence_source_as_related_context():
+    question = "Un agent convoqué par sa hiérarchie peut-il bénéficier d'un accompagnement syndical ?"
+    source = {
+        "title": "Droits de la défense dans la procédure disciplinaire",
+        "text": "Le fonctionnaire peut consulter son dossier et être assisté par un défenseur.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+

@@ -625,10 +625,27 @@ def is_topic_relevant_source(
         "AGGRESSION_AGENT_PROTECTION",
     }
     if str(target_versant or "FPT").upper() == "FPT" and question_topics & strict_topics:
+        # Preserve only explicit, narrowly related source families for the
+        # two compound topics; generic hits remain excluded.
+        related_strict_source = (
+            (
+                "AGGRESSION_AGENT_PROTECTION" in question_topics
+                and bool({
+                    "FUNCTIONAL_PROTECTION", "SICK_LEAVE",
+                    "STAFFING_AND_WORK_CONDITIONS",
+                } & source_topics)
+            )
+            or (
+                "UNION_ASSISTANCE" in question_topics
+                and "DISCIPLINE" in source_topics
+            )
+        )
         # For annual-appraisal questions only, an unclassified procedural
         # source may still be relevant. The CDI six-year mechanism remains
         # strict: generic or unrelated CGFP provisions are rejected.
-        if "PROFESSIONAL_EVALUATION" not in question_topics or source_topics:
+        if not related_strict_source and (
+            "PROFESSIONAL_EVALUATION" not in question_topics or source_topics
+        ):
             return False
     if not source_topics:
         return True
