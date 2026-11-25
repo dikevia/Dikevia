@@ -12,7 +12,7 @@ from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import _fold, classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
+from .fpt_scope import _fold, _matched_topic_families, classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, parse_structured_answer, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -679,8 +679,14 @@ def _source_relevant_for_target(
     # Keep the historical two-argument FPT call contract for existing adapters
     # and tests; FPE/FPH must not inherit FPT-specific retrieval guards.
     if str(target_versant or "FPT").upper() == "FPT":
+        if question is None:
+            return _source_relevant_to_any_research_axis(research_queries, source)
         return _source_relevant_to_any_research_axis(
             research_queries, source, question=question,
+        )
+    if question is None:
+        return _source_relevant_to_any_research_axis(
+            research_queries, source, target_versant,
         )
     return _source_relevant_to_any_research_axis(
         research_queries, source, target_versant, question=question,
