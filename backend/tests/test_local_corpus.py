@@ -27,6 +27,10 @@ def local_row(**overrides):
         "effective_from": date(2024, 1, 1),
         "effective_to": None,
         "validation_status": "VERIFIED_APPLICABLE",
+        "scan_status": "CLEAN",
+        "scan_engine": "clamav",
+        "version_scan_status": "CLEAN",
+        "version_scan_engine": "clamav",
         "sha256": "a" * 64,
         "extracted_sha256": "a" * 64,
         "extraction_status": "EXTRACTED",
@@ -121,3 +125,15 @@ async def test_local_search_strips_ts_headline_markup_from_evidence_excerpt():
     )
     assert results[0]["excerpt"] == "Extrait contrôlé de la délibération."
     assert results[0]["text"] == results[0]["excerpt"]
+
+
+@pytest.mark.asyncio
+async def test_local_search_accepts_only_explicit_owner_authorized_trusted_source_import_without_av_scan():
+    conn = FakeConn([local_row(validation_status="COLLECTED_UNVERIFIED", scan_status="NOT_SCANNED", scan_engine="TRUSTED_SOURCE_IMPORT:SAINT_ETIENNE_ARCHIVE", version_scan_status="NOT_SCANNED", version_scan_engine="TRUSTED_SOURCE_IMPORT:SAINT_ETIENNE_ARCHIVE")])
+    results = await search_local_documents(conn, "00000000-0000-0000-0000-000000000001", "VILLE_SAINT_ETIENNE", "temps de travail", date(2024, 6, 1))
+    assert len(results) == 1
+    assert results[0]["citation_integrity"]["valid"] is True
+    assert results[0]["citation_integrity"]["antivirus_scanned"] is False
+    assert results[0]["citation_integrity"]["trusted_source_import"] is True
+    assert "NO_ANTIVIRUS_SCAN" in results[0]["citation_integrity"]["verification_scope"]
+    assert "TRUSTED_SOURCE_IMPORT:SAINT_ETIENNE_ARCHIVE" in conn.calls[0][0]
