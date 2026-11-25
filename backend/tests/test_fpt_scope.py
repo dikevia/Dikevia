@@ -624,7 +624,7 @@ def test_generic_medical_personnel_mention_does_not_establish_fph_source_scope()
 
 
 def test_report_and_individual_file_articles_have_explicit_legal_scope():
-    common_articles = ("L532-4", "R137-16")
+    common_articles = ("L137-1", "L137-4", "L532-4")
     for article in common_articles:
         result = classify_public_service_scope({
             "title": f"Code général de la fonction publique — article {article}",
