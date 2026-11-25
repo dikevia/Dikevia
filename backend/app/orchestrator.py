@@ -1569,11 +1569,15 @@ class LegalOrchestrator:
                                   ts_headline('french',extracted_text,plainto_tsquery('french',$2),
                                     'MaxWords=90,MinWords=20,ShortWord=2,HighlightAll=false') excerpt
                            FROM personal_documents
-                           WHERE owner_user_id=$1::uuid AND scan_status='CLEAN'
+                           WHERE owner_user_id=$1::uuid
+                             AND ($2::uuid[] IS NULL OR id=ANY($2::uuid[]))
+                             AND scan_status='CLEAN'
                              AND extraction_status='EXTRACTED'
-                             AND search_vector @@ plainto_tsquery('french',$2)
-                           ORDER BY relevance DESC,created_at DESC LIMIT $3""",
-                        personal_user_id, personal_query[:500], 5,
+                             AND search_vector @@ plainto_tsquery('french',$3)
+                           ORDER BY relevance DESC,created_at DESC LIMIT $4""",
+                        personal_user_id,
+                        [str(document_id) for document_id in request.personal_document_ids] or None,
+                        personal_query[:500], 5,
                     )
                     for row in rows:
                         key = str(row["id"])
