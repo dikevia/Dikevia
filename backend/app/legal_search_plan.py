@@ -1053,6 +1053,7 @@ def build_official_research_axes(question: str) -> list[str]:
         if (
             "convocation par ma hierarchie" in triggers
             or "agresse par un usager" in triggers
+            or "livret de famille" in triggers
         ):
             axes_found.extend(axis[:500] for axis in axes[:2])
             continue
