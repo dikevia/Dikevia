@@ -909,7 +909,7 @@ def _provider_context_history(
 
 
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None, corpus_conn=None) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None, corpus_conn=None, allow_personal_documents: bool = False) -> AskResponse:
         request_id = str(uuid4())
         ai_usage_events: list[dict] = []
         answer_started_at = None
@@ -1624,7 +1624,7 @@ class LegalOrchestrator:
                         "official_source": False,
                         "transfer_status": (
                             "TRANSMITTED_FOR_THIS_REQUEST"
-                            if allow_local_documents else "NOT_TRANSMITTED"
+                            if allow_personal_documents else "NOT_TRANSMITTED"
                         ),
                         "legal_assurance": {
                             "authority_label": "Document personnel non vérifié",
@@ -2235,7 +2235,7 @@ class LegalOrchestrator:
                     )
                     personal_context_sources = [
                         source for source in personal_sources
-                        if allow_local_documents
+                        if allow_personal_documents
                         and source.get("transfer_status") == "TRANSMITTED_FOR_THIS_REQUEST"
                     ]
                     # Personal files can supply local factual context only. They
@@ -2251,7 +2251,7 @@ class LegalOrchestrator:
                             sources=ai_sources,
                             conversation_history=provider_history,
                             legal_context=legal_context,
-                            allow_local_documents=allow_local_documents,
+                            allow_local_documents=(allow_local_documents or allow_personal_documents),
                         )
                         if isinstance(ai_result, AIAnalysisResult):
                             raw_ai_content = ai_result.content
