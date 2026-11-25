@@ -175,6 +175,34 @@ def classify_public_service_scope(
             "analysis_eligible": True,
             "claim_eligible": official_live_article,
         }
+    # The disciplinary guarantees in L. 532-4 apply to civil servants across
+    # the three public-service branches. The FPT-specific report sent to the
+    # territorial disciplinary board is separately governed by L. 532-9.
+    # Electronic individual-file copy rules in R. 137-16 are also common.
+    if title_folded.startswith("code general de la fonction publique") and article_ref in {
+        "l532 4", "r137 16",
+    }:
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                f"Article {article_ref.upper()} du CGFP : garantie relative au dossier individuel ou à la procédure disciplinaire",
+                "Applicabilité à distinguer selon le statut de fonctionnaire et la nature de la procédure",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+    if title_folded.startswith("code general de la fonction publique") and article_ref == "l532 9":
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        return {
+            "scope": "FPT",
+            "evidence": [
+                "Article L. 532-9 du CGFP : rapport de saisine du conseil de discipline par l'autorité territoriale",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+
     # CGFP L. 822-1 to L. 822-5 contain ordinary sick-leave statutory provisions.
     # Only a live Légifrance article may support a claim; snapshots remain contextual.
     if (
