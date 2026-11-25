@@ -158,6 +158,25 @@ def classify_public_service_scope(
             "analysis_eligible": True,
             "claim_eligible": official_live_article,
         }
+    # The CGFP's ordinary sick-leave section (L. 822-1 to L. 822-5)
+    # governs civil servants across the three public-service branches. In
+    # particular, L. 822-3 is the statutory remuneration rule for CMO; do not
+    # leave it unclassified merely because the individual wording says
+    # "fonctionnaire" rather than repeating "fonctionnaire territorial".
+    if (
+        title_folded.startswith("code general de la fonction publique")
+        and article_ref in {f"l822 {number}" for number in range(1, 6)}
+    ):
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                f"Article {article_ref.upper()} du CGFP : section 1 relative aux congés de maladie",
+                "Champ du CGFP applicable aux fonctionnaires des trois versants",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": True,
+        }
+
     # CITIS provisions remain contextual until their branch-specific scope and
     # implementing rules have been independently established.
     if target_versant == "FPT" and article_ref in {
