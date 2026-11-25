@@ -1,4 +1,4 @@
-from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
+from app.fpt_scope import _matched_topic_families, classify_public_service_scope, is_topic_relevant_source
 from app.orchestrator import (
     apply_semantic_source_relevance,
     filter_irrelevant_sources_for_display,
@@ -482,3 +482,16 @@ def test_semantic_direct_verdict_cannot_override_cmo_citis_exclusion(monkeypatch
 
     assert source["research_axis_relevant"] is False
     assert source["semantic_relevance"] == "BLOCKED_BY_TOPIC_GUARD"
+
+
+def test_cgfp_ordinary_sick_leave_articles_are_eligible_for_fpt_claims():
+    for number in range(1, 6):
+        article = {
+            "title": f"Code général de la fonction publique — article L822-{number}",
+            "article": f"L822-{number}",
+            "text": "Le fonctionnaire en activité bénéficie des dispositions relatives au congé de maladie et à sa rémunération.",
+        }
+        scope = classify_public_service_scope(article, target_versant="FPT")
+        assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert scope["analysis_eligible"] is True
+        assert scope["claim_eligible"] is True
