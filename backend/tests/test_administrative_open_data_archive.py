@@ -36,3 +36,13 @@ def test_monthly_archive_url_rejects_unknown_or_unavailable_periods(court, year,
         administrative_open_data_archive_url(
             court, year, month, today=date(2026, 11, 25)
         )
+
+def test_ingestion_history_reads_the_shared_corpus_database():
+    from pathlib import Path
+
+    source = (Path(__file__).parents[1] / "app" / "main.py").read_text(encoding="utf-8")
+    start = source.index("async def list_legal_ingestion_runs")
+    end = source.index("\n\n", start)
+    endpoint = source[start:end]
+    assert "get_corpus_ingest_pool()" in endpoint
+    assert "get_pool()" not in endpoint
