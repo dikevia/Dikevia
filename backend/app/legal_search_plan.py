@@ -23,6 +23,7 @@ _TOPIC_EXPANSIONS = (
          "rapport a charge", "rapport defavorable", "rapport circonstancie",
          "contester un rapport de mon chef", "contester le rapport de mon superieur"),
         "fonctionnaire territorial rapport hierarchique redige par superieur autorite territoriale "
+        "CGFP articles L532-4 L532-9 R137-16 decret 89-677 articles 4 et 5 "
         "dossier individuel communication consultation acces aux pieces observations agent "
         "rapport circonstancie signalement procedure disciplinaire droits de la defense "
         "distinguer rapport informatif document verse au dossier et decision faisant grief",
@@ -415,8 +416,8 @@ _TOPIC_RESEARCH_AXES = (
          "rapport a charge", "rapport defavorable", "rapport circonstancie",
          "contester un rapport de mon chef", "contester le rapport de mon superieur"),
         (
-            "fonction publique territoriale rapport hierarchique superieur dossier individuel communication consultation acces aux pieces observations agent",
-            "fonctionnaire territorial rapport utilise dans procedure disciplinaire droits de la defense consultation dossier assistance defenseur de son choix",
+            "fonction publique territoriale rapport hierarchique superieur dossier individuel communication consultation acces aux pieces observations agent CGFP R137-16",
+            "fonctionnaire territorial rapport utilise dans procedure disciplinaire CGFP L532-4 L532-9 decret 89-677 articles 4 et 5 droits de la defense consultation dossier assistance defenseur de son choix",
         ),
     ),
     (
