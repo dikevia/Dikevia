@@ -3,6 +3,11 @@ concurrency:
   group: corpus-public-source-${{ github.ref }}
   cancel-in-progress: true
 on:
+  push:
+    branches:
+      - feature/dikevia-v3.38.5-cgfp-chat
+    paths:
+      - "corpus_national/sources/FULL_IMPORT_REQUESTED"
   workflow_dispatch:
     inputs:
       apply_import:

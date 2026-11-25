@@ -190,6 +190,8 @@ def to_corpus_item(seed: dict, source: dict, fetched: dict) -> dict:
             "document_details": fetched["details"],
             "reuse_status": seed.get("reuse_status"),
             "source_registry_status": source.get("status"),
+            "owner_trust_status": source.get("owner_trust_status", "TRUSTED_BY_PROJECT_OWNER"),
+            "owner_trust_confirmed_at": source.get("owner_trust_confirmed_at", "2026-11-25"),
             "corpus_role": "ADMINISTRATIVE_GUIDANCE_NOT_PRIMARY_LEGAL_AUTHORITY",
             "legal_validation_status": "NOT_VERIFIED",
         },
