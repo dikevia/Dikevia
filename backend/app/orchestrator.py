@@ -111,6 +111,20 @@ def _build_versant_fallback_research(
     return [branch_query], [branch_query]
 
 
+def _build_targeted_cgfp_article_queries(question: str, public_service: str = "FPT") -> list[str]:
+    """Return exact CGFP CMO provisions for FPT questions about ordinary sick leave."""
+    if str(public_service or "").upper() != "FPT":
+        return []
+    folded = _fold(str(question or ""))
+    ordinary_sick_leave = any(marker in folded for marker in (
+        "conge de maladie ordinaire", "maladie ordinaire",
+        "jour de carence", "jours de carence", "cmo",
+    ))
+    if not ordinary_sick_leave:
+        return []
+    return ["article L822-1", "article L822-2", "article L822-3", "article L822-5"]
+
+
 def _build_code_research_queries(
     research_queries: list[str],
     cgfp_article_queries: list[str] | None = None,
@@ -148,6 +162,19 @@ def _build_targeted_regulatory_queries(
             ),
         }
         queries.extend(branch_availability_articles.get(public_service, ()))
+
+    ordinary_sick_leave = any(marker in folded for marker in (
+        "congé de maladie ordinaire", "conge de maladie ordinaire",
+        "maladie ordinaire", "jour de carence", "jours de carence",
+        "cmo",
+    ))
+    if public_service == "FPT" and ordinary_sick_leave:
+        # Exact territorial implementing texts and the statutory day-of-
+        # waiting rule are searched independently of broad lexical retrieval.
+        queries.extend([
+            "décret n° 87-602 du 30 juillet 1987 articles 14 et 15 congé de maladie fonctionnaires territoriaux",
+            "loi n° 2017-1837 du 30 décembre 2017 article 115 jour de carence agents publics fonctionnaires territoriaux",
+        ])
 
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
@@ -1218,7 +1245,10 @@ class LegalOrchestrator:
         # used as a fallback only when live CGFP retrieval is unavailable.
         found, cgfp_issue = await search_cgfp_index()
         cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
-        cgfp_article_queries = _cgfp_article_discovery_queries(found, request.public_service)
+        cgfp_article_queries = list(dict.fromkeys([
+            *_cgfp_article_discovery_queries(found, request.public_service),
+            *_build_targeted_cgfp_article_queries(contextual_question, request.public_service),
+        ]))
 
         # Official legal texts and administrative case law remain the
         # authoritative verification path.
