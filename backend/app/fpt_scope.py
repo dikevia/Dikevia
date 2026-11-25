@@ -175,29 +175,28 @@ def classify_public_service_scope(
             "analysis_eligible": True,
             "claim_eligible": official_live_article,
         }
-    # The disciplinary guarantees in L. 532-4 apply to civil servants across
-    # the three public-service branches. The FPT-specific report sent to the
-    # territorial disciplinary board is separately governed by L. 532-9.
-    # Electronic individual-file copy rules in R. 137-16 are also common.
-    if title_folded.startswith("code general de la fonction publique") and article_ref in {
-        "l532 4", "r137 16",
-    }:
+    # CGFP L. 532-4 sets the disciplinary-file disclosure and defence
+    # guarantees applicable to civil servants across the three public-service
+    # branches. The current wording has been in force since 1 October 2025.
+    if title_folded.startswith("code general de la fonction publique") and article_ref == "l532 4":
         official_live_article = source.get("source_type") == "LEGIFRANCE_API"
         return {
             "scope": "COMMON_PUBLIC_SERVICE",
             "evidence": [
-                f"Article {article_ref.upper()} du CGFP : garantie relative au dossier individuel ou à la procédure disciplinaire",
-                "Applicabilité à distinguer selon le statut de fonctionnaire et la nature de la procédure",
+                "Article L. 532-4 du CGFP : droit à la communication de l'intégralité du dossier individuel et de ses annexes, ainsi qu'à l'assistance de défenseurs de son choix",
+                "Garantie applicable lorsqu'une procédure disciplinaire est engagée contre un fonctionnaire",
             ],
             "analysis_eligible": True,
             "claim_eligible": official_live_article,
         }
+    # CGFP L. 532-9 specifically governs referral to the disciplinary board
+    # by a territorial authority and the content of its referral report.
     if title_folded.startswith("code general de la fonction publique") and article_ref == "l532 9":
         official_live_article = source.get("source_type") == "LEGIFRANCE_API"
         return {
             "scope": "FPT",
             "evidence": [
-                "Article L. 532-9 du CGFP : rapport de saisine du conseil de discipline par l'autorité territoriale",
+                "Article L. 532-9 du CGFP : en procédure disciplinaire, l'autorité territoriale saisit le conseil de discipline par un rapport précisant les faits reprochés et leurs circonstances",
             ],
             "analysis_eligible": True,
             "claim_eligible": official_live_article,
