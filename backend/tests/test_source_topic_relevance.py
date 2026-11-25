@@ -573,3 +573,53 @@ def test_cmo_keeps_exact_cgfp_remuneration_article():
     question = "Fonctionnaire territorial : congé de maladie ordinaire et maintien de rémunération"
     source = {"source_type": "LEGIFRANCE_API", "title": "Code général de la fonction publique — article L822-3", "article": "L822-3", "text": "Le fonctionnaire en congé de maladie perçoit une fraction de son traitement."}
     assert is_topic_relevant_source(question, source) is True
+
+def test_live_cgfp_l111_1_is_common_public_service_claim_evidence():
+    from app.legal_assurance import assess_source_set, validate_claim_evidence
+
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000000000111",
+        "title": "Code général de la fonction publique — article L111-1",
+        "article": "L111-1",
+        "document_kind": "CODE",
+        "text": "La liberté d'opinion est garantie aux agents publics.",
+        "excerpt": "La liberté d'opinion est garantie aux agents publics.",
+        "content_kind": "FULL_TEXT",
+        "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
+        "citation_integrity": {"valid": True},
+    }
+    scope = classify_public_service_scope(source, target_versant="FPT")
+    source.update(scope)
+    assert source["public_service_scope"] == "COMMON_PUBLIC_SERVICE"
+    assert source["analysis_eligible"] is True
+    assert source["claim_eligible"] is True
+
+    assessed = assess_source_set([source])["sources"][0]
+    result = validate_claim_evidence(
+        {
+            "claims": [{
+                "text": "La liberté d'opinion est garantie aux agents publics.",
+                "source_id": source["source_id"],
+                "quote": "La liberté d'opinion est garantie aux agents publics.",
+            }]
+        },
+        [assessed],
+        public_service="FPT",
+    )
+    assert result["valid"] is True
+    assert len(result["claims"]) == 1
+
+
+def test_cgfp_l111_1_snapshot_is_not_promoted_to_live_claim_evidence():
+    source = {
+        "source_type": "CGFP_SNAPSHOT",
+        "title": "Code général de la fonction publique — article L111-1",
+        "article": "L111-1",
+        "text": "La liberté d'opinion est garantie aux agents publics.",
+    }
+    scope = classify_public_service_scope(source, target_versant="FPT")
+    assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
+    assert scope["analysis_eligible"] is True
+    assert scope["claim_eligible"] is False
+
