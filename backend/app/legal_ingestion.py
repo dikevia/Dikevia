@@ -239,7 +239,7 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
     return None
 
 _ADMIN_OPEN_DATA_ARCHIVES = {
-    "CE": ("DCE", date(2021, 9, 1)),
+    "CE": ("DCE", date(2021, 6, 1)),
     "CAA": ("DCA", date(2022, 3, 1)),
     "TA": ("DTA", date(2022, 6, 1)),
 }
