@@ -659,3 +659,41 @@ def test_report_question_triggers_exact_live_cgfp_article_lookups():
         "Mon chef a fait un rapport contre moi, puis-je le contester ?",
         public_service="FPE",
     ) == []
+
+
+def test_cgfp_l532_4_is_common_disciplinary_file_access_guarantee():
+    from app.fpt_scope import classify_public_service_scope
+
+    live = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L532-4",
+        "article": "L532-4",
+        "text": "Le fonctionnaire a droit à la communication de l'intégralité de son dossier individuel et de tous les documents annexes.",
+    })
+    assert live["scope"] == "COMMON_PUBLIC_SERVICE"
+    assert live["analysis_eligible"] is True
+    assert live["claim_eligible"] is True
+
+    snapshot = classify_public_service_scope({
+        "source_type": "CGFP_SNAPSHOT",
+        "title": "Code général de la fonction publique — article L532-4",
+        "article": "L532-4",
+        "text": "Le fonctionnaire a droit à la communication de l'intégralité de son dossier individuel et de tous les documents annexes.",
+    })
+    assert snapshot["scope"] == "COMMON_PUBLIC_SERVICE"
+    assert snapshot["analysis_eligible"] is True
+    assert snapshot["claim_eligible"] is False
+
+
+def test_cgfp_l532_9_is_fpt_specific_report_to_disciplinary_board():
+    from app.fpt_scope import classify_public_service_scope
+
+    result = classify_public_service_scope({
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L532-9",
+        "article": "L532-9",
+        "text": "Lors d'une procédure disciplinaire, l'autorité territoriale saisit le conseil de discipline par un rapport précisant les faits reprochés et les circonstances dans lesquelles ils ont été commis.",
+    })
+    assert result["scope"] == "FPT"
+    assert result["analysis_eligible"] is True
+    assert result["claim_eligible"] is True
