@@ -1119,8 +1119,15 @@ class LegalOrchestrator:
             # additional budget for up to three exact CGFP article lookups.
             # Exact article calls are essential when lexical discovery identifies
             # a provision whose title/body does not repeat the user's wording.
+            targeted_cmo_articles = _build_targeted_cgfp_article_queries(
+                contextual_question, request.public_service,
+            )
+            # For explicit CMO questions, reserve four of the eight code-query
+            # slots for exact L. 822 provisions. Broad discovery must not crowd
+            # out the very articles that answer the user's question.
+            code_query_inputs = research_queries[:4] if targeted_cmo_articles else research_queries
             code_research_queries = _build_code_research_queries(
-                research_queries, cgfp_article_queries, max_queries=8,
+                code_query_inputs, cgfp_article_queries, max_queries=8,
             )
             # These targeted, exact-number queries are sent only to the LODA
             # regulatory-text endpoint. They do not consume the CGFP or CETAT
@@ -1246,8 +1253,8 @@ class LegalOrchestrator:
         found, cgfp_issue = await search_cgfp_index()
         cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
         cgfp_article_queries = list(dict.fromkeys([
-            *_cgfp_article_discovery_queries(found, request.public_service),
             *_build_targeted_cgfp_article_queries(contextual_question, request.public_service),
+            *_cgfp_article_discovery_queries(found, request.public_service),
         ]))
 
         # Official legal texts and administrative case law remain the
