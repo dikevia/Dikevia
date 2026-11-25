@@ -1025,3 +1025,100 @@ html.dikevia-standard-app .juris-input-row .ask-attach-button:disabled { opacity
     padding: 7px 10px;
   }
 }
+
+
+/* Dikévia light identity — aligned web and Android visual language */
+html.dikevia-standard-app {
+  color-scheme: light;
+  --dk-ink:#26364a;
+  --dk-muted:#718096;
+  --dk-muted-2:#95a1b1;
+  --dk-border:#e5ebf2;
+  --dk-border-strong:#d4dfeb;
+  --dk-blue:#527eaf;
+  --dk-blue-deep:#294b70;
+  --dk-blue-soft:#eaf2fb;
+  background:#f7f9fc;
+  color:#26364a;
+}
+html.dikevia-standard-app body {
+  background:radial-gradient(ellipse at 50% -18%,#edf4fc 0%,#f8fafc 52%,#f7f9fc 100%);
+  color:#26364a;
+}
+html.dikevia-standard-app .top {
+  background:rgba(255,255,255,.92);
+  border-bottom:1px solid #e7edf4;
+  box-shadow:0 2px 14px rgba(34,55,82,.045);
+}
+html.dikevia-standard-app .brand { color:#26364a; }
+html.dikevia-standard-app .brand:before {
+  content:"";
+  width:38px;height:38px;flex:0 0 38px;
+  border:1px solid #d8e4f1;border-radius:12px;
+  background-color:#edf3fa;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M14 10h18c15 0 25 9 25 22S47 54 32 54H14V10zm12 10v24h6c9 0 14-4 14-12s-5-12-14-12h-6z' fill='%2318324f' fill-rule='evenodd'/%3E%3Cpath d='M9 45C23 34 36 28 55 17' fill='none' stroke='%23527eaf' stroke-width='3.5' stroke-linecap='round'/%3E%3Ccircle cx='54' cy='16' r='4' fill='%239fc1e5'/%3E%3C/svg%3E");
+  background-position:center;background-repeat:no-repeat;background-size:30px 30px;
+  box-shadow:0 3px 10px rgba(67,103,148,.09);
+}
+html.dikevia-standard-app .brand small { color:#7b8798; }
+html.dikevia-standard-app .juris-brand-mark {
+  color:transparent;font-size:0;
+  background:radial-gradient(circle at 35% 30%,#fff 0%,#edf4fc 56%,#dce9f7 100%);
+  border:1px solid #d7e4f2;
+  box-shadow:0 4px 14px rgba(67,103,148,.10);
+}
+html.dikevia-standard-app .juris-brand-mark:before {
+  content:"";width:17px;height:17px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#a9c9eb,#5d8fbe 68%,#426f9f);
+  box-shadow:0 0 0 5px rgba(111,157,209,.10),0 0 18px rgba(82,126,175,.24);
+}
+html.dikevia-standard-app .juris-brand-mark:after {
+  border-color:rgba(82,126,175,.24);
+}
+html.dikevia-standard-app .juris-welcome-icon {
+  background:radial-gradient(circle at 35% 30%,#fff 0%,#edf4fc 48%,#dce9f7 100%);
+  border-color:#d8e5f2;
+}
+html.dikevia-standard-app .juris-welcome-icon:before {
+  background:radial-gradient(circle at 35% 30%,#a9c9eb,#5d8fbe 68%,#426f9f);
+}
+html.dikevia-standard-app .juris-welcome-kicker,
+html.dikevia-standard-app .juris-sources > strong { color:#6688ae; }
+html.dikevia-standard-app .juris-input-row button {
+  background:linear-gradient(145deg,#638fbd,#426f9f);
+  box-shadow:0 4px 12px rgba(66,111,159,.20);
+}
+html.dikevia-standard-app .juris-input-row .ask-attach-button {
+  background:#f1f6fc;color:#6688ae;border-color:#e0e9f3;
+}
+html.dikevia-standard-app .juris-input-row .ask-attach-button:hover {
+  background:#eaf2fb;color:#426f9f;border-color:#cbdced;
+}
+html.dikevia-standard-app .juris-message.assistant .juris-avatar:before {
+  background:radial-gradient(circle at 35% 30%,#b8d4f1,#638fbd 68%,#426f9f);
+}
+html.dikevia-standard-app .juris-message.assistant.is-generating .juris-avatar:before,
+html.dikevia-standard-app .juris-message.assistant .juris-avatar.is-speaking:before {
+  animation:dikevia-speaking .9s ease-in-out infinite;
+}
+html.dikevia-standard-app .standard-drawer-title { color:#26364a; }
+html.dikevia-standard-app .standard-drawer-title span { color:#7c9fc5; }
+html.dikevia-standard-app .standard-menu-toggle {
+  border-color:#e1e8f0;background:#fff;color:#6688ae;
+}
+html.dikevia-standard-app #logout {
+  border-color:#e1e8f0;background:#fff;color:#5d7189;
+}
+html.dikevia-standard-app .standard-drawer-newchat {
+  border-color:#dce7f3;background:#f3f7fc;color:#527eaf;
+}
+html.dikevia-standard-app .juris-status.warn {
+  background:#fff9ec;border-color:#f3e8cd;color:#9c8250;
+}
+@media(prefers-reduced-motion:reduce) {
+  html.dikevia-standard-app .juris-brand-mark:after,
+  html.dikevia-standard-app .juris-welcome-icon,
+  html.dikevia-standard-app .juris-message.assistant .juris-avatar:before {
+    animation:none!important;
+  }
+}
