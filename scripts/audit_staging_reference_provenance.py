@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 STAGING_MARKER = "br-billowing-haze-bd5a1cns"
 LEGIFRANCE_ID = re.compile(
-    r"^(?:LEGIARTI|LEGITEXT|JORFTEXT|JORFARTI|CETATEXT)\\d{8,}$",
+    r"^(?:LEGIARTI|LEGITEXT|JORFTEXT|JORFARTI|CETATEXT)\d{8,}$",
     re.IGNORECASE,
 )
 
@@ -79,7 +79,7 @@ async def main() -> int:
                 raise RuntimeError("Database identity or staging marker mismatch.")
             rows = await conn.fetch(
                 """
-                SELECT source_id, raw_metadata->'references_juridiques' AS references
+                SELECT source_id, raw_metadata->'references_juridiques' AS refs_json
                 FROM legal_documents
                 WHERE source_type='SERVICE_PUBLIC_PART'
                 ORDER BY source_id
@@ -91,7 +91,7 @@ async def main() -> int:
         totals: Counter = Counter()
         document_errors = []
         for row in rows:
-            result = audit_references(str(row["source_id"]), row["references"])
+            result = audit_references(str(row["source_id"]), row["refs_json"])
             for key in ("references", "missing_source_reference_id",
                         "mislabelled_legifrance_id", "malformed_reference"):
                 totals[key] += result[key]
