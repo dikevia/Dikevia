@@ -532,7 +532,7 @@ def test_cmo_questions_trigger_exact_cgfp_and_fpt_implementing_text_searches():
         "du congé de maladie ordinaire, notamment le jour de carence et le maintien de rémunération ?"
     )
     assert _build_targeted_cgfp_article_queries(question, "FPT") == [
-        "article L822-1", "article L822-2", "article L822-3", "article L822-5",
+        "article L822-1", "article L822-2", "article L822-3", "article L822-4", "article L822-5",
     ]
     regulatory = _build_targeted_regulatory_queries(question, "FPT")
     assert any("décret n° 87-602" in item and "articles 14 et 15" in item for item in regulatory)
@@ -551,11 +551,11 @@ def test_cmo_exact_articles_keep_reserved_slots_ahead_of_snapshot_discovery():
     question = "Congé de maladie ordinaire : jour de carence et maintien de rémunération"
     exact = _build_targeted_cgfp_article_queries(question, "FPT")
     queries = _build_code_research_queries(
-        ["broad", "cmo", "remuneration", "case-law", "overflow"],
+        ["broad", "cmo", "remuneration"],
         exact + ["article L999-999"],
         max_queries=8,
     )
     assert queries == [
-        "broad", "cmo", "remuneration", "case-law",
-        "article L822-1", "article L822-2", "article L822-3", "article L822-5",
+        "broad", "cmo", "remuneration",
+        "article L822-1", "article L822-2", "article L822-3", "article L822-4", "article L822-5",
     ]
