@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-23",
+  "updated_at": "2026-11-25",
   "purpose": "Registre de gouvernance des sources du corpus documentaire national Dikévia. Une source enregistrée n'est pas réputée collectée ni indexée.",
   "statuses": [
     "CANDIDATE",
@@ -1454,7 +1454,7 @@
       "id": "sig-missions-2026",
       "source_id": "info-gouv",
       "title": "Service d'information du Gouvernement (SIG) — missions et rôle",
-      "url": "https://www.info.gouv.fr/organisation/service-d-information-du-gouvernement-sig",
+      "url": "https://www.info.gouv.fr/organisation/service-d-information-du-gouvernement-sig/les-raisons-detre-du-sig",
       "format": "HTML",
       "status": "REUSE_APPROVED",
       "content_status": "NOT_COLLECTED",
@@ -1466,13 +1466,14 @@
         "communication_publique",
         "service_public"
       ],
-      "collection_note": "Le collecteur automatisé a reçu HTTP 403 Forbidden le 24/11/2026 depuis GitHub Actions ; contenu non extrait, aucune donnée inventée."
+      "collection_note": "URL canonique vérifiée le 25/11/2026. Le collecteur GitHub Actions a reçu HTTP 403 le 24/11/2026 ; le contenu n'est pas collecté ni extrait dans le corpus. La page publique est consultable, mais son aperçu indexé ne remplace pas une extraction contrôlée.",
+      "page_verified_at": "2026-11-25"
     },
     {
       "id": "sig-charte-etat-marque",
       "source_id": "info-gouv",
       "title": "La marque de l'État — Charte de l'État",
-      "url": "https://www.info.gouv.fr/marque-de-letat/",
+      "url": "https://www.info.gouv.fr/organisation/service-d-information-du-gouvernement-sig/marque-de-letat",
       "format": "HTML",
       "status": "REUSE_APPROVED",
       "content_status": "NOT_COLLECTED",
@@ -1484,7 +1485,8 @@
         "charte_etat",
         "communication_publique"
       ],
-      "collection_note": "Le collecteur automatisé a reçu HTTP 403 Forbidden le 24/11/2026 depuis GitHub Actions ; contenu non extrait, aucune donnée inventée."
+      "collection_note": "URL canonique vérifiée le 25/11/2026. Le collecteur GitHub Actions a reçu HTTP 403 le 24/11/2026 ; le contenu n'est pas collecté ni extrait dans le corpus. La page publique est consultable, mais son aperçu indexé ne remplace pas une extraction contrôlée.",
+      "page_verified_at": "2026-11-25"
     },
     {
       "id": "sig-charte-accessibilite-communication",
@@ -1503,7 +1505,9 @@
         "communication_publique",
         "FALC"
       ],
-      "collection_note": "Dry-run du 24/11/2026 réussi : PDF téléchargé et texte extrait (64 pages, 85 022 caractères). SHA-256 du fichier : 2769053883943eccafc9707febc32daf088a295f41b326608aca99a2e05fde58. Aucune écriture PostgreSQL ; content_status reste NOT_COLLECTED jusqu’à l’import contrôlé."
+      "collection_note": "Dry-run du 24/11/2026 réussi : PDF téléchargé et texte extrait (64 pages, 85 022 caractères). SHA-256 du fichier : 2769053883943eccafc9707febc32daf088a295f41b326608aca99a2e05fde58. Aucune écriture PostgreSQL ; content_status reste NOT_COLLECTED jusqu’à l’import contrôlé.",
+      "reference_page_url": "https://www.info.gouv.fr/organisation/service-d-information-du-gouvernement-sig/charte-daccessibilite-de-la-communication-de-letat",
+      "page_verified_at": "2026-11-25"
     },
     {
       "id": "sig-charte-usage-responsable-ia-2026",
@@ -1526,7 +1530,9 @@
         "accessibilite",
         "souverainete_numerique"
       ],
-      "collection_note": "Dry-run du 24/11/2026 réussi : PDF téléchargé et texte extrait (49 pages, 69 101 caractères). SHA-256 du fichier : e870ea079281b65ea395fc7956a7fb4043f4a0e407465606dc9b502bd1f2b912. Aucune écriture PostgreSQL ; content_status reste NOT_COLLECTED jusqu’à l’import contrôlé."
+      "collection_note": "Dry-run du 24/11/2026 réussi : PDF téléchargé et texte extrait (49 pages, 69 101 caractères). SHA-256 du fichier : e870ea079281b65ea395fc7956a7fb4043f4a0e407465606dc9b502bd1f2b912. Aucune écriture PostgreSQL ; content_status reste NOT_COLLECTED jusqu’à l’import contrôlé.",
+      "reference_page_url": "https://www.info.gouv.fr/organisation/service-d-information-du-gouvernement-sig/la-charte-pour-un-usage-responsable-de-l-intelligence-artificielle-pour-les-communicants-de-l-etat",
+      "page_verified_at": "2026-11-25"
     }
   ]
 }

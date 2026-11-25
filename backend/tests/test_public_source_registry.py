@@ -94,8 +94,11 @@ def test_sig_info_gouv_pages_are_explicitly_reuse_approved_and_scoped():
     assert all(item["status"] == "REUSE_APPROVED" for item in seeds)
     assert all(item["reuse_status"] == "REUSE_APPROVED" for item in seeds)
     assert all(item["url"].startswith("https://www.info.gouv.fr/") for item in seeds)
-    assert next(item for item in seeds if item["id"] == "sig-missions-2026")["collection_note"].startswith("Le collecteur automatisé")
-    assert next(item for item in seeds if item["id"] == "sig-charte-etat-marque")["collection_note"].startswith("Le collecteur automatisé")
+    for seed_id in ("sig-missions-2026", "sig-charte-etat-marque"):
+        note = next(item for item in seeds if item["id"] == seed_id)["collection_note"]
+        assert "HTTP 403" in note
+        assert "n'est pas collecté ni extrait dans le corpus" in note
+        assert "aperçu indexé ne remplace pas une extraction contrôlée" in note
 
 
 def test_sig_info_gouv_guidance_cannot_become_primary_legal_evidence():
