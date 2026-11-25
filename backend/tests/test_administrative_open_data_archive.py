@@ -9,6 +9,7 @@ from app.legal_ingestion import administrative_open_data_archive_url
     ("court", "year", "month", "expected"),
     [
         ("CE", 2026, 10, "https://opendata.justice-administrative.fr/DCE/2026/10/CE_202610.zip"),
+        ("CE", 2021, 6, "https://opendata.justice-administrative.fr/DCE/2021/06/CE_202106.zip"),
         ("CAA", 2026, 9, "https://opendata.justice-administrative.fr/DCA/2026/09/CAA_202609.zip"),
         ("TA", 2026, 8, "https://opendata.justice-administrative.fr/DTA/2026/08/TA_202608.zip"),
     ],
