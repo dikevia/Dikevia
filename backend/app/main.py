@@ -416,6 +416,16 @@ async def _set_tenant_rls_context(conn, ctx: TenantContext) -> None:
     await conn.execute("SELECT set_config('app.current_user_id',$1,true)", ctx.user_id)
 
 
+class _SharedCorpusReadConnection:
+    """Read-only adapter for the shared legal corpus, isolated from tenant data."""
+    def __init__(self, pool):
+        self._pool = pool
+
+    async def fetch(self, query: str, *args):
+        async with self._pool.acquire() as conn:
+            return await conn.fetch(query, *args)
+
+
 class _TenantScopedReadConnection:
     """Short-lived, tenant-scoped read adapter for orchestrator corpus lookups.
 
@@ -1146,8 +1156,15 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
     # No connection or transaction is held while the orchestrator plans or calls providers.
     scoped_reader = _TenantScopedReadConnection(pool, ctx)
     try:
+        # Permanent legal sources live in the dedicated shared-corpus database;
+        # local and personal documents remain on the tenant-scoped connection.
+        try:
+            shared_corpus_reader = _SharedCorpusReadConnection(get_corpus_ingest_pool())
+        except HTTPException:
+            shared_corpus_reader = scoped_reader
         result = await orchestrator.ask(
-            payload, ctx.organization_id, conn=scoped_reader, conversation_history=history,
+            payload, ctx.organization_id, conn=scoped_reader, corpus_conn=shared_corpus_reader,
+            conversation_history=history,
             allow_local_documents=(
                 payload.confirm_local_document_ai_transfer
                 and settings.ai_local_documents_in_chat_enabled
@@ -1279,7 +1296,9 @@ async def search_permanent_legal_knowledge(q: str, effective_date: date | None =
         limit: int = 12, ctx: TenantContext = Depends(get_tenant_context)):
     requested_date = effective_date or date.today()
     try:
-        results = await search_legal_corpus(ctx.conn, q, requested_date, limit)
+        shared_pool = get_corpus_ingest_pool()
+        async with shared_pool.acquire() as corpus_conn:
+            results = await search_legal_corpus(corpus_conn, q, requested_date, limit)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     public_results = [{k: v for k, v in item.items() if k != "full_text"} for item in results]
