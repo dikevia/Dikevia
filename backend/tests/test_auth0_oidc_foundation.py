@@ -467,3 +467,75 @@ def test_google_legacy_link_migration_is_staging_scoped_and_preserves_account_re
     assert "SET oidc_issuer = expected_auth0_issuer" in migration
     assert "DROP FUNCTION" in rollback
     assert "UPDATE users" not in rollback
+
+
+
+def test_legacy_keycloak_id_token_requires_exact_issuer_client_nonce_and_freshness(monkeypatch):
+    now = int(time.time())
+    issuer = "https://dikevia-identity-l2r8.onrender.com/realms/cfdt"
+    client_id = "cfdt-juris-web"
+    monkeypatch.setattr(security, "jwks_client", lambda url: FakeJwks())
+    monkeypatch.setattr(security, "settings", SimpleNamespace(
+        oidc_identity_compat_issuer=issuer,
+        oidc_legacy_client_id=client_id,
+    ))
+    claims = {
+        "iss": issuer, "sub": "legacy-user-subject", "aud": client_id,
+        "iat": now, "exp": now + 300, "nonce": "server-issued-one-time-nonce",
+    }
+    token = jwt.encode(claims, KEY, algorithm="RS256")
+    principal = security.verify_legacy_keycloak_id_token(token, claims["nonce"])
+    assert principal.issuer == issuer
+    assert principal.subject == "legacy-user-subject"
+    with pytest.raises(HTTPException):
+        security.verify_legacy_keycloak_id_token(token, "different-nonce")
+
+
+def test_legacy_keycloak_id_token_rejects_stale_or_wrong_audience(monkeypatch):
+    now = int(time.time())
+    issuer = "https://dikevia-identity-l2r8.onrender.com/realms/cfdt"
+    client_id = "cfdt-juris-web"
+    monkeypatch.setattr(security, "jwks_client", lambda url: FakeJwks())
+    monkeypatch.setattr(security, "settings", SimpleNamespace(
+        oidc_identity_compat_issuer=issuer,
+        oidc_legacy_client_id=client_id,
+    ))
+    stale = jwt.encode({
+        "iss": issuer, "sub": "legacy-user-subject", "aud": client_id,
+        "iat": now - 900, "exp": now + 100, "nonce": "n",
+    }, KEY, algorithm="RS256")
+    with pytest.raises(HTTPException):
+        security.verify_legacy_keycloak_id_token(stale, "n")
+    wrong_audience = jwt.encode({
+        "iss": issuer, "sub": "legacy-user-subject", "aud": "other-client",
+        "iat": now, "exp": now + 300, "nonce": "n",
+    }, KEY, algorithm="RS256")
+    with pytest.raises(HTTPException):
+        security.verify_legacy_keycloak_id_token(wrong_audience, "n")
+
+
+def test_dual_proof_linking_requires_nonce_bound_to_both_identities_and_one_use():
+    migration = (ROOT / "database/migrations/030_dual_proof_auth_identity_link.sql").read_text()
+    rollback = (ROOT / "database/migrations/rollback/030_dual_proof_auth_identity_link.down.sql").read_text()
+    assert "SECURITY DEFINER" in migration
+    assert "SET row_security = off" in migration
+    assert "nonce_hash=p_nonce_hash" in migration
+    assert "consumed_at IS NULL" in migration
+    assert "expires_at > now()" in migration
+    assert "p_auth0_subject" in migration and "p_legacy_subject" in migration
+    assert "UPDATE users SET oidc_issuer=p_auth0_issuer, oidc_subject=p_auth0_subject" in migration
+    assert "UPDATE auth_identity_link_challenges SET consumed_at=now()" in migration
+    assert "DROP TABLE IF EXISTS public.auth_identity_link_challenges" in rollback
+    assert "UPDATE users" not in rollback
+
+
+def test_browser_implements_separate_pkce_legacy_proof_and_explicit_link_action():
+    oidc = (ROOT / "frontend/oidc-auth.js").read_text()
+    html = (ROOT / "frontend/index.html").read_text()
+    assert "beginLegacyLink" in oidc
+    assert "exchangeLegacyCode" in oidc
+    assert "cfdt_oidc_flow','legacy-link'" in oidc
+    assert "cfdt_legacy_link_id_token" in oidc
+    assert "/api/v1/auth/link-legacy/complete" in oidc
+    assert 'id="linkLegacy"' in html
+    assert "auth.linkLegacy()" in html
