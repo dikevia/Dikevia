@@ -140,6 +140,23 @@ def classify_public_service_scope(
     corpus = _fold((title + " " + text)[:500_000])
     title_folded = _fold(title)
 
+    # CGFP L111-1 expressly guarantees freedom of opinion to public agents.
+    # This is a common statutory guarantee, not merely generic contextual
+    # wording. Only the live Légifrance article may ground a claim.
+    if (
+        title_folded.startswith("code general de la fonction publique")
+        and article_ref == "l111 1"
+    ):
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                "Article L.111-1 du CGFP : liberté d'opinion garantie aux agents publics",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+
     # The CGFP chapter L823-1 to L823-6 states the common statutory TPT
     # framework for civil servants. Only a live Légifrance article may ground
     # a claim; a bundled snapshot remains contextual and cannot certify the
