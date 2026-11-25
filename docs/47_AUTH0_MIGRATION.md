@@ -11,7 +11,7 @@ Le navigateur reste un client public OIDC Authorization Code + PKCE. Aucun secre
 Le tenant de développement créé est `dev-brlgaz1yh2de3mjo` (région US-5), émetteur `https://dev-brlgaz1yh2de3mjo.us.auth0.com/`. Il contient deux objets :
 
 1. Une application **Single Page Application** nommée **Dikévia Web SPA - Development** (Client ID `BSpBdDO3IUyG2g5JcHYH29e80JRbnW41`).
-2. Une API nommée **Dikévia API - Development**, identifiant **https://dikevia-commercial-api-l2r8.onrender.com**, algorithme de signature RS256.
+2. Une API nommée **Dikévia Backend API**, identifiant **https://api.dikevia.fr**, algorithme de signature RS256.
 
 Pour l'API, la durée de vie maximale des access tokens et des tokens implicit/hybrid est configurée à **900 secondes**. Le backend Dikévia rejette volontairement les jetons dont la durée dépasse 15 minutes.
 
@@ -19,9 +19,8 @@ Dans l'application SPA de développement, autoriser uniquement l'origine de stag
 
 Configuration effectivement enregistrée pour la SPA de développement :
 
-- État constaté : les quatre listes contiennent actuellement les origines de production et de staging. Cette configuration est trop permissive pour un client de développement.
-- Action de sécurisation obligatoire avant tout déploiement Auth0 sur staging : retirer `https://dikevia-commercial-api-l2r8.onrender.com` de toutes les listes et ne conserver que `https://dikevia-vector-beta-staging.onrender.com` (avec les deux callback paths indiqués ci-dessus).
-- La liste de production ne doit pas être réintroduite dans ce client. Elle nécessitera un client Auth0 de production distinct.
+- État confirmé le 25 novembre 2026 : les quatre listes ont été enregistrées avec uniquement l’origine `https://dikevia-vector-beta-staging.onrender.com` ; les callbacks autorisés sont `/` et `/static/silent-check-sso.html`. Les origines de production ont été retirées.
+- Cette SPA reste réservée au staging. La production nécessitera un client Auth0 distinct.
 
 Ne pas utiliser de wildcard d'origine. Vérifier ces URL dans Render avant de les enregistrer dans Auth0.
 
@@ -39,11 +38,11 @@ Les variables publiques et privées sont séparées. Les valeurs de l'audience c
 
 - `OIDC_PROVIDER=auth0`
 - `OIDC_ISSUER=https://dev-brlgaz1yh2de3mjo.us.auth0.com/` — conserver la barre oblique finale exacte.
-- `OIDC_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com` — identifiant exact de l'API déclaré dans Auth0.
+- `OIDC_AUDIENCE=https://api.dikevia.fr` — identifiant exact de l'API déclaré dans Auth0.
 - `OIDC_JWKS_URL=https://dev-brlgaz1yh2de3mjo.us.auth0.com/.well-known/jwks.json`
 - `OIDC_CLIENT_ID=BSpBdDO3IUyG2g5JcHYH29e80JRbnW41` — identifiant public de l'application SPA.
 - `OIDC_SCOPES=openid profile email`
-- `OIDC_AUTHORIZATION_AUDIENCE=https://dikevia-commercial-api-l2r8.onrender.com` — strictement identique à `OIDC_AUDIENCE`.
+- `OIDC_AUTHORIZATION_AUDIENCE=https://api.dikevia.fr` — strictement identique à `OIDC_AUDIENCE`.
 - `OIDC_EMAIL_CLAIM=email`
 - `OIDC_EMAIL_VERIFIED_CLAIM=email_verified`
 
@@ -80,3 +79,23 @@ Les variables `SMTP_HOST`, `SMTP_FROM` et `INVITATION_BASE_URL` sont nécessaire
 ## État actuel
 
 Le tenant Auth0 de développement, la SPA et l'API sont créés. Les connexions de la SPA sont limitées à la base de données Auth0 ; Google OAuth2 est désactivé pour cette application. La vérification de l'adresse e-mail à l'inscription par lien est activée. Le token API et le token implicit/hybrid ont une durée maximale de 900 secondes. Le code Auth0 a été intégré à `main` via la PR #74 ; la branche historique `feat/auth0-oidc-foundation` contient des commits ultérieurs et ne doit pas être fusionnée directement dans `main`. Aucun compte n'a été importé, aucune variable Render n'a été modifiée, aucun déploiement ni changement de base n'a été effectué. La migration des comptes et la recette réelle restent bloquantes avant la bascule.
+
+
+## Vérifications complémentaires — 26 novembre 2026
+
+### Autorisation de la SPA sur l'API
+
+La dernière vérification connue signalait que l'application SPA n'était pas autorisée à obtenir un jeton d'accès pour l'API. Aucune preuve récente de correction n'est disponible. Avant toute recette Auth0, vérifier qu'une connexion PKCE retourne bien un access token dont l'audience est exactement `https://api.dikevia.fr`, puis que l'API accepte ce jeton. Ne pas confondre l'ID token destiné au client SPA et l'access token destiné à l'API.
+
+### Sessions persistantes côté serveur
+
+Le BFF de sessions OIDC est présent dans la branche de déploiement historique, mais le manifeste Render y fixe explicitement `OIDC_SERVER_SESSIONS_ENABLED=false`. Le parcours actuellement configuré n'utilise donc pas les sessions HttpOnly côté serveur. La table `oidc_sessions` existe dans la base applicative de production et ne contient aucune session au contrôle du 26 novembre 2026.
+
+L'activation du BFF exige une clé de chiffrement de 32 octets, une URI HTTPS autorisée et un flux Auth0 renvoyant un refresh token. Le manifeste actuel définit `OIDC_SCOPES=openid`, ce qui ne suffit pas à démontrer que le refresh token sera délivré. Il faut valider `offline_access`, la rotation des refresh tokens et la révocation avant activation. Ne pas activer cette option en production par simple changement de drapeau.
+
+### Règles de bascule
+
+- Le tenant US-5 reste un tenant de développement/staging ; il ne doit pas servir de tenant de production pour des données réelles sans validation juridique et contractuelle de la résidence des données.
+- Aucun import global d'utilisateurs ni aucune bascule définitive des comptes Keycloak ne sont réputés réalisés.
+- Les comptes, appartenances, rôles et droits PostgreSQL doivent rester la source d'autorité ; aucun rapprochement par adresse e-mail seule n'est acceptable.
+- Le service Render commercial déploie encore la branche `feature/dikevia-v3.38.5-cgfp-chat`. La branche `main` n'est pas encore la source de déploiement de ce service.
