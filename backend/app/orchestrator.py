@@ -1561,30 +1561,44 @@ class LegalOrchestrator:
         if conn is not None and personal_user_id:
             try:
                 personal_hits_by_id: dict[str, dict] = {}
-                for personal_query in research_queries:
+                if request.personal_document_ids:
+                    # Explicit attachments are fetched by owner-scoped ID, not
+                    # keyword match, so "résume ce fichier" still includes it.
                     rows = await conn.fetch(
                         """SELECT id,title,document_type,collectivity_scope,validation_status,
-                                  effective_from,effective_to,
-                                  ts_rank(search_vector,plainto_tsquery('french',$2)) relevance,
-                                  ts_headline('french',extracted_text,plainto_tsquery('french',$2),
-                                    'MaxWords=90,MinWords=20,ShortWord=2,HighlightAll=false') excerpt
+                                  effective_from,effective_to,1.0::float8 relevance,
+                                  left(extracted_text,6000) excerpt
                            FROM personal_documents
                            WHERE owner_user_id=$1::uuid
-                             AND ($2::uuid[] IS NULL OR id=ANY($2::uuid[]))
+                             AND id=ANY($2::uuid[])
                              AND scan_status='CLEAN'
                              AND extraction_status='EXTRACTED'
-                             AND search_vector @@ plainto_tsquery('french',$3)
-                           ORDER BY relevance DESC,created_at DESC LIMIT $4""",
-                        personal_user_id,
-                        [str(document_id) for document_id in request.personal_document_ids] or None,
-                        personal_query[:500], 5,
+                           ORDER BY created_at DESC LIMIT $3""",
+                        personal_user_id, request.personal_document_ids, 5,
                     )
                     for row in rows:
-                        key = str(row["id"])
-                        candidate = dict(row)
-                        existing = personal_hits_by_id.get(key)
-                        if existing is None or float(candidate.get("relevance") or 0) > float(existing.get("relevance") or 0):
-                            personal_hits_by_id[key] = candidate
+                        personal_hits_by_id[str(row["id"])] = dict(row)
+                else:
+                    for personal_query in research_queries:
+                        rows = await conn.fetch(
+                            """SELECT id,title,document_type,collectivity_scope,validation_status,
+                                      effective_from,effective_to,
+                                      ts_rank(search_vector,plainto_tsquery('french',$2)) relevance,
+                                      ts_headline('french',extracted_text,plainto_tsquery('french',$2),
+                                        'MaxWords=90,MinWords=20,ShortWord=2,HighlightAll=false') excerpt
+                               FROM personal_documents
+                               WHERE owner_user_id=$1::uuid AND scan_status='CLEAN'
+                                 AND extraction_status='EXTRACTED'
+                                 AND search_vector @@ plainto_tsquery('french',$2)
+                               ORDER BY relevance DESC,created_at DESC LIMIT $3""",
+                            personal_user_id, personal_query[:500], 5,
+                        )
+                        for row in rows:
+                            key = str(row["id"])
+                            candidate = dict(row)
+                            existing = personal_hits_by_id.get(key)
+                            if existing is None or float(candidate.get("relevance") or 0) > float(existing.get("relevance") or 0):
+                                personal_hits_by_id[key] = candidate
                 for hit in sorted(
                     personal_hits_by_id.values(),
                     key=lambda item: -float(item.get("relevance") or 0),
