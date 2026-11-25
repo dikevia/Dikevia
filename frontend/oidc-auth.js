@@ -56,13 +56,14 @@
     discovery = data;
     return data;
   }
-  function authorizationUrl(oidc, redirectUri, state, verifier, prompt, nonce) {
+  function authorizationUrl(oidc, redirectUri, state, verifier, prompt, nonce, connection) {
     const params = {
       client_id:cfg.client_id,response_type:'code',redirect_uri:redirectUri,
       scope:cfg.scopes||'openid profile email',state,nonce,
       code_challenge_method:'S256'
     };
     if (cfg.audience) params.audience=cfg.audience;
+    if (connection) params.connection=connection;
     return challenge(verifier).then(value => {
       params.code_challenge=value;
       if (prompt) params.prompt=prompt;
@@ -71,7 +72,7 @@
       return url.toString();
     });
   }
-  async function beginAuthorization(prompt) {
+  async function beginAuthorization(prompt, connection) {
     const pending = new URLSearchParams(window.location.search).get('invitation_token');
     if (pending) sessionStorage.setItem('cfdt_pending_invitation', pending);
     const oidc = await metadata();
@@ -80,12 +81,16 @@
     sessionStorage.setItem('cfdt_oidc_verifier',verifier);
     sessionStorage.setItem('cfdt_oidc_nonce',nonce);
     sessionStorage.setItem('cfdt_oidc_flow','interactive');
-    const url=await authorizationUrl(oidc,cfg.redirect_uri,state,verifier,prompt,nonce);
+    const url=await authorizationUrl(oidc,cfg.redirect_uri,state,verifier,prompt,nonce,connection);
     window.location.assign(url);
   }
   async function login() {
     sessionStorage.removeItem('cfdt_oidc_silent_failed');
-    return beginAuthorization(null);
+    return beginAuthorization(null, null);
+  }
+  async function loginWithGoogle() {
+    sessionStorage.removeItem('cfdt_oidc_silent_failed');
+    return beginAuthorization('select_account', 'google-oauth2');
   }
   function cleanCallbackUrl() {
     history.replaceState({},document.title,window.location.pathname+window.location.hash);
@@ -278,6 +283,7 @@
       return idToken;
     },
     async login(){await ready.catch(()=>{});return login();},
+    async loginWithGoogle(){await ready.catch(()=>{});return loginWithGoogle();},
     async logout(){
       accessToken=null;idToken=null;expiresAt=0;
       sessionStorage.removeItem('cfdt_oidc_state');
