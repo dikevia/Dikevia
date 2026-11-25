@@ -1134,6 +1134,8 @@ async def _lock_conversation_for_chat_turn(
 
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
 async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity)):
+    if payload.personal_document_ids and not settings.ai_local_documents_in_chat_enabled:
+        raise HTTPException(503, "L'analyse des pièces jointes est désactivée côté service ; aucun document n'a été transmis.")
     pool = get_pool()
     # Persist and rate-limit the incoming message in one short tenant transaction.
     async with pool.acquire() as conn:
