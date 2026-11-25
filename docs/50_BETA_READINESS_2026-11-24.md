@@ -13,6 +13,7 @@ Ce document distingue les contrôles effectués, les limites connues et les vali
 - Les contrôles directs de `/health/ready` et de la découverte OIDC `/realms/cfdt/.well-known/openid-configuration` ont continué à répondre HTTP 503 après plusieurs tentatives. La branche Neon de production était `ready`, mais aucune connexion Keycloak active n'était visible dans `pg_stat_activity` lors du dernier contrôle.
 - **Diagnostic non conclu :** il n'est pas possible d'attribuer avec certitude le 503 à un démarrage à froid, à la mémoire, à la connexion DB ou à une autre cause. Aucun redémarrage manuel, changement de configuration ou changement de plan n'a été déclenché. La disponibilité OIDC doit être revalidée avant une démonstration nécessitant une connexion.
 - Ce contrôle opérationnel est distinct des smoke tests OIDC précédemment réussis ; ces derniers ne prouvent pas que le fournisseur d'identité répond actuellement.
+- **Résultat du contrôle de clôture après démarrage :** `GET /health/ready` a renvoyé `status=UP`, avec les contrôles `Graceful Shutdown`, `Keycloak database connections async health check` et `Keycloak Initialized` tous à `UP`. La découverte OIDC du realm `cfdt` a ensuite renvoyé l'issuer attendu et les endpoints d'autorisation, de jeton et JWKS. Le 503 transitoire est donc résolu à ce contrôle ; une vraie connexion utilisateur reste à tester.
 
 ## 1. Production et sécurité opérationnelle
 
