@@ -199,7 +199,8 @@ async def _refresh(pool, digest):
                     if response.status_code != 200:
                         raise ValueError()
                     tokens = response.json()
-                    access=tokens.get("access_token"); expires=tokens.get("expires_in")
+                    access = tokens.get("access_token")
+                    expires = tokens.get("expires_in")
                     if not isinstance(access,str) or not access or not isinstance(expires,int) or not 1<=expires<=86400:
                         raise ValueError()
                     principal=verify_access_token(access)
