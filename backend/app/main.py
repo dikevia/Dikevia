@@ -1191,6 +1191,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 payload.confirm_local_document_ai_transfer
                 and settings.ai_local_documents_in_chat_enabled
             ),
+            allow_personal_documents=(
+                payload.confirm_personal_document_ai_transfer
+                and settings.ai_local_documents_in_chat_enabled
+            ),
             personal_user_id=ctx.user_id,
         )
     except Exception:
