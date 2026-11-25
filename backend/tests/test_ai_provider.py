@@ -2381,7 +2381,7 @@ async def test_gemini_model_not_found_uses_only_configured_fallback_model(monkey
         if model == "gemini-primary-model":
             return httpx.Response(
                 404, request=request,
-                json={"error": {"status": "NOT_FOUND", "message": "models/gemini-primary-model is not found"}},
+                json={"error": {"status": "NOT_FOUND", "message": "This model models/gemini-primary-model is no longer available to new users. Please update your code to use models/gemini-fallback-model."}},
             )
         return httpx.Response(
             200, request=request,

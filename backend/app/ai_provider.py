@@ -358,7 +358,8 @@ def _is_gemini_model_not_found_response(response: httpx.Response) -> bool:
     detail = " ".join(fragments).casefold()
     return "model" in detail and any(
         marker in detail for marker in (
-            "not found", "not supported", "does not exist", "unknown model",
+            "not found", "not_found", "not supported", "does not exist",
+            "unknown model", "no longer available", "no longer supported",
         )
     )
 
