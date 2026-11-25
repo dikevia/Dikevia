@@ -32,6 +32,91 @@
   async function challenge(verifier) {
     return base64url(await crypto.subtle.digest('SHA-256', encoder.encode(verifier)));
   }
+  async function legacyMetadata() {
+    const issuer=cfg.legacy_issuer;
+    if(!issuer||!cfg.legacy_client_id)throw new Error('La vérification de l’ancien compte n’est pas configurée.');
+    if(!issuer.startsWith('https://'))throw new Error('L’ancien fournisseur d’identité doit utiliser HTTPS.');
+    const response=await fetch(issuer.replace(/\/+$/,'')+'/.well-known/openid-configuration',{cache:'no-store'});
+    if(!response.ok)throw new Error('Découverte de l’ancien fournisseur d’identité indisponible.');
+    const data=await response.json();
+    if(data.issuer!==issuer||!data.authorization_endpoint||!data.token_endpoint)throw new Error('Métadonnées Keycloak incohérentes.');
+    return data;
+  }
+  async function exchangeLegacyCode(code,verifier,redirectUri,expectedNonce) {
+    const oidc=await legacyMetadata();
+    const body=new URLSearchParams({grant_type:'authorization_code',client_id:cfg.legacy_client_id,code,redirect_uri:redirectUri,code_verifier:verifier});
+    const response=await fetch(oidc.token_endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body,cache:'no-store'});
+    if(!response.ok)throw new Error('Échange du code Keycloak refusé. Vérifiez l’URI de retour et le client public PKCE.');
+    const data=await response.json();
+    if(!data.id_token)throw new Error('Keycloak n’a pas fourni de jeton d’identité.');
+    const claims=decodeJwtPayload(data.id_token);
+    const audiences=Array.isArray(claims.aud)?claims.aud:[claims.aud];
+    if(claims.iss!==cfg.legacy_issuer||!audiences.includes(cfg.legacy_client_id)||claims.nonce!==expectedNonce||!claims.sub)
+      throw new Error('La preuve Keycloak ne correspond pas à la demande de rattachement.');
+    return data.id_token;
+  }
+  async function completeLegacyCallback() {
+    const params=new URLSearchParams(window.location.search);
+    const code=params.get('code'),error=params.get('error'),state=params.get('state');
+    const expected=sessionStorage.getItem('cfdt_oidc_state');
+    const verifier=sessionStorage.getItem('cfdt_oidc_verifier');
+    const nonce=sessionStorage.getItem('cfdt_oidc_nonce');
+    sessionStorage.removeItem('cfdt_oidc_state');
+    sessionStorage.removeItem('cfdt_oidc_verifier');
+    sessionStorage.removeItem('cfdt_oidc_nonce');
+    sessionStorage.removeItem('cfdt_oidc_flow');
+    if(!state||!expected||state!==expected||(code&&(!verifier||!nonce))){
+      cleanCallbackUrl();
+      throw new Error('État de vérification Keycloak invalide. Recommencez le rattachement.');
+    }
+    if(error){cleanCallbackUrl();throw new Error(params.get('error_description')||'Keycloak a refusé la vérification ('+error+').');}
+    try{
+      const idToken=await exchangeLegacyCode(code,verifier,cfg.legacy_redirect_uri||cfg.redirect_uri,nonce);
+      sessionStorage.setItem('cfdt_legacy_link_id_token',idToken);
+      sessionStorage.setItem('cfdt_legacy_link_nonce',nonce);
+    }finally{cleanCallbackUrl();}
+    return true;
+  }
+  async function finishPendingLegacyLink() {
+    const legacyToken=sessionStorage.getItem('cfdt_legacy_link_id_token');
+    const nonce=sessionStorage.getItem('cfdt_legacy_link_nonce');
+    if(!legacyToken||!nonce||!accessToken||!idToken)return false;
+    const response=await fetch('/api/v1/auth/link-legacy/complete',{
+      method:'POST',cache:'no-store',
+      headers:{'Authorization':'Bearer '+accessToken,'X-OIDC-ID-Token':idToken,'Content-Type':'application/json'},
+      body:JSON.stringify({keycloak_id_token:legacyToken,nonce})
+    });
+    const data=await response.json().catch(()=>({detail:'Réponse serveur illisible.'}));
+    if(!response.ok)throw new Error(data.detail||'Le rattachement des identités a échoué.');
+    sessionStorage.removeItem('cfdt_legacy_link_id_token');
+    sessionStorage.removeItem('cfdt_legacy_link_nonce');
+    window.dispatchEvent(new CustomEvent('cfdt:legacy-identity-linked',{detail:data}));
+    return true;
+  }
+  async function beginLegacyLink() {
+    const bearer=await window.CFDT_JURIS_AUTH.getAccessToken();
+    const identity=await window.CFDT_JURIS_AUTH.getIdentityToken();
+    if(!bearer||!identity)throw new Error('Connectez-vous d’abord à votre compte Dikévia/Auth0.');
+    const challengeResponse=await fetch('/api/v1/auth/link-legacy/challenge',{
+      method:'POST',cache:'no-store',headers:{'Authorization':'Bearer '+bearer,'X-OIDC-ID-Token':identity}
+    });
+    const challengeData=await challengeResponse.json().catch(()=>({}));
+    if(!challengeResponse.ok)throw new Error(challengeData.detail||'Impossible de préparer la vérification du compte historique.');
+    const oidc=await legacyMetadata();
+    const state=random(24),verifier=random(48),nonce=challengeData.nonce;
+    sessionStorage.setItem('cfdt_oidc_state',state);
+    sessionStorage.setItem('cfdt_oidc_verifier',verifier);
+    sessionStorage.setItem('cfdt_oidc_nonce',nonce);
+    sessionStorage.setItem('cfdt_oidc_flow','legacy-link');
+    const redirectUri=challengeData.redirect_uri||cfg.legacy_redirect_uri||cfg.redirect_uri;
+    const url=new URL(oidc.authorization_endpoint);
+    url.search=new URLSearchParams({
+      client_id:cfg.legacy_client_id,response_type:'code',redirect_uri:redirectUri,
+      scope:'openid profile email',state,nonce,code_challenge_method:'S256',
+      code_challenge:await challenge(verifier),prompt:'login'
+    });
+    window.location.assign(url.toString());
+  }
   async function metadata() {
     if (discovery) return discovery;
     // Preserve the issuer exactly as advertised by discovery. Auth0 issuers
@@ -148,6 +233,7 @@
     await acceptPendingInvitation();
   }
   async function completeCallback() {
+    if(sessionStorage.getItem('cfdt_oidc_flow')==='legacy-link')return completeLegacyCallback();
     const params=new URLSearchParams(window.location.search);
     const code=params.get('code'),error=params.get('error');
     if(!code&&!error) return false;
@@ -257,6 +343,11 @@
     const hadCallback=new URLSearchParams(window.location.search).has('code')||
       new URLSearchParams(window.location.search).has('error');
     const completed=await completeCallback();
+    if(sessionStorage.getItem('cfdt_legacy_link_id_token')){
+      if(!accessToken)await silentCheckSso().catch(()=>false);
+      if(accessToken)await finishPendingLegacyLink();
+      return;
+    }
     if(hadCallback||completed||accessToken)return;
     if(sessionStorage.getItem('cfdt_oidc_silent_failed')==='1')return;
     try { await silentCheckSso(); }
@@ -284,6 +375,7 @@
     },
     async login(){await ready.catch(()=>{});return login();},
     async loginWithGoogle(){await ready.catch(()=>{});return loginWithGoogle();},
+    async linkLegacy(){await ready.catch(()=>{});return beginLegacyLink();},
     async logout(){
       accessToken=null;idToken=null;expiresAt=0;
       sessionStorage.removeItem('cfdt_oidc_state');
@@ -291,6 +383,8 @@
       sessionStorage.removeItem('cfdt_oidc_nonce');
       sessionStorage.removeItem('cfdt_oidc_flow');
       sessionStorage.removeItem('cfdt_oidc_silent_failed');
+      sessionStorage.removeItem('cfdt_legacy_link_id_token');
+      sessionStorage.removeItem('cfdt_legacy_link_nonce');
       const oidc=await metadata().catch(()=>null);
       if(oidc?.end_session_endpoint)
         window.location.assign(oidc.end_session_endpoint+'?'+new URLSearchParams({
