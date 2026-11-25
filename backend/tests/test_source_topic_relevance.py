@@ -1,5 +1,8 @@
-from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
+from app.fpt_scope import _matched_topic_families, classify_public_service_scope, is_topic_relevant_source
 from app.orchestrator import (
+    _build_code_research_queries,
+    _build_targeted_cgfp_article_queries,
+    _build_targeted_regulatory_queries,
     apply_semantic_source_relevance,
     filter_irrelevant_sources_for_display,
     _source_relevant_to_any_research_axis,
@@ -482,3 +485,152 @@ def test_semantic_direct_verdict_cannot_override_cmo_citis_exclusion(monkeypatch
 
     assert source["research_axis_relevant"] is False
     assert source["semantic_relevance"] == "BLOCKED_BY_TOPIC_GUARD"
+
+
+def test_cgfp_ordinary_sick_leave_articles_are_eligible_for_fpt_claims():
+    from app.fpt_scope import classify_public_service_scope
+
+    for number in range(1, 6):
+        article = {
+            "source_type": "LEGIFRANCE_API",
+            "title": f"Code général de la fonction publique — article L822-{number}",
+            "article": f"L822-{number}",
+            "text": "Le fonctionnaire en activité bénéficie des dispositions relatives au congé de maladie et à sa rémunération.",
+        }
+        scope = classify_public_service_scope(article, target_versant="FPT")
+        assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert scope["analysis_eligible"] is True
+        assert scope["claim_eligible"] is True
+
+
+def test_cgfp_cmo_snapshot_is_context_only_not_claim_evidence():
+    snapshot = {
+        "source_type": "CGFP_SNAPSHOT",
+        "title": "Code général de la fonction publique — article L822-3",
+        "article": "L822-3",
+        "text": "Le fonctionnaire en congé de maladie perçoit 90 % de son traitement pendant trois mois.",
+    }
+    scope = classify_public_service_scope(snapshot, target_versant="FPT")
+    assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
+    assert scope["analysis_eligible"] is True
+    assert scope["claim_eligible"] is False
+
+
+def test_law_2017_1837_article_115_is_common_public_service_claim_evidence():
+    law = {
+        "source_type": "LEGIFRANCE_LODA",
+        "title": "Loi n° 2017-1837 du 30 décembre 2017 de finances pour 2018",
+        "text": "Article 115. Les agents publics civils et les militaires en congé de maladie bénéficient du maintien de leur rémunération à compter du deuxième jour.",
+    }
+    scope = classify_public_service_scope(law, target_versant="FPT")
+    assert scope["scope"] == "COMMON_PUBLIC_SERVICE"
+    assert scope["analysis_eligible"] is True
+    assert scope["claim_eligible"] is True
+
+
+def test_cmo_questions_trigger_exact_cgfp_and_fpt_implementing_text_searches():
+    question = (
+        "Je suis fonctionnaire territorial titulaire. Quelles sont les règles "
+        "du congé de maladie ordinaire, notamment le jour de carence et le maintien de rémunération ?"
+    )
+    assert _build_targeted_cgfp_article_queries(question, "FPT") == [
+        "article L822-1", "article L822-2", "article L822-3", "article L822-4", "article L822-5",
+    ]
+    regulatory = _build_targeted_regulatory_queries(question, "FPT")
+    assert any("décret n° 87-602" in item and "articles 14 et 15" in item for item in regulatory)
+    assert any("loi n° 2017-1837" in item and "article 115" in item for item in regulatory)
+
+
+def test_cmo_exact_queries_are_not_leaked_to_other_public_service_branches():
+    question = "Quelles sont les règles du congé de maladie ordinaire et du jour de carence ?"
+    assert _build_targeted_cgfp_article_queries(question, "FPE") == []
+    assert _build_targeted_cgfp_article_queries(question, "FPH") == []
+    assert _build_targeted_regulatory_queries(question, "FPE") == []
+    assert _build_targeted_regulatory_queries(question, "FPH") == []
+
+
+def test_cmo_exact_articles_keep_reserved_slots_ahead_of_snapshot_discovery():
+    question = "Congé de maladie ordinaire : jour de carence et maintien de rémunération"
+    exact = _build_targeted_cgfp_article_queries(question, "FPT")
+    queries = _build_code_research_queries(
+        ["broad", "cmo", "remuneration"],
+        exact + ["article L999-999"],
+        max_queries=8,
+    )
+    assert queries == [
+        "broad", "cmo", "remuneration",
+        "article L822-1", "article L822-2", "article L822-3", "article L822-4", "article L822-5",
+    ]
+
+
+def test_cmo_question_rejects_unrelated_annual_leave_decree():
+    question = (
+        "Je suis fonctionnaire territorial titulaire. Quelles sont les règles "
+        "du congé de maladie ordinaire, notamment le jour de carence et le maintien de rémunération ?"
+    )
+    annual_leave = {
+        "title": "Décret n° 2026-768 relatif au report de jours de congé annuel non pris",
+        "text": "Les congés annuels non pris en raison d'une maladie peuvent être reportés.",
+    }
+    assert is_topic_relevant_source(question, annual_leave) is False
+
+
+def test_cmo_question_keeps_exact_cgfp_article_even_without_ordinary_wording():
+    question = "Congé de maladie ordinaire : jour de carence et maintien de rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L822-3",
+        "article": "L822-3",
+        "text": "Le fonctionnaire en congé de maladie perçoit 90 % de son traitement pendant trois mois.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_cmo_question_hides_out_of_scope_sources_from_display():
+    sources = [
+        {"source_id": "out_of_scope", "research_axis_relevant": True, "analysis_eligible": False},
+        {"source_id": "usable_context", "research_axis_relevant": True, "analysis_eligible": True},
+    ]
+    assert [item["source_id"] for item in filter_irrelevant_sources_for_display(sources)] == ["usable_context"]
+
+
+def test_cmo_keeps_decree_87_602_article_from_structured_article_metadata():
+    question = "Fonctionnaire territorial : règles du congé de maladie ordinaire et maintien de rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Décret n° 87-602 du 30 juillet 1987",
+        "article": "14",
+        "text": "Le fonctionnaire en congé de maladie transmet un certificat médical.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_cmo_keeps_decree_87_602_article_from_formatted_article_number_metadata():
+    question = "Fonctionnaire territorial : règles du congé de maladie ordinaire et maintien de rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Décret n° 87-602 du 30 juillet 1987",
+        "article_number": "Article 15 du décret",
+        "text": "Le comité médical examine la situation du fonctionnaire en congé de maladie.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_cmo_rejects_generic_rifseep_document_as_remuneration_evidence():
+    question = "Fonctionnaire territorial : congé de maladie ordinaire et maintien de rémunération"
+    source = {
+        "title": "Régime indemnitaire tenant compte des fonctions, sujétions, expertise et engagement professionnel",
+        "text": "L'IFSE et le CIA constituent les composantes du RIFSEEP.",
+    }
+    assert is_topic_relevant_source(question, source) is False
+
+
+def test_cmo_keeps_exact_cgfp_remuneration_article():
+    question = "Fonctionnaire territorial : congé de maladie ordinaire et maintien de rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L822-3",
+        "article": "L822-3",
+        "text": "Le fonctionnaire en congé de maladie perçoit une fraction de son traitement.",
+    }
+    assert is_topic_relevant_source(question, source) is True
