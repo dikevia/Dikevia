@@ -93,6 +93,13 @@ def temporal_status(valid_from: date | None, valid_to: date | None, requested: d
     if valid_to and requested > valid_to:
         return "NO_LONGER_IN_FORCE"
     if valid_from and valid_to:
+        # For normative instruments, a bounded interval alone is not enough:
+        # require an independently verified IN_FORCE version status before
+        # presenting the text as applicable on the requested date.
+        if document_kind in {"CODE", "LAW", "ORDONNANCE", "DECREE", "ORDER"}:
+            if version_status == "IN_FORCE":
+                return "IN_FORCE_ON_REQUESTED_DATE"
+            return "TEMPORAL_SCOPE_INCOMPLETE"
         return "IN_FORCE_ON_REQUESTED_DATE"
     return "TEMPORAL_SCOPE_INCOMPLETE"
 
