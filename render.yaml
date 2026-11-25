@@ -43,7 +43,7 @@ services:
       - key: OIDC_CLIENT_ID
         value: cfdt-juris-web
       - key: OIDC_SCOPES
-        value: openid profile email
+        value: openid
       - key: OIDC_AUTHORIZATION_AUDIENCE
         sync: false
       - key: OIDC_IDENTITY_COMPAT_ISSUER
