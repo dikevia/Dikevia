@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/dikevia-v3.38.5-cgfp-chat
     paths:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
