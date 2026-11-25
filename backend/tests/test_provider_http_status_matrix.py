@@ -87,5 +87,5 @@ async def test_http_503_retries_primary_then_uses_one_configured_fallback():
     assert client.models == [
         "gemini-2.5-flash",
         "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash-lite",
     ]
