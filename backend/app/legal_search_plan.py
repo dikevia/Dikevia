@@ -301,7 +301,9 @@ def _is_union_assistance_convocation_question(question: str) -> bool:
     )
     has_assistance = any(_contains_trigger(folded, trigger) for trigger in assistance)
     has_summons = any(_contains_trigger(folded, trigger) for trigger in (
-        "convocation", "entretien avec ma hierarchie", "entretien hierarchique",
+        "convocation", "convoque par ma hierarchie", "convoque par sa hierarchie",
+        "convoque par mon chef", "convoque par son chef",
+        "entretien avec ma hierarchie", "entretien hierarchique",
     ))
     return has_assistance and has_summons
 
@@ -406,6 +408,17 @@ _TOPIC_RESEARCH_AXES = (
         (
             "agent territorial convocation hierarchie entretien ordinaire accompagnement representant syndical assistance entretien conditions applicables",
             "fonction publique territoriale procedure disciplinaire droits de la defense droit etre assiste defenseur de son choix CGFP decret 89-677",
+        ),
+    ),
+    (
+        ("deces d un grand pere", "deces d une grand mere", "deces d un proche",
+         "deces d un membre de la famille", "grand pere", "grand mere",
+         "grand parent", "obseques", "autorisation d absence pour deces",
+         "livret de famille", "justificatif de lien familial",
+         "preuve du lien de parente", "justificatif de deces"),
+        (
+            "fonction publique territoriale autorisation speciale absence deces grand parent ascendant CGFP textes reglementaires deliberation locale",
+            "agent territorial justificatif deces lien de parente livret de famille acte de deces protection des donnees minimisation donnees personnelles",
         ),
     ),
     (
@@ -934,6 +947,11 @@ def build_official_research_axes(question: str) -> list[str]:
         "etre accompagne par un representant syndical",
         "etre assiste par un representant syndical",
     )
+    union_summons_markers = (
+        "convocation", "convoque par ma hierarchie", "convoque par sa hierarchie",
+        "convoque par mon chef", "convoque par son chef",
+        "entretien avec ma hierarchie", "entretien hierarchique",
+    )
     explicit_procedure_markers = (
         "procedure disciplinaire",
         "entretien disciplinaire",
@@ -944,6 +962,7 @@ def build_official_research_axes(question: str) -> list[str]:
     )
     if (
         any(_contains_trigger(folded, marker) for marker in union_assistance_markers)
+        and any(_contains_trigger(folded, marker) for marker in union_summons_markers)
         and not any(_contains_trigger(folded, marker) for marker in explicit_procedure_markers)
     ):
         return []
