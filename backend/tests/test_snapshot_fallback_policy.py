@@ -87,3 +87,32 @@ def test_snapshot_discovery_only_source_is_not_shown_as_answer_evidence():
     visible = filter_irrelevant_sources_for_display(sources)
 
     assert [source["source_id"] for source in visible] == ["live"]
+
+
+def test_relevant_live_cgfp_article_suppresses_snapshot_fallback():
+    from app.orchestrator import should_use_cgfp_snapshot_fallback
+
+    found = {
+        "results": [
+            {
+                "article": "L111-1",
+                "title": "Code général de la fonction publique — article L111-1",
+                "text": "La liberté d'opinion est garantie aux agents publics.",
+            }
+        ]
+    }
+    live = [{
+        "source_type": "LEGIFRANCE_API",
+        "article": "L111-1",
+        "title": "Code général de la fonction publique — article L111-1",
+        "text": "La liberté d'opinion est garantie aux agents publics.",
+        "analysis_eligible": True,
+    }]
+
+    assert should_use_cgfp_snapshot_fallback(
+        None,
+        found,
+        ["Que prévoit l'article L111-1 du CGFP ?"],
+        target_versant="FPT",
+        live_sources=live,
+    ) is False
