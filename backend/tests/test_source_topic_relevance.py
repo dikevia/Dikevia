@@ -1,5 +1,6 @@
 from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
 from app.orchestrator import (
+    _build_code_research_queries,
     _build_targeted_cgfp_article_queries,
     _build_targeted_regulatory_queries,
     apply_semantic_source_relevance,
@@ -518,3 +519,17 @@ def test_cmo_exact_queries_are_not_leaked_to_other_public_service_branches():
     assert _build_targeted_cgfp_article_queries(question, "FPH") == []
     assert _build_targeted_regulatory_queries(question, "FPE") == []
     assert _build_targeted_regulatory_queries(question, "FPH") == []
+
+
+def test_cmo_exact_articles_keep_reserved_slots_ahead_of_snapshot_discovery():
+    question = "Congé de maladie ordinaire : jour de carence et maintien de rémunération"
+    exact = _build_targeted_cgfp_article_queries(question, "FPT")
+    queries = _build_code_research_queries(
+        ["broad", "cmo", "remuneration", "case-law", "overflow"],
+        exact + ["article L999-999"],
+        max_queries=8,
+    )
+    assert queries == [
+        "broad", "cmo", "remuneration", "case-law",
+        "article L822-1", "article L822-2", "article L822-3", "article L822-5",
+    ]
