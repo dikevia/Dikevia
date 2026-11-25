@@ -74,7 +74,8 @@ async def search_local_documents(
         """
         SELECT d.id, d.title, d.document_type, d.official_number, d.official_url,
                d.adopted_at, d.published_at, d.effective_from, d.effective_to,
-               d.validation_status, d.sha256,
+               d.validation_status, d.sha256, d.scan_status, d.scan_engine,
+               dv.scan_status AS version_scan_status, dv.scan_engine AS version_scan_engine,
                dt.sha256 AS extracted_sha256, dt.extraction_status,
                c.name AS collectivity_name, c.code AS collectivity_code,
                ts_rank(dt.search_vector, plainto_tsquery('french', $4)) AS relevance,
@@ -96,8 +97,16 @@ async def search_local_documents(
         WHERE dt.organization_id=$1::uuid
           AND dt.search_vector @@ plainto_tsquery('french', $4)
           AND dt.extraction_status='EXTRACTED'
-          AND d.scan_status='CLEAN'
-          AND dv.scan_status='CLEAN'
+          AND (
+            (d.scan_status='CLEAN' AND dv.scan_status='CLEAN')
+            OR (
+              d.scan_status='NOT_SCANNED'
+              AND dv.scan_status='NOT_SCANNED'
+              AND d.scan_engine='TRUSTED_SOURCE_IMPORT:SAINT_ETIENNE_ARCHIVE'
+              AND dv.scan_engine='TRUSTED_SOURCE_IMPORT:SAINT_ETIENNE_ARCHIVE'
+              AND d.validation_note LIKE 'TRUSTED_SOURCE_IMPORT:SAINT_ETIENNE_ARCHIVE:%'
+            )
+          )
           AND (
             upper(c.code) = ANY($2::text[])
             OR lower(c.name) = ANY($3::text[])
@@ -150,8 +159,14 @@ async def search_local_documents(
             "relevance": float(row["relevance"]),
             "citation_integrity": {
                 "valid": hash_matches and row["extraction_status"] == "EXTRACTED",
-                "verification_scope": "TENANT_DOCUMENT_SHA256_AND_CLEAN_SCAN",
+                "verification_scope": (
+                    "TENANT_DOCUMENT_SHA256_AND_CLEAN_SCAN"
+                    if row.get("scan_status") == "CLEAN" and row.get("version_scan_status") == "CLEAN"
+                    else "TENANT_DOCUMENT_SHA256_AND_OWNER_AUTHORIZED_TRUSTED_SOURCE_IMPORT_NO_ANTIVIRUS_SCAN"
+                ),
                 "document_hash_matches_text_record": hash_matches,
+                "antivirus_scanned": row.get("scan_status") == "CLEAN" and row.get("version_scan_status") == "CLEAN",
+                "trusted_source_import": row.get("scan_engine") == "TRUSTED_SOURCE_IMPORT:SAINT_ETIENNE_ARCHIVE",
             },
         })
     return results
