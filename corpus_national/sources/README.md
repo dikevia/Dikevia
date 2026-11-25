@@ -84,6 +84,8 @@ Le moteur les traite comme contexte documentaire non normatif : `claim_eligible=
 
 **Périmètre de cette vérification : staging uniquement.** Aucune base de production n'a été interrogée ; il ne faut donc pas déduire de ces chiffres que les mêmes documents sont présents en production. La présence en base et la vectorisation ne valent ni validation juridique, ni validation complète de la pertinence du retrieval.
 
+Les identifiants présents dans les éléments XML `Reference` de Service-Public sont conservés sous `source_reference_id`. Ils ne sont exposés sous `id_legifrance` que lorsque leur format correspond explicitement à un identifiant Légifrance reconnu (par exemple `LEGIARTI…`, `LEGITEXT…` ou `JORFTEXT…`). Un identifiant interne tel que `R57657` ne doit jamais être présenté ni transformé en identifiant Légifrance. Même lorsqu'un identifiant Légifrance est reconnu syntaxiquement, la référence et sa version restent à vérifier sur Légifrance avant toute utilisation juridique.
+
 Le script `scripts/import_service_public_to_legal_corpus.py` :
 - télécharge les métadonnées du jeu de données et l'archive ZIP courante ;
 - filtre les fiches du thème Fonction publique ;
