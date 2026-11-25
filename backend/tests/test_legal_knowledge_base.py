@@ -385,6 +385,7 @@ async def test_loda_date_filtered_consult_preserves_unknown_status_and_marks_ret
         signature_date=result[0]["signature_date"],
         raw_payload=result[0]["raw_version_payload"],
         version_status=result[0]["version_status"],
+        source_version_id=result[0]["source_version_id"],
     ) == "VERSION_RETRIEVED_AT_REQUESTED_DATE"
     assert result[0]["raw_version_payload"]["matching_consulted_id"] == "LEGITEXT000000000099"
 
