@@ -592,3 +592,34 @@ def test_cmo_question_hides_out_of_scope_sources_from_display():
         {"source_id": "usable_context", "research_axis_relevant": True, "analysis_eligible": True},
     ]
     assert [item["source_id"] for item in filter_irrelevant_sources_for_display(sources)] == ["usable_context"]
+
+
+def test_cmo_keeps_decree_87_602_article_from_structured_article_metadata():
+    question = "Fonctionnaire territorial : règles du congé de maladie ordinaire et maintien de rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Décret n° 87-602 du 30 juillet 1987",
+        "article": "14",
+        "text": "Le fonctionnaire en congé de maladie transmet un certificat médical.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_cmo_rejects_generic_rifseep_document_as_remuneration_evidence():
+    question = "Fonctionnaire territorial : congé de maladie ordinaire et maintien de rémunération"
+    source = {
+        "title": "Régime indemnitaire tenant compte des fonctions, sujétions, expertise et engagement professionnel",
+        "text": "L'IFSE et le CIA constituent les composantes du RIFSEEP.",
+    }
+    assert is_topic_relevant_source(question, source) is False
+
+
+def test_cmo_keeps_exact_cgfp_remuneration_article():
+    question = "Fonctionnaire territorial : congé de maladie ordinaire et maintien de rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L822-3",
+        "article": "L822-3",
+        "text": "Le fonctionnaire en congé de maladie perçoit une fraction de son traitement.",
+    }
+    assert is_topic_relevant_source(question, source) is True
