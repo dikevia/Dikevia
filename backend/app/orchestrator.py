@@ -833,7 +833,7 @@ def _provider_context_history(
 
 
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, corpus_conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None) -> AskResponse:
         request_id = str(uuid4())
         ai_usage_events: list[dict] = []
         answer_started_at = None
@@ -1548,7 +1548,7 @@ class LegalOrchestrator:
                 for query in research_queries:
                     try:
                         result = await search_legal_corpus(
-                            conn, query, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
+                            corpus_conn or conn, query, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
                         )
                     except Exception as exc:
                         logger.warning("Recherche du corpus juridique en échec (%s) : %r", query[:100], exc)
@@ -1563,7 +1563,7 @@ class LegalOrchestrator:
                 if settings.vector_search_enabled and request.query_embedding is not None:
                     try:
                         vector_results = await search_legal_corpus(
-                            conn, request.question, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
+                            corpus_conn or conn, request.question, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
                             query_embedding=request.query_embedding,
                         )
                     except Exception as exc:
