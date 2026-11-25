@@ -764,3 +764,23 @@ def test_bereavement_question_builds_targeted_territorial_research_axes():
     assert any("justificatif" in axis or "livret de famille" in axis for axis in axes)
     assert all(len(query) <= 500 for query in queries)
 
+
+
+def test_grandparent_without_death_does_not_trigger_bereavement_research():
+    question = "Quelles aides un agent peut-il demander pour accompagner son grand-père âgé ?"
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+    assert not any("deces" in query.casefold() or "obseques" in query.casefold() for query in queries)
+    assert axes == []
+
+
+def test_grandparent_death_still_triggers_bereavement_and_kinship_proof_axes():
+    question = (
+        "Après le décès de son grand-père, un agent peut-il demander une autorisation d'absence "
+        "et la direction peut-elle exiger le livret de famille ?"
+    )
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+    assert any("deces grand parent" in query or "deces grand pere" in query for query in queries)
+    assert any("livret de famille" in query for query in queries)
+    assert any("justificatif" in axis for axis in axes)
