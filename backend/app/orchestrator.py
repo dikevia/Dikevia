@@ -2077,7 +2077,7 @@ class LegalOrchestrator:
             ai_answer = None
             missing.insert(
                 0,
-                "Analyse IA suspendue : les trois piliers documentaires n'ont pas tous pu être interrogés avec succès. Aucune réponse juridique de mémoire n'est autorisée.",
+                "Analyse IA suspendue : aucune source juridique exploitable n'a été retrouvée dans les sources consultées. Aucune réponse juridique de mémoire n'est autorisée.",
             )
         else:
             provider_status = await check_provider_availability()
@@ -2385,7 +2385,7 @@ class LegalOrchestrator:
 
         if ai_answer:
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
-                "Le snapshot du CGFP est une consolidation documentaire datée du 31 octobre 2026, non une consultation en direct de Légifrance ; il sert aux questions générales et ne reconstitue pas une version historique. Les ressources Service-Public, institutionnelles et professionnelles sont uniquement informatives et ne fondent pas les affirmations juridiques. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
+                "Lorsque le snapshot local du CGFP est utilisé, il s'agit d'une consolidation documentaire datée du 31 octobre 2026, et non d'une consultation en direct de Légifrance ; il ne reconstitue pas une version historique. Les ressources Service-Public, institutionnelles et professionnelles sont uniquement informatives et ne fondent pas les affirmations juridiques. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
         else:
             lines = [
                 "Je n'ai pas pu établir une réponse suffisamment fiable à la question précise à partir des éléments retrouvés.",
