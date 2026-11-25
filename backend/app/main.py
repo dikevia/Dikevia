@@ -303,6 +303,26 @@ async def _startup_ai_provider_diagnostic() -> None:
 async def lifespan(app: FastAPI):
     validate_runtime_configuration(settings)
     await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
+    if settings.legal_corpus_ingest_database_url:
+        try:
+            corpus_pool = get_corpus_ingest_pool()
+            async with corpus_pool.acquire() as corpus_conn:
+                corpus_health = await corpus_conn.fetchrow("""
+                    SELECT current_database() AS database_name, current_user AS role_name,
+                           (SELECT count(*) FROM legal_documents) AS documents,
+                           (SELECT count(*) FROM legal_document_versions) AS versions,
+                           (SELECT count(*) FROM legal_chunks) AS chunks
+                """)
+            logger.warning(
+                "DIKEVIA_SHARED_LEGAL_CORPUS_RUNTIME status=CONNECTED database=%s role=%s documents=%s versions=%s chunks=%s",
+                corpus_health["database_name"], corpus_health["role_name"],
+                corpus_health["documents"], corpus_health["versions"], corpus_health["chunks"],
+            )
+        except Exception as exc:
+            logger.error(
+                "DIKEVIA_SHARED_LEGAL_CORPUS_RUNTIME status=FAILED error_type=%s",
+                type(exc).__name__,
+            )
     if settings.database_url:
         await assert_runtime_role_is_safe()
     diagnostics_enabled = settings.app_env == "production" and settings.startup_external_diagnostics_enabled
