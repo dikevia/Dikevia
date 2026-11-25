@@ -82,6 +82,7 @@ def _build_versant_fallback_research(
         "UNION_RIGHTS": "droits syndicaux et autorisations spéciales d'absence",
         "TERMINATION_OF_TITULAR": "fin de fonctions et cessation d'emploi du fonctionnaire",
         "STAFFING_AND_WORK_CONDITIONS": "effectifs, charge et conditions de travail",
+        "REPORT_HIERARCHICAL_CONTESTATION": "rapport hiérarchique, dossier individuel et éventuelle procédure disciplinaire",
         "DISCIPLINE": "procédure disciplinaire et sanctions",
         "CONTRACTUAL_EMPLOYMENT": "contrat, renouvellement et fin de contrat",
         "SICK_LEAVE_AND_SERVICE_INJURY": "congé maladie, accident de service et CITIS",
