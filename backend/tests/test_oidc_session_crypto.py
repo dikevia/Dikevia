@@ -51,3 +51,12 @@ def test_server_sessions_are_opt_in_and_require_encryption_and_https_redirect():
     validate_runtime_configuration(enabled)
     with pytest.raises(RuntimeError, match="32 octets"):
         validate_runtime_configuration(enabled.model_copy(update={"oidc_session_encryption_key": "invalid"}))
+
+def test_cookie_session_origin_guard_rejects_cross_origin_mutations(monkeypatch):
+    from app import auth_sessions
+    monkeypatch.setattr(auth_sessions, "settings", SimpleNamespace(
+        cors_origins="https://app.example"
+    ))
+    auth_sessions.require_same_origin(SimpleNamespace(headers={"origin": "https://app.example"}))
+    with pytest.raises(Exception):
+        auth_sessions.require_same_origin(SimpleNamespace(headers={"origin": "https://attacker.example"}))
