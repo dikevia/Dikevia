@@ -389,13 +389,23 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
     )
 
     models = [(primary_model, 2)] + [(model, 1) for model in fallback_models]
-    for model, max_attempts in models:
+    for model_index, (model, max_attempts) in enumerate(models):
         request_payload = dict(payload)
         if model:
             request_payload["model"] = model
         model_not_found = False
+        last_timeout = None
+        response = None
         for attempt in range(max_attempts):
-            response = await client.post(url, headers=headers, json=request_payload)
+            try:
+                response = await client.post(url, headers=headers, json=request_payload)
+                last_timeout = None
+            except httpx.TimeoutException as exc:
+                last_timeout = exc
+                if attempt + 1 < max_attempts:
+                    await asyncio.sleep(0.6)
+                    continue
+                break
             if _is_gemini_provider() and _is_gemini_model_not_found_response(response):
                 model_not_found = True
                 break
@@ -411,8 +421,14 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
                 await asyncio.sleep(0.6)
                 continue
             response.raise_for_status()
-        if response.status_code == 503 or model_not_found:
+        if model_not_found or (response is not None and response.status_code == 503):
             continue
+        if last_timeout is not None:
+            if model_index + 1 < len(models):
+                continue
+            raise last_timeout
+    if response is None:
+        raise httpx.TimeoutException("Le fournisseur IA n'a répondu sur aucun modèle configuré.")
     response.raise_for_status()
 
 
