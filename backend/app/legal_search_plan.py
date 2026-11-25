@@ -84,11 +84,13 @@ _TOPIC_EXPANSIONS = (
         "délibération protocole accord local",
     ),
     (
-        ("deces d un grand pere", "deces d une grand mere", "deces d un proche",
-         "deces d un membre de la famille", "grand pere", "grand mere",
-         "grand parent", "obseques", "autorisation d absence pour deces",
-         "livret de famille", "justificatif de lien familial",
-         "preuve du lien de parente", "justificatif de deces"),
+        ("deces d un grand pere", "deces d une grand mere",
+         "deces de son grand pere", "deces de sa grand mere",
+         "deces de mon grand pere", "deces de ma grand mere",
+         "deces d un proche", "deces d un membre de la famille",
+         "deces d un ascendant", "grand pere decede", "grand mere decedee",
+         "grand parent decede", "obseques", "autorisation d absence pour deces",
+         "acte de deces", "justificatif de deces"),
         (
             "fonction publique territoriale autorisation speciale absence deces grand parent ascendant CGFP textes reglementaires deliberation locale",
             "agent territorial justificatif deces lien de parente livret de famille acte de deces protection des donnees minimisation donnees personnelles",
@@ -411,11 +413,13 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("deces d un grand pere", "deces d une grand mere", "deces d un proche",
-         "deces d un membre de la famille", "grand pere", "grand mere",
-         "grand parent", "obseques", "autorisation d absence pour deces",
-         "livret de famille", "justificatif de lien familial",
-         "preuve du lien de parente", "justificatif de deces"),
+        ("deces d un grand pere", "deces d une grand mere",
+         "deces de son grand pere", "deces de sa grand mere",
+         "deces de mon grand pere", "deces de ma grand mere",
+         "deces d un proche", "deces d un membre de la famille",
+         "deces d un ascendant", "grand pere decede", "grand mere decedee",
+         "grand parent decede", "obseques", "autorisation d absence pour deces",
+         "acte de deces", "justificatif de deces"),
         (
             "fonction publique territoriale autorisation speciale absence deces grand parent ascendant CGFP textes reglementaires deliberation locale",
             "agent territorial justificatif deces lien de parente livret de famille acte de deces protection des donnees minimisation donnees personnelles",
@@ -1053,7 +1057,14 @@ def build_official_research_axes(question: str) -> list[str]:
         if (
             "convocation par ma hierarchie" in triggers
             or "agresse par un usager" in triggers
-            or "livret de famille" in triggers
+            or any(trigger in matched_triggers for trigger in (
+                "deces d un grand pere", "deces d une grand mere",
+                "deces de son grand pere", "deces de sa grand mere",
+                "deces de mon grand pere", "deces de ma grand mere",
+                "deces d un proche", "deces d un membre de la famille",
+                "deces d un ascendant", "grand pere decede", "grand mere decedee",
+                "grand parent decede", "obseques", "autorisation d absence pour deces",
+            ))
         ):
             axes_found.extend(axis[:500] for axis in axes[:2])
             continue
