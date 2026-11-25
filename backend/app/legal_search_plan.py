@@ -84,6 +84,17 @@ _TOPIC_EXPANSIONS = (
         "délibération protocole accord local",
     ),
     (
+        ("deces d un grand pere", "deces d une grand mere", "deces d un proche",
+         "deces d un membre de la famille", "grand pere", "grand mere",
+         "grand parent", "obseques", "autorisation d absence pour deces",
+         "livret de famille", "justificatif de lien familial",
+         "preuve du lien de parente", "justificatif de deces"),
+        (
+            "fonction publique territoriale autorisation speciale absence deces grand parent ascendant CGFP textes reglementaires deliberation locale",
+            "agent territorial justificatif deces lien de parente livret de famille acte de deces protection des donnees minimisation donnees personnelles",
+        ),
+    ),
+    (
         ("heures supplementaires", "heure supplementaire", "heures sup", "ihts",
          "indemnites horaires pour travaux supplementaires", "travaux supplementaires",
          "rester apres mon horaire", "heures effectuees au dela de mon horaire"),
@@ -284,6 +295,9 @@ def _is_union_assistance_convocation_question(question: str) -> bool:
         "etre accompagne d un syndicat",
         "assistance syndicale lors d une convocation",
         "accompagnement syndical lors d une convocation",
+        "accompagnement syndical", "assistance syndicale",
+        "etre accompagne par un representant syndical",
+        "etre assiste par un representant syndical",
     )
     has_assistance = any(_contains_trigger(folded, trigger) for trigger in assistance)
     has_summons = any(_contains_trigger(folded, trigger) for trigger in (
@@ -386,7 +400,9 @@ _TOPIC_RESEARCH_AXES = (
          "accompagne d un representant syndical", "accompagne par un representant syndical",
          "assiste par un representant syndical", "venir avec mon syndicat",
          "venir avec un syndicat", "assistance syndicale lors d une convocation",
-         "accompagnement syndical lors d une convocation"),
+         "accompagnement syndical lors d une convocation",
+         "accompagnement syndical", "assistance syndicale",
+         "etre accompagne par un representant syndical"),
         (
             "agent territorial convocation hierarchie entretien ordinaire accompagnement representant syndical assistance entretien conditions applicables",
             "fonction publique territoriale procedure disciplinaire droits de la defense droit etre assiste defenseur de son choix CGFP decret 89-677",
@@ -914,6 +930,9 @@ def build_official_research_axes(question: str) -> list[str]:
         "venir avec un syndicat",
         "assistance syndicale lors d une convocation",
         "accompagnement syndical lors d une convocation",
+        "accompagnement syndical", "assistance syndicale",
+        "etre accompagne par un representant syndical",
+        "etre assiste par un representant syndical",
     )
     explicit_procedure_markers = (
         "procedure disciplinaire",

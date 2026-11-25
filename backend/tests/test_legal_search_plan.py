@@ -739,3 +739,28 @@ def test_plural_territorial_medico_social_cadre_names_keep_the_specific_ihts_axi
         "Les cadres territoriaux de santé paramédicaux peuvent-ils dépasser le contingent d'IHTS ?"
     )
     assert any("équivalence exacte" in axis for axis in axes)
+
+def test_generic_union_assistance_wording_triggers_required_clarification():
+    from app.legal_search_plan import clarification_for_union_assistance_summons
+
+    question = (
+        "Un agent convoqué par sa hiérarchie peut-il bénéficier d'un accompagnement syndical ?"
+    )
+    clarification = clarification_for_union_assistance_summons(question)
+    assert clarification is not None
+    assert "entretien hiérarchique ordinaire" in clarification
+    assert build_official_research_axes(question) == []
+
+
+def test_bereavement_question_builds_targeted_territorial_research_axes():
+    question = (
+        "Un agent demande une autorisation d'absence après le décès de son grand-père. "
+        "La direction peut-elle exiger le livret de famille ?"
+    )
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+    assert any("grand parent" in query or "grand pere" in query for query in queries)
+    assert any("livret de famille" in query for query in queries)
+    assert any("justificatif" in axis or "livret de famille" in axis for axis in axes)
+    assert all(len(query) <= 500 for query in queries)
+
