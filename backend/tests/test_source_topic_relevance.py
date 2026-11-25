@@ -559,3 +559,34 @@ def test_cmo_exact_articles_keep_reserved_slots_ahead_of_snapshot_discovery():
         "broad", "cmo", "remuneration",
         "article L822-1", "article L822-2", "article L822-3", "article L822-4", "article L822-5",
     ]
+
+
+def test_cmo_question_rejects_unrelated_annual_leave_decree():
+    question = (
+        "Je suis fonctionnaire territorial titulaire. Quelles sont les règles "
+        "du congé de maladie ordinaire, notamment le jour de carence et le maintien de rémunération ?"
+    )
+    annual_leave = {
+        "title": "Décret n° 2026-768 relatif au report de jours de congé annuel non pris",
+        "text": "Les congés annuels non pris en raison d'une maladie peuvent être reportés.",
+    }
+    assert is_topic_relevant_source(question, annual_leave) is False
+
+
+def test_cmo_question_keeps_exact_cgfp_article_even_without_ordinary_wording():
+    question = "Congé de maladie ordinaire : jour de carence et maintien de rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L822-3",
+        "article": "L822-3",
+        "text": "Le fonctionnaire en congé de maladie perçoit 90 % de son traitement pendant trois mois.",
+    }
+    assert is_topic_relevant_source(question, source) is True
+
+
+def test_cmo_question_hides_out_of_scope_sources_from_display():
+    sources = [
+        {"source_id": "out_of_scope", "research_axis_relevant": True, "analysis_eligible": False},
+        {"source_id": "usable_context", "research_axis_relevant": True, "analysis_eligible": True},
+    ]
+    assert [item["source_id"] for item in filter_irrelevant_sources_for_display(sources)] == ["usable_context"]
