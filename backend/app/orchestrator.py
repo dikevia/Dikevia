@@ -2302,7 +2302,7 @@ class LegalOrchestrator:
                                 question=contextual_question,
                                 claims=claim_validation["claims"], sources=ai_sources,
                                 public_service=request.public_service,
-                                allow_local_documents=allow_local_documents,
+                                allow_local_documents=(allow_local_documents or allow_personal_documents),
                                 facts_period=temporal_context,
                                 **_provider_usage_kwargs(verify_claim_entailment, ai_usage_events),
                             )
