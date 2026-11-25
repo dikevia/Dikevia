@@ -2522,3 +2522,10 @@ async def test_gemini_model_not_found_array_error_payload_uses_configured_fallba
     assert response.status_code == 200
     assert calls == ["gemini-primary-model", "gemini-fallback-model"]
 
+
+
+def test_system_prompt_requires_natural_conversational_assistant_style_without_weakening_evidence_rules():
+    assert "STYLE CONVERSATIONNEL — EXPÉRIENCE D'ASSISTANT" in SYSTEM_PROMPT
+    assert "Rédige chaque claim dans un français naturel" in SYSTEM_PROMPT
+    assert "La fluidité conversationnelle ne doit jamais réduire les exigences de preuve" in SYSTEM_PROMPT
+    assert "FORMAT DE SORTIE OBLIGATOIRE — JSON STRICT" in SYSTEM_PROMPT
