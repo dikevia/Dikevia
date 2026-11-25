@@ -341,7 +341,10 @@ async def browser_oidc_configuration():
         f"redirect_uri:{redirect_uri},"
         f"silent_redirect_uri:{silent_redirect_uri},"
         f"scopes:{json.dumps(settings.oidc_scopes)},"
-        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)}"
+        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)},"
+        f"legacy_issuer:{json.dumps(settings.oidc_identity_compat_issuer)},"
+        f"legacy_client_id:{json.dumps(settings.oidc_legacy_client_id)},"
+        f"legacy_redirect_uri:{redirect_uri}"
         "});"
     )
     return Response(
