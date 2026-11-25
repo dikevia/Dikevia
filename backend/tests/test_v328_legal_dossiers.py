@@ -61,7 +61,10 @@ def test_frontend_exposes_dossier_build_edit_save_and_print_actions():
     html = (ROOT / "frontend/index.html").read_text()
     for item in ("buildDossier", "saveDossier", "printDossier", "dossierFacts", "dossierSources"):
         assert item in html
-    assert "localStorage" not in html
+    dossier_start = html.index("function renderDossier")
+    dossier_end = html.index("async function loadChatConversations", dossier_start)
+    assert "localStorage" not in html[dossier_start:dossier_end]
+    assert "/dossier" in html[dossier_start:dossier_end]
 
 
 
