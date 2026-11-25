@@ -24,7 +24,7 @@ def test_monthly_archive_url_uses_only_official_fixed_host(court, year, month, e
     ("court", "year", "month"),
     [
         ("OTHER", 2026, 10),
-        ("CE", 2021, 8),
+        ("CE", 2021, 5),
         ("CAA", 2022, 2),
         ("TA", 2022, 5),
         ("TA", 2026, 13),
