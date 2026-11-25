@@ -72,11 +72,11 @@ async def _resolve_auth0_legacy_identity(principal: Principal) -> Principal:
 
 
 async def get_principal(
-    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     x_oidc_id_token: str | None = Header(default=None, alias="X-OIDC-ID-Token"),
+    request: Request | None = None,
 ):
-    if settings.oidc_server_sessions_enabled and request.cookies.get(SESSION_COOKIE):
+    if request is not None and settings.oidc_server_sessions_enabled and request.cookies.get(SESSION_COOKIE):
         if request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
             require_same_origin(request)
         principal = await get_session_principal(request)
