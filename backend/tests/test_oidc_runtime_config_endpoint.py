@@ -18,8 +18,8 @@ def test_runtime_oidc_configuration_is_valid_javascript(monkeypatch):
     assert response.media_type == "application/javascript"
     script = response.body.decode("utf-8")
     assert "window.CFDT_JURIS_OIDC = Object.freeze({" in script
-    assert '"issuer":"https://identity.example/realms/cfdt"' in script
-    assert '"client_id":"cfdt-juris-web"' in script
-    assert '"audience":"dikevia-api"' in script
+    assert 'issuer:"https://identity.example/realms/cfdt"' in script
+    assert 'client_id:"cfdt-juris-web"' in script
+    assert 'audience:"dikevia-api"' in script
     assert "server_sessions_enabled:false" in script
     assert script.rstrip().endswith("});")
