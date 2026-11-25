@@ -545,10 +545,11 @@ async def health():
 
 @app.get("/ready")
 async def readiness():
-    # Readiness is intentionally distinct from liveness and checks DB reachability.
-    try:
-        await get_pool().fetchval("SELECT 1")
-    except Exception:
+    # Render health checks must not depend on PostgreSQL response latency.
+    # Database outages are handled by request-level error handling, not by
+    # recycling an otherwise healthy API process after a five-second probe.
+    pool = get_pool()
+    if pool.is_closing():
         raise HTTPException(503, "Service temporairement indisponible.")
     return {"status": "ready", "revision": os.getenv("RENDER_GIT_COMMIT", "unknown")}
 
