@@ -363,3 +363,107 @@ def test_auth0_migration_refuses_existing_subject_with_different_email():
             "auth0|legacy-subject",
             "agent@example.org",
         )
+
+
+
+class _GoogleLinkConnection:
+    def __init__(self, linked_user_id=None, fail=False):
+        self.linked_user_id = linked_user_id
+        self.fail = fail
+        self.calls = []
+    def transaction(self):
+        return _FakeTransaction()
+    async def fetchval(self, query, issuer, subject, email, verified):
+        self.calls.append((query, issuer, subject, email, verified))
+        if self.fail:
+            raise RuntimeError("database unavailable")
+        return self.linked_user_id
+
+
+@pytest.mark.parametrize("linked_user_id", ["internal-user-id", None])
+def test_google_social_identity_uses_verified_email_link_function(monkeypatch, linked_user_id):
+    import asyncio
+    from app import dependencies
+
+    issuer = "https://dev-brlgaz1yh2de3mjo.us.auth0.com/"
+    conn = _GoogleLinkConnection(linked_user_id=linked_user_id)
+    monkeypatch.setattr(dependencies, "get_pool", lambda: _FakePool(conn))
+    monkeypatch.setattr(dependencies, "settings", SimpleNamespace(
+        oidc_provider="auth0",
+        oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
+        oidc_identity_subject_prefix="auth0|",
+    ))
+    principal = security.Principal(
+        subject="google-oauth2|provider-subject",
+        issuer=issuer,
+        email="agent@example.test",
+        email_verified=True,
+    )
+    resolved = asyncio.run(dependencies._resolve_auth0_legacy_identity(principal))
+    assert resolved == principal
+    assert len(conn.calls) == 1
+    query, called_issuer, subject, email, verified = conn.calls[0]
+    assert "link_auth0_google_legacy_user" in query
+    assert called_issuer == issuer
+    assert subject == principal.subject
+    assert email == principal.email
+    assert verified is True
+
+
+def test_google_social_identity_without_verified_email_does_not_attempt_link(monkeypatch):
+    import asyncio
+    from app import dependencies
+
+    conn = _GoogleLinkConnection(linked_user_id="must-not-be-used")
+    monkeypatch.setattr(dependencies, "get_pool", lambda: _FakePool(conn))
+    monkeypatch.setattr(dependencies, "settings", SimpleNamespace(
+        oidc_provider="auth0",
+        oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
+        oidc_identity_subject_prefix="auth0|",
+    ))
+    principal = security.Principal(
+        subject="google-oauth2|provider-subject",
+        issuer="https://dev-brlgaz1yh2de3mjo.us.auth0.com/",
+        email="agent@example.test",
+        email_verified=False,
+    )
+    resolved = asyncio.run(dependencies._resolve_auth0_legacy_identity(principal))
+    assert resolved == principal
+    assert conn.calls == []
+
+
+def test_google_social_identity_link_database_failure_fails_closed(monkeypatch):
+    import asyncio
+    from app import dependencies
+
+    conn = _GoogleLinkConnection(fail=True)
+    monkeypatch.setattr(dependencies, "get_pool", lambda: _FakePool(conn))
+    monkeypatch.setattr(dependencies, "settings", SimpleNamespace(
+        oidc_provider="auth0",
+        oidc_identity_compat_issuer="https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
+        oidc_identity_subject_prefix="auth0|",
+    ))
+    principal = security.Principal(
+        subject="google-oauth2|provider-subject",
+        issuer="https://dev-brlgaz1yh2de3mjo.us.auth0.com/",
+        email="agent@example.test",
+        email_verified=True,
+    )
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(dependencies._resolve_auth0_legacy_identity(principal))
+    assert exc.value.status_code == 503
+
+
+def test_google_legacy_link_migration_is_staging_scoped_and_preserves_account_relations():
+    migration = (ROOT / "database/migrations/029_auth0_google_verified_identity_link.sql").read_text()
+    rollback = (ROOT / "database/migrations/rollback/029_auth0_google_verified_identity_link.down.sql").read_text()
+    assert "SECURITY DEFINER" in migration
+    assert "SET row_security = off" in migration
+    assert "email_verified IS DISTINCT FROM true" in migration
+    assert "candidate_count <> 1" in migration
+    assert "google-oauth2|%" in migration
+    assert "https://dev-brlgaz1yh2de3mjo.us.auth0.com/" in migration
+    assert "https://dikevia-identity-l2r8.onrender.com/realms/cfdt" in migration
+    assert "SET oidc_issuer = expected_auth0_issuer" in migration
+    assert "DROP FUNCTION" in rollback
+    assert "UPDATE users" not in rollback
