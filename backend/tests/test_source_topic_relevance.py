@@ -637,3 +637,33 @@ def test_hierarchical_report_question_keeps_individual_file_and_disciplinary_sou
     assert is_topic_relevant_source(question, file_source) is True
     assert is_topic_relevant_source(question, discipline_source) is True
     assert is_topic_relevant_source(question, unrelated) is False
+
+
+def test_hierarchical_report_research_keeps_exact_current_cgfp_articles_and_rejects_wrong_code_reference():
+    from app.fpt_scope import is_topic_relevant_source
+
+    question = "Mon chef a fait un rapport contre moi, puis-je le contester ?"
+    file_access = {
+        "title": "Code général de la fonction publique — article L137-4",
+        "article": "L137-4",
+        "text": "Tout agent public a accès à son dossier individuel.",
+    }
+    disciplinary_guarantee = {
+        "title": "Code général de la fonction publique — article L532-4",
+        "article": "L532-4",
+        "text": "Le fonctionnaire à l'encontre duquel une procédure disciplinaire est engagée a droit à la communication de l'intégralité de son dossier individuel et de tous les documents annexes.",
+    }
+    territorial_report = {
+        "title": "Code général de la fonction publique — article L532-9",
+        "article": "L532-9",
+        "text": "Lors d'une procédure disciplinaire, l'autorité territoriale saisit le conseil de discipline par un rapport précisant les faits reprochés et les circonstances dans lesquelles ils ont été commis.",
+    }
+    wrong_code = {
+        "title": "Code forestier — article R137-16",
+        "article": "R137-16",
+        "text": "Le préfet détermine les lots où la chasse sera exploitée.",
+    }
+    assert is_topic_relevant_source(question, file_access) is True
+    assert is_topic_relevant_source(question, disciplinary_guarantee) is True
+    assert is_topic_relevant_source(question, territorial_report) is True
+    assert is_topic_relevant_source(question, wrong_code) is False
