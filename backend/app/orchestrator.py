@@ -602,7 +602,8 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
     """Exclude sources explicitly unrelated to every independently searched axis."""
     return [
         source for source in sources
-        if source.get(
+        if source.get("analysis_eligible") is not False
+        and source.get(
             "research_axis_relevant",
             source.get("ihts_relevant") is not False and source.get("topic_relevant") is not False,
         )
@@ -658,8 +659,12 @@ async def apply_semantic_source_relevance(
 
 def _source_relevant_to_any_research_axis(
     research_queries: list[str], source: dict, target_versant: str = "FPT",
+    question: str | None = None,
 ) -> bool:
-    """Require topic relevance while applying FPT-only safeguards to FPT questions."""
+    """Require topic relevance while applying hard mechanism guards to the actual question."""
+    if question and "ORDINARY_SICK_LEAVE" in _matched_topic_families(question):
+        if not is_topic_relevant_source(question, source, target_versant=target_versant):
+            return False
     return any(
         is_topic_relevant_source(query, source, target_versant=target_versant)
         and is_ihts_relevant_source(query, source, target_versant=target_versant)
@@ -669,13 +674,16 @@ def _source_relevant_to_any_research_axis(
 
 def _source_relevant_for_target(
     research_queries: list[str], source: dict, target_versant: str,
+    question: str | None = None,
 ) -> bool:
     # Keep the historical two-argument FPT call contract for existing adapters
     # and tests; FPE/FPH must not inherit FPT-specific retrieval guards.
     if str(target_versant or "FPT").upper() == "FPT":
-        return _source_relevant_to_any_research_axis(research_queries, source)
+        return _source_relevant_to_any_research_axis(
+            research_queries, source, question=question,
+        )
     return _source_relevant_to_any_research_axis(
-        research_queries, source, target_versant,
+        research_queries, source, target_versant, question=question,
     )
 
 
@@ -1860,6 +1868,7 @@ class LegalOrchestrator:
         for source in sources:
             source["research_axis_relevant"] = _source_relevant_for_target(
                 research_queries, source, request.public_service,
+                question=contextual_question,
             )
 
 
