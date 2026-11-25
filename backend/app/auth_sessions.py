@@ -270,7 +270,8 @@ async def session(request: Request):
 async def logout(request: Request):
     _enabled()
     require_same_origin(request)
-    cookie=request.cookies.get(SESSION_COOKIE); logout_url=None
+    cookie = request.cookies.get(SESSION_COOKIE)
+    logout_url = None
     if cookie:
         try:
             digest = hash_session_cookie(cookie)
@@ -284,7 +285,8 @@ async def logout(request: Request):
                         refresh=decrypt_session_value(row["refresh_token_ciphertext"],"refresh")
                         async with httpx.AsyncClient(timeout=5,follow_redirects=False) as client:
                             await client.post(metadata["revocation_endpoint"],data={"token":refresh,"token_type_hint":"refresh_token","client_id":settings.oidc_client_id})
-                except Exception: log.warning("oidc_provider_revocation_failed")
+                except Exception:
+                    log.warning("oidc_provider_revocation_failed")
                 if metadata.get("end_session_endpoint"):
                     logout_url=metadata["end_session_endpoint"]+"?"+urlencode({"client_id":settings.oidc_client_id,"post_logout_redirect_uri":_redirect_uri()})
         except ValueError:
