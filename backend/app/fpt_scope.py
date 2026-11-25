@@ -493,7 +493,8 @@ _TOPIC_FAMILIES = {
         "temps non complet", "heures complementaires", "decret 2020 592",
     ),
     "DISCIPLINE": (
-        "discipline", "sanction disciplinaire", "conseil de discipline",
+        "discipline", "disciplinaire", "procedure disciplinaire",
+        "sanction disciplinaire", "conseil de discipline",
         "exclusion temporaire", "blame", "revocation",
     ),
     "TELEWORK": (
