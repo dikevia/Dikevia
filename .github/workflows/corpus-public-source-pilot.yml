@@ -3,6 +3,11 @@ concurrency:
   group: corpus-public-source-${{ github.ref }}
   cancel-in-progress: true
 on:
+  pull_request:
+    paths:
+      - "corpus_national/sources/registry.json"
+      - "scripts/import_public_guidance_sources.py"
+      - ".github/workflows/corpus-public-source-pilot.yml"
   workflow_dispatch:
     inputs:
       apply_import:
@@ -18,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ secrets.LEGAL_CORPUS_INGEST_DATABASE_URL }}
+      LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_import && secrets.LEGAL_CORPUS_INGEST_DATABASE_URL || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -82,6 +87,18 @@ jobs:
       - name: Dry-run solidaires-fp-site extraction (union source, no database writes)
         run: python scripts/import_public_guidance_sources.py --id solidaires-fp-site --export-json /tmp/solidaires-fp.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
+      - name: Dry-run SIG mission page extraction (official administrative guidance, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id sig-missions-2026 --export-json /tmp/sig-missions.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run State Charter page extraction (official administrative guidance, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id sig-charte-etat-marque --export-json /tmp/sig-charte-etat.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run State communication accessibility charter PDF extraction (64 pages, no database writes)
+        run: python scripts/import_public_guidance_sources.py --id sig-charte-accessibilite-communication --export-json /tmp/sig-charte-accessibilite.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
+      - name: Dry-run 2026 State AI responsibility charter PDF extraction (no database writes)
+        run: python scripts/import_public_guidance_sources.py --id sig-charte-usage-responsable-ia-2026 --export-json /tmp/sig-charte-usage-responsable-ia.json --download-dir /tmp/public-guidance-originals
+        continue-on-error: true
       - name: Archive the extracted public corpus for audit
         uses: actions/upload-artifact@v4
         with:
@@ -107,6 +124,10 @@ jobs:
             /tmp/cftc-greve.json
             /tmp/unsa-fp.json
             /tmp/solidaires-fp.json
+            /tmp/sig-missions.json
+            /tmp/sig-charte-etat.json
+            /tmp/sig-charte-accessibilite.json
+            /tmp/sig-charte-usage-responsable-ia.json
           if-no-files-found: warn
           retention-days: 2
       - name: Detect an explicit full-import request on this branch
@@ -132,14 +153,19 @@ jobs:
             sleep 10
           done
           echo "Délai CI dépassé : import interdit."; exit 1
+      - name: Refuse database writes when the dedicated staging credential is missing
+        if: github.event_name == 'workflow_dispatch' && inputs.apply_import && env.LEGAL_CORPUS_INGEST_DATABASE_URL == ''
+        run: |
+          echo 'Import demandé mais le secret du rôle dédié cfdt_juris_ingest est absent.'
+          exit 1
       - name: Import ten Service-Public records with the dedicated ingestion role
-        if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != '' && steps.import-mode.outputs.full != 'true' && (github.event_name != 'workflow_dispatch' || inputs.apply_import)
+        if: github.event_name == 'workflow_dispatch' && inputs.apply_import && env.LEGAL_CORPUS_INGEST_DATABASE_URL != '' && steps.import-mode.outputs.full != 'true'
         run: python scripts/import_service_public_to_legal_corpus.py --apply --limit 10
       - name: Import the full Service-Public corpus after explicit branch request
-        if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != '' && steps.import-mode.outputs.full == 'true' && (github.event_name != 'workflow_dispatch' || inputs.apply_import)
+        if: github.event_name == 'workflow_dispatch' && inputs.apply_import && env.LEGAL_CORPUS_INGEST_DATABASE_URL != '' && steps.import-mode.outputs.full == 'true'
         run: python scripts/import_service_public_to_legal_corpus.py --apply
       - name: Import owner-approved institutional and union guidance resources
-        if: env.LEGAL_CORPUS_INGEST_DATABASE_URL != '' && (github.event_name != 'workflow_dispatch' || inputs.apply_import)
+        if: github.event_name == 'workflow_dispatch' && inputs.apply_import && env.LEGAL_CORPUS_INGEST_DATABASE_URL != ''
         run: >-
           python scripts/import_public_guidance_sources.py --apply
           --id dgafp-faq-tpt-2026
