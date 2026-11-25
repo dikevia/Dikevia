@@ -382,3 +382,24 @@ def test_union_assistance_question_keeps_disciplinary_defence_source_as_related_
     }
     assert is_topic_relevant_source(question, source) is True
 
+def test_bereavement_topic_does_not_match_generic_grandparent_family_provisions():
+    question = "Après le décès de son grand-père, l'agent demande une autorisation d'absence."
+    unrelated = {
+        "title": "Aide familiale aux ascendants et grands-parents",
+        "text": "Dispositions relatives à l'accompagnement familial des personnes âgées.",
+    }
+    assert "FAMILY_BEREAVEMENT" in _matched_topic_families(question)
+    assert is_topic_relevant_source(question, unrelated) is False
+
+
+def test_union_assistance_topic_does_not_match_generic_union_representative_rights():
+    question = (
+        "Un agent convoqué par sa hiérarchie peut-il bénéficier d'un accompagnement syndical ?"
+    )
+    unrelated = {
+        "title": "Droits du représentant syndical",
+        "text": "Crédit de temps syndical et autorisations d'absence pour les congrès.",
+    }
+    assert "UNION_ASSISTANCE" in _matched_topic_families(question)
+    assert is_topic_relevant_source(question, unrelated) is False
+
