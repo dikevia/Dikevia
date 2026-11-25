@@ -112,7 +112,7 @@
     const url=new URL(oidc.authorization_endpoint);
     url.search=new URLSearchParams({
       client_id:cfg.legacy_client_id,response_type:'code',redirect_uri:redirectUri,
-      scope:'openid profile email',state,nonce,code_challenge_method:'S256',
+      scope:'openid',state,nonce,code_challenge_method:'S256',
       code_challenge:await challenge(verifier),prompt:'login'
     });
     window.location.assign(url.toString());
