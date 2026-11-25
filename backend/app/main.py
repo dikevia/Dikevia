@@ -23,7 +23,7 @@ from urllib.parse import quote, urlparse
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool, assert_runtime_role_is_safe
 from .dependencies import get_principal, get_tenant_context, get_tenant_identity, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_org_admin_for_external, require_legal_editor_for_external, require_platform_admin, TenantContext
-from .security import Principal
+from .security import Principal, verify_legacy_keycloak_id_token
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
 from .cgfp import search_cgfp, get_cgfp_article
@@ -528,6 +528,63 @@ async def auth_me(principal: Principal = Depends(get_principal)):
     if not row or row["status"] != "ACTIVE":
         raise HTTPException(403,"Compte désactivé ou non provisionné.")
     return {"id":str(row["id"]),"email":row["email"],"display_name":row["display_name"]}
+
+@app.post("/api/v1/auth/link-legacy/challenge")
+async def create_legacy_identity_link_challenge(principal: Principal = Depends(get_principal)):
+    """Issue a short-lived, one-use nonce bound to the currently authenticated Auth0 identity."""
+    if settings.oidc_provider != "auth0" or not settings.oidc_identity_compat_issuer or not settings.oidc_legacy_client_id:
+        raise HTTPException(503, "Le rattachement de l'ancien compte n'est pas configuré.")
+    nonce = secrets.token_urlsafe(32)
+    nonce_hash = hashlib.sha256(nonce.encode("utf-8")).hexdigest()
+    try:
+        async with get_pool().acquire() as conn:
+            created = await conn.fetchval(
+                "SELECT public.create_auth_identity_link_challenge($1,$2,$3)",
+                principal.issuer, principal.subject, nonce_hash,
+            )
+    except Exception:
+        logging.getLogger("dikevia.auth").error("auth_rejected reason=identity_link_challenge_unavailable status=503")
+        raise HTTPException(503, "Impossible de préparer la vérification d'identité.")
+    if not created:
+        raise HTTPException(503, "Impossible de préparer la vérification d'identité.")
+    return {
+        "nonce": nonce,
+        "legacy_issuer": settings.oidc_identity_compat_issuer,
+        "legacy_client_id": settings.oidc_legacy_client_id,
+        "redirect_uri": (settings.invitation_base_url.rstrip("/") + "/") if settings.invitation_base_url else "/",
+    }
+
+
+@app.post("/api/v1/auth/link-legacy/complete")
+async def complete_legacy_identity_link(request: Request, principal: Principal = Depends(get_principal)):
+    """Link only after fresh Auth0 and Keycloak proofs have both been validated."""
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(400, "Requête de rattachement invalide.")
+    if not isinstance(payload, dict):
+        raise HTTPException(400, "Requête de rattachement invalide.")
+    keycloak_id_token = payload.get("keycloak_id_token")
+    nonce = payload.get("nonce")
+    if not isinstance(keycloak_id_token, str) or not isinstance(nonce, str) or len(nonce) > 256:
+        raise HTTPException(400, "Preuve de l'ancien compte manquante.")
+    legacy_principal = verify_legacy_keycloak_id_token(keycloak_id_token, nonce)
+    nonce_hash = hashlib.sha256(nonce.encode("utf-8")).hexdigest()
+    try:
+        async with get_pool().acquire() as conn:
+            async with conn.transaction():
+                linked_user_id = await conn.fetchval(
+                    "SELECT public.link_auth_identity_after_dual_proof($1,$2,$3,$4,$5)",
+                    principal.issuer, principal.subject,
+                    legacy_principal.issuer, legacy_principal.subject, nonce_hash,
+                )
+    except Exception:
+        logging.getLogger("dikevia.auth").error("auth_rejected reason=identity_link_completion_unavailable status=503")
+        raise HTTPException(503, "Le rattachement du compte est momentanément indisponible.")
+    if linked_user_id is None:
+        raise HTTPException(409, "Le rattachement a été refusé : preuve expirée, compte ancien inactif ou identité déjà utilisée.")
+    return {"linked": True, "message": "Ancien compte rattaché. Vos droits et adhésions sont conservés."}
+
 
 @app.get("/api/v1/account/identity")
 async def account_identity(ctx: TenantContext = Depends(get_tenant_context)):
