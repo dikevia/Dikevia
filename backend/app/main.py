@@ -40,7 +40,7 @@ from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_questi
 from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip, administrative_open_data_archive_url
 from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
-from .rate_limit import consume_chat_request
+from .rate_limit import consume_chat_request, consume_daily_chat_question
 from .entitlements import resolve_entitlements
 from .instances import prepare_instance
 from .personal_documents import router as personal_documents_router
@@ -1159,20 +1159,10 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 founder=bool(founder),
             )
             if entitlements.daily_question_limit is not None:
-                usage = await conn.fetchrow(
-                    """INSERT INTO chat_daily_question_usage(
-                           organization_id,user_id,usage_date,question_count
-                       ) VALUES(
-                           $1::uuid,$2::uuid,(now() AT TIME ZONE 'Europe/Paris')::date,1
-                       )
-                       ON CONFLICT(organization_id,user_id,usage_date)
-                       DO UPDATE SET question_count=chat_daily_question_usage.question_count+1,
-                                     updated_at=now()
-                       WHERE chat_daily_question_usage.question_count < $3
-                       RETURNING question_count""",
-                    ctx.organization_id, ctx.user_id, entitlements.daily_question_limit,
+                daily = await consume_daily_chat_question(
+                    conn, ctx.organization_id, ctx.user_id, entitlements.daily_question_limit
                 )
-                if not usage:
+                if not daily.allowed:
                     return JSONResponse(
                         status_code=429,
                         content={"detail": "Vous avez atteint la limite de 5 questions aujourd'hui. Votre quota sera réinitialisé à minuit (heure de Paris)."},
