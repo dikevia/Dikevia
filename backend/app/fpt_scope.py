@@ -128,6 +128,7 @@ def _fold(value: str) -> str:
 def classify_public_service_scope(
     source: dict[str, Any], target_versant: str = "FPT",
     agent_status: str | None = None,
+    agent_working_time_status: str | None = None,
 ) -> dict[str, Any]:
     """Return a conservative scope label and eligibility for the selected versant."""
     target_versant = str(target_versant or "FPT").upper()
@@ -211,6 +212,7 @@ def classify_public_service_scope(
                 target_versant == "FPT"
                 and source.get("source_type") == "LEGIFRANCE_API"
                 and functionary_status_confirmed
+                and str(agent_working_time_status or "").upper() == "FULL_TIME_EXPLICIT"
             ),
         }
     # Articles L. 822-18 to L. 822-23 govern service-related accidents,
