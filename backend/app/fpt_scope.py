@@ -141,10 +141,60 @@ def classify_public_service_scope(
     article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     corpus = _fold((title + " " + text)[:500_000])
     title_folded = _fold(title)
-    functionary_status_confirmed = str(agent_status or "").upper() in {
+    normalized_agent_status = str(agent_status or "").upper()
+    functionary_status_confirmed = normalized_agent_status in {
         "TITULAIRE_EXPLICIT", "STAGIAIRE_EXPLICIT",
         "FONCTIONNAIRE_STATUS_UNSPECIFIED",
     }
+    contractual_status_confirmed = normalized_agent_status == "CONTRACTUEL_EXPLICIT"
+    live_legifrance_source = source.get("source_type") == "LEGIFRANCE_API"
+
+    # Implementing decrees are not interchangeable between territorial
+    # functionaries and contract agents. Keep them as contextual leads when
+    # status is unknown, and only allow claims for the status they govern.
+    functionary_only_decrees = (
+        "decret n 87 602", "decret 87 602",
+        "decret n 89 677", "decret 89 677",
+        "decret n 2021 1462", "decret 2021 1462",
+        "decret n 2026 705", "decret 2026 705",
+    )
+    if any(marker in title_folded for marker in functionary_only_decrees):
+        return {
+            "scope": "FPT",
+            "evidence": [
+                "Texte d'application propre aux fonctionnaires territoriaux",
+                "Ne pas transposer aux agents contractuels ; statut de l'agent à vérifier",
+            ],
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": target_versant == "FPT" and live_legifrance_source and functionary_status_confirmed,
+        }
+
+    if "decret n 91 298" in title_folded or "decret 91 298" in title_folded:
+        return {
+            "scope": "FPT",
+            "evidence": [
+                "Décret n° 91-298 relatif aux fonctionnaires territoriaux nommés dans des emplois permanents à temps non complet",
+                "Vérifier le statut de fonctionnaire et la situation explicite d'emploi à temps non complet",
+            ],
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": (
+                target_versant == "FPT"
+                and live_legifrance_source
+                and functionary_status_confirmed
+                and str(agent_working_time_status or "").upper() == "NON_COMPLETE_EXPLICIT"
+            ),
+        }
+
+    if "decret n 88 145" in title_folded or "decret 88 145" in title_folded:
+        return {
+            "scope": "FPT",
+            "evidence": [
+                "Décret n° 88-145 relatif aux agents contractuels de la fonction publique territoriale",
+                "Ne pas transposer aux fonctionnaires titulaires ou stagiaires",
+            ],
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": target_versant == "FPT" and live_legifrance_source and contractual_status_confirmed,
+        }
 
     # These CGFP provisions expressly establish rights for all public agents.
     # Only a live Légifrance article may support a current legal claim; the
