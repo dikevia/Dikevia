@@ -1,5 +1,8 @@
-from app.fpt_scope import _matched_topic_families, is_topic_relevant_source
+from app.fpt_scope import _matched_topic_families, classify_public_service_scope, is_topic_relevant_source
 from app.orchestrator import (
+    _build_code_research_queries,
+    _build_targeted_cgfp_article_queries,
+    _build_targeted_regulatory_queries,
     filter_irrelevant_sources_for_display,
     _source_relevant_to_any_research_axis,
 )
@@ -295,3 +298,74 @@ def test_contractual_availability_question_rejects_titular_sick_leave_source():
         "text": "Le congé de longue durée concerne les fonctionnaires titulaires.",
     }
     assert is_topic_relevant_source(question, source) is False
+
+
+def test_cmo_exact_cgfp_articles_are_claim_eligible_only_from_live_legifrance():
+    for number in range(1, 6):
+        live = {
+            "source_type": "LEGIFRANCE_API",
+            "title": f"Code général de la fonction publique — article L822-{number}",
+            "article": f"L822-{number}",
+            "text": "Le fonctionnaire bénéficie du congé de maladie et des règles de rémunération applicables.",
+        }
+        snapshot = {**live, "source_type": "CGFP_SNAPSHOT"}
+        live_scope = classify_public_service_scope(live, target_versant="FPT")
+        snapshot_scope = classify_public_service_scope(snapshot, target_versant="FPT")
+        assert live_scope["scope"] == "COMMON_PUBLIC_SERVICE"
+        assert live_scope["analysis_eligible"] is True
+        assert live_scope["claim_eligible"] is True
+        assert snapshot_scope["analysis_eligible"] is True
+        assert snapshot_scope["claim_eligible"] is False
+
+
+def test_cmo_questions_trigger_exact_cgfp_and_territorial_regulatory_queries():
+    question = "Quelles sont les règles du congé de maladie ordinaire et du jour de carence ?"
+    assert _build_targeted_cgfp_article_queries(question, "FPT") == [
+        "article L822-1", "article L822-2", "article L822-3", "article L822-4", "article L822-5",
+    ]
+    regulatory = _build_targeted_regulatory_queries(question, "FPT")
+    assert any("décret n° 87-602" in query and "articles 14 et 15" in query for query in regulatory)
+    assert any("loi n° 2017-1837" in query and "article 115" in query for query in regulatory)
+
+
+def test_cmo_exact_queries_are_not_added_for_fpe_or_fph():
+    question = "Congé de maladie ordinaire et jour de carence"
+    assert _build_targeted_cgfp_article_queries(question, "FPE") == []
+    assert _build_targeted_cgfp_article_queries(question, "FPH") == []
+    assert _build_targeted_regulatory_queries(question, "FPE") == []
+    assert _build_targeted_regulatory_queries(question, "FPH") == []
+
+
+def test_cmo_exact_articles_are_prioritized_within_bounded_cgfp_query_budget():
+    exact = _build_targeted_cgfp_article_queries(
+        "Congé de maladie ordinaire et jour de carence", "FPT"
+    )
+    queries = _build_code_research_queries(
+        ["broad", "specific", "another axis"],
+        exact,
+        max_queries=8,
+    )
+    assert queries == [
+        "broad", "specific", "another axis",
+        "article L822-1", "article L822-2", "article L822-3", "article L822-4", "article L822-5",
+    ]
+
+
+def test_cmo_query_rejects_unrelated_annual_leave_source():
+    question = "Quelles sont les règles du congé de maladie ordinaire ?"
+    unrelated = {
+        "title": "Décret relatif au report de congés annuels non pris",
+        "text": "Les congés annuels non pris en raison d'une maladie peuvent être reportés.",
+    }
+    assert is_topic_relevant_source(question, unrelated) is False
+
+
+def test_cmo_query_keeps_exact_cgfp_article_without_ordinary_wording():
+    question = "Congé de maladie ordinaire : jour de carence et rémunération"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L822-3",
+        "article": "L822-3",
+        "text": "Le fonctionnaire en congé de maladie perçoit 90 % de son traitement pendant trois mois.",
+    }
+    assert is_topic_relevant_source(question, source) is True
