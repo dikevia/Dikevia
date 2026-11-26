@@ -41,7 +41,7 @@
       "name": "Service-Public.gouv.fr — fiches pratiques Particuliers",
       "publisher": "Service-Public.gouv.fr / DILA",
       "authority_level": "OFFICIAL_ADMIN_GUIDANCE",
-      "status": "ACCESS_REVIEWED",
+      "status": "REUSE_APPROVED",
       "collection_mode": "Flux XML 3.5 via data.gouv.fr",
       "scope": [
         "FPT",
@@ -508,7 +508,7 @@
       "name": "Conseil d'État — Données ouvertes de la justice administrative",
       "publisher": "Conseil d'État",
       "authority_level": "PRIMARY_LEGAL",
-      "status": "REUSE_APPROVED",
+      "status": "ACCESS_REVIEWED",
       "reuse_reviewed_at": "2026-11-26",
       "collection_mode": "Archives XML ZIP mensuelles par juridiction, année et mois ; aucun endpoint API documenté",
       "scope": [

@@ -48,6 +48,12 @@ def test_document_seeds_have_explicit_ingestion_status_and_known_source():
                 assert item.get("character_count", 0) > 0
 
 
+def test_service_public_reuse_approval_is_preserved():
+    registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    source = next(item for item in registry["sources"] if item["id"] == "service-public-part")
+    assert source["status"] == "REUSE_APPROVED"
+
+
 def test_administrative_justice_open_data_is_registered_as_primary_case_law():
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
     source = next(item for item in registry["sources"] if item["id"] == "justice-administrative-opendata")
