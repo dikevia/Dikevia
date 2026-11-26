@@ -411,6 +411,30 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
 # and provider load while avoiding a single overloaded keyword string.
 _TOPIC_RESEARCH_AXES = (
     (
+        ("rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+         "mon chef a fait un rapport", "mon superieur a fait un rapport",
+         "rapport a charge", "rapport defavorable", "rapport circonstancie",
+         "contester un rapport de mon chef", "contester le rapport de mon superieur"),
+        (
+            "fonction publique territoriale rapport hierarchique superieur dossier individuel communication consultation acces aux pieces observations agent CGFP L137-1 L137-4",
+            "fonctionnaire territorial rapport utilise dans procedure disciplinaire CGFP L532-4 L532-9 decret 89-677 articles 4 et 5 droits de la defense consultation dossier assistance defenseur de son choix",
+            "jurisprudence administrative fonctionnaire territorial rapport hierarchique note rapport preparatoire recours recevabilite decision faisant grief contestation rapport",
+        ),
+    ),
+    (
+        ("deces d un grand pere", "deces d une grand mere",
+         "deces de son grand pere", "deces de sa grand mere",
+         "deces de mon grand pere", "deces de ma grand mere",
+         "deces d un proche", "deces d un membre de la famille",
+         "deces d un ascendant", "grand pere decede", "grand mere decedee",
+         "grand parent decede", "obseques", "autorisation d absence pour deces",
+         "acte de deces", "justificatif de deces"),
+        (
+            "fonction publique territoriale autorisation speciale absence deces grand parent ascendant CGFP textes reglementaires deliberation locale",
+            "agent territorial justificatif deces lien de parente livret de famille acte de deces protection des donnees minimisation donnees personnelles",
+        ),
+    ),
+    (
         ("accompagne d un syndicat", "accompagne par un syndicat",
          "accompagne d un representant syndical", "accompagne par un representant syndical",
          "assiste par un representant syndical", "venir avec mon syndicat",
