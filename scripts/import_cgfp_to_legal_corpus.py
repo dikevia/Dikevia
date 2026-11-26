@@ -130,6 +130,14 @@ async def import_snapshot(dsn: str, metadata: dict[str, Any], articles: list[dic
     chunk_rows: list[tuple[Any, int, str, str]] = []
     try:
         async with conn.transaction():
+            source_policy = await conn.fetchrow("""
+                SELECT metadata_ingestion_allowed,full_text_ingestion_allowed
+                FROM legal_source_registry WHERE source_key='CGFP_SNAPSHOT'
+            """)
+            if not source_policy or not source_policy["metadata_ingestion_allowed"] or not source_policy["full_text_ingestion_allowed"]:
+                raise ValueError(
+                    "Import CGFP bloqué : la provenance/licence de l'instantané doit être validée dans le registre des sources."
+                )
             for article in articles:
                 ref = article["article"]
                 source_id = f'{metadata["source_id"]}:{ref}'
