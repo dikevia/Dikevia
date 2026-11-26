@@ -30,7 +30,8 @@ def test_service_worker_only_caches_static_offline_shell():
 def test_service_worker_is_served_from_origin_root_without_stale_caching():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     assert '@app.get("/sw.js", include_in_schema=False)' in main
-    assert 'FileResponse(FRONTEND / "sw.js"' in main
+    assert 'FRONTEND / "sw.js"' in main
+    assert 'media_type="application/javascript"' in main
     assert '"Cache-Control": "no-cache"' in main
 
 
