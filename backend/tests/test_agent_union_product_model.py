@@ -21,7 +21,7 @@ def test_agent_chat_daily_quota_is_server_side_and_uses_paris_calendar_day():
     assert "resolve_entitlements(" in source
     assert "consume_daily_chat_question(" in source
     quota_source = inspect.getsource(__import__("app.rate_limit", fromlist=["consume_daily_chat_question"]).consume_daily_chat_question)
-    assert "question_count < $3" in quota_source
+    assert "question_count < $2" in quota_source
     assert "Europe/Paris" in quota_source
     assert "limite de 5 questions" in source
 
