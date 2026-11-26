@@ -118,6 +118,7 @@ def _build_targeted_cgfp_article_queries(question: str, public_service: str = "F
     folded = _fold(str(question or ""))
     if not any(marker in folded for marker in (
         "conge de maladie ordinaire", "maladie ordinaire",
+        "conge maladie", "conge de maladie",
         "jour de carence", "jours de carence", "cmo",
     )):
         return []
@@ -164,7 +165,9 @@ def _build_targeted_regulatory_queries(
 
     ordinary_sick_leave = any(marker in folded for marker in (
         "congé de maladie ordinaire", "conge de maladie ordinaire",
-        "maladie ordinaire", "jour de carence", "jours de carence", "cmo",
+        "maladie ordinaire", "congé maladie", "conge maladie",
+        "congé de maladie", "conge de maladie",
+        "jour de carence", "jours de carence", "cmo",
     ))
     if public_service == "FPT" and ordinary_sick_leave:
         queries.extend([
