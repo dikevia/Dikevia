@@ -9,27 +9,35 @@ from app.main import billing_checkout
 from app.billing import PLANS, public_plans, verify_stripe_signature, extract_subscription_state
 
 
-def test_official_offers_have_exact_ttc_prices_seats_and_monthly_credits():
-    expected = {
-        "ESSENTIEL": (1490, 14900, 1, 125),
-        "PRO": (2900, 29000, 1, 248),
-        "EQUIPE_INSTANCES": (11900, 119000, 5, 1000),
-        "COLLECTIVITE_SYNDICATS": (29900, 299000, 15, 2450),
-    }
+def test_current_catalogue_contains_only_agent_and_three_union_seat_tiers():
     plans = {plan["code"]: plan for plan in public_plans()}
-    assert set(plans) == set(expected)
-    for code, (monthly, annual, seats, credits) in expected.items():
-        assert PLANS[code]["amount"] == monthly
-        assert PLANS[code]["annual_amount"] == annual
-        assert PLANS[code]["max_users"] == seats
-        assert PLANS[code]["monthly_credits"] == credits
-        assert PLANS[code]["tax_inclusive"] is True
-        assert plans[code]["amount_cents"] == monthly
-        assert plans[code]["annual_amount_cents"] == annual
-        assert plans[code]["monthly_credits"] == credits
-        assert "TTC" in plans[code]["price"]
-    assert len(public_plans()) == 4
-    assert "INDIVIDUAL_1" not in plans
+    assert set(plans) == {
+        "AGENT_5_QUESTIONS",
+        "SYNDICAT_5_ACCES",
+        "SYNDICAT_10_ACCES",
+        "SYNDICAT_15_ACCES",
+    }
+    agent = plans["AGENT_5_QUESTIONS"]
+    assert agent["amount_cents"] == 500
+    assert agent["max_users"] == 1
+    assert agent["daily_question_limit"] == 5
+    assert agent["premium"] is False
+    for code, seats in (
+        ("SYNDICAT_5_ACCES", 5),
+        ("SYNDICAT_10_ACCES", 10),
+        ("SYNDICAT_15_ACCES", 15),
+    ):
+        plan = plans[code]
+        assert plan["amount_cents"] is None
+        assert plan["max_users"] == seats
+        assert plan["daily_question_limit"] is None
+        assert plan["premium"] is True
+        assert plan["purchasable"] is False
+    assert all(plan["purchasable"] is False for plan in plans.values())
+    assert PLANS["ESSENTIEL"]["public"] is False
+    assert PLANS["PRO"]["public"] is False
+    assert PLANS["EQUIPE_INSTANCES"]["public"] is False
+    assert PLANS["COLLECTIVITE_SYNDICATS"]["public"] is False
     assert PLANS["INDIVIDUAL_1"]["public"] is False
 
 
