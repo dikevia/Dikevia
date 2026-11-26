@@ -434,11 +434,11 @@ def test_gemini_plan_keeps_independent_fallback_axes_for_compound_health_case():
 
     assert len(merged) == 5
     assert len(merged) == len(set(merged))
-    # Both independent fallback axes survive even when Gemini already
-    # supplied the maximum number of queries.
-    assert fallback_queries[1] in merged
-    assert fallback_queries[2] in merged
-    assert merged[:3] == ai_queries[:3]
+    # The deterministic plan identifies three distinct health/legal axes.
+    # Preserve the first two model queries, then reserve the remaining bounded
+    # slots for every independent deterministic fallback axis.
+    assert merged[:2] == ai_queries[:2]
+    assert all(query in merged for query in fallback_queries[1:])
 
 
 def test_gemini_plan_is_not_replaced_by_fallback_for_single_topic():
