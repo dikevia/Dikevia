@@ -848,3 +848,11 @@ def test_admin_case_law_source_cards_show_ecli_and_source_update_date():
     assert "Mise à jour indiquée par la source le" in html
     assert "src.first_seen_at" in html
     assert "src.document_kind==='ADMIN_CASELAW'" in html
+
+
+
+def test_admin_case_law_source_contract_passes_first_seen_timestamp_to_ui():
+    from pathlib import Path
+
+    orchestrator = (Path(__file__).resolve().parents[1] / "app/orchestrator.py").read_text(encoding="utf-8")
+    assert '"first_seen_at": item.get("first_seen_at")' in orchestrator

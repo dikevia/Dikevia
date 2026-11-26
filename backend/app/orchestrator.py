@@ -1603,6 +1603,7 @@ class LegalOrchestrator:
                         "jurisprudential_publication_code": _source_metadata(item).get("publication_code"),
                         "signature_date": source_decision_date, "decision_date": source_decision_date,
                         "publication_date": item.get("publication_date"),
+                        "first_seen_at": item.get("first_seen_at"),
                         "valid_from": item.get("valid_from"), "valid_to": item.get("valid_to"),
                         "temporal_status": source_temporal_status,
                         "temporal_explanation": source_temporal_explanation,
