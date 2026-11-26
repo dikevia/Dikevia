@@ -598,9 +598,9 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
     if entitlements.daily_question_limit is not None:
         daily_questions_used = await ctx.conn.fetchval(
             """SELECT COALESCE((SELECT question_count FROM chat_daily_question_usage
-                WHERE organization_id=$1::uuid AND user_id=$2::uuid
+                WHERE user_id=$1::uuid
                   AND usage_date=(now() AT TIME ZONE 'Europe/Paris')::date),0)""",
-            ctx.organization_id, ctx.user_id,
+            ctx.user_id,
         )
     return {"plan_code": plan_code, "status": plan_status, "provider": row["provider"] if row else None,
             "max_users": entitlements.max_users, "active_users": active_users,
@@ -1160,7 +1160,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
             )
             if entitlements.daily_question_limit is not None:
                 daily = await consume_daily_chat_question(
-                    conn, ctx.organization_id, ctx.user_id, entitlements.daily_question_limit
+                    conn, ctx.user_id, entitlements.daily_question_limit
                 )
                 if not daily.allowed:
                     return JSONResponse(
