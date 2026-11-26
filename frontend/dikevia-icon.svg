@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Dikévia">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="75%"><stop offset="0" stop-color="#294d70"/><stop offset="1" stop-color="#142b45"/></radialGradient>
+    <radialGradient id="core" cx="42%" cy="35%" r="65%"><stop offset="0" stop-color="#fff"/><stop offset=".22" stop-color="#d8f3ff"/><stop offset=".58" stop-color="#78c9f0"/><stop offset="1" stop-color="#287fb9"/></radialGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="13" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="166" fill="none" stroke="#75c9f0" stroke-opacity=".35" stroke-width="5"/>
+  <ellipse cx="256" cy="256" rx="196" ry="78" fill="none" stroke="#8bd8fa" stroke-opacity=".72" stroke-width="9" transform="rotate(-28 256 256)"/>
+  <ellipse cx="256" cy="256" rx="196" ry="78" fill="none" stroke="#4aa7d8" stroke-opacity=".5" stroke-width="5" transform="rotate(58 256 256)"/>
+  <circle cx="256" cy="256" r="102" fill="#58b7e8" opacity=".17" filter="url(#glow)"/>
+  <circle cx="256" cy="256" r="76" fill="url(#core)" filter="url(#glow)"/>
+  <circle cx="231" cy="229" r="19" fill="#fff" opacity=".8"/>
+  <circle cx="256" cy="256" r="93" fill="none" stroke="#bceaff" stroke-opacity=".65" stroke-width="3"/>
+</svg>
