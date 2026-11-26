@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     ai_api_base_url: str = ""
     ai_api_key: str = ""
     ai_model: str = ""
+    # Enable only for providers whose chat-completions API supports JSON mode.
+    ai_supports_json_mode: bool = False
     ai_fallback_models: str = "gemini-3.5-flash-lite"
     ai_timeout_seconds: float = 25.0
     ai_local_document_review_enabled: bool = False
