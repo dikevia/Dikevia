@@ -91,9 +91,9 @@ class ContextualResearchContext:
 
 def _explicit_working_time_declaration(question: str) -> str | None:
     folded = _fold(str(question or ""))
-    if re.search(r"\\b(?:emploi\\s+)?a\\s+temps\\s+non\\s+complet\\b", folded):
+    if re.search(r"\b(?:emploi\s+)?a\s+temps\s+non\s+complet\b", folded):
         return "temps non complet"
-    if re.search(r"\\b(?:emploi\\s+)?a\\s+temps\\s+complet\\b|\\btemps\\s+plein\\b", folded):
+    if re.search(r"\b(?:emploi\s+)?a\s+temps\s+complet\b|\btemps\s+plein\b", folded):
         return "temps complet"
     return None
 
