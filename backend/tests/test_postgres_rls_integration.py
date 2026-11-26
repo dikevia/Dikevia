@@ -300,6 +300,7 @@ async def _run_administrative_case_law_search_sql_scenario():
     try:
         item = {
             "source_type": "OTHER_OFFICIAL",
+            "source_key": "JUSTICE_ADMIN_OPEN_DATA",
             "source_id": source_id,
             "title": "Décision administrative de test — agent territorial et temps de travail",
             "document_kind": "ADMIN_CASELAW",
