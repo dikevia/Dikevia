@@ -69,3 +69,21 @@ def test_instance_preparation_endpoint_is_explicitly_subscription_gated():
     source = inspect.getsource(prepare_social_instance)
     assert "Depends(require_syndicate_subscription)" in source
     assert "prepare_instance(instance, objet)" in source
+
+def test_standalone_legal_documents_and_organization_management_are_union_only():
+    source = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    guarded_paths = (
+        "/api/v1/legal/legifrance/search",
+        "/api/v1/legal/jurisprudence/administrative/search",
+        "/api/v1/legal/knowledge/search",
+        "/api/v1/legal/cgfp/search",
+        "/api/v1/documents/search",
+        "/api/v1/collectivities",
+        "/api/v1/organizations/me/invitations",
+    )
+    for path in guarded_paths:
+        route_index = source.index(path)
+        decorator_start = source.rfind("@app.", 0, route_index)
+        decorator_end = source.find("\n", route_index)
+        decorator = source[decorator_start:decorator_end]
+        assert "require_syndicate_subscription" in decorator, path
