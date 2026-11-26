@@ -6,7 +6,9 @@ All legal conclusions must be established separately from current official sourc
 """
 from __future__ import annotations
 
+import asyncio
 import re
+from datetime import date
 import unicodedata
 from typing import Any
 
@@ -203,3 +205,205 @@ def prepare_instance(instance: str, objet: str) -> dict[str, Any]:
             "doivent être vérifiés avant toute utilisation."
         ),
     }
+
+
+# One bounded search per official source family. These are discovery queries,
+# not a statement that every returned provision applies to the case.
+_INSTANCE_LEGAL_PROFILES: dict[str, dict[str, str]] = {
+    "CST": {
+        "code": "comité social territorial compétences consultation organisation des services conditions de travail fonction publique territoriale",
+        "regulatory": "décret n° 2021-571 du 10 mai 2021 comités sociaux territoriaux fonction publique territoriale",
+        "case_law": "comité social territorial consultation obligatoire collectivités territoriales fonction publique territoriale",
+    },
+    "CAP": {
+        "code": "commission administrative paritaire compétences fonctionnaires territoriaux garanties statutaires",
+        "regulatory": "décret n° 89-229 du 17 avril 1989 commissions administratives paritaires territoriales",
+        "case_law": "commission administrative paritaire fonction publique territoriale compétence consultation",
+    },
+    "CCP": {
+        "code": "commission consultative paritaire agents contractuels fonction publique territoriale compétences",
+        "regulatory": "décret n° 2016-1858 du 23 décembre 2016 commissions consultatives paritaires territoriales",
+        "case_law": "commission consultative paritaire agent contractuel territorial consultation",
+    },
+    "FS": {
+        "code": "formation spécialisée santé sécurité conditions de travail collectivités territoriales",
+        "regulatory": "décret n° 85-603 du 10 juin 1985 santé sécurité travail collectivités territoriales",
+        "case_law": "formation spécialisée santé sécurité conditions de travail fonction publique territoriale",
+    },
+}
+
+_INSTANCE_TOPIC_TERMS: dict[str, dict[str, str]] = {
+    "CST": {
+        "organisation_travail": "organisation du travail conditions de travail temps de travail",
+        "formation": "plan de formation formation professionnelle agents territoriaux",
+        "ldg": "lignes directrices de gestion",
+        "reglement": "règlement intérieur règlement de service",
+    },
+    "CAP": {
+        "discipline": "discipline fonctionnaire territorial conseil de discipline garanties défense",
+        "entretien": "recours compte rendu entretien professionnel saisine CAP",
+        "titularisation": "stage titularisation refus titularisation insuffisance professionnelle",
+    },
+    "CCP": {
+        "fin_contrat": "fin contrat non renouvellement agent contractuel",
+        "licenciement": "licenciement agent contractuel territorial reclassement",
+        "discipline": "sanction disciplinaire agent contractuel territorial",
+    },
+    "FS": {
+        "risques": "santé sécurité prévention risques professionnels DUERP",
+        "accident": "accident de service enquête prévention danger grave imminent",
+        "rps": "risques psychosociaux charge de travail prévention",
+    },
+}
+
+
+def _instance_search_context(instance: str, points: list[dict[str, Any]]) -> str:
+    topic_map = _INSTANCE_TOPIC_TERMS.get(instance, {})
+    topics = [
+        topic_map[point["code"]]
+        for point in points
+        if isinstance(point, dict) and point.get("code") in topic_map
+    ]
+    return " ".join(dict.fromkeys(topics))[:180]
+
+
+def _compact_instance_source(source: dict[str, Any], family: str) -> dict[str, Any]:
+    from .fpt_scope import classify_public_service_scope
+
+    text = (
+        source.get("excerpt")
+        or source.get("analysis_excerpt")
+        or source.get("text")
+        or source.get("full_text")
+        or ""
+    )
+    scope = classify_public_service_scope(source, target_versant="FPT")
+    decision_metadata_only = family == "jurisprudence" and source.get("full_text_retrieved") is not True
+    return {
+        "family": family,
+        "source_type": source.get("source_type"),
+        "source_id": source.get("source_id"),
+        "title": str(source.get("title") or "Source officielle sans intitulé")[:500],
+        "article": source.get("article"),
+        "official_number": source.get("official_number"),
+        "decision_date": source.get("decision_date"),
+        "case_number": source.get("case_number"),
+        "excerpt": str(text)[:3500] if text else None,
+        "official_url": source.get("official_url") or source.get("source_url"),
+        "requested_effective_date": (
+            source.get("requested_effective_date")
+            or source.get("effective_date_requested")
+        ),
+        "valid_from": source.get("valid_from"),
+        "valid_to": source.get("valid_to"),
+        "version_status": source.get("version_status"),
+        "source_status": source.get("source_status"),
+        "full_text_retrieved": source.get("full_text_retrieved") is True,
+        "verification_note": (
+            "Résultat de recherche : métadonnées/extrait uniquement, texte intégral non récupéré."
+            if decision_metadata_only else
+            "Source officielle récupérée à la date demandée ; son applicabilité au dossier reste à qualifier."
+        ),
+        "scope_assessment": {
+            "scope": scope.get("scope"),
+            "analysis_eligible": scope.get("analysis_eligible"),
+            "claim_eligible": scope.get("claim_eligible"),
+            "evidence": scope.get("evidence", []),
+        },
+    }
+
+
+async def prepare_instance_with_legal_sources(
+    instance: str,
+    objet: str,
+    *,
+    legifrance_connector: Any,
+    case_law_connector: Any,
+    effective_date: date,
+) -> dict[str, Any]:
+    """Build the checklist and enrich it with bounded official-source searches.
+
+    This function never calls an LLM and never turns search hits into a legal
+    conclusion. Each upstream source family is queried once per preparation.
+    """
+    result = prepare_instance(instance, objet)
+    key = result["instance"]
+    profile = _INSTANCE_LEGAL_PROFILES[key]
+    topic_context = _instance_search_context(key, result["points"])
+    code_query = f"{profile['code']} {topic_context}".strip()[:500]
+    regulatory_query = profile["regulatory"]
+    case_law_query = f"{profile['case_law']} {topic_context}".strip()[:500]
+
+    if not getattr(legifrance_connector, "configured", False):
+        result["legal_research"] = {
+            "provider": "PISTE_LEGIFRANCE",
+            "status": "NOT_CONFIGURED",
+            "requested_date": effective_date.isoformat(),
+            "sources": [],
+            "searches": [],
+            "notice": "La connexion PISTE n'est pas configurée. La fiche reste une aide lexicale sans recherche juridique en direct.",
+        }
+        return result
+
+    calls = await asyncio.gather(
+        legifrance_connector.search_code_articles(code_query, effective_date),
+        legifrance_connector.search_regulatory_texts(regulatory_query, effective_date, limit=3),
+        case_law_connector.search(case_law_query, effective_date),
+        return_exceptions=True,
+    )
+    families = ("CGFP", "TEXTES_REGLEMENTAIRES", "JURISPRUDENCE_ADMINISTRATIVE")
+    compact_sources: list[dict[str, Any]] = []
+    searches: list[dict[str, Any]] = []
+    failed = 0
+    for family, value in zip(families, calls):
+        if isinstance(value, BaseException):
+            failed += 1
+            searches.append({
+                "family": family,
+                "status": "ERROR",
+                "error_type": type(value).__name__,
+                "result_count": 0,
+            })
+            continue
+        if not isinstance(value, list):
+            failed += 1
+            searches.append({
+                "family": family,
+                "status": "INVALID_RESPONSE",
+                "result_count": 0,
+            })
+            continue
+        searches.append({
+            "family": family,
+            "status": "OK" if value else "NO_RESULT",
+            "result_count": len(value),
+        })
+        compact_sources.extend(
+            _compact_instance_source(item, family.lower())
+            for item in value[:5]
+            if isinstance(item, dict)
+        )
+
+    if failed == len(families):
+        status = "UNAVAILABLE"
+    elif failed:
+        status = "PARTIAL"
+    elif compact_sources:
+        status = "SEARCHED"
+    else:
+        status = "NO_RESULT"
+
+    result["legal_research"] = {
+        "provider": "PISTE_LEGIFRANCE",
+        "status": status,
+        "requested_date": effective_date.isoformat(),
+        "searches": searches,
+        "sources": compact_sources[:12],
+        "notice": (
+            "Les résultats sont des pistes documentaires officielles, pas une conclusion juridique. "
+            "La version temporelle, le statut de l'agent, le champ FPT et les conditions de saisine "
+            "doivent être vérifiés pour le dossier. Les résultats de jurisprudence peuvent ne contenir "
+            "que des métadonnées et extraits, pas le texte intégral."
+        ),
+    }
+    return result
