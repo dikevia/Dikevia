@@ -12,7 +12,7 @@ from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import _fold, classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
+from .fpt_scope import _fold, _matched_topic_families, classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, parse_structured_answer, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -620,6 +620,22 @@ def filter_irrelevant_sources_for_display(sources: list[dict]) -> list[dict]:
 
 
 
+def _semantic_hard_topic_exclusion(question: str, source: dict) -> bool:
+    """Prevent a model relevance verdict from crossing explicit legal-mechanism boundaries."""
+    question_topics = _matched_topic_families(str(question or ""))
+    source_text = " ".join(
+        str(source.get(key) or "")
+        for key in ("title", "article", "article_id", "article_number", "text", "full_text", "excerpt")
+    )
+    source_topics = _matched_topic_families(source_text[:500_000])
+    # CITIS (service-related incapacity) is not evidence for ordinary sick leave.
+    return (
+        "CITIS" in source_topics
+        and "CITIS" not in question_topics
+        and bool({"SICK_LEAVE", "ORDINARY_SICK_LEAVE"} & question_topics)
+    )
+
+
 async def apply_semantic_source_relevance(
     *, question: str, research_axes: list[str], sources: list[dict],
     target_versant: str = "FPT", allow_local_documents: bool = False,
@@ -646,8 +662,12 @@ async def apply_semantic_source_relevance(
         for source in sources:
             verdict = semantic_verdicts.get(source.get("source_id"))
             if verdict in {"DIRECT", "CONTEXTUAL"}:
-                source["research_axis_relevant"] = True
-                source["semantic_relevance"] = verdict
+                if _semantic_hard_topic_exclusion(question, source):
+                    source["research_axis_relevant"] = False
+                    source["semantic_relevance"] = "BLOCKED_BY_TOPIC_GUARD"
+                else:
+                    source["research_axis_relevant"] = True
+                    source["semantic_relevance"] = verdict
             elif verdict == "UNCERTAIN":
                 # Uncertainty is not positive relevance evidence: keep the lexical result.
                 source["semantic_relevance"] = verdict
