@@ -22,5 +22,5 @@ def test_migration_has_reversible_legacy_plan_preservation():
 def test_checkout_stays_disabled_until_credit_enforcement_is_implemented():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     assert '"billing_enabled": False' in main
-    assert "compteur de crédits mensuels" in main
+    assert "tarifs syndicaux et les contrôles d'abonnement" in main
     assert '"line_items[0][price_data][tax_behavior]"' not in main
