@@ -1794,9 +1794,21 @@ class LegalOrchestrator:
 
         if found and cgfp_snapshot_fallback and parsed_date is None:
             for hit in found["results"]:
-                if not _source_relevant_for_target(research_queries, hit, request.public_service):
-                    continue
                 article = get_cgfp_article(hit["article"])
+                article_text = str((article or {}).get("text") or "")
+                article_ref = re.sub(r"\\s+", "", str(hit["article"])).upper()
+                candidate = {
+                    **hit,
+                    "source_type": "CGFP_SNAPSHOT",
+                    "title": f"Code général de la fonction publique — article {article_ref}",
+                    "text": article_text,
+                }
+                # Relevance must be checked against the actual article text,
+                # not only the short discovery-index excerpt.
+                if not _source_relevant_for_target(
+                    research_queries, candidate, request.public_service,
+                ):
+                    continue
                 citation = {"source_id": hit["source_id"], "article": hit["article"],
                     "page_start": hit["page_start"], "page_end": hit["page_end"], "excerpt": hit["excerpt"]}
                 integrity = validate_snapshot_citation(citation, article or {})
