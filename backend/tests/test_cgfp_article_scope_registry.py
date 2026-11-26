@@ -40,7 +40,7 @@ def test_common_cgfp_snapshot_is_context_only(article):
 
 
 @pytest.mark.parametrize("number", range(18, 24))
-def test_citis_cgfp_articles_are_eligible_for_fpt_live_claims(number):
+def test_citis_cgfp_articles_remain_context_only_until_agent_status_is_verified(number):
     article = f"L822-{number}"
     source = {
         "source_type": "LEGIFRANCE_API",
@@ -51,7 +51,7 @@ def test_citis_cgfp_articles_are_eligible_for_fpt_live_claims(number):
     result = classify_public_service_scope(source, target_versant="FPT")
     assert result["scope"] == "FPT"
     assert result["analysis_eligible"] is True
-    assert result["claim_eligible"] is True
+    assert result["claim_eligible"] is False
 
 
 @pytest.mark.parametrize("number", range(18, 24))
@@ -69,7 +69,7 @@ def test_citis_cgfp_snapshot_remains_non_claim_evidence(number):
     assert result["claim_eligible"] is False
 
 
-def test_l532_9_is_fpt_specific():
+def test_l532_9_is_fpt_context_only_until_agent_status_is_verified():
     source = {
         "source_type": "LEGIFRANCE_API",
         "title": "Code général de la fonction publique — article L532-9",
