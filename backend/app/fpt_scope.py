@@ -270,6 +270,35 @@ def classify_public_service_scope(
                 and str(agent_working_time_status or "").upper() == "FULL_TIME_EXPLICIT"
             ),
         }
+    # CGFP L. 822-1 to L. 822-5 establish the ordinary sick-leave framework
+    # for civil servants across the three public-service branches. The bundled
+    # snapshot is contextual only; claims require a live official article.
+    if (
+        title_folded.startswith("code general de la fonction publique")
+        and article_ref in {f"l822 {number}" for number in range(1, 6)}
+    ):
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                f"Article {article_ref.upper()} du CGFP : congé de maladie ordinaire",
+                "Le texte statutaire commun doit être complété par les règles d'application du versant concerné",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": live_legifrance_source,
+        }
+
+    # The statutory waiting-day rule is Article 115 of the 2017 Finance Act.
+    if (
+        "loi n 2017 1837" in title_folded
+        and "article 115" in corpus
+    ):
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": ["Article 115 de la loi n° 2017-1837 : délai de carence des agents publics"],
+            "analysis_eligible": True,
+            "claim_eligible": source.get("source_type") == "LEGIFRANCE_LODA",
+        }
+
     # Articles L. 822-18 to L. 822-23 govern service-related accidents,
     # commuting accidents and occupational disease. They are applicable to
     # territorial civil servants; the FPT implementing framework is notably
@@ -704,6 +733,14 @@ def is_topic_relevant_source(
     ))
     source_topics = _matched_topic_families(source_text[:500_000])
     source_article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
+    source_title_folded = _fold(str(source.get("title") or ""))
+    if (
+        source_title_folded.startswith("code general de la fonction publique")
+        and source_article_ref in {f"l822 {number}" for number in range(1, 6)}
+    ):
+        source_topics.add("ORDINARY_SICK_LEAVE")
+    if "loi n 2017 1837" in source_title_folded and "article 115" in _fold(source_text):
+        source_topics.add("ORDINARY_SICK_LEAVE")
     source_title_folded = _fold(str(source.get("title") or ""))
     cmo_pay_evidence = (
         source_article_ref in {f"l822 {number}" for number in range(1, 6)}
