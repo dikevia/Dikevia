@@ -2,6 +2,8 @@
 
 > **Développeurs :** commencez par [`docs/00_DEVELOPMENT_START_HERE.md`](docs/00_DEVELOPMENT_START_HERE.md). La branche de référence est `main`. Ce guide précise l'architecture présente, les validations connues et les éléments historiques à ne pas réactiver sans audit.
 
+> **État courant — 26 novembre 2026 :** ce README contient encore des sections historiques V3.30/V3.38 et des références à Keycloak qui ne décrivent pas nécessairement le staging actuel. Pour la situation fiable, suivre dans cet ordre : `docs/00_DEVELOPMENT_START_HERE.md`, `docs/47_AUTH0_MIGRATION.md`, puis `android/README.md`. Le staging est préparé pour Auth0 ; la migration de production n'est pas effectuée. Les APK de test chargent le staging et leur authentification Android doit encore être validée sur appareils réels. Ne pas utiliser les anciens numéros de tests, instructions de migration ou états de déploiement ci-dessous comme preuve actuelle.
+
 
 La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des textes réglementaires complémentaires sur Légifrance et interrogation sécurisée des documents propres à l’employeur.
 
