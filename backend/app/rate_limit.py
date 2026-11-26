@@ -78,7 +78,7 @@ async def consume_daily_chat_question(
         DO UPDATE SET
             question_count=chat_daily_question_usage.question_count+1,
             updated_at=now()
-        WHERE chat_daily_question_usage.question_count < $3
+        WHERE chat_daily_question_usage.question_count < $2
         RETURNING question_count
         """,
         user_id, daily_limit,
