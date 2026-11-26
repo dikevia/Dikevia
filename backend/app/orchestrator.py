@@ -1368,6 +1368,7 @@ class LegalOrchestrator:
                     scope = classify_public_service_scope(
                         result, target_versant=request.public_service,
                         agent_status=legal_context.get("agent_status"),
+                        agent_working_time_status=legal_context.get("agent_working_time_status"),
                     )
                     result["public_service_scope"] = scope["scope"]
                     result["scope_evidence"] = scope["evidence"]
@@ -1654,6 +1655,7 @@ class LegalOrchestrator:
             scope_check = classify_public_service_scope(
                 item, target_versant=request.public_service,
                 agent_status=legal_context.get("agent_status"),
+                        agent_working_time_status=legal_context.get("agent_working_time_status"),
             )
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
@@ -1691,6 +1693,7 @@ class LegalOrchestrator:
             scope_check = classify_public_service_scope(
                 item, target_versant=request.public_service,
                 agent_status=legal_context.get("agent_status"),
+                        agent_working_time_status=legal_context.get("agent_working_time_status"),
             )
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
@@ -1813,6 +1816,7 @@ class LegalOrchestrator:
             scope_check = classify_public_service_scope(
                 decision, target_versant=request.public_service,
                 agent_status=legal_context.get("agent_status"),
+                        agent_working_time_status=legal_context.get("agent_working_time_status"),
             )
             decision["public_service_scope"] = scope_check["scope"]
             decision["scope_evidence"] = scope_check["evidence"]
