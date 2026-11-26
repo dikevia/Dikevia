@@ -937,9 +937,20 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             "contester un rapport de mon chef", "contester le rapport de mon superieur",
         )
     )
+    explicit_non_complete_tpt = (
+        therapeutic_part_time_present
+        and _contains_trigger(folded, "temps non complet")
+    )
     query_limit = max(
         1,
-        min(max_queries, 4 if (_is_professional_evaluation_question(original) or report_dispute_present) else 3),
+        min(
+            max_queries,
+            4 if (
+                _is_professional_evaluation_question(original)
+                or report_dispute_present
+                or explicit_non_complete_tpt
+            ) else 3,
+        ),
     )
     if explicit_compound and len(matched_axes) >= 3:
         query_limit = min(max_queries, len(matched_axes) + 1)
