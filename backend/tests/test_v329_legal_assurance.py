@@ -983,3 +983,73 @@ def test_explicit_whole_period_assertions_remain_detected(claim_text):
     from app.legal_assurance import _WHOLE_PERIOD_ASSERTION_RE
 
     assert _WHOLE_PERIOD_ASSERTION_RE.search(claim_text) is not None
+
+
+
+def test_registered_open_data_administrative_case_law_can_support_a_verified_claim():
+    import hashlib
+    from app.legal_assurance import validate_claim_evidence
+
+    full_text = (
+        "Le fonctionnaire territorial bénéficie des garanties statutaires "
+        "prévues par les dispositions applicables à la fonction publique territoriale."
+    )
+    source = _verified_evidence_source(
+        source_type="OTHER_OFFICIAL",
+        source_id="OPEN_DATA_JA_0123456789ABCDEF",
+        title="Décision de justice administrative — fonction publique territoriale",
+        document_kind="ADMIN_CASELAW",
+        official_source=True,
+        source_key="JUSTICE_ADMIN_OPEN_DATA",
+        source_registry_status="VERIFIED",
+        source_status="OFFICIAL_XML_IMPORTED",
+        version_id="12345678-1234-4234-8234-123456789012",
+        source_version_id="ECLI:FR:TA:2025:123456",
+        version_key="open-data-xml-123456",
+        text_sha256=hashlib.sha256(full_text.encode("utf-8")).hexdigest(),
+        full_text=full_text,
+        text=full_text,
+        excerpt=full_text,
+        analysis_excerpt=full_text,
+        content_kind="FULL_TEXT",
+        temporal_status="DECISION_AVAILABLE_BY_REQUESTED_DATE",
+        public_service_scope="FPT",
+        analysis_eligible=True,
+        claim_eligible=True,
+        citation_integrity={"valid": True, "text_hash_verified": True},
+    )
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "Le fonctionnaire territorial bénéficie des garanties statutaires prévues.",
+            full_text,
+            source_id=source["source_id"],
+        ),
+        [source],
+        public_service="FPT",
+    )
+    assert result["valid"] is True
+
+
+def test_unregistered_other_official_document_cannot_support_a_legal_claim():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _verified_evidence_source(
+        source_type="OTHER_OFFICIAL",
+        source_id="UNREGISTERED_SOURCE_123",
+        document_kind="ADMIN_CASELAW",
+        official_source=True,
+        source_status="OFFICIAL_XML_IMPORTED",
+        public_service_scope="FPT",
+        analysis_eligible=True,
+        claim_eligible=True,
+    )
+    result = validate_claim_evidence(
+        _evidence_claim(
+            "L'autorité territoriale veille à la santé des agents.",
+            source["excerpt"],
+            source_id=source["source_id"],
+        ),
+        [source],
+        public_service="FPT",
+    )
+    assert result["valid"] is False

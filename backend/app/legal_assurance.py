@@ -620,6 +620,17 @@ def validate_claim_evidence(
         if source_type in {"LOCAL_DOCUMENT", "LOCAL_COLLECTIVITY_DOCUMENT"}:
             if source.get("validation_status") not in {"VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL"}:
                 continue
+        elif source_type == "OTHER_OFFICIAL":
+            # Bulk administrative case-law XML is eligible only through the
+            # exact registered, open-licensed and verified ingestion path.
+            if not (
+                source.get("source_key") == "JUSTICE_ADMIN_OPEN_DATA"
+                and source.get("source_registry_status") == "VERIFIED"
+                and source.get("source_status") == "OFFICIAL_XML_IMPORTED"
+                and source.get("document_kind") == "ADMIN_CASELAW"
+                and source.get("official_source") is True
+            ):
+                continue
         elif source_type not in {
             "LEGIFRANCE_API", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT_FULL_TEXT",
             "CGFP_SNAPSHOT",
