@@ -13,10 +13,10 @@ def _route(source: str, marker: str, next_marker: str) -> str:
 def test_direct_piste_endpoints_share_the_tenant_user_quota_before_network_calls():
     source = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     cases = [
-        ('@app.post("/api/v1/integrations/legifrance/check")', "await legifrance.ping()", '@app.get("/api/v1/legal/legifrance/search")'),
-        ('@app.get("/api/v1/legal/legifrance/search")', "await legifrance.search_code_articles", '@app.get("/api/v1/legal/jurisprudence/administrative/search")'),
-        ('@app.get("/api/v1/legal/jurisprudence/administrative/search")', "await case_law_connector.search", '@app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}")'),
-        ('@app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}")', "await case_law_connector.consult", '@app.get("/api/v1/legal/knowledge/search")'),
+        ('@app.post("/api/v1/integrations/legifrance/check"', "await legifrance.ping()", '@app.get("/api/v1/legal/legifrance/search"'),
+        ('@app.get("/api/v1/legal/legifrance/search"', "await legifrance.search_code_articles", '@app.get("/api/v1/legal/jurisprudence/administrative/search"'),
+        ('@app.get("/api/v1/legal/jurisprudence/administrative/search"', "await case_law_connector.search", '@app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}"'),
+        ('@app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}"', "await case_law_connector.consult", '@app.get("/api/v1/legal/knowledge/search"'),
     ]
     for marker, outbound_call, next_marker in cases:
         route = _route(source, marker, next_marker)
@@ -27,8 +27,8 @@ def test_direct_piste_endpoints_share_the_tenant_user_quota_before_network_calls
 def test_connector_search_inputs_are_validated_before_consuming_the_quota():
     source = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     for marker, next_marker in [
-        ('@app.get("/api/v1/legal/legifrance/search")', '@app.get("/api/v1/legal/jurisprudence/administrative/search")'),
-        ('@app.get("/api/v1/legal/jurisprudence/administrative/search")', '@app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}")'),
+        ('@app.get("/api/v1/legal/legifrance/search"', '@app.get("/api/v1/legal/jurisprudence/administrative/search"'),
+        ('@app.get("/api/v1/legal/jurisprudence/administrative/search"', '@app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}"'),
     ]:
         route = _route(source, marker, next_marker)
         assert route.index("len(q.strip()) < 2") < route.index("await enforce_legal_connector_rate_limit(ctx)")
