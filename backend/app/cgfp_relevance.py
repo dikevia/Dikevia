@@ -93,6 +93,31 @@ _TOPICS: tuple[dict[str, Any], ...] = (
         "exclude_unless_anchor": (),
     },
     {
+        "key": "maladie_ordinaire",
+        "triggers": (
+            "conge de maladie ordinaire", "maladie ordinaire",
+            "jour de carence", "jours de carence", "conge maladie",
+            "conge de maladie", "arret maladie",
+        ),
+        "expansion": (
+            "CGFP articles L822-1 L822-2 L822-3 L822-4 L822-5 "
+            "congé de maladie ordinaire fonctionnaire congé maladie "
+            "rémunération traitement indiciaire jour de carence "
+            "loi 2017-1837 article 115 décret 87-602 articles 14 15"
+        ),
+        "anchors": (
+            "conge de maladie", "conge maladie", "maladie ordinaire",
+            "jour de carence", "traitement indiciaire",
+        ),
+        "boosts": {
+            "conge de maladie": 14.0,
+            "maladie ordinaire": 16.0,
+            "jour de carence": 12.0,
+            "traitement indiciaire": 5.0,
+        },
+        "exclude_unless_anchor": ("citis", "accident de service", "maladie contractee en service"),
+    },
+    {
         "key": "citis",
         "triggers": (
             "citis", "conge pour invalidite temporaire imputable au service",
@@ -150,7 +175,7 @@ _TOPICS: tuple[dict[str, Any], ...] = (
         "triggers": (
             "accident de service", "maladie professionnelle", "imputable au service",
             "conge longue maladie", "conge longue duree", "citis",
-            "arret maladie", "conge maladie",
+            
         ),
         "expansion": (
             "accident de service maladie professionnelle imputabilité au service CITIS "
@@ -603,7 +628,7 @@ def _matching_topics(query: str) -> list[dict[str, Any]]:
     # with generic leave, working-time or sick-leave expansions.
     focused_health = [
         topic for topic in matched
-        if topic["key"] in {"citis", "temps_partiel_therapeutique"}
+        if topic["key"] in {"citis", "temps_partiel_therapeutique", "maladie_ordinaire"}
     ]
     if focused_health:
         return focused_health
