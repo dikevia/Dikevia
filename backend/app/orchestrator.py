@@ -312,7 +312,9 @@ def should_use_cgfp_snapshot_fallback(
     # A successful live request with zero usable CGFP articles is also a
     # retrieval gap. For general-current-law questions, a relevant dated
     # snapshot may still provide bounded context; it is never historical proof.
-    live_unusable = bool(live_issue) or not live_covers_an_axis
+    live_unusable = bool(live_issue) or (
+        live_sources is not None and not live_covers_an_axis
+    )
     return bool(
         live_unusable and isinstance(found, dict) and found.get("results")
         and any(
