@@ -478,9 +478,9 @@ def qualify_legal_question(
             break
 
     working_time_folded = _fold(str(question or ""))
-    if re.search(r"\\b(?:emploi\\s+)?a\\s+temps\\s+non\\s+complet\\b", working_time_folded):
+    if re.search(r"\b(?:emploi\s+)?a\s+temps\s+non\s+complet\b", working_time_folded):
         agent_working_time_status = "NON_COMPLETE_EXPLICIT"
-    elif re.search(r"\\b(?:emploi\\s+)?a\\s+temps\\s+complet\\b|\\btemps\\s+plein\\b", working_time_folded):
+    elif re.search(r"\b(?:emploi\s+)?a\s+temps\s+complet\b|\btemps\s+plein\b", working_time_folded):
         agent_working_time_status = "FULL_TIME_EXPLICIT"
     else:
         agent_working_time_status = "NOT_SPECIFIED"
