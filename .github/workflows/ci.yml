@@ -82,8 +82,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements-dev.txt
           python -m pip check
-      - name: Validate browser-side embedding worker syntax
-        run: node --input-type=module --check < frontend/legal-embedding-worker.js
+      - name: Validate browser-side JavaScript syntax
+        run: |
+          node --input-type=module --check < frontend/legal-embedding-worker.js
+          node --check frontend/oidc-auth.js
       - name: Compile Python and audit environment template
         run: |
           python -m compileall -q backend/app scripts
