@@ -278,7 +278,7 @@ def _compact_instance_source(source: dict[str, Any], family: str) -> dict[str, A
         or ""
     )
     scope = classify_public_service_scope(source, target_versant="FPT")
-    decision_metadata_only = family == "jurisprudence" and source.get("full_text_retrieved") is not True
+    decision_metadata_only = family.startswith("jurisprudence") and source.get("full_text_retrieved") is not True
     return {
         "family": family,
         "source_type": source.get("source_type"),
