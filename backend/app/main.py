@@ -42,7 +42,7 @@ from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request, consume_daily_chat_question
 from .entitlements import resolve_entitlements
-from .instances import prepare_instance
+from .instances import prepare_instance_with_legal_sources
 from .personal_documents import router as personal_documents_router
 from .auth_sessions import router as oidc_sessions_router
 import httpx
@@ -1122,7 +1122,15 @@ async def prepare_social_instance(
     """Prepare a structured CST/CAP/CCP/FS checklist for active union subscribers."""
     objet = payload.get("objet")
     try:
-        return prepare_instance(instance, objet)
+        if legifrance.configured:
+            await enforce_legal_connector_rate_limit(ctx)
+        return await prepare_instance_with_legal_sources(
+            instance,
+            objet,
+            legifrance_connector=legifrance,
+            case_law_connector=AdministrativeCaseLawConnector(legifrance),
+            effective_date=datetime.now(ZoneInfo("Europe/Paris")).date(),
+        )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
