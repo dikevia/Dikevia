@@ -101,7 +101,7 @@ Contrôle en lecture seule de la branche `dikevia-corpus-ingestion-test` :
 | Ressources institutionnelles | 18 | `IMPORTED_UNVERIFIED` | Statut `UNKNOWN`, seules 3 fiches ont une date de publication |
 | Open Data justice administrative | 157 | `OFFICIAL_XML_IMPORTED` | Décisions du Conseil d'État uniquement dans cet import ; dates de décision et de mise à jour, numéros et ECLI présents, mais statut et version juridique restent `UNKNOWN` |
 
-Les 157 décisions ont été corrigées **uniquement sur cette branche de test** : le code juridiction `CE` est restitué comme Conseil d'État, avec le siège à Paris, la section et la formation lorsque ces informations existent. Les cartes de source affichent désormais l'ECLI et la date de mise à jour source. Cette collecte partielle ne constitue pas une couverture exhaustive de la jurisprudence administrative.
+Les 157 décisions ont été corrigées **uniquement sur cette branche de test** : le code juridiction `CE` est restitué comme Conseil d'État, avec le siège à Paris, la section et la formation lorsque ces informations existent. Les cartes de source affichent désormais l'ECLI, la date d'import dans Dikévia et la date de mise à jour indiquée par le fichier source. Cette collecte partielle ne constitue pas une couverture exhaustive de la jurisprudence administrative.
 
 ### État de la base de production
 

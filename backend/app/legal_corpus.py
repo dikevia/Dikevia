@@ -434,7 +434,7 @@ async def search_legal_corpus(
       ), ranked AS (
         SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
-          d.source_status,d.raw_metadata,v.source_version_id,v.version_key,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
+          d.source_status,d.raw_metadata,d.created_at,v.source_version_id,v.version_key,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
           c.anchor,c.content content_chunk,c.content_kind,c.ordinal,candidate_scores.rank,
           CASE
             WHEN d.source_type IN ('LEGIFRANCE_LEGI','LEGIFRANCE_LODA','LEGIFRANCE_JORF','OTHER_OFFICIAL')
@@ -469,7 +469,7 @@ async def search_legal_corpus(
       ), document_metadata AS (
         SELECT DISTINCT ON (version_id) document_id,version_id,source_type,source_id,title,document_kind,
           official_number,jurisdiction,official_url,signature_date,publication_date,document_status,
-          source_status,raw_metadata,source_version_id,version_key,valid_from,valid_to,version_status,raw_payload,full_text,text_sha256,
+          source_status,raw_metadata,created_at,source_version_id,version_key,valid_from,valid_to,version_status,raw_payload,full_text,text_sha256,
           anchor,content_kind
         FROM ranked ORDER BY version_id,rank DESC,ordinal
       )
