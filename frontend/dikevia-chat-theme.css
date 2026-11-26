@@ -1303,6 +1303,62 @@ html.dikevia-standard-app .standard-drawer {scrollbar-color:#a8cde5 transparent!
 }
 
 
+/* JARVIS — surfaces communes de l'application standard.
+   Les anciennes couches historiques restent neutralisées sur tous les écrans. */
+html.dikevia-standard-app .panel,
+html.dikevia-standard-app .card,
+html.dikevia-standard-app .auth {
+  border:1px solid #dce7f0!important;border-radius:15px!important;
+  background:#fff!important;color:#172f49!important;
+  box-shadow:0 5px 20px rgba(34,74,111,.045)!important;
+}
+html.dikevia-standard-app button,
+html.dikevia-standard-app .button {
+  border:1px solid #398fc1!important;border-radius:10px!important;
+  background:linear-gradient(145deg,#58b7e8,#287fb9)!important;
+  color:#fff!important;box-shadow:0 4px 13px rgba(48,139,194,.13)!important;
+}
+html.dikevia-standard-app button:hover,
+html.dikevia-standard-app .button:hover {
+  background:linear-gradient(145deg,#4ba9dc,#216fa8)!important;
+  box-shadow:0 7px 18px rgba(48,139,194,.18)!important;
+}
+html.dikevia-standard-app button.secondary {
+  border:1px solid #cbddea!important;background:#f4faff!important;
+  color:#347da9!important;box-shadow:none!important;
+}
+html.dikevia-standard-app button.secondary:hover {
+  border-color:#9fcbe6!important;background:#eaf5fc!important;box-shadow:none!important;
+}
+html.dikevia-standard-app button.danger {
+  border-color:#d58b91!important;background:#fff3f3!important;
+  color:#a84f58!important;box-shadow:none!important;
+}
+html.dikevia-standard-app input,
+html.dikevia-standard-app select,
+html.dikevia-standard-app textarea {
+  border:1px solid #cbddea!important;border-radius:9px!important;
+  background:#fff!important;color:#263f56!important;
+}
+html.dikevia-standard-app input:focus,
+html.dikevia-standard-app select:focus,
+html.dikevia-standard-app textarea:focus {
+  outline:0!important;border-color:#68b4df!important;
+  box-shadow:0 0 0 3px rgba(80,169,220,.13)!important;
+}
+html.dikevia-standard-app label {color:#49657e!important}
+html.dikevia-standard-app th {background:#f1f7fb!important;color:#607b92!important}
+html.dikevia-standard-app th,
+html.dikevia-standard-app td {border-bottom:1px solid #e6eef5!important}
+html.dikevia-standard-app .notice {
+  border:1px solid #d5e8f4!important;background:#eff8fd!important;
+  color:#315d7d!important;
+}
+html.dikevia-standard-app .pill {background:#eaf4fb!important;color:#347eaa!important}
+html.dikevia-standard-app .pill.warn {background:#f2f7fb!important;color:#527eaf!important}
+html.dikevia-standard-app .message {border:1px solid #d5e8f4!important;background:#eff8fd!important;color:#315d7d!important}
+html.dikevia-standard-app .message.error {border-color:#f0d0d0!important;background:#fff3f3!important;color:#a84f58!important}
+
 /* JARVIS — application Administration : même identité, interface de pilotage dédiée. */
 html.dikevia-admin-mode {
   color-scheme:light;
