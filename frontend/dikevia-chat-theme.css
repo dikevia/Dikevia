@@ -1221,7 +1221,7 @@ html.dikevia-standard-app .juris-status {
   border:1px solid #cce4f3!important;background:#edf7fd!important;color:#347eaa!important;
 }
 html.dikevia-standard-app .juris-status.warn {
-  border-color:#f0dfb7!important;background:#fff9eb!important;color:#94713a!important;
+  border-color:#cbddea!important;background:#f2f7fb!important;color:#527eaf!important;
 }
 html.dikevia-standard-app .juris-status.bad {
   border-color:#f0d0d0!important;background:#fff3f3!important;color:#a84f58!important;
@@ -1384,7 +1384,7 @@ html.dikevia-admin-mode td {border-bottom:1px solid #e6eef5}
 html.dikevia-admin-mode tbody tr:hover {background:#f6fbfe}
 html.dikevia-admin-mode .tablewrap {border:1px solid #dce8f1;border-radius:11px}
 html.dikevia-admin-mode .pill {background:#eaf4fb;color:#347eaa}
-html.dikevia-admin-mode .pill.warn {background:#fff8e9;color:#94713a}
+html.dikevia-admin-mode .pill.warn {background:#eaf4fb;color:#527eaf}
 html.dikevia-admin-mode .pill.bad {background:#fff1f1;color:#a84f58}
 html.dikevia-admin-mode .message {border:1px solid #d5e8f4;background:#eff8fd;color:#315d7d}
 html.dikevia-admin-mode .message.error {border-color:#f0d0d0;background:#fff3f3;color:#a84f58}
