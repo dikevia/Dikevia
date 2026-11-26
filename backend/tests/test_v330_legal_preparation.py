@@ -62,6 +62,10 @@ async def test_general_sick_leave_question_does_not_request_personal_facts_date(
     async def provider_available():
         return {"status": "AVAILABLE"}
 
+    async def unavailable_research_plan(**kwargs):
+        raise module.AIProviderUnavailable("CI deterministic fallback")
+
+    monkeypatch.setattr(module, "plan_legal_research", unavailable_research_plan)
     monkeypatch.setattr(module, "analyze_question", bounded_snapshot_ai)
     monkeypatch.setattr(module, "check_provider_availability", provider_available)
     monkeypatch.setattr(type(module.legifrance), "configured", property(lambda self: False))
