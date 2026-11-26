@@ -982,6 +982,14 @@ def build_official_research_axes(question: str) -> list[str]:
         "venir avec un syndicat",
         "assistance syndicale lors d une convocation",
         "accompagnement syndical lors d une convocation",
+        "accompagnement syndical", "assistance syndicale",
+        "etre accompagne par un representant syndical",
+        "etre assiste par un representant syndical",
+    )
+    union_summons_markers = (
+        "convocation", "convoque par ma hierarchie", "convoque par sa hierarchie",
+        "convoque par mon chef", "convoque par son chef",
+        "entretien avec ma hierarchie", "entretien hierarchique",
     )
     explicit_procedure_markers = (
         "procedure disciplinaire",
@@ -993,6 +1001,7 @@ def build_official_research_axes(question: str) -> list[str]:
     )
     if (
         any(_contains_trigger(folded, marker) for marker in union_assistance_markers)
+        and any(_contains_trigger(folded, marker) for marker in union_summons_markers)
         and not any(_contains_trigger(folded, marker) for marker in explicit_procedure_markers)
     ):
         return []
