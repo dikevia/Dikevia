@@ -1246,14 +1246,14 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
             )
     return result
 
-@app.get("/api/v1/integrations/legifrance/status")
+@app.get("/api/v1/integrations/legifrance/status", dependencies=[Depends(require_syndicate_subscription)])
 async def legifrance_status(ctx: TenantContext = Depends(get_tenant_context)):
     return {"configured": legifrance.configured, "environment": legifrance.environment,
             "code_name": settings.legifrance_code_name,
             "status": "CONFIGURED_NOT_TESTED" if legifrance.configured else "NOT_CONFIGURED",
             "credentials_exposed": False}
 
-@app.post("/api/v1/integrations/legifrance/check")
+@app.post("/api/v1/integrations/legifrance/check", dependencies=[Depends(require_syndicate_subscription)])
 async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
         raise HTTPException(503, "Identifiants PISTE non configurés.")
@@ -1265,7 +1265,7 @@ async def legifrance_check(ctx: TenantContext = Depends(get_tenant_context_for_c
     return {"status": "CONNECTED", "environment": legifrance.environment,
             "message": "Le point de contrôle Légifrance répond. Cela ne valide pas encore une recherche juridique complète."}
 
-@app.get("/api/v1/legal/legifrance/search")
+@app.get("/api/v1/legal/legifrance/search", dependencies=[Depends(require_syndicate_subscription)])
 async def search_legifrance(q: str, effective_date: date | None = None,
         ctx: TenantContext = Depends(get_tenant_context_for_chat)):
     if not legifrance.configured:
@@ -1283,7 +1283,7 @@ async def search_legifrance(q: str, effective_date: date | None = None,
             "results_count": len(results), "results": results,
             "warning": "Résultats API à vérifier ; l'absence de résultat ne prouve pas l'absence de règle."}
 
-@app.get("/api/v1/legal/jurisprudence/administrative/search")
+@app.get("/api/v1/legal/jurisprudence/administrative/search", dependencies=[Depends(require_syndicate_subscription)])
 async def search_administrative_case_law(q: str, effective_date: date | None = None,
         ctx: TenantContext = Depends(get_tenant_context)):
     if not legifrance.configured:
@@ -1307,7 +1307,7 @@ async def search_administrative_case_law(q: str, effective_date: date | None = N
     }
 
 
-@app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}")
+@app.get("/api/v1/legal/jurisprudence/administrative/{decision_id}", dependencies=[Depends(require_syndicate_subscription)])
 async def consult_administrative_case_law(decision_id: str,
         ctx: TenantContext = Depends(get_tenant_context)):
     if not legifrance.configured:
@@ -1325,7 +1325,7 @@ async def consult_administrative_case_law(decision_id: str,
             "warning": "La récupération du texte intégral et la correspondance de l'identifiant sont contrôlées. Cela ne constitue pas une analyse de la portée juridique, ni une vérification exhaustive des revirements ou de l'état actuel du droit."}
 
 
-@app.get("/api/v1/legal/knowledge/search")
+@app.get("/api/v1/legal/knowledge/search", dependencies=[Depends(require_syndicate_subscription)])
 async def search_permanent_legal_knowledge(q: str, effective_date: date | None = None,
         limit: int = 12, ctx: TenantContext = Depends(get_tenant_context)):
     requested_date = effective_date or date.today()
@@ -1729,7 +1729,7 @@ async def list_legal_ingestion_runs(limit: int = 30, admin=Depends(require_platf
     return {"runs": [{**dict(row), "id": str(row["id"])} for row in rows]}
 
 
-@app.get("/api/v1/legal/cgfp/source")
+@app.get("/api/v1/legal/cgfp/source", dependencies=[Depends(require_syndicate_subscription)])
 async def cgfp_source(ctx: TenantContext = Depends(get_tenant_context)):
     try:
         result = search_cgfp("L1", limit=1)
@@ -1738,7 +1738,7 @@ async def cgfp_source(ctx: TenantContext = Depends(get_tenant_context)):
     return {"source": result["source"], "verification_status": "SNAPSHOT_NOT_LIVE_VERIFIED",
             "warning": "Métadonnées du snapshot local. Vérification officielle Légifrance non effectuée."}
 
-@app.get("/api/v1/legal/cgfp/articles/{article_ref}")
+@app.get("/api/v1/legal/cgfp/articles/{article_ref}", dependencies=[Depends(require_syndicate_subscription)])
 async def get_national_cgfp_article(article_ref: str, ctx: TenantContext = Depends(get_tenant_context)):
     try:
         article = get_cgfp_article(article_ref)
@@ -1749,7 +1749,7 @@ async def get_national_cgfp_article(article_ref: str, ctx: TenantContext = Depen
     return {"verification_status": "PARTIELLEMENT_VERIFIE", "article": article,
             "warning": "Texte extrait du snapshot PDF ; contrôler la rédaction officielle et la version applicable à la date des faits sur Légifrance."}
 
-@app.get("/api/v1/legal/cgfp/search")
+@app.get("/api/v1/legal/cgfp/search", dependencies=[Depends(require_syndicate_subscription)])
 async def search_national_cgfp(q: str, limit: int = 8, ctx: TenantContext = Depends(get_tenant_context)):
     if len(q.strip()) < 2 or len(q) > 500:
         raise HTTPException(422, "La recherche doit contenir entre 2 et 500 caractères.")
@@ -1763,7 +1763,7 @@ async def search_national_cgfp(q: str, limit: int = 8, ctx: TenantContext = Depe
             "source": result["source"], "results": result["results"],
             "warning": "Résultats issus d’un snapshot documentaire ; vérifier la version applicable et les textes officiels sur Légifrance."}
 
-@app.get("/api/v1/organizations/me/members")
+@app.get("/api/v1/organizations/me/members", dependencies=[Depends(require_syndicate_subscription)])
 async def members(ctx: TenantContext=Depends(require_org_admin)):
     rows=await ctx.conn.fetch("""
       SELECT u.id,u.email,u.display_name,m.role,m.status,m.created_at
@@ -1773,14 +1773,14 @@ async def members(ctx: TenantContext=Depends(require_org_admin)):
     return [{"id":str(r["id"]),"email":r["email"],"display_name":r["display_name"],
       "role":r["role"],"status":r["status"],"created_at":r["created_at"]} for r in rows]
 
-@app.get("/api/v1/collectivities")
+@app.get("/api/v1/collectivities", dependencies=[Depends(require_syndicate_subscription)])
 async def list_collectivities(ctx: TenantContext = Depends(get_tenant_context)):
     rows = await ctx.conn.fetch(
         "SELECT id,code,name,created_at FROM collectivities WHERE organization_id=$1::uuid ORDER BY name",
         ctx.organization_id)
     return [{"id":str(r["id"]),"code":r["code"],"name":r["name"],"created_at":r["created_at"]} for r in rows]
 
-@app.post("/api/v1/collectivities", status_code=201)
+@app.post("/api/v1/collectivities", status_code=201, dependencies=[Depends(require_syndicate_subscription)])
 async def create_collectivity(payload: CollectivityCreate, ctx: TenantContext = Depends(require_org_admin)):
     try:
         row = await ctx.conn.fetchrow(
@@ -1794,7 +1794,7 @@ async def create_collectivity(payload: CollectivityCreate, ctx: TenantContext = 
       VALUES($1::uuid,$2::uuid,'COLLECTIVITY_CREATED','collectivity',$3::uuid)""",ctx.organization_id,ctx.user_id,row["id"])
     return {"id":str(row["id"]),"code":row["code"],"name":row["name"],"created_at":row["created_at"]}
 
-@app.get("/api/v1/documents")
+@app.get("/api/v1/documents", dependencies=[Depends(require_syndicate_subscription)])
 async def documents(ctx: TenantContext=Depends(get_tenant_context)):
     rows=await ctx.conn.fetch("""
       SELECT d.id,d.collectivity_id,c.name collectivity_name,d.title,d.document_type,d.official_number,
@@ -1810,7 +1810,7 @@ async def documents(ctx: TenantContext=Depends(get_tenant_context)):
       "original_filename":r["original_filename"],"mime_type":r["mime_type"],"file_size_bytes":r["file_size_bytes"],
       "sha256":r["sha256"],"scan_status":r["scan_status"],"scan_engine":r["scan_engine"],"scanned_at":r["scanned_at"],"created_at":r["created_at"],"version_count":r["version_count"]} for r in rows]
 
-@app.get("/api/v1/documents/search")
+@app.get("/api/v1/documents/search", dependencies=[Depends(require_syndicate_subscription)])
 async def search_documents(q: str, collectivity_id: str | None = None, limit: int = 20,
     ctx: TenantContext = Depends(get_tenant_context)):
     query = q.strip()
@@ -1842,7 +1842,7 @@ async def search_documents(q: str, collectivity_id: str | None = None, limit: in
       "extraction_status":r["extraction_status"],"relevance":float(r["relevance"]),"excerpt":r["excerpt"]} for r in rows]
 
 
-@app.get("/api/v1/documents/{document_id}")
+@app.get("/api/v1/documents/{document_id}", dependencies=[Depends(require_syndicate_subscription)])
 async def document(document_id:str,ctx:TenantContext=Depends(get_tenant_context)):
     row=await ctx.conn.fetchrow("""SELECT d.id,d.collectivity_id,c.name collectivity_name,d.title,d.document_type,
       d.official_number,d.official_url,d.adopted_at,d.published_at,d.effective_from,d.effective_to,
@@ -1920,7 +1920,7 @@ async def load_private_document(storage_key: str, missing_message: str) -> bytes
         raise HTTPException(503, "Le stockage privé est temporairement indisponible.")
 
 
-@app.post("/api/v1/documents",status_code=201)
+@app.post("/api/v1/documents",status_code=201, dependencies=[Depends(require_syndicate_subscription)])
 async def upload_document(
     title: str = Form(...), document_type: str = Form(...), collectivity_id: str = Form(...),
     official_number: str | None = Form(default=None), official_url: str | None = Form(default=None),
@@ -1972,7 +1972,7 @@ async def upload_document(
       "file_size_bytes":len(data),"sha256":digest,"scan_status":scan["scan_status"],
       "extraction_status":extraction_status,"validation_status":"COLLECTED_UNVERIFIED","created_at":row["created_at"]}
 
-@app.post("/api/v1/documents/{document_id}/versions",status_code=201)
+@app.post("/api/v1/documents/{document_id}/versions",status_code=201, dependencies=[Depends(require_syndicate_subscription)])
 async def upload_document_version(document_id:str,file:UploadFile=File(...),effective_from:date|None=Form(default=None),
     effective_to:date|None=Form(default=None),ctx:TenantContext=Depends(require_legal_editor)):
     try:
@@ -2027,7 +2027,7 @@ async def upload_document_version(document_id:str,file:UploadFile=File(...),effe
     return {"document_id":document_id,"version":version,"original_filename":filename,"sha256":digest,
       "scan_status":scan["scan_status"],"extraction_status":extraction_status,"validation_status":"COLLECTED_UNVERIFIED"}
 
-@app.get("/api/v1/documents/{document_id}/versions")
+@app.get("/api/v1/documents/{document_id}/versions", dependencies=[Depends(require_syndicate_subscription)])
 async def document_versions(document_id:str,ctx:TenantContext=Depends(get_tenant_context)):
     rows=await ctx.conn.fetch("""SELECT id,version_number,original_filename,mime_type,file_size_bytes,sha256,scan_status,scan_engine,scanned_at,
       effective_from,effective_to,created_at FROM document_versions WHERE organization_id=$1::uuid AND document_id=$2::uuid
@@ -2038,7 +2038,7 @@ async def document_versions(document_id:str,ctx:TenantContext=Depends(get_tenant
       "mime_type":r["mime_type"],"file_size_bytes":r["file_size_bytes"],"sha256":r["sha256"],"scan_status":r["scan_status"],"scan_engine":r["scan_engine"],"scanned_at":r["scanned_at"],
       "effective_from":r["effective_from"],"effective_to":r["effective_to"],"created_at":r["created_at"]} for r in rows]
 
-@app.post("/api/v1/documents/{document_id}/reindex")
+@app.post("/api/v1/documents/{document_id}/reindex", dependencies=[Depends(require_syndicate_subscription)])
 async def reindex_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor)):
     try:
         UUID(document_id)
@@ -2073,7 +2073,7 @@ async def reindex_document_versions(document_id: str, ctx: TenantContext = Depen
     return {"document_id":document_id,"versions":[{"version":v,"extraction_status":status} for v,_,__,status in extracted]}
 
 
-@app.post("/api/v1/documents/{document_id}/rescan")
+@app.post("/api/v1/documents/{document_id}/rescan", dependencies=[Depends(require_syndicate_subscription)])
 async def rescan_document_versions(document_id: str, ctx: TenantContext = Depends(require_legal_editor)):
     try:
         UUID(document_id)
@@ -2135,7 +2135,7 @@ async def rescan_document_versions(document_id: str, ctx: TenantContext = Depend
     return {"document_id":document_id,"versions":results}
 
 
-@app.get("/api/v1/documents/{document_id}/download")
+@app.get("/api/v1/documents/{document_id}/download", dependencies=[Depends(require_syndicate_subscription)])
 async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM documents WHERE id=$1::uuid AND organization_id=$2::uuid",document_id,ctx.organization_id)
     if not row or not row["storage_key"]:
@@ -2150,7 +2150,7 @@ async def download_document(document_id:str,ctx:TenantContext=Depends(get_tenant
         "Content-Disposition":f"attachment; filename=\"document\"; filename*=UTF-8''{quote(filename)}",
         "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
-@app.get("/api/v1/documents/{document_id}/versions/{version_number}/download")
+@app.get("/api/v1/documents/{document_id}/versions/{version_number}/download", dependencies=[Depends(require_syndicate_subscription)])
 async def download_document_version(document_id:str,version_number:int,ctx:TenantContext=Depends(get_tenant_context_for_chat)):
     row=await ctx.conn.fetchrow("""SELECT storage_key,original_filename,mime_type,scan_status,sha256 FROM document_versions
       WHERE organization_id=$1::uuid AND document_id=$2::uuid AND version_number=$3""",ctx.organization_id,document_id,version_number)
@@ -2166,7 +2166,7 @@ async def download_document_version(document_id:str,version_number:int,ctx:Tenan
         "Content-Disposition":f"attachment; filename=\"document\"; filename*=UTF-8''{quote(filename)}",
         "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
 
-@app.put("/api/v1/documents/{document_id}")
+@app.put("/api/v1/documents/{document_id}", dependencies=[Depends(require_syndicate_subscription)])
 async def update_document_metadata(document_id:str,payload:DocumentMetadataUpdate,ctx:TenantContext=Depends(require_legal_editor)):
     try:
         UUID(document_id)
@@ -2189,7 +2189,7 @@ async def update_document_metadata(document_id:str,payload:DocumentMetadataUpdat
       VALUES($1::uuid,$2::uuid,'DOCUMENT_METADATA_UPDATED','document',$3::uuid)""",ctx.organization_id,ctx.user_id,document_id)
     return {"id":str(row["id"]),"title":row["title"],"document_type":row["document_type"],"collectivity_id":str(row["collectivity_id"])}
 
-@app.patch("/api/v1/documents/{document_id}/validation")
+@app.patch("/api/v1/documents/{document_id}/validation", dependencies=[Depends(require_syndicate_subscription)])
 async def validate_document(document_id:str,payload:DocumentValidationUpdate,ctx:TenantContext=Depends(require_legal_editor)):
     if payload.validation_status in ("VERIFIED_APPLICABLE", "VERIFIED_HISTORICAL", "REPEALED", "REPLACED") and not (payload.validation_note or "").strip():
         raise HTTPException(422,"Une justification est obligatoire pour une validation juridique.")
@@ -2204,7 +2204,7 @@ async def validate_document(document_id:str,payload:DocumentValidationUpdate,ctx
     return {"id":str(row["id"]),"validation_status":row["validation_status"],"validated_by":str(row["validated_by"]),"validated_at":row["validated_at"]}
 
 
-@app.post("/api/v1/organizations/me/invitations", status_code=201)
+@app.post("/api/v1/organizations/me/invitations", status_code=201, dependencies=[Depends(require_syndicate_subscription)])
 async def create_invitation(payload: InvitationCreate, response: Response, ctx: TenantContext = Depends(require_org_admin)):
     """Create a one-time invitation. The raw token is returned once for secure manual delivery."""
     response.headers["Cache-Control"] = "no-store"
@@ -2293,7 +2293,7 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
         result["warning"] = "Le provisionnement automatique n'est pas configuré. Transmettez ce jeton par un canal sûr."
     return result
 
-@app.delete("/api/v1/organizations/me/invitations/{invitation_id}", status_code=204)
+@app.delete("/api/v1/organizations/me/invitations/{invitation_id}", status_code=204, dependencies=[Depends(require_syndicate_subscription)])
 async def revoke_invitation(invitation_id: str, ctx: TenantContext = Depends(require_org_admin)):
     if settings.private_instance_mode and not await ctx.conn.fetchval(
         "SELECT EXISTS(SELECT 1 FROM platform_admins WHERE user_id=$1::uuid)", ctx.user_id):
@@ -2468,7 +2468,7 @@ async def create_organization(payload: OrganizationCreate, platform=Depends(requ
     return {"id": org_id, "slug": payload.slug, "display_name": payload.display_name,
             "founding_plan": "FOUNDING_FREE", "creator_role": "ORG_ADMIN"}
 
-@app.patch("/api/v1/organizations/me/members/{user_id}/role")
+@app.patch("/api/v1/organizations/me/members/{user_id}/role", dependencies=[Depends(require_syndicate_subscription)])
 async def update_member_role(user_id: str, payload: MemberRoleUpdate, ctx: TenantContext = Depends(require_org_admin)):
     role = payload.role
     if settings.private_instance_mode:
@@ -2498,7 +2498,7 @@ async def update_member_role(user_id: str, payload: MemberRoleUpdate, ctx: Tenan
       ctx.organization_id, ctx.user_id, user_id, role)
     return {"user_id": user_id, "role": role, "status": "ACTIVE"}
 
-@app.delete("/api/v1/organizations/me/members/{user_id}", status_code=204)
+@app.delete("/api/v1/organizations/me/members/{user_id}", status_code=204, dependencies=[Depends(require_syndicate_subscription)])
 async def revoke_member(user_id: str, ctx: TenantContext=Depends(require_org_admin)):
     if settings.private_instance_mode and not await ctx.conn.fetchval(
         "SELECT EXISTS(SELECT 1 FROM platform_admins WHERE user_id=$1::uuid)", ctx.user_id):
