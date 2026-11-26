@@ -765,3 +765,81 @@ html.dikevia-standard-app :focus-visible {outline-color:rgba(94,151,204,.55)!imp
   50% {transform:scale(1.045);box-shadow:0 0 0 13px rgba(117,174,221,.07),0 0 46px rgba(83,151,208,.36),inset 0 0 20px rgba(255,255,255,.95)}
 }
 @media(prefers-reduced-motion:reduce){html.dikevia-standard-app .juris-welcome-icon{animation:none!important}}
+
+
+/* Dikévia — correction de portée : thème glacier pour les deux espaces */
+html.dikevia-standard-app,
+html.dikevia-admin-mode {
+  color-scheme: light !important;
+  --dk-bg:#f4f7fb; --dk-panel:#ffffff; --dk-border:#dce6f0;
+  --dk-ink:#26364a; --dk-muted:#718096;
+  background:#f4f7fb !important; color:#26364a !important;
+}
+html.dikevia-standard-app body,
+html.dikevia-admin-mode body {
+  background:#f4f7fb !important; color:#26364a !important;
+}
+html.dikevia-standard-app .top,
+html.dikevia-admin-mode .top {
+  background:#ffffff !important; color:#26364a !important;
+  border-bottom:1px solid #dce6f0 !important;
+  box-shadow:0 4px 22px rgba(40,67,98,.07) !important;
+}
+html.dikevia-standard-app .brand,
+html.dikevia-admin-mode .brand,
+html.dikevia-standard-app #userLabel,
+html.dikevia-admin-mode #userLabel {color:#26364a !important}
+html.dikevia-standard-app .brand:before,
+html.dikevia-admin-mode .brand:before {
+  border-color:#c8d9eb !important; background-color:#f2f7fc !important;
+  filter:none !important;
+}
+html.dikevia-standard-app button,
+html.dikevia-admin-mode button,
+html.dikevia-standard-app .button,
+html.dikevia-admin-mode .button {
+  background:#477fae !important; color:#fff !important;
+  border-color:#477fae !important;
+}
+html.dikevia-standard-app button.secondary,
+html.dikevia-admin-mode button.secondary,
+html.dikevia-admin-mode .nav,
+html.dikevia-standard-app .standard-drawer .nav {
+  background:#f3f7fc !important; color:#42698f !important;
+  border-color:#dce7f2 !important;
+}
+html.dikevia-standard-app button:hover,
+html.dikevia-admin-mode button:hover {filter:brightness(.97)}
+html.dikevia-standard-app input,
+html.dikevia-standard-app select,
+html.dikevia-standard-app textarea,
+html.dikevia-admin-mode input,
+html.dikevia-admin-mode select,
+html.dikevia-admin-mode textarea {
+  background:#fff !important; color:#26364a !important;
+  border-color:#cfdeec !important;
+}
+html.dikevia-admin-mode .side,
+html.dikevia-admin-mode .panel,
+html.dikevia-admin-mode .card,
+html.dikevia-admin-mode .auth {
+  background:#fff !important; color:#34465c !important;
+  border-color:#dce6f0 !important;
+  box-shadow:0 5px 22px rgba(50,88,130,.045) !important;
+}
+html.dikevia-admin-mode .nav {border-radius:9px !important}
+html.dikevia-admin-mode .nav.active,
+html.dikevia-admin-mode .nav:hover {
+  background:#eaf3fb !important; color:#315f8d !important;
+}
+html.dikevia-admin-mode .notice {
+  background:#f7faff !important; color:#64758a !important;
+  border-color:#dce7f2 !important;
+}
+html.dikevia-admin-mode .muted,
+html.dikevia-admin-mode th,
+html.dikevia-admin-mode footer {color:#718096 !important}
+html.dikevia-admin-mode .pill {background:#edf4fb !important;color:#426f9e !important}
+html.dikevia-admin-mode .message {background:#edf5fc !important;color:#344f6b !important}
+html.dikevia-admin-mode .token {background:#f3f7fc !important;color:#34465c !important}
+html.dikevia-admin-mode .top .brand small {color:#718096 !important}
