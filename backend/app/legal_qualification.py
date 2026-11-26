@@ -477,6 +477,14 @@ def qualify_legal_question(
             scope_evidence = matched[:3]
             break
 
+    working_time_folded = _fold(str(question or ""))
+    if re.search(r"\\b(?:emploi\\s+)?a\\s+temps\\s+non\\s+complet\\b", working_time_folded):
+        agent_working_time_status = "NON_COMPLETE_EXPLICIT"
+    elif re.search(r"\\b(?:emploi\\s+)?a\\s+temps\\s+complet\\b|\\btemps\\s+plein\\b", working_time_folded):
+        agent_working_time_status = "FULL_TIME_EXPLICIT"
+    else:
+        agent_working_time_status = "NOT_SPECIFIED"
+
     explicit_self_versant = _explicit_self_versant(question)
     scope_mismatch_versant = (
         explicit_self_versant
@@ -501,6 +509,7 @@ def qualify_legal_question(
         "topic": topic,
         "topics": matched_topics,
         "agent_status": status,
+        "agent_working_time_status": agent_working_time_status,
         "public_service": public_service,
         "employer_document_scope": (
             "LOCAL_EMPLOYER_SELECTED" if public_service == "FPT" and local_employer_selected else "NATIONAL_CORPUS_ONLY"
