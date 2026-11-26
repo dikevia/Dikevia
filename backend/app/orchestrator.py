@@ -1365,7 +1365,10 @@ class LegalOrchestrator:
                     else:
                         result["excerpt"] = decision_text[:9000] + "\n\n[Passages intermédiaires non transmis]\n\n" + decision_text[-3000:]
                         result["retrieval_scope"] = "BEGINNING_AND_FINAL_PASSAGES_FROM_VERIFIED_FULL_TEXT"
-                    scope = classify_public_service_scope(result, target_versant=request.public_service)
+                    scope = classify_public_service_scope(
+                        result, target_versant=request.public_service,
+                        agent_status=legal_context.get("agent_status"),
+                    )
                     result["public_service_scope"] = scope["scope"]
                     result["scope_evidence"] = scope["evidence"]
                     result["analysis_eligible"] = scope["analysis_eligible"]
@@ -1648,7 +1651,10 @@ class LegalOrchestrator:
                     f"{item.get('title') or 'Article du CGFP'} — version consultée au "
                     f"{item['requested_effective_date']}"
                 )
-            scope_check = classify_public_service_scope(item, target_versant=request.public_service)
+            scope_check = classify_public_service_scope(
+                item, target_versant=request.public_service,
+                agent_status=legal_context.get("agent_status"),
+            )
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
@@ -1801,7 +1807,10 @@ class LegalOrchestrator:
             })
 
         for decision in case_law_full_text_sources:
-            scope_check = classify_public_service_scope(decision, target_versant=request.public_service)
+            scope_check = classify_public_service_scope(
+                decision, target_versant=request.public_service,
+                agent_status=legal_context.get("agent_status"),
+            )
             decision["public_service_scope"] = scope_check["scope"]
             decision["scope_evidence"] = scope_check["evidence"]
             decision["analysis_eligible"] = scope_check["analysis_eligible"]
