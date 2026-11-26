@@ -4,8 +4,7 @@
 The consolidated schema.sql is the installation baseline through migration 009.
 Existing V3.20 databases are adopted at baseline 008 and then apply migration 009.
 Migrations 001-008 are historical/non-reversible; migration 009 has an explicit,
-destructive down SQL for V3.20 upgrades. Migrations 010-019 extend billing,
-legal-dossier, legal-corpus, private-instance, admin-role and chat-throttling support. New migrations require
+destructive down SQL for V3.20 upgrades. Migrations 010-031 extend billing, legal corpus, documents, authentication, quotas and commercial reporting. New migrations require
 a matching down SQL file under database/migrations/rollback/ before application.
 """
 from __future__ import annotations
