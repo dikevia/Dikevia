@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/dikevia-free-vector-search-poc
     paths:
       - "android/**"
       - ".github/workflows/android-beta-apk.yml"
