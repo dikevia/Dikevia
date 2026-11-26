@@ -1,13 +1,15 @@
 # Dikévia Android — éditions standard et administration
 
-Les deux applications Android sont des enveloppes natives distinctes de l'application web Dikévia. Elles utilisent la même API commerciale, le même realm Keycloak et les mêmes comptes ; chaque connexion reste soumise aux droits contrôlés par le serveur.
+Les deux applications Android sont des enveloppes natives distinctes de l'application web Dikévia. Elles partagent le frontend et l'API, mais conservent des parcours d'interface distincts : l'application standard porte l'assistant juridique ; l'application Administration est réservée au pilotage et ne contient pas le chatbot utilisateur.
 
-## Éditions beta
+## Éditions bêta
 
-- **Dikévia standard** — package beta `fr.dikevia.commercial.beta`. Ouvre l'espace de travail des agents, avec l'assistant juridique, les documents et les fonctions de leur organisation.
-- **Dikévia Administration** — package beta `fr.dikevia.admin.beta`. Ouvre l'administration générale, sans interface de conversation. L'accès est refusé par l'API si le compte ne possède pas les droits d'administrateur plateforme.
+- **Dikévia standard** — package bêta `fr.dikevia.commercial.beta`. Ouvre l'espace de travail des agents, avec l'assistant juridique et les fonctions de leur organisation.
+- **Dikévia Administration** — package bêta `fr.dikevia.admin.beta`. Ouvre l'administration générale. L'accès aux fonctions d'administration reste contrôlé côté API par les droits plateforme.
 
-Les deux éditions partagent l'authentification Keycloak (`cfdt-juris-web`) et l'URI de retour OIDC déjà configurée. Le mode d'interface est mémorisé temporairement dans la session WebView pendant le retour d'authentification. Aucun mot de passe ni jeton n'est embarqué dans les APK.
+Les APK bêta construites par le workflow pointent vers le staging Render `https://dikevia-vector-beta-staging.onrender.com`. Le staging est préparé pour Auth0 avec le tenant de développement documenté dans [la procédure Auth0](../docs/47_AUTH0_MIGRATION.md). **Le parcours complet de connexion Auth0 dans la WebView Android n'est pas encore validé sur appareil réel.** Ne pas présenter ces APK comme une version de production.
+
+La production n'a pas été migrée par ce chantier : son fournisseur d'identité et ses services restent hors périmètre. Aucun mot de passe, secret client ou jeton d'accès n'est embarqué dans les APK.
 
 ## Construction et livraison de test
 
@@ -16,8 +18,14 @@ Le workflow GitHub Actions **Dikévia — APK standard et administration** const
 - `dikevia-standard-beta-apk`
 - `dikevia-administration-beta-apk`
 
-Les APK beta sont signés avec la clé debug Android du pipeline et leur téléchargement est temporaire (14 jours). Ils sont destinés aux tests contrôlés, pas à une diffusion publique ni au Play Store.
+Les APK bêta sont signées avec la clé debug Android du pipeline et leur téléchargement est temporaire (14 jours). Elles sont destinées aux tests contrôlés, pas à une diffusion publique ni au Play Store.
 
-## Avant une livraison publique
+## Recette obligatoire avant livraison publique
 
-Une version de production nécessite une clé de signature dédiée et conservée hors du dépôt, une stratégie de mise à jour/versionnement, des tests sur appareils réels, la validation de l'accès administrateur par l'API, et une publication séparée. Ne jamais ajouter de secret de signature, de mot de passe ou de jeton au dépôt ou aux artefacts.
+- Valider les connexions Auth0 et les retours OIDC sur appareils Android réels, pour les deux éditions.
+- Vérifier les liens profonds, le retour après authentification et la conservation du mode standard/administration.
+- Vérifier que l'application Administration n'expose aucun écran de conversation.
+- Vérifier les rôles et les autorisations côté API, sans se fier au seul masquage de l'interface.
+- Préparer une clé de signature dédiée et conservée hors du dépôt, une stratégie de mise à jour/versionnement et une publication séparée.
+
+Ne jamais ajouter de secret de signature, de mot de passe ou de jeton au dépôt ou aux artefacts.
