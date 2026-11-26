@@ -357,6 +357,8 @@ async def prepare_instance_with_legal_sources(
     failed = 0
     for family, value in zip(families, calls):
         if isinstance(value, BaseException):
+            if not isinstance(value, Exception):
+                raise value
             failed += 1
             searches.append({
                 "family": family,
