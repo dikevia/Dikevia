@@ -748,7 +748,9 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
 
     ranked.sort(key=lambda item: (-float(item["score"]), item["article"]))
     for index, item in enumerate(ranked):
-        if index == 0:
+        if index == 0 and item.get("relevance_label") not in {
+            "Correspondance lexicale — pertinence à vérifier",
+        }:
             item["relevance_label"] = "Premier résultat à examiner"
     return {
         **base,
