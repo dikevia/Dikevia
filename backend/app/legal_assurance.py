@@ -328,10 +328,10 @@ def _same_legal_date(value: object, expected: object) -> bool:
     expected_date = _parse_legal_date(expected)
     return actual_date is not None and expected_date is not None and actual_date == expected_date
 _WHOLE_PERIOD_ASSERTION_RE = re.compile(
-    r"\b(?:sur|pendant|pour)\s+(?:toute|l['’]ensemble de la)\s+(?:la\s+)?(?:période|année)\b|"
-    r"\b(?:sur|pendant|pour)\s+l['’]ensemble\s+de\s+la\s+période\b|"
-    r"\bdu\s+\d{4}-\d{2}-\d{2}\s+au\s+\d{4}-\d{2}-\d{2}\b|"
-    r"\b(?:pendant|durant|au cours de|sur|pour)\s+(?:toute\s+)?(?:l['’]année\s+)?\d{4}\b",
+    r"\b(?:sur|pendant|durant|pour|au cours de)\s+"
+    r"(?:toute\s+)?(?:(?:la|l['’])\s*)?(?:période|année)\b|"
+    r"\b(?:sur|pendant|durant|pour)\s+l['’]ensemble\s+de\s+la\s+(?:période|année)\b|"
+    r"\bdu\s+\d{4}-\d{2}-\d{2}\s+au\s+\d{4}-\d{2}-\d{2}\b",
     re.IGNORECASE,
 )
 _EVIDENCE_STOPWORDS = {
