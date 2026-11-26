@@ -594,6 +594,14 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
     free_active_users = seat_counts["free_active_users"]
     active_users = paid_active_users + free_active_users
     entitlements = resolve_entitlements(plan_code, plan_status, founder=bool(founder_entitlement))
+    daily_questions_used = 0
+    if entitlements.daily_question_limit is not None:
+        daily_questions_used = await ctx.conn.fetchval(
+            """SELECT COALESCE((SELECT question_count FROM chat_daily_question_usage
+                WHERE organization_id=$1::uuid AND user_id=$2::uuid
+                  AND usage_date=(now() AT TIME ZONE 'Europe/Paris')::date),0)""",
+            ctx.organization_id, ctx.user_id,
+        )
     return {"plan_code": plan_code, "status": plan_status, "provider": row["provider"] if row else None,
             "max_users": entitlements.max_users, "active_users": active_users,
             "paid_active_users": paid_active_users, "free_active_users": free_active_users,
@@ -603,6 +611,7 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
             "founder_entitlement": bool(founder_entitlement),
             "premium_access": entitlements.syndicate_tools,
             "daily_question_limit": entitlements.daily_question_limit,
+            "daily_questions_used": int(daily_questions_used or 0),
             "features": {"chatbot": entitlements.chatbot, "syndicate_tools": entitlements.syndicate_tools},
             "updated_at": row["updated_at"] if row else None}
 
