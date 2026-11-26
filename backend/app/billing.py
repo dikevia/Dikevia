@@ -11,41 +11,72 @@ import time
 from typing import Any
 
 PLANS: dict[str, dict[str, Any]] = {
-    # Official Dikévia catalogue. Prices are TTC; credits are monthly.
-    "ESSENTIEL": {"name": "Essentiel", "amount": 1490, "annual_amount": 14900, "currency": "eur", "interval": "month", "annual_interval": "year", "max_users": 1, "monthly_credits": 125, "public": True, "tax_inclusive": True},
-    "PRO": {"name": "Pro", "amount": 2900, "annual_amount": 29000, "currency": "eur", "interval": "month", "annual_interval": "year", "max_users": 1, "monthly_credits": 248, "public": True, "tax_inclusive": True},
-    "EQUIPE_INSTANCES": {"name": "Équipe & Instances", "amount": 11900, "annual_amount": 119000, "currency": "eur", "interval": "month", "annual_interval": "year", "max_users": 5, "monthly_credits": 1000, "public": True, "tax_inclusive": True},
-    "COLLECTIVITE_SYNDICATS": {"name": "Collectivité & Syndicats", "amount": 29900, "annual_amount": 299000, "currency": "eur", "interval": "month", "annual_interval": "year", "max_users": 15, "monthly_credits": 2450, "public": True, "tax_inclusive": True},
-    # Existing subscriptions are preserved, but these obsolete offers are no longer sold.
-    "INDIVIDUAL_1": {"name": "Ancienne offre Individuel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 1, "public": False, "tax_inclusive": True},
-    "SYNDICAT_10": {"name": "Ancienne offre Syndicat 10", "amount": 8000, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
-    "SYNDICAT_50": {"name": "Ancienne offre Syndicat 50", "amount": 30000, "currency": "eur", "interval": "month", "max_users": 50, "public": False, "tax_inclusive": True},
-    "LEGACY_ESSENTIAL_3": {"name": "Ancienne offre Essentiel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 3, "public": False, "tax_inclusive": True},
-    "LEGACY_SYNDICAT_10": {"name": "Ancienne offre Syndicat", "amount": 5000, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
-    "FOUNDING_FREE": {"name": "Accès offert organisation", "amount": 0, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "tax_inclusive": True},
+    # Current catalogue. Syndicate prices remain unset until explicitly decided.
+    "AGENT_5_QUESTIONS": {
+        "name": "Agent", "amount": 500, "currency": "eur", "interval": "month",
+        "max_users": 1, "daily_question_limit": 5, "premium": False,
+        "public": True, "purchasable": False, "tax_inclusive": True,
+    },
+    "SYNDICAT_5_ACCES": {
+        "name": "Syndicat · 5 accès", "amount": None, "currency": "eur",
+        "interval": "month", "max_users": 5, "daily_question_limit": None,
+        "premium": True, "public": True, "purchasable": False,
+    },
+    "SYNDICAT_10_ACCES": {
+        "name": "Syndicat · 10 accès", "amount": None, "currency": "eur",
+        "interval": "month", "max_users": 10, "daily_question_limit": None,
+        "premium": True, "public": True, "purchasable": False,
+    },
+    "SYNDICAT_15_ACCES": {
+        "name": "Syndicat · 15 accès", "amount": None, "currency": "eur",
+        "interval": "month", "max_users": 15, "daily_question_limit": None,
+        "premium": True, "public": True, "purchasable": False,
+    },
+    # Historical codes remain readable for existing subscription records only.
+    # They are not published, cannot be purchased, and do not grant new premium tools.
+    "ESSENTIEL": {"name": "Offre historique Essentiel", "amount": 1490, "currency": "eur", "interval": "month", "max_users": 1, "public": False, "purchasable": False},
+    "PRO": {"name": "Offre historique Pro", "amount": 2900, "currency": "eur", "interval": "month", "max_users": 1, "public": False, "purchasable": False},
+    "EQUIPE_INSTANCES": {"name": "Offre historique Équipe & Instances", "amount": 11900, "currency": "eur", "interval": "month", "max_users": 5, "public": False, "purchasable": False},
+    "COLLECTIVITE_SYNDICATS": {"name": "Offre historique Collectivité & Syndicats", "amount": 29900, "currency": "eur", "interval": "month", "max_users": 15, "public": False, "purchasable": False},
+    "INDIVIDUAL_1": {"name": "Ancienne offre Individuel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 1, "public": False, "purchasable": False},
+    "SYNDICAT_10": {"name": "Ancienne offre Syndicat 10", "amount": 8000, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "purchasable": False},
+    "SYNDICAT_50": {"name": "Ancienne offre Syndicat 50", "amount": 30000, "currency": "eur", "interval": "month", "max_users": 50, "public": False, "purchasable": False},
+    "LEGACY_ESSENTIAL_3": {"name": "Ancienne offre Essentiel", "amount": 1500, "currency": "eur", "interval": "month", "max_users": 3, "public": False, "purchasable": False},
+    "LEGACY_SYNDICAT_10": {"name": "Ancienne offre Syndicat", "amount": 5000, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "purchasable": False},
+    "FOUNDING_FREE": {"name": "Accès fondateur", "amount": 0, "currency": "eur", "interval": "month", "max_users": 10, "public": False, "purchasable": False},
 }
+
+SYNDICATE_PLAN_CODES = frozenset({
+    "SYNDICAT_5_ACCES", "SYNDICAT_10_ACCES", "SYNDICAT_15_ACCES",
+})
 
 
 def public_plans() -> list[dict[str, Any]]:
-    return [
-        {
+    """Return only the current two-category catalogue; unset syndicate prices stay unset."""
+    plans = []
+    for code, plan in PLANS.items():
+        if not plan.get("public", False):
+            continue
+        amount = plan.get("amount")
+        plans.append({
             "code": code,
             "name": plan["name"],
-            "amount_cents": plan["amount"],
-            "annual_amount_cents": plan["annual_amount"],
+            "amount_cents": amount,
             "currency": plan["currency"],
             "interval": plan["interval"],
-            "annual_interval": plan["annual_interval"],
             "max_users": plan["max_users"],
-            "monthly_credits": plan["monthly_credits"],
-            "tax_behavior": "inclusive",
-            "price": f"{plan['amount'] / 100:.2f} € TTC / mois",
-            "annual_price": f"{plan['annual_amount'] / 100:.2f} € TTC / an",
-            "description": f"{plan['max_users']} accès · {plan['monthly_credits']} crédits par mois",
-        }
-        for code, plan in PLANS.items()
-        if plan.get("public", False)
-    ]
+            "daily_question_limit": plan.get("daily_question_limit"),
+            "premium": bool(plan.get("premium", False)),
+            "purchasable": bool(plan.get("purchasable", False)),
+            "tax_behavior": "inclusive" if plan.get("tax_inclusive") else "unspecified",
+            "price": f"{amount / 100:.2f} € TTC / mois" if amount is not None else None,
+            "description": (
+                "Chatbot juridique uniquement · 5 questions par jour"
+                if code == "AGENT_5_QUESTIONS"
+                else f"{plan['max_users']} accès · toutes les fonctionnalités · utilisation sans quota quotidien"
+            ),
+        })
+    return plans
 
 
 def verify_stripe_signature(payload: bytes, header: str | None, secret: str,
