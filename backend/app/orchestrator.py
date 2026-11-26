@@ -2424,6 +2424,15 @@ class LegalOrchestrator:
             missing.append("La délibération de la collectivité et le dispositif local de compensation restent à vérifier.")
 
         if ai_answer:
+            # Conseils pratiques ajoutés après validation des affirmations juridiques :
+            # ils ne sont pas présentés comme des règles de droit ni soumis au contrôle de citation.
+            if any(source.get("ihts_relevant") is True for source in ai_sources):
+                ai_answer += (
+                    "\n\nDémarches utiles :"
+                    "\n• Conservez le relevé des heures réellement effectuées et les éléments montrant qu'elles ont été demandées ou validées."
+                    "\n• Demandez à votre service RH quel dispositif de compensation s'applique (indemnisation ou repos) et quelle délibération locale le prévoit."
+                    "\n• Si la réponse ne correspond pas aux textes ou aux pièces de votre situation, faites examiner le dossier par un référent juridique ou un représentant syndical."
+                )
             answer = (ai_answer + "\n\n---\nStatut : analyse assistée à partir des sources affichées. "
                 "Le snapshot du CGFP est une consolidation documentaire datée du 31 octobre 2026, non une consultation en direct de Légifrance ; il sert aux questions générales et ne reconstitue pas une version historique. Les ressources Service-Public, institutionnelles et professionnelles sont uniquement informatives et ne fondent pas les affirmations juridiques. Les actes locaux restent à vérifier. Le contrôle automatique vérifie l'identifiant de source, la citation et la présence exacte de l'extrait ; il ne certifie pas à lui seul la justesse de l'interprétation juridique. Une validation juridique humaine reste nécessaire.")
         else:
