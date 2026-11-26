@@ -79,3 +79,32 @@ Le développeur devra vérifier sur le compte PISTE de l'organisation que les CG
 La consultation du texte intégral CETAT via `/consult/juri` est considérée expérimentale dans le kit : l'endpoint d'ingestion correspondant est désactivé par défaut (`LEGIFRANCE_CETAT_FULLTEXT_ENABLED=false`). Le développeur devra confirmer le contrat sur PISTE sandbox avec une décision connue avant de l'activer.
 
 Pour les textes `LODA_DATE`, le statut temporel `IN_FORCE_ON_REQUESTED_DATE` provient du couple `DATE_VERSION` + consultation datée `/consult/legiPart` avec identifiant retourné concordant. Si la réponse de recherche ne fournit pas de libellé d'état juridique, le statut brut reste `UNKNOWN` dans les métadonnées ; seule la version consultée à la date demandée est qualifiée comme version applicable à cette date.
+
+
+## Audit du corpus national — 26 novembre 2026
+
+### Branche Neon de test
+
+Contrôle en lecture seule de la branche `dikevia-corpus-ingestion-test` :
+
+- **4 616 documents** : 4 242 CGFP, 199 fiches Service-Public, 18 ressources institutionnelles et 157 décisions du Conseil d'État.
+- **6 147 fragments** : tous contiennent du texte intégral et sont indexés lexicalement.
+- **5 667 embeddings** dans la colonne multilingue 384 dimensions ; 480 fragments ne disposent pas encore d'embedding.
+- La présence des embeddings ne prouve pas que la recherche vectorielle est activée dans le service qui utilise cette branche.
+
+### État de vérification des sources
+
+| Source | Documents | Statut technique | Limites constatées |
+|---|---:|---|---|
+| CGFP snapshot | 4 242 | `IMPORTED_UNVERIFIED` | Statut juridique `UNKNOWN`, aucune date de validité ; les 4 242 liens renvoient à la page générale du code, pas à un article Légifrance individualisé |
+| Service-Public | 199 | `IMPORTED_UNVERIFIED` | Statut `UNKNOWN`, pas de dates de signature ou de publication dans les métadonnées importées |
+| Ressources institutionnelles | 18 | `IMPORTED_UNVERIFIED` | Statut `UNKNOWN`, seules 3 fiches ont une date de publication |
+| Open Data justice administrative | 157 | `OFFICIAL_XML_IMPORTED` | Décisions du Conseil d'État uniquement dans cet import ; dates de décision et de mise à jour, numéros et ECLI présents, mais statut et version juridique restent `UNKNOWN` |
+
+Les 157 décisions ont été corrigées **uniquement sur cette branche de test** : le code juridiction `CE` est restitué comme Conseil d'État, avec le siège à Paris, la section et la formation lorsque ces informations existent. Les cartes de source affichent désormais l'ECLI et la date de mise à jour source. Cette collecte partielle ne constitue pas une couverture exhaustive de la jurisprudence administrative.
+
+### État de la base de production
+
+Contrôle de la branche Neon `production` : **0 `legal_documents`, 0 `legal_document_versions`, 0 `legal_chunks`**. Le corpus partagé de cette base n'est donc pas alimenté. Le PDF et l'index CGFP embarqués dans l'application restent disponibles pour le parcours local prévu, mais ils ne remplacent pas l'import du corpus national partagé.
+
+**Conséquence :** ne pas annoncer que les 4 616 documents et les 5 667 embeddings sont déjà disponibles en production. La promotion du corpus exige une recette de recherche, la vérification des sources, puis un import contrôlé sur la base cible avec le rôle dédié. Aucun transfert vers la base de production n'a été effectué lors de cet audit.

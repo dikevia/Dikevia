@@ -508,7 +508,8 @@
       "name": "Conseil d'État — Données ouvertes de la justice administrative",
       "publisher": "Conseil d'État",
       "authority_level": "PRIMARY_LEGAL",
-      "status": "CANDIDATE",
+      "status": "REUSE_APPROVED",
+      "reuse_reviewed_at": "2026-11-26",
       "collection_mode": "Archives XML ZIP mensuelles par juridiction, année et mois ; aucun endpoint API documenté",
       "scope": [
         "FPT",
@@ -516,7 +517,7 @@
         "FPH",
         "TRANSVERSAL"
       ],
-      "reuse": "Licence Ouverte 2.0 et CGU propres à la plateforme. Préserver l'intégrité de chaque décision et son contexte. Toute citation doit conserver le numéro, la juridiction, la formation, le siège et la date. Le commentaire éditorial doit être distinct du texte de la décision. Aucune réutilisation à des fins de profilage des magistrats ou personnels de greffe.",
+      "reuse": "Réutilisation commerciale autorisée sous Licence Ouverte Etalab 2.0 et CGU du Conseil d’État (version du 18 janvier 2022). Préserver intégralement chaque décision et son contexte ; tout extrait doit être explicitement signalé comme partiel et permettre l’accès au texte intégral. Afficher le numéro, la juridiction, la formation, le siège, la date de décision, la source et la date de mise à jour. Distinguer nettement tout commentaire éditorial. Respecter le RGPD et la pseudonymisation ; signaler sans délai toute défaillance d’occultation. Interdiction de profiler les magistrats et personnels de greffe.",
       "dataset_url": "https://opendata.justice-administrative.fr/index.html",
       "help_url": "https://opendata.justice-administrative.fr/aide.html",
       "terms_url": "https://opendata.justice-administrative.fr/cgu.html",

@@ -836,3 +836,13 @@ def test_verified_admin_open_data_common_scope_applies_to_all_versants():
         assert result["scope"] == "COMMON_PUBLIC_SERVICE"
         assert result["analysis_eligible"] is True
         assert result["claim_eligible"] is True
+
+
+
+def test_admin_case_law_source_cards_show_ecli_and_source_update_date():
+    from pathlib import Path
+
+    html = (Path(__file__).resolve().parents[2] / "frontend/index.html").read_text(encoding="utf-8")
+    assert "src.raw_metadata?.ecli" in html
+    assert "Données source mises à jour le" in html
+    assert "src.document_kind==='ADMIN_CASELAW'" in html
