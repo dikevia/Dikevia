@@ -148,7 +148,6 @@ def classify_public_service_scope(
         "l114 1": "Article L. 114-1 du CGFP : les agents publics exercent le droit de grève dans le cadre des lois qui le réglementent",
         "l137 1": "Article L. 137-1 du CGFP : composition du dossier individuel de l'agent public",
         "l137 4": "Article L. 137-4 du CGFP : droit d'accès de tout agent public à son dossier individuel",
-        "l532 4": "Article L. 532-4 du CGFP : garanties de communication du dossier et d'assistance du fonctionnaire poursuivi disciplinairement",
     }
     if title_folded.startswith("code general de la fonction publique") and article_ref in common_cgfp_articles:
         official_live_article = source.get("source_type") == "LEGIFRANCE_API"
@@ -167,9 +166,10 @@ def classify_public_service_scope(
             "scope": "FPT",
             "evidence": [
                 "Article L. 532-9 du CGFP : saisine du conseil de discipline par l'autorité territoriale au moyen d'un rapport précisant les faits reprochés et leurs circonstances",
+                "Disposition relative aux fonctionnaires : statut de l'agent à vérifier avant toute conclusion individuelle",
             ],
             "analysis_eligible": target_versant == "FPT",
-            "claim_eligible": target_versant == "FPT" and official_live_article,
+            "claim_eligible": False,
         }
 
     # The CGFP chapter L823-1 to L823-6 states the common statutory TPT
@@ -184,11 +184,12 @@ def classify_public_service_scope(
         return {
             "scope": "COMMON_PUBLIC_SERVICE",
             "evidence": [
-                f"Article {article_ref.upper()} du CGFP : disposition statutaire commune relative au TPT",
-                "Le texte réglementaire propre au versant doit être vérifié pour les modalités d'application",
+                f"Article {article_ref.upper()} du CGFP : disposition statutaire relative au TPT des fonctionnaires",
+                "Le statut de l'agent doit être vérifié : ces articles ne suffisent pas à établir le régime d'un agent contractuel",
+                "Pour la FPT, vérifier également le décret n° 87-602 et les éventuelles exclusions propres aux emplois à temps non complet",
             ],
             "analysis_eligible": True,
-            "claim_eligible": official_live_article,
+            "claim_eligible": False,
         }
     # Articles L. 822-18 to L. 822-23 govern service-related accidents,
     # commuting accidents and occupational disease. They are applicable to
@@ -200,11 +201,11 @@ def classify_public_service_scope(
         return {
             "scope": "FPT",
             "evidence": [
-                f"Article {article_ref.upper()} du CGFP : disposition relative aux accidents de service, accidents de trajet ou maladies contractées en service",
-                "Pour la FPT, vérifier les dispositions d'application du décret n° 87-602 du 30 juillet 1987",
+                f"Article {article_ref.upper()} du CGFP : disposition relative aux accidents de service, accidents de trajet ou maladies contractées en service des fonctionnaires",
+                "Pour la FPT, vérifier le décret n° 87-602 du 30 juillet 1987 et le statut de l'agent : le régime CITIS ne doit pas être transposé aux agents contractuels",
             ],
             "analysis_eligible": True,
-            "claim_eligible": source.get("source_type") == "LEGIFRANCE_API",
+            "claim_eligible": False,
         }
     # Articles L. 332-8 to L. 332-14 belong to the CGFP subsection devoted
     # specifically to permanent contractual employment in the FPT. Their
