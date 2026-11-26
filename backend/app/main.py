@@ -1703,8 +1703,8 @@ async def ingest_administrative_open_data_zip(file: UploadFile = File(...), admi
         raise HTTPException(422, "Aucune décision intégrale pertinente pour la fonction publique territoriale n'a été trouvée dans cette archive.")
     pool = get_corpus_ingest_pool()
     async with pool.acquire() as conn:
-        run = await conn.fetchrow("""INSERT INTO legal_ingestion_runs(source_type,run_mode,status,query_text)
-            VALUES('OTHER_OFFICIAL','BULK_XML_IMPORT','RUNNING',$1) RETURNING id""", file.filename[:250])
+        run = await conn.fetchrow("""INSERT INTO legal_ingestion_runs(source_type,source_key,run_mode,status,query_text)
+            VALUES('OTHER_OFFICIAL','JUSTICE_ADMIN_OPEN_DATA','BULK_XML_IMPORT','RUNNING',$1) RETURNING id""", file.filename[:250])
         imported = rejected = 0
         try:
             async with conn.transaction():
