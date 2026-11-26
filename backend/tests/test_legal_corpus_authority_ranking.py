@@ -130,6 +130,9 @@ async def test_upsert_fills_official_source_version_id_when_same_version_is_rein
         "source_status": "OFFICIAL_TEXT_RETRIEVED",
     })
 
+    document_query, document_args = conn.fetchrow_calls[0]
+    assert "source_key" in document_query
+    assert document_args[2] == "LEGIFRANCE_PISTE"
     version_query, version_args = conn.fetchrow_calls[1]
     assert "source_version_id=COALESCE(EXCLUDED.source_version_id,legal_document_versions.source_version_id)" in version_query
     assert version_args[2] == "LEGIARTI000000000001"
@@ -226,3 +229,23 @@ async def test_corpus_search_rejects_invalid_query_embeddings_before_database_ac
         )
 
     assert conn.query is None
+
+
+
+def test_source_key_resolution_uses_registered_official_and_institutional_sources():
+    from app.legal_corpus import resolve_legal_source_key
+
+    assert resolve_legal_source_key({"source_type": "LEGIFRANCE_LEGI"}) == "LEGIFRANCE_PISTE"
+    assert resolve_legal_source_key({
+        "source_type": "OTHER_OFFICIAL",
+        "raw_metadata": {"import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML"},
+    }) == "JUSTICE_ADMIN_OPEN_DATA"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "cdg-35"},
+    }) == "CDG35"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "cfdt-interco"},
+    }) == "CFDT_INTERCO"
+    assert resolve_legal_source_key({"source_type": "INSTITUTIONAL_GUIDANCE"}) is None
