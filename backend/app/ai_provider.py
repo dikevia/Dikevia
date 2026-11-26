@@ -38,9 +38,9 @@ def _log_provider_failure(operation: str, exc: Exception) -> None:
             detail = detail.replace(settings.ai_api_key, "[REDACTED]")
         detail = detail[:400]
         logger.warning(
-            "AI_PROVIDER_REQUEST_FAILED provider=%s operation=%s http_status=%s detail=%s",
+            "AI_PROVIDER_REQUEST_FAILED provider=%s model=%s operation=%s http_status=%s detail=%s",
             "gemini" if _is_gemini_provider() else "openai_compatible",
-            operation, response.status_code, detail,
+            settings.ai_model or "not-configured", operation, response.status_code, detail,
         )
         return
     logger.warning(
@@ -336,31 +336,59 @@ class AIAnalysisRefusedNoSources(RuntimeError):
     pass
 
 
-async def _post_chat_completion(client, url: str, *, headers: dict, payload: dict):
-    """Bounded retry plus one configured Gemini model fallback for capacity-only 503s.
+def _is_gemini_model_not_found_response(response: httpx.Response) -> bool:
+    """Recognize a model-specific 404 without mistaking a broken API route for one."""
+    if response.status_code != 404:
+        return False
+    try:
+        payload = response.json()
+    except ValueError:
+        return False
+    records = payload if isinstance(payload, list) else [payload]
+    fragments = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        error = record.get("error")
+        if isinstance(error, dict):
+            fragments.extend(str(error.get(key) or "") for key in ("status", "code", "message"))
+        elif isinstance(error, str):
+            fragments.append(error)
+        fragments.extend(str(record.get(key) or "") for key in ("status", "code", "message"))
+    detail = " ".join(fragments).casefold()
+    return "model" in detail and any(
+        marker in detail for marker in (
+            "not found", "not_found", "not supported", "does not exist",
+            "unknown model", "no longer available", "no longer supported",
+        )
+    )
 
-    Authentication, quota and request errors are never retried or redirected to
-    another model. The fallback uses the same provider, credentials and prompt;
-    downstream source/citation/claim validation remains unchanged.
+
+async def _post_chat_completion(client, url: str, *, headers: dict, payload: dict):
+    """Bounded retries plus configured Gemini fallbacks for capacity or missing-model errors.
+
+    Authentication, quota and unrelated route/request errors are never retried or
+    redirected to another model. The fallback uses the same provider, credentials
+    and prompt; downstream source/citation/claim validation remains unchanged.
     """
     transient_statuses = {500, 502, 503, 504}
     primary_model = payload.get("model")
-    fallback_models = []
-    if _is_gemini_provider():
-        configured = getattr(settings, "ai_fallback_models", "gemini-2.5-flash-lite")
-        if isinstance(configured, str):
-            fallback_models = [
-                item.strip() for item in configured.split(",")
-                if item.strip() and item.strip() != primary_model
-            ][:2]
+    fallback_models = (
+        _gemini_fallback_model_candidates(primary_model)
+        if _is_gemini_provider() else []
+    )
 
     models = [(primary_model, 2)] + [(model, 1) for model in fallback_models]
     for model, max_attempts in models:
         request_payload = dict(payload)
         if model:
             request_payload["model"] = model
+        model_not_found = False
         for attempt in range(max_attempts):
             response = await client.post(url, headers=headers, json=request_payload)
+            if _is_gemini_provider() and _is_gemini_model_not_found_response(response):
+                model_not_found = True
+                break
             if response.status_code not in transient_statuses:
                 response.raise_for_status()
                 return response
@@ -373,7 +401,7 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
                 await asyncio.sleep(0.6)
                 continue
             response.raise_for_status()
-        if response.status_code == 503:
+        if response.status_code == 503 or model_not_found:
             continue
     response.raise_for_status()
 
@@ -861,6 +889,26 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         raise AIProviderUnavailable("Le fournisseur IA est temporairement indisponible.") from exc
 
 
+_GEMINI_RETIRED_MODEL_FALLBACKS = {
+    "gemini-2.5-flash-lite": "gemini-3.5-flash-lite",
+}
+
+
+def _gemini_fallback_model_candidates(primary_model: str | None) -> list[str]:
+    """Resolve configured fallback IDs, migrating the retired Flash-Lite alias."""
+    configured = getattr(settings, "ai_fallback_models", "gemini-3.5-flash-lite")
+    raw_models = configured.split(",") if isinstance(configured, str) else []
+    candidates = []
+    for raw_model in raw_models:
+        model = raw_model.strip()
+        if not model:
+            continue
+        model = _GEMINI_RETIRED_MODEL_FALLBACKS.get(model, model)
+        if model != primary_model and model not in candidates:
+            candidates.append(model)
+    return candidates[:2]
+
+
 async def _check_provider_availability_uncached(*, transport: httpx.AsyncBaseTransport | None = None) -> dict:
     """Check model availability through a read-only provider endpoint; never generate text."""
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
@@ -871,20 +919,24 @@ async def _check_provider_availability_uncached(*, transport: httpx.AsyncBaseTra
             timeout=min(settings.ai_timeout_seconds, 10.0), transport=transport
         ) as client:
             if _is_gemini_provider():
-                # Native Gemini models.get is read-only and accepts the key in a header.
-                model_name = quote(settings.ai_model, safe="")
-                response = await client.get(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}",
-                    headers={"x-goog-api-key": settings.ai_api_key, "Accept": "application/json"},
-                )
-                if response.status_code == 404:
-                    return {"status": "MODEL_NOT_FOUND"}
-                response.raise_for_status()
-                payload = response.json()
-                methods = payload.get("supportedGenerationMethods", []) if isinstance(payload, dict) else []
-                if isinstance(methods, list) and "generateContent" in methods:
-                    return {"status": "AVAILABLE"}
-                return {"status": "MODEL_NOT_GENERATIVE"}
+                # If the configured primary model was retired, check only explicitly
+                # configured fallbacks before reporting the provider unavailable.
+                model_candidates = [settings.ai_model, *_gemini_fallback_model_candidates(settings.ai_model)]
+                for candidate in model_candidates:
+                    model_name = quote(candidate, safe="")
+                    response = await client.get(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}",
+                        headers={"x-goog-api-key": settings.ai_api_key, "Accept": "application/json"},
+                    )
+                    if response.status_code == 404:
+                        continue
+                    response.raise_for_status()
+                    payload = response.json()
+                    methods = payload.get("supportedGenerationMethods", []) if isinstance(payload, dict) else []
+                    if isinstance(methods, list) and "generateContent" in methods:
+                        return {"status": "AVAILABLE"}
+                    return {"status": "MODEL_NOT_GENERATIVE"}
+                return {"status": "MODEL_NOT_FOUND"}
             response = await client.get(
                 base + "/models",
                 headers={"Authorization": f"Bearer {settings.ai_api_key}", "Accept": "application/json"},
