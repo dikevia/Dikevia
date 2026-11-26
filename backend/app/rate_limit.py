@@ -43,7 +43,7 @@ async def consume_chat_request(conn, organization_id: str, user_id: str,
         WHERE organization_id=$1::uuid AND user_id=$2::uuid
           AND window_start < date_trunc('minute',clock_timestamp())-interval '1 day'
         """,
-        user_id,
+        organization_id, user_id,
     )
     count = int(row["request_count"])
     return RateLimitDecision(
@@ -92,6 +92,6 @@ async def consume_daily_chat_question(
         WHERE user_id=$1::uuid
           AND usage_date=(clock_timestamp() AT TIME ZONE 'Europe/Paris')::date
         """,
-        organization_id, user_id,
+        user_id,
     )
     return DailyQuestionDecision(False, int(current_count or 0))
