@@ -305,16 +305,11 @@ def should_use_cgfp_snapshot_fallback(
         and source.get("analysis_eligible") is not False
         for source in (live_sources or [])
     )
-    # An empty list means the live endpoint answered successfully but found
-    # no CGFP article. It is not an outage. Use the snapshot only after an
-    # actual live failure, or when returned live CGFP documents are all
-    # irrelevant to the independently identified research axes.
-    # A successful live request with zero usable CGFP articles is also a
-    # retrieval gap. For general-current-law questions, a relevant dated
-    # snapshot may still provide bounded context; it is never historical proof.
-    live_unusable = bool(live_issue) or (
-        live_sources is not None and not live_covers_an_axis
-    )
+    # A successful live Légifrance lookup is not an outage, even when it
+    # returns no CGFP article. The dated snapshot is used only when the live
+    # CGFP endpoint itself failed; this avoids mixing stale snapshot evidence
+    # into an answer when current official retrieval succeeded.
+    live_unusable = bool(live_issue)
     return bool(
         live_unusable and isinstance(found, dict) and found.get("results")
         and any(
