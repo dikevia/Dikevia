@@ -369,3 +369,36 @@ def test_cmo_query_keeps_exact_cgfp_article_without_ordinary_wording():
         "text": "Le fonctionnaire en congé de maladie perçoit 90 % de son traitement pendant trois mois.",
     }
     assert is_topic_relevant_source(question, source) is True
+
+def test_semantic_direct_verdict_cannot_override_cmo_citis_exclusion(monkeypatch):
+    import asyncio
+    import app.orchestrator as orchestrator
+
+    async def fake_evaluate_source_relevance(**kwargs):
+        return {"citis": "DIRECT"}
+
+    monkeypatch.setattr(orchestrator, "evaluate_source_relevance", fake_evaluate_source_relevance)
+    question = (
+        "Je suis fonctionnaire territorial titulaire. Quelles sont les règles "
+        "du congé de maladie ordinaire, notamment le jour de carence et le maintien de rémunération ?"
+    )
+    source = {
+        "source_id": "citis",
+        "title": "Code général de la fonction publique — article L822-21",
+        "article": "L822-21",
+        "text": (
+            "Le fonctionnaire en activité a droit à un congé pour invalidité "
+            "temporaire imputable au service lorsque son incapacité temporaire "
+            "de travail est consécutive à un accident reconnu imputable au service."
+        ),
+    }
+
+    asyncio.run(orchestrator.apply_semantic_source_relevance(
+        question=question,
+        research_axes=[question],
+        sources=[source],
+        target_versant="FPT",
+    ))
+
+    assert source["research_axis_relevant"] is False
+    assert source["semantic_relevance"] == "BLOCKED_BY_TOPIC_GUARD"
