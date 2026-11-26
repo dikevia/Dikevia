@@ -222,7 +222,7 @@ INSERT INTO legal_source_registry (
     'RESTRICTED','EXCLUDED','Contenu payant ou sous licence. Exclu de toute ingestion sans contrat explicite.'
 ),
 (
-    'DALLoz','Dalloz — documentation juridique','SECONDARY_DOCTRINE',
+    'DALLOZ','Dalloz — documentation juridique','SECONDARY_DOCTRINE',
     'SECONDARY_DOCTRINE','Dalloz','https://www.dalloz.fr/',
     'EXCLUDED',NULL,NULL,NULL,'NOT_AUTHORIZED',false,false,false,false,
     'RESTRICTED','EXCLUDED','Contenu éditorial protégé ou sous abonnement. Exclu de toute ingestion sans contrat explicite.'
