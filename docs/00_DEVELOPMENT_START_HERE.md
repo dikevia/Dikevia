@@ -51,14 +51,15 @@ Le fichier `render.yaml` et certains fichiers de configuration historiques conti
 
 ## 5. État de validation constaté
 
-Au commit `b48c92f7e69449f46ec5f02782b7119de6fdfb43` :
+Au commit `79b5fa435af56a01c015885a4a76d987b36c4155` (26 novembre 2026) :
 
-- le workflow de génération des APK Android est terminé avec succès ;
-- le workflow CI général est en échec sur l'étape de tests unitaires, contractuels et d'intégration PostgreSQL/RLS ;
-- le succès de compilation d'un APK ne prouve pas que le parcours de connexion Auth0 fonctionne sur l'appareil ;
-- la connexion Android doit donc rester un sujet ouvert jusqu'à un test utilisateur concluant.
+- le workflow CI général est terminé avec succès ;
+- **1 293 tests passent** ; les tests unitaires, contractuels et d'intégration PostgreSQL/RLS sont verts ;
+- les contrôles de syntaxe, lint, analyse statique de sécurité, audit de dépendances, scripts shell, Docker Compose et kit développeur passent ;
+- le workflow de génération des APK Android avait également réussi sur le commit `dfc6bbf59ceed2871a001a399d0cfc9c22a1ecf0` ;
+- le succès de compilation d'un APK ne prouve toujours pas que le parcours de connexion Auth0 fonctionne sur un appareil réel.
 
-Ne pas annoncer une version stable ou une mise en production sur la seule base de la compilation.
+Le CI vert valide le dépôt et les tests automatisés ; il ne remplace pas une recette fonctionnelle Auth0, Android, IA, Légifrance et hébergement. Ne pas annoncer une mise en production sur la seule base du CI.
 
 ## 6. Procédure de validation locale
 
