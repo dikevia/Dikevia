@@ -51,7 +51,7 @@ Le fichier `render.yaml` et certains fichiers de configuration historiques conti
 
 ## 5. État de validation constaté
 
-Au commit `79b5fa435af56a01c015885a4a76d987b36c4155` (26 novembre 2026) :
+Au commit `f99e0ca01db414399d467a2b3c46653fa2cf7e28` (26 novembre 2026) :
 
 - le workflow CI général est terminé avec succès ;
 - **1 293 tests passent** ; les tests unitaires, contractuels et d'intégration PostgreSQL/RLS sont verts ;
