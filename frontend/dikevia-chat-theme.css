@@ -1364,3 +1364,183 @@ html.dikevia-standard-app .juris-bubble.juris-typing:before {
   html.dikevia-standard-app .juris-chat {background:#fff!important}
   html.dikevia-standard-app .juris-composer {background:#fff!important}
 }
+
+
+/* DIKEVIA JARVIS — palette verrouillée : glacier / acier / bleu nuit.
+   Override final volontairement placé après les anciennes couches visuelles. */
+html.dikevia-standard-app {
+  color-scheme: light!important;
+  --dk-bg:#f3f7fb!important; --dk-header:#fafdff!important;
+  --dk-panel:#ffffff!important; --dk-panel-raised:#f5f9fd!important;
+  --dk-panel-hover:#eaf3fb!important; --dk-border:#dce6f0!important;
+  --dk-border-strong:#c5d5e5!important; --dk-ink:#17283b!important;
+  --dk-muted:#63758a!important; --dk-muted-2:#8495a8!important;
+  --dk-gold:#3d9bd7!important; --dk-gold-soft:#6bbbe9!important;
+  --dk-emerald:#287fbd!important; --dk-emerald-bright:#54b5ed!important;
+  --dk-user:#e7f1fa!important; --dk-shadow:0 16px 44px rgba(30,69,108,.09)!important;
+  background:#f3f7fb!important;color:#17283b!important;
+}
+html.dikevia-standard-app body {
+  background:radial-gradient(ellipse at 50% -20%,rgba(95,181,235,.18),transparent 48%),#f3f7fb!important;
+  color:#17283b!important;
+}
+html.dikevia-standard-app .top {
+  background:rgba(250,253,255,.94)!important;color:#142b43!important;
+  border-bottom:1px solid #dce8f3!important;box-shadow:0 5px 24px rgba(31,74,112,.07)!important;
+}
+html.dikevia-standard-app .brand {color:#17334f!important}
+html.dikevia-standard-app .brand:before {
+  content:""!important;width:38px;height:38px;border:1px solid #9bc9e8!important;
+  border-radius:13px!important;background:
+    radial-gradient(circle at 50% 50%,#fff 0 12%,#70c8f4 13% 18%,transparent 19%),
+    radial-gradient(circle at 50% 50%,transparent 0 31%,#4aa6dc 32% 35%,transparent 36%),
+    radial-gradient(circle at 50% 50%,transparent 0 49%,#b9e4fa 50% 53%,transparent 54%),
+    linear-gradient(145deg,#fafdff,#e5f4fc)!important;
+  box-shadow:0 0 18px rgba(72,171,224,.20),inset 0 0 12px rgba(83,178,229,.14)!important;
+}
+html.dikevia-standard-app #userLabel {color:#60768c!important}
+html.dikevia-standard-app #logout,
+html.dikevia-standard-app .standard-menu-toggle,
+html.dikevia-standard-app #clearChat {
+  border:1px solid #cbddea!important;background:#f6fbff!important;color:#326f9c!important;
+}
+html.dikevia-standard-app .shell {background:transparent!important}
+html.dikevia-standard-app #view-ask>.heading h1,
+html.dikevia-standard-app .juris-welcome h2 {color:#172f49!important}
+html.dikevia-standard-app #view-ask>.heading .muted,
+html.dikevia-standard-app .juris-welcome p {color:#637991!important}
+html.dikevia-standard-app .juris-chat {
+  border:1px solid #d8e5f0!important;border-radius:22px!important;
+  background:rgba(255,255,255,.94)!important;
+  box-shadow:0 18px 48px rgba(33,77,116,.08),inset 0 1px 0 #fff!important;
+}
+html.dikevia-standard-app .juris-messages {
+  background:linear-gradient(180deg,#fff 0%,#fafdff 100%)!important;
+  scrollbar-color:#a8cde5 transparent!important;
+}
+html.dikevia-standard-app .juris-welcome-icon {
+  position:relative!important;width:86px!important;height:86px!important;
+  border:1px solid #b6d9ef!important;border-radius:50%!important;
+  background:
+    radial-gradient(circle,#fff 0 12%,#bce8ff 13% 17%,transparent 18%),
+    radial-gradient(circle,transparent 0 29%,rgba(69,166,218,.95) 30% 32%,transparent 33%),
+    radial-gradient(circle,transparent 0 43%,rgba(129,203,239,.8) 44% 46%,transparent 47%),
+    linear-gradient(145deg,#fafdff,#e5f4fc)!important;
+  box-shadow:0 0 0 8px rgba(92,180,229,.07),0 0 34px rgba(76,173,226,.24),inset 0 0 20px rgba(91,184,235,.18)!important;
+  animation:jarvis-core-pulse 3.8s ease-in-out infinite!important;
+}
+html.dikevia-standard-app .juris-welcome-icon:before {
+  content:""!important;position:absolute!important;inset:8px!important;width:auto!important;height:auto!important;
+  background:none!important;border:1px solid rgba(60,151,205,.32)!important;border-radius:50%!important;
+}
+html.dikevia-standard-app .juris-welcome-kicker {color:#368fc3!important;letter-spacing:.2em!important}
+html.dikevia-standard-app .juris-suggestions button {
+  border:1px solid #d7e6f1!important;border-radius:14px!important;
+  background:linear-gradient(145deg,#fff,#f3f9fd)!important;color:#315a7b!important;
+  box-shadow:0 4px 14px rgba(36,94,139,.045)!important;
+}
+html.dikevia-standard-app .juris-suggestions button:before {
+  background:#e5f3fb!important;color:#378fc4!important;
+}
+html.dikevia-standard-app .juris-suggestions button:hover {
+  border-color:#8fc5e7!important;background:#eef8fe!important;box-shadow:0 8px 22px rgba(50,133,187,.10)!important;
+}
+html.dikevia-standard-app .juris-message .juris-avatar {
+  border:1px solid #b9d9ed!important;border-radius:12px!important;
+  background:linear-gradient(145deg,#f5fbff,#dceefa)!important;color:#347fae!important;
+  box-shadow:0 4px 14px rgba(50,126,174,.10)!important;
+}
+html.dikevia-standard-app .juris-message.user .juris-avatar {
+  border-color:#d7e3ed!important;background:#e8f0f7!important;color:#526b81!important;
+}
+html.dikevia-standard-app .juris-bubble {
+  border:1px solid #e0e9f1!important;background:#f7fafd!important;color:#263d53!important;
+  box-shadow:0 5px 16px rgba(34,74,111,.045)!important;
+}
+html.dikevia-standard-app .juris-message.user .juris-bubble {
+  border-color:#d1e4f2!important;background:#eaf4fb!important;color:#24435f!important;
+}
+html.dikevia-standard-app .juris-status {
+  border:1px solid #cce4f3!important;background:#edf7fd!important;color:#347eaa!important;
+}
+html.dikevia-standard-app .juris-status.warn {
+  border-color:#f0dfb7!important;background:#fff9eb!important;color:#94713a!important;
+}
+html.dikevia-standard-app .juris-status.bad {
+  border-color:#f0d0d0!important;background:#fff3f3!important;color:#a84f58!important;
+}
+html.dikevia-standard-app .juris-meta,
+html.dikevia-standard-app .juris-composer-foot {color:#8193a5!important}
+html.dikevia-standard-app .juris-sources {border-color:#e1eaf2!important}
+html.dikevia-standard-app .juris-sources>strong,
+html.dikevia-standard-app .juris-source a {color:#347fae!important}
+html.dikevia-standard-app .juris-source {
+  border-color:#dce8f1!important;background:#fafdff!important;
+}
+html.dikevia-standard-app .juris-source strong {color:#2b435a!important}
+html.dikevia-standard-app .juris-source p {color:#657b90!important}
+html.dikevia-standard-app .juris-composer {
+  border-color:#e1eaf2!important;background:rgba(250,253,255,.97)!important;
+}
+html.dikevia-standard-app .juris-input-row {
+  border:1px solid #cbddea!important;border-radius:18px!important;background:#fff!important;
+  box-shadow:0 5px 20px rgba(35,86,128,.055)!important;
+}
+html.dikevia-standard-app .juris-input-row:focus-within {
+  border-color:#68b4df!important;background:#fff!important;
+  box-shadow:0 0 0 3px rgba(80,169,220,.13),0 8px 24px rgba(35,86,128,.08)!important;
+}
+html.dikevia-standard-app .juris-input-row textarea {color:#203950!important}
+html.dikevia-standard-app .juris-input-row textarea::placeholder {color:#91a3b4!important}
+html.dikevia-standard-app .juris-input-row button {
+  border:1px solid #4e9fce!important;border-radius:14px!important;
+  background:linear-gradient(145deg,#58b7e8,#287fb9)!important;color:#fff!important;
+  box-shadow:0 5px 15px rgba(48,139,194,.24)!important;
+}
+html.dikevia-standard-app #dossierPanel,
+html.dikevia-standard-app .juris-context-details {
+  border-color:#d8e6f0!important;background:#fafdff!important;color:#263f56!important;
+}
+html.dikevia-standard-app #dossierPanel h3 {color:#203b55!important}
+html.dikevia-standard-app #dossierPanel input,
+html.dikevia-standard-app #dossierPanel textarea,
+html.dikevia-standard-app #dossierPanel select,
+html.dikevia-standard-app #dossierPanel .dossier-readonly,
+html.dikevia-standard-app .juris-context input,
+html.dikevia-standard-app .juris-context select {
+  border-color:#cbddea!important;background:#fff!important;color:#263f56!important;
+}
+html.dikevia-standard-app .standard-drawer {
+  border-color:#d9e6f0!important;background:linear-gradient(180deg,#fbfdff,#edf5fb)!important;
+  box-shadow:16px 0 48px rgba(32,75,113,.13)!important;
+}
+html.dikevia-standard-app .standard-drawer-head {border-color:#dce8f1!important}
+html.dikevia-standard-app .standard-drawer-title,
+html.dikevia-standard-app .standard-drawer-title span {color:#2e79a9!important}
+html.dikevia-standard-app .standard-drawer-section-title {color:#64839d!important}
+html.dikevia-standard-app .standard-drawer .nav {color:#49657e!important}
+html.dikevia-standard-app .standard-drawer .nav.active {
+  border-color:#c7e1f1!important;background:#e3f2fb!important;color:#277eaf!important;
+}
+html.dikevia-standard-app .standard-drawer .juris-history-item {
+  border-color:#d8e6f0!important;background:#fff!important;color:#4d687f!important;
+}
+html.dikevia-standard-app .standard-drawer-newchat {
+  border:1px solid #b9d9ec!important;background:#e9f5fc!important;color:#317fae!important;
+}
+html.dikevia-standard-app .standard-drawer-footer {border-color:#dce8f1!important;color:#7a8fa2!important}
+html.dikevia-standard-app :focus-visible {outline:3px solid rgba(67,157,209,.45)!important;outline-offset:3px}
+html.dikevia-standard-app .juris-messages,
+html.dikevia-standard-app .standard-drawer {scrollbar-color:#a8cde5 transparent!important}
+@keyframes jarvis-core-pulse {
+  0%,100% {transform:scale(1);filter:brightness(1);box-shadow:0 0 0 8px rgba(92,180,229,.07),0 0 30px rgba(76,173,226,.20),inset 0 0 20px rgba(91,184,235,.18)}
+  50% {transform:scale(1.035);filter:brightness(1.08);box-shadow:0 0 0 12px rgba(92,180,229,.05),0 0 42px rgba(76,173,226,.32),inset 0 0 24px rgba(91,184,235,.24)}
+}
+@media(prefers-reduced-motion:reduce) {
+  html.dikevia-standard-app .juris-welcome-icon {animation:none!important}
+}
+@media(max-width:600px) {
+  html.dikevia-standard-app .top {background:rgba(250,253,255,.97)!important}
+  html.dikevia-standard-app .juris-chat {background:#fff!important}
+  html.dikevia-standard-app .juris-composer {background:#fafdff!important}
+}
