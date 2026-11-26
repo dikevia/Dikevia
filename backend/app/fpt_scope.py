@@ -203,7 +203,7 @@ def classify_public_service_scope(
             "evidence": [
                 f"Article {article_ref.upper()} du CGFP : disposition statutaire relative au TPT des fonctionnaires",
                 "Le statut de l'agent doit être vérifié : ces articles ne suffisent pas à établir le régime d'un agent contractuel",
-                "Pour la FPT, vérifier également le décret n° 87-602 et les éventuelles exclusions propres aux emplois à temps non complet",
+                "Pour les emplois à temps non complet, vérifier les articles 34-1 et 35 du décret n° 91-298 : régime spécifique de TPT et exclusion des articles L. 823-1 à L. 823-6 du CGFP",
             ],
             "analysis_eligible": True,
             "claim_eligible": (
