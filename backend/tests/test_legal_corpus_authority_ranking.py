@@ -255,6 +255,18 @@ def test_source_key_resolution_uses_registered_official_and_institutional_source
         "source_type": "INSTITUTIONAL_GUIDANCE",
         "raw_metadata": {"source_id": "cfdt-interco"},
     }) == "CFDT_INTERCO"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "cnfpt"},
+    }) == "CNFPT"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "dgafp"},
+    }) == "DGAFP"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "info-gouv"},
+    }) == "INFO_GOUV"
     assert resolve_legal_source_key({"source_type": "INSTITUTIONAL_GUIDANCE"}) is None
 
 
@@ -290,5 +302,40 @@ async def test_corpus_import_rejects_full_text_when_source_registry_does_not_all
             "full_text": "Texte intégral non autorisé à l'ingestion. " * 10,
         })
 
+    assert len(conn.fetchrow_calls) == 1
+    assert conn.execute_calls == []
+
+
+
+@pytest.mark.asyncio
+async def test_institutional_guidance_import_requires_source_and_individual_seed_approval():
+    from app.legal_corpus import upsert_legal_document
+
+    class RegistryConn:
+        def __init__(self):
+            self.fetchrow_calls = []
+            self.execute_calls = []
+
+        async def fetchrow(self, query, *args):
+            self.fetchrow_calls.append((query, args))
+            return {"metadata_ingestion_allowed": True, "full_text_ingestion_allowed": True}
+
+        async def execute(self, query, *args):
+            self.execute_calls.append((query, args))
+
+    conn = RegistryConn()
+    with pytest.raises(ValueError, match="source et la ressource individuelle"):
+        await upsert_legal_document(conn, {
+            "source_type": "INSTITUTIONAL_GUIDANCE",
+            "source_id": "unapproved-seed",
+            "title": "Ressource non approuvée",
+            "document_kind": "PROFESSIONAL_GUIDANCE",
+            "full_text": "Contenu documentaire substantiel à titre de test. " * 20,
+            "raw_metadata": {
+                "source_id": "cnfpt",
+                "source_registry_status": "REUSE_APPROVED",
+                "reuse_status": "REVIEW_REQUIRED",
+            },
+        })
     assert len(conn.fetchrow_calls) == 1
     assert conn.execute_calls == []

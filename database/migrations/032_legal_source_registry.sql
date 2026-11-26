@@ -76,6 +76,28 @@ INSERT INTO legal_source_registry (
     'Fiches pratiques de vulgarisation. Toujours conserver attribution et date de mise à jour. Ne jamais traiter ces fiches comme source normative primaire.'
 ),
 (
+    'DGAFP','DGAFP — ressources sélectionnées de la fonction publique','INSTITUTIONAL_GUIDANCE',
+    'OFFICIAL_ADMIN_GUIDANCE','DGAFP','https://www.fonction-publique.gouv.fr/',
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
+    'CONDITIONAL','APPROVED_SEEDS_ONLY',
+    'Le registre documentaire du projet identifie des ressources sélectionnées comme réutilisables. L''ingestion du texte intégral est conditionnée au statut REUSE_APPROVED de la fiche individuelle et à la validation de son champ FPT/FPE.'
+),
+(
+    'CNFPT','CNFPT — ressources sélectionnées de la fonction publique territoriale','INSTITUTIONAL_GUIDANCE',
+    'PROFESSIONAL_GUIDANCE','CNFPT','https://www.cnfpt.fr/',
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
+    'CONDITIONAL','APPROVED_SEEDS_ONLY',
+    'Le registre documentaire du projet identifie des ressources sélectionnées comme réutilisables. L''ingestion du texte intégral est conditionnée au statut REUSE_APPROVED de la fiche individuelle et à la validation de son champ FPT.'
+),
+(
+    'INFO_GOUV','Info.gouv.fr — ressources textuelles sélectionnées','INSTITUTIONAL_GUIDANCE',
+    'OFFICIAL_ADMIN_GUIDANCE','Service d''information du Gouvernement','https://www.info.gouv.fr/',
+    'MANUAL_APPROVED',NULL,NULL,'https://www.info.gouv.fr/mentions-legales',
+    'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
+    'CONDITIONAL','APPROVED_SEEDS_ONLY',
+    'Les conditions de réutilisation sont documentées dans le registre du projet pour quatre ressources sélectionnées uniquement. Aucune aspiration générale du domaine ; exclure les éléments de tiers.'
+),
+(
     'DILA_CIRCULAIRES','DILA — fonds des circulaires','DILA_CIRCULAIRES',
     'OFFICIAL_ADMIN_GUIDANCE','DILA','https://www.legifrance.gouv.fr/',
     'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
@@ -128,73 +150,73 @@ INSERT INTO legal_source_registry (
 (
     'CDG35','CDG 35 — ressources statutaires et RH','INSTITUTIONAL_GUIDANCE',
     'PROFESSIONAL_GUIDANCE','Centre de gestion d''Ille-et-Vilaine','https://www.cdg35.bzh/',
-    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW',
     'Des documents sont déjà présents avec réutilisation approuvée par le responsable du projet. Vérifier les droits et conserver la validation juridique distincte.'
 ),
 (
     'CDG59','CDG 59 — ressources statutaires et RH','INSTITUTIONAL_GUIDANCE',
     'PROFESSIONAL_GUIDANCE','Centre de gestion du Nord','https://www.cdg59.fr/',
-    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW',
     'Des documents sont déjà présents avec réutilisation approuvée par le responsable du projet. Vérifier les droits et conserver la validation juridique distincte.'
 ),
 (
     'CDG69','CDG 69 — ressources statutaires et RH','INSTITUTIONAL_GUIDANCE',
     'PROFESSIONAL_GUIDANCE','Centre de gestion du Rhône et de la Métropole de Lyon','https://www.cdg69.fr/',
-    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW',
     'Des documents sont déjà présents avec réutilisation approuvée par le responsable du projet. Vérifier les droits et conserver la validation juridique distincte.'
 ),
 (
     'CIG_PETITE_COURONNE','CIG Petite Couronne — ressources statutaires','INSTITUTIONAL_GUIDANCE',
     'PROFESSIONAL_GUIDANCE','CIG Petite Couronne','https://www.cig929394.fr/',
-    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW',
     'Ressources professionnelles. Vérifier les droits de réutilisation de chaque document.'
 ),
 (
     'CFDT_INTERCO','CFDT Interco — ressources syndicales','INSTITUTIONAL_GUIDANCE',
     'TRADE_UNION_POSITION','CFDT Interco','https://www.cfdt-interco31.fr/',
-    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW',
     'Position et documentation syndicales. Distinguer revendication, analyse et droit positif. Vérifier les droits sur chaque document.'
 ),
 (
     'CFDT_UFFA','CFDT Fonctions Publiques — UFFA','INSTITUTIONAL_GUIDANCE',
     'TRADE_UNION_POSITION','CFDT Fonctions Publiques','https://uffa.cfdt.fr/',
-    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW',
     'Position et documentation syndicales. Distinguer revendication, analyse et droit positif. Vérifier les droits sur chaque document.'
 ),
 (
     'CFTC_FONCTION_PUBLIQUE','CFTC — Fonction publique','INSTITUTIONAL_GUIDANCE',
     'TRADE_UNION_POSITION','CFTC','https://www.cftc.fr/',
-    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW','Source syndicale secondaire ; ne pas assimiler à une source normative.'
 ),
 (
     'CGT_FONCTION_PUBLIQUE','CGT — Fonction publique','INSTITUTIONAL_GUIDANCE',
     'TRADE_UNION_POSITION','CGT','https://www.cgt.fr/',
-    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW','Source syndicale secondaire ; ne pas assimiler à une source normative.'
 ),
 (
     'FO_FONCTION_PUBLIQUE','FO — Fonction publique','INSTITUTIONAL_GUIDANCE',
     'TRADE_UNION_POSITION','FO','https://www.force-ouvriere.fr/',
-    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW','Source syndicale secondaire ; ne pas assimiler à une source normative.'
 ),
 (
     'SOLIDAIRES_FONCTION_PUBLIQUE','Solidaires — Fonction publique','INSTITUTIONAL_GUIDANCE',
     'TRADE_UNION_POSITION','Solidaires','https://www.solidaires.org/',
-    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW','Source syndicale secondaire ; ne pas assimiler à une source normative.'
 ),
 (
     'UNSA_FONCTION_PUBLIQUE','UNSA — Fonction publique','INSTITUTIONAL_GUIDANCE',
     'TRADE_UNION_POSITION','UNSA','https://www.unsa.org/',
-    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
     'CONDITIONAL','MANUAL_REVIEW','Source syndicale secondaire ; ne pas assimiler à une source normative.'
 ),
 (
@@ -287,8 +309,9 @@ SET source_key = CASE
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cdg-59' THEN 'CDG59'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cdg-69' THEN 'CDG69'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cig-petite-couronne' THEN 'CIG_PETITE_COURONNE'
-    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cnfpt' THEN 'CNFPT_WIKITERRITORIAL'
-    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'dgafp' THEN 'DGAFP_CIRCULAIRES'
+    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cnfpt' THEN 'CNFPT'
+    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'dgafp' THEN 'DGAFP'
+    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'info-gouv' THEN 'INFO_GOUV'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cfdt-interco' THEN 'CFDT_INTERCO'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cfdt-fonctions-publiques' THEN 'CFDT_UFFA'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cftc-fonction-publique' THEN 'CFTC_FONCTION_PUBLIQUE'

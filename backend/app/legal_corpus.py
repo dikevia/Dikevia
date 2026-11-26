@@ -168,8 +168,9 @@ def resolve_legal_source_key(item: dict[str, Any]) -> str | None:
         "cdg-59": "CDG59",
         "cdg-69": "CDG69",
         "cig-petite-couronne": "CIG_PETITE_COURONNE",
-        "cnfpt": "CNFPT_WIKITERRITORIAL",
-        "dgafp": "DGAFP_CIRCULAIRES",
+        "cnfpt": "CNFPT",
+        "dgafp": "DGAFP",
+        "info-gouv": "INFO_GOUV",
         "cfdt-interco": "CFDT_INTERCO",
         "cfdt-fonctions-publiques": "CFDT_UFFA",
         "cftc-fonction-publique": "CFTC_FONCTION_PUBLIQUE",
@@ -200,6 +201,15 @@ async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("La politique du registre interdit l'import des métadonnées de cette source.")
     if text and not source_policy["full_text_ingestion_allowed"]:
         raise ValueError("Le texte intégral de cette source n'est pas autorisé à l'ingestion automatique.")
+    if item.get("source_type") == "INSTITUTIONAL_GUIDANCE":
+        approved = {"REUSE_APPROVED", "APPROVED"}
+        if (
+            metadata.get("source_registry_status") not in approved
+            or metadata.get("reuse_status") not in approved
+        ):
+            raise ValueError(
+                "Import de contenu institutionnel refusé : la source et la ressource individuelle doivent être explicitement approuvées."
+            )
     doc = await conn.fetchrow("""
       INSERT INTO legal_documents(source_type,source_id,source_key,title,document_kind,official_number,jurisdiction,publisher,
         official_url,signature_date,publication_date,status,source_status,raw_metadata,content_sha256,last_seen_at)

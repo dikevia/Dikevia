@@ -18,6 +18,10 @@ def test_source_registry_records_authority_reuse_and_refresh_policy():
     assert "'CNFPT_WIKITERRITORIAL'" in migration
     assert "'CDG35'" in migration
     assert "'CFDT_INTERCO'" in migration
+    assert "'INFO_GOUV'" in migration
+    assert "'CNFPT'" in migration
+    assert "'DGAFP'" in migration
+    assert "'APPROVED_SEEDS_ONLY'" in migration
 
 
 def test_source_registry_never_allows_automatic_full_text_from_unverified_sources():
