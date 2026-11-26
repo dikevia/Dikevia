@@ -3,10 +3,15 @@ package fr.dikevia.commercial
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Insets
 import android.net.Uri
 import android.net.http.SslError
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
+import android.widget.FrameLayout
 import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.ValueCallback
@@ -99,9 +104,50 @@ class MainActivity : Activity() {
             }
         }
 
+        // Android 15 (targetSdk 35) impose l'affichage edge-to-edge.
+        // On réserve les zones système sans laisser la WebView passer sous les barres.
+        // Le fond reste dans la palette JARVIS bleu glacier.
+        val root = FrameLayout(this).apply {
+            setBackgroundColor(Color.rgb(234, 245, 252))
+        }
+        root.addView(
+            webView,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        if (Build.VERSION.SDK_INT >= 35) {
+            val lightSystemBars =
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
+                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            window.insetsController?.setSystemBarsAppearance(
+                lightSystemBars,
+                lightSystemBars
+            )
+            root.setOnApplyWindowInsetsListener { _, insets ->
+                val systemBarsAndCutout =
+                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+                val safeInsets = insets.getInsets(systemBarsAndCutout)
+                val params = webView.layoutParams as FrameLayout.LayoutParams
+                params.setMargins(
+                    safeInsets.left,
+                    safeInsets.top,
+                    safeInsets.right,
+                    safeInsets.bottom
+                )
+                webView.layoutParams = params
+                // Les insets clavier restent disponibles pour la WebView.
+                WindowInsets.Builder(insets)
+                    .setInsets(systemBarsAndCutout, Insets.NONE)
+                    .build()
+            }
+        }
+
         // Évite qu'une ancienne configuration OIDC reste utilisée par la WebView.
         webView.clearCache(true)
-        setContentView(webView)
+        setContentView(root)
+        if (Build.VERSION.SDK_INT >= 35) root.requestApplyInsets()
         if (savedInstanceState == null) {
             webView.loadUrl(APP_URL)
         } else {
