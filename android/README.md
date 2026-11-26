@@ -1,13 +1,13 @@
 # Dikévia Android — éditions standard et administration
 
-Les deux applications Android sont des enveloppes natives distinctes de l'application web Dikévia. Elles utilisent la même API commerciale, le même realm Keycloak et les mêmes comptes ; chaque connexion reste soumise aux droits contrôlés par le serveur.
+Les deux applications Android sont des enveloppes natives distinctes de l'application web Dikévia. Elles utilisent la même API commerciale, le même realm Auth0 et les mêmes comptes ; chaque connexion reste soumise aux droits contrôlés par le serveur.
 
 ## Éditions beta
 
 - **Dikévia standard** — package beta `fr.dikevia.commercial.beta`. Ouvre l'espace de travail des agents, avec l'assistant juridique, les documents et les fonctions de leur organisation.
 - **Dikévia Administration** — package beta `fr.dikevia.admin.beta`. Ouvre l'administration générale, sans interface de conversation. L'accès est refusé par l'API si le compte ne possède pas les droits d'administrateur plateforme.
 
-Les deux éditions partagent l'authentification Keycloak (`cfdt-juris-web`) et l'URI de retour OIDC déjà configurée. Le mode d'interface est mémorisé temporairement dans la session WebView pendant le retour d'authentification. Aucun mot de passe ni jeton n'est embarqué dans les APK.
+Les deux éditions partagent l'authentification Auth0 (`Dikévia Auth0 OIDC`) et l'URI de retour OIDC déjà configurée. Le mode d'interface est mémorisé temporairement dans la session WebView pendant le retour d'authentification. Aucun mot de passe ni jeton n'est embarqué dans les APK.
 
 ## Construction et livraison de test
 
