@@ -335,17 +335,28 @@ def should_use_cgfp_snapshot_fallback(
     live_unusable = bool(live_issue) or (
         live_sources is not None and not live_covers_an_axis
     )
+    snapshot_has_relevant_article = False
+    if isinstance(found, dict):
+        for hit in found.get("results") or []:
+            article_ref = re.sub(r"\\s+", "", str(hit.get("article") or "")).upper()
+            article = get_cgfp_article(article_ref)
+            candidate = {
+                **hit,
+                "source_type": "CGFP_SNAPSHOT",
+                "title": f"Code général de la fonction publique — article {article_ref}",
+                "text": str((article or {}).get("text") or ""),
+            }
+            if (
+                _source_relevant_for_target(queries, candidate, target_versant)
+                and _cgfp_article_fpt_eligible(article_ref, target_versant)
+            ):
+                snapshot_has_relevant_article = True
+                break
     return bool(
-        live_unusable and isinstance(found, dict) and found.get("results")
-        and any(
-            _source_relevant_for_target(queries, hit, target_versant)
-            and (
-                _cgfp_article_fpt_eligible(str(hit.get("article") or ""))
-                if target_versant == "FPT"
-                else _cgfp_article_fpt_eligible(str(hit.get("article") or ""), target_versant)
-            )
-            for hit in found["results"]
-        )
+        live_unusable
+        and isinstance(found, dict)
+        and found.get("results")
+        and snapshot_has_relevant_article
     )
 
 
