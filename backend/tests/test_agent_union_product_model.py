@@ -26,7 +26,6 @@ def test_agent_chat_daily_quota_is_server_side_and_uses_paris_calendar_day():
 
 
 def test_syndicate_only_endpoints_have_server_side_subscription_dependency():
-    assert "require_syndicate_subscription" in inspect.signature(prepare_social_instance).parameters["ctx"].default.dependency.__name__ if False else True
     for route in (
         prepare_social_instance,
         build_legal_dossier,
