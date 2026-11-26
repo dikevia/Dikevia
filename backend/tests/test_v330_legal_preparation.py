@@ -361,6 +361,8 @@ async def test_cgfp_import_batches_chunk_inserts_inside_one_transaction(monkeypa
             return Transaction()
         async def fetchrow(self, query, *args):
             self.fetch_calls.append((query, args))
+            if "FROM legal_source_registry" in query:
+                return {"metadata_ingestion_allowed": True, "full_text_ingestion_allowed": True}
             if "bad_temporal_status" in query:
                 return {
                     "documents": 2, "versions": 2, "chunks": 2,
@@ -394,9 +396,10 @@ async def test_cgfp_import_batches_chunk_inserts_inside_one_transaction(monkeypa
     )
 
     assert result == {"articles": 2, "versions": 2, "chunks": 2}
-    assert len(fake_conn.fetch_calls) == 3
-    assert all("WITH upserted_document" in call[0] for call in fake_conn.fetch_calls[:2])
-    assert "bad_temporal_status" in fake_conn.fetch_calls[2][0]
+    assert len(fake_conn.fetch_calls) == 4
+    assert "FROM legal_source_registry" in fake_conn.fetch_calls[0][0]
+    assert all("WITH upserted_document" in call[0] for call in fake_conn.fetch_calls[1:3])
+    assert "bad_temporal_status" in fake_conn.fetch_calls[3][0]
     assert len(fake_conn.batch_calls) == 1
     assert len(fake_conn.batch_calls[0][1]) == 2
     assert fake_conn.closed is True
