@@ -502,6 +502,7 @@ _TOPIC_RESEARCH_AXES = (
         (
             "CGFP L823-1 L823-2 L823-3 L823-4 L823-5 L823-6 fonctionnaire territorial temps partiel pour raison therapeutique conditions maintien retour emploi mi temps remuneration integrale traitement SFT indemnite residence decret 87-602",
             "decret 87-602 articles 13-1 13-2 13-3 13-5 13-7 13-9 13-11 13-13 decret 2026-705 CITIS reprise apres conge imputable au service autorisation temps partiel therapeutique",
+            "decret 91-298 articles 34-1 et 35 fonctionnaire territorial emploi a temps non complet temps partiel therapeutique exclusion des articles CGFP L823-1 a L823-6 conditions quotite 50 60 70 80 90",
         ),
     ),
     (
