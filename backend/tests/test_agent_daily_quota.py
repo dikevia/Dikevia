@@ -32,7 +32,7 @@ async def test_daily_agent_question_quota_allows_five_and_rejects_sixth():
     assert [item.allowed for item in decisions] == [True, True, True, True, True, False]
     assert [item.question_count for item in decisions] == [1, 2, 3, 4, 5, 5]
     assert "Europe/Paris" in conn.fetchrow_calls[0][0]
-    assert "question_count < $3" in conn.fetchrow_calls[0][0]
+    assert "question_count < $2" in conn.fetchrow_calls[0][0]
     assert conn.fetchval_calls
 
 
