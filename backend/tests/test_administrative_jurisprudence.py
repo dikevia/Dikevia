@@ -846,5 +846,5 @@ def test_admin_case_law_source_cards_show_ecli_and_source_update_date():
     assert "src.raw_metadata?.ecli" in html
     assert "Document importé dans Dikévia le" in html
     assert "Mise à jour indiquée par la source le" in html
-    assert "src.created_at" in html
+    assert "src.first_seen_at" in html
     assert "src.document_kind==='ADMIN_CASELAW'" in html
