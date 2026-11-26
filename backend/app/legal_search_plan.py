@@ -439,7 +439,10 @@ _TOPIC_RESEARCH_AXES = (
          "accompagne d un representant syndical", "accompagne par un representant syndical",
          "assiste par un representant syndical", "venir avec mon syndicat",
          "venir avec un syndicat", "assistance syndicale lors d une convocation",
-         "accompagnement syndical lors d une convocation"),
+         "accompagnement syndical lors d une convocation",
+         "accompagnement syndical", "assistance syndicale",
+         "etre accompagne par un representant syndical",
+         "etre assiste par un representant syndical"),
         (
             "agent territorial convocation hierarchie entretien ordinaire accompagnement representant syndical assistance entretien conditions applicables",
             "fonction publique territoriale procedure disciplinaire droits de la defense droit etre assiste defenseur de son choix CGFP decret 89-677",
