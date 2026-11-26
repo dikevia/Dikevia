@@ -338,6 +338,12 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             recourse_type = value("Type_Recours", "TypeRecours", max_length=160)
             hearing_date = _date(value("Date_Audience", "DateAudience", max_length=40))
             formation = value("Formation_Jugement", "FormationJugement", max_length=200)
+            citation_court = f"{court_name} (siège à {court_seat})" if court_seat else court_name
+            if decision_section:
+                citation_court += f" — {decision_section}"
+            if formation:
+                citation_court += f" — {formation}"
+            title = f"Décision du {citation_court} n° {case_number} du {decision_date.isoformat()}"
             role_number = value("Numero_Role", "NumeroRole", max_length=100)
             update_date = _date(value("Date_Mise_Jour", "DateMiseAJour", max_length=40))
             identity = "|".join((court_code or court_name, case_number, decision_date.isoformat(), identification))

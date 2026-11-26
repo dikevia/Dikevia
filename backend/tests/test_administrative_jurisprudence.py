@@ -600,6 +600,7 @@ def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
     assert len(item["raw_metadata"]["source_xml_sha256"]) == 64
     assert item["jurisdiction"] == "Tribunal administratif de Grenoble"
     assert item["raw_metadata"]["court_seat"] == "Grenoble"
+    assert "siège à Grenoble" in item["title"]
 
 
 def test_parse_administrative_open_data_zip_rejects_invalid_archive():
@@ -626,6 +627,7 @@ def test_administrative_open_data_import_includes_explicit_state_public_service_
       <Identification>CE_2024002_20240510.xml</Identification>
       <Code_Juridiction>CE</Code_Juridiction>
       <Nom_Juridiction>Section du Contentieux</Nom_Juridiction>
+      <Formation_Jugement>5ème et 6ème chambres réunies</Formation_Jugement>
       <Numero_Dossier>2400002</Numero_Dossier>
       <Date_Lecture>2024-05-10</Date_Lecture>
       <Texte_Integral><p>Un agent de l'Etat affecté dans un ministère conteste une décision de rémunération prise par l'administration centrale au regard des règles propres à la fonction publique de l'Etat.</p></Texte_Integral>
@@ -640,6 +642,8 @@ def test_administrative_open_data_import_includes_explicit_state_public_service_
     assert records[0]["raw_metadata"]["court_name"] == "Conseil d'État"
     assert records[0]["raw_metadata"]["court_seat"] == "Paris"
     assert records[0]["raw_metadata"]["decision_section"] == "Section du Contentieux"
+    assert "siège à Paris" in records[0]["title"]
+    assert "5ème et 6ème chambres réunies" in records[0]["title"]
 
 
 def test_administrative_open_data_import_rejects_xml_entity_declarations():
