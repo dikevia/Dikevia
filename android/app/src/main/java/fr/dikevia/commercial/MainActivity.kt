@@ -24,6 +24,8 @@ class MainActivity : Activity() {
         private val APP_URL = BuildConfig.APP_URL
         private const val FILE_CHOOSER_REQUEST = 4107
         private val TRUSTED_HOSTS = setOf(
+            "dikevia-vector-beta-staging.onrender.com",
+            "dev-brlgaz1yh2de3mjo.us.auth0.com",
             "dikevia-commercial-api-l2r8.onrender.com",
             "dikevia-identity-l2r8.onrender.com"
         )
@@ -31,11 +33,11 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.rgb(18, 59, 50)
-        window.navigationBarColor = Color.rgb(18, 59, 50)
+        window.statusBarColor = Color.rgb(234, 245, 252)
+        window.navigationBarColor = Color.rgb(234, 245, 252)
 
         webView = WebView(this)
-        webView.setBackgroundColor(Color.rgb(243, 246, 244))
+        webView.setBackgroundColor(Color.rgb(243, 247, 251))
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
 
         webView.settings.apply {
@@ -127,8 +129,8 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
-        // Persist Keycloak SSO cookies before Android suspends or backgrounds the WebView.
-        // This keeps prompt=none able to reuse the existing provider session on the next launch.
+        // Persist OIDC session cookies before Android suspends or backgrounds the WebView.
+        // This keeps the existing identity-provider session available on the next launch.
         CookieManager.getInstance().flush()
         super.onPause()
     }
