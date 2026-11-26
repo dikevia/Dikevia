@@ -145,6 +145,42 @@ def safe_official_url(value: str | None) -> str | None:
     return None
 
 
+def resolve_legal_source_key(item: dict[str, Any]) -> str | None:
+    """Resolve an imported document to its reviewed source-registry entry."""
+    explicit = item.get("source_key")
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()
+    source_type = str(item.get("source_type") or "").strip().upper()
+    metadata = item.get("raw_metadata") if isinstance(item.get("raw_metadata"), dict) else {}
+    source_id = str(metadata.get("source_id") or "").strip().lower()
+    if source_type in {"LEGIFRANCE_LEGI", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT", "LEGIFRANCE_JORF"}:
+        return "LEGIFRANCE_PISTE"
+    if source_type == "CGFP_SNAPSHOT":
+        return "CGFP_SNAPSHOT"
+    if source_type == "SERVICE_PUBLIC_PART":
+        return "SERVICE_PUBLIC_DATA"
+    if source_type == "DILA_CIRCULAIRES":
+        return "DILA_CIRCULAIRES"
+    if source_type == "OTHER_OFFICIAL" and metadata.get("import_method") == "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML":
+        return "JUSTICE_ADMIN_OPEN_DATA"
+    institutional_sources = {
+        "cdg-35": "CDG35",
+        "cdg-59": "CDG59",
+        "cdg-69": "CDG69",
+        "cig-petite-couronne": "CIG_PETITE_COURONNE",
+        "cnfpt": "CNFPT_WIKITERRITORIAL",
+        "dgafp": "DGAFP_CIRCULAIRES",
+        "cfdt-interco": "CFDT_INTERCO",
+        "cfdt-fonctions-publiques": "CFDT_UFFA",
+        "cftc-fonction-publique": "CFTC_FONCTION_PUBLIQUE",
+        "cgt-fonction-publique": "CGT_FONCTION_PUBLIQUE",
+        "fo-fonction-publique": "FO_FONCTION_PUBLIQUE",
+        "solidaires-fonction-publique": "SOLIDAIRES_FONCTION_PUBLIQUE",
+        "unsa-fonction-publique": "UNSA_FONCTION_PUBLIQUE",
+    }
+    return institutional_sources.get(source_id)
+
+
 async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
     required = ("source_type", "source_id", "title", "document_kind")
     if any(not isinstance(item.get(k), str) or not item[k].strip() for k in required):
@@ -154,10 +190,11 @@ async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
     url = safe_official_url(item.get("official_url"))
     metadata = item.get("raw_metadata") if isinstance(item.get("raw_metadata"), dict) else {}
     doc = await conn.fetchrow("""
-      INSERT INTO legal_documents(source_type,source_id,title,document_kind,official_number,jurisdiction,publisher,
+      INSERT INTO legal_documents(source_type,source_id,source_key,title,document_kind,official_number,jurisdiction,publisher,
         official_url,signature_date,publication_date,status,source_status,raw_metadata,content_sha256,last_seen_at)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,now())
-      ON CONFLICT(source_type,source_id) DO UPDATE SET title=EXCLUDED.title,
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,now())
+      ON CONFLICT(source_type,source_id) DO UPDATE SET source_key=COALESCE(EXCLUDED.source_key,legal_documents.source_key),
+        title=EXCLUDED.title,
         document_kind=EXCLUDED.document_kind,official_number=COALESCE(EXCLUDED.official_number,legal_documents.official_number),
         jurisdiction=COALESCE(EXCLUDED.jurisdiction,legal_documents.jurisdiction),
         publisher=COALESCE(EXCLUDED.publisher,legal_documents.publisher),
@@ -168,7 +205,7 @@ async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
         source_status=EXCLUDED.source_status,raw_metadata=legal_documents.raw_metadata || EXCLUDED.raw_metadata,
         content_sha256=COALESCE(EXCLUDED.content_sha256,legal_documents.content_sha256),last_seen_at=now()
       RETURNING id
-    """, item["source_type"], item["source_id"], item["title"][:1000], item["document_kind"],
+    """, item["source_type"], item["source_id"], resolve_legal_source_key(item), item["title"][:1000], item["document_kind"],
         item.get("official_number"), item.get("jurisdiction"), item.get("publisher"), url,
         item.get("signature_date"), item.get("publication_date"), item.get("status", "UNKNOWN"),
         item.get("source_status", "METADATA_ONLY"), __import__("json").dumps(metadata, ensure_ascii=False), text_hash)
