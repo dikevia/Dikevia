@@ -399,6 +399,13 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
         request_payload = dict(payload)
         if model:
             request_payload["model"] = model
+        # JSON mode is opt-in per configured provider. Gemini's OpenAI-compatible
+        # endpoint is deliberately excluded because its request contract differs.
+        if (
+            bool(getattr(settings, "ai_supports_json_mode", False))
+            and not _is_gemini_provider()
+        ):
+            request_payload.setdefault("response_format", {"type": "json_object"})
         model_not_found = False
         for attempt in range(max_attempts):
             response = await client.post(url, headers=headers, json=request_payload)
