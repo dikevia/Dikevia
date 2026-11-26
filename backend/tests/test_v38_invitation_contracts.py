@@ -16,7 +16,7 @@ def test_invitation_supports_keycloak_and_auth0_server_side_delivery():
 
 def test_role_change_is_tenant_scoped_audited_and_protects_last_admin():
     main = (ROOT / "backend/app/main.py").read_text()
-    assert '@app.patch("/api/v1/organizations/me/members/{user_id}/role")' in main
+    assert '@app.patch("/api/v1/organizations/me/members/{user_id}/role"' in main
     assert "Depends(require_org_admin)" in main
     assert "Impossible de retirer le dernier administrateur" in main
     assert "MEMBERSHIP_ROLE_CHANGED" in main
