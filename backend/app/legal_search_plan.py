@@ -411,6 +411,14 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
 # and provider load while avoiding a single overloaded keyword string.
 _TOPIC_RESEARCH_AXES = (
     (
+        ("temps partiel therapeutique", "temps partiel pour raison therapeutique",
+         "mi temps therapeutique", "mi-temps therapeutique", "tpt"),
+        (
+            "CGFP L823-1 L823-2 L823-3 L823-4 L823-5 L823-6 fonctionnaire territorial temps partiel pour raison therapeutique conditions maintien retour emploi remuneration decret 87-602",
+            "fonctionnaire territorial emploi a temps non complet temps partiel therapeutique decret 91-298 articles 34-1 et 35 regime specifique conditions quotite",
+        ),
+    ),
+    (
         ("rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
          "mon chef a fait un rapport", "mon superieur a fait un rapport",
          "rapport a charge", "rapport defavorable", "rapport circonstancie",
@@ -851,7 +859,10 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
             continue
         # A therapeutic return is not ordinary part-time work. Keep its
         # dedicated CGFP/decree axis and suppress the generic IHTS expansion.
-        if therapeutic_part_time_present and "temps partiel heures supplémentaires IHTS" in axes[0]:
+        if therapeutic_part_time_present and (
+            "temps partiel heures supplémentaires IHTS" in axes[0]
+            or "temps non complet heures complémentaires" in axes[0]
+        ):
             continue
         # Overtime/IHTS is already a dedicated legal topic. Do not count the
         # generic time-work axis as a second issue unless the wording also
