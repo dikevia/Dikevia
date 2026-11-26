@@ -115,7 +115,9 @@ async def test_upsert_fills_official_source_version_id_when_same_version_is_rein
 
         async def fetchrow(self, query, *args):
             self.fetchrow_calls.append((query, args))
-            return {"id": "document-id" if len(self.fetchrow_calls) == 1 else "version-id"}
+            if "FROM legal_source_registry" in query:
+                return {"metadata_ingestion_allowed": True, "full_text_ingestion_allowed": True}
+            return {"id": "document-id" if "INSERT INTO legal_documents" in query else "version-id"}
 
         async def execute(self, query, *args):
             self.execute_calls.append((query, args))
@@ -132,10 +134,13 @@ async def test_upsert_fills_official_source_version_id_when_same_version_is_rein
         "source_status": "OFFICIAL_TEXT_RETRIEVED",
     })
 
-    document_query, document_args = conn.fetchrow_calls[0]
+    policy_query, policy_args = conn.fetchrow_calls[0]
+    assert "FROM legal_source_registry" in policy_query
+    assert policy_args == ("LEGIFRANCE_PISTE",)
+    document_query, document_args = conn.fetchrow_calls[1]
     assert "source_key" in document_query
     assert document_args[2] == "LEGIFRANCE_PISTE"
-    version_query, version_args = conn.fetchrow_calls[1]
+    version_query, version_args = conn.fetchrow_calls[2]
     assert "source_version_id=COALESCE(EXCLUDED.source_version_id,legal_document_versions.source_version_id)" in version_query
     assert version_args[2] == "LEGIARTI000000000001"
     assert result["version_id"] == "version-id"
