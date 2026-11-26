@@ -720,10 +720,10 @@ def search_cgfp(query: str, limit: int = 8) -> dict[str, Any]:
         # suppress lexical candidates: applicable general provisions may use
         # different vocabulary from the question and this topic taxonomy.
         unique_anchors = list(dict.fromkeys(matched_anchors))
-        if excluded:
-            score *= 0.35
-        elif not unique_anchors:
-            score *= 0.55
+        # Preserve the lexical BM25 score. Missing concept anchors or an
+        # exclusion hint are relevance metadata, not grounds to demote a
+        # potentially applicable provision before the downstream legal guards
+        # have examined its scope, topic and temporal validity.
         ranked.append({
             **{k: v for k, v in item.items() if not k.startswith("_")},
             "score": round(score, 4),
