@@ -517,6 +517,15 @@ async def home():
     vector_flag = "true" if settings.vector_search_enabled else "false"
     return html.replace("</head>", f"<script>window.PRIVATE_INSTANCE_MODE={flag};window.DIKEVIA_VECTOR_SEARCH_ENABLED={vector_flag};</script></head>")
 
+@app.get("/sw.js", include_in_schema=False)
+async def service_worker():
+    # Served at the origin root so the PWA worker can control the app root.
+    return FileResponse(
+        FRONTEND / "sw.js",
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache"},
+    )
+
 @app.get("/api/v1/auth/me")
 async def auth_me(principal: Principal = Depends(get_principal)):
     async with get_pool().acquire() as conn:
