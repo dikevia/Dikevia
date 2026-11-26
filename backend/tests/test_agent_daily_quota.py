@@ -26,7 +26,7 @@ async def test_daily_agent_question_quota_allows_five_and_rejects_sixth():
         current_count=5,
     )
     decisions = [
-        await consume_daily_chat_question(conn, "org", "user", 5)
+        await consume_daily_chat_question(conn, "user", 5)
         for _ in range(6)
     ]
     assert [item.allowed for item in decisions] == [True, True, True, True, True, False]
@@ -39,4 +39,4 @@ async def test_daily_agent_question_quota_allows_five_and_rejects_sixth():
 @pytest.mark.asyncio
 async def test_daily_agent_question_quota_rejects_invalid_limit():
     with pytest.raises(ValueError, match="compris entre 1 et 5"):
-        await consume_daily_chat_question(FakeDailyConnection([]), "org", "user", 6)
+        await consume_daily_chat_question(FakeDailyConnection([]), "user", 6)
