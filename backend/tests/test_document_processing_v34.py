@@ -122,8 +122,8 @@ def test_search_route_is_registered_before_dynamic_document_id_route():
     assert main.index('@app.get("/api/v1/documents/search"') < main.index('@app.get("/api/v1/documents/{document_id}"')
     assert "scan_uploaded_bytes(data)" in main
     assert "Le contrôle antivirus est indisponible" in main
-    assert '@app.post("/api/v1/documents/{document_id}/rescan")' in main
-    assert '@app.post("/api/v1/documents/{document_id}/reindex")' in main
+    assert '@app.post("/api/v1/documents/{document_id}/rescan"' in main
+    assert '@app.post("/api/v1/documents/{document_id}/reindex"' in main
 
 
 def test_v34_runtime_grants_cover_scan_and_reindex_operations():
