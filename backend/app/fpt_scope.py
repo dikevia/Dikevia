@@ -308,7 +308,10 @@ def classify_public_service_scope(
         f"l822 {number}" for number in range(18, 24)
     }:
         return {
-            "scope": "FPT",
+            "scope": (
+                "FPT" if source.get("source_type") in {"LEGIFRANCE_API", "CGFP_SNAPSHOT"}
+                else "GENERAL_PUBLIC_SERVICE"
+            ),
             "evidence": [
                 f"Article {article_ref.upper()} du CGFP : disposition relative aux accidents de service, accidents de trajet ou maladies contractées en service des fonctionnaires",
                 "Pour la FPT, compléter par le décret n° 87-602 du 30 juillet 1987 ; ne pas transposer ce régime aux agents contractuels",
