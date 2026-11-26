@@ -42,3 +42,12 @@ def test_union_assistance_without_a_summons_is_not_misclassified_as_a_convocatio
     question = "Comment fonctionne l'accompagnement syndical dans ma collectivité ?"
 
     assert clarification_for_union_assistance_summons(question) is None
+
+def test_tpt_query_includes_the_specific_non_complete_fpt_regime():
+    question = (
+        "Je suis fonctionnaire territorial à temps non complet, "
+        "puis-je bénéficier d'un temps partiel thérapeutique ?"
+    )
+    queries = build_official_search_queries(question)
+
+    assert any("91-298" in query and "34-1" in query for query in queries)
