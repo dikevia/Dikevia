@@ -290,7 +290,8 @@ def classify_public_service_scope(
     # The statutory waiting-day rule is Article 115 of the 2017 Finance Act.
     if (
         "loi n 2017 1837" in title_folded
-        and "article 115" in corpus
+        and ("article 115" in corpus or article_ref == "115")
+        and ("agents publics" in corpus or "agent public" in corpus)
     ):
         return {
             "scope": "COMMON_PUBLIC_SERVICE",
