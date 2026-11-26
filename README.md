@@ -1,5 +1,8 @@
 # Dikevia — Kit développeur V3.38.5
 
+> **Développeurs :** commencez par [`docs/00_DEVELOPMENT_START_HERE.md`](docs/00_DEVELOPMENT_START_HERE.md). La branche de référence est `main`. Ce guide précise l'architecture présente, les validations connues et les éléments historiques à ne pas réactiver sans audit.
+
+
 La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des textes réglementaires complémentaires sur Légifrance et interrogation sécurisée des documents propres à l’employeur.
 
 ## État réel de cette livraison
