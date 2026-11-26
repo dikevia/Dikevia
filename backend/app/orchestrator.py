@@ -328,11 +328,11 @@ def should_use_cgfp_snapshot_fallback(
         and source.get("analysis_eligible") is not False
         for source in (live_sources or [])
     )
-    # A successful live Légifrance lookup is not an outage, even when it
-    # returns no CGFP article. The dated snapshot is used only when the live
-    # CGFP endpoint itself failed; this avoids mixing stale snapshot evidence
-    # into an answer when current official retrieval succeeded.
-    live_unusable = bool(live_issue)
+    # Use the dated snapshot as a discovery/context fallback whenever live
+    # retrieval failed OR returned no relevant CGFP article for the requested
+    # axis. Its scope and claim-eligibility guards still prevent it from
+    # grounding a current legal assertion.
+    live_unusable = bool(live_issue) or not live_covers_an_axis
     return bool(
         live_unusable and isinstance(found, dict) and found.get("results")
         and any(
