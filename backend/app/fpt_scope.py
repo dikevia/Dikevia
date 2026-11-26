@@ -739,7 +739,7 @@ def is_topic_relevant_source(
     source_article_number_raw = " ".join(
         str(source.get(key) or "") for key in ("article", "article_id", "article_number")
     )
-    source_article_number_match = re.search(r"\\b(14|15)\\b", _fold(source_article_number_raw))
+    source_article_number_match = re.search(r"\b(14|15)\b", _fold(source_article_number_raw))
     source_article_number = source_article_number_match.group(1) if source_article_number_match else ""
     source_title_folded = _fold(str(source.get("title") or ""))
     if (
