@@ -127,6 +127,7 @@ def _fold(value: str) -> str:
 
 def classify_public_service_scope(
     source: dict[str, Any], target_versant: str = "FPT",
+    agent_status: str | None = None,
 ) -> dict[str, Any]:
     """Return a conservative scope label and eligibility for the selected versant."""
     target_versant = str(target_versant or "FPT").upper()
@@ -139,6 +140,10 @@ def classify_public_service_scope(
     article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
     corpus = _fold((title + " " + text)[:500_000])
     title_folded = _fold(title)
+    functionary_status_confirmed = str(agent_status or "").upper() in {
+        "TITULAIRE_EXPLICIT", "STAGIAIRE_EXPLICIT",
+        "FONCTIONNAIRE_STATUS_UNSPECIFIED",
+    }
 
     # These CGFP provisions expressly establish rights for all public agents.
     # Only a live Légifrance article may support a current legal claim; the
@@ -158,6 +163,19 @@ def classify_public_service_scope(
             "claim_eligible": official_live_article,
         }
 
+    # These disciplinary guarantees concern fonctionnaires, not contract
+    # agents. They become claim evidence only when the user's status is explicit.
+    if title_folded.startswith("code general de la fonction publique") and article_ref == "l532 4":
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [
+                "Article L. 532-4 du CGFP : communication du dossier et assistance du fonctionnaire poursuivi disciplinairement",
+                "Règle réservée aux fonctionnaires : statut de l'agent à vérifier avant toute conclusion individuelle",
+            ],
+            "analysis_eligible": True,
+            "claim_eligible": source.get("source_type") == "LEGIFRANCE_API" and functionary_status_confirmed,
+        }
+
     # Article L. 532-9 concerns the referral to the disciplinary board by
     # the territorial authority and is therefore a specific FPT provision.
     if title_folded.startswith("code general de la fonction publique") and article_ref == "l532 9":
@@ -169,7 +187,7 @@ def classify_public_service_scope(
                 "Disposition relative aux fonctionnaires : statut de l'agent à vérifier avant toute conclusion individuelle",
             ],
             "analysis_eligible": target_versant == "FPT",
-            "claim_eligible": False,
+            "claim_eligible": source.get("source_type") == "LEGIFRANCE_API" and functionary_status_confirmed,
         }
 
     # The CGFP chapter L823-1 to L823-6 states the common statutory TPT
@@ -189,7 +207,11 @@ def classify_public_service_scope(
                 "Pour la FPT, vérifier également le décret n° 87-602 et les éventuelles exclusions propres aux emplois à temps non complet",
             ],
             "analysis_eligible": True,
-            "claim_eligible": False,
+            "claim_eligible": (
+                target_versant == "FPT"
+                and source.get("source_type") == "LEGIFRANCE_API"
+                and functionary_status_confirmed
+            ),
         }
     # Articles L. 822-18 to L. 822-23 govern service-related accidents,
     # commuting accidents and occupational disease. They are applicable to
@@ -205,7 +227,10 @@ def classify_public_service_scope(
                 "Pour la FPT, vérifier le décret n° 87-602 du 30 juillet 1987 et le statut de l'agent : le régime CITIS ne doit pas être transposé aux agents contractuels",
             ],
             "analysis_eligible": True,
-            "claim_eligible": False,
+            "claim_eligible": (
+                source.get("source_type") == "LEGIFRANCE_API"
+                and functionary_status_confirmed
+            ),
         }
     # Articles L. 332-8 to L. 332-14 belong to the CGFP subsection devoted
     # specifically to permanent contractual employment in the FPT. Their
