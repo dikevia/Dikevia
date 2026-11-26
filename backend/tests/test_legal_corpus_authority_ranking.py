@@ -32,6 +32,8 @@ async def test_corpus_search_applies_bounded_authority_weight_only_to_verified_o
     assert conn.query is not None
     assert "authority_weight" in conn.query
     assert "v.source_version_id" in conn.query
+    assert "LEFT JOIN legal_source_registry sr ON sr.source_key=d.source_key" in conn.query
+    assert "source_registry_status" in conn.query
     assert "v.version_key" in conn.query
     assert "source_version_id,version_key" in conn.query
     assert "max(rank * authority_weight) AS rank" in conn.query
