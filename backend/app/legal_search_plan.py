@@ -945,11 +945,10 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         1,
         min(
             max_queries,
-            4 if (
-                _is_professional_evaluation_question(original)
-                or report_dispute_present
-                or explicit_non_complete_tpt
-            ) else 3,
+            5 if explicit_non_complete_tpt else (
+                4 if (_is_professional_evaluation_question(original) or report_dispute_present)
+                else 3
+            ),
         ),
     )
     if explicit_compound and len(matched_axes) >= 3:
@@ -964,6 +963,19 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         candidate = axes[0][:500]
         if candidate not in queries:
             queries.append(candidate)
+        # When the user explicitly states a non-complete FPT position, the
+        # decree 91-298 TPT regime is a separate mandatory lookup. Reserve it
+        # immediately after the common CGFP TPT provision, before other axes
+        # can consume the bounded query budget.
+        if (
+            explicit_non_complete_tpt
+            and "CGFP L823-1" in axes[0]
+            and len(axes) > 1
+            and len(queries) < query_limit
+        ):
+            specific = axes[1][:500]
+            if specific not in queries:
+                queries.append(specific)
 
     for axes in matched_axes:
         for axis in axes[1:]:
