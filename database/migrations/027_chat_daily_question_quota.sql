@@ -31,6 +31,5 @@ GRANT INSERT (user_id, usage_date, question_count)
     ON chat_daily_question_usage TO cfdt_juris_app;
 GRANT UPDATE (question_count, updated_at)
     ON chat_daily_question_usage TO cfdt_juris_app;
-GRANT DELETE ON chat_daily_question_usage TO cfdt_juris_app;
 
 COMMIT;
