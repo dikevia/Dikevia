@@ -66,9 +66,9 @@ def test_unrecognized_event_is_ignored():
     assert extract_subscription_state({"type": "customer.created", "data": {"object": {}}}) is None
 
 @pytest.mark.asyncio
-async def test_checkout_is_blocked_until_monthly_credit_enforcement_is_live(monkeypatch):
+async def test_checkout_remains_disabled_until_union_prices_and_subscription_controls_are_finalized(monkeypatch):
     monkeypatch.setattr(settings, "private_instance_mode", False)
     with pytest.raises(HTTPException) as exc:
         await billing_checkout({"plan_code": "ESSENTIEL"})
     assert exc.value.status_code == 503
-    assert "compteur de crédits mensuels" in exc.value.detail
+    assert "tarifs syndicaux" in exc.value.detail
