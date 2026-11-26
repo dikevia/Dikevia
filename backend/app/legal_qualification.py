@@ -89,6 +89,15 @@ class ContextualResearchContext:
     assistant_context: str | None = None
 
 
+def _explicit_working_time_declaration(question: str) -> str | None:
+    folded = _fold(str(question or ""))
+    if re.search(r"\\b(?:emploi\\s+)?a\\s+temps\\s+non\\s+complet\\b", folded):
+        return "temps non complet"
+    if re.search(r"\\b(?:emploi\\s+)?a\\s+temps\\s+complet\\b|\\btemps\\s+plein\\b", folded):
+        return "temps complet"
+    return None
+
+
 def build_contextual_research_context(
     current_question: str,
     prior_user_questions: list[str] | None = None,
@@ -135,6 +144,15 @@ def build_contextual_research_context(
                         + declaration.group(0)
                     )
                     break
+        if not _explicit_working_time_declaration(current):
+            for earlier_question in reversed(prior_questions):
+                working_time = _explicit_working_time_declaration(earlier_question)
+                if working_time:
+                    contextual += (
+                        "\nContexte de temps de travail déclaré précédemment : "
+                        + working_time
+                    )
+                    break
         return ContextualResearchContext(
             question=contextual[:500],
             is_followup=True,
@@ -177,6 +195,15 @@ def build_contextual_research_context(
                     contextual += (
                         "\nContexte de statut déclaré précédemment : "
                         + declaration.group(0)
+                    )
+                    break
+        if not _explicit_working_time_declaration(current):
+            for earlier_question in reversed(prior_questions):
+                working_time = _explicit_working_time_declaration(earlier_question)
+                if working_time:
+                    contextual += (
+                        "\nContexte de temps de travail déclaré précédemment : "
+                        + working_time
                     )
                     break
         contextual = contextual[:500]
