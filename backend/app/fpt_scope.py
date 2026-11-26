@@ -153,9 +153,9 @@ def classify_public_service_scope(
     # functionaries and contract agents. Keep them as contextual leads when
     # status is unknown, and only allow claims for the status they govern.
     functionary_only_decrees = (
-        "decret n 87 602", "decret 87 602",
-        "decret n 89 677", "decret 89 677",
-        "decret n 2021 1462", "decret 2021 1462",
+        "decret n 87 602", "decret 87 602", "decret du 30 juillet 1987",
+        "decret n 89 677", "decret 89 677", "decret du 18 septembre 1989",
+        "decret n 2021 1462", "decret 2021 1462", "decret du 8 novembre 2021",
         "decret n 2026 705", "decret 2026 705",
     )
     if any(marker in title_folded for marker in functionary_only_decrees):
@@ -169,7 +169,11 @@ def classify_public_service_scope(
             "claim_eligible": target_versant == "FPT" and live_legifrance_source and functionary_status_confirmed,
         }
 
-    if "decret n 91 298" in title_folded or "decret 91 298" in title_folded:
+    if (
+        "decret n 91 298" in title_folded
+        or "decret 91 298" in title_folded
+        or "decret du 20 mars 1991" in title_folded
+    ):
         return {
             "scope": "FPT",
             "evidence": [
@@ -185,7 +189,11 @@ def classify_public_service_scope(
             ),
         }
 
-    if "decret n 88 145" in title_folded or "decret 88 145" in title_folded:
+    if (
+        "decret n 88 145" in title_folded
+        or "decret 88 145" in title_folded
+        or "decret du 15 fevrier 1988" in title_folded
+    ):
         return {
             "scope": "FPT",
             "evidence": [
