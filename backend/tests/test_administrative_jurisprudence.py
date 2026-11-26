@@ -598,6 +598,8 @@ def test_parse_administrative_open_data_zip_imports_only_relevant_full_text():
     assert item["raw_metadata"]["solution"] == "Rejet pour irrecevabilité"
     assert item["raw_metadata"]["source_license"] == "Licence Ouverte version 2.0"
     assert len(item["raw_metadata"]["source_xml_sha256"]) == 64
+    assert item["jurisdiction"] == "Tribunal administratif de Grenoble"
+    assert item["raw_metadata"]["court_seat"] == "Grenoble"
 
 
 def test_parse_administrative_open_data_zip_rejects_invalid_archive():
@@ -623,7 +625,7 @@ def test_administrative_open_data_import_includes_explicit_state_public_service_
     xml = """<Decision>
       <Identification>CE_2024002_20240510.xml</Identification>
       <Code_Juridiction>CE</Code_Juridiction>
-      <Nom_Juridiction>Conseil d'Etat</Nom_Juridiction>
+      <Nom_Juridiction>Section du Contentieux</Nom_Juridiction>
       <Numero_Dossier>2400002</Numero_Dossier>
       <Date_Lecture>2024-05-10</Date_Lecture>
       <Texte_Integral><p>Un agent de l'Etat affecté dans un ministère conteste une décision de rémunération prise par l'administration centrale au regard des règles propres à la fonction publique de l'Etat.</p></Texte_Integral>
@@ -634,6 +636,10 @@ def test_administrative_open_data_import_includes_explicit_state_public_service_
     records = parse_administrative_open_data_zip(archive_bytes.getvalue(), "CE_202405.zip")
     assert len(records) == 1
     assert records[0]["raw_metadata"]["public_service_scope"] == "FPE"
+    assert records[0]["jurisdiction"] == "Conseil d'État"
+    assert records[0]["raw_metadata"]["court_name"] == "Conseil d'État"
+    assert records[0]["raw_metadata"]["court_seat"] == "Paris"
+    assert records[0]["raw_metadata"]["decision_section"] == "Section du Contentieux"
 
 
 def test_administrative_open_data_import_rejects_xml_entity_declarations():

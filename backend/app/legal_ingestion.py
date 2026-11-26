@@ -285,7 +285,26 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                 return found[:max_length] if found else None
 
             court_code = value("Code_Juridiction", "CodeJuridiction", max_length=80)
-            court_name = value("Nom_Juridiction", "NomJuridiction", max_length=250)
+            source_court_label = value("Nom_Juridiction", "NomJuridiction", max_length=250)
+            court_name = source_court_label
+            court_seat = None
+            decision_section = None
+            if (court_code or "").upper() == "CE":
+                # In some Conseil d'État XML archives, Nom_Juridiction contains
+                # "Section du Contentieux" rather than the institution's name.
+                court_name = "Conseil d'État"
+                court_seat = "Paris"
+                if source_court_label and source_court_label.casefold().replace("’", "'") not in {
+                    "conseil d'etat", "conseil d'état"
+                }:
+                    decision_section = source_court_label
+            elif source_court_label:
+                seat_match = re.search(
+                    r"^(?:tribunal administratif|cour administrative d'appel) de (.+)$",
+                    source_court_label, re.IGNORECASE,
+                )
+                if seat_match:
+                    court_seat = seat_match.group(1).strip()
             case_number = value("Numero_Dossier", "NumeroDossier", max_length=120)
             decision_date_raw = value("Date_Lecture", "DateLecture", max_length=40)
             decision_date = _date(decision_date_raw)
@@ -347,6 +366,8 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                 "full_text": body,
                 "raw_metadata": {
                     "court_code": court_code, "ecli": ecli,
+                    "court_name": court_name, "court_seat": court_seat,
+                    "decision_section": decision_section,
                     "publication_code": publication_code,
                     "decision_type": decision_type, "solution": solution,
                     "recourse_type": recourse_type,
