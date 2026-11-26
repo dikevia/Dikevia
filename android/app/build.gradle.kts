@@ -11,25 +11,25 @@ android {
         applicationId = "fr.dikevia.commercial"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     // Deux APK indépendants, construits depuis le même socle vérifié.
-    // Les deux conservent la même authentification Keycloak et la même API.
+    // Les deux utilisent Auth0 pour l'identité et la même API Dikévia.
     flavorDimensions += "edition"
     productFlavors {
         create("standard") {
             dimension = "edition"
             applicationId = "fr.dikevia.commercial"
             resValue("string", "app_name", "Dikévia")
-            buildConfigField("String", "APP_URL", "\"https://dikevia-commercial-api-l2r8.onrender.com/?dikevia_app=standard\"")
+            buildConfigField("String", "APP_URL", "\"https://dikevia-vector-beta-staging.onrender.com/?dikevia_app=standard\"")
         }
         create("admin") {
             dimension = "edition"
             applicationId = "fr.dikevia.admin"
             resValue("string", "app_name", "Dikévia Administration")
-            buildConfigField("String", "APP_URL", "\"https://dikevia-commercial-api-l2r8.onrender.com/?dikevia_app=admin\"")
+            buildConfigField("String", "APP_URL", "\"https://dikevia-vector-beta-staging.onrender.com/?dikevia_app=admin\"")
         }
     }
 
