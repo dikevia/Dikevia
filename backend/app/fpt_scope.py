@@ -481,7 +481,8 @@ _TOPIC_FAMILIES = {
         "temps non complet", "heures complementaires", "decret 2020 592",
     ),
     "DISCIPLINE": (
-        "discipline", "sanction disciplinaire", "conseil de discipline",
+        "discipline", "disciplinaire", "procedure disciplinaire",
+        "sanction disciplinaire", "conseil de discipline",
         "exclusion temporaire", "blame", "revocation",
     ),
     "TELEWORK": (
@@ -490,6 +491,30 @@ _TOPIC_FAMILIES = {
     "FUNCTIONAL_PROTECTION": (
         "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
         "agissement sexiste",
+    ),
+    "FAMILY_BEREAVEMENT": (
+        "deces d un proche", "deces d un membre de la famille",
+        "deces d un ascendant", "deces du grand pere", "deces de la grand mere",
+        "deces de son grand pere", "deces de sa grand mere",
+        "deces de mon grand pere", "deces de ma grand mere",
+        "grand pere decede", "grand mere decedee", "grand parent decede",
+        "obseques", "autorisation d absence pour deces", "conge pour deces",
+        "conge de deuil", "justificatif de deces", "acte de deces",
+    ),
+    "UNION_ASSISTANCE": (
+        "accompagnement syndical", "assistance syndicale",
+        "accompagnement par un representant syndical",
+        "assistance d un representant syndical",
+        "assiste par un representant syndical", "assiste par un defenseur",
+        "se faire assister", "assistance par un defenseur",
+        "assistance d un defenseur", "assistance du fonctionnaire",
+        "droits de la defense", "entretien disciplinaire",
+        "entretien prealable", "convocation a un entretien hierarchique",
+    ),
+    "AGGRESSION_AGENT_PROTECTION": (
+        "agression", "agresse par un usager", "agressions",
+        "violence", "menace d un usager", "insulte d un usager",
+        "incident avec un usager", "signalement d agression",
     ),
     "TERMINATION_OF_TITULAR": (
         # Query-side expressions must classify the question too; keep generic
@@ -523,6 +548,18 @@ _TOPIC_FAMILIES = {
     "CST": (
         "comite social territorial", "formation specialisee",
         "comite technique", "instance de dialogue social",
+    ),
+    "REPORT_HIERARCHICAL_CONTESTATION": (
+        "rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+        "mon chef a fait un rapport", "mon superieur a fait un rapport",
+        "rapport a charge", "rapport defavorable", "rapport circonstancie",
+        "rapport precisant les faits reproches",
+        "contester un rapport de mon chef", "contester le rapport de mon superieur",
+    ),
+    "INDIVIDUAL_FILE": (
+        "dossier individuel", "communication du dossier", "consultation du dossier",
+        "acces au dossier", "pieces du dossier", "documents verses au dossier",
+        "verse au dossier individuel",
     ),
     "PROFESSIONAL_EVALUATION": (
         "entretien professionnel", "evaluation professionnelle", "evaluation annuelle",
@@ -620,6 +657,26 @@ def is_topic_relevant_source(
     ):
         return False
 
+    # A specific bereavement question must not be satisfied by unrelated leave rules.
+    if "FAMILY_BEREAVEMENT" in question_topics and "FAMILY_BEREAVEMENT" not in source_topics:
+        return False
+    # Generic union-rights administration is not proof of a right to assistance
+    # at a particular meeting; disciplinary defence remains a related lead.
+    if "UNION_ASSISTANCE" in question_topics and not (
+        {"UNION_ASSISTANCE", "DISCIPLINE"} & source_topics
+    ):
+        return False
+    # Aggression by a service user requires protection, health/safety or work-condition material.
+    if "AGGRESSION_AGENT_PROTECTION" in question_topics and not (
+        {"FUNCTIONAL_PROTECTION", "SICK_LEAVE", "STAFFING_AND_WORK_CONDITIONS"} & source_topics
+    ):
+        return False
+    if "REPORT_HIERARCHICAL_CONTESTATION" in question_topics and not (
+        {"REPORT_HIERARCHICAL_CONTESTATION", "INDIVIDUAL_FILE", "DISCIPLINE", "PROFESSIONAL_EVALUATION"}
+        & source_topics
+    ):
+        return False
+
     if question_topics & source_topics:
         return True
 
@@ -637,6 +694,10 @@ def is_topic_relevant_source(
         "CONTRACT_CDI_SIX_YEARS",
         "AVAILABILITY",
         "CONTRACTUAL_STATUS",
+        "REPORT_HIERARCHICAL_CONTESTATION",
+        "FAMILY_BEREAVEMENT",
+        "UNION_ASSISTANCE",
+        "AGGRESSION_AGENT_PROTECTION",
     }
     if str(target_versant or "FPT").upper() == "FPT" and question_topics & strict_topics:
         # For annual-appraisal questions only, an unclassified procedural
@@ -654,6 +715,13 @@ def is_topic_relevant_source(
         "WORKING_TIME": {"REMUNERATION"},
         "REMUNERATION": {"WORKING_TIME", "SICK_LEAVE"},
         "SICK_LEAVE": {"REMUNERATION"},
+        "AGGRESSION_AGENT_PROTECTION": {
+            "FUNCTIONAL_PROTECTION", "SICK_LEAVE", "STAFFING_AND_WORK_CONDITIONS",
+        },
+        "UNION_ASSISTANCE": {"DISCIPLINE"},
+        "REPORT_HIERARCHICAL_CONTESTATION": {
+            "INDIVIDUAL_FILE", "DISCIPLINE", "PROFESSIONAL_EVALUATION",
+        },
     }
     return any(
         source_family in related_families.get(question_family, set())
