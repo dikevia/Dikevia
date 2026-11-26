@@ -157,12 +157,13 @@ async def import_snapshot(dsn: str, metadata: dict[str, Any], articles: list[dic
                 version = await conn.fetchrow("""
                     WITH upserted_document AS (
                       INSERT INTO legal_documents(
-                        source_type,source_id,title,document_kind,publisher,official_url,official_number,
+                        source_type,source_id,source_key,title,document_kind,publisher,official_url,official_number,
                         status,source_status,raw_metadata,content_sha256,last_seen_at
                       )
-                      VALUES('CGFP_SNAPSHOT',$1,$2,'CODE','Légifrance',
+                      VALUES('CGFP_SNAPSHOT',$1,'CGFP_SNAPSHOT',$2,'CODE','Légifrance',
                         $8,$9,'UNKNOWN','IMPORTED_UNVERIFIED',$3::jsonb,$4,now())
                       ON CONFLICT(source_type,source_id) DO UPDATE SET
+                        source_key=EXCLUDED.source_key,
                         title=EXCLUDED.title,
                         publisher=EXCLUDED.publisher,
                         official_url=EXCLUDED.official_url,
