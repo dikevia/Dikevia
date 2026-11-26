@@ -267,6 +267,8 @@ async def test_upsert_persists_text_as_fulltext_chunks_and_hash():
             self.calls = []
         async def fetchrow(self, query, *args):
             self.calls.append((query, args))
+            if "FROM legal_source_registry" in query:
+                return {"metadata_ingestion_allowed": True, "full_text_ingestion_allowed": True}
             return {"id": uuid4()}
         async def execute(self, query, *args):
             self.calls.append((query, args))
