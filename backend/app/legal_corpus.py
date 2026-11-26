@@ -479,7 +479,10 @@ async def search_legal_corpus(
         ) candidates
         GROUP BY chunk_id,version_id,ordinal
       ), ranked AS (
-        SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.title,d.document_kind,
+        SELECT d.id document_id,v.id version_id,d.source_type,d.source_id,d.source_key,
+          sr.authority_level source_authority_level,sr.verification_status source_registry_status,
+          sr.license_name source_license_name,sr.full_text_ingestion_allowed source_full_text_ingestion_allowed,
+          d.title,d.document_kind,
           d.official_number,d.jurisdiction,d.official_url,d.signature_date,d.publication_date,d.status document_status,
           d.source_status,d.raw_metadata,d.first_seen_at,v.source_version_id,v.version_key,v.valid_from,v.valid_to,v.version_status,v.raw_payload,v.full_text,v.text_sha256,
           c.anchor,c.content content_chunk,c.content_kind,c.ordinal,candidate_scores.rank,
@@ -501,6 +504,7 @@ async def search_legal_corpus(
         JOIN legal_chunks c ON c.id=candidate_scores.chunk_id
         JOIN legal_document_versions v ON v.id=c.version_id
         JOIN legal_documents d ON d.id=v.document_id
+        LEFT JOIN legal_source_registry sr ON sr.source_key=d.source_key
       ), selected_chunks AS (
         -- Keep only passages selected by lexical/vector relevance. Never append
         -- the document's final chunk: it is often unrelated to the user's question.
@@ -514,8 +518,9 @@ async def search_legal_corpus(
         ) selected_passages
         GROUP BY version_id
       ), document_metadata AS (
-        SELECT DISTINCT ON (version_id) document_id,version_id,source_type,source_id,title,document_kind,
-          official_number,jurisdiction,official_url,signature_date,publication_date,document_status,
+        SELECT DISTINCT ON (version_id) document_id,version_id,source_type,source_id,source_key,
+          source_authority_level,source_registry_status,source_license_name,source_full_text_ingestion_allowed,
+          title,document_kind,official_number,jurisdiction,official_url,signature_date,publication_date,document_status,
           source_status,raw_metadata,first_seen_at,source_version_id,version_key,valid_from,valid_to,version_status,raw_payload,full_text,text_sha256,
           anchor,content_kind
         FROM ranked ORDER BY version_id,rank DESC,ordinal
