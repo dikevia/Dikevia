@@ -1796,7 +1796,7 @@ class LegalOrchestrator:
             for hit in found["results"]:
                 article = get_cgfp_article(hit["article"])
                 article_text = str((article or {}).get("text") or "")
-                article_ref = re.sub(r"\\s+", "", str(hit["article"])).upper()
+                article_ref = re.sub(r"\s+", "", str(hit["article"])).upper()
                 candidate = {
                     **hit,
                     "source_type": "CGFP_SNAPSHOT",
@@ -1817,7 +1817,9 @@ class LegalOrchestrator:
                     article_ref = re.sub(r"\s+", "", str(hit["article"])).upper()
                     snapshot_title = f"Code général de la fonction publique — article {article_ref}"
                     snapshot_scope = classify_public_service_scope({
+                        "source_type": "CGFP_SNAPSHOT",
                         "title": snapshot_title,
+                        "article": article_ref,
                         "text": article_text,
                         "document_kind": "CODE",
                     }, target_versant=request.public_service)
