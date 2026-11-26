@@ -736,6 +736,11 @@ def is_topic_relevant_source(
     ))
     source_topics = _matched_topic_families(source_text[:500_000])
     source_article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
+    source_article_number_raw = " ".join(
+        str(source.get(key) or "") for key in ("article", "article_id", "article_number")
+    )
+    source_article_number_match = re.search(r"\\b(14|15)\\b", _fold(source_article_number_raw))
+    source_article_number = source_article_number_match.group(1) if source_article_number_match else ""
     source_title_folded = _fold(str(source.get("title") or ""))
     if (
         source_title_folded.startswith("code general de la fonction publique")
@@ -749,7 +754,7 @@ def is_topic_relevant_source(
         source_article_ref in {f"l822 {number}" for number in range(1, 6)}
         or (
             ("decret n 87 602" in source_title_folded or "decret 87 602" in source_title_folded)
-            and source_article_ref in {"14", "15", "article 14", "article 15"}
+            and source_article_number in {"14", "15"}
         )
         or (
             ("loi n 2017 1837" in source_title_folded or "loi 2017 1837" in source_title_folded)
