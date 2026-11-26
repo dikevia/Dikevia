@@ -422,7 +422,8 @@ def test_live_cgfp_tpt_articles_are_common_claim_evidence_but_snapshot_is_not():
         for versant in ("FPT", "FPE", "FPH"):
             live = classify_public_service_scope({
                 **common, "source_type": "LEGIFRANCE_API",
-            }, target_versant=versant)
+            }, target_versant=versant, agent_status="TITULAIRE_EXPLICIT",
+                agent_working_time_status="FULL_TIME_EXPLICIT")
             assert live["scope"] == "COMMON_PUBLIC_SERVICE"
             assert live["analysis_eligible"] is True
             assert live["claim_eligible"] is True
