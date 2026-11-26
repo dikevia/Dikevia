@@ -189,6 +189,17 @@ async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
     text_hash = sha256_text(text) if text else None
     url = safe_official_url(item.get("official_url"))
     metadata = item.get("raw_metadata") if isinstance(item.get("raw_metadata"), dict) else {}
+    source_key = resolve_legal_source_key(item)
+    if not source_key:
+        raise ValueError("Source juridique absente du registre de provenance : import refusé.")
+    source_policy = await conn.fetchrow("""
+      SELECT metadata_ingestion_allowed,full_text_ingestion_allowed,verification_status
+      FROM legal_source_registry WHERE source_key=$1
+    """, source_key)
+    if not source_policy or not source_policy["metadata_ingestion_allowed"]:
+        raise ValueError("La politique du registre interdit l'import des métadonnées de cette source.")
+    if text and not source_policy["full_text_ingestion_allowed"]:
+        raise ValueError("Le texte intégral de cette source n'est pas autorisé à l'ingestion automatique.")
     doc = await conn.fetchrow("""
       INSERT INTO legal_documents(source_type,source_id,source_key,title,document_kind,official_number,jurisdiction,publisher,
         official_url,signature_date,publication_date,status,source_status,raw_metadata,content_sha256,last_seen_at)
