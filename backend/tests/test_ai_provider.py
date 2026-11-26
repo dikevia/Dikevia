@@ -2397,3 +2397,9 @@ def test_entailment_verdict_quote_cannot_target_text_omitted_from_model_payload(
 
     assert result["valid"] is False
     assert "verdict_0:support_quote_not_in_source" in result["invalid"]
+
+def test_system_prompt_requires_natural_conversational_assistant_style_without_weakening_evidence_rules():
+    assert "STYLE CONVERSATIONNEL — EXPÉRIENCE D'ASSISTANT" in SYSTEM_PROMPT
+    assert "Rédige chaque claim dans un français naturel" in SYSTEM_PROMPT
+    assert "La fluidité conversationnelle ne doit jamais réduire les exigences de preuve" in SYSTEM_PROMPT
+    assert "FORMAT DE SORTIE OBLIGATOIRE — JSON STRICT" in SYSTEM_PROMPT
