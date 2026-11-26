@@ -564,3 +564,20 @@ def test_union_assistance_topic_does_not_match_generic_union_representative_righ
     }
     assert "UNION_ASSISTANCE" in _matched_topic_families(question)
     assert is_topic_relevant_source(question, unrelated) is False
+
+def test_health_regulatory_queries_stay_with_the_selected_versant():
+    fpe = _build_targeted_regulatory_queries(
+        "Un agent demande un temps partiel thérapeutique après un accident de service.",
+        "FPE",
+    )
+    assert any("86-442" in query and "23-1" in query for query in fpe)
+    assert any("86-442" in query and "47-1" in query for query in fpe)
+    assert not any("87-602" in query or "88-386" in query for query in fpe)
+
+    fph = _build_targeted_regulatory_queries(
+        "Un agent demande un temps partiel thérapeutique après un accident de service.",
+        "FPH",
+    )
+    assert any("88-386" in query and "13-1" in query for query in fph)
+    assert any("88-386" in query and "35-2" in query for query in fph)
+    assert not any("87-602" in query or "86-442" in query for query in fph)
