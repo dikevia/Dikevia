@@ -119,7 +119,7 @@ def test_v34_database_migration_enables_tenant_rls_and_full_text_index():
 def test_search_route_is_registered_before_dynamic_document_id_route():
     from pathlib import Path
     main = (Path(__file__).parents[1] / "app/main.py").read_text()
-    assert main.index('@app.get("/api/v1/documents/search")') < main.index('@app.get("/api/v1/documents/{document_id}")')
+    assert main.index('@app.get("/api/v1/documents/search"') < main.index('@app.get("/api/v1/documents/{document_id}"')
     assert "scan_uploaded_bytes(data)" in main
     assert "Le contrôle antivirus est indisponible" in main
     assert '@app.post("/api/v1/documents/{document_id}/rescan")' in main
