@@ -181,6 +181,7 @@ def test_cgfp_concept_router_covers_major_fpt_code_subjects():
         ("Je souhaite démissionner de la fonction publique territoriale.", "cessation_fonctions_retraite"),
         ("Je subis une discrimination au travail.", "egalite_discrimination"),
         ("Mon ASA syndicale est refusée.", "droits_syndicaux_dialogue_social"),
+        ("Quels sont les droits à congé maladie ?", "maladie_ordinaire"),
     ]
     for question, expected_topic in cases:
         assert expected_topic in {topic["key"] for topic in _matching_topics(question)}
