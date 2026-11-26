@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     oidc_provider: str = "keycloak"
     oidc_client_id: str = ""
     oidc_scopes: str = "openid profile email"
+    oidc_server_sessions_enabled: bool = False
+    oidc_session_encryption_key: str = ""
+    oidc_redirect_uri: str = ""
     oidc_authorization_audience: str = ""
     oidc_identity_compat_issuer: str = ""
     oidc_identity_subject_prefix: str = "auth0|"
@@ -101,9 +104,21 @@ def validate_runtime_configuration(config: Settings) -> None:
         raise RuntimeError("OIDC_ALGORITHMS doit contenir uniquement RS256 et/ou ES256.")
     if config.oidc_provider not in {"keycloak", "auth0"}:
         raise RuntimeError("OIDC_PROVIDER doit être keycloak ou auth0.")
+    if config.oidc_server_sessions_enabled:
+        if not config.oidc_client_id or not config.oidc_issuer:
+            raise RuntimeError("Les sessions OIDC serveur exigent OIDC_CLIENT_ID et OIDC_ISSUER.")
+        if not config.oidc_redirect_uri.startswith("https://"):
+            raise RuntimeError("OIDC_REDIRECT_URI doit être une URL HTTPS.")
+        from .auth_session_crypto import decode_encryption_key
+        try:
+            decode_encryption_key(config.oidc_session_encryption_key)
+        except ValueError as exc:
+            raise RuntimeError("OIDC_SESSION_ENCRYPTION_KEY doit représenter exactement 32 octets.") from exc
     scopes = [scope for scope in config.oidc_scopes.split() if scope]
     if not scopes or "openid" not in scopes:
         raise RuntimeError("OIDC_SCOPES doit inclure le scope openid.")
+    if config.oidc_server_sessions_enabled and config.oidc_provider == "auth0" and "offline_access" not in scopes:
+        raise RuntimeError("Les sessions Auth0 côté serveur exigent le scope offline_access.")
     if config.oidc_provider == "auth0" and config.app_env == "production":
         if not config.oidc_client_id or not config.oidc_authorization_audience:
             raise RuntimeError("Auth0 exige OIDC_CLIENT_ID et OIDC_AUTHORIZATION_AUDIENCE en production.")

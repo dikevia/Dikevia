@@ -9,6 +9,52 @@
   if (initialInvitation) sessionStorage.setItem('cfdt_pending_invitation', initialInvitation);
   const cfg = window.CFDT_JURIS_OIDC;
   if (!cfg || !cfg.issuer || !cfg.client_id || !cfg.redirect_uri) return;
+  if (cfg.server_sessions_enabled === true) {
+    const pending = new URLSearchParams(window.location.search).get('invitation_token');
+    if (pending) sessionStorage.setItem('cfdt_pending_invitation', pending);
+    const clean = () => history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    async function acceptInvitation() {
+      const token = sessionStorage.getItem('cfdt_pending_invitation');
+      if (!token) return;
+      const response = await fetch('/api/v1/invitations/accept', {method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+      if (response.ok) {
+        sessionStorage.removeItem('cfdt_pending_invitation');
+        window.dispatchEvent(new CustomEvent('cfdt:invitation-accepted',{detail:await response.json()}));
+      } else {
+        const detail=await response.json().catch(()=>({}));
+        window.dispatchEvent(new CustomEvent('cfdt:invitation-error',{detail:{message:detail.detail||'Impossible d’accepter l’invitation.'}}));
+      }
+    }
+    const ready = (async () => {
+      const params=new URLSearchParams(window.location.search);
+      const code=params.get('code'),state=params.get('state'),error=params.get('error');
+      if (error) { clean(); throw new Error(params.get('error_description')||'Le fournisseur d’identité a refusé la connexion.'); }
+      if (code) {
+        clean();
+        const response=await fetch('/api/v1/auth/oidc/callback',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,state})});
+        if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.detail||'La connexion sécurisée a échoué. Recommencez.');}
+        await acceptInvitation();
+        return true;
+      }
+      const response=await fetch('/api/v1/auth/oidc/session',{credentials:'same-origin',cache:'no-store'});
+      if(response.status===401)return false;
+      if(!response.ok)throw new Error('Vérification de session indisponible.');
+      return true;
+    })();
+    window.CFDT_JURIS_AUTH={
+      ready,
+      async getAccessToken(){return await ready?'server-session':null;},
+      async getIdentityToken(){await ready;return null;},
+      async login(){window.location.assign('/api/v1/auth/oidc/login');},
+      async logout(){
+        await ready.catch(()=>false);
+        const response=await fetch('/api/v1/auth/oidc/logout',{method:'POST',credentials:'same-origin',cache:'no-store'});
+        const result=await response.json().catch(()=>({}));
+        window.location.assign(result.logout_url||'/');
+      }
+    };
+    return;
+  }
   let accessToken = null;
   let idToken = null;
   let expiresAt = 0;

@@ -42,6 +42,7 @@ from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
 from .personal_documents import router as personal_documents_router
+from .auth_sessions import router as oidc_sessions_router
 import httpx
 
 CHAT_SOURCE_METADATA_FIELDS = frozenset({
@@ -317,6 +318,7 @@ if settings.cors_origins:
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
 app.include_router(personal_documents_router)
+app.include_router(oidc_sessions_router)
 
 
 @app.get("/auth-config.js", include_in_schema=False)
@@ -328,7 +330,7 @@ async def browser_oidc_configuration():
             media_type="application/javascript",
             headers={"Cache-Control": "no-store"},
         )
-    redirect_origin = settings.invitation_base_url.rstrip("/") if settings.invitation_base_url else ""
+    redirect_origin = settings.oidc_redirect_uri.rstrip("/") if settings.oidc_redirect_uri else (settings.invitation_base_url.rstrip("/") if settings.invitation_base_url else "")
     redirect_uri = json.dumps(redirect_origin + "/") if redirect_origin else "window.location.origin + '/'"
     silent_redirect_uri = (
         json.dumps(redirect_origin + "/static/silent-check-sso.html")
@@ -341,7 +343,8 @@ async def browser_oidc_configuration():
         f"redirect_uri:{redirect_uri},"
         f"silent_redirect_uri:{silent_redirect_uri},"
         f"scopes:{json.dumps(settings.oidc_scopes)},"
-        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)}"
+        f"audience:{json.dumps(settings.oidc_authorization_audience or settings.oidc_audience)},"
+        f"server_sessions_enabled:{str(settings.oidc_server_sessions_enabled).lower()}"
         "});"
     )
     return Response(
