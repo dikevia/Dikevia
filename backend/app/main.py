@@ -1621,7 +1621,7 @@ async def ingest_administrative_open_data_zip(file: UploadFile = File(...), admi
 async def list_legal_ingestion_runs(limit: int = 30, admin=Depends(require_platform_admin)):
     if not 1 <= limit <= 100:
         raise HTTPException(422, "La limite doit être comprise entre 1 et 100.")
-    pool = get_pool()
+    pool = get_corpus_ingest_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch("SELECT id,source_type,run_mode,status,query_text,records_seen,records_imported,records_rejected,error_summary,started_at,finished_at FROM legal_ingestion_runs ORDER BY started_at DESC LIMIT $1", limit)
     return {"runs": [{**dict(row), "id": str(row["id"])} for row in rows]}
