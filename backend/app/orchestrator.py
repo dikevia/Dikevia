@@ -12,7 +12,7 @@ from .schemas import AskRequest, AskResponse
 from .config import settings
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
-from .fpt_scope import classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
+from .fpt_scope import _fold, classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
 from .legal_validation import validate_snapshot_citation, parse_facts_date
 from .ai_provider import analyze_question, plan_legal_research, evaluate_source_relevance, verify_claim_entailment, parse_structured_answer, AIAnalysisResult, AIProviderUnavailable, AIAnalysisRefusedNoSources, answer_references_are_grounded, check_provider_availability
 from .legifrance import connector as legifrance, LegifranceUnavailable
@@ -111,6 +111,19 @@ def _build_versant_fallback_research(
     return [branch_query], [branch_query]
 
 
+def _build_targeted_cgfp_article_queries(question: str, public_service: str = "FPT") -> list[str]:
+    """Return exact CGFP CMO provisions for explicit ordinary sick-leave questions."""
+    if str(public_service or "").upper() != "FPT":
+        return []
+    folded = _fold(str(question or ""))
+    if not any(marker in folded for marker in (
+        "conge de maladie ordinaire", "maladie ordinaire",
+        "jour de carence", "jours de carence", "cmo",
+    )):
+        return []
+    return [f"article L822-{number}" for number in range(1, 6)]
+
+
 def _build_code_research_queries(
     research_queries: list[str],
     cgfp_article_queries: list[str] | None = None,
@@ -148,6 +161,16 @@ def _build_targeted_regulatory_queries(
             ),
         }
         queries.extend(branch_availability_articles.get(public_service, ()))
+
+    ordinary_sick_leave = any(marker in folded for marker in (
+        "congé de maladie ordinaire", "conge de maladie ordinaire",
+        "maladie ordinaire", "jour de carence", "jours de carence", "cmo",
+    ))
+    if public_service == "FPT" and ordinary_sick_leave:
+        queries.extend([
+            "décret n° 87-602 du 30 juillet 1987 articles 14 et 15 congé de maladie fonctionnaires territoriaux",
+            "loi n° 2017-1837 du 30 décembre 2017 article 115 jour de carence agents publics",
+        ])
 
     citis = any(marker in folded for marker in (
         "citis", "invalidité temporaire imputable au service",
@@ -1083,8 +1106,16 @@ class LegalOrchestrator:
             # additional budget for up to three exact CGFP article lookups.
             # Exact article calls are essential when lexical discovery identifies
             # a provision whose title/body does not repeat the user's wording.
+            targeted_cmo_articles = _build_targeted_cgfp_article_queries(
+                contextual_question, request.public_service,
+            )
+            # Reserve the exact statutory CMO articles instead of allowing broad
+            # snapshot discovery to consume the bounded CGFP query budget.
+            code_query_inputs = research_queries[:3] if targeted_cmo_articles else research_queries
             code_research_queries = _build_code_research_queries(
-                research_queries, cgfp_article_queries, max_queries=8,
+                code_query_inputs,
+                [*targeted_cmo_articles, *(cgfp_article_queries or [])],
+                max_queries=8,
             )
             # These targeted, exact-number queries are sent only to the LODA
             # regulatory-text endpoint. They do not consume the CGFP or CETAT
@@ -1209,7 +1240,10 @@ class LegalOrchestrator:
         # used as a fallback only when live CGFP retrieval is unavailable.
         found, cgfp_issue = await search_cgfp_index()
         cgfp_partial_issue = found.get("partial_issue") if isinstance(found, dict) else None
-        cgfp_article_queries = _cgfp_article_discovery_queries(found, request.public_service)
+        cgfp_article_queries = list(dict.fromkeys([
+            *_build_targeted_cgfp_article_queries(contextual_question, request.public_service),
+            *_cgfp_article_discovery_queries(found, request.public_service),
+        ]))
 
         # Official legal texts and administrative case law remain the
         # authoritative verification path.
