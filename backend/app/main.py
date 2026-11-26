@@ -37,7 +37,7 @@ from .billing import PLANS, public_plans, verify_stripe_signature, extract_subsc
 from .legal_corpus import upsert_legal_document, search_legal_corpus
 from .legal_assurance import assess_source_set
 from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
-from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip
+from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip, administrative_open_data_archive_url
 from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
@@ -1579,6 +1579,54 @@ async def ingest_circulaires_open_data(file: UploadFile = File(...), admin=Depen
         "warning": "Le flux CIRCULAIRES peut ne fournir que des métadonnées. Les circulaires sans texte intégral restent explicitement identifiées comme telles."}
 
 
+@app.post("/api/v1/platform/legal-corpus/ingest/administrative-open-data-archive")
+async def ingest_administrative_open_data_archive(
+    court: str, year: int, month: int, admin=Depends(require_platform_admin),
+):
+    """Download one monthly archive from the fixed official open-data host."""
+    try:
+        archive_url = administrative_open_data_archive_url(court, year, month)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    max_archive_bytes = 100 * 1024 * 1024
+    timeout = httpx.Timeout(60.0, connect=10.0)
+    chunks: list[bytes] = []
+    total_bytes = 0
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
+            async with client.stream("GET", archive_url) as response:
+                if response.status_code == 404:
+                    raise HTTPException(404, "Cette archive mensuelle n'est pas publiée sur la plateforme officielle.")
+                if response.status_code != 200:
+                    raise HTTPException(502, f"La plateforme officielle a répondu HTTP {response.status_code}.")
+                content_length = response.headers.get("content-length")
+                if content_length:
+                    try:
+                        if int(content_length) > max_archive_bytes:
+                            raise HTTPException(413, "Archive ZIP limitée à 100 Mo.")
+                    except ValueError:
+                        pass
+                async for chunk in response.aiter_bytes():
+                    total_bytes += len(chunk)
+                    if total_bytes > max_archive_bytes:
+                        raise HTTPException(413, "Archive ZIP limitée à 100 Mo.")
+                    chunks.append(chunk)
+    except HTTPException:
+        raise
+    except httpx.TimeoutException as exc:
+        raise HTTPException(504, "Le téléchargement de l'archive officielle a dépassé le délai autorisé.") from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(502, "La plateforme officielle de données ouvertes est momentanément inaccessible.") from exc
+
+    raw = b"".join(chunks)
+    if not raw.startswith(b"PK\\x03\\x04"):
+        raise HTTPException(502, "La ressource téléchargée n'est pas une archive ZIP reconnue.")
+    filename = archive_url.rsplit("/", 1)[-1]
+    uploaded = UploadFile(filename=filename, file=BytesIO(raw))
+    return await ingest_administrative_open_data_zip(uploaded, admin=admin)
+
+
 @app.post("/api/v1/platform/legal-corpus/ingest/administrative-open-data-zip")
 async def ingest_administrative_open_data_zip(file: UploadFile = File(...), admin=Depends(require_platform_admin)):
     if not file.filename or not file.filename.lower().endswith(".zip"):
@@ -1587,7 +1635,7 @@ async def ingest_administrative_open_data_zip(file: UploadFile = File(...), admi
     if len(raw) > 100 * 1024 * 1024:
         raise HTTPException(413, "Archive ZIP limitée à 100 Mo.")
     try:
-        items = parse_administrative_open_data_zip(raw, file.filename)
+        items = await asyncio.to_thread(parse_administrative_open_data_zip, raw, file.filename)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     if not items:
