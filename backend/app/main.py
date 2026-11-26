@@ -42,6 +42,7 @@ from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
 from .entitlements import resolve_entitlements
+from .instances import prepare_instance
 from .personal_documents import router as personal_documents_router
 from .auth_sessions import router as oidc_sessions_router
 import httpx
@@ -1101,6 +1102,20 @@ async def _lock_conversation_for_chat_turn(
             "démarrez une nouvelle conversation pour la "
             f"{labels.get(requested, requested)}.",
         )
+
+
+@app.post("/api/v1/instances/{instance}/prepare")
+async def prepare_social_instance(
+    instance: str,
+    payload: dict,
+    ctx: TenantContext = Depends(require_syndicate_subscription),
+):
+    """Prepare a structured CST/CAP/CCP/FS checklist for active union subscribers."""
+    objet = payload.get("objet")
+    try:
+        return prepare_instance(instance, objet)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
