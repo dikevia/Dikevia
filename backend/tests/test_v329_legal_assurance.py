@@ -954,3 +954,32 @@ def test_claim_evidence_requires_explicit_matching_versant_or_common_scope(
         public_service=versant,
     )
     assert result["valid"] is expected
+
+
+
+@pytest.mark.parametrize(
+    "claim_text",
+    [
+        "Pendant 2024, les agents territoriaux bénéficient d'une protection statutaire.",
+        "Durant 2024, les agents territoriaux bénéficient d'une protection statutaire.",
+        "Au cours de 2024, les agents territoriaux bénéficient d'une protection statutaire.",
+    ],
+)
+def test_a_calendar_year_reference_is_not_mistaken_for_a_whole_period_assertion(claim_text):
+    from app.legal_assurance import _WHOLE_PERIOD_ASSERTION_RE
+
+    assert _WHOLE_PERIOD_ASSERTION_RE.search(claim_text) is None
+
+
+@pytest.mark.parametrize(
+    "claim_text",
+    [
+        "Pendant toute l'année, les agents territoriaux bénéficient d'une protection statutaire.",
+        "Sur l'ensemble de la période, les agents territoriaux bénéficient d'une protection statutaire.",
+        "Du 2024-01-01 au 2024-12-31, les agents territoriaux bénéficient d'une protection statutaire.",
+    ],
+)
+def test_explicit_whole_period_assertions_remain_detected(claim_text):
+    from app.legal_assurance import _WHOLE_PERIOD_ASSERTION_RE
+
+    assert _WHOLE_PERIOD_ASSERTION_RE.search(claim_text) is not None
