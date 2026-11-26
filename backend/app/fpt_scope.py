@@ -265,8 +265,7 @@ def classify_public_service_scope(
             ],
             "analysis_eligible": True,
             "claim_eligible": (
-                target_versant == "FPT"
-                and source.get("source_type") == "LEGIFRANCE_API"
+                source.get("source_type") == "LEGIFRANCE_API"
                 and functionary_status_confirmed
                 and str(agent_working_time_status or "").upper() == "FULL_TIME_EXPLICIT"
             ),
@@ -279,16 +278,14 @@ def classify_public_service_scope(
         f"l822 {number}" for number in range(18, 24)
     }:
         return {
-            "scope": "FPT",
+            "scope": "GENERAL_PUBLIC_SERVICE",
             "evidence": [
                 f"Article {article_ref.upper()} du CGFP : disposition relative aux accidents de service, accidents de trajet ou maladies contractées en service des fonctionnaires",
                 "Pour la FPT, vérifier le décret n° 87-602 du 30 juillet 1987 et le statut de l'agent : le régime CITIS ne doit pas être transposé aux agents contractuels",
+                "Cet article seul ne prouve pas le régime d'application propre au versant territorial",
             ],
             "analysis_eligible": True,
-            "claim_eligible": (
-                source.get("source_type") == "LEGIFRANCE_API"
-                and functionary_status_confirmed
-            ),
+            "claim_eligible": False,
         }
     # Articles L. 332-8 to L. 332-14 belong to the CGFP subsection devoted
     # specifically to permanent contractual employment in the FPT. Their
