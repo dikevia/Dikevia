@@ -105,3 +105,49 @@ def test_therapeutic_part_time_cgfp_articles_remain_context_only_until_agent_sta
     result = classify_public_service_scope(source, target_versant="FPT")
     assert result["analysis_eligible"] is True
     assert result["claim_eligible"] is False
+
+
+@pytest.mark.parametrize("number", range(18, 24))
+def test_citis_live_claim_requires_explicit_functionary_status(number):
+    article = f"L822-{number}"
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": f"Code général de la fonction publique — article {article}",
+        "article": article,
+        "text": "Disposition relative à l'accident de service ou à la maladie contractée en service du fonctionnaire.",
+    }
+    result = classify_public_service_scope(source, target_versant="FPT", agent_status="TITULAIRE_EXPLICIT")
+    assert result["claim_eligible"] is True
+
+
+def test_citis_live_claim_is_rejected_for_explicit_contract_agent():
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L822-18",
+        "article": "L822-18",
+        "text": "Disposition relative à l'accident de service ou à la maladie contractée en service du fonctionnaire.",
+    }
+    result = classify_public_service_scope(source, target_versant="FPT", agent_status="CONTRACTUEL_EXPLICIT")
+    assert result["claim_eligible"] is False
+
+
+def test_l532_4_live_claim_requires_explicit_functionary_status():
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L532-4",
+        "article": "L532-4",
+        "text": "Le fonctionnaire poursuivi disciplinairement a droit à la communication de son dossier.",
+    }
+    result = classify_public_service_scope(source, target_versant="FPT", agent_status="TITULAIRE_EXPLICIT")
+    assert result["claim_eligible"] is True
+
+
+def test_l532_9_live_claim_requires_explicit_functionary_status():
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "title": "Code général de la fonction publique — article L532-9",
+        "article": "L532-9",
+        "text": "L'autorité territoriale saisit le conseil de discipline par un rapport précisant les faits reprochés.",
+    }
+    result = classify_public_service_scope(source, target_versant="FPT", agent_status="FONCTIONNAIRE_STATUS_UNSPECIFIED")
+    assert result["claim_eligible"] is True
