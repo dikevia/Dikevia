@@ -11,6 +11,40 @@ from urllib.parse import urlparse
 from .legal_corpus import clean_text
 
 
+
+_ADMIN_OPEN_DATA_ARCHIVES = {
+    "CE": ("DCE", date(2021, 6, 1)),
+    "CAA": ("DCA", date(2022, 3, 1)),
+    "TA": ("DTA", date(2022, 6, 1)),
+}
+
+
+def administrative_open_data_archive_url(
+    court: str, year: int, month: int, *, today: date | None = None,
+) -> str:
+    """Build a monthly archive URL on the official, fixed justice-administrative host."""
+    normalized_court = str(court or "").strip().upper()
+    archive = _ADMIN_OPEN_DATA_ARCHIVES.get(normalized_court)
+    if archive is None:
+        raise ValueError("La juridiction doit être CE, CAA ou TA.")
+    if isinstance(year, bool) or not isinstance(year, int):
+        raise ValueError("L'année de l'archive est invalide.")
+    if isinstance(month, bool) or not isinstance(month, int) or not 1 <= month <= 12:
+        raise ValueError("Le mois de l'archive est invalide.")
+    try:
+        requested_month = date(year, month, 1)
+    except ValueError as exc:
+        raise ValueError("L'année de l'archive est invalide.") from exc
+    current = today or date.today()
+    current_month = date(current.year, current.month, 1)
+    folder, first_available = archive
+    if requested_month < first_available or requested_month > current_month:
+        raise ValueError("Aucune archive mensuelle n'est attendue pour cette période.")
+    return (
+        "https://opendata.justice-administrative.fr/"
+        f"{folder}/{year}/{month:02d}/{normalized_court}_{year}{month:02d}.zip"
+    )
+
 def _local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1].split(":")[-1].upper()
 
