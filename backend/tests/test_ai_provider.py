@@ -1053,7 +1053,11 @@ def test_structured_answer_parser_accepts_only_pure_or_fenced_json_objects():
         "Voici la réponse : " + valid,
         valid + "\nVoici la réponse.",
         "```json\n" + valid,
+        "```python\n" + valid + "\n```",
+        "```json\n" + valid + "\n```\n" + valid,
         "[1, 2, 3]",
+        "null",
+        "42",
         "{claims: []}",
         "",
         None,
@@ -2403,3 +2407,49 @@ def test_system_prompt_requires_natural_conversational_assistant_style_without_w
     assert "Rédige chaque claim dans un français naturel" in SYSTEM_PROMPT
     assert "La fluidité conversationnelle ne doit jamais réduire les exigences de preuve" in SYSTEM_PROMPT
     assert "FORMAT DE SORTIE OBLIGATOIRE — JSON STRICT" in SYSTEM_PROMPT
+
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("base_url", "supports_json_mode", "expected"),
+    [
+        ("https://example.test/v1", True, True),
+        ("https://example.test/v1", False, False),
+        ("https://generativelanguage.googleapis.com/v1beta/openai", True, False),
+    ],
+)
+async def test_chat_completion_adds_json_mode_only_for_explicitly_supported_provider(
+    monkeypatch, base_url, supports_json_mode, expected
+):
+    import httpx
+    from types import SimpleNamespace
+    import app.ai_provider as ai_provider
+
+    monkeypatch.setattr(
+        ai_provider,
+        "settings",
+        SimpleNamespace(
+            ai_api_base_url=base_url,
+            ai_supports_json_mode=supports_json_mode,
+            ai_fallback_models="",
+        ),
+    )
+    observed = {}
+
+    def handler(request):
+        observed.update(request_json=json.loads(request.content.decode("utf-8")))
+        return httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}]})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        response = await ai_provider._post_chat_completion(
+            client,
+            base_url.rstrip("/") + "/chat/completions",
+            headers={"Content-Type": "application/json"},
+            payload={"model": "test-model", "messages": []},
+        )
+
+    assert response.status_code == 200
+    assert ("response_format" in observed["request_json"]) is expected
+    if expected:
+        assert observed["request_json"]["response_format"] == {"type": "json_object"}
