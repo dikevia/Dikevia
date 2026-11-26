@@ -43,7 +43,7 @@ async def consume_chat_request(conn, organization_id: str, user_id: str,
         WHERE organization_id=$1::uuid AND user_id=$2::uuid
           AND window_start < date_trunc('minute',clock_timestamp())-interval '1 day'
         """,
-        organization_id, user_id,
+        user_id,
     )
     count = int(row["request_count"])
     return RateLimitDecision(
@@ -61,7 +61,7 @@ class DailyQuestionDecision:
 
 
 async def consume_daily_chat_question(
-    conn, organization_id: str, user_id: str, daily_limit: int = 5,
+    conn, user_id: str, daily_limit: int = 5,
 ) -> DailyQuestionDecision:
     """Atomically consume one Agent question in the Europe/Paris calendar day."""
     if not 1 <= daily_limit <= 5:
@@ -70,18 +70,18 @@ async def consume_daily_chat_question(
     row = await conn.fetchrow(
         """
         INSERT INTO chat_daily_question_usage
-            (organization_id,user_id,usage_date,question_count)
+            (user_id,usage_date,question_count)
         VALUES (
-            $1::uuid,$2::uuid,(clock_timestamp() AT TIME ZONE 'Europe/Paris')::date,1
+            $1::uuid,(clock_timestamp() AT TIME ZONE 'Europe/Paris')::date,1
         )
-        ON CONFLICT (organization_id,user_id,usage_date)
+        ON CONFLICT (user_id,usage_date)
         DO UPDATE SET
             question_count=chat_daily_question_usage.question_count+1,
             updated_at=now()
         WHERE chat_daily_question_usage.question_count < $3
         RETURNING question_count
         """,
-        organization_id, user_id, daily_limit,
+        user_id, daily_limit,
     )
     if row:
         return DailyQuestionDecision(True, int(row["question_count"]))
@@ -89,7 +89,7 @@ async def consume_daily_chat_question(
     current_count = await conn.fetchval(
         """
         SELECT question_count FROM chat_daily_question_usage
-        WHERE organization_id=$1::uuid AND user_id=$2::uuid
+        WHERE user_id=$1::uuid
           AND usage_date=(clock_timestamp() AT TIME ZONE 'Europe/Paris')::date
         """,
         organization_id, user_id,
