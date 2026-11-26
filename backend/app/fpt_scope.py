@@ -180,7 +180,6 @@ def classify_public_service_scope(
     # Article L. 532-9 concerns the referral to the disciplinary board by
     # the territorial authority and is therefore a specific FPT provision.
     if title_folded.startswith("code general de la fonction publique") and article_ref == "l532 9":
-        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
         return {
             "scope": "FPT",
             "evidence": [
@@ -199,7 +198,6 @@ def classify_public_service_scope(
         title_folded.startswith("code general de la fonction publique")
         and article_ref in {f"l823 {number}" for number in range(1, 7)}
     ):
-        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
         return {
             "scope": "COMMON_PUBLIC_SERVICE",
             "evidence": [
