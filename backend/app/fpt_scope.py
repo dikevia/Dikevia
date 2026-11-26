@@ -706,6 +706,21 @@ def is_topic_relevant_source(
         "title", "article", "official_number", "excerpt", "text", "full_text"
     ))
     source_topics = _matched_topic_families(source_text[:500_000])
+    source_article_ref = _fold(str(source.get("article") or source.get("article_id") or ""))
+    source_title_folded = _fold(str(source.get("title") or ""))
+    cmo_pay_evidence = (
+        source_article_ref in {f"l822 {number}" for number in range(1, 6)}
+        or (
+            ("decret n 87 602" in source_title_folded or "decret 87 602" in source_title_folded)
+            and source_article_ref in {"14", "15", "article 14", "article 15"}
+        )
+        or (
+            ("loi n 2017 1837" in source_title_folded or "loi 2017 1837" in source_title_folded)
+            and source_article_ref in {"115", "article 115"}
+        )
+    )
+    if cmo_pay_evidence:
+        source_topics.add("ORDINARY_SICK_LEAVE")
     # Do not let the similar wording "extra hours" merge two distinct FPT
     # regimes: decree 2004-777 concerns part-time IHTS conditions, while
     # decree 2020-592 governs complementary hours for permanent non-complete
@@ -729,6 +744,14 @@ def is_topic_relevant_source(
     # retirement) is not evidence of the six-year conversion mechanism.
     if "CONTRACT_CDI_SIX_YEARS" in question_topics and (
         "CONTRACT_CDI_SIX_YEARS" not in source_topics
+    ):
+        return False
+
+    # Ordinary sick-leave questions need an ordinary-sick-leave source:
+    # generic long-term leave or unrelated health provisions are not enough.
+    if (
+        "ORDINARY_SICK_LEAVE" in question_topics
+        and "ORDINARY_SICK_LEAVE" not in source_topics
     ):
         return False
 
