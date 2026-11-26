@@ -52,6 +52,7 @@ def test_daily_quota_migration_uses_forced_tenant_user_rls():
     assert "FORCE ROW LEVEL SECURITY" in migration
     assert "app.current_user_id" in migration
     assert "question_count BETWEEN 1 AND 5" in migration
+    assert "GRANT DELETE ON chat_daily_question_usage" not in migration
 
 
 def test_public_billing_endpoint_exposes_only_current_catalogue():
