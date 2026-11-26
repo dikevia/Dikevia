@@ -279,6 +279,9 @@ def _compact_instance_source(source: dict[str, Any], family: str) -> dict[str, A
     )
     scope = classify_public_service_scope(source, target_versant="FPT")
     decision_metadata_only = family.startswith("jurisprudence") and source.get("full_text_retrieved") is not True
+    full_text_retrieved = source.get("full_text_retrieved") is True or (
+        not decision_metadata_only and bool(source.get("text") or source.get("full_text"))
+    )
     return {
         "family": family,
         "source_type": source.get("source_type"),
@@ -298,7 +301,7 @@ def _compact_instance_source(source: dict[str, Any], family: str) -> dict[str, A
         "valid_to": source.get("valid_to"),
         "version_status": source.get("version_status"),
         "source_status": source.get("source_status"),
-        "full_text_retrieved": source.get("full_text_retrieved") is True,
+        "full_text_retrieved": full_text_retrieved,
         "verification_note": (
             "Résultat de recherche : métadonnées/extrait uniquement, texte intégral non récupéré."
             if decision_metadata_only else
