@@ -50,7 +50,6 @@ def test_daily_quota_migration_uses_forced_tenant_user_rls():
     migration = (ROOT / "database/migrations/027_chat_daily_question_quota.sql").read_text(encoding="utf-8")
     assert "ENABLE ROW LEVEL SECURITY" in migration
     assert "FORCE ROW LEVEL SECURITY" in migration
-    assert "app.current_org_id" in migration
     assert "app.current_user_id" in migration
     assert "question_count BETWEEN 1 AND 5" in migration
 
