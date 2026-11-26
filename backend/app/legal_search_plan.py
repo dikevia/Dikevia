@@ -916,7 +916,19 @@ def build_official_search_queries(question: str, max_queries: int = 6) -> list[s
         r"\b(?:et|ainsi que|par ailleurs|de plus|egalement)\b|[;?]\s*(?:et|puis|ensuite)\b",
         folded,
     ))
-    query_limit = max(1, min(max_queries, 4 if _is_professional_evaluation_question(original) else 3))
+    report_dispute_present = any(
+        _contains_trigger(folded, marker)
+        for marker in (
+            "rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+            "mon chef a fait un rapport", "mon superieur a fait un rapport",
+            "rapport a charge", "rapport defavorable", "rapport circonstancie",
+            "contester un rapport de mon chef", "contester le rapport de mon superieur",
+        )
+    )
+    query_limit = max(
+        1,
+        min(max_queries, 4 if (_is_professional_evaluation_question(original) or report_dispute_present) else 3),
+    )
     if explicit_compound and len(matched_axes) >= 3:
         query_limit = min(max_queries, len(matched_axes) + 1)
 
