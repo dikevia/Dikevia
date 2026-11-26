@@ -30,7 +30,7 @@ def test_source_registry_never_allows_automatic_full_text_from_unverified_source
     assert "'GAZETTE_COMMUNES'" in migration
     assert "'LOCALtis'" in migration
     assert "'WEKA'" in migration
-    assert "'DALLoz'" in migration
+    assert "'DALLOZ'" in migration
     assert "'LEXISNEXIS'" in migration
     assert "'DELIBIA'" in migration
     assert "'COMMUNIA'" in migration
@@ -42,7 +42,7 @@ def test_open_licensed_official_sources_are_marked_for_controlled_automated_inge
     assert "'OPEN_LICENSE',true,true,true,true,'VERIFIED'" in migration
     assert "Respecter les quotas par jeton" in migration
     assert "Licence Ouverte 2.0" in migration
-    assert "source_key=CASE" in migration
+    assert "SET source_key = CASE" in migration
 
 
 def test_source_registry_rollback_removes_only_registry_metadata_and_links():
