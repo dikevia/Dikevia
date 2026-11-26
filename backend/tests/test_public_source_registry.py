@@ -52,7 +52,7 @@ def test_administrative_justice_open_data_is_registered_as_primary_case_law():
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
     source = next(item for item in registry["sources"] if item["id"] == "justice-administrative-opendata")
     assert source["authority_level"] == "PRIMARY_LEGAL"
-    assert source["status"] == "CANDIDATE"
+    assert source["status"] == "ACCESS_REVIEWED"
     assert source["dataset_url"].startswith("https://opendata.justice-administrative.fr/")
     assert "archives xml zip mensuelles" in source["collection_mode"].casefold()
     assert "profilage" in source["reuse"]

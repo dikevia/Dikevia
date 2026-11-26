@@ -108,3 +108,6 @@ Les 157 décisions ont été corrigées **uniquement sur cette branche de test**
 Contrôle de la branche Neon `production` : **0 `legal_documents`, 0 `legal_document_versions`, 0 `legal_chunks`**. Le corpus partagé de cette base n'est donc pas alimenté. Le PDF et l'index CGFP embarqués dans l'application restent disponibles pour le parcours local prévu, mais ils ne remplacent pas l'import du corpus national partagé.
 
 **Conséquence :** ne pas annoncer que les 4 616 documents et les 5 667 embeddings sont déjà disponibles en production. La promotion du corpus exige une recette de recherche, la vérification des sources, puis un import contrôlé sur la base cible avec le rôle dédié. Aucun transfert vers la base de production n'a été effectué lors de cet audit.
+
+
+**Statut de réutilisation :** les CGU et la Licence Ouverte Etalab 2.0 ont été examinées. Elles autorisent la réutilisation commerciale sous conditions, mais les CGU prévoient une acceptation sans réserve par le réutilisateur. Cette acceptation n'a pas été effectuée au nom de l'exploitant. Le registre reste donc à `ACCESS_REVIEWED`, et non `REUSE_APPROVED`, jusqu'à sa confirmation par l'exploitant.
