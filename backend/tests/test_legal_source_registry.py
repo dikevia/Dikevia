@@ -29,7 +29,9 @@ def test_source_registry_never_allows_automatic_full_text_from_unverified_source
     assert "'ARIANEWEB'" in migration
     assert "'METADATA_ONLY',false,true,false,false" in migration
     assert "'CNFPT_WIKITERRITORIAL'" in migration
-    assert "'OWNER_APPROVED_PENDING_REVIEW',false,true,false,false" in migration
+    assert "'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false" in migration
+    assert "'CNFPT_WIKITERRITORIAL'" in migration
+    assert "'METADATA_ONLY',false,true,false,false" in migration
     assert "'LANDOT'" in migration
     assert "'GAZETTE_COMMUNES'" in migration
     assert "'LOCALtis'" in migration
