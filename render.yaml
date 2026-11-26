@@ -44,6 +44,12 @@ services:
         sync: false
       - key: OIDC_SCOPES
         value: openid profile email
+      - key: OIDC_SERVER_SESSIONS_ENABLED
+        value: "false"
+      - key: OIDC_SESSION_ENCRYPTION_KEY
+        sync: false
+      - key: OIDC_REDIRECT_URI
+        sync: false
       - key: OIDC_AUTHORIZATION_AUDIENCE
         sync: false
       - key: OIDC_IDENTITY_COMPAT_ISSUER
