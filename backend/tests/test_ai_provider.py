@@ -2397,3 +2397,35 @@ def test_entailment_verdict_quote_must_be_inside_the_exact_model_payload_excerpt
 
     assert result["valid"] is False
     assert "verdict_0:support_quote_not_in_source" in result["invalid"]
+
+def test_entailment_verdict_quote_cannot_target_text_omitted_from_model_payload():
+    from app.ai_provider import validate_entailment_verdicts
+
+    full_text = "Passage juridique pertinent. " * 500
+    source = {
+        "source_type": "LEGIFRANCE_API",
+        "source_id": "LEGIARTI000000000124",
+        "title": "Code général de la fonction publique",
+        "text": full_text,
+        "excerpt": full_text + " MARQUEUR TARDIF HORS PAYLOAD UNIQUE.",
+        "content_kind": "FULL_TEXT",
+        "temporal_status": "IN_FORCE_ON_REQUESTED_DATE",
+        "analysis_eligible": True,
+        "official_source": True,
+        "citation_integrity": {"valid": True},
+    }
+    claim = {
+        "text": "L'agent bénéficie d'un congé annuel dans les conditions prévues.",
+        "source_id": source["source_id"],
+    }
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0,
+            "source_id": source["source_id"],
+            "verdict": "SUPPORTED",
+            "support_quote": "MARQUEUR TARDIF HORS PAYLOAD UNIQUE.",
+        }]
+    }, [claim], [source])
+
+    assert result["valid"] is False
+    assert "verdict_0:support_quote_not_in_source" in result["invalid"]
