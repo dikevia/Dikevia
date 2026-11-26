@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote, urlparse
 from .config import settings, validate_runtime_configuration
 from .db import open_pool, close_pool, get_pool, get_corpus_ingest_pool, get_platform_admin_pool, assert_runtime_role_is_safe
-from .dependencies import get_principal, get_tenant_context, get_tenant_identity, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_org_admin_for_external, require_legal_editor_for_external, require_platform_admin, TenantContext
+from .dependencies import get_principal, get_tenant_context, get_tenant_identity, get_tenant_context_for_chat, require_org_admin, require_legal_editor, require_org_admin_for_external, require_legal_editor_for_external, require_platform_admin, require_syndicate_subscription, TenantContext
 from .security import Principal
 from .schemas import AskRequest, AskResponse, InvitationCreate, InvitationAccept, OrganizationCreate, CollectivityCreate, DocumentValidationUpdate, DocumentMetadataUpdate, MemberRoleUpdate
 from .orchestrator import LegalOrchestrator
@@ -41,6 +41,7 @@ from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_da
 from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request
+from .entitlements import resolve_entitlements
 from .personal_documents import router as personal_documents_router
 from .auth_sessions import router as oidc_sessions_router
 import httpx
@@ -317,7 +318,7 @@ if settings.cors_origins:
         allow_headers=["Authorization","Content-Type","X-Organization-ID","X-OIDC-ID-Token"])
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
-app.include_router(personal_documents_router)
+app.include_router(personal_documents_router, dependencies=[Depends(require_syndicate_subscription)])
 app.include_router(oidc_sessions_router)
 
 
@@ -563,7 +564,7 @@ async def billing_plans():
     """Public catalogue; hidden entirely for private instances."""
     if settings.private_instance_mode:
         raise HTTPException(404, "La facturation n'est pas disponible sur cette instance privée.")
-    return {"plans": public_plans(), "billing_provider": None, "billing_enabled": False, "currency": "EUR", "notice": "Catalogue officiel ; souscription désactivée jusqu’à la mise en service du compteur de crédits mensuels."}
+    return {"plans": public_plans(), "billing_provider": None, "billing_enabled": False, "currency": "EUR", "notice": "Offre Agent : 5 € TTC/mois et 5 questions par jour. Offres syndicales : 5, 10 ou 15 accès, tarif à définir. Souscription en ligne désactivée."}
 
 
 @app.get("/api/v1/billing/subscription")
@@ -591,14 +592,17 @@ async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context))
     paid_active_users = seat_counts["paid_active_users"]
     free_active_users = seat_counts["free_active_users"]
     active_users = paid_active_users + free_active_users
+    entitlements = resolve_entitlements(plan_code, plan_status, founder=bool(founder_entitlement))
     return {"plan_code": plan_code, "status": plan_status, "provider": row["provider"] if row else None,
-            "max_users": plan["max_users"], "active_users": active_users,
+            "max_users": entitlements.max_users, "active_users": active_users,
             "paid_active_users": paid_active_users, "free_active_users": free_active_users,
             "current_period_end": row["current_period_end"] if row else None,
             "cancel_at_period_end": row["cancel_at_period_end"] if row else False,
             "free_access_until": row["free_access_until"] if row else None,
             "founder_entitlement": bool(founder_entitlement),
-            "premium_access": bool(founder_entitlement or plan_status in {"ACTIVE", "TRIALING"}),
+            "premium_access": entitlements.syndicate_tools,
+            "daily_question_limit": entitlements.daily_question_limit,
+            "features": {"chatbot": entitlements.chatbot, "syndicate_tools": entitlements.syndicate_tools},
             "updated_at": row["updated_at"] if row else None}
 
 
@@ -962,7 +966,7 @@ async def delete_chat_conversation(conversation_id: str, ctx: TenantContext = De
 
 
 @app.post("/api/v1/chat/conversations/{conversation_id}/dossier", status_code=201)
-async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(get_tenant_context)):
+async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(require_syndicate_subscription)):
     """Compile a faithful, editable working dossier from this user's conversation."""
     try:
         conversation_uuid = str(UUID(conversation_id))
@@ -1004,7 +1008,7 @@ async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends
 
 
 @app.get("/api/v1/chat/conversations/{conversation_id}/dossier")
-async def get_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(get_tenant_context)):
+async def get_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(require_syndicate_subscription)):
     try:
         conversation_uuid = str(UUID(conversation_id))
     except ValueError:
@@ -1018,7 +1022,7 @@ async def get_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(g
 
 
 @app.put("/api/v1/chat/conversations/{conversation_id}/dossier")
-async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantContext = Depends(get_tenant_context)):
+async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantContext = Depends(require_syndicate_subscription)):
     try:
         conversation_uuid = str(UUID(conversation_id))
         content = validate_dossier_content(payload.get("content"))
@@ -1112,9 +1116,44 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
             if not rate.allowed:
                 return JSONResponse(
                     status_code=429,
-                    content={"detail": "Limite de requêtes atteinte. Réessayez dans quelques instants."},
+                    content={"detail": "Limite technique de requêtes atteinte. Réessayez dans quelques instants."},
                     headers={"Retry-After": str(rate.retry_after_seconds)},
                 )
+
+            subscription = await conn.fetchrow(
+                "SELECT plan_code,status FROM subscriptions WHERE organization_id=$1::uuid",
+                ctx.organization_id,
+            )
+            founder = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements "
+                "WHERE user_id=$1::uuid AND revoked_at IS NULL)",
+                ctx.user_id,
+            )
+            entitlements = resolve_entitlements(
+                subscription["plan_code"] if subscription else None,
+                subscription["status"] if subscription else None,
+                founder=bool(founder),
+            )
+            if entitlements.daily_question_limit is not None:
+                usage = await conn.fetchrow(
+                    """INSERT INTO chat_daily_question_usage(
+                           organization_id,user_id,usage_date,question_count
+                       ) VALUES(
+                           $1::uuid,$2::uuid,(now() AT TIME ZONE 'Europe/Paris')::date,1
+                       )
+                       ON CONFLICT(organization_id,user_id,usage_date)
+                       DO UPDATE SET question_count=chat_daily_question_usage.question_count+1,
+                                     updated_at=now()
+                       WHERE chat_daily_question_usage.question_count < $3
+                       RETURNING question_count""",
+                    ctx.organization_id, ctx.user_id, entitlements.daily_question_limit,
+                )
+                if not usage:
+                    return JSONResponse(
+                        status_code=429,
+                        content={"detail": "Vous avez atteint la limite de 5 questions aujourd'hui. Votre quota sera réinitialisé à minuit (heure de Paris)."},
+                    )
+
             conversation_id = payload.conversation_id
             if conversation_id is None:
                 row = await conn.fetchrow("""INSERT INTO chat_conversations(organization_id,user_id,title)
@@ -1289,7 +1328,7 @@ async def search_permanent_legal_knowledge(q: str, effective_date: date | None =
 @app.post("/api/v1/legal/compliance/review/{document_id}")
 async def review_local_rule_compliance(document_id: str, q: str,
         effective_date: date | None = None, confirm_local_document_ai_transfer: bool = False,
-        ctx: TenantContext = Depends(get_tenant_context_for_chat)):
+        ctx: TenantContext = Depends(require_syndicate_subscription)):
     """Prepare a sourced comparison of one tenant-local document with national sources.
 
     This endpoint flags review needs; it never declares a local act illegal.
