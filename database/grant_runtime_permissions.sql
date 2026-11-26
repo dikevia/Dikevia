@@ -50,8 +50,6 @@ GRANT UPDATE (scan_status, scan_engine, scanned_at) ON document_versions TO cfdt
 
 -- V3.21 national legal knowledge base is shared/read-only for the runtime API role.
 GRANT SELECT ON legal_documents,legal_document_versions,legal_chunks,legal_document_relations,legal_ingestion_runs TO cfdt_juris_app;
-GRANT SELECT ON legal_source_registry TO cfdt_juris_app;
-GRANT SELECT, INSERT, UPDATE ON legal_source_registry TO cfdt_juris_ingest;
 
 -- The application runtime must never read or modify the migration ledger.
 REVOKE ALL ON schema_migrations FROM cfdt_juris_app;
