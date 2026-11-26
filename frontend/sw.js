@@ -1,4 +1,4 @@
-// Privacy boundary: no API, authentication, billing, documents, or user content is cached.
+// No API, authentication, billing, documents, or user content is cached.
 'use strict';
 const CACHE_NAME = 'dikevia-shell-v1';
 const OFFLINE_URL = '/static/offline.html';
