@@ -256,3 +256,39 @@ def test_source_key_resolution_uses_registered_official_and_institutional_source
         "raw_metadata": {"source_id": "cfdt-interco"},
     }) == "CFDT_INTERCO"
     assert resolve_legal_source_key({"source_type": "INSTITUTIONAL_GUIDANCE"}) is None
+
+
+
+@pytest.mark.asyncio
+async def test_corpus_import_rejects_full_text_when_source_registry_does_not_allow_it():
+    from app.legal_corpus import upsert_legal_document
+
+    class DeniedSourceConn:
+        def __init__(self):
+            self.fetchrow_calls = []
+            self.execute_calls = []
+
+        async def fetchrow(self, query, *args):
+            self.fetchrow_calls.append((query, args))
+            return {
+                "metadata_ingestion_allowed": True,
+                "full_text_ingestion_allowed": False,
+                "verification_status": "CONDITIONAL",
+            }
+
+        async def execute(self, query, *args):
+            self.execute_calls.append((query, args))
+
+    conn = DeniedSourceConn()
+    with pytest.raises(ValueError, match="texte intégral"):
+        await upsert_legal_document(conn, {
+            "source_type": "DILA_CIRCULAIRES",
+            "source_id": "CIRCULAIRE_TEST_1",
+            "title": "Circulaire de test",
+            "document_kind": "CIRCULAR",
+            "source_status": "IMPORTED_UNVERIFIED",
+            "full_text": "Texte intégral non autorisé à l'ingestion. " * 10,
+        })
+
+    assert len(conn.fetchrow_calls) == 1
+    assert conn.execute_calls == []
