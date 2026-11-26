@@ -1450,7 +1450,7 @@ async def test_gemini_503_uses_flash_lite_fallback_after_primary_retry(monkeypat
         )
 
     assert response.status_code == 200
-    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite"]
 
 
 @pytest.mark.asyncio
