@@ -332,7 +332,9 @@ def should_use_cgfp_snapshot_fallback(
     # retrieval failed OR returned no relevant CGFP article for the requested
     # axis. Its scope and claim-eligibility guards still prevent it from
     # grounding a current legal assertion.
-    live_unusable = bool(live_issue) or not live_covers_an_axis
+    live_unusable = bool(live_issue) or (
+        live_sources is not None and not live_covers_an_axis
+    )
     return bool(
         live_unusable and isinstance(found, dict) and found.get("results")
         and any(
@@ -1671,7 +1673,11 @@ class LegalOrchestrator:
         # used to reconstruct the version applicable to historical facts.
         cgfp_snapshot_fallback = should_use_cgfp_snapshot_fallback(
             live_issue, found, research_queries,
-            target_versant=request.public_service, live_sources=live_sources,
+            target_versant=request.public_service,
+            # A successfully retrieved regulatory LODA source means the live
+            # legal search is available; keep the CGFP snapshot as discovery,
+            # not as an additional evidence source in this case.
+            live_sources=live_sources if not regulatory_sources else None,
         )
 
         sources: list[dict] = []
