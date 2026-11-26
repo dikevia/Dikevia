@@ -132,3 +132,33 @@ async def test_instance_preparation_reports_partial_piste_failures_without_losin
     )
     assert regulatory["status"] == "ERROR"
     assert regulatory["error_type"] == "RuntimeError"
+
+
+
+def test_instance_ui_renders_law_sources_and_does_not_hide_metadata_only_jurisprudence():
+    from pathlib import Path
+
+    frontend = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+    source = frontend.read_text(encoding="utf-8")
+    assert "async function prepareInstance()" in source
+    assert "async async function prepareInstance()" not in source
+    assert "result.legal_research" in source
+    assert "full_text_retrieved" in source
+    assert "Consulter sur Légifrance" in source
+
+
+@pytest.mark.asyncio
+async def test_instance_preparation_distinguishes_full_text_from_case_law_metadata():
+    result = await prepare_instance_with_legal_sources(
+        "FS",
+        "Risques psychosociaux et conditions de travail",
+        legifrance_connector=FakeLegifrance(),
+        case_law_connector=FakeCaseLaw(),
+        effective_date=date(2026, 11, 27),
+    )
+
+    sources = result["legal_research"]["sources"]
+    assert sources[0]["full_text_retrieved"] is True
+    assert sources[1]["full_text_retrieved"] is True
+    assert sources[2]["full_text_retrieved"] is False
+    assert "métadonnées/extrait uniquement" in sources[2]["verification_note"]
