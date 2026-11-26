@@ -18,6 +18,30 @@ _DIRECT_ARTICLE_LOOKUP = re.compile(
 # territorial public-service source families and their implementing texts.
 _TOPIC_EXPANSIONS = (
     (
+        ("rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+         "mon chef a fait un rapport", "mon superieur a fait un rapport",
+         "rapport a charge", "rapport defavorable", "rapport circonstancie",
+         "contester un rapport de mon chef", "contester le rapport de mon superieur"),
+        "fonctionnaire territorial rapport hierarchique redige par superieur autorite territoriale "
+        "CGFP articles L532-4 L532-9 L137-1 L137-4 decret 89-677 articles 4 et 5 "
+        "dossier individuel communication consultation acces aux pieces observations agent "
+        "rapport circonstancie signalement procedure disciplinaire droits de la defense "
+        "distinguer rapport informatif document verse au dossier et decision faisant grief",
+    ),
+    (
+        ("deces d un grand pere", "deces d une grand mere",
+         "deces de son grand pere", "deces de sa grand mere",
+         "deces de mon grand pere", "deces de ma grand mere",
+         "deces d un proche", "deces d un membre de la famille",
+         "deces d un ascendant", "grand pere decede", "grand mere decedee",
+         "grand parent decede", "obseques", "autorisation d absence pour deces",
+         "acte de deces", "justificatif de deces"),
+        (
+            "fonction publique territoriale autorisation speciale absence deces grand parent ascendant CGFP textes reglementaires deliberation locale",
+            "agent territorial justificatif deces lien de parente livret de famille acte de deces protection des donnees minimisation donnees personnelles",
+        ),
+    ),
+    (
         ("accompagne d un syndicat", "accompagne par un syndicat",
          "accompagne d un representant syndical", "accompagne par un representant syndical",
          "assiste par un representant syndical", "venir avec mon syndicat",
