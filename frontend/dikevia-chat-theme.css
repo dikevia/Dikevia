@@ -1544,3 +1544,113 @@ html.dikevia-standard-app .standard-drawer {scrollbar-color:#a8cde5 transparent!
   html.dikevia-standard-app .juris-chat {background:#fff!important}
   html.dikevia-standard-app .juris-composer {background:#fafdff!important}
 }
+
+
+/* JARVIS — application Administration : même identité, interface de pilotage dédiée. */
+html.dikevia-admin-mode {
+  color-scheme:light;
+  --ja-bg:#f3f7fb;--ja-surface:#fff;--ja-surface-soft:#f7fbfe;
+  --ja-ink:#172f49;--ja-muted:#647b91;--ja-line:#dce7f0;
+  --ja-blue:#368fc3;--ja-blue-strong:#287fb9;--ja-blue-soft:#eaf4fb;
+  background:var(--ja-bg);color:var(--ja-ink);
+}
+html.dikevia-admin-mode body {
+  min-height:100dvh;background:
+    radial-gradient(ellipse at 50% -18%,rgba(91,184,235,.14),transparent 48%),
+    var(--ja-bg);color:var(--ja-ink);-webkit-font-smoothing:antialiased;
+}
+html.dikevia-admin-mode .top {
+  min-height:66px;padding:12px clamp(14px,3vw,30px);
+  background:rgba(250,253,255,.96);color:var(--ja-ink);
+  border-bottom:1px solid var(--ja-line);
+  box-shadow:0 5px 24px rgba(31,74,112,.07);
+  backdrop-filter:blur(16px);
+}
+html.dikevia-admin-mode .brand {display:flex;align-items:center;gap:11px;color:#17334f;font-size:20px;font-weight:780;letter-spacing:-.03em}
+html.dikevia-admin-mode .brand:before {
+  content:"";width:38px;height:38px;flex:0 0 38px;border:1px solid #b6d9ef;border-radius:50%;
+  background:
+    radial-gradient(circle,#fff 0 12%,#bce8ff 13% 17%,transparent 18%),
+    radial-gradient(circle,transparent 0 29%,#45a6da 30% 33%,transparent 34%),
+    radial-gradient(circle,transparent 0 44%,#a8d9f3 45% 48%,transparent 49%),
+    linear-gradient(145deg,#fff,#e5f4fc);
+  box-shadow:0 0 18px rgba(72,171,224,.18),inset 0 0 12px rgba(83,178,229,.12);
+}
+html.dikevia-admin-mode .brand small {display:block;color:#71869a;font-size:10px;font-weight:550;letter-spacing:.015em}
+html.dikevia-admin-mode .topright {gap:10px;color:#60768c}
+html.dikevia-admin-mode #userLabel {color:#60768c;font-size:11px}
+html.dikevia-admin-mode button,
+html.dikevia-admin-mode .button {
+  border:1px solid #398fc1;border-radius:10px;
+  background:linear-gradient(145deg,#58b7e8,#287fb9);
+  color:#fff;box-shadow:0 4px 13px rgba(48,139,194,.13);
+  transition:transform .16s ease,box-shadow .16s ease,background .16s ease;
+}
+html.dikevia-admin-mode button:hover,
+html.dikevia-admin-mode .button:hover {background:linear-gradient(145deg,#4ba9dc,#216fa8);box-shadow:0 7px 18px rgba(48,139,194,.18)}
+html.dikevia-admin-mode button:active {transform:translateY(1px)}
+html.dikevia-admin-mode button.secondary {
+  border:1px solid #cbddea;background:#f4faff;color:#347da9;box-shadow:none;
+}
+html.dikevia-admin-mode button.secondary:hover {background:#eaf5fc;border-color:#9fcbe6;box-shadow:none}
+html.dikevia-admin-mode button.danger {border-color:#d58b91;background:#fff3f3;color:#a84f58;box-shadow:none}
+html.dikevia-admin-mode .shell {max-width:1320px;padding:24px clamp(12px,2.5vw,28px)}
+html.dikevia-admin-mode .heading h1,
+html.dikevia-admin-mode #platformScreen h1 {color:#172f49;letter-spacing:-.035em}
+html.dikevia-admin-mode .muted {color:#687f94}
+html.dikevia-admin-mode .panel,
+html.dikevia-admin-mode .card,
+html.dikevia-admin-mode .auth {
+  border:1px solid var(--ja-line);border-radius:16px;background:var(--ja-surface);
+  box-shadow:0 5px 20px rgba(34,74,111,.045);
+}
+html.dikevia-admin-mode .panel {padding:20px;margin-bottom:17px}
+html.dikevia-admin-mode .panel h2,
+html.dikevia-admin-mode .panel h3 {color:#203b55;letter-spacing:-.02em}
+html.dikevia-admin-mode input,
+html.dikevia-admin-mode select,
+html.dikevia-admin-mode textarea {
+  border:1px solid #cbddea;border-radius:9px;background:#fff;color:#263f56;
+}
+html.dikevia-admin-mode input:focus,
+html.dikevia-admin-mode select:focus,
+html.dikevia-admin-mode textarea:focus {
+  outline:0;border-color:#68b4df;box-shadow:0 0 0 3px rgba(80,169,220,.13);
+}
+html.dikevia-admin-mode label {color:#49657e}
+html.dikevia-admin-mode .cards {gap:12px}
+html.dikevia-admin-mode .metric {color:#287fb9}
+html.dikevia-admin-mode table {color:#304a62}
+html.dikevia-admin-mode th {background:#f1f7fb;color:#607b92}
+html.dikevia-admin-mode th,
+html.dikevia-admin-mode td {border-bottom:1px solid #e6eef5}
+html.dikevia-admin-mode tbody tr:hover {background:#f6fbfe}
+html.dikevia-admin-mode .tablewrap {border:1px solid #dce8f1;border-radius:11px}
+html.dikevia-admin-mode .pill {background:#eaf4fb;color:#347eaa}
+html.dikevia-admin-mode .pill.warn {background:#fff8e9;color:#94713a}
+html.dikevia-admin-mode .pill.bad {background:#fff1f1;color:#a84f58}
+html.dikevia-admin-mode .message {border:1px solid #d5e8f4;background:#eff8fd;color:#315d7d}
+html.dikevia-admin-mode .message.error {border-color:#f0d0d0;background:#fff3f3;color:#a84f58}
+html.dikevia-admin-mode #platformScreen .panel {overflow:hidden}
+html.dikevia-admin-mode #platformScreen .tablewrap {overflow:auto}
+html.dikevia-admin-mode #platformScreen th {position:sticky;top:0;z-index:1}
+html.dikevia-admin-mode #platformScreen .cards .card {min-width:0}
+html.dikevia-admin-mode #platformScreen form .row {align-items:end}
+html.dikevia-admin-mode #platformScreen .pricing-price {color:#287fb9}
+html.dikevia-admin-mode #platformScreen .pricing-kicker,
+html.dikevia-admin-mode #platformScreen .pricing-label {color:#5485a7}
+html.dikevia-admin-mode :focus-visible {outline:3px solid rgba(67,157,209,.42);outline-offset:3px}
+html.dikevia-admin-mode footer {color:#8193a5}
+@media(max-width:700px) {
+  html.dikevia-admin-mode .shell {padding:14px 10px}
+  html.dikevia-admin-mode .panel {padding:14px;border-radius:13px}
+  html.dikevia-admin-mode .top {padding:10px 12px}
+  html.dikevia-admin-mode .brand {font-size:18px}
+  html.dikevia-admin-mode .brand small {max-width:205px;line-height:1.35}
+  html.dikevia-admin-mode #platformScreen .cards {grid-template-columns:repeat(2,minmax(0,1fr))}
+  html.dikevia-admin-mode #platformScreen .metric {font-size:23px}
+  html.dikevia-admin-mode #platformScreen .tablewrap {margin-left:-2px;margin-right:-2px}
+}
+@media(max-width:390px) {
+  html.dikevia-admin-mode #platformScreen .cards {grid-template-columns:1fr}
+}
