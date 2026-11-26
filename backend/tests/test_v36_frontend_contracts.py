@@ -129,22 +129,26 @@ def test_commercial_workspace_has_polished_responsive_tables_and_forms():
     assert "@media(hover:none)" in html
 
 
-def test_billing_screen_uses_official_ttc_catalogue_and_monthly_credit_rules():
+def test_billing_screen_uses_agent_and_union_access_catalogue():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
     for expected in (
-        "14,90 €", "149 € TTC / an", "125 crédits par mois",
-        "29 €", "290 € TTC / an", "248 crédits par mois",
-        "119 €", "1 190 € TTC / an", "1 000 crédits par mois",
-        "299 €", "2 990 € TTC / an", "2 450 crédits par mois",
-        "1 crédit par question juridique standard",
-        "2 crédits pour une analyse approfondie d’un résumé",
-        "4 crédits pour le résumé intégral d’un rapport de commission jusqu’à 50 pages",
-        "Gratuit, illimité et sans consommation de crédits : 0 crédit",
-        "Aucun quota journalier contraignant n’est appliqué",
-        "souscription en ligne reste désactivée",
+        "Agent · 1 accès",
+        "5 €",
+        "5 questions par jour",
+        "Chatbot juridique uniquement",
+        "Syndicat · 5 accès",
+        "Syndicat · 10 accès",
+        "Syndicat · 15 accès",
+        "Toutes les fonctionnalités",
+        "utilisation sans quota quotidien",
+        "tarifs des abonnements syndicaux restent à fixer",
+        "souscription et les paiements en ligne sont désactivés",
     ):
         assert expected in html
-    assert "15 €" not in html and "HT / mois" not in html
+    assert "14,90 €" not in html
+    assert "29 €" not in html
+    assert "119 €" not in html
+    assert "299 €" not in html
 
 def test_readiness_exposes_render_revision_for_post_deploy_verification():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
