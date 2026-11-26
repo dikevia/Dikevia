@@ -1620,7 +1620,7 @@ async def ingest_administrative_open_data_archive(
         raise HTTPException(502, "La plateforme officielle de données ouvertes est momentanément inaccessible.") from exc
 
     raw = b"".join(chunks)
-    if not raw.startswith(b"PK\\x03\\x04"):
+    if not raw.startswith(b"PK\x03\x04"):
         raise HTTPException(502, "La ressource téléchargée n'est pas une archive ZIP reconnue.")
     filename = archive_url.rsplit("/", 1)[-1]
     uploaded = UploadFile(filename=filename, file=BytesIO(raw))
