@@ -89,9 +89,20 @@ La dernière vérification connue signalait que l'application SPA n'était pas a
 
 ### Sessions persistantes côté serveur
 
-Le BFF de sessions OIDC est présent dans la branche de déploiement historique, mais le manifeste Render y fixe explicitement `OIDC_SERVER_SESSIONS_ENABLED=false`. Le parcours actuellement configuré n'utilise donc pas les sessions HttpOnly côté serveur. La table `oidc_sessions` existe dans la base applicative de production et ne contient aucune session au contrôle du 26 novembre 2026.
+Le BFF de sessions OIDC est désormais présent dans `main` et dans la branche commerciale historique. Il reste explicitement désactivé par défaut (`OIDC_SERVER_SESSIONS_ENABLED=false`) ; le parcours actuellement configuré n'utilise donc pas les sessions HttpOnly côté serveur. La table `oidc_sessions` existe dans la base applicative de production et ne contient aucune session au contrôle du 26 novembre 2026. La branche Neon de test du corpus ne possède pas cette table.
 
-L'activation du BFF exige une clé de chiffrement de 32 octets, une URI HTTPS autorisée et un flux Auth0 renvoyant un refresh token. Le manifeste actuel définit `OIDC_SCOPES=openid`, ce qui ne suffit pas à démontrer que le refresh token sera délivré. Il faut valider `offline_access`, la rotation des refresh tokens et la révocation avant activation. Ne pas activer cette option en production par simple changement de drapeau.
+L'activation du BFF exige une clé AES-256 de 32 octets (64 caractères hexadécimaux ou base64url), une URI HTTPS autorisée et un flux Auth0 renvoyant un refresh token. La branche commerciale historique conserve `OIDC_SCOPES=openid`, tandis que `main` prévoit `openid profile email`. Dans les deux cas, le BFF Auth0 exige explicitement `offline_access` lorsqu'il est activé. Il faut également activer la rotation des refresh tokens dans la SPA Auth0.
+
+**Configuration requise avant activation, uniquement sur staging :**
+
+- `OIDC_SERVER_SESSIONS_ENABLED=true`
+- `OIDC_SESSION_ENCRYPTION_KEY` : clé aléatoire de 32 octets, stockée comme secret Render
+- `OIDC_REDIRECT_URI` : origine HTTPS exacte de l'application, terminée par `/`, autorisée dans Auth0 et dans les origines CORS
+- `OIDC_SCOPES=openid profile email offline_access`
+
+La migration `029_oidc_server_sessions.sql` doit être présente sur la branche de base utilisée par le service avant activation. Le fichier de rollback correspondant invalide et supprime toutes les sessions : il ne doit être exécuté qu'en cas de décision explicite de retour arrière. Aucune migration ni modification de secret Render n'a été effectuée pendant cette intervention.
+
+Avant toute activation, tester le cycle complet PKCE, callback, création de cookie HttpOnly/Secure, vérification de session, renouvellement avec rotation, déconnexion/révocation et protection CSRF. Ne pas activer cette option en production par simple changement de drapeau.
 
 ### Règles de bascule
 
