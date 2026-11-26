@@ -8,6 +8,7 @@ from .security import verify_access_token, verify_identity_token, Principal, aut
 from .db import get_pool
 from .config import settings
 from .auth_sessions import get_session_principal, SESSION_COOKIE, require_same_origin
+from .entitlements import resolve_entitlements
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -162,6 +163,31 @@ async def require_org_admin(ctx: TenantContext = Depends(get_tenant_context)):
 async def require_legal_editor(ctx: TenantContext = Depends(get_tenant_context)):
     if ctx.role not in ("ORG_ADMIN", "LEGAL_EDITOR"):
         raise HTTPException(403, "Permission insuffisante.")
+    return ctx
+
+async def require_syndicate_subscription(ctx: TenantContext = Depends(get_tenant_context)):
+    """Require an active 5/10/15-seat union plan or the verified founder entitlement."""
+    if settings.private_instance_mode:
+        return ctx
+    subscription = await ctx.conn.fetchrow(
+        "SELECT plan_code,status FROM subscriptions WHERE organization_id=$1::uuid",
+        ctx.organization_id,
+    )
+    founder = await ctx.conn.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements "
+        "WHERE user_id=$1::uuid AND revoked_at IS NULL)",
+        ctx.user_id,
+    )
+    entitlements = resolve_entitlements(
+        subscription["plan_code"] if subscription else None,
+        subscription["status"] if subscription else None,
+        founder=bool(founder),
+    )
+    if not entitlements.syndicate_tools:
+        raise HTTPException(
+            403,
+            "Cette fonctionnalité est réservée aux abonnements syndicaux Dikévia.",
+        )
     return ctx
 
 
