@@ -81,9 +81,9 @@ Les tests d'intégration PostgreSQL doivent utiliser une base jetable et des rô
 
 ## 7. Travaux encore à arbitrer
 
-- Examiner les branches historiques et extraire uniquement les changements réellement utiles qui manquent à `main`.
-- Résoudre l'échec CI du dernier commit avant de déclarer `main` sain.
-- Diagnostiquer le parcours Auth0 Android ; ne pas fusionner une correction non vérifiée.
+- Poursuivre l'audit des branches historiques ; ne récupérer que les changements précis absents de `main`, sans fusion globale.
+- Maintenir le CI vert à chaque évolution.
+- Terminer la recette fonctionnelle Auth0 sur navigateur et Android ; la compilation APK ne suffit pas.
 - Réconcilier `render.yaml`, les fichiers de configuration historiques et la configuration Render réellement active.
 - Auditer les modules Python racine, les anciens fichiers Keycloak et les documents de versions successives avant suppression.
 - Réduire la documentation à un index actuel et un historique clairement séparé, sans supprimer les preuves techniques ou procédures encore utiles.
