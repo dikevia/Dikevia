@@ -581,3 +581,25 @@ def test_health_regulatory_queries_stay_with_the_selected_versant():
     assert any("88-386" in query and "13-1" in query for query in fph)
     assert any("88-386" in query and "35-2" in query for query in fph)
     assert not any("87-602" in query or "86-442" in query for query in fph)
+
+def test_medico_social_ihts_queries_retrieve_specific_20_hour_equivalence_sources():
+    queries = _build_targeted_regulatory_queries(
+        "Je suis cadre de santé paramédical territorial. Quel est mon contingent mensuel d'IHTS ?",
+        "FPT",
+    )
+    joined = " ".join(queries).casefold()
+    assert any("91-875" in query and "annexes 1 et 2" in query for query in queries)
+    assert any("98-1057" in query for query in queries)
+    assert any("2002-598" in query and "20 heures" in query for query in queries)
+    assert any("arrêté du 25 avril 2002" in query for query in queries)
+    assert "20 heures" in joined
+
+
+def test_medico_social_ihts_detection_handles_official_territorial_cadre_wording():
+    questions = [
+        "Je suis cadre territorial de santé paramédical, quel contingent d'IHTS ?",
+        "Je suis puéricultrice territoriale, quelles règles d'heures supplémentaires ?",
+    ]
+    for question in questions:
+        queries = _build_targeted_regulatory_queries(question, "FPT")
+        assert any("2002-598" in query for query in queries)
