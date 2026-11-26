@@ -412,8 +412,19 @@ def is_ihts_relevant_source(
 _TOPIC_FAMILIES = {
     "SICK_LEAVE": (
         "conge maladie", "conge de maladie", "conge longue maladie",
-        "conge longue duree", "citis", "accident de service",
-        "maladie professionnelle", "arret maladie",
+        "conge longue duree", "maladie professionnelle", "arret maladie",
+    ),
+    # Ordinary sick leave (CMO) and service-related leave (CITIS) are
+    # legally distinct mechanisms. Do not let shared "congé de maladie"
+    # wording make a CITIS provision evidence for an ordinary sick-leave query.
+    "ORDINARY_SICK_LEAVE": (
+        "conge de maladie ordinaire", "maladie ordinaire", "cmo",
+        "jour de carence", "jours de carence",
+    ),
+    "CITIS": (
+        "citis", "conge pour invalidite temporaire imputable au service",
+        "invalidite temporaire imputable au service", "accident de service",
+        "accident de trajet", "maladie contractee en service",
     ),
     "LEAVE": (
         "conges annuels", "conge annuel", "conges bonifies",
@@ -563,6 +574,15 @@ def is_topic_relevant_source(
     # retirement) is not evidence of the six-year conversion mechanism.
     if "CONTRACT_CDI_SIX_YEARS" in question_topics and (
         "CONTRACT_CDI_SIX_YEARS" not in source_topics
+    ):
+        return False
+
+    # A CITIS source cannot support an ordinary sick-leave question merely
+    # because both mechanisms concern an interruption of work for health reasons.
+    if (
+        "CITIS" in source_topics
+        and "CITIS" not in question_topics
+        and ("SICK_LEAVE" in question_topics or "ORDINARY_SICK_LEAVE" in question_topics)
     ):
         return False
 
