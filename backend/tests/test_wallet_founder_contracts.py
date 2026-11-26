@@ -70,3 +70,10 @@ def test_multilingual_embedding_rollback_preserves_1536_vectors_and_vector_exten
     assert "DROP COLUMN IF EXISTS embedding_384_updated_at" in down
     assert "DROP COLUMN IF EXISTS embedding;" not in down
     assert "DROP EXTENSION" not in down
+
+
+def test_migration_versions_are_unique_and_contiguous():
+    migrations = ROOT / "database/migrations"
+    versions = sorted(int(path.name[:3]) for path in migrations.glob("[0-9][0-9][0-9]_*.sql"))
+    assert len(versions) == len(set(versions))
+    assert versions == list(range(1, max(versions) + 1))
