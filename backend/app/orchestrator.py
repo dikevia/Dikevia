@@ -338,7 +338,7 @@ def should_use_cgfp_snapshot_fallback(
     snapshot_has_relevant_article = False
     if isinstance(found, dict):
         for hit in found.get("results") or []:
-            article_ref = re.sub(r"\\s+", "", str(hit.get("article") or "")).upper()
+            article_ref = re.sub(r"\s+", "", str(hit.get("article") or "")).upper()
             article = get_cgfp_article(article_ref)
             candidate = {
                 **hit,
