@@ -47,7 +47,7 @@ def test_personal_document_router_is_protected_for_agent_accounts():
 
 
 def test_daily_quota_migration_uses_forced_tenant_user_rls():
-    migration = (ROOT / "database/migrations/027_chat_daily_question_quota.sql").read_text(encoding="utf-8")
+    migration = (ROOT / "database/migrations/030_chat_daily_question_quota.sql").read_text(encoding="utf-8")
     assert "ENABLE ROW LEVEL SECURITY" in migration
     assert "FORCE ROW LEVEL SECURITY" in migration
     assert "app.current_user_id" in migration
@@ -69,7 +69,7 @@ def test_public_billing_endpoint_exposes_only_current_catalogue():
 def test_instance_preparation_endpoint_is_explicitly_subscription_gated():
     source = inspect.getsource(prepare_social_instance)
     assert "Depends(require_syndicate_subscription)" in source
-    assert "prepare_instance(instance, objet)" in source
+    assert "prepare_instance_with_legal_sources" in source
 
 def test_standalone_legal_documents_and_organization_management_are_union_only():
     source = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
