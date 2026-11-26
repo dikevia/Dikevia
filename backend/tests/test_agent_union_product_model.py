@@ -87,3 +87,16 @@ def test_standalone_legal_documents_and_organization_management_are_union_only()
         decorator_end = source.find("\n", route_index)
         decorator = source[decorator_start:decorator_end]
         assert "require_syndicate_subscription" in decorator, path
+
+def test_frontend_exposes_instances_only_to_union_entitlements_and_removes_old_pricing():
+    frontend = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert 'data-view="instances" data-premium' in frontend
+    assert "hasSyndicateTools=Boolean(sub.features?.syndicate_tools||sub.premium_access)" in frontend
+    assert "AGENT_5_QUESTIONS" in frontend
+    assert "SYNDICAT_5_ACCES" in frontend
+    assert "SYNDICAT_10_ACCES" in frontend
+    assert "SYNDICAT_15_ACCES" in frontend
+    assert "125 crédits par mois" not in frontend
+    assert "Essentiel · 1 accès" not in frontend
+    assert "Collectivité & Syndicats · 15 accès" not in frontend
+    assert "Préparation des instances" in frontend
