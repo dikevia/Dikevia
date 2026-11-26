@@ -284,6 +284,12 @@ _TOPIC_MARKERS = (
                                       "charge de travail", "conditions de travail",
                                       "risques psychosociaux", "risques professionnels",
                                       "sante et securite au travail")),
+    ("REPORT_HIERARCHICAL_CONTESTATION", (
+        "rapport hierarchique", "rapport contre moi", "rapport fait contre moi",
+        "mon chef a fait un rapport", "mon superieur a fait un rapport",
+        "rapport a charge", "rapport defavorable", "rapport circonstancie",
+        "contester un rapport de mon chef", "contester le rapport de mon superieur",
+    )),
     ("DISCIPLINE", ("sanction disciplinaire", "procedure disciplinaire", "conseil de discipline",
                     "avertissement", "blame", "exclusion temporaire", "revocation",
                     "on me sanctionne", "je suis sanctionne", "sanctionne par ma collectivite")),
