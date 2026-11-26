@@ -14,6 +14,13 @@ _TYPOGRAPHIC_TRANSLATION = str.maketrans({
     "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-", "\u2015": "-",
     "\u00ab": '"', "\u00bb": '"', "\u201c": '"', "\u201d": '"', "\u201e": '"', "\u201f": '"',
     "\u2026": "...",
+    # Invisible formatting controls can split or visually reorder legal evidence.
+    **{character: None for character in (
+        "\u00ad", "\u034f", "\u061c", "\u180e", "\u200b", "\u200c",
+        "\u200d", "\u200e", "\u200f", "\u202a", "\u202b", "\u202c",
+        "\u202d", "\u202e", "\u2060", "\u2066", "\u2067", "\u2068",
+        "\u2069", "\ufeff",
+    )},
 })
 
 
