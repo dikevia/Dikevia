@@ -1688,7 +1688,10 @@ class LegalOrchestrator:
                     f"{item['requested_effective_date']}"
                 )
             full_text = item.get("full_text") or ""
-            scope_check = classify_public_service_scope(item, target_versant=request.public_service)
+            scope_check = classify_public_service_scope(
+                item, target_versant=request.public_service,
+                agent_status=legal_context.get("agent_status"),
+            )
             item["public_service_scope"] = scope_check["scope"]
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
