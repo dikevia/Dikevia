@@ -76,6 +76,34 @@ INSERT INTO legal_source_registry (
     'Fiches pratiques de vulgarisation. Toujours conserver attribution et date de mise à jour. Ne jamais traiter ces fiches comme source normative primaire.'
 ),
 (
+    'DGCL','DGCL — ressources officielles relatives aux collectivités territoriales','INSTITUTIONAL_GUIDANCE',
+    'OFFICIAL_ADMIN_GUIDANCE','Direction générale des collectivités locales','https://www.collectivites-locales.gouv.fr/',
+    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'PENDING','MANUAL_REVIEW',
+    'Source officielle utile à la FPT. Conserver les liens et métadonnées ; texte intégral à réutiliser uniquement après vérification de la licence et du statut du document.'
+),
+(
+    'CDG44','CDG 44 — ressources statutaires et RH','INSTITUTIONAL_GUIDANCE',
+    'PROFESSIONAL_GUIDANCE','Centre de gestion de Loire-Atlantique','https://www.cdg44.fr/',
+    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'PENDING','MANUAL_REVIEW',
+    'Ressources de gestion FPT. Conditions de réutilisation à vérifier document par document avant tout stockage du texte intégral.'
+),
+(
+    'CIG_GRANDE_COURONNE','CIG Grande Couronne — ressources statutaires','INSTITUTIONAL_GUIDANCE',
+    'PROFESSIONAL_GUIDANCE','Centre interdépartemental de gestion de la grande couronne','https://www.cigversailles.fr/',
+    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'PENDING','MANUAL_REVIEW',
+    'Ressources professionnelles FPT. Conditions de réutilisation à vérifier document par document.'
+),
+(
+    'CDG_DEPARTMENTS','Centres de gestion départementaux — ressources statutaires','INSTITUTIONAL_GUIDANCE',
+    'PROFESSIONAL_GUIDANCE','Centres de gestion de la fonction publique territoriale',NULL,
+    'MANUAL_LINK',NULL,NULL,NULL,'METADATA_ONLY',false,true,false,false,
+    'PENDING','MANUAL_REVIEW',
+    'Catégorie de découverte des CDG départementaux. Chaque organisme doit être enregistré individuellement avec ses propres domaines, licences et autorisations.'
+),
+(
     'DGAFP','DGAFP — ressources sélectionnées de la fonction publique','INSTITUTIONAL_GUIDANCE',
     'OFFICIAL_ADMIN_GUIDANCE','DGAFP','https://www.fonction-publique.gouv.fr/',
     'MANUAL_APPROVED',NULL,NULL,NULL,'OWNER_APPROVED_PENDING_REVIEW',false,true,true,false,
@@ -312,6 +340,11 @@ SET source_key = CASE
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cnfpt' THEN 'CNFPT'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'dgafp' THEN 'DGAFP'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'info-gouv' THEN 'INFO_GOUV'
+    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'dgcl' THEN 'DGCL'
+    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cdg-44' THEN 'CDG44'
+    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cig-grande-couronne' THEN 'CIG_GRANDE_COURONNE'
+    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cdg-departements' THEN 'CDG_DEPARTMENTS'
+    WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'wikiterritorial-cnfpt' THEN 'CNFPT_WIKITERRITORIAL'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cfdt-interco' THEN 'CFDT_INTERCO'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cfdt-fonctions-publiques' THEN 'CFDT_UFFA'
     WHEN source_type = 'INSTITUTIONAL_GUIDANCE' AND raw_metadata->>'source_id' = 'cftc-fonction-publique' THEN 'CFTC_FONCTION_PUBLIQUE'

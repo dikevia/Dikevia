@@ -19,6 +19,10 @@ def test_source_registry_records_authority_reuse_and_refresh_policy():
     assert "'CDG35'" in migration
     assert "'CFDT_INTERCO'" in migration
     assert "'INFO_GOUV'" in migration
+    assert "'DGCL'" in migration
+    assert "'CDG44'" in migration
+    assert "'CIG_GRANDE_COURONNE'" in migration
+    assert "'CDG_DEPARTMENTS'" in migration
     assert "'CNFPT'" in migration
     assert "'DGAFP'" in migration
     assert "'APPROVED_SEEDS_ONLY'" in migration

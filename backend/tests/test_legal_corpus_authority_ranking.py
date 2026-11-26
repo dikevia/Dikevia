@@ -267,6 +267,22 @@ def test_source_key_resolution_uses_registered_official_and_institutional_source
         "source_type": "INSTITUTIONAL_GUIDANCE",
         "raw_metadata": {"source_id": "info-gouv"},
     }) == "INFO_GOUV"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "dgcl"},
+    }) == "DGCL"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "cdg-44"},
+    }) == "CDG44"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "cig-grande-couronne"},
+    }) == "CIG_GRANDE_COURONNE"
+    assert resolve_legal_source_key({
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "wikiterritorial-cnfpt"},
+    }) == "CNFPT_WIKITERRITORIAL"
     assert resolve_legal_source_key({"source_type": "INSTITUTIONAL_GUIDANCE"}) is None
 
 
