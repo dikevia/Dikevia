@@ -308,10 +308,15 @@ def _is_union_assistance_convocation_question(question: str) -> bool:
         "etre accompagne d un syndicat",
         "assistance syndicale lors d une convocation",
         "accompagnement syndical lors d une convocation",
+        "accompagnement syndical", "assistance syndicale",
+        "etre accompagne par un representant syndical",
+        "etre assiste par un representant syndical",
     )
     has_assistance = any(_contains_trigger(folded, trigger) for trigger in assistance)
     has_summons = any(_contains_trigger(folded, trigger) for trigger in (
-        "convocation", "entretien avec ma hierarchie", "entretien hierarchique",
+        "convocation", "convoque par ma hierarchie", "convoque par sa hierarchie",
+        "convoque par mon chef", "convoque par son chef",
+        "entretien avec ma hierarchie", "entretien hierarchique",
     ))
     return has_assistance and has_summons
 
