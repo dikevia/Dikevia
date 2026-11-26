@@ -1095,3 +1095,113 @@ html.dikevia-standard-app .juris-welcome-icon:after {
   border-radius:50%;
   animation:dikevia-orbit 18s linear infinite;
 }
+
+
+/* JARVIS mobile workspace: full-height chat on Android and narrow screens */
+@media (max-width: 760px) {
+  html.dikevia-standard-app,
+  html.dikevia-standard-app body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden !important;
+  }
+  html.dikevia-standard-app body {
+    display: flex;
+    flex-direction: column;
+  }
+  html.dikevia-standard-app .top {
+    position: relative;
+    flex: 0 0 60px;
+    height: 60px;
+    min-height: 60px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: 8px;
+  }
+  html.dikevia-standard-app #mainContent.shell {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    height: calc(100dvh - 60px);
+    min-height: 0;
+    margin: 0;
+    padding: 8px 9px max(8px, env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+  html.dikevia-standard-app #appScreen {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  html.dikevia-standard-app #workspace {
+    display: flex;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  html.dikevia-standard-app #workspace .grid,
+  html.dikevia-standard-app #workspace .content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  html.dikevia-standard-app #view-ask:not(.hidden) {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  html.dikevia-standard-app #view-ask > .heading {
+    flex: 0 0 auto;
+    margin: 2px 1px 8px;
+  }
+  html.dikevia-standard-app .juris-chat {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    overflow: hidden;
+    border-radius: 16px !important;
+  }
+  html.dikevia-standard-app .juris-messages {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  html.dikevia-standard-app .juris-composer {
+    position: relative;
+    flex: 0 0 auto;
+    bottom: auto;
+    z-index: 5;
+    padding: 9px 10px max(9px, env(safe-area-inset-bottom));
+  }
+  html.dikevia-standard-app .juris-input-row textarea {
+    min-width: 0;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+  }
+  html.dikevia-standard-app footer {
+    display: none !important;
+  }
+}
