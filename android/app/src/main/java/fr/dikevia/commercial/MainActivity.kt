@@ -24,18 +24,17 @@ class MainActivity : Activity() {
         private val APP_URL = BuildConfig.APP_URL
         private const val FILE_CHOOSER_REQUEST = 4107
         private val TRUSTED_HOSTS = setOf(
-            "dikevia-commercial-api-l2r8.onrender.com",
-            "dikevia-identity-l2r8.onrender.com"
+            "dikevia-vector-beta-staging.onrender.com"
         )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.rgb(18, 59, 50)
-        window.navigationBarColor = Color.rgb(18, 59, 50)
+        window.statusBarColor = Color.rgb(24, 50, 79)
+        window.navigationBarColor = Color.rgb(24, 50, 79)
 
         webView = WebView(this)
-        webView.setBackgroundColor(Color.rgb(243, 246, 244))
+        webView.setBackgroundColor(Color.rgb(237, 243, 250))
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
 
         webView.settings.apply {
@@ -60,7 +59,7 @@ class MainActivity : Activity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val uri = request.url
-                if (uri.scheme == "https" && uri.host in TRUSTED_HOSTS) return false
+                if (uri.scheme == "https" && (uri.host in TRUSTED_HOSTS || uri.host?.endsWith(".auth0.com") == true)) return false
                 if (uri.scheme == "https" || uri.scheme == "mailto" || uri.scheme == "tel") {
                     return try {
                         startActivity(Intent(Intent.ACTION_VIEW, uri))

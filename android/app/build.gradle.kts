@@ -23,13 +23,13 @@ android {
             dimension = "edition"
             applicationId = "fr.dikevia.commercial"
             resValue("string", "app_name", "Dikévia")
-            buildConfigField("String", "APP_URL", "\"https://dikevia-commercial-api-l2r8.onrender.com/?dikevia_app=standard\"")
+            buildConfigField("String", "APP_URL", "\"https://dikevia-vector-beta-staging.onrender.com/?dikevia_app=standard\"")
         }
         create("admin") {
             dimension = "edition"
             applicationId = "fr.dikevia.admin"
             resValue("string", "app_name", "Dikévia Administration")
-            buildConfigField("String", "APP_URL", "\"https://dikevia-commercial-api-l2r8.onrender.com/?dikevia_app=admin\"")
+            buildConfigField("String", "APP_URL", "\"https://dikevia-vector-beta-staging.onrender.com/?dikevia_app=admin\"")
         }
     }
 
