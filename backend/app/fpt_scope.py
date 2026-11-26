@@ -140,6 +140,38 @@ def classify_public_service_scope(
     corpus = _fold((title + " " + text)[:500_000])
     title_folded = _fold(title)
 
+    # These CGFP provisions expressly establish rights for all public agents.
+    # Only a live Légifrance article may support a current legal claim; the
+    # bundled snapshot remains contextual and cannot certify current wording.
+    common_cgfp_articles = {
+        "l111 1": "Article L. 111-1 du CGFP : liberté d'opinion garantie aux agents publics",
+        "l114 1": "Article L. 114-1 du CGFP : les agents publics exercent le droit de grève dans le cadre des lois qui le réglementent",
+        "l137 1": "Article L. 137-1 du CGFP : composition du dossier individuel de l'agent public",
+        "l137 4": "Article L. 137-4 du CGFP : droit d'accès de tout agent public à son dossier individuel",
+        "l532 4": "Article L. 532-4 du CGFP : garanties de communication du dossier et d'assistance du fonctionnaire poursuivi disciplinairement",
+    }
+    if title_folded.startswith("code general de la fonction publique") and article_ref in common_cgfp_articles:
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        return {
+            "scope": "COMMON_PUBLIC_SERVICE",
+            "evidence": [common_cgfp_articles[article_ref]],
+            "analysis_eligible": True,
+            "claim_eligible": official_live_article,
+        }
+
+    # Article L. 532-9 concerns the referral to the disciplinary board by
+    # the territorial authority and is therefore a specific FPT provision.
+    if title_folded.startswith("code general de la fonction publique") and article_ref == "l532 9":
+        official_live_article = source.get("source_type") == "LEGIFRANCE_API"
+        return {
+            "scope": "FPT",
+            "evidence": [
+                "Article L. 532-9 du CGFP : saisine du conseil de discipline par l'autorité territoriale au moyen d'un rapport précisant les faits reprochés et leurs circonstances",
+            ],
+            "analysis_eligible": target_versant == "FPT",
+            "claim_eligible": target_versant == "FPT" and official_live_article,
+        }
+
     # The CGFP chapter L823-1 to L823-6 states the common statutory TPT
     # framework for civil servants. Only a live Légifrance article may ground
     # a claim; a bundled snapshot remains contextual and cannot certify the
@@ -158,19 +190,21 @@ def classify_public_service_scope(
             "analysis_eligible": True,
             "claim_eligible": official_live_article,
         }
-    # CITIS provisions remain contextual until their branch-specific scope and
-    # implementing rules have been independently established.
+    # Articles L. 822-18 to L. 822-23 govern service-related accidents,
+    # commuting accidents and occupational disease. They are applicable to
+    # territorial civil servants; the FPT implementing framework is notably
+    # set out in decree n° 87-602. Keep snapshots contextual, not claim evidence.
     if target_versant == "FPT" and article_ref in {
         f"l822 {number}" for number in range(18, 24)
     }:
         return {
-            "scope": "GENERAL_PUBLIC_SERVICE",
+            "scope": "FPT",
             "evidence": [
-                f"Article {article_ref.upper()} du CGFP : piste de contexte uniquement",
-                "Applicabilité FPT et dispositions réglementaires d'application à vérifier séparément",
+                f"Article {article_ref.upper()} du CGFP : disposition relative aux accidents de service, accidents de trajet ou maladies contractées en service",
+                "Pour la FPT, vérifier les dispositions d'application du décret n° 87-602 du 30 juillet 1987",
             ],
             "analysis_eligible": True,
-            "claim_eligible": False,
+            "claim_eligible": source.get("source_type") == "LEGIFRANCE_API",
         }
     # Articles L. 332-8 to L. 332-14 belong to the CGFP subsection devoted
     # specifically to permanent contractual employment in the FPT. Their
