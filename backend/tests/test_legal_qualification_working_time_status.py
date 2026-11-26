@@ -30,7 +30,7 @@ def test_explicit_working_time_is_preserved_across_a_follow_up():
     from app.legal_qualification import build_contextual_research_context
 
     context = build_contextual_research_context(
-        "Et pour le TPT ?",
+        "Et dans ce cas ?",
         prior_user_questions=["Je suis fonctionnaire territorial à temps non complet."],
         prior_assistant_messages=["Voici les règles générales applicables."],
     )
