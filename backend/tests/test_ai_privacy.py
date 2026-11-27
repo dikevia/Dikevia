@@ -18,6 +18,24 @@ def test_direct_personal_identifiers_are_masked_before_provider_transfer():
 
 
 
+def test_labeled_birth_dates_keep_only_the_year_and_agent_numbers_are_masked():
+    from app.ai_privacy import redact_direct_identifiers
+
+    value = (
+        "L'agent est né le 15/01/1980 et son matricule : AGT-45872. "
+        "Date de naissance : 2 février 1978."
+    )
+
+    result = redact_direct_identifiers(value)
+
+    assert "15/01/1980" not in result
+    assert "2 février 1978" not in result
+    assert "né en 1980" in result
+    assert "année de naissance : 1978" in result
+    assert "AGT-45872" not in result
+    assert "MATRICULE AGENT MASQUÉ" in result
+
+
 def test_provider_payload_minimization_recurses_into_sources_metadata_and_history():
     from app.ai_privacy import redact_provider_payload
 
