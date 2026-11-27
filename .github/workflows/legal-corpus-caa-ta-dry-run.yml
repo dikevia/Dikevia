@@ -59,7 +59,7 @@ jobs:
 
   apply-staging:
     if: github.event_name == 'workflow_dispatch' && inputs.mode == 'apply-staging'
-    name: Import official CAA/TA decisions into staging only
+    name: Replace and reimport official CAA/TA decisions in staging only
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: staging
@@ -88,5 +88,6 @@ jobs:
             --max-archives 4 \
             --delay-seconds 2 \
             --apply \
+            --replace-archives \
             --export-json legal-corpus-caa-ta-staging-import.json
           cat legal-corpus-caa-ta-staging-import.json
