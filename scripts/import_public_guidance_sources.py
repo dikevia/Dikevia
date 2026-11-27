@@ -61,6 +61,16 @@ class VisibleTextParser(HTMLParser):
         return clean_text("\n".join(self.parts))
 
 
+def seed_is_fpt_relevant(seed: dict) -> bool:
+    scope = {str(value).strip().upper() for value in seed.get("scope", [])}
+    return bool(scope.intersection({"FPT", "COMMON_PUBLIC_SERVICE"}))
+
+
+def seed_reuse_is_approved(seed: dict, source: dict) -> bool:
+    approved = {"REUSE_APPROVED", "APPROVED"}
+    return source.get("status") in approved and seed.get("reuse_status") in approved
+
+
 def load_registry() -> dict:
     return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
 
@@ -248,12 +258,10 @@ def main() -> int:
         for seed in seeds:
             source = source_for(seed, registry)
             validate_public_url(seed["url"], source)
-            approved_source_statuses = {"REUSE_APPROVED", "APPROVED"}
-            approved_reuse_statuses = {"REUSE_APPROVED", "APPROVED"}
-            if args.apply and (
-                source.get("status") not in approved_source_statuses
-                or seed.get("reuse_status") not in approved_reuse_statuses
-            ):
+            if not seed_is_fpt_relevant(seed):
+                rejected.append({"id": seed["id"], "reason": "outside_fpt_scope"})
+                continue
+            if not seed_reuse_is_approved(seed, source):
                 rejected.append({"id": seed["id"], "reason": "source_or_reuse_not_approved"})
                 continue
             fetched = fetch_seed(client, seed, source)
@@ -286,8 +294,10 @@ def main() -> int:
     if not args.apply:
         print("DRY RUN : aucun enregistrement PostgreSQL n'a été créé.")
         return 0
-    if rejected:
-        raise RuntimeError("Import partiel refusé : toutes les ressources sélectionnées doivent être approuvées.")
+    if args.id and rejected:
+        raise RuntimeError("Import refusé : une ressource explicitement sélectionnée est hors périmètre FPT ou sans autorisation de réutilisation.")
+    if not items:
+        raise RuntimeError("Aucune ressource FPT autorisée à importer.")
     result = asyncio.run(import_items(items, dsn))
     print(json.dumps(result, ensure_ascii=False))
     return 0

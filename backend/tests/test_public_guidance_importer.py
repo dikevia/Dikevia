@@ -55,3 +55,23 @@ def test_pdf_extraction_records_pages_and_rejects_empty_pdf():
         assert "sans couche texte" in str(exc)
     else:
         raise AssertionError("Un PDF image sans OCR ne doit pas être indexé comme texte.")
+
+
+
+def test_guidance_seed_scope_must_include_fpt_or_common_public_service():
+    assert MODULE.seed_is_fpt_relevant({"scope": ["FPT"]}) is True
+    assert MODULE.seed_is_fpt_relevant({"scope": ["FPE", "FPT", "FPH"]}) is True
+    assert MODULE.seed_is_fpt_relevant({"scope": ["COMMON_PUBLIC_SERVICE"]}) is True
+    assert MODULE.seed_is_fpt_relevant({"scope": ["FPE"]}) is False
+    assert MODULE.seed_is_fpt_relevant({"scope": ["TRANSVERSAL"]}) is False
+    assert MODULE.seed_is_fpt_relevant({"scope": []}) is False
+
+
+def test_guidance_seed_download_requires_both_source_and_document_reuse_approval():
+    source_approved = {"status": "REUSE_APPROVED"}
+    source_pending = {"status": "REVIEW_REQUIRED"}
+    seed_approved = {"reuse_status": "REUSE_APPROVED"}
+    seed_pending = {"reuse_status": "REVIEW_REQUIRED"}
+    assert MODULE.seed_reuse_is_approved(seed_approved, source_approved) is True
+    assert MODULE.seed_reuse_is_approved(seed_pending, source_approved) is False
+    assert MODULE.seed_reuse_is_approved(seed_approved, source_pending) is False
