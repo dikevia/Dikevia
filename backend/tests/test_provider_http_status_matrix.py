@@ -89,3 +89,56 @@ async def test_http_503_retries_primary_then_uses_one_configured_fallback():
         "gemini-2.5-flash",
         "gemini-3.5-flash-lite",
     ]
+
+class TimeoutSequenceClient:
+    def __init__(self, events):
+        self.events = list(events)
+        self.models = []
+
+    async def post(self, url, *, headers, json):
+        self.models.append(json.get("model"))
+        event = self.events.pop(0)
+        if event == "timeout":
+            raise httpx.ReadTimeout("simulated provider read timeout")
+        return httpx.Response(
+            event,
+            request=httpx.Request("POST", url),
+            json={"choices": [{"message": {"content": "ok"}}]},
+        )
+
+
+@pytest.mark.asyncio
+async def test_gemini_read_timeout_retries_primary_then_uses_configured_fallback():
+    client = TimeoutSequenceClient(["timeout", "timeout", 200])
+    payload = {"model": "gemini-2.5-flash"}
+
+    response = await ai_provider._post_chat_completion(
+        client,
+        "https://example.test/v1/chat/completions",
+        headers={"Authorization": "Bearer test-only"},
+        payload=payload,
+    )
+
+    assert response.status_code == 200
+    assert client.models == [
+        "gemini-2.5-flash",
+        "gemini-2.5-flash",
+        "gemini-3.5-flash-lite",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_non_gemini_read_timeout_retries_primary_without_model_fallback(monkeypatch):
+    monkeypatch.setattr(settings, "ai_api_base_url", "https://provider.example/v1")
+    client = TimeoutSequenceClient(["timeout", "timeout"])
+    payload = {"model": "primary-model"}
+
+    with pytest.raises(httpx.ReadTimeout):
+        await ai_provider._post_chat_completion(
+            client,
+            "https://provider.example/v1/chat/completions",
+            headers={"Authorization": "Bearer test-only"},
+            payload=payload,
+        )
+
+    assert client.models == ["primary-model", "primary-model"]
