@@ -639,7 +639,7 @@ def build_legal_conversation_state(
     # Restrict inherited facts to the latest substantive user topic and its
     # short follow-ups. Older independent topics are not part of this case.
     relevant_user_records = []
-    for record in reversed(relevant_user_records):
+    for record in reversed(user_records):
         content = str(record.get("content") or "").strip()
         if not content:
             continue
