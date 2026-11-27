@@ -440,7 +440,7 @@ def test_fs_major_work_and_new_technology_topics_are_detected_as_candidates():
 
 def test_fs_operational_catalog_covers_visits_accidents_investigations_expertise_and_dgi():
     assert {rule["code"] for rule in FS_OPERATIONAL_RULES} == {
-        "annual_health_safety_report_program",
+        "annual_prevention_program",
         "health_safety_register",
         "visit_report_followup",
         "investigation_conclusion_followup",
