@@ -1,4 +1,5 @@
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,7 +23,7 @@ def test_acceptance_cannot_overwrite_existing_active_membership_role():
     assert "pg_advisory_xact_lock(hashtextextended" in main
 
 
-def test_production_keycloak_admin_endpoint_requires_https_origin_only():
-    config = (ROOT / "backend/app/config.py").read_text()
-    assert "KEYCLOAK_ADMIN_BASE_URL doit utiliser HTTPS en production" in config
-    assert "doit être une origine sans chemin" in config
+def test_runtime_rejects_keycloak_provider():
+    from app.config import Settings, validate_runtime_configuration
+    with pytest.raises(RuntimeError, match="OIDC_PROVIDER doit être auth0"):
+        validate_runtime_configuration(Settings(oidc_provider="keycloak"))
