@@ -277,7 +277,8 @@ def test_nbi_question_builds_dedicated_cgfp_and_fpt_decree_search_axes():
     assert "décret 2006-779" in query
     assert any("L712-12" in item and "L712-13" in item for item in queries)
     assert any("93-863" in item and "2006-779" in item for item in queries)
-    assert axes and all("NBI" in axis or "bonification indiciaire" in axis for axis in axes)
+    # A single legal topic is not a mandatory multi-issue coverage axis.
+    assert axes == []
 
 
 def test_remuneration_question_builds_fpt_and_local_deliberation_axes():
