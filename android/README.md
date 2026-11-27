@@ -61,7 +61,7 @@ Aucun déploiement, publication, dépense ou migration de fournisseur n'est auto
 
 Le module `core/auth/Auth0NativeAuth.kt` utilise le SDK officiel Auth0.Android **3.21.3** avec le flux natif Authorization Code + PKCE, Universal Login et le navigateur système. La branche v3 est conservée car le projet prend en charge Android API 24 ; la branche SDK v4 exige API 26 minimum.
 
-Le module utilise `SecureCredentialsManager` avec chiffrement et contrôle local de l'appareil. Il ne journalise ni jeton ni code d'autorisation et ne contient aucun secret client.
+Le module utilise `SecureCredentialsManager` avec un stockage chiffré adossé à Android Keystore. Aucun contrôle biométrique n'est imposé à chaque ouverture. Il ne journalise ni jeton ni code d'autorisation et ne contient aucun secret client.
 
 ### Configuration locale du Client ID
 
