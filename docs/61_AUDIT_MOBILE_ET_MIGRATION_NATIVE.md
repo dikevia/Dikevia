@@ -209,3 +209,38 @@ Les premiers fichiers d'interface native ont été ajoutés directement à `main
 5. Les nouvelles interfaces ne sont pas encore les points d'entrée livrés. Ne pas annoncer une application native prête ni distribuer un APK/IPA sur cette seule base.
 
 La prochaine tranche doit porter sur l'enregistrement du client Auth0 natif (après autorisation), l'intégration OIDC PKCE avec stockage sécurisé, puis le client API typé et les tests sur appareils réels. Aucun changement de secret, aucune dépense et aucun déploiement n'ont été effectués dans cette tranche.
+
+
+## 14. Intégration Auth0 native Android — 27 novembre 2026
+
+Une première intégration SDK a été ajoutée sur `main` :
+
+- `android/app/src/main/java/fr/dikevia/commercial/core/auth/Auth0NativeAuth.kt` : client d'authentification Auth0 natif utilisant Authorization Code + PKCE, Universal Login dans le navigateur système, restauration de session, logout et `SecureCredentialsManager`.
+- `android/app/build.gradle.kts` : SDK officiel `com.auth0.android:auth0:3.21.3`, retenu car le projet conserve `minSdk=24` (la branche v4 du SDK requiert API 26 minimum).
+- Le Client ID est injecté par la propriété Gradle locale `auth0AndroidClientId`, avec une valeur de garde qui bloque le login tant que le vrai Client ID natif n'est pas fourni.
+- Domaine de développement : `dev-brlgaz1yh2de3mjo.us.auth0.com`.
+- Audience API : `https://api.dikevia.fr`.
+- Scopes demandés : `openid profile email offline_access`.
+- Aucun secret client n'est embarqué.
+
+Le SDK Android est intégré au code, mais le module n'est pas encore relié au point d'entrée natif livré. L'activité de lancement reste la WebView, par choix réversible. L'écran Compose demeure une prévisualisation isolée et ne doit pas être présenté comme l'application native active.
+
+### Configuration Auth0 encore absente
+
+Aucun client Auth0 Native Android n'a été créé dans le tenant à cette étape. Il faut enregistrer les quatre callback/logout URI listées dans `android/README.md`, activer l'accès à l'API avec l'audience exacte, puis valider `offline_access` et la rotation des refresh tokens. La SPA existante ne doit pas être réutilisée.
+
+### Build automatisé
+
+Un workflow GitHub Actions `.github/workflows/android-native-build.yml` a été ajouté pour assembler les deux variantes debug et publier des APK comme artefacts temporaires. La première tentative a échoué pendant l'installation d'un package Android SDK obsolète par l'action d'installation ; le workflow a été corrigé pour utiliser le SDK préinstallé du runner. Le résultat de la nouvelle compilation doit encore être confirmé.
+
+### Limites restant à lever
+
+1. Confirmer la compilation des variantes standard et administration avec le SDK Auth0.
+2. Enregistrer et valider le client natif Auth0 Android.
+3. Relier le module Auth0 à une activité native de production, sans rendre JURIS disponible avant authentification et contrôle API.
+4. Implémenter le client API natif et respecter le contrat backend actuel : access token pour l'audience API et ID token Auth0 vérifié dans `X-OIDC-ID-Token`.
+5. Ajouter les tests appareil réel (login, annulation, retour callback, restauration, expiration, logout).
+6. Réaliser l'intégration Auth0.swift côté iOS ; le projet SwiftUI existe mais n'a pas encore d'authentification native.
+7. Ne remplacer la WebView qu'après recette et conservation d'un chemin de repli.
+
+Aucun déploiement Render, aucune modification du tenant Auth0, aucun secret et aucune dépense n'ont été effectués.
