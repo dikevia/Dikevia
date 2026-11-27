@@ -66,3 +66,13 @@ def test_cross_encoder_requires_explicit_local_model_files():
             onnx_model_path="",
             tokenizer_path="",
         )
+
+
+def test_cross_encoder_is_disabled_by_default():
+    from app.config import Settings
+
+    config = Settings(_env_file=None)
+
+    assert config.legal_cross_encoder_enabled is False
+    assert config.legal_cross_encoder_top_k == 30
+    assert config.legal_cross_encoder_max_length == 384
