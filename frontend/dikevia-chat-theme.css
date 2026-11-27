@@ -1532,3 +1532,20 @@ html.dikevia-standard-app .juris-welcome-icon:after {content:none}
   .juris-orb,.juris-orb:after {animation:none!important}
   .instance-launch-card {transition:none}
 }
+
+
+.instance-juris-bridge {
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  margin-top:16px;padding:15px 16px;border:1px solid #dceaf5;border-radius:13px;
+  background:linear-gradient(110deg,#f5faff,#fbfdff);
+}
+.instance-juris-bridge p {margin:0;color:#61758c;font-size:12px;line-height:1.55;flex:1 1 260px}
+.instance-juris-bridge button {
+  flex:0 0 auto;border:1px solid #3c88bd;border-radius:10px;
+  background:linear-gradient(110deg,#347fb7,#2b9fbb);color:#fff;font-weight:700;
+}
+.instance-juris-bridge button:hover {filter:brightness(1.05);box-shadow:0 5px 16px rgba(49,132,183,.2)}
+@media(max-width:520px) {
+  .instance-juris-bridge {align-items:stretch}
+  .instance-juris-bridge button {width:100%}
+}
