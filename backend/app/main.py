@@ -461,13 +461,13 @@ def _ai_safe_conversation_history(rows):
     safe = []
     for row in reversed(rows):
         role = row["role"]
+        metadata = row["metadata"]
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except (TypeError, ValueError):
+                metadata = None
         if role == "assistant":
-            metadata = row["metadata"]
-            if isinstance(metadata, str):
-                try:
-                    metadata = json.loads(metadata)
-                except (TypeError, ValueError):
-                    metadata = None
             if not isinstance(metadata, dict):
                 continue
             if metadata.get("contains_local_documents") is True:
