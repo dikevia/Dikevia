@@ -139,66 +139,75 @@ def parse_circulaires_xml(xml_bytes: bytes) -> list[dict[str, Any]]:
 
 
 def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) -> bool:
-    """Keep only administrative decisions genuinely connected to FPT employment.
+    """Require a direct territorial-employment link, not incidental local references.
 
-    A local authority being a party, or the generic phrase "collectivités
-    territoriales", is not enough: those terms also occur in urban-planning,
-    tax and public-procurement litigation.
+    A municipality mentioned somewhere in a decision about a State or hospital
+    employee is not sufficient to classify that decision as FPT. Accept either
+    explicit territorial-employment terminology or a local authority's own HR
+    decision in the opening procedural section.
     """
     import unicodedata
 
-    corpus = unicodedata.normalize("NFKD", f"{title} {body}".casefold())
+    raw = f"{title} {body}"
+    corpus = unicodedata.normalize("NFKD", raw.casefold())
     corpus = "".join(char for char in corpus if not unicodedata.combining(char))
     corpus = re.sub(r"[^a-z0-9]+", " ", corpus)
-    corpus = re.sub(r"\s+", " ", corpus).strip()
+    corpus = re.sub(r"\\s+", " ", corpus).strip()
+    opening = unicodedata.normalize("NFKD", str(body or "")[:6000].casefold())
+    opening = "".join(char for char in opening if not unicodedata.combining(char))
+    opening = re.sub(r"[^a-z0-9]+", " ", opening)
+    opening = re.sub(r"\\s+", " ", opening).strip()
 
-    if scope.get("scope") in {
-        "FPE", "FPH", "OUT_OF_SCOPE_EUROPEAN_LAW",
-    }:
+    if scope.get("scope") in {"FPE", "FPH", "OUT_OF_SCOPE_EUROPEAN_LAW"}:
         return False
 
-    local_employers = (
-        "commune", "mairie", "centre communal d action sociale",
-        "etablissement public de cooperation intercommunale", "epci",
-        "metropole", "departement", "region",
+    explicit_fpt_employment = (
+        "fonction publique territoriale", "fonctionnaire territorial",
+        "fonctionnaires territoriaux", "agent territorial", "agents territoriaux",
+        "agent contractuel territorial", "agents contractuels territoriaux",
+        "personnel communal", "personnels communaux", "agent communal",
+        "agents communaux", "agent de la commune", "agent de la mairie",
+        "personnel territorial", "personnels territoriaux",
+        "decret 88 145", "decret n 88 145", "decret 87 602",
+        "decret n 87 602", "decret 89 677", "decret n 89 677",
+        "decret 91 298", "decret n 91 298",
     )
-    public_employment = (
-        "agent public", "agents publics", "agent territorial", "agents territoriaux",
-        "fonctionnaire territorial", "fonctionnaires territoriaux",
-        "fonction publique territoriale", "personnel communal", "personnels communaux",
-        "personnel territorial", "personnels territoriaux", "agent communal",
-        "agents communaux", "agent contractuel territorial",
-        "agents contractuels territoriaux", "agent contractuel de la commune",
-        "agent contractuel de la mairie", "agent de la commune",
-        "agent de la mairie", "fonctionnaire", "fonctionnaires",
+    has_explicit_fpt = any(marker in corpus for marker in explicit_fpt_employment)
+
+    local_authority_hr_decisions = (
+        "decision du maire", "arrete du maire", "par lequel le maire",
+        "par laquelle le maire", "decision de la commune", "arrete de la commune",
+        "par lequel la commune", "par laquelle la commune",
+        "decision du president du conseil departemental",
+        "decision de la presidente du conseil departemental",
+        "decision du president du conseil regional",
+        "decision de la presidente du conseil regional",
+        "decision du president du centre de gestion",
+        "decision de la presidente du centre de gestion",
     )
     hr_subjects = (
-        "protection fonctionnelle", "harcelement moral", "harcelement sexuel",
-        "agissement sexiste", "agissements sexistes", "sanction disciplinaire",
-        "conseil de discipline", "temps de travail", "duree du travail",
-        "conge de maladie", "conge maladie", "accident de service",
-        "maladie professionnelle", "droit syndical", "droits syndicaux",
-        "decharge d activite de service", "autorisation speciale d absence",
-        "traitement indiciaire", "regime indemnitaire",
-        "detachement", "disponibilite", "retraite d office",
-        "carriere d un agent", "remuneration d un agent",
-        "service des ressources humaines", "direction des ressources humaines",
+        "affectation", "agent", "fonctionnaire", "personnel", "disciplinaire",
+        "remuneration", "conge", "harcelement", "maladie", "temps de travail",
+        "licenciement", "recrutement", "protection fonctionnelle",
     )
-    fpt_specific = (
-        "fonction publique territoriale", "agent territorial", "agents territoriaux",
-        "fonctionnaire territorial", "fonctionnaires territoriaux",
-        "decret 88 145", "decret 87 602", "decret 89 677", "decret 91 298",
+    has_local_hr_decision = (
+        any(marker in opening for marker in local_authority_hr_decisions)
+        and any(marker in opening for marker in hr_subjects)
     )
-    has_local_employer = any(re.search(rf"\b{re.escape(marker)}\b", corpus) for marker in local_employers)
-    has_public_employment = any(marker in corpus for marker in public_employment)
-    has_hr_subject = any(marker in corpus for marker in hr_subjects)
-    has_fpt_specific = any(marker in corpus for marker in fpt_specific)
 
-    if has_local_employer and (has_public_employment or has_hr_subject):
+    # Explicit FPT language is strong evidence, except when the opening
+    # identifies a different public employer and no local HR decision is at issue.
+    state_or_hospital_employer = any(marker in opening for marker in (
+        "ministre des armees", "ministere des armees", "ministere de l interieur",
+        "ministre de l interieur", "recteur de l academie", "rectrice de l academie",
+        "rectorat", "ministre", "ministere", "centre hospitalier",
+        "etablissement public de sante", "commandant de la legion etrangere",
+    ))
+    if has_explicit_fpt and (not state_or_hospital_employer or has_local_hr_decision):
         return True
-    return bool(scope.get("analysis_eligible") and has_fpt_specific
-                and has_public_employment and has_hr_subject)
-
+    if has_local_hr_decision:
+        return True
+    return False
 
 
 def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str, Any] | None:
