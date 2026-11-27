@@ -23,6 +23,7 @@ RECENT_USER_CONTEXT_LIMIT = 10
 _CLARIFICATION_REPLY = re.compile(
     r"^(?:oui\b|non\b|exactement\b|c['’]est\s+(?:ça|bien\s+ça)\b|"
     r"je\s+suis\s+(?:(?:un|une|agent(?:e)?\s+)?(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b)|"
+    r"je\s+ne\s+suis\s+(?:plus|pas|jamais)\s+(?:(?:un|une|agent(?:e)?\s+)?(?:contractuel(?:le)?s?|stagiaires?|titulaires?|fonctionnaires?)\b)|"
     r"je\s+travaille\s+(?:comme|en\s+tant\s+que)\b|mon\s+statut\b|"
     r"depuis\s+(?:le\s+)?(?:\d|janvier\b|février\b|mars\b|avril\b|"
     r"mai\b|juin\b|juillet\b|août\b|septembre\b|octobre\b|"
