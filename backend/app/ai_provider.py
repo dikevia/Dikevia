@@ -1030,7 +1030,7 @@ def _provider_availability_cache_key() -> tuple[str, str, bool, bool]:
 
 def _provider_availability_cache_ttl(result: dict) -> float:
     status = str(result.get("status") or "").upper()
-    if status == "AVAILABLE":
+    if status in {"AVAILABLE", "MODEL_CONFIGURED"}:
         return 60.0
     if status in {
         "NOT_CONFIGURED",
