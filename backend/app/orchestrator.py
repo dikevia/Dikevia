@@ -18,7 +18,7 @@ from .ai_provider import analyze_question, plan_legal_research, evaluate_source_
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, decision_temporal_status, interleave_case_law_results
 from .legal_corpus import search_legal_corpus, select_multi_source_chunks, corpus_version_citation_id
-from .legal_assurance import assess_source_set, validate_answer_citations, validate_claim_evidence
+from .legal_assurance import assess_source_set, rerank_legal_evidence_sources, validate_answer_citations, validate_claim_evidence
 from .local_corpus import search_local_documents, local_document_temporal_status
 from .article_lookup import missing_direct_article_reference
 from .legal_search_plan import (
@@ -2321,6 +2321,14 @@ class LegalOrchestrator:
                     base_ai_sources = (
                         cgfp_fallback_sources + verified_sources + context_guidance_sources
                         if verified_sources or cgfp_fallback_sources or context_guidance_sources else []
+                    )
+                    # Deterministic reranking happens only after all admissibility,
+                    # temporal, citation-integrity and FPT-scope filters. It changes
+                    # evidence order, never source eligibility or legal authority.
+                    base_ai_sources = rerank_legal_evidence_sources(
+                        base_ai_sources,
+                        question=contextual_question,
+                        research_axes=research_queries,
                     )
                     personal_context_sources = [
                         source for source in personal_sources
