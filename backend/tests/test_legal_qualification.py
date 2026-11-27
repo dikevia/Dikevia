@@ -792,3 +792,29 @@ def test_long_reference_to_previous_assistant_point_retains_its_case_context():
     assert current.strip() in context.question
     assert prior in context.question
     assert context.assistant_context == "Le deuxième point portait sur la preuve des heures effectuées."
+
+
+def test_case_context_does_not_inherit_facts_from_an_older_independent_topic():
+    from app.legal_qualification import build_legal_conversation_state
+
+    history = [
+        {"role": "user", "content": "Je suis agent contractuel en CDD et mon employeur refuse mes heures supplémentaires.",
+         "metadata": {"employer": "VILLE_SAINT_ETIENNE", "facts_start_date": "2023-01-01"}},
+        {"role": "assistant", "content": "Les règles des heures supplémentaires doivent être vérifiées."},
+        {"role": "user", "content": "Comment fonctionne le compte épargne-temps ?",
+         "metadata": {"employer": "NATIONAL"}},
+        {"role": "assistant", "content": "Êtes-vous titulaire ou contractuel ?"},
+    ]
+    state = build_legal_conversation_state(
+        "Contractuel",
+        history,
+        is_followup=True,
+        current_turn_metadata={"employer": "NATIONAL"},
+    )
+    assert state["agent_status_declare"] is None
+    assert state["type_contrat_declare"] is None
+    assert state["employeur_selectionne"] is None
+    assert state["periode_faits_declaree"] is None
+    assert state["messages_utilisateur_pertinents"] == [
+        "Comment fonctionne le compte épargne-temps ?"
+    ]
