@@ -20,17 +20,19 @@ Ce document est le point de situation opérationnel. Il prévaut sur les anciens
 
 ## 2. État du code et de la CI
 
+Index documentaire : [ARCHIVE_INDEX.md](ARCHIVE_INDEX.md).
+
 Les anciens modules, scripts, fichiers Compose, index et documents présents à la racine ont été déplacés dans `archive/legacy-root/` après audit des références. Le code courant reste dans les répertoires `backend/`, `frontend/`, `scripts/`, `database/`, `deploy/`, `android/`, `corpus_national/` et `docs/`. L'archive est exclue du kit développeur.
 
 ### Référence de dépôt
 
 - Dépôt : `dikevia/Dikevia`.
 - Branche : `main`.
-- Commit fonctionnel contrôlé : `8462631d9f3cd8582ce65672d71c15b359d2349f`.
-- Dernière CI complète vérifiée : run [46015790927](https://github.com/dikevia/Dikevia/actions/runs/46013359956), conclusion `success`.
-- **1 494 tests réussis, 0 échec, 1 avertissement** ; lint, analyse statique, audit des dépendances, scripts shell, Docker Compose et génération du kit développeur passent.
+- Commit fonctionnel contrôlé : `691c35514b961ec29dafcf77430819ad5ec6500e`.
+- Dernière CI complète vérifiée : run [46017735647](https://github.com/dikevia/Dikevia/actions/runs/46017735647), conclusion `success`.
+- **1 494 tests réussis, 0 échec, 0 avertissement de test** ; lint, analyse statique, audit des dépendances, scripts shell, Docker Compose et génération du kit développeur passent.
 - L'intégration PostgreSQL/RLS s'exécute sur une base jetable. La migration 033 est exécutée après 032 dans cette CI.
-- L'avertissement de test restant concerne l'usage de `httpx` par `starlette.testclient` ; il n'a pas fait échouer la suite.
+- Le transport `httpx2` est désormais utilisé par Starlette TestClient en environnement de développement ; le paramètre de boucle pytest-asyncio est explicite. Les avertissements restants dans les logs concernent seulement le conteneur PostgreSQL jetable et l'installation pip en root.
 - Le succès CI ne prouve pas le fonctionnement des fournisseurs IA en conditions réelles, la pertinence juridique des réponses, la recette sur appareil Android ni l'alignement de la production.
 
 ### Correctif de consolidation CI
@@ -41,10 +43,13 @@ La migration 033 est désormais exécutée après 032 dans la séquence PostgreS
 
 ### Nettoyage du workflow CI
 
-- Les déclencheurs `push` et `pull_request` sont limités à `main` ; les branches historiques ne sont plus des cibles CI.
+- Le workflow CI principal est déclenché par les pushes directs sur `main` ou manuellement ; aucun workflow ne se déclenche sur `pull_request`.
+- Le workflow APK Android se déclenche uniquement sur `main` lorsque les fichiers Android/frontend changent, ou manuellement.
+- Les workflows d'import CAA/TA, Service-Public, pilote de sources publiques, audit staging et parité embeddings sont manuels ; ils ne téléchargent ni ne requêtent des services externes à chaque commit.
 - Les actions GitHub du workflow CI principal ont été mises à jour vers des versions compatibles Node 24.
 - L'ancien job d'embeddings conditionné par une branche POC et l'ancien job de smoke test qui contactait des endpoints de production/Keycloak ont été désactivés. Le workflow dédié `legal-embeddings-staging.yml` reste le seul parcours d'embeddings staging.
 - La CI standard ne contacte donc plus les services Render de production. Les contrôles live Auth0/Android restent à faire dans une recette distincte, sans les déclencher automatiquement ni générer de frais.
+- Un ancien déclenchement push du workflow CAA/TA a échoué sur un délai d'attente de téléchargement d'archives externes (run `46016970524`). Il n'a effectué aucune écriture de base ; ce workflow est maintenant manuel uniquement.
 
 ## 3. Authentification et environnements
 

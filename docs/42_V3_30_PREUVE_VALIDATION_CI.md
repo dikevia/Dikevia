@@ -1,3 +1,5 @@
+> **PREUVE CI HISTORIQUE.** Cette validation concerne une ancienne branche et une PR historique. La référence actuelle est le run `46017735647` sur `main`, avec 1 494 tests réussis ; voir `docs/57`.
+
 # V3.33 — preuve de validation CI du kit développeur
 
 Date de validation : 17 novembre 2026

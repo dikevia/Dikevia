@@ -6,12 +6,13 @@ Assistant juridique spécialisé dans la défense des agents de la fonction publ
 
 - [Guide de démarrage développeur](docs/00_DEVELOPMENT_START_HERE.md)
 - [État consolidé du projet](docs/57_ETAT_CONSOLIDE_2026-11-27.md)
+- [Index des documents historiques](docs/ARCHIVE_INDEX.md)
 
 La seule branche de travail est `main`. Les développements utiles sont intégrés directement sur cette branche. Aucune branche parallèle, PR ou fusion globale d'anciennes branches.
 
 ## État du dépôt — 27 novembre 2026
 
-- Dernier contrôle CI complet : [run 46015790927](https://github.com/dikevia/Dikevia/actions/runs/46015790927), **1 494 tests réussis**.
+- Dernier contrôle CI complet : [run 46017735647](https://github.com/dikevia/Dikevia/actions/runs/46017735647), **1 494 tests réussis**.
 - Auth0 est le fournisseur d'identité par défaut ; le parcours staging a été vérifié. Le Compose local ne démarre plus Keycloak.
 - Le corpus juridique staging comporte 8 020 chunks vectorisés. La pertinence juridique du moteur hybride n'est pas encore certifiée par le benchmark métier.
 - Aucun paiement n'est activé. Aucun service ou API payant ne doit être activé sans accord explicite.

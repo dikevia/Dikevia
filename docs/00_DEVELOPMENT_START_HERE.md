@@ -52,7 +52,7 @@ Le fichier `render.yaml` reste un Blueprint historique relié à l'ancienne bran
 
 ## 5. État de validation constaté
 
-Au commit fonctionnel `8462631d9f3cd8582ce65672d71c15b359d2349f` (27 novembre 2026), le run CI [46015790927](https://github.com/dikevia/Dikevia/actions/runs/46013359956) est terminé avec succès :
+Au commit contrôlé `691c35514b961ec29dafcf77430819ad5ec6500e` (27 novembre 2026), le run CI [46017735647](https://github.com/dikevia/Dikevia/actions/runs/46017735647) est terminé avec succès :
 
 - **1 494 tests passent**, dont les tests unitaires, contractuels et l'intégration PostgreSQL/RLS sur base jetable ;
 - la migration 033 est exécutée après 032 dans la CI ;
@@ -61,7 +61,7 @@ Au commit fonctionnel `8462631d9f3cd8582ce65672d71c15b359d2349f` (27 novembre 20
 - le workflow de génération des APK Android avait également réussi sur le commit `dfc6bbf59ceed2871a001a399d0cfc9c22a1ecf0` ;
 - le succès de compilation d'un APK ne prouve pas le parcours utilisateur complet sur un appareil Android réel.
 
-Le CI vert valide le dépôt et les tests automatisés ; il ne remplace pas une recette Android sur appareil réel, une vérification des générations IA en conditions réelles, ni une validation de pertinence juridique. Un avertissement non bloquant subsiste dans la suite de tests sur l'intégration httpx/Starlette. Ne pas annoncer une mise en production sur la seule base du CI.
+Le CI vert valide le dépôt et les tests automatisés ; il ne remplace pas une recette Android sur appareil réel, une vérification des générations IA en conditions réelles, ni une validation de pertinence juridique. Aucun avertissement de test ne subsiste après l'ajout du transport de test httpx2 et la configuration explicite de pytest-asyncio. Les avertissements encore visibles dans les logs concernent uniquement l'environnement de conteneur de test (pip exécuté en root et authentification trust du PostgreSQL jetable). Ne pas annoncer une mise en production sur la seule base du CI.
 
 ## 6. Procédure de validation locale
 
@@ -83,12 +83,14 @@ Les tests d'intégration PostgreSQL doivent utiliser une base jetable et des rô
 
 ## 7. Travaux encore à arbitrer
 
-- Poursuivre l'audit des branches historiques ; ne récupérer que les changements précis absents de `main`, sans fusion globale.
-- Maintenir le CI vert à chaque évolution.
-- Auth0 est le fournisseur retenu et le chantier est déclaré terminé par le porteur du projet ; ne pas rouvrir cette intégration. La recette Android sur appareils réels reste à distinguer de la validation Auth0 déjà réalisée sur staging.
-- Réconcilier `render.yaml`, les fichiers de configuration historiques et la configuration Render réellement active.
-- Auditer les modules Python racine, les anciens fichiers Keycloak et les documents de versions successives avant suppression.
-- Réduire la documentation à un index actuel et un historique clairement séparé, sans supprimer les preuves techniques ou procédures encore utiles.
+- Maintenir `main` comme seule branche de travail et conserver la CI verte après chaque modification ; les workflows PR ont été retirés.
+- Ne récupérer d'anciennes branches qu'un correctif précis démontré absent de `main`, jamais une branche entière.
+- Faire réaliser le benchmark conversationnel et juridique par les développeurs ; les tests CI ne certifient pas la pertinence des réponses.
+- Finaliser les garanties RGPD : anonymisation réelle avant LLM, garanties contractuelles du fournisseur, politique de rétention/purge, registre, information et AIPD si nécessaire.
+- Compléter l'OCR des PDF numérisés et le suivi persistant des suites CST/FS/CAP/CCP.
+- Valider Auth0 et les deux applications Android sur appareils réels ; ne pas rouvrir l'intégration Auth0 déjà validée sur staging.
+- Préparer séparément la migration de production : le service actif reste sur une ancienne branche et le Blueprint Render ne doit pas être synchronisé sans plan dédié.
+- Laisser de côté la page Abonnement/billing signalée comme non résolue tant que le porteur du projet ne demande pas sa reprise.
 
 ## 8. Politique de nettoyage
 
@@ -100,4 +102,4 @@ Le nettoyage doit être réversible et fondé sur des preuves :
 - **Supprimer** seulement après vérification des imports, références, workflows, scripts, déploiements et dépendances.
 - **Ne jamais fusionner une branche entière** uniquement pour récupérer un correctif isolé.
 
-La cible est un dépôt simple à prendre en main, avec `main` comme seule référence de développement, une documentation courte et fiable, et aucun déploiement déclenché par un nettoyage documentaire.
+La cible est un dépôt simple à prendre en main, avec `main` comme seule référence de développement, une documentation courte et fiable, et aucun déploiement déclenché par un nettoyage documentaire. Les anciens fichiers racine ont été déplacés dans `archive/legacy-root/` ; leur index documentaire est `docs/ARCHIVE_INDEX.md`.

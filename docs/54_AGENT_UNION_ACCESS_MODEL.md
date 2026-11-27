@@ -1,3 +1,5 @@
+> **NOTE DE VERSION.** Le modèle Agent/Syndicat et les droits décrits ici restent la référence commerciale. Les premières descriptions d'implémentation des instances sont dépassées par `docs/55_CST_TOPIC_QUALIFICATION.md` et `docs/56_CAP_CCP_QUALIFICATION.md`. Pour l'état et les limites actuelles, utiliser `docs/57`.
+
 # Dikévia — modèle Agent / Syndicats
 
 ## Catalogue public cible

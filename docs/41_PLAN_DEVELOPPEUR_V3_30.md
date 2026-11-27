@@ -1,3 +1,5 @@
+> **PLAN HISTORIQUE V3.30.** Ce plan ne décrit plus l'ordre de travail courant. Utiliser `docs/00` et `docs/57` pour les priorités actuelles.
+
 # Plan développeur — finalisation V3.30
 
 ## État du kit

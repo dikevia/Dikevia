@@ -1,3 +1,5 @@
+> **CHECKLIST HISTORIQUE DATÉE DU 23 NOVEMBRE 2026.** Les contrôles et opérations réellement exécutés depuis sont consignés dans `docs/57`. Ne pas considérer cette checklist comme un état opérationnel à jour.
+
 # Dikévia — checklist de mise en service de la bêta privée
 
 **État documentaire : 23 novembre 2026.** Cette checklist distingue le code validé par CI, les contrôles réellement exécutés sur le staging et les opérations qui restent à faire. Elle ne constitue ni une certification juridique ni une déclaration de mise en production.
