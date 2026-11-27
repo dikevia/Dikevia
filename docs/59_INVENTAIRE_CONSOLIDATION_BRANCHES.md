@@ -176,6 +176,8 @@ Lors de l'audit Render précédent, un seul workspace Render était visible ; le
 - Aucun développement métier tant que l'architecture cible n'est pas conforme.
 - Les travaux d'architecture doivent être commits directement sur `main`.
 
-### Rectification de l'identité visuelle
+### Rectification et récupération de l'identité visuelle
 
-Le document `docs/60_SYSTEME_DESIGN_EMERAUDE_OR.md` a été supprimé de `main` : la direction Émeraude & Or avait été abandonnée et ne constitue pas l'identité de Dikévia. La référence visuelle à retrouver et à consolider est l'expérience surnommée « Jarvis », centrée sur une sphère IA interactive animée donnant une présence visuelle vivante à l'assistant. Les spécifications précises (forme, palette, états, animation, interaction) doivent être retrouvées dans les branches/historiques et validées à partir des travaux existants ; ne pas inventer de nouveau design ni remplacer cette direction par une autre.
+Le document provisoire `docs/60_SYSTEME_DESIGN_EMERAUDE_OR.md` a été supprimé : la direction Émeraude & Or avait été abandonnée. La référence JARVIS a été retrouvée directement dans `frontend/dikevia-chat-theme.css` sur `main` (bloc final « DIKEVIA JARVIS — palette verrouillée : glacier / acier / bleu nuit »), ainsi que dans les commentaires Android.
+
+Le document `docs/60_IDENTITE_VISUELLE_JARVIS.md` décrit maintenant cette source de vérité. Le code comporte déjà une sphère d'accueil bleue avec anneaux et pulsation CSS, ainsi que des styles prévus pour les états `is-generating` et `is-speaking`. En revanche, il reste à vérifier que ces états sont effectivement pilotés par le JavaScript et à concevoir une sphère persistante réactive aux états réels du moteur. Ne pas présenter l'animation actuelle comme une sphère 3D ou audio-réactive.
