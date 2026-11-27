@@ -45,6 +45,28 @@ def administrative_open_data_archive_url(
         f"{folder}/{year}/{month:02d}/{normalized_court}_{year}{month:02d}.zip"
     )
 
+
+
+
+def filter_administrative_open_data_items(
+    items: list[dict[str, Any]], *, versant: str = "FPT",
+) -> list[dict[str, Any]]:
+    """Keep only decisions explicitly scoped to the requested versant or common rules."""
+    target = str(versant or "").strip().upper()
+    if target not in {"FPT", "FPE", "FPH"}:
+        raise ValueError("Le versant doit être FPT, FPE ou FPH.")
+    allowed = {target, "COMMON_PUBLIC_SERVICE"}
+    selected = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        metadata = item.get("raw_metadata")
+        metadata = metadata if isinstance(metadata, dict) else {}
+        if str(metadata.get("public_service_scope") or "").strip().upper() in allowed:
+            selected.append(item)
+    return selected
+
+
 def _local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1].split(":")[-1].upper()
 

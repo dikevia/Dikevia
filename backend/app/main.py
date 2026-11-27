@@ -37,7 +37,7 @@ from .billing import PLANS, public_plans, verify_stripe_signature, extract_subsc
 from .legal_corpus import upsert_legal_document, search_legal_corpus
 from .legal_assurance import assess_source_set
 from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
-from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip, administrative_open_data_archive_url
+from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip, administrative_open_data_archive_url, filter_administrative_open_data_items
 from .dossiers import build_dossier_content, validate_dossier_content
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request, consume_daily_chat_question
@@ -1696,7 +1696,8 @@ async def ingest_administrative_open_data_zip(file: UploadFile = File(...), admi
     if len(raw) > 100 * 1024 * 1024:
         raise HTTPException(413, "Archive ZIP limitée à 100 Mo.")
     try:
-        items = await asyncio.to_thread(parse_administrative_open_data_zip, raw, file.filename)
+        parsed_items = await asyncio.to_thread(parse_administrative_open_data_zip, raw, file.filename)
+        items = filter_administrative_open_data_items(parsed_items, versant="FPT")
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     if not items:
