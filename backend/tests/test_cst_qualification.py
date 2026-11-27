@@ -423,3 +423,14 @@ def test_cst_president_evocation_requires_half_agreement_and_valid_counts():
     assert president_allowed["status"] == "CST_OPINION_SUBSTITUTES_FS"
     assert president_blocked["status"] == "EVOCATION_THRESHOLD_NOT_REACHED"
     assert "official_references" in president_allowed
+
+
+
+def test_fs_major_work_and_new_technology_topics_are_detected_as_candidates():
+    major_change = qualify_fs_topic("Projet important de modification du temps de travail")
+    new_technology = qualify_fs_topic("Projet important d'introduction de nouvelles technologies")
+
+    assert any(item["reference"] == "R. 253-25, 1°" for item in major_change["candidates"])
+    assert any(item["reference"] == "R. 253-25, 2°" for item in new_technology["candidates"])
+    assert major_change["legal_conclusion"] is False
+    assert new_technology["legal_conclusion"] is False
