@@ -61,6 +61,19 @@ Branches comparées :
 - `fix/auth0-provider-blueprint` : 19 commits propres, 640 en retard, changements très proches de la précédente avec différences sur certains tests/configurations.
 - `fix/beta-user-runtime-sync` : 1 commit propre, 1 169 en retard ; changements sur identité runtime, périmètre FPT, corpus et frontend.
 
+### Récupération ciblée effectuée depuis `security/runtime-role-guard`
+
+La comparaison a confirmé que `backend/app/db.py` est déjà identique dans cette branche et dans `main` : la protection au démarrage contre les rôles PostgreSQL `SUPERUSER` et `BYPASSRLS` est déjà présente pour les pools API, ingestion et administration de plateforme.
+
+En revanche, la branche comportait des tests de régression absents de `main`. Les trois groupes de tests ont été repris uniquement dans `backend/tests/test_v35_runtime_security.py` :
+- vérification des trois pools configurés ;
+- refus d'un rôle SUPERUSER ou BYPASSRLS dans chacun des pools ;
+- omission des pools optionnels non configurés.
+
+Commit de récupération sur `main` : `d6de01c8ad84627282854ad4fee1c4fa84bed5d7`.
+
+Aucun code runtime n'a été remplacé. Les tests n'ont pas encore été exécutés : le statut GitHub et la liste des workflows pour ce commit sont vides. Le changement est donc intégré mais non validé par exécution.
+
 Décision : comparer les implémentations Auth0 avec le code courant de `main`, puis reprendre uniquement les corrections non déjà présentes. Ne pas récupérer de fichier de configuration Render ou de migration d'identité sans vérifier les valeurs et l'environnement cible. Ne pas exécuter de migration de comptes sans plan explicite et procédure de retour arrière.
 
 ### Audit complémentaire du code Auth0 actuel dans main
