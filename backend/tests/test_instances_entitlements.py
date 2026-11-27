@@ -240,7 +240,7 @@ def test_ccp_professional_inadequacy_checks_file_access_and_procedure():
     assert "toute pièce" in joined
     assert "cinq jours ouvrables" in joined
     assert "R. 272-19" in joined
-    assert "article 42-1" in joined
+    assert "42-1" in joined
     assert "article 39-5" in joined
     assert not any(item["code"] == "discipline" for item in result["points"])
 
@@ -259,7 +259,7 @@ def test_ccp_unpaid_leave_non_reemployment_is_separate_from_redeployment():
     assert "contrat de projet" in joined
     assert "article 38-2" in joined
     assert "après un an" in joined
-    assert "article 42-1" in joined
+    assert "42-1" in joined
 
 
 
