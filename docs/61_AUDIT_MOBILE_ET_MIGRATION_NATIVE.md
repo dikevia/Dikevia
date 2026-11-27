@@ -85,22 +85,22 @@ La suppression de Keycloak exige donc de traiter le parcours d'invitation et ses
 - Kotlin + Jetpack Compose + Material 3.
 - Séparer au minimum les couches `app`, `core/auth`, `core/network`, `core/designsystem`, `feature/assistant`, `feature/documents`, `feature/organization`, `feature/profile`, et les modules d'administration distincts.
 - ViewModels + StateFlow pour états d'écran ; repositories pour appels API ; DTOs typés et erreurs normalisées.
-- Sphère JARVIS en composant Compose dédié, avec états explicites et animations adaptées à l'énergie et aux préférences d'accessibilité.
+- Sphère JURIS en composant Compose dédié, avec états explicites et animations adaptées à l'énergie et aux préférences d'accessibilité.
 
 ### iOS
 
 - SwiftUI, architecture équivalente et contrats API identiques.
 - Module identité OIDC Auth0 via SDK iOS approprié.
-- Sphère JARVIS avec états et palette équivalents, sans chercher une identité graphique différente.
+- Sphère JURIS avec états et palette équivalents, sans chercher une identité graphique différente.
 - Projet iOS à créer sur `main` : aucun projet ou prototype iOS n'a été retrouvé dans les branches examinées.
 
 ### Éditions standard et administration
 
 Les deux expériences peuvent partager les fondations techniques et composants, mais doivent garder des points d'entrée et permissions distincts. L'édition Administration n'embarque pas l'assistant juridique des agents. Les autorisations sont toujours appliquées côté backend ; le masquage d'un écran ne constitue jamais une protection.
 
-## 6. Sphère JARVIS
+## 6. Sphère JURIS
 
-La source de vérité visuelle actuelle est `frontend/dikevia-chat-theme.css` et le document `docs/60_IDENTITE_VISUELLE_JARVIS.md`.
+La source de vérité visuelle actuelle est `frontend/dikevia-chat-theme.css` et le document `docs/60_IDENTITE_VISUELLE_JURIS.md`.
 
 La sphère ne doit pas simuler une activité qui n'a pas lieu. Ses états sont pilotés par l'état réel du client et les événements backend :
 - prêt ;
@@ -118,7 +118,7 @@ La disponibilité d'une animation CSS n'est pas la preuve que les classes d'éta
 2. Créer une architecture Android native modulaire sur `main`, sans reprendre les dépendances Keycloak.
 3. Reprendre progressivement les écrans utiles du prototype Compose, un par un, en les alignant sur les endpoints actuels.
 4. Mettre en place Auth0 natif et tester le retour OIDC sur appareils physiques.
-5. Implémenter le composant JARVIS selon la source de vérité existante.
+5. Implémenter le composant JURIS selon la source de vérité existante.
 6. Créer le projet iOS SwiftUI avec les mêmes contrats, états et droits.
 7. Ajouter les tests automatisés Android/iOS et les pipelines de build.
 8. Maintenir les applications Web complémentaires tant que les parcours mobiles ne sont pas validés.
@@ -163,10 +163,15 @@ Une première brique de code native, isolée du parcours WebView encore en servi
 
 - `android/build.gradle.kts` : déclaration du plugin Kotlin Compose versionné avec Kotlin 2.0.21 ;
 - `android/app/build.gradle.kts` : activation de Compose et ajout du BOM Compose 2024.12.01, UI, graphics, Material 3 et tooling ;
-- `android/app/src/main/java/fr/dikevia/commercial/designsystem/JarvisOrb.kt` : composant Compose JARVIS, palette glacier/acier/bleu nuit, noyau lumineux, anneaux, pulsation et états sémantiques `READY`, `LISTENING`, `ANALYZING`, `GENERATING`, `COMPLETED`, `ERROR`.
+- `android/app/src/main/java/fr/dikevia/commercial/designsystem/JurisOrb.kt` : composant Compose JURIS, palette glacier/acier/bleu nuit, noyau lumineux, anneaux, pulsation et états sémantiques `READY`, `LISTENING`, `ANALYZING`, `GENERATING`, `COMPLETED`, `ERROR`.
 
 Le composant reçoit explicitement son état du client appelant. Il ne simule pas de microphone, de recherche ni de génération par lui-même. L'appelant ne devra passer `LISTENING` que lorsqu'une capture vocale réelle sera active.
 
 **Limites actuelles :** le composant n'est pas encore branché à `MainActivity`, qui reste une WebView. Il n'y a pas encore de ViewModel d'état assistant, de tests Compose, de validation de build Gradle, de gestion de réduction des animations, ni d'intégration Auth0 native. Aucun APK natif n'a été construit ou distribué. Les modifications constituent une fondation UI isolée, pas une application native achevée.
 
 Le premier contrôle de compilation doit être exécuté dans un environnement Android/Gradle avec SDK 35 et JDK 17 avant toute bascule du point d'entrée de l'application.
+
+
+## Rectification de nomenclature — 27 novembre 2026
+
+Le nom de la sphère interactive est **JURIS** (et non JARVIS). Le composant natif est donc nommé `JurisOrb` et son état `JurisOrbState`. La direction visuelle reste la sphère lumineuse organique glacier/acier/bleu nuit.
