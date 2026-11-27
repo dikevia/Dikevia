@@ -759,7 +759,7 @@ async function prepareInstance(){
   if(fsQualification){
    const rows=(fsQualification.candidates||[]).map(item=>'<li><b>'+esc(item.label)+'</b> <span class="muted">('+esc(item.reference)+')</span><br><span class="muted">Déclencheur : '+esc(item.matched_term)+' · piste à vérifier</span></li>').join('');
    const links=(fsQualification.official_references||[]).map(item=>'<a href="'+esc(item.url)+'" target="_blank" rel="noopener noreferrer">'+esc(item.article)+'</a>').join(' · ');
-   fsQualificationHtml='<section><h3>Consultations FS possibles · qualification indicative</h3>'+(rows?'<ul>'+rows+'</ul>':'<p>Aucun thème du référentiel FS n’a été détecté. Cela ne signifie pas qu’aucune consultation n’est requise.</p>')+'<p class="muted">'+esc(fsQualification.notice||'Pistes documentaires à vérifier.')+'</p><p class="muted">Références : '+links+'</p></section>';
+   fsQualificationHtml='<section><h3>Pistes santé-sécurité / FS · qualification indicative</h3>'+(rows?'<ul>'+rows+'</ul>':'<p>Aucun thème du référentiel FS n’a été détecté. Cela ne signifie pas qu’aucune consultation n’est requise.</p>')+'<p class="muted">'+esc(fsQualification.notice||'Pistes documentaires à vérifier.')+'</p><p class="muted">Références : '+links+'</p></section>';
   }
   if(cstQualification){
    const categoryLabels={consultation:'Consultation pour avis à vérifier',debate:'Débat annuel à vérifier',information:'Information à vérifier'};
