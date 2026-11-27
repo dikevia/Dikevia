@@ -834,3 +834,23 @@ def test_short_clarification_reply_becomes_a_structured_user_declaration():
     assert state["agent_status_declare"].startswith("Contractuel")
     assert "clarification précédente" in state["agent_status_declare"]
     assert state["question_clarification_precedente"] == "Quel est votre statut : titulaire ou contractuel ?"
+
+
+def test_status_correction_after_assistant_clarification_keeps_case_continuity():
+    from app.legal_qualification import build_contextual_research_context, build_legal_conversation_state
+
+    history = [
+        {"role": "user", "content": "Mon employeur refuse mes heures supplémentaires."},
+        {"role": "assistant", "content": "Quel est votre statut : titulaire ou contractuel ?"},
+    ]
+    question = "Je ne suis plus contractuel."
+    context = build_contextual_research_context(
+        question,
+        [history[0]["content"]],
+        [history[1]["content"]],
+    )
+    assert context.is_followup is True
+    state = build_legal_conversation_state(
+        question, history, is_followup=context.is_followup,
+    )
+    assert state["agent_status_declare"] == "Je ne suis plus contractuel"
