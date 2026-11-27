@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     oidc_audience: str = ""
     oidc_jwks_url: str = ""
     oidc_algorithms: str = "RS256"
-    oidc_provider: str = "keycloak"
+    oidc_provider: str = "auth0"
     oidc_client_id: str = ""
     oidc_scopes: str = "openid profile email"
     oidc_server_sessions_enabled: bool = False
