@@ -4,7 +4,7 @@
 
 > **Attention — README historique :** les sections ci-dessous proviennent des versions V3.30/V3.38. Elles contiennent des procédures obsolètes (anciennes migrations, Keycloak, Stripe, commandes d'installation et résultats de tests historiques). Elles sont conservées comme archive technique, mais ne constituent plus une procédure opérationnelle. Ne pas les exécuter ni les utiliser pour déduire la configuration actuelle. Auth0 est le fournisseur retenu ; les résidus Keycloak sont historiques et font l'objet d'un nettoyage distinct. La production n'est pas alignée sur `main` et ne doit pas être modifiée par ce guide.
 
-> **Règles de travail :** aucun autre branche de développement, aucune PR/merge, aucun déploiement de production, aucun fournisseur ou service payant activé. Toute modification utile doit être faite directement sur `main`, testée, puis documentée avec son niveau réel de validation.
+> **Règles de travail :** aucune autre branche de développement, aucune PR/merge, aucun déploiement de production, aucun fournisseur ou service payant activé. Toute modification utile doit être faite directement sur `main`, testée, puis documentée avec son niveau réel de validation.
 
 La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des textes réglementaires complémentaires sur Légifrance et interrogation sécurisée des documents propres à l’employeur.
 
