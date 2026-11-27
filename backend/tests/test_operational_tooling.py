@@ -49,6 +49,14 @@ def test_staging_configuration_is_separate_and_uses_sandbox_piste():
     assert "https://juris-staging.example.org" in env
 
 
+def test_default_compose_stack_does_not_start_or_require_keycloak():
+    compose = (ROOT / "deploy" / "docker-compose.yml").read_text(encoding="utf-8")
+    assert compose.count('profiles: ["legacy-keycloak"]') == 2
+    api = compose.split("  api:", 1)[1].split("  migrator:", 1)[0]
+    dependencies = api.split("depends_on:", 1)[1].split("healthcheck:", 1)[0]
+    assert "keycloak" not in dependencies.lower()
+
+
 def test_monitoring_configuration_contains_api_and_database_probes_only():
     compose = (ROOT / "deploy" / "docker-compose.monitoring.yml").read_text(encoding="utf-8")
     prometheus = (ROOT / "deploy" / "monitoring" / "prometheus.yml").read_text(encoding="utf-8")
