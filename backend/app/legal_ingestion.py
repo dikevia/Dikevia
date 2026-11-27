@@ -327,14 +327,14 @@ def _administrative_case_number_matches_body(case_number: str, body: str) -> boo
     If the opening text contains no recognizable docket number, retain the record
     and let the other provenance checks decide its eligibility.
     """
-    expected = re.sub(r"\\D", "", str(case_number or ""))
+    expected = re.sub(r"\D", "", str(case_number or ""))
     if not expected:
         return False
     opening = clean_text(body or "")[:8000]
     pattern = re.compile(
-        r"(?:requ[eê]te|demande|appel|instance)[^\\n.]{0,500}?"
+        r"(?:requ[eê]te|demande|appel|instance)[^\n.]{0,500}?"
         r"(?:enregistr[eé]e?|inscrit[e]?e?|introduit[e]?e?).{0,180}?"
-        r"(?:sous\\s+le\\s+)?(?:n[°ºo]|num[eé]ro)\\s*[:：]?\\s*(\\d{5,10})",
+        r"(?:sous\s+le\s+)?(?:n[°ºo]|num[eé]ro)\s*[:：]?\s*(\d{5,10})",
         re.IGNORECASE,
     )
     docket_numbers = {match.group(1) for match in pattern.finditer(opening)}
