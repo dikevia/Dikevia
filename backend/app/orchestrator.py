@@ -1053,13 +1053,12 @@ class LegalOrchestrator:
         # where relevant, the personal-case classification. Independent new
         # questions never inherit unrelated topics or facts.
         if is_followup and prior_user_questions:
-            inherited_question = next(
-                (
-                    item for item in reversed(prior_user_questions)
-                    if item and item not in {current_question}
-                ),
-                "",
+            inherited_question = (
+                contextual_question.split("\\n", 1)[1]
+                if "\\n" in contextual_question else ""
             )
+            if inherited_question.startswith("Contexte antérieur de la situation :"):
+                inherited_question = inherited_question.split(":", 1)[1].strip()
             if question_intent != "PERSONAL_CASE" and classify_question_intent(inherited_question) == "PERSONAL_CASE":
                 question_intent = "PERSONAL_CASE"
                 temporal_context["question_intent"] = question_intent
