@@ -231,7 +231,7 @@ jobs:
 
   embed-staging:
     name: Generate local legal embeddings (staging only)
-    if: github.ref == 'refs/heads/feature/dikevia-free-vector-search-poc'
+    if: ${{ false }} # Retired: use legal-embeddings-staging.yml with explicit staging safeguards.
     needs: test-and-audit
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -328,8 +328,8 @@ jobs:
 
   live-smoke:
     # These probes contact Render-hosted services and may wake paid compute. Disabled unless explicitly enabled in repository variables.
-    if: github.event_name == 'pull_request'
-    name: Live API, OIDC and commercial web smoke tests
+    if: ${{ false }} # Retired: legacy Keycloak probes contacted billable production services.
+    name: Retired legacy live smoke tests
     needs: test-and-audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
