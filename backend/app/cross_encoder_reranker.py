@@ -167,9 +167,12 @@ def rerank_sources_with_cross_encoder(
         outputs = session.run(None, feed)
         if not outputs:
             raise CrossEncoderUnavailable("Le modèle ONNX n'a retourné aucun score.")
-        scores = np.asarray(outputs[0], dtype=np.float32).reshape(-1).tolist()
-        if len(scores) != len(candidate_indices):
+        scores_array = np.asarray(outputs[0], dtype=np.float32).reshape(-1)
+        if len(scores_array) != len(candidate_indices):
             raise CrossEncoderUnavailable("Le modèle ONNX a retourné un nombre de scores inattendu.")
+        if not np.isfinite(scores_array).all():
+            raise CrossEncoderUnavailable("Le modèle ONNX a retourné des scores non finis.")
+        scores = scores_array.tolist()
     except CrossEncoderUnavailable:
         raise
     except Exception as exc:
