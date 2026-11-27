@@ -402,7 +402,7 @@ async def test_upsert_rejects_source_key_spoofing_before_database_access():
 
     with pytest.raises(ValueError, match="incohérente"):
         await upsert_legal_document(NeverCalledConn(), {
-            "source_type": "SECONDARY_DOCTRINE",
+            "source_type": "INSTITUTIONAL_GUIDANCE",
             "source_key": "LEGIFRANCE_PISTE",
             "source_id": "WEKA_ARTICLE_1",
             "title": "Article professionnel",
