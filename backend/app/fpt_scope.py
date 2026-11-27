@@ -832,6 +832,9 @@ def is_topic_relevant_source(
         return False
 
     # NBI is a distinct statutory mechanism: generic remuneration hits are not evidence.
+    # Require an explicit NBI match before a source can support an NBI question.
+    if "NBI" in question_topics and "NBI" not in source_topics:
+        return False
     # Exclude NBI instruments explicitly limited to national police/gendarmerie from FPT answers.
     if "NBI" in question_topics and any(
         marker in source_title_folded for marker in ("gendarmerie nationale", "police nationale")
