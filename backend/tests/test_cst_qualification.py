@@ -145,3 +145,18 @@ def test_cst_agenda_request_rejects_invalid_representative_counts():
             requesting_titular_representatives=6,
             requested_topic_in_competence=True,
         )
+
+
+
+def test_cst_agenda_request_controls_are_wired_to_instance_preparation_ui():
+    from pathlib import Path
+
+    frontend = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+    source = frontend.read_text(encoding="utf-8")
+
+    assert "cstAgendaRequestField" in source
+    assert "cstTitularCount" in source
+    assert "cstRequestingCount" in source
+    assert "requested_topic_in_competence" in source
+    assert "cst_agenda_request" in source
+    assert "R. 254-43" in source
