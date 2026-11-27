@@ -130,3 +130,28 @@ La disponibilité d'une animation CSS n'est pas la preuve que les classes d'éta
 - Aucune migration DB ni modification Auth0 hébergée dans le cadre de cet audit.
 - Aucune suppression de branche avant inventaire complet et récupération.
 - Aucun écran métier ou chatbot déclaré natif tant que les builds et tests ne le prouvent pas.
+
+
+## 9. Vérification Auth0 spécifique au client mobile — 27 novembre 2026
+
+Le dossier Auth0 `docs/47_AUTH0_MIGRATION.md` identifie un seul client applicatif Auth0 configuré dans le tenant de développement : la SPA Web `Dikévia Web SPA - Development`, Client ID `BSpBdDO3IUyG2g5JcHYH29e80JRbnW41`. Le dossier documente également l'API `https://api.dikevia.fr` et l'issuer de développement `https://dev-brlgaz1yh2de3mjo.us.auth0.com/`.
+
+Ce Client ID est celui d'une SPA web et ne constitue pas la preuve d'une application native Auth0. Le prototype Compose utilise un ancien client Keycloak `dikevia-android`, qui ne doit pas être repris. Aucun Client ID Auth0 natif Android n'a été retrouvé dans les fichiers de configuration/documentation examinés, et aucun callback mobile Auth0 n'est documenté.
+
+**Blocage explicite avant l'implémentation du login Android natif :** enregistrer dans le tenant Auth0 de développement une application native dédiée (client public), confirmer Authorization Code + PKCE, le callback de schéma personnalisé Android, l'URL de retour après logout, les origines/URLs autorisées et l'accès à l'API avec l'audience exacte `https://api.dikevia.fr`. Ne créer aucun secret client. Le Client ID natif doit ensuite être fourni au build comme configuration publique d'environnement, jamais confondu avec le Client ID SPA.
+
+La configuration backend actuelle exige également que l'access token ait l'audience de l'API et que l'ID token soit émis par le même issuer avec le même `sub`. Le client natif devra donc transmettre le jeton d'accès Bearer et l'ID token dans le contrat attendu par le backend (`X-OIDC-ID-Token`), ou une évolution du contrat backend devra être conçue et testée séparément. Ne pas supprimer cette vérification pour simplifier le mobile.
+
+Aucune application native Auth0 n'a été créée, aucun paramètre du tenant n'a été modifié et aucun test d'authentification mobile n'a été lancé. Le compte SPA existant n'est pas réutilisé comme client natif par défaut.
+
+## 10. Séquencement Android sans dette d'intégration
+
+1. Faire confirmer le Client ID Auth0 natif et ses callbacks autorisés.
+2. Introduire les plugins Compose et les dépendances Android nécessaires dans le module existant, avec versions alignées et verrouillées.
+3. Remplacer l'activité WebView par une activité Compose seulement lorsque le premier parcours OIDC natif peut être configuré sans valeurs inventées.
+4. Découper l'authentification, le client HTTP, les modèles d'API et les écrans en couches testables ; ne pas conserver l'activité monolithique du prototype.
+5. Porter les écrans standard et administration avec des destinations et contrôles d'accès séparés.
+6. Ajouter les tests unitaires des états UI, tests de contrats API, tests Compose et builds debug des deux éditions.
+7. Recetter la connexion, la rotation/expiration de session, la déconnexion, les erreurs 401/403 et les permissions sur appareil physique.
+
+La migration de la WebView doit être une bascule explicite et réversible : garder l'ancien chemin de build jusqu'à validation du premier APK natif, sans distribuer ni déployer ce dernier prématurément.
