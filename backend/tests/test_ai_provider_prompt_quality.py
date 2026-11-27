@@ -140,9 +140,12 @@ def test_prompt_requires_each_claim_to_be_bound_to_an_exact_research_axis():
 
 
 
-def test_entailment_prompt_checks_that_a_claim_answers_its_assigned_axis():
+def test_entailment_prompt_checks_legal_rule_and_application_to_user_facts():
     from app.ai_provider import ENTAILMENT_SYSTEM_PROMPT
 
+    assert "le noyau juridique de la proposition" in ENTAILMENT_SYSTEM_PROMPT
+    assert "faits explicitement décrits dans la question actuelle" in ENTAILMENT_SYSTEM_PROMPT
+    assert "N'exige pas que les faits de l'utilisateur figurent dans le texte juridique" in ENTAILMENT_SYSTEM_PROMPT
     assert "Lorsqu'un axe de recherche est fourni" in ENTAILMENT_SYSTEM_PROMPT
 
 
