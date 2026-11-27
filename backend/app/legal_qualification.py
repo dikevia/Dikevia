@@ -631,9 +631,6 @@ def build_legal_conversation_state(
             "Un nouveau sujet ne récupère pas les faits personnels d'un dossier antérieur.",
         ],
     }
-    if not is_followup:
-        return state
-
     history = [
         item for item in (conversation_history or [])
         if isinstance(item, dict) and item.get("role") in {"user", "assistant"}
@@ -642,14 +639,15 @@ def build_legal_conversation_state(
     # Restrict inherited facts to the latest substantive user topic and its
     # short follow-ups. Older independent topics are not part of this case.
     relevant_user_records = []
-    for record in reversed(user_records):
-        content = str(record.get("content") or "").strip()
-        if not content:
-            continue
-        relevant_user_records.append(record)
-        if not _CONTEXTUAL_FOLLOWUP.match(content) and not _CLARIFICATION_REPLY.match(content):
-            break
-    relevant_user_records.reverse()
+    if is_followup:
+        for record in reversed(user_records):
+            content = str(record.get("content") or "").strip()
+            if not content:
+                continue
+            relevant_user_records.append(record)
+            if not _CONTEXTUAL_FOLLOWUP.match(content) and not _CLARIFICATION_REPLY.match(content):
+                break
+        relevant_user_records.reverse()
     current = " ".join(str(current_question or "").split())
 
     def metadata_of(record: dict) -> dict:
