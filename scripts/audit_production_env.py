@@ -9,7 +9,7 @@ from urllib.parse import unquote, urlparse
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_SECRET_KEYS = (
     "POSTGRES_MIGRATION_PASSWORD", "POSTGRES_APP_PASSWORD", "POSTGRES_INGEST_PASSWORD",
-    "POSTGRES_MONITOR_PASSWORD", "KEYCLOAK_DB_PASSWORD", "KEYCLOAK_ADMIN_PASSWORD",
+    "POSTGRES_MONITOR_PASSWORD",
 )
 URL_PASSWORDS = {"DATABASE_URL": "cfdt_juris_app", "LEGAL_CORPUS_INGEST_DATABASE_URL": "cfdt_juris_ingest"}
 PLACEHOLDERS = ("CHANGE_ME_", "your-secret", "replace-me", "example-password")
@@ -72,20 +72,23 @@ def audit(path: Path) -> list[str]:
         elif password != values.get("POSTGRES_APP_PASSWORD" if expected_user == "cfdt_juris_app" else "POSTGRES_INGEST_PASSWORD"):
             errors.append(f"Mot de passe de {url_key} incohérent avec le secret PostgreSQL dédié.")
 
-    for key in ("KEYCLOAK_DB_PASSWORD", "KEYCLOAK_ADMIN_PASSWORD"):
-        if key in values and values[key] in template.values():
-            errors.append(f"{key} reprend une valeur du modèle d'environnement.")
-    for key in ("KEYCLOAK_PUBLIC_URL", "PUBLIC_APP_URL", "OIDC_ISSUER", "OIDC_JWKS_URL"):
+    for key in ("PUBLIC_APP_URL", "OIDC_ISSUER", "OIDC_JWKS_URL", "OIDC_IDENTITY_COMPAT_ISSUER"):
         parsed = urlparse(values.get(key, ""))
         if parsed.scheme != "https" or not parsed.hostname:
             errors.append(f"{key} doit être une URL HTTPS réelle en production.")
+    if values.get("OIDC_PROVIDER") != "auth0":
+        errors.append("OIDC_PROVIDER doit être auth0.")
+    if not values.get("OIDC_CLIENT_ID"):
+        errors.append("OIDC_CLIENT_ID doit être renseigné pour Auth0.")
+    if not values.get("OIDC_AUDIENCE") or values.get("OIDC_AUTHORIZATION_AUDIENCE") != values.get("OIDC_AUDIENCE"):
+        errors.append("OIDC_AUTHORIZATION_AUDIENCE doit être renseignée et identique à OIDC_AUDIENCE.")
+    if values.get("OIDC_IDENTITY_SUBJECT_PREFIX") != "auth0|":
+        errors.append("OIDC_IDENTITY_SUBJECT_PREFIX doit conserver le préfixe Auth0 historique auth0|.")
     if values.get("OIDC_ALGORITHMS", "") not in {"RS256", "ES256"}:
         errors.append("OIDC_ALGORITHMS doit être RS256 ou ES256 uniquement.")
     origins = [x.strip() for x in values.get("CORS_ORIGINS", "").split(",") if x.strip()]
     if not origins or "*" in origins or any(urlparse(x).scheme != "https" for x in origins):
         errors.append("CORS_ORIGINS doit contenir uniquement des origines HTTPS explicites.")
-    if values.get("KEYCLOAK_PROXY_HEADERS") != "xforwarded":
-        errors.append("KEYCLOAK_PROXY_HEADERS doit être xforwarded derrière le reverse proxy.")
     if not values.get("BACKUP_AGE_RECIPIENT", "").startswith("age1"):
         errors.append("BACKUP_AGE_RECIPIENT doit être une clé publique age1... (sauvegarde chiffrée obligatoire).")
     return errors
