@@ -362,7 +362,7 @@ def _administrative_case_number_matches_body(case_number: str, body: str) -> boo
     pattern = re.compile(
         r"(?:requ[eê]te|demande|appel|instance)[^\n.]{0,500}?"
         r"(?:enregistr[eé]e?|inscrit[e]?e?|introduit[e]?e?)[^\n.]{0,120}?"
-        r"(?:sous\s+le\s+)?(?:n[°ºo]|num[eé]ro)\s*[:：]?\s*([A-Z0-9]{5,15})\b",
+        r"(?:sous\s+le\s+)?(?:n[°º]|no\b|num[eé]ro)\s*[:：]?\s*([A-Z0-9]{5,15})\b",
         re.IGNORECASE,
     )
     docket_numbers = {
