@@ -30,7 +30,7 @@ from .legal_search_plan import (
 )
 from .legal_qualification import (
     qualify_legal_question, build_contextual_research_context,
-    CONVERSATION_HISTORY_MESSAGE_LIMIT,
+    build_legal_conversation_state, CONVERSATION_HISTORY_MESSAGE_LIMIT,
 )
 
 
@@ -895,10 +895,35 @@ def _provider_context_history(
     contextual_question: str,
     is_followup: bool,
     assistant_context: str | None = None,
+    prior_history: list[dict] | None = None,
 ) -> list[dict]:
-    """Pass only the resolved prior user turn and, when needed, a non-source assistant referent."""
+    """Pass bounded recent turns only for a classified follow-up.
+
+    History is conversational context, never legal evidence. The caller supplies
+    only tenant-owned turns already filtered for local-document privacy.
+    """
     if not is_followup:
         return []
+    if isinstance(prior_history, list):
+        history = []
+        for item in prior_history[-8:]:
+            if not isinstance(item, dict) or item.get("role") not in {"user", "assistant"}:
+                continue
+            content = str(item.get("content") or "").strip()
+            if not content:
+                continue
+            limit = 1200 if item["role"] == "user" else 1800
+            history.append({"role": item["role"], "content": content[-limit:]})
+        if assistant_context and (
+            not history or history[-1]["role"] != "assistant"
+            or history[-1]["content"] != assistant_context.strip()[-1800:]
+        ):
+            history.append({
+                "role": "assistant",
+                "content": assistant_context.strip()[-1800:],
+            })
+        return history[-8:]
+
     normalized_question = str(contextual_question or "").replace("\\n", "\n")
     parts = normalized_question.split("\n", 1)
     if len(parts) < 2:
@@ -920,49 +945,12 @@ class LegalOrchestrator:
         request_id = str(uuid4())
         ai_usage_events: list[dict] = []
         answer_started_at = None
-        try:
-            legacy_date = parse_facts_date(request.facts_date)
-            period_start = parse_facts_date(request.facts_start_date) or legacy_date
-            period_end = parse_facts_date(request.facts_end_date)
-            if legacy_date and not request.facts_start_date and not request.facts_end_date:
-                # Compatibility: the former single-date field describes one exact day.
-                period_end = legacy_date
-            if request.situation_ongoing and period_end:
-                raise ValueError("Une situation déclarée toujours en cours ne peut pas avoir de date de fin.")
-            if request.situation_ongoing and not period_start:
-                raise ValueError("Indiquez la date de début de la situation, même si elle est toujours en cours.")
-            if period_start and period_end and period_end < period_start:
-                raise ValueError("La fin de la période ne peut pas précéder son début.")
-            # Always retrieve current law and case law. The facts date is an
-            # additional applicability checkpoint, never a research cut-off.
-            effective_date = _france_today()
-            question_intent = classify_question_intent(request.question)
-            # For an ongoing situation, case law is assessed through today:
-            # decisions issued after its start may still govern its continuing
-            # effects. Keep the declared start date separately for historical
-            # statutory-version lookup and provenance.
-            parsed_date = period_end or period_start
-            facts_reference_date = _case_law_reference_date(
-                period_start, period_end, bool(request.situation_ongoing), effective_date,
-            )
-            temporal_context = {
-                "period_start": period_start.isoformat() if period_start else None,
-                "period_end": period_end.isoformat() if period_end else None,
-                "facts_reference_date": facts_reference_date.isoformat() if facts_reference_date else None,
-                "ongoing": bool(request.situation_ongoing),
-                "facts_date_provided": parsed_date is not None,
-                "analysis_mode": _analysis_mode(question_intent, parsed_date is not None),
-                "question_intent": question_intent,
-                "reference_date_for_retrieval": effective_date.isoformat(),
-                "legacy_exact_date": bool(legacy_date and not request.facts_start_date and not request.facts_end_date),
-            }
-        except ValueError as exc:
-            return AskResponse(request_id=request_id, verification_status="NON_VERIFIE",
-                answer="La période de la situation n'a pas pu être interprétée. Aucune analyse juridique n'est produite.",
-                missing_information=[str(exc)])
 
         history = (conversation_history or [])[-CONVERSATION_HISTORY_MESSAGE_LIMIT:]
-        prior_user_questions = [str(m.get("content", ""))[:1200] for m in history if m.get("role") == "user"]
+        prior_user_questions = [
+            str(m.get("content", ""))[:5000]
+            for m in history if m.get("role") == "user"
+        ]
         current_question = request.question.strip()
         prior_assistant_messages = _immediate_prior_assistant_messages(history)
         contextual_research_context = build_contextual_research_context(
@@ -970,10 +958,87 @@ class LegalOrchestrator:
         )
         contextual_question = contextual_research_context.question
         is_followup = contextual_research_context.is_followup
-        provider_history = _provider_context_history(
-            contextual_question, is_followup,
-            assistant_context=contextual_research_context.assistant_context,
+        current_turn_metadata = {
+            "employer": request.employer,
+            "public_service": request.public_service,
+            "facts_date": request.facts_date,
+            "facts_start_date": request.facts_start_date,
+            "facts_end_date": request.facts_end_date,
+            "situation_ongoing": request.situation_ongoing,
+        }
+        conversation_state = build_legal_conversation_state(
+            current_question,
+            history,
+            is_followup=is_followup,
+            current_turn_metadata=current_turn_metadata,
         )
+        inherited_period = conversation_state.get("periode_faits_declaree") or {}
+        current_period_provided = bool(
+            request.facts_date or request.facts_start_date
+            or request.facts_end_date or request.situation_ongoing
+        )
+        inherited_period_used = bool(is_followup and inherited_period and not current_period_provided)
+        conversation_employer = request.employer
+        if (
+            is_followup
+            and conversation_employer == "NATIONAL"
+            and conversation_state.get("employeur_selectionne")
+        ):
+            conversation_employer = conversation_state["employeur_selectionne"]
+
+        provider_history = _provider_context_history(
+            contextual_question,
+            is_followup,
+            assistant_context=contextual_research_context.assistant_context,
+            prior_history=history,
+        )
+        try:
+            inherited_exact_date = inherited_period.get("date_exacte")
+            legacy_date = parse_facts_date(request.facts_date or inherited_exact_date)
+            inherited_start = inherited_period.get("debut")
+            inherited_end = inherited_period.get("fin")
+            period_start = (
+                parse_facts_date(request.facts_start_date)
+                or parse_facts_date(inherited_start)
+                or legacy_date
+            )
+            period_end = parse_facts_date(request.facts_end_date) or parse_facts_date(inherited_end)
+            situation_ongoing = bool(
+                request.situation_ongoing
+                or (inherited_period_used and inherited_period.get("situation_en_cours"))
+            )
+            if legacy_date and not request.facts_start_date and not request.facts_end_date and not inherited_start:
+                # Compatibility: the former single-date field describes one exact day.
+                period_end = legacy_date
+            if situation_ongoing and period_end:
+                raise ValueError("Une situation déclarée toujours en cours ne peut pas avoir de date de fin.")
+            if situation_ongoing and not period_start:
+                raise ValueError("Indiquez la date de début de la situation, même si elle est toujours en cours.")
+            if period_start and period_end and period_end < period_start:
+                raise ValueError("La fin de la période ne peut pas précéder son début.")
+            effective_date = _france_today()
+            question_intent = classify_question_intent(request.question)
+            parsed_date = period_end or period_start
+            facts_reference_date = _case_law_reference_date(
+                period_start, period_end, situation_ongoing, effective_date,
+            )
+            temporal_context = {
+                "period_start": period_start.isoformat() if period_start else None,
+                "period_end": period_end.isoformat() if period_end else None,
+                "facts_reference_date": facts_reference_date.isoformat() if facts_reference_date else None,
+                "ongoing": situation_ongoing,
+                "facts_date_provided": parsed_date is not None,
+                "analysis_mode": _analysis_mode(question_intent, parsed_date is not None),
+                "question_intent": question_intent,
+                "reference_date_for_retrieval": effective_date.isoformat(),
+                "legacy_exact_date": bool(legacy_date and not request.facts_start_date and not request.facts_end_date),
+                "period_inherited_from_conversation": inherited_period_used,
+            }
+        except ValueError as exc:
+            return AskResponse(request_id=request_id, verification_status="NON_VERIFIE",
+                answer="La période de la situation n'a pas pu être interprétée. Aucune analyse juridique n'est produite.",
+                missing_information=[str(exc)])
+
         targeted_clarification = clarification_for_union_assistance_summons(contextual_question)
         if targeted_clarification:
             return AskResponse(
@@ -988,7 +1053,13 @@ class LegalOrchestrator:
         # where relevant, the personal-case classification. Independent new
         # questions never inherit unrelated topics or facts.
         if is_followup and prior_user_questions:
-            inherited_question = contextual_question.split("\n", 1)[1]
+            inherited_question = next(
+                (
+                    item for item in reversed(prior_user_questions)
+                    if item and item not in {current_question}
+                ),
+                "",
+            )
             if question_intent != "PERSONAL_CASE" and classify_question_intent(inherited_question) == "PERSONAL_CASE":
                 question_intent = "PERSONAL_CASE"
                 temporal_context["question_intent"] = question_intent
@@ -997,8 +1068,13 @@ class LegalOrchestrator:
                 )
         # Qualification must use the resolved referent so follow-ups such as
         # "Et pour les contractuels ?" retain the original legal topic.
-        legal_context = qualify_legal_question(contextual_question, _effective_employer_for_versant(request.public_service, request.employer), request.public_service)
+        legal_context = qualify_legal_question(
+            contextual_question,
+            _effective_employer_for_versant(request.public_service, conversation_employer),
+            request.public_service,
+        )
         legal_context["versant_fonction_publique"] = request.public_service
+        legal_context["contexte_conversationnel_juridique"] = conversation_state
         mismatch_versant = legal_context.get("explicit_self_versant_mismatch")
         if mismatch_versant:
             labels = {
@@ -1031,7 +1107,7 @@ class LegalOrchestrator:
         try:
             research_plan = await plan_legal_research(
                 question=contextual_question,
-                employer=_effective_employer_for_versant(request.public_service, request.employer),
+                employer=_effective_employer_for_versant(request.public_service, conversation_employer),
                 facts_period=temporal_context,
                 legal_context=legal_context,
                 conversation_history=provider_history,
@@ -1331,7 +1407,7 @@ class LegalOrchestrator:
             try:
                 refinement = await plan_legal_research(
                     question=contextual_question,
-                    employer=_effective_employer_for_versant(request.public_service, request.employer),
+                    employer=_effective_employer_for_versant(request.public_service, conversation_employer),
                     facts_period=temporal_context,
                     legal_context=legal_context,
                     conversation_history=provider_history,
@@ -2259,7 +2335,7 @@ class LegalOrchestrator:
                         answer_started_at = time.perf_counter()
                         ai_result = await analyze_question(
                             question=contextual_question,
-                            employer=_effective_employer_for_versant(request.public_service, request.employer),
+                            employer=_effective_employer_for_versant(request.public_service, conversation_employer),
                             facts_date=effective_date.isoformat(),
                             facts_period=temporal_context,
                             sources=ai_sources,
