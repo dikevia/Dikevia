@@ -69,6 +69,8 @@ _FPE_MARKERS = (
     "agents contractuels de l etat",
     "decret n 86 83",
     "decret 86 83",
+    "gendarmerie nationale",
+    "police nationale",
 )
 
 # These words can occur as incidental context and do not establish a
@@ -578,6 +580,9 @@ _TOPIC_FAMILIES = {
         "autorisation speciale d absence", "absence pour raison familiale",
         "compte epargne temps",
     ),
+    "NBI": (
+        "nouvelle bonification indiciaire", "nbi",
+    ),
     "REMUNERATION": (
         "remuneration", "traitement indiciaire", "regime indemnitaire",
         "rifseep", "ifse", "nbi", "indemnite", "prime", "paie",
@@ -826,6 +831,13 @@ def is_topic_relevant_source(
     ):
         return False
 
+    # NBI is a distinct statutory mechanism: generic remuneration hits are not evidence.
+    # Exclude NBI instruments explicitly limited to national police/gendarmerie from FPT answers.
+    if "NBI" in question_topics and any(
+        marker in source_title_folded for marker in ("gendarmerie nationale", "police nationale")
+    ):
+        return False
+
     if question_topics & source_topics:
         return True
 
@@ -835,6 +847,7 @@ def is_topic_relevant_source(
 
     strict_topics = {
         "TERMINATION_OF_TITULAR",
+        "NBI",
         "STAFFING_AND_WORK_CONDITIONS",
         # Evaluation searches are especially prone to lexical false positives:
         # generic references to evaluating risks, health, senior civil-service
