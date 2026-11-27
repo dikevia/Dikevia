@@ -258,3 +258,23 @@ def test_cst_written_request_requires_half_and_sets_two_month_deadline():
     assert required["status"] == "MEETING_WITHIN_TWO_MONTHS_REQUIRED"
     assert insufficient["deadline_date"] is None
     assert insufficient["status"] == "REQUEST_THRESHOLD_NOT_REACHED"
+
+
+
+def test_cst_and_fs_calendar_controls_are_wired_to_instance_ui():
+    from pathlib import Path
+
+    frontend = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+    source = frontend.read_text(encoding="utf-8")
+
+    assert "cstMeetingDate" in source
+    assert "cstMeetingUrgent" in source
+    assert "lastFsMeetingDate" in source
+    assert "inspectorRequestReceivedDate" in source
+    assert "cstWrittenRequestDate" in source
+    assert "cstAnnualMeetingsHeld" in source
+    assert "fsAnnualMeetingsHeld" in source
+    assert "fsMeetingDate" in source
+    assert "fs_nine_month_assessment" in source
+    assert "cst_written_request_deadline" in source
+    assert "annual_meeting_frequency" in source
