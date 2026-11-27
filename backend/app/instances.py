@@ -12,7 +12,7 @@ from datetime import date
 import unicodedata
 from typing import Any
 
-from .cst_qualification import qualify_cst_topic
+from .cst_qualification import qualify_cst_topic, qualify_fs_topic
 
 
 INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
@@ -216,6 +216,8 @@ def prepare_instance(
         result["cst_qualification"] = qualify_cst_topic(
             objet, formation_specialisee_exists=formation_specialisee_exists
         )
+    elif key == "FS":
+        result["fs_qualification"] = qualify_fs_topic(objet)
     return result
 
 
