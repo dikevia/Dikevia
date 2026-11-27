@@ -81,6 +81,15 @@ _ASSISTANT_REFERENTIAL_FOLLOWUP = re.compile(
     re.IGNORECASE,
 )
 
+_LONG_CONTEXTUAL_FOLLOWUP = re.compile(
+    r"^(?:dans (?:cette|la) (?:situation|affaire|hypothèse)|"
+    r"pour revenir à|à ce propos|concernant (?:ce|cette|mon|ma)|"
+    r"suite à (?:ce|cette|mon|ma)|par rapport à (?:ce|cette|mon|ma)|"
+    r"comme je (?:l['’]ai|l['’]avais) indiqué|"
+    r"pour préciser (?:ma|cette) situation)\b",
+    re.IGNORECASE,
+)
+
 
 @dataclass(frozen=True)
 class ContextualResearchContext:
@@ -108,7 +117,44 @@ def build_contextual_research_context(
     if not current:
         return ContextualResearchContext(question="", is_followup=False)
     if len(current) >= 220:
-        return ContextualResearchContext(question=current[:500], is_followup=False)
+        if _LONG_CONTEXTUAL_FOLLOWUP.match(current) and prior_questions:
+            prior = next(
+                (
+                    item for item in reversed(prior_questions)
+                    if not _CONTEXTUAL_FOLLOWUP.match(item)
+                ),
+                prior_questions[-1],
+            )
+            assistants = [
+                str(item).strip()
+                for item in (prior_assistant_messages or [])
+                if str(item).strip()
+            ]
+            contextual = f"{current[:5000]}\nContexte antérieur de la situation : {prior[:1200]}"
+            if not _EXPLICIT_STATUS_DECLARATION.search(current):
+                for earlier_question in reversed(prior_questions):
+                    declaration = _EXPLICIT_STATUS_DECLARATION.search(earlier_question)
+                    if declaration:
+                        contextual += (
+                            "\nContexte de statut déclaré précédemment : "
+                            + declaration.group(0)
+                        )
+                        break
+            if not _explicit_working_time_declaration(current):
+                for earlier_question in reversed(prior_questions):
+                    working_time = _explicit_working_time_declaration(earlier_question)
+                    if working_time:
+                        contextual += (
+                            "\nContexte de temps de travail déclaré précédemment : "
+                            + working_time
+                        )
+                        break
+            return ContextualResearchContext(
+                question=contextual[:6800],
+                is_followup=True,
+                assistant_context=assistants[-1][-1800:] if assistants else None,
+            )
+        return ContextualResearchContext(question=current[:5000], is_followup=False)
 
     prior_questions = [
         str(item).strip()
@@ -154,7 +200,7 @@ def build_contextual_research_context(
                     )
                     break
         return ContextualResearchContext(
-            question=contextual[:500],
+            question=contextual[:6800],
             is_followup=True,
             assistant_context=assistants[-1][-1800:],
         )
@@ -206,7 +252,7 @@ def build_contextual_research_context(
                         + working_time
                     )
                     break
-        contextual = contextual[:500]
+        contextual = contextual[:6800]
         return ContextualResearchContext(question=contextual, is_followup=True)
 
     # A short answer such as "oui" or "contractuel" is contextual only when
@@ -549,3 +595,120 @@ def qualify_legal_question(
             "Do not transpose rules between FPT, FPE, FPH or the private sector.",
         ],
     }
+
+
+def build_legal_conversation_state(
+    current_question: str,
+    conversation_history: list[dict] | None = None,
+    is_followup: bool = False,
+    current_turn_metadata: dict | None = None,
+) -> dict:
+    """Build a bounded legal case context from user-declared facts only.
+
+    Assistant prose is never promoted to fact or legal authority. Historical
+    metadata is inherited only for a classified follow-up; current-turn values
+    take precedence over older declarations.
+    """
+    state = {
+        "continuity": "FOLLOW_UP" if is_followup else "NEW_TOPIC",
+        "facts_origin": "USER_DECLARATIONS_ONLY",
+        "agent_status_declare": None,
+        "temps_travail_declare": None,
+        "type_contrat_declare": None,
+        "employeur_selectionne": None,
+        "periode_faits_declaree": None,
+        "messages_utilisateur_pertinents": [],
+        "question_clarification_precedente": None,
+        "limits": [
+            "Les déclarations utilisateur ne sont pas des faits matériellement vérifiés.",
+            "Les réponses antérieures de l'assistant ne constituent jamais une preuve juridique.",
+            "Un nouveau sujet ne récupère pas les faits personnels d'un dossier antérieur.",
+        ],
+    }
+    if not is_followup:
+        return state
+
+    history = [
+        item for item in (conversation_history or [])
+        if isinstance(item, dict) and item.get("role") in {"user", "assistant"}
+    ]
+    user_records = [item for item in history if item.get("role") == "user"]
+    current = " ".join(str(current_question or "").split())
+
+    def metadata_of(record: dict) -> dict:
+        value = record.get("metadata")
+        if isinstance(value, dict):
+            return value
+        return {}
+
+    current_meta = current_turn_metadata if isinstance(current_turn_metadata, dict) else {}
+    records = user_records + [{"role": "user", "content": current, "metadata": current_meta}]
+
+    status_declaration = None
+    working_time_declaration = None
+    contract_declaration = None
+    for record in reversed(records):
+        content = str(record.get("content") or "")
+        if status_declaration is None:
+            match = _EXPLICIT_STATUS_DECLARATION.search(content)
+            if match:
+                status_declaration = match.group(0)[:180]
+        if working_time_declaration is None:
+            match = re.search(
+                r"\\b(?:je suis|je travaille)\\s+(?:à|a)\\s+temps\\s+"
+                r"(?:partiel|complet|non complet)\\b",
+                content,
+                re.IGNORECASE,
+            )
+            if match:
+                working_time_declaration = match.group(0)[:120]
+        if contract_declaration is None:
+            match = re.search(
+                r"\\b(?:je suis en|mon contrat est un)\\s+(CDD|CDI)\\b",
+                content,
+                re.IGNORECASE,
+            )
+            if match:
+                contract_declaration = match.group(1).upper()
+    state["agent_status_declare"] = status_declaration
+    state["temps_travail_declare"] = working_time_declaration
+    state["type_contrat_declare"] = contract_declaration
+
+    employer = current_meta.get("employer")
+    if not employer or employer == "NATIONAL":
+        for record in reversed(user_records):
+            previous_employer = metadata_of(record).get("employer")
+            if previous_employer and previous_employer != "NATIONAL":
+                employer = previous_employer
+                break
+    state["employeur_selectionne"] = employer if employer and employer != "NATIONAL" else None
+
+    period_keys = ("facts_date", "facts_start_date", "facts_end_date", "situation_ongoing")
+    current_period = {key: current_meta.get(key) for key in period_keys}
+    if not any(current_period.get(key) for key in period_keys):
+        for record in reversed(user_records):
+            candidate = {key: metadata_of(record).get(key) for key in period_keys}
+            if any(candidate.get(key) for key in period_keys):
+                current_period = candidate
+                break
+    if any(current_period.get(key) for key in period_keys):
+        state["periode_faits_declaree"] = {
+            "date_exacte": current_period.get("facts_date"),
+            "debut": current_period.get("facts_start_date"),
+            "fin": current_period.get("facts_end_date"),
+            "situation_en_cours": bool(current_period.get("situation_ongoing")),
+            "origine": "déclaration utilisateur dans cette conversation",
+        }
+
+    relevant_user_messages = [
+        str(record.get("content") or "").strip()[:1200]
+        for record in user_records[-6:]
+        if str(record.get("content") or "").strip()
+    ]
+    state["messages_utilisateur_pertinents"] = relevant_user_messages
+    if history and history[-1].get("role") == "assistant":
+        previous_answer = str(history[-1].get("content") or "").strip()
+        questions = re.findall(r"[^?]{1,260}\\?", previous_answer[-1600:])
+        if questions:
+            state["question_clarification_precedente"] = " ".join(questions[-1].split())[-260:]
+    return state
