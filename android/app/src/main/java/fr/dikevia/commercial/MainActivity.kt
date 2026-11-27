@@ -106,7 +106,7 @@ class MainActivity : Activity() {
 
         // Android 15 (targetSdk 35) impose l'affichage edge-to-edge.
         // On réserve les zones système sans laisser la WebView passer sous les barres.
-        // Le fond reste dans la palette JARVIS bleu glacier.
+        // Le fond reste dans la palette JURIS bleu glacier.
         val root = FrameLayout(this).apply {
             setBackgroundColor(Color.rgb(234, 245, 252))
         }
