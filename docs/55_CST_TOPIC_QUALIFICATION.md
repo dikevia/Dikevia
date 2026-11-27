@@ -148,7 +148,7 @@ Sources officielles : [CGFP, chapitre III — attributions des formations spéci
 
 Le repérage opérationnel couvre également les obligations d'information, de rapport et de suivi prévues par les articles suivants :
 
-- **R. 253-30 — rapport annuel et programme de prévention** : saisine annuelle pour avis sur le rapport écrit et le programme annuel de prévention ; le programme précise les actions, leurs conditions d'exécution et leur coût estimé. Les motifs des mesures non réalisées sont annexés au rapport annuel. La FS est associée au suivi du DUERP.
+- **R. 253-27 — programme annuel de prévention en FPT** : la formation spécialisée du CST est saisie chaque année pour avis sur le programme annuel de prévention. Celui-ci est établi à partir de l'analyse prévue à R. 253-38 et des informations santé-sécurité du rapport social unique ; il détaille les actions, leurs conditions d'exécution et leur coût estimé. La FS peut proposer des priorités et des mesures supplémentaires ; les motifs des mesures non réalisées sont annexés au programme.
 - **R. 253-35 — registre santé et sécurité au travail** : la FS prend connaissance des observations et suggestions inscrites au registre coté, relatives à la prévention et à l'amélioration des conditions de travail. Ce registre est distinct du registre spécial DGI.
 - **R. 253-47 — rapport de visite** : les missions de la délégation donnent lieu à un rapport présenté à la FS.
 - **R. 253-52 — suites des enquêtes** : la FS est informée des conclusions de chaque enquête et des suites qui leur sont réservées.
@@ -162,4 +162,4 @@ Les checklists invitent à distinguer :
 
 **Limite de la version actuelle :** Dikévia génère des points de contrôle et des éléments à demander. Il ne conserve pas encore un registre persistant des recommandations, responsables, échéances et états d'avancement. Ce suivi durable nécessitera un module de dossiers avec droits d'accès, cloisonnement organisationnel, historique et règles de conservation ; il ne doit pas être simulé par une simple fiche temporaire.
 
-Sources officielles : [CGFP R. 253-30](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549791/), [CGFP R. 253-35](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549803/), [CGFP R. 253-47](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549833/), [CGFP R. 253-52](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549847/).
+Sources officielles : [CGFP R. 253-27](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549783/), [CGFP R. 253-35](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549803/), [CGFP R. 253-47](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549833/), [CGFP R. 253-52](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549847/).
