@@ -345,3 +345,32 @@ def test_cst_r25381_substitution_requires_unexamined_fs_topic_and_half_support()
     assert threshold_not_met["status"] == "EVOCATION_THRESHOLD_NOT_REACHED"
     assert substituted["status"] == "CST_OPINION_SUBSTITUTES_FS"
     assert already_examined["status"] == "FS_ALREADY_EXAMINED"
+
+
+
+def test_fs_prepare_exposes_specific_consultation_candidates():
+    from app.instances import prepare_instance
+
+    result = prepare_instance("FS", "Projet de mise à jour du DUERP")
+
+    assert result["fs_qualification"]["legal_conclusion"] is False
+    assert any(
+        item["reference"] == "R. 253-24, 6°"
+        for item in result["fs_qualification"]["candidates"]
+    )
+
+
+def test_cst_fs_routing_controls_are_wired_to_frontend():
+    from pathlib import Path
+
+    frontend = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+    source = frontend.read_text(encoding="utf-8")
+
+    assert "cstFsRoutingField" in source
+    assert "topicInCstCompetence" in source
+    assert "topicInFsMandatory" in source
+    assert "fsConsultationExamined" in source
+    assert "cstEvocationInitiative" in source
+    assert "cst_staff_representatives_supporting" in source
+    assert "cst_fs_competence_routing" in source
+    assert "fsQualificationHtml" in source
