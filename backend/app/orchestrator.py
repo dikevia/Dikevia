@@ -2379,7 +2379,7 @@ class LegalOrchestrator:
                                 else:
                                     rendered_claims.append(
                                         f"Cette réponse porte sur les règles consultées au {effective_date.isoformat()} ; "
-                                        + ("elle ne constitue pas une conclusion sur une situation individuelle."
+                                        + ("l'analyse d'une situation concrète reste limitée aux faits et pièces communiqués, et une vérification historique peut être nécessaire si la date des faits modifie la règle applicable."
                                            if parsed_date is None else
                                            "son application dépend aussi des faits établis et des éventuels actes locaux applicables.")
                                     )
