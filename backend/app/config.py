@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     cgfp_index_path: str = ""
     cgfp_enabled: bool = True
     vector_search_enabled: bool = False
+    # Optional local-only ONNX cross-encoder. Disabled until model files and
+    # available RAM/CPU have been validated on the target runtime.
+    legal_cross_encoder_enabled: bool = False
+    legal_cross_encoder_onnx_path: str = ""
+    legal_cross_encoder_tokenizer_path: str = ""
+    legal_cross_encoder_top_k: int = 30
+    legal_cross_encoder_max_length: int = 384
+    legal_cross_encoder_threads: int = 1
     ai_api_base_url: str = ""
     ai_api_key: str = ""
     ai_model: str = ""
