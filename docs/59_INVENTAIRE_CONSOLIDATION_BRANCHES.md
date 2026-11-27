@@ -331,3 +331,19 @@ Conclusion de cette passe : les candidats ciblés qui paraissaient apporter des 
 
 
 Complément de contrôle : `fix/stripe-billing-explicit-opt-in` présente 15 commits propres mais reste 2 163 commits derrière `main`. Son diff porte sur l'ancienne implémentation billing, la configuration, le backend et les tests. Cette version ne doit pas remplacer le dispositif courant : Stripe demeure désactivé par défaut et aucun paiement ne doit être activé sans accord explicite.
+
+
+### Lot logiciel Auth0-only — retrait du provisionnement Keycloak — 27 novembre 2026
+
+Le runtime applicatif a été épuré sur `main` :
+
+- `backend/app/main.py` n'importe plus `KeycloakAdmin` et ne crée plus de compte dans Keycloak lors d'une invitation. Le parcours d'invitation SMTP est exclusivement Auth0 : Dikévia envoie son jeton d'invitation à usage unique ; l'utilisateur s'authentifie ensuite via Universal Login. La création de compte Auth0 n'est possible que si le tenant et la connexion autorisent l'inscription ; aucun appel Management API n'est effectué.
+- `backend/app/config.py` impose désormais `OIDC_PROVIDER=auth0` et ne déclare plus les paramètres de provisionnement Keycloak Admin. Les variables historiques de service ne sont plus consommées par le backend.
+- Les contrôles d'intégrité des invitations, l'acceptation liée à l'e-mail vérifié, les jetons à usage unique, l'expiration, la révocation en cas d'échec SMTP et la résolution des identités historiques exactes `issuer + subject` sont conservés.
+- Les tests V38/V39 ont été réorientés vers les contrats Auth0 et le rejet de Keycloak comme fournisseur runtime. Les configurations de tests de production V35 et corpus ont été basculées vers des paramètres Auth0 cohérents.
+- Le préflight `scripts/audit_production_env.py` vérifie maintenant le fournisseur Auth0, le client, l'audience API et les paramètres de compatibilité historique ; il n'exige plus les secrets ni les en-têtes proxy Keycloak.
+- Les fichiers `.env.example` et `.env.staging.example` ne documentent plus le client de service Keycloak Admin.
+
+Périmètre volontairement conservé : `backend/app/keycloak_admin.py`, les fichiers de realm, le profil Docker Compose legacy, les paramètres d'amorçage du conteneur local et le service Render d'identité n'ont pas été supprimés ni arrêtés. Leur retrait physique dépend encore de l'audit des comptes historiques, de la confirmation du tenant Auth0 de référence et d'un plan de retour arrière. La fonction `_resolve_auth0_legacy_identity` de `backend/app/dependencies.py` n'a pas été modifiée.
+
+Validation : les fichiers ont été modifiés et relus via GitHub. Les tests Python n'ont pas été exécutés dans cet environnement et aucun statut/workflow CI n'est considéré comme réussi tant qu'un résultat concret n'est pas disponible.
