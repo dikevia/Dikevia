@@ -129,7 +129,8 @@ def extract_document_text(data: bytes, mime: str, max_chars: int = 2_000_000) ->
 
     if not text:
         return "", "NO_TEXT"
-    return text[:max_chars], "EXTRACTED"
+    status = "OCR_EXTRACTED" if mime == "application/pdf" and ocr_status == "OCR_EXTRACTED" else "EXTRACTED"
+    return text[:max_chars], status
 
 
 
