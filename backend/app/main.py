@@ -1121,6 +1121,9 @@ async def prepare_social_instance(
 ):
     """Prepare a structured CST/CAP/CCP/FS checklist for active union subscribers."""
     objet = payload.get("objet")
+    formation_specialisee_exists = payload.get("formation_specialisee_exists")
+    if formation_specialisee_exists not in (None, True, False):
+        raise HTTPException(422, "formation_specialisee_exists doit être un booléen ou absent.")
     try:
         if legifrance.configured:
             await enforce_legal_connector_rate_limit(ctx)
@@ -1130,6 +1133,7 @@ async def prepare_social_instance(
             legifrance_connector=legifrance,
             case_law_connector=AdministrativeCaseLawConnector(legifrance),
             effective_date=datetime.now(ZoneInfo("Europe/Paris")).date(),
+            formation_specialisee_exists=formation_specialisee_exists,
         )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
