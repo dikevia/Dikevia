@@ -48,6 +48,16 @@ La comparaison de cette branche avec `main` est très divergente (192 commits en
 
 Décision : réutiliser sélectivement les patterns Compose et les écrans après découpage, pas copier la branche ni son code d'authentification.
 
+### Vérification des autres branches Android
+
+- `android/native-compose-beta` : malgré son nom et ses dépendances Gradle Compose, le `MainActivity.kt` examiné instancie encore une `WebView`. Ce n'est pas une application native livrable. Les tests UI de cette branche concernent principalement le frontend web.
+- `android/native-compose-beta-v2` : contient effectivement une UI Jetpack Compose, mais conserve les URL de l'ancienne API Render, l'issuer Keycloak et la palette Émeraude & Or abandonnée. Elle est moins complète que `android/native-compose-integration` et n'est pas intégrable telle quelle.
+- `android/apk-auth0-staging` : reste également une WebView ; son contrôle Auth0 autorise tout sous-domaine `.auth0.com`, ce qui est plus large que la liste d'hôtes exacts de `main`. Aucun motif ne justifie de reprendre cette politique.
+
+La comparaison actualisée de `android/native-compose-integration` avec `main` au moment de cet audit indique 192 commits propres et 2 159 commits de retard. Le diff couvre aussi de nombreux fichiers backend, migrations et corpus : cela confirme qu'une fusion globale serait inappropriée.
+
+Aucune branche iOS n'a été trouvée avec la recherche de branches `ios`, et la recherche de fichiers SwiftUI/Xcode n'a révélé aucun projet iOS.
+
 ## 3. Dépendance Keycloak résiduelle dans le backend `main`
 
 L'authentification des requêtes prend en charge Auth0, et `oidc_provider` vaut `auth0` par défaut. Toutefois, Keycloak n'est pas encore entièrement retiré du code opérationnel :
