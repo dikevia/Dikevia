@@ -769,7 +769,7 @@ def test_explicit_user_correction_supersedes_older_status_and_working_time():
         is_followup=True,
     )
     assert state["agent_status_declare"] == "Je ne suis plus contractuel"
-    assert state["temps_travail_declare"] == "Je ne suis plus à temps partiel"
+    assert state["temps_travail_declare"] == "je ne suis plus à temps partiel"
     assert state["type_contrat_declare"] == "NON_CONTRACTUEL"
 
 
