@@ -280,6 +280,10 @@ def test_cst_and_fs_calendar_controls_are_wired_to_instance_ui():
     assert "fsRequestingCountDirect" in source
     assert "fs_titular_representatives" in source
     assert "fs_requesting_titular_representatives" in source
+    assert "fsSecretaryConsulted" in source
+    assert "agendaVotePointsIdentified" in source
+    assert "fs_agenda_preparation" in source
+    assert "agenda_convocation_check" in source
     assert "fsMeetingDate" in source
     assert "fs_nine_month_assessment" in source
     assert "cst_written_request_deadline" in source
