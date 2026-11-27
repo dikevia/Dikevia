@@ -355,7 +355,7 @@ def test_all_ai_research_and_answer_stages_receive_versant_consistent_employer()
 
     source = inspect.getsource(LegalOrchestrator.ask)
     assert source.count(
-        "_effective_employer_for_versant(request.public_service, request.employer)"
+        "_effective_employer_for_versant(request.public_service, conversation_employer)"
     ) == 4
 
 
