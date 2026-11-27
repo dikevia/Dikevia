@@ -481,7 +481,20 @@ def _ai_safe_conversation_history(rows):
                 for source in sources
             ):
                 continue
-        safe.append({"role": role, "content": row["content"]})
+        record = {"role": role, "content": row["content"]}
+        if role == "user":
+            # Keep only structured, non-document conversation metadata needed
+            # to maintain the legal case context. Never forward consent flags,
+            # uploaded-file identifiers or arbitrary metadata to the provider.
+            allowed = {
+                "employer", "public_service", "facts_date",
+                "facts_start_date", "facts_end_date", "situation_ongoing",
+            }
+            record["metadata"] = {
+                key: value for key, value in (metadata.items() if isinstance(metadata, dict) else [])
+                if key in allowed
+            }
+        safe.append(record)
     return safe
 
 
