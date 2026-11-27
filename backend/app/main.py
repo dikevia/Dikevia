@@ -1147,7 +1147,7 @@ async def prepare_social_instance(
     annual_health_safety_count = payload.get("annual_health_safety_meetings_held", 0)
     if not isinstance(meeting_urgent, bool):
         raise HTTPException(422, "meeting_urgent doit être un booléen.")
-    if instance.upper() != "CST" and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw, cst_written_request_raw, annual_health_safety_count)):
+    if instance.upper() not in {"CST", "FS"} and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw, cst_written_request_raw, annual_health_safety_count, annual_meeting_count)):
         raise HTTPException(422, "Les paramètres de calendrier CST/FS ne sont disponibles que pour une préparation CST.")
     if annual_meeting_count is not None and (
         isinstance(annual_meeting_count, bool) or not isinstance(annual_meeting_count, int) or annual_meeting_count < 0
@@ -1222,7 +1222,7 @@ async def prepare_social_instance(
             )
         if annual_meeting_count is not None:
             result["annual_meeting_frequency"] = assess_annual_instance_meeting_frequency(
-                instance="CST",
+                instance=instance,
                 meetings_held=annual_meeting_count,
                 formation_specialisee_exists=formation_specialisee_exists,
                 health_safety_meetings_held=annual_health_safety_count,
