@@ -169,7 +169,12 @@ def _fold(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", value).strip()
 
 
-def prepare_instance(instance: str, objet: str) -> dict[str, Any]:
+def prepare_instance(
+    instance: str,
+    objet: str,
+    *,
+    formation_specialisee_exists: bool | None = None,
+) -> dict[str, Any]:
     """Build a non-authoritative preparation checklist for one FPT instance."""
     key = str(instance or "").strip().upper()
     if key not in INSTANCE_RULES:
@@ -208,7 +213,9 @@ def prepare_instance(instance: str, objet: str) -> dict[str, Any]:
         ),
     }
     if key == "CST":
-        result["cst_qualification"] = qualify_cst_topic(objet)
+        result["cst_qualification"] = qualify_cst_topic(
+            objet, formation_specialisee_exists=formation_specialisee_exists
+        )
     return result
 
 
@@ -328,13 +335,16 @@ async def prepare_instance_with_legal_sources(
     legifrance_connector: Any,
     case_law_connector: Any,
     effective_date: date,
+    formation_specialisee_exists: bool | None = None,
 ) -> dict[str, Any]:
     """Build the checklist and enrich it with bounded official-source searches.
 
     This function never calls an LLM and never turns search hits into a legal
     conclusion. Each upstream source family is queried once per preparation.
     """
-    result = prepare_instance(instance, objet)
+    result = prepare_instance(
+        instance, objet, formation_specialisee_exists=formation_specialisee_exists
+    )
     key = result["instance"]
     profile = _INSTANCE_LEGAL_PROFILES[key]
     topic_context = _instance_search_context(key, result["points"])
