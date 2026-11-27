@@ -45,7 +45,7 @@ La feuille de style prévoit également la désactivation des animations de la s
 Le code actuel démontre l'identité visuelle, mais ne prouve pas encore une sphère IA persistante et réellement pilotée par les états de l'assistant.
 
 - La grande sphère est principalement affichée dans l'écran d'accueil de conversation.
-- Les états CSS `is-generating` et `is-speaking` existent, mais leur activation effective par le JavaScript doit être vérifiée.
+- Les états CSS `is-generating` et `is-speaking` existent, mais le contrôle direct de `frontend/index.html` confirme qu'aucune activation JavaScript de ces classes n'est présente dans ce fichier. L'animation de l'avatar pendant la génération ou la parole n'est donc pas actuellement démontrée.
 - Aucun lien vérifié n'établit actuellement une animation synchronisée avec les phases réelles du moteur (écoute, compréhension, recherche juridique, génération, erreur, réponse terminée).
 - Le rendu observé est une animation CSS 2D ; ne pas le présenter comme une sphère 3D ou un moteur audio-réactif.
 
