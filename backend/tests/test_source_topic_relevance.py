@@ -565,6 +565,20 @@ def test_union_assistance_topic_does_not_match_generic_union_representative_righ
     assert "UNION_ASSISTANCE" in _matched_topic_families(question)
     assert is_topic_relevant_source(question, unrelated) is False
 
+def test_nbi_queries_target_fpt_cgfp_and_implementing_decrees_only():
+    question = "C est quoi une NBI et comment son montant est-il calculé ?"
+    assert _build_targeted_cgfp_article_queries(question, "FPT") == [
+        "article L712-12", "article L712-13",
+    ]
+    assert _build_targeted_cgfp_article_queries(question, "FPE") == []
+    queries = _build_targeted_regulatory_queries(question, "FPT")
+    assert any("93-863" in query for query in queries)
+    assert any("2006-779" in query for query in queries)
+    assert any("2006-780" in query for query in queries)
+    assert _build_targeted_regulatory_queries(question, "FPE") == []
+    assert _build_targeted_regulatory_queries(question, "FPH") == []
+
+
 def test_health_regulatory_queries_stay_with_the_selected_versant():
     fpe = _build_targeted_regulatory_queries(
         "Un agent demande un temps partiel thérapeutique après un accident de service.",
