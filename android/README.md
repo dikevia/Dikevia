@@ -16,7 +16,7 @@ Le fait de disposer de deux APK ne signifie donc pas que les interfaces sont nat
 
 Dikévia doit être une application Android et iOS native en priorité. Le web reste une interface complémentaire. L'édition standard contient l'assistant juridique conversationnel ; l'édition Administration est dédiée au pilotage et ne doit pas exposer le chatbot agent.
 
-La référence visuelle est JARVIS, documentée dans [l'identité visuelle JARVIS](../docs/60_IDENTITE_VISUELLE_JARVIS.md). Ne pas réintroduire l'identité Émeraude & Or.
+La référence visuelle est JURIS, documentée dans [l'identité visuelle JURIS](../docs/60_IDENTITE_VISUELLE_JURIS.md). Ne pas réintroduire l'identité Émeraude & Or.
 
 ## Prototype natif historique — non intégrable tel quel
 
@@ -30,7 +30,7 @@ Elle ne peut pas être fusionnée directement :
 - une seule activité monolithique d'environ 500 lignes ;
 - aucune preuve que les endpoints utilisés correspondent tous aux contrats actuels de `main`.
 
-Le prototype doit être traité comme une référence de composants et de flux, pas comme une base de livraison. Toute récupération doit adapter Auth0, les contrats API, l'identité JARVIS et les éditions standard/administration.
+Le prototype doit être traité comme une référence de composants et de flux, pas comme une base de livraison. Toute récupération doit adapter Auth0, les contrats API, l'identité JURIS et les éditions standard/administration.
 
 ## Construction actuelle
 
@@ -49,7 +49,7 @@ Le build ne prouve ni la conformité native, ni la connexion Auth0 sur appareil 
 - Base URL API injectée par configuration de build/environnement, jamais ancienne URL Render codée en dur.
 - Jetons stockés selon les recommandations de sécurité Android/iOS, pas dans les logs ni les préférences non chiffrées.
 - Contrats API vérifiés contre `main`, autorisations contrôlées côté serveur.
-- Sphère JARVIS intégrée à l'expérience standard et réagissant uniquement à des états réellement émis par l'application/backend.
+- Sphère JURIS intégrée à l'expérience standard et réagissant uniquement à des états réellement émis par l'application/backend.
 - Interface Administration séparée du parcours agent, sans chatbot conversationnel.
 - Tests unitaires, tests UI, tests OIDC, tests API, accessibilité et essais sur appareils physiques.
 - Signature de production et secrets conservés hors Git.
