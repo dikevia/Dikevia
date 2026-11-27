@@ -181,3 +181,12 @@ Lors de l'audit Render précédent, un seul workspace Render était visible ; le
 Le document provisoire `docs/60_SYSTEME_DESIGN_EMERAUDE_OR.md` a été supprimé : la direction Émeraude & Or avait été abandonnée. La référence JARVIS a été retrouvée directement dans `frontend/dikevia-chat-theme.css` sur `main` (bloc final « DIKEVIA JARVIS — palette verrouillée : glacier / acier / bleu nuit »), ainsi que dans les commentaires Android.
 
 Le document `docs/60_IDENTITE_VISUELLE_JARVIS.md` décrit maintenant cette source de vérité. Le code comporte déjà une sphère d'accueil bleue avec anneaux et pulsation CSS, ainsi que des styles prévus pour les états `is-generating` et `is-speaking`. En revanche, il reste à vérifier que ces états sont effectivement pilotés par le JavaScript et à concevoir une sphère persistante réactive aux états réels du moteur. Ne pas présenter l'animation actuelle comme une sphère 3D ou audio-réactive.
+
+### Audit mobile approfondi
+
+L'analyse de `android/` sur `main` confirme que les deux flavors Android sont des WebView, pas des applications natives. Aucun projet iOS n'a été retrouvé à la racine ni dans les branches recherchées par les termes `ios`, `native`, `mobile` et `design`.
+
+La branche `android/native-compose-integration` fournit des composants Jetpack Compose utiles, mais reste non intégrable telle quelle : API Render historique, issuer Keycloak, client OIDC Keycloak, palette Émeraude & Or, activité monolithique et session non persistée après fermeture complète. Le diff est très divergent (192 commits en avance, 2 130 en retard au moment du contrôle). Elle ne doit pas être fusionnée globalement.
+
+Les détails de l'audit et la trajectoire Android Compose / iOS SwiftUI sont dans `docs/61_AUDIT_MOBILE_ET_MIGRATION_NATIVE.md`. Le README Android a été rectifié pour ne plus présenter les WebView comme des applications natives.
+
