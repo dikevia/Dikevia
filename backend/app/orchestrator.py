@@ -2344,7 +2344,7 @@ class LegalOrchestrator:
                                     )
                                 # The model is instructed to put the direct answer first.
                                 # Render it immediately instead of prefacing it with legal boilerplate.
-                                rendered_claims = []
+                                rendered_claims = ["Réponse et analyse :"]
                                 unique_sources = {}
                                 for claim in claims:
                                     source_id = claim["source_id"]
