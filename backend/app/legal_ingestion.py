@@ -318,26 +318,57 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
     return None
 
 def _administrative_case_number_matches_body(case_number: str, body: str) -> bool:
-    """Reject XML records whose docket metadata contradicts the opening procedural text.
+    """Reject only a clear mismatch in the decision's own opening procedure.
 
-    The monthly feed can contain XML metadata whose Numero_Dossier does not match
-    the case number stated in the decision body. We only compare docket numbers
-    attached to an opening request/application registration; incidental citations
-    later in the decision must not be used to infer the record identity.
-    If the opening text contains no recognizable docket number, retain the record
-    and let the other provenance checks decide its eligibility.
+    CAA decisions often repeat the lower court's docket before the section
+    describing the appeal. TA decisions may cite related proceedings later in
+    the introductory material. Those references must not be mistaken for the
+    current XML record's docket number.
     """
-    expected = re.sub(r"\D", "", str(case_number or ""))
+    def normalize_docket(value: str) -> str:
+        token = re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+        # Some CAA texts omit zero-padding present in Numero_Dossier.
+        match = re.fullmatch(r"(\d{2}[A-Z]{2})(\d+)", token)
+        if match:
+            return match.group(1) + str(int(match.group(2)))
+        if token.isdigit():
+            return str(int(token))
+        return token
+
+    expected = normalize_docket(case_number)
     if not expected:
         return False
+
     opening = clean_text(body or "")[:8000]
+    # For CAA/CE appeals, ignore the "Procédure contentieuse antérieure"
+    # section and inspect the section for the current court.
+    current_procedure = re.search(
+        r"proc[eé]dure\s+devant\s+(?:la\s+cour|le\s+conseil\s+d['’]e?tat|le\s+tribunal)\s*:?",
+        opening,
+        re.IGNORECASE,
+    )
+    if current_procedure:
+        opening = opening[current_procedure.end():]
+
+    # Stop before the list of documents/procedural references, which may cite
+    # another docket unrelated to the decision's own registration.
+    opening = re.split(
+        r"\n\s*(?:Vu\b|Consid[eé]rant\b)",
+        opening,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0]
+
     pattern = re.compile(
         r"(?:requ[eê]te|demande|appel|instance)[^\n.]{0,500}?"
         r"(?:enregistr[eé]e?|inscrit[e]?e?|introduit[e]?e?)[^\n.]{0,120}?"
-        r"(?:sous\s+le\s+)?(?:n[°ºo]|num[eé]ro)\s*[:：]?\s*(\d{5,10})",
+        r"(?:sous\s+le\s+)?(?:n[°ºo]|num[eé]ro)\s*[:：]?\s*([A-Z0-9]{5,15})\b",
         re.IGNORECASE,
     )
-    docket_numbers = {match.group(1) for match in pattern.finditer(opening)}
+    docket_numbers = {
+        normalize_docket(match.group(1))
+        for match in pattern.finditer(opening)
+    }
     return not docket_numbers or expected in docket_numbers
 
 
