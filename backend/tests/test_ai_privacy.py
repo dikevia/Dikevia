@@ -72,6 +72,28 @@ def test_every_user_text_provider_path_applies_direct_identifier_minimization():
 
 
 
+def test_provider_error_logs_never_include_response_body(caplog):
+    import httpx
+
+    from app.ai_provider import _log_provider_failure
+
+    response = httpx.Response(
+        400,
+        request=httpx.Request("POST", "https://provider.invalid/chat/completions"),
+        text="Invalid request for agent@example.fr",
+    )
+    error = httpx.HTTPStatusError(
+        "provider rejected request", request=response.request, response=response,
+    )
+
+    with caplog.at_level("WARNING", logger="app.ai_provider"):
+        _log_provider_failure("privacy_test", error)
+
+    assert "agent@example.fr" not in caplog.text
+    assert "http_status=400" in caplog.text
+    assert "Invalid request" not in caplog.text
+
+
 def test_personal_documents_are_excluded_from_ai_without_explicit_opt_in():
     from app.ai_provider import _usable_document_sources, SYSTEM_PROMPT
 
