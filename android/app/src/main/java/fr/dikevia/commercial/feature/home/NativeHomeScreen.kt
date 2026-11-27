@@ -19,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -193,6 +194,40 @@ fun NativeHomeScreen(
                             placeholder = { Text(if (publicService == "FPE") "Ministère, rectorat, préfecture…" else "Centre hospitalier, CHU…") },
                             singleLine = true,
                             shape = RoundedCornerShape(14.dp)
+                        )
+                    }
+                    Text("Période de la situation (facultatif)", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = factsStartDate,
+                            onValueChange = onFactsStartDateChange,
+                            modifier = Modifier.weight(1f),
+                            label = { Text("Début") },
+                            placeholder = { Text("AAAA-MM-JJ") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        OutlinedTextField(
+                            value = factsEndDate,
+                            onValueChange = onFactsEndDateChange,
+                            modifier = Modifier.weight(1f),
+                            label = { Text("Fin") },
+                            placeholder = { Text("AAAA-MM-JJ") },
+                            enabled = !situationOngoing,
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Checkbox(checked = situationOngoing, onCheckedChange = onSituationOngoingChange)
+                        Text("La situation est toujours en cours", color = Navy, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Checkbox(checked = confirmLocalDocumentAiTransfer, onCheckedChange = onConfirmLocalDocumentAiTransferChange)
+                        Text(
+                            "Autoriser, pour cette demande, la transmission d'extraits de documents locaux au fournisseur IA",
+                            color = Color(0xFF52677C),
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                     if (authenticated) {
