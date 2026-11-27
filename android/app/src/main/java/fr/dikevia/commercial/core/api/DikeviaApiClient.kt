@@ -59,11 +59,15 @@ class DikeviaApiClient {
         idToken: String,
         organizationId: String,
         question: String,
+        publicService: String,
+        employer: String,
         conversationId: String? = null
     ): DikeviaAnswer {
+        require(publicService in setOf("FPT", "FPE", "FPH")) { "Versant de la fonction publique invalide." }
+        require(employer.isNotBlank()) { "Précisez l'employeur ou choisissez « National / non précisé »." }
         val payload = JSONObject()
-            .put("employer", "NATIONAL")
-            .put("public_service", "FPT")
+            .put("employer", employer)
+            .put("public_service", publicService)
             .put("question", question)
         if (!conversationId.isNullOrBlank()) payload.put("conversation_id", conversationId)
         val response = request(
