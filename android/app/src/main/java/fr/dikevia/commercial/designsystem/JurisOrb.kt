@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.semantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -37,7 +37,7 @@ enum class JurisOrbState(val accessibilityLabel: String, val pulseDurationMs: In
 }
 
 /**
- * JARVIS visual primitive: glacier/steel/navy palette, luminous core,
+ * JURIS visual primitive: glacier/steel/navy palette, luminous core,
  * concentric rings and restrained organic breathing.
  *
  * The caller must pass state transitions driven by actual UI/backend events.
