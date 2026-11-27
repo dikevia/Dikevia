@@ -420,6 +420,11 @@ def assess_cst_fs_competence_routing(
     base = {
         "legal_conclusion": False,
         "references": ["CGFP R. 253-79", "CGFP R. 253-80", "CGFP R. 253-81"],
+        "official_references": [
+            {"article": "CGFP R. 253-79", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549927"},
+            {"article": "CGFP R. 253-80", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051968704"},
+            {"article": "CGFP R. 253-81", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549931"},
+        ],
     }
     if formation_specialisee_exists is None:
         return {**base, "status": "FS_EXISTENCE_TO_VERIFY", "notice": "Préciser si une formation spécialisée a été instituée et vérifier son périmètre avant de répartir les compétences."}
