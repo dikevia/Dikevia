@@ -28,6 +28,8 @@ _CLARIFICATION_REPLY = re.compile(
     r"depuis\s+(?:le\s+)?(?:\d|janvier\b|février\b|mars\b|avril\b|"
     r"mai\b|juin\b|juillet\b|août\b|septembre\b|octobre\b|"
     r"novembre\b|décembre\b)|"
+    r"je\s+ne\s+suis\s+(?:plus|pas)\s+(?:à|a)\s+temps\s+(?:partiel|complet|non\s+complet)\b|"
+    r"je\s+ne\s+suis\s+plus\s+en\s+(?:cdi|cdd)\b|"
     r"à\s+temps\b|à\s+\d{1,3}\s*%|"
     r"en\s+(?:cdi|cdd|catégorie\s+[abc]|classe\s+normale)\b|"
     r"titulaire\b|contractuel(?:le)?\b|stagiaire\b|fonctionnaire\b|"
