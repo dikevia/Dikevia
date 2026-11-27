@@ -7,7 +7,7 @@ Les deux variantes Android actuellement présentes (`standard` et `admin`) sont 
 - `standard` : package `fr.dikevia.commercial`, avec suffixe `.beta` en debug.
 - `admin` : package `fr.dikevia.admin`, avec suffixe `.beta` en debug.
 - Les deux variantes chargent actuellement le même hôte staging Render, avec un paramètre de mode différent.
-- La liste des hôtes de confiance contient encore plusieurs hôtes Render historiques et un ancien hôte Keycloak : cette configuration est transitoire et ne doit pas servir de référence de production.
+- La liste des hôtes de confiance a été réduite à l'hôte staging actif et à l'issuer Auth0 de développement. Les anciens hôtes Render API et Keycloak ne sont plus autorisés à rester dans la WebView.
 - Le flux Auth0 dans la WebView n'est pas validé sur appareil réel.
 
 Le fait de disposer de deux APK ne signifie donc pas que les interfaces sont natives. Ne pas annoncer une application Android native terminée.
