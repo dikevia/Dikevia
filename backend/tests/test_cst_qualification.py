@@ -11,6 +11,8 @@ from app.cst_qualification import (
     qualify_cst_topic,
     qualify_fs_topic,
     assess_cst_fs_competence_routing,
+    FS_OPERATIONAL_RULES,
+    qualify_fs_operational_topic,
 )
 from app.instances import prepare_instance
 
@@ -434,3 +436,89 @@ def test_fs_major_work_and_new_technology_topics_are_detected_as_candidates():
     assert any(item["reference"] == "R. 253-25, 2°" for item in new_technology["candidates"])
     assert major_change["legal_conclusion"] is False
     assert new_technology["legal_conclusion"] is False
+
+
+def test_fs_operational_catalog_covers_visits_accidents_investigations_expertise_and_dgi():
+    assert {rule["code"] for rule in FS_OPERATIONAL_RULES} == {
+        "risk_analysis_prevention",
+        "service_visit",
+        "serious_accident",
+        "mandatory_investigation",
+        "neighbor_nuisance",
+        "certified_expert",
+        "serious_imminent_danger",
+    }
+
+
+def test_fs_service_visit_candidate_includes_written_delegation_and_telework_consent():
+    result = qualify_fs_operational_topic("Organisation d'une visite de service en télétravail")
+    candidate = next(item for item in result["candidates"] if item["code"] == "service_visit")
+
+    assert any("délibération" in action for action in candidate["actions_to_check"])
+    assert any("accord écrit préalable" in action for action in candidate["actions_to_check"])
+    assert candidate["reference"] == "CGFP R. 253-41 à R. 253-47"
+    assert result["legal_conclusion"] is False
+
+
+def test_fs_accident_and_investigation_triggers_remain_distinct_candidates():
+    accident = qualify_fs_operational_topic("Accident grave au travail")
+    repeated = qualify_fs_operational_topic("Accidents répétés sur le même poste")
+
+    assert any(item["code"] == "serious_accident" for item in accident["candidates"])
+    assert not any(item["code"] == "mandatory_investigation" for item in accident["candidates"])
+    assert any(item["code"] == "mandatory_investigation" for item in repeated["candidates"])
+    assert all(item["status"] == "candidate_a_verifier" for item in repeated["candidates"])
+
+
+def test_fs_dgi_candidate_contains_territorial_24_hour_divergence_and_15_day_followup():
+    result = qualify_fs_operational_topic("Alerte pour danger grave et imminent")
+    candidate = next(item for item in result["candidates"] if item["code"] == "serious_imminent_danger")
+    joined = " ".join(candidate["actions_to_check"])
+
+    assert "registre spécial" in joined
+    assert "24 heures" in joined
+    assert "FPT" in joined
+    assert "quinze jours" in joined
+    assert "R. 253-62" in candidate["reference"]
+    assert result["legal_conclusion"] is False
+
+
+def test_fs_expert_candidate_limits_one_month_deadline_to_fpt_case():
+    result = qualify_fs_operational_topic("Recours à un expert certifié")
+    candidate = next(item for item in result["candidates"] if item["code"] == "certified_expert")
+    joined = " ".join(candidate["actions_to_check"])
+
+    assert "un mois" in joined
+    assert "FPT" in joined
+    assert "hors réorganisation" in joined
+
+
+def test_fs_operational_routing_requires_known_existence_of_specialized_committee():
+    unknown = qualify_fs_operational_topic("Visite de service", formation_specialisee_exists=None)
+    absent = qualify_fs_operational_topic("Visite de service", formation_specialisee_exists=False)
+    present = qualify_fs_operational_topic("Visite de service", formation_specialisee_exists=True)
+
+    assert unknown["instance_routing"] == "INSTANCE_INDETERMINEE"
+    assert absent["instance_routing"] == "CST_SANS_FS_A_EXAMINER"
+    assert present["instance_routing"] == "FS_A_EXAMINER"
+
+
+def test_fs_operational_qualification_is_exposed_in_instance_preparation_and_frontend():
+    from pathlib import Path
+
+    fs = prepare_instance("FS", "Alerte pour danger grave et imminent")
+    cst_without_fs = prepare_instance(
+        "CST",
+        "Visite de service",
+        formation_specialisee_exists=False,
+    )
+    frontend = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+    source = frontend.read_text(encoding="utf-8")
+
+    assert any(
+        item["code"] == "serious_imminent_danger"
+        for item in fs["fs_operational_qualification"]["candidates"]
+    )
+    assert cst_without_fs["fs_operational_qualification"]["instance_routing"] == "CST_SANS_FS_A_EXAMINER"
+    assert "fsOperationalHtml" in source
+    assert "Procédures opérationnelles santé-sécurité" in source
