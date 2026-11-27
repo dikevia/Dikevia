@@ -229,3 +229,48 @@ def test_open_data_zip_accepts_more_than_5000_small_xml_entries():
 
     assert parse_administrative_open_data_zip(payload.getvalue(), "TA_202610.zip") == []
 
+
+
+def test_fpt_scope_rejects_state_employee_with_incidental_commune_reference():
+    from app.legal_ingestion import _is_fpt_employment_case_law
+
+    body = (
+        "Vu la procédure suivante : la requête demande l'annulation de la décision "
+        "du ministre des armées refusant la reconnaissance d'une maladie professionnelle "
+        "à un fonctionnaire. La commune est seulement mentionnée dans les pièces du dossier."
+    )
+    assert not _is_fpt_employment_case_law(
+        "Décision du Tribunal administratif n° 2303018",
+        body,
+        {"scope": "FPT", "analysis_eligible": True},
+    )
+
+
+def test_fpt_scope_accepts_local_authority_hr_decision():
+    from app.legal_ingestion import _is_fpt_employment_case_law
+
+    body = (
+        "Vu la procédure suivante : Mme X demande l'annulation de la décision du maire "
+        "de Montpellier par laquelle elle a été affectée sur un nouvel emploi d'agente "
+        "d'accueil au sein de la police municipale."
+    )
+    assert _is_fpt_employment_case_law(
+        "Décision du Tribunal administratif n° 2401234",
+        body,
+        {"scope": "FPT", "analysis_eligible": True},
+    )
+
+
+def test_fpt_scope_rejects_urban_planning_case_with_incidental_hr_terms():
+    from app.legal_ingestion import _is_fpt_employment_case_law
+
+    body = (
+        "Vu la procédure suivante : la commune demande l'annulation d'un permis de construire. "
+        "Le dossier mentionne par ailleurs un fonctionnaire et une procédure disciplinaire "
+        "dans une pièce sans lien avec le litige."
+    )
+    assert not _is_fpt_employment_case_law(
+        "Décision de la cour administrative d'appel",
+        body,
+        {"scope": "FPT", "analysis_eligible": True},
+    )
