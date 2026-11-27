@@ -284,21 +284,22 @@ def test_source_key_resolution_uses_registered_official_and_institutional_source
         "raw_metadata": {"source_id": "wikiterritorial-cnfpt"},
     }) == "CNFPT_WIKITERRITORIAL"
     assert resolve_legal_source_key({
-        "source_type": "LEGIFRANCE_API",
+        "source_type": "LEGIFRANCE_LODA",
     }) == "LEGIFRANCE_PISTE"
     assert resolve_legal_source_key({
-        "source_type": "ARIANEWEB",
+        "source_type": "INSTITUTIONAL_GUIDANCE",
+        "raw_metadata": {"source_id": "arianeweb"},
     }) == "ARIANEWEB"
     assert resolve_legal_source_key({
-        "source_type": "SECONDARY_DOCTRINE",
+        "source_type": "INSTITUTIONAL_GUIDANCE",
         "raw_metadata": {"source_id": "landot"},
     }) == "LANDOT"
     assert resolve_legal_source_key({
-        "source_type": "SECONDARY_DOCTRINE",
+        "source_type": "INSTITUTIONAL_GUIDANCE",
         "raw_metadata": {"source_id": "weka"},
     }) == "WEKA"
     assert resolve_legal_source_key({
-        "source_type": "COMPETITOR",
+        "source_type": "INSTITUTIONAL_GUIDANCE",
         "raw_metadata": {"source_id": "delibia"},
     }) == "DELIBIA"
     assert resolve_legal_source_key({
@@ -307,7 +308,7 @@ def test_source_key_resolution_uses_registered_official_and_institutional_source
     }) == "LEGIFRANCE_PISTE"
     with pytest.raises(ValueError, match="incohérente"):
         resolve_legal_source_key({
-            "source_type": "SECONDARY_DOCTRINE",
+            "source_type": "INSTITUTIONAL_GUIDANCE",
             "source_key": "LEGIFRANCE_PISTE",
             "raw_metadata": {"source_id": "weka"},
         })

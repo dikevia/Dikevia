@@ -152,10 +152,7 @@ def resolve_legal_source_key(item: dict[str, Any]) -> str | None:
     source_id = str(metadata.get("source_id") or "").strip().lower()
     resolved: str | None = None
 
-    if source_type in {
-        "LEGIFRANCE_API", "LEGIFRANCE_LEGI", "LEGIFRANCE_LODA",
-        "LEGIFRANCE_CETAT", "LEGIFRANCE_CETAT_FULL_TEXT", "LEGIFRANCE_JORF",
-    }:
+    if source_type in {"LEGIFRANCE_LEGI", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT", "LEGIFRANCE_JORF"}:
         resolved = "LEGIFRANCE_PISTE"
     elif source_type == "CGFP_SNAPSHOT":
         resolved = "CGFP_SNAPSHOT"
@@ -165,10 +162,9 @@ def resolve_legal_source_key(item: dict[str, Any]) -> str | None:
         resolved = "DILA_CIRCULAIRES"
     elif source_type == "OTHER_OFFICIAL" and metadata.get("import_method") == "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML":
         resolved = "JUSTICE_ADMIN_OPEN_DATA"
-    elif source_type == "ARIANEWEB":
-        resolved = "ARIANEWEB"
     elif source_type == "INSTITUTIONAL_GUIDANCE":
         institutional_sources = {
+            "arianeweb": "ARIANEWEB",
             "cdg-35": "CDG35",
             "cdg-44": "CDG44",
             "cdg-59": "CDG59",
@@ -191,10 +187,6 @@ def resolve_legal_source_key(item: dict[str, Any]) -> str | None:
             "fo-fonction-publique": "FO_FONCTION_PUBLIQUE",
             "solidaires-fonction-publique": "SOLIDAIRES_FONCTION_PUBLIQUE",
             "unsa-fonction-publique": "UNSA_FONCTION_PUBLIQUE",
-        }
-        resolved = institutional_sources.get(source_id)
-    elif source_type == "SECONDARY_DOCTRINE":
-        secondary_sources = {
             "landot": "LANDOT",
             "gazette": "GAZETTE_COMMUNES",
             "gazette-des-communes": "GAZETTE_COMMUNES",
@@ -202,15 +194,11 @@ def resolve_legal_source_key(item: dict[str, Any]) -> str | None:
             "weka": "WEKA",
             "dalloz": "DALLOZ",
             "lexisnexis": "LEXISNEXIS",
-        }
-        resolved = secondary_sources.get(source_id)
-    elif source_type == "COMPETITOR":
-        competitors = {
             "delibia": "DELIBIA",
             "communia": "COMMUNIA",
             "kolectivia": "KOLECTIVIA",
         }
-        resolved = competitors.get(source_id)
+        resolved = institutional_sources.get(source_id)
 
     explicit = item.get("source_key")
     if isinstance(explicit, str) and explicit.strip():
@@ -238,7 +226,7 @@ async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("La politique du registre interdit l'import des métadonnées de cette source.")
     if text and not source_policy["full_text_ingestion_allowed"]:
         raise ValueError("Le texte intégral de cette source n'est pas autorisé à l'ingestion automatique.")
-    if item.get("source_type") == "INSTITUTIONAL_GUIDANCE":
+    if item.get("source_type") == "INSTITUTIONAL_GUIDANCE" and text:
         approved = {"REUSE_APPROVED", "APPROVED"}
         if (
             metadata.get("source_registry_status") not in approved
