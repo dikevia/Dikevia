@@ -653,11 +653,22 @@ def build_legal_conversation_state(
     for record in reversed(records):
         content = str(record.get("content") or "")
         if status_declaration is None:
-            match = _EXPLICIT_STATUS_DECLARATION.search(content)
+            match = re.search(
+                r"\bje ne suis (?:plus|pas|jamais) "
+                r"(?:(?:un|une|agent(?:e)?)\s+)?(?:contractuel(?:le)?s?|"
+                r"stagiaires?|titulaires?|fonctionnaires?)\b",
+                content,
+                re.IGNORECASE,
+            ) or _EXPLICIT_STATUS_DECLARATION.search(content)
             if match:
                 status_declaration = match.group(0)[:180]
         if working_time_declaration is None:
             match = re.search(
+                r"\bje ne suis (?:plus|pas) (?:à|a) temps "
+                r"(?:partiel|complet|non complet)\b",
+                content,
+                re.IGNORECASE,
+            ) or re.search(
                 r"\b(?:je suis|je travaille)\s+(?:à|a)\s+temps\s+"
                 r"(?:partiel|complet|non complet)\b",
                 content,
@@ -667,12 +678,20 @@ def build_legal_conversation_state(
                 working_time_declaration = match.group(0)[:120]
         if contract_declaration is None:
             match = re.search(
-                r"\b(?:je suis en|mon contrat est un)\s+(CDD|CDI)\b",
+                r"\bje ne suis plus en (?:CDD|CDI)\b",
                 content,
                 re.IGNORECASE,
             )
             if match:
-                contract_declaration = match.group(1).upper()
+                contract_declaration = match.group(0)[:40].upper()
+            else:
+                match = re.search(
+                    r"\b(?:je suis en|mon contrat est un)\s+(CDD|CDI)\b",
+                    content,
+                    re.IGNORECASE,
+                )
+                if match:
+                    contract_declaration = match.group(1).upper()
     state["agent_status_declare"] = status_declaration
     state["temps_travail_declare"] = working_time_declaration
     state["type_contrat_declare"] = contract_declaration
