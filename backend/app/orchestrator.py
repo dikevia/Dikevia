@@ -942,7 +942,7 @@ def _provider_context_history(
 
 
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None, founder_cross_encoder_access: bool = False) -> AskResponse:
         request_id = str(uuid4())
         ai_usage_events: list[dict] = []
         answer_started_at = None
@@ -2334,7 +2334,7 @@ class LegalOrchestrator:
                     # Optional local cross-encoder: scores question/document pairs
                     # on CPU. It only changes order; deterministic eligibility,
                     # temporal and citation-integrity gates remain authoritative.
-                    if settings.legal_cross_encoder_enabled:
+                    if settings.legal_cross_encoder_enabled and founder_cross_encoder_access:
                         try:
                             base_ai_sources = await asyncio.to_thread(
                                 rerank_sources_with_cross_encoder,
