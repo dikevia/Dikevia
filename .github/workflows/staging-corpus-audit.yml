@@ -1,23 +1,6 @@
 name: "Dikévia — audit corpus juridique staging"
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/staging-corpus-audit.yml"
-      - "scripts/audit_staging_guidance_eligibility.py"
-      - "scripts/audit_staging_vector_retrieval.py"
-      - "backend/app/legal_assurance.py"
-      - "backend/requirements-embeddings.txt"
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/staging-corpus-audit.yml"
-      - "scripts/audit_staging_guidance_eligibility.py"
-      - "scripts/audit_staging_vector_retrieval.py"
-      - "backend/app/legal_assurance.py"
-      - "backend/requirements-embeddings.txt"
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -27,8 +10,8 @@ jobs:
     env:
       LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ secrets.LEGAL_CORPUS_INGEST_DATABASE_URL }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip

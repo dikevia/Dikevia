@@ -1,22 +1,6 @@
 name: Legal embedding parity
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - "scripts/generate_transformersjs_parity.mjs"
-      - "scripts/compare_legal_embedding_parity.py"
-      - "backend/requirements-embeddings.txt"
-      - "docs/quality/legal_embedding_parity_inputs.example.json"
-      - ".github/workflows/legal-embedding-parity.yml"
-  push:
-    branches: [main]
-    paths:
-      - "scripts/generate_transformersjs_parity.mjs"
-      - "scripts/compare_legal_embedding_parity.py"
-      - "backend/requirements-embeddings.txt"
-      - "docs/quality/legal_embedding_parity_inputs.example.json"
-      - ".github/workflows/legal-embedding-parity.yml"
 permissions:
   contents: read
 concurrency:
@@ -28,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -77,7 +61,7 @@ jobs:
           }, ensure_ascii=False, indent=2))
           PY
       - name: Upload numerical report and raw exports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: legal-embedding-parity-${{ github.run_id }}
           path: |

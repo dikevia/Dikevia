@@ -3,11 +3,6 @@ concurrency:
   group: corpus-public-source-${{ github.ref }}
   cancel-in-progress: true
 on:
-  pull_request:
-    paths:
-      - "corpus_national/sources/registry.json"
-      - "scripts/import_public_guidance_sources.py"
-      - ".github/workflows/corpus-public-source-pilot.yml"
   workflow_dispatch:
     inputs:
       apply_import:
@@ -25,8 +20,8 @@ jobs:
     env:
       LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_import && secrets.LEGAL_CORPUS_INGEST_DATABASE_URL || '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Install collector dependencies
@@ -100,7 +95,7 @@ jobs:
         run: python scripts/import_public_guidance_sources.py --id sig-charte-usage-responsable-ia-2026 --export-json /tmp/sig-charte-usage-responsable-ia.json --download-dir /tmp/public-guidance-originals
         continue-on-error: true
       - name: Archive the extracted public corpus for audit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: service-public-function-public-corpus
           path: |

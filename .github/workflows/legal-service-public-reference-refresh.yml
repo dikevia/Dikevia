@@ -1,11 +1,6 @@
 name: "Dikévia — actualisation ciblée des références Service-Public sur staging"
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/legal-service-public-reference-refresh.yml"
   workflow_dispatch:
     inputs:
       mode:
@@ -31,8 +26,8 @@ jobs:
     env:
       LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ inputs.mode == 'apply-staging' && secrets.LEGAL_CORPUS_INGEST_DATABASE_URL || '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
