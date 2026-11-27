@@ -358,3 +358,100 @@ def calculate_cst_written_request_deadline(
         "legal_conclusion": False,
         "notice": "Si la demande écrite émane d'au moins la moitié des représentants titulaires, le CST doit se réunir dans le délai de deux mois. Vérifier la réception de la demande, la qualité des signataires et les effectifs.",
     }
+
+
+FS_TOPIC_RULES: tuple[dict[str, Any], ...] = (
+    {"code": "fs_health_hygiene_safety", "label": "Protection de la santé physique et mentale, hygiène et sécurité au travail", "article": "R. 253-24, 1°", "keywords": ("santé physique et mentale", "hygiène et sécurité", "hygiene et securite", "sécurité des agents au travail", "securite des agents au travail")},
+    {"code": "fs_work_organization", "label": "Organisation du travail", "article": "R. 253-24, 2°", "keywords": ("organisation du travail",)},
+    {"code": "fs_telework", "label": "Télétravail", "article": "R. 253-24, 3°", "keywords": ("télétravail", "teletravail")},
+    {"code": "fs_disconnection", "label": "Déconnexion et régulation des outils numériques", "article": "R. 253-24, 4°", "keywords": ("droit à la déconnexion", "droit a la deconnexion", "régulation des outils numériques", "regulation des outils numeriques")},
+    {"code": "fs_work_conditions", "label": "Amélioration des conditions de travail", "article": "R. 253-24, 5°", "keywords": ("amélioration des conditions de travail", "amelioration des conditions de travail")},
+    {"code": "fs_duerp", "label": "Élaboration ou mise à jour du document unique d'évaluation des risques professionnels", "article": "R. 253-24, 6°", "keywords": ("document unique d'évaluation des risques", "document unique d evaluation des risques", "duerp")},
+    {"code": "fs_major_work_changes", "label": "Projet important modifiant santé, sécurité ou conditions de travail", "article": "R. 253-25, 1°", "keywords": ("transformation importante des postes", "modification de l'outillage", "changement de produit", "modification des cadences", "normes de productivité", "normes de productivite")},
+    {"code": "fs_new_technology", "label": "Projet important d'introduction de nouvelles technologies susceptible d'affecter santé ou sécurité", "article": "R. 253-25, 2°", "keywords": ("introduction de nouvelles technologies", "nouvelle technologie susceptible")},
+    {"code": "fs_return_to_work", "label": "Mesures de mise, remise ou maintien au travail après accident, invalidité ou handicap", "article": "R. 253-26", "keywords": ("maintien au travail après accident", "maintien au travail apres accident", "aménagement de poste pour handicap", "amenagement de poste pour handicap", "retour au travail après accident", "retour au travail apres accident")},
+    {"code": "fs_incapacity_redeployment", "label": "Mesures générales de reclassement des agents reconnus inaptes", "article": "R. 253-26", "keywords": ("reclassement des agents inaptes", "agents reconnus inaptes")},
+    {"code": "fs_annual_prevention_program", "label": "Programme annuel de prévention des risques professionnels et d'amélioration des conditions de travail", "article": "R. 253-27", "keywords": ("programme annuel de prévention", "programme annuel de prevention", "papt")},
+)
+
+
+def qualify_fs_topic(objet: str) -> dict[str, Any]:
+    """Return candidate FPT specialized-committee consultation topics, not conclusions."""
+    normalized = f" {_fold(objet)} "
+    candidates = []
+    for rule in FS_TOPIC_RULES:
+        matched = next((term for term in rule["keywords"] if f" {_fold(term)} " in normalized), None)
+        if matched:
+            candidates.append({
+                "code": rule["code"],
+                "label": rule["label"],
+                "reference": rule["article"],
+                "matched_term": matched,
+                "status": "candidate_a_verifier",
+            })
+    return {
+        "status": "CANDIDATES_FOUND" if candidates else "NO_TOPIC_MATCH",
+        "candidates": candidates,
+        "legal_conclusion": False,
+        "notice": "Pistes de consultation FS à vérifier au regard du contenu exact du projet, de l'existence et du périmètre de la FS, des exclusions des articles R. 253-24 et R. 253-25 et de l'articulation prévue aux articles R. 253-79 à R. 253-81.",
+        "official_references": [
+            {"article": "CGFP R. 253-24", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549777"},
+            {"article": "CGFP R. 253-25", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549779"},
+            {"article": "CGFP R. 253-26", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549781"},
+            {"article": "CGFP R. 253-27", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549783"},
+        ],
+    }
+
+
+def assess_cst_fs_competence_routing(
+    *,
+    formation_specialisee_exists: bool | None,
+    topic_in_cst_own_competence: bool | None = None,
+    topic_in_fs_mandatory_consultation: bool | None = None,
+    fs_consultation_already_examined: bool | None = None,
+    cst_evocation_initiative: str | None = None,
+    cst_staff_representatives_total: int | None = None,
+    cst_staff_representatives_supporting: int | None = None,
+) -> dict[str, Any]:
+    """Apply the high-level FPT articulation safeguards in CGFP R. 253-79 to R. 253-81."""
+    base = {
+        "legal_conclusion": False,
+        "references": ["CGFP R. 253-79", "CGFP R. 253-80", "CGFP R. 253-81"],
+    }
+    if formation_specialisee_exists is None:
+        return {**base, "status": "FS_EXISTENCE_TO_VERIFY", "notice": "Préciser si une formation spécialisée a été instituée et vérifier son périmètre avant de répartir les compétences."}
+    if formation_specialisee_exists is False:
+        return {**base, "status": "CST_EXERCISES_FS_COMPETENCES", "notice": "En l'absence de formation spécialisée instituée, le CST exerce les compétences attribuées à la formation spécialisée par les sous-sections 1 à 4 de la section 2 du chapitre III du titre V du livre II du CGFP."}
+    if topic_in_cst_own_competence is True and topic_in_fs_mandatory_consultation is True:
+        return {**base, "status": "CST_SOLELY_CONSULTED", "notice": "Lorsque la question ou le projet relève des attributions propres du CST et pourrait aussi relever de la FS, le CST est seul consulté. Vérifier précisément le champ de chaque attribution."}
+    if topic_in_cst_own_competence is None or topic_in_fs_mandatory_consultation is None:
+        return {**base, "status": "COMPETENCE_TO_VERIFY", "notice": "Qualifier séparément les attributions propres du CST et les consultations obligatoires de la FS avant de choisir l'instance."}
+    if topic_in_fs_mandatory_consultation is False:
+        return {**base, "status": "CST_COMPETENCE_TO_EXAMINE" if topic_in_cst_own_competence else "NO_AUTOMATIC_INSTANCE_ROUTING", "notice": "Aucune consultation obligatoire de la FS n'est déclarée. Vérifier les autres compétences et textes applicables."}
+    if fs_consultation_already_examined is None:
+        return {**base, "status": "FS_EXAMINATION_STATUS_TO_VERIFY", "notice": "Vérifier si la consultation obligatoire de la FS a déjà été examinée avant d'envisager la procédure de substitution."}
+    if fs_consultation_already_examined is True:
+        return {**base, "status": "FS_ALREADY_EXAMINED", "notice": "La consultation FS est déclarée déjà examinée ; le mécanisme de substitution de R. 253-81 vise une question qui n'a pas encore été examinée par la FS."}
+    if cst_evocation_initiative not in {"PRESIDENT", "STAFF_REPRESENTATIVES"}:
+        return {**base, "status": "FS_MANDATORY_CONSULTATION_TO_EXAMINE", "notice": "La consultation obligatoire relève en principe de la FS. Le CST ne peut se substituer à elle que dans les conditions de R. 253-81."}
+    if (
+        isinstance(cst_staff_representatives_total, bool)
+        or isinstance(cst_staff_representatives_supporting, bool)
+        or not isinstance(cst_staff_representatives_total, int)
+        or not isinstance(cst_staff_representatives_supporting, int)
+        or cst_staff_representatives_total < 1
+        or cst_staff_representatives_supporting < 0
+        or cst_staff_representatives_supporting > cst_staff_representatives_total
+    ):
+        raise ValueError("Les effectifs de représentants du personnel au CST sont invalides.")
+    minimum = (cst_staff_representatives_total + 1) // 2
+    threshold_met = cst_staff_representatives_supporting >= minimum
+    if not threshold_met:
+        return {**base, "status": "EVOCATION_THRESHOLD_NOT_REACHED", "minimum_supporting_representatives": minimum, "notice": "Le seuil de la moitié des membres représentants du personnel n'est pas atteint sur la base des effectifs déclarés."}
+    return {
+        **base,
+        "status": "CST_OPINION_SUBSTITUTES_FS",
+        "minimum_supporting_representatives": minimum,
+        "initiative": cst_evocation_initiative,
+        "notice": "Sous réserve des conditions de R. 253-81, le CST peut examiner directement la question non encore examinée par la FS ; son avis se substitue alors à celui de la FS. Pour une initiative du président, vérifier l'accord de la moitié des membres représentants du personnel.",
+    }
