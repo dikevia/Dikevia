@@ -18,6 +18,10 @@ class MalwareDetected(RuntimeError):
     pass
 
 
+class OCRUnavailable(RuntimeError):
+    pass
+
+
 @dataclass(frozen=True)
 class ScanResult:
     status: str
@@ -66,16 +70,44 @@ def extract_document_text(data: bytes, mime: str, max_chars: int = 2_000_000) ->
             if reader.is_encrypted:
                 return "", "ENCRYPTED"
             parts: list[str] = []
+            pages_needing_ocr: list[int] = []
             total = 0
-            for page in reader.pages:
+            for page_index, page in enumerate(reader.pages):
                 value = page.extract_text() or ""
-                if value:
+                if value.strip():
                     remaining = max_chars - total
                     if remaining <= 0:
                         break
                     parts.append(value[:remaining])
                     total += min(len(value), remaining)
+                else:
+                    pages_needing_ocr.append(page_index)
+
+            ocr_status = "NOT_NEEDED"
+            if pages_needing_ocr and total < max_chars:
+                page_limit = 10
+                selected_pages = pages_needing_ocr[:page_limit]
+                try:
+                    ocr_text, ocr_failed = _ocr_pdf_pages(data, selected_pages, max_chars - total)
+                    if ocr_text:
+                        parts.append(ocr_text)
+                        total += len(ocr_text)
+                        ocr_status = "PARTIAL_OCR_LIMIT" if len(pages_needing_ocr) > page_limit else "OCR_EXTRACTED"
+                    elif ocr_failed:
+                        ocr_status = "OCR_FAILED"
+                    else:
+                        ocr_status = "OCR_NO_TEXT"
+                    if len(pages_needing_ocr) > page_limit and not ocr_text:
+                        ocr_status = "OCR_LIMIT"
+                except OCRUnavailable:
+                    ocr_status = "PARTIAL_OCR_UNAVAILABLE" if total else "OCR_UNAVAILABLE"
+
             text = "\n\n".join(parts).strip()
+            if ocr_status != "NOT_NEEDED":
+                if not text:
+                    return "", ocr_status
+                if ocr_status != "OCR_EXTRACTED":
+                    return text[:max_chars], ocr_status
         elif mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
             with zipfile.ZipFile(BytesIO(data)) as archive:
                 info = archive.getinfo("word/document.xml")
@@ -98,6 +130,54 @@ def extract_document_text(data: bytes, mime: str, max_chars: int = 2_000_000) ->
     if not text:
         return "", "NO_TEXT"
     return text[:max_chars], "EXTRACTED"
+
+
+
+def _ocr_pdf_pages(data: bytes, page_indices: list[int], max_chars: int) -> tuple[str, bool]:
+    """OCR only pages with no text, with strict page, time and output bounds."""
+    try:
+        import pypdfium2 as pdfium
+        import pytesseract
+    except ImportError as exc:
+        raise OCRUnavailable("Local OCR dependencies are unavailable") from exc
+
+    document = None
+    extracted: list[str] = []
+    total = 0
+    failed = False
+    try:
+        document = pdfium.PdfDocument(data)
+        for page_index in page_indices:
+            if total >= max_chars:
+                break
+            page = bitmap = image = None
+            try:
+                page = document[page_index]
+                bitmap = page.render(scale=1.5)
+                image = bitmap.to_pil()
+                value = pytesseract.image_to_string(image, lang="fra+eng", config="--psm 6", timeout=3).strip()
+                if value:
+                    value = value[:max_chars - total]
+                    extracted.append(value)
+                    total += len(value)
+            except Exception as exc:
+                if exc.__class__.__name__ == "TesseractNotFoundError":
+                    raise OCRUnavailable("Local Tesseract executable is unavailable") from exc
+                failed = True
+            finally:
+                for resource in (image, bitmap, page):
+                    close = getattr(resource, "close", None)
+                    if callable(close):
+                        close()
+    except OCRUnavailable:
+        raise
+    except Exception:
+        failed = True
+    finally:
+        close = getattr(document, "close", None)
+        if callable(close):
+            close()
+    return "\n\n".join(extracted), failed
 
 
 def document_sha256_matches(data: bytes, expected: str | None) -> bool:

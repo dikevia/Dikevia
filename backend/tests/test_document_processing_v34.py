@@ -205,3 +205,89 @@ def test_document_version_number_is_allocated_under_document_row_lock():
     assert transaction_start < lock_position < version_position < file_position < insert_position
     assert "storage_key=None" in route
     assert "if storage_key:" in route
+
+
+def test_scanned_pdf_uses_bounded_local_ocr(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+    class FakePage:
+        def extract_text(self): return ""
+    class FakeBitmap:
+        def to_pil(self): return object()
+        def close(self): pass
+    class FakeRenderedPage:
+        def render(self, scale):
+            assert scale == 1.5
+            return FakeBitmap()
+        def close(self): pass
+    class FakePdfiumDocument:
+        def __init__(self, data): pass
+        def __getitem__(self, index): return FakeRenderedPage()
+        def close(self): pass
+    class FakePdfReader:
+        def __init__(self, stream, strict=False):
+            self.is_encrypted = False
+            self.pages = [FakePage()]
+    calls = []
+    def fake_ocr(image, lang, config, timeout):
+        calls.append((lang, config, timeout))
+        return "Décision administrative"
+    monkeypatch.setitem(sys.modules, "pypdf", SimpleNamespace(PdfReader=FakePdfReader))
+    monkeypatch.setitem(sys.modules, "pypdfium2", SimpleNamespace(PdfDocument=FakePdfiumDocument))
+    monkeypatch.setitem(sys.modules, "pytesseract", SimpleNamespace(image_to_string=fake_ocr))
+    text, status = extract_document_text(b"%PDF-fake", "application/pdf")
+    assert text == "Décision administrative"
+    assert status == "OCR_EXTRACTED"
+    assert calls == [("fra+eng", "--psm 6", 3)]
+
+
+def test_ocr_is_skipped_when_pdf_already_contains_text(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+    class FakePage:
+        def extract_text(self): return "Texte PDF natif"
+    class FakePdfReader:
+        def __init__(self, stream, strict=False):
+            self.is_encrypted = False
+            self.pages = [FakePage()]
+    monkeypatch.setitem(sys.modules, "pypdf", SimpleNamespace(PdfReader=FakePdfReader))
+    monkeypatch.delitem(sys.modules, "pypdfium2", raising=False)
+    monkeypatch.delitem(sys.modules, "pytesseract", raising=False)
+    text, status = extract_document_text(b"%PDF-fake", "application/pdf")
+    assert text == "Texte PDF natif"
+    assert status == "EXTRACTED"
+
+
+def test_ocr_page_count_is_bounded(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+    class FakePage:
+        def extract_text(self): return ""
+    class FakeBitmap:
+        def to_pil(self): return object()
+        def close(self): pass
+    class FakeRenderedPage:
+        def render(self, scale): return FakeBitmap()
+        def close(self): pass
+    class FakePdfiumDocument:
+        def __init__(self, data): self.rendered = 0
+        def __getitem__(self, index):
+            self.rendered += 1
+            return FakeRenderedPage()
+        def close(self): pass
+    instances = []
+    def make_pdfium(data):
+        item = FakePdfiumDocument(data)
+        instances.append(item)
+        return item
+    class FakePdfReader:
+        def __init__(self, stream, strict=False):
+            self.is_encrypted = False
+            self.pages = [FakePage() for _ in range(12)]
+    monkeypatch.setitem(sys.modules, "pypdf", SimpleNamespace(PdfReader=FakePdfReader))
+    monkeypatch.setitem(sys.modules, "pypdfium2", SimpleNamespace(PdfDocument=make_pdfium))
+    monkeypatch.setitem(sys.modules, "pytesseract", SimpleNamespace(image_to_string=lambda *a, **k: ""))
+    text, status = extract_document_text(b"%PDF-fake", "application/pdf")
+    assert text == ""
+    assert status == "OCR_LIMIT"
+    assert instances[0].rendered == 10
