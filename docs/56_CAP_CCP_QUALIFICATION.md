@@ -71,5 +71,5 @@ Ces saisines à la demande de l'agent sont distinctes des avis obligatoires de R
 
 - [CGFP R. 263-6 à R. 263-10 — CAP territoriales](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050550427/2026-10-29)
 - [CGFP R. 272-19 à R. 272-21 — CCP territoriales](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050550837/)
-- [CGFP L. 533-1 — échelle des sanctions des fonctionnaires](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044423132/)
+- [CGFP L. 533-1 — échelle des sanctions des fonctionnaires](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044425388/)
 - [Décret n° 88-145 — agents contractuels territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/)
