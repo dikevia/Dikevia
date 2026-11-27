@@ -1122,7 +1122,7 @@ async def prepare_social_instance(
     """Prepare a structured CST/CAP/CCP/FS checklist for active union subscribers."""
     objet = payload.get("objet")
     formation_specialisee_exists = payload.get("formation_specialisee_exists")
-    if formation_specialisee_exists not in (None, True, False):
+    if formation_specialisee_exists is not None and not isinstance(formation_specialisee_exists, bool):
         raise HTTPException(422, "formation_specialisee_exists doit être un booléen ou absent.")
     try:
         if legifrance.configured:
