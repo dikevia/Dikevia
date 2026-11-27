@@ -10,7 +10,9 @@ Le filtre reconnaît et masque actuellement :
 - adresses e-mail ;
 - numéros de téléphone français ;
 - numéros NIR français ;
-- IBAN.
+- IBAN ;
+- matricules et identifiants d'agent explicitement étiquetés ;
+- dates de naissance explicitement étiquetées, dont seul l'année est conservée.
 
 La minimisation récursive couvre aussi les extraits documentaires, les titres et métadonnées, les éléments de contexte conversationnel et les données provenant des documents personnels lorsqu'un transfert a été explicitement autorisé.
 
@@ -25,7 +27,7 @@ Ce mécanisme est une **minimisation partielle**, pas une anonymisation ni une p
 Il ne détecte pas de façon fiable :
 - les noms et prénoms ;
 - les adresses postales ;
-- les matricules et identifiants internes propres aux employeurs ;
+- les matricules et identifiants internes non étiquetés ou présentés dans un format non reconnu ;
 - les dates de naissance lorsqu'elles ne sont pas identifiables par leur contexte ;
 - les données sensibles ou les éléments indirectement identifiants dans un récit libre ;
 - les combinaisons d'informations qui permettent une réidentification.
