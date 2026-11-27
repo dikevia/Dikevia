@@ -292,7 +292,38 @@ def prepare_instance(
     normalized = f" {_fold(objet)} "
     points = []
     documents = []
+    first_group_sanction_terms = (
+        "avertissement",
+        "blâme",
+        "exclusion temporaire de trois jours",
+        "exclusion temporaire de fonctions pour une durée maximale de trois jours",
+        "premier groupe",
+    )
+    higher_group_sanction_terms = (
+        "deuxième groupe",
+        "troisième groupe",
+        "quatrième groupe",
+        "quatre à quinze jours",
+        "seize jours à deux ans",
+        "radiation du tableau d'avancement",
+        "abaissement d'échelon",
+        "rétrogradation",
+        "révocation",
+        "mise à la retraite d'office",
+        "exclusion temporaire de quatre jours",
+    )
+    first_group_only = (
+        any(f" {_fold(term)} " in normalized for term in first_group_sanction_terms)
+        and not any(f" {_fold(term)} " in normalized for term in higher_group_sanction_terms)
+    )
+
     for rule_key, rule in INSTANCE_RULES[key].items():
+        if (
+            rule_key == "discipline"
+            and key in {"CAP", "CCP"}
+            and first_group_only
+        ):
+            continue
         if any(f" {_fold(word)} " in normalized for word in rule["keywords"]):
             points.append({
                 "code": rule_key,
