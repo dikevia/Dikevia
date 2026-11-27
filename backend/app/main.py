@@ -1160,7 +1160,7 @@ async def prepare_social_instance(
     if cst_written_request_raw and instance.upper() != "CST":
         raise HTTPException(422, "La demande de réunion dans le délai de deux mois concerne ici le CST territorial.")
     if instance.upper() not in {"CST", "FS"} and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw, cst_written_request_raw, fs_titular_representatives, fs_requesting_titular_representatives, annual_health_safety_count, annual_meeting_count)):
-        raise HTTPException(422, "Les paramètres de calendrier CST/FS ne sont disponibles que pour une préparation CST.")
+        raise HTTPException(422, "Les paramètres de calendrier sont réservés aux préparations CST ou FS.")
     if annual_meeting_count is not None and (
         isinstance(annual_meeting_count, bool) or not isinstance(annual_meeting_count, int) or annual_meeting_count < 0
     ):
@@ -1197,7 +1197,7 @@ async def prepare_social_instance(
                 meeting_date = date.fromisoformat(meeting_date_raw)
             except (TypeError, ValueError) as exc:
                 raise HTTPException(422, "meeting_date doit être au format AAAA-MM-JJ.") from exc
-            result["cst_meeting_deadlines"] = calculate_cst_meeting_deadlines(meeting_date, urgent=meeting_urgent)
+            result["instance_meeting_deadlines"] = calculate_cst_meeting_deadlines(meeting_date, urgent=meeting_urgent)
         elif meeting_urgent:
             raise HTTPException(422, "Une date de séance est nécessaire pour calculer les délais.")
         fs_context_supplied = any(
