@@ -296,3 +296,35 @@ Contrats de tests à traiter dans le lot Auth0 :
 - `test_v35_runtime_security.py` et `test_legal_knowledge_base.py` utilisent encore `oidc_provider="keycloak"` dans des configurations de test de production. Ces cas doivent être migrés vers Auth0 avec toutes les valeurs Auth0 exigées par la validation de production, sans affaiblir les contrôles généraux de sécurité.
 
 Décision de séquencement affinée : le retrait du provisionnement Keycloak des invitations est techniquement isolable du flux Auth0, mais il doit être committé avec le remplacement des tests d'invitation et l'ajustement des tests de configuration. Ne pas encore supprimer `keycloak_admin.py`, les variables legacy, le template realm, les profils Docker ni le service Render identité. La désactivation physique reste conditionnée à l'inventaire des comptes historiques, à la validation du tenant Auth0 et à un plan de retour arrière. Aucun appel Auth0, aucune écriture DB, aucune modification Render ou déploiement n'a été effectué pendant cet audit.
+
+
+### Complément de comparaison des branches restantes — 27 novembre 2026
+
+La seconde page de recherche GitHub confirme 143 branches au total. Quarante branches de cette page ont été comparées à `main` au cours de cette passe. Les différences de commits ont été contrôlées par fichiers ; les candidats étroits ont été ouverts pour vérifier leur contenu.
+
+Constats vérifiés :
+
+- `fix/p0-ai-usage-outcome-constraint` : la migration `020_ai_usage_outcome_contract.sql` et le test `test_ai_usage_outcome_contract.py` sont déjà présents dans `main` avec les mêmes SHA de blobs. Aucun transfert.
+- `test/provider-http-status-matrix-main` : le test est déjà présent dans `main` et la version de `main` couvre en plus les délais d'attente et le cache de disponibilité. Aucun transfert.
+- `test/beta-capacity-postgres-019` : le test PostgreSQL est déjà présent dans `main` ; la copie de branche est une version antérieure. Aucun transfert.
+- `fix/telemetry-failure-isolation` : le test d'isolation des erreurs de télémétrie est déjà présent dans `main` avec le même SHA de blob. Aucun transfert.
+- `fix/service-public-reference-id-provenance` : les fichiers examinés sont déjà identiques ou dépassés par la version courante. Aucun transfert.
+- `fix/sig-official-source-page-urls` : son registre de sources est plus ancien que celui de `main` et ne doit pas écraser le statut de revue des sources actuelles.
+- `security/runtime-role-guard` : le code de garde runtime est déjà présent dans `main`; seuls des tests complémentaires avaient été repris lors d'une passe précédente. Ne pas remplacer le code applicatif courant.
+- `fix/opt-in-external-startup-diagnostics`, `fix/opt-in-external-startup-diagnostics-v2`, `fix/platform-admin-pool-routing`, `fix/preserve-hard-topic-exclusions-after-semantic`, `fix/require-verified-status-for-in-force`, `fix/verified-legal-status-combined`, `fix/verify-date-filtered-version-id`, `ops/log-shared-corpus-runtime-health`, `ops/pin-production-safety-flags` et `ux/fpe-fph-employer-context` sont des ensembles larges, fortement divergents, dont les modifications touchent simultanément backend, contrats, frontend, CI, corpus et/ou Render. Pas de fusion globale.
+- `integration/beta-commercial-security` est une branche très divergente, contient encore des artefacts Keycloak et des migrations de numérotation incompatible. Elle n'est pas une base de livraison.
+- `ops/keycloak-recovery-workflow` porte sur le rétablissement de l'ancien fournisseur ; elle ne doit pas être reprise dans la cible Auth0.
+- `test/pwa-ci-validation` et `feature/dikevia-pwa-android-shell` concernent une PWA/WebView et ne remplacent pas le socle Android/iOS natif décidé.
+- `refactor/dikevia-shells-2026-11-26` modifie de nombreux fichiers, dont le thème, l'OIDC et les migrations d'identité historiques ; son diff est trop large et comporte des éléments incompatibles avec les règles actuelles.
+- Les branches `release/*` examinées modifient souvent `render.yaml`, des paramètres de capacité bêta ou des tests d'invitation. Les snapshots de déploiement ne sont pas repris sans audit de chaque variable, service et environnement.
+
+Aucune migration SQL de ces branches n'a été exécutée. Aucun service Render, compte, branche GitHub ou volume n'a été supprimé. Aucun déploiement n'a été lancé.
+
+### Vérification technique de l'état mobile et visuel sur main
+
+- `android/app/src/main/java/fr/dikevia/commercial/MainActivity.kt` instancie encore explicitement `android.webkit.WebView`. Les variantes Gradle `standard` et `admin` utilisent la même URL staging avec un paramètre de mode. Le dépôt ne contient donc toujours pas de client Android natif livré.
+- Le prototype `android/native-compose-integration` confirme Jetpack Compose, AppAuth/PKCE et OkHttp, mais ses constantes API et issuer pointent vers l'ancien service Render et Keycloak. Sa palette Kotlin est encore Émeraude & Or. Son activité concentre plusieurs responsabilités et les jetons ne sont pas persistés après fermeture complète. Il ne faut pas copier cette activité ni fusionner la branche.
+- Le CSS `frontend/dikevia-chat-theme.css` conserve des règles historiques Émeraude & Or dans sa première partie. Le bloc JARVIS final applique une palette glacier/acier/bleu nuit aux racines standard et administration. Cette neutralisation dépend des classes de mode posées par l'interface : il faut vérifier les deux modes en rendu réel avant de qualifier toute l'interface de conforme.
+- `frontend/index.html` affiche un texte « Analyse juridique en cours… » pendant l'appel, mais l'audit n'a pas établi de liaison complète des classes d'état JARVIS `is-generating` et `is-speaking` avec des événements réels. La sphère vivante réactive reste à construire ; ne pas simuler une écoute vocale qui n'existe pas.
+
+Conclusion de cette passe : les candidats ciblés qui paraissaient apporter des tests manquants sont, pour les exemples ouverts, déjà consolidés dans `main`. Les branches restantes apportent surtout des versions historiques et des changements groupés. La priorité de travail reste donc l'architecture native Android/iOS et la réduction contrôlée des dépendances Keycloak, pas l'intégration artificielle de commits anciens.
