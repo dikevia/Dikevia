@@ -1401,6 +1401,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 and settings.ai_local_documents_in_chat_enabled
             ),
             personal_user_id=ctx.user_id,
+            founder_cross_encoder_access=bool(founder),
         )
     except Exception as exc:
         failure = _chat_orchestration_failure(conversation_id)
