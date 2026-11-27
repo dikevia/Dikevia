@@ -68,3 +68,12 @@ def test_cst_preparation_exposes_structured_qualification_without_changing_other
     assert cst["cst_qualification"]["legal_conclusion"] is False
     assert cst["cst_qualification"]["candidates"][0]["reference"] == "R. 253-7, 13°"
     assert "cst_qualification" not in cap
+
+def test_cst_preparation_uses_declared_specialized_committee_context():
+    result = prepare_instance(
+        "CST",
+        "Mise à jour du DUERP",
+        formation_specialisee_exists=True,
+    )
+
+    assert result["cst_qualification"]["health_safety_routing"] == "formation_specialisee_a_examiner"
