@@ -309,17 +309,20 @@ def assess_annual_instance_meeting_frequency(
         }
     base_required = 2
     extra_health_required = 0 if formation_specialisee_exists else 1
+    total_required = base_required + extra_health_required
     base_met = meetings_held >= base_required
     health_met = extra_health_required == 0 or health_safety_meetings_held >= extra_health_required
+    total_met = meetings_held >= total_required
     return {
         "instance": "CST",
-        "minimum_annual_meetings": base_required,
+        "minimum_annual_meetings": total_required,
+        "base_minimum_annual_meetings": base_required,
         "meetings_held": meetings_held,
         "base_minimum_reached": base_met,
         "additional_health_safety_meetings_required": extra_health_required,
         "health_safety_meetings_held": health_safety_meetings_held,
         "health_safety_minimum_reached": health_met,
-        "minimum_reached": base_met and health_met,
+        "minimum_reached": base_met and total_met and health_met,
         "status": "MINIMUM_REACHED" if base_met and health_met else "MINIMUM_NOT_YET_REACHED",
         "legal_conclusion": False,
         "reference": "CGFP R. 254-35 et R. 254-36",
