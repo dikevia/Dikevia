@@ -323,7 +323,7 @@ def assess_annual_instance_meeting_frequency(
         "health_safety_meetings_held": health_safety_meetings_held,
         "health_safety_minimum_reached": health_met,
         "minimum_reached": base_met and total_met and health_met,
-        "status": "MINIMUM_REACHED" if base_met and health_met else "MINIMUM_NOT_YET_REACHED",
+        "status": "MINIMUM_REACHED" if base_met and total_met and health_met else "MINIMUM_NOT_YET_REACHED",
         "legal_conclusion": False,
         "reference": "CGFP R. 254-35 et R. 254-36",
         "notice": "Le CST se réunit au moins deux fois par an. En l'absence de formation spécialisée, il tient en outre au moins une réunion annuelle portant sur la santé, la sécurité et les conditions de travail, hors exceptions prévues par le texte.",
