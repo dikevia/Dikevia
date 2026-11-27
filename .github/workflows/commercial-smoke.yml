@@ -10,7 +10,7 @@ jobs:
   smoke-test:
     # Run against the live Render services only on explicit dispatch, after deployment.
     # A PR-time live smoke test would block Render's checksPass deployment and test the old revision.
-    if: github.event_name == 'workflow_dispatch'
+    if: ${{ false }} # Retired: legacy Keycloak probes contact production and may wake billable services.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
