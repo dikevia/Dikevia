@@ -1387,11 +1387,13 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
             ),
             personal_user_id=ctx.user_id,
         )
-    except Exception:
+    except Exception as exc:
         failure = _chat_orchestration_failure(conversation_id)
-        logger.exception(
-            "Chat orchestration failed; a controlled response will be persisted (request_id=%s)",
-            failure.request_id,
+        # Exception messages can contain fragments of a request or database data.
+        # Keep the operational correlation data without logging exception payloads.
+        logger.error(
+            "Chat orchestration failed; a controlled response will be persisted (request_id=%s, error_type=%s).",
+            failure.request_id, type(exc).__name__,
         )
         result = failure
     result.conversation_id = conversation_id
