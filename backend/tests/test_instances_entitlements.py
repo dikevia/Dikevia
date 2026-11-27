@@ -122,7 +122,7 @@ def test_ccp_individual_referral_is_separate_from_mandatory_consultation():
     point = next(item for item in result["points"] if item["code"] == "refusal_individual_decision")
     joined = " ".join(point["questions"])
     assert "R. 272-21" in joined
-    assert "à la demande" in point["label"]
+    assert "à la demande" in point["libelle"]
 
 def test_cap_mandatory_training_refusal_is_distinct_from_agent_requested_referral():
     result = prepare_instance("CAP", "Second refus de formation")
