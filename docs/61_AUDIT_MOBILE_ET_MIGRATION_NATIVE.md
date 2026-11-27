@@ -183,3 +183,29 @@ Le nom de la sphère interactive est **JURIS** (et non JARVIS). Le composant nat
 ## 12. Rectification du nom de la sphère — 27 novembre 2026
 
 Le nom officiel est **JURIS**. Le composant natif, les animations CSS et les tests de régression sont nommés JURIS. Les mentions JARVIS dans les constats historiques décrivent uniquement l'ancien nom employé avant rectification ; elles ne constituent plus la nomenclature du produit.
+
+
+## 13. Première tranche d'implémentation native — 27 novembre 2026
+
+Les premiers fichiers d'interface native ont été ajoutés directement à `main`, sans basculer le point d'entrée de production :
+
+### Android
+- `feature/home/NativeHomeScreen.kt` : écran Compose natif avec l'identité JURIS, les quatre entrées CST/CAP/CCP/F3SCT, et une surface Administration distincte sans chatbot.
+- `NativePreviewActivity.kt` : hôte isolé pour prévisualiser l'interface native.
+- Dépendance `androidx.activity:activity-compose` ajoutée.
+- L'activité de prévisualisation n'est volontairement pas enregistrée dans le manifeste et ne remplace pas `MainActivity`. Les APK actuellement générés continuent donc à démarrer sur le parcours WebView existant.
+
+### iOS
+- Création de `ios/Dikevia.xcodeproj` et du premier target SwiftUI.
+- `ContentView.swift` : écran d'accueil natif, déclinaisons standard et administration.
+- `JurisOrbView.swift` : sphère JURIS native, palette glacier/acier/bleu nuit et respect du réglage de réduction des animations.
+- Les sources et le projet Xcode n'ont pas encore été compilés sur macOS/Xcode.
+
+### Blocages d'intégration non levés
+1. Le tenant Auth0 documenté ne contient qu'un client SPA Web connu. Son Client ID ne doit pas être réutilisé comme client natif.
+2. Aucun client Auth0 Native Android/iOS ni callback mobile n'a été configuré ou validé. La création de cet objet dans le tenant nécessite une action distincte et une autorisation explicite.
+3. Le contrat backend exige un access token d'audience `https://api.dikevia.fr` et un ID token Auth0 vérifié transmis dans `X-OIDC-ID-Token`. Le client mobile doit respecter ce contrat ; aucune vérification ne doit être désactivée.
+4. Le parcours de connexion, la sélection d'organisation, le client API authentifié, l'historique, les documents et les fonctions d'administration ne sont pas encore raccordés aux écrans natifs.
+5. Les nouvelles interfaces ne sont pas encore les points d'entrée livrés. Ne pas annoncer une application native prête ni distribuer un APK/IPA sur cette seule base.
+
+La prochaine tranche doit porter sur l'enregistrement du client Auth0 natif (après autorisation), l'intégration OIDC PKCE avec stockage sécurisé, puis le client API typé et les tests sur appareils réels. Aucun changement de secret, aucune dépense et aucun déploiement n'ont été effectués dans cette tranche.
