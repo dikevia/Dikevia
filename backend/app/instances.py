@@ -294,7 +294,7 @@ INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
         },
         "national_service_reserve_return": {
             "label": "Retour après service national, réserve ou activité liée au SNU",
-            "keywords": ("réemploi après service national", "libération du service national agent contractuel", "retour du service national contractuel", "réserve opérationnelle agent contractuel", "réserve de sécurité civile agent contractuel", "réserve sanitaire agent contractuel", "réemploi après réserve", "instruction militaire agent contractuel", "séjour de cohésion SNU agent contractuel"),
+            "keywords": ("réemploi après service national", "réemploi après libération du service national", "libération du service national", "retour du service national contractuel", "réemploi après une période dans la réserve opérationnelle", "réserve opérationnelle agent contractuel", "réserve de sécurité civile agent contractuel", "réserve sanitaire agent contractuel", "réemploi après réserve", "instruction militaire agent contractuel", "séjour de cohésion SNU agent contractuel"),
             "questions": (
                 "S'agit-il de l'accomplissement du service national actif, d'une période d'instruction militaire, d'une activité dans la réserve opérationnelle, la réserve de sécurité civile ou la réserve sanitaire, ou de fonctions de préparation et d'encadrement des séjours de cohésion du SNU ? Ces situations ont des règles distinctes (article 20).",
                 "Pour le service national actif, l'agent est-il placé dans la position d'accomplissement du service national avec perte du traitement ? À sa libération, le droit au réemploi est-il examiné au titre de l'article 33, sous réserve de l'article 34 ?",
