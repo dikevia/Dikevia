@@ -133,6 +133,26 @@ INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
             ),
             "documents": ("Décision contestée et preuve de notification", "Demande initiale et échanges avec l'autorité", "Recours hiérarchique préalable et réponse lorsqu'ils sont requis", "Pièces démontrant le cas de saisine prévu par R. 263-10"),
         },
+        "mandatory_training_refusal": {
+            "label": "Refus de formation soumis à avis obligatoire de la CAP",
+            "keywords": ("refus congé de formation hygiène sécurité", "refus congé de formation santé sécurité", "refus congé de formation syndicale", "refus cpf au titre de l'article l. 422-13", "second refus de formation", "deuxième refus action de formation"),
+            "questions": (
+                "Le refus concerne-t-il un congé de formation en matière d'hygiène, de sécurité et de conditions de travail, un congé de formation syndicale, le CPF dans le cas de L. 422-13 ou une action de formation après un second refus ?",
+                "Le cas précis relève-t-il de R. 263-7, qui prévoit une saisine pour avis, et non de la saisine à la demande du fonctionnaire prévue à R. 263-10 ?",
+                "Les demandes antérieures, les motifs des refus et leur notification sont-ils établis ?",
+            ),
+            "documents": ("Demandes de congé ou de formation", "Décisions de refus et preuves de notification", "Historique des demandes et refus successifs", "Texte fondant la demande et projet de décision"),
+        },
+        "reinstatement_after_civil_disqualification": {
+            "label": "Réintégration après privation des droits civiques ou interdiction d'emploi public",
+            "keywords": ("réintégration après privation des droits civiques", "réintégration après interdiction d'exercer un emploi public", "réintégration après interdiction emploi public", "réintégration dans la nationalité française"),
+            "questions": (
+                "La demande intervient-elle à l'issue de la période de privation des droits civiques, d'interdiction d'exercer un emploi public ou à la suite de la réintégration dans la nationalité française ?",
+                "L'autorité ayant pouvoir de nomination a-t-elle recueilli l'avis de la commission compétente conformément à R. 263-8 ?",
+                "Les dates de fin de la mesure et la demande de réintégration sont-elles établies ?",
+            ),
+            "documents": ("Décision de privation des droits ou d'interdiction et preuve de sa fin", "Justificatif de réintégration dans la nationalité française le cas échéant", "Demande de réintégration", "Saisine et avis de la CAP"),
+        },
         "disabled_worker_recruitment": {
             "label": "Recrutement contractuel d'un travailleur handicapé",
             "keywords": ("renouvellement contrat travailleur handicapé", "non renouvellement contrat travailleur handicapé", "recrutement contractuel travailleur handicapé"),
