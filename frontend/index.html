@@ -753,7 +753,14 @@ async function prepareInstance(){
   $('#instanceMessage').classList.add('hidden');
   const sections=(result.points||[]).map(p=>'<section><h3>'+esc(p.libelle)+'</h3><h4>Questions à poser</h4><ul>'+(p.questions||[]).map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul><h4>Documents à demander</h4><ul>'+(p.documents||[]).map(d=>'<li>'+esc(d)+'</li>').join('')+'</ul><p class="muted">Qualification : piste de préparation à confirmer.</p></section>').join('');
   const cstQualification=result.cst_qualification||null;
+  const fsQualification=result.fs_qualification||null;
   let cstQualificationHtml='';
+  let fsQualificationHtml='';
+  if(fsQualification){
+   const rows=(fsQualification.candidates||[]).map(item=>'<li><b>'+esc(item.label)+'</b> <span class="muted">('+esc(item.reference)+')</span><br><span class="muted">Déclencheur : '+esc(item.matched_term)+' · piste à vérifier</span></li>').join('');
+   const links=(fsQualification.official_references||[]).map(item=>'<a href="'+esc(item.url)+'" target="_blank" rel="noopener noreferrer">'+esc(item.article)+'</a>').join(' · ');
+   fsQualificationHtml='<section><h3>Consultations FS possibles · qualification indicative</h3>'+(rows?'<ul>'+rows+'</ul>':'<p>Aucun thème du référentiel FS n’a été détecté. Cela ne signifie pas qu’aucune consultation n’est requise.</p>')+'<p class="muted">'+esc(fsQualification.notice||'Pistes documentaires à vérifier.')+'</p><p class="muted">Références : '+links+'</p></section>';
+  }
   if(cstQualification){
    const categoryLabels={consultation:'Consultation pour avis à vérifier',debate:'Débat annuel à vérifier',information:'Information à vérifier'};
    const candidateRows=(cstQualification.candidates||[]).map(item=>'<li><b>'+esc(categoryLabels[item.category]||item.category)+'</b> · '+esc(item.label)+' <span class="muted">('+esc(item.reference)+')</span><br><span class="muted">Déclencheur : '+esc(item.matched_term)+' · qualification indicative</span></li>').join('');
@@ -817,7 +824,7 @@ async function prepareInstance(){
    }).join('');
    researchHtml='<section><h3>Recherche juridique · Légifrance</h3><p><b>'+esc(statusLabels[research.status]||research.status)+'</b> · Date de référence : '+esc(research.requested_date||'—')+'</p>'+(searchRows?'<ul>'+searchRows+'</ul>':'')+(sourceCards||'<p>Aucune source exploitable retournée par les recherches.</p>')+'<div class="pricing-note"><strong>Précaution juridique</strong><span>'+esc(research.notice||'Les résultats sont des pistes documentaires. Leur applicabilité doit être vérifiée.')+' L’absence de résultat ne prouve pas l’absence de règle.</span></div></section>';
   }
-  $('#instanceResult').innerHTML='<h2>Fiche de préparation · '+esc(result.instance)+'</h2><p><b>Objet :</b> '+esc(result.objet)+'</p>'+(sections||'<p>Aucun thème détecté automatiquement. Complétez la préparation manuellement.</p>')+cstQualificationHtml+agendaHtml+calendarHtml+researchHtml+'<div class="pricing-note"><strong>Limite de cette fiche</strong><span>'+esc(result.notice)+'</span></div>';
+  $('#instanceResult').innerHTML='<h2>Fiche de préparation · '+esc(result.instance)+'</h2><p><b>Objet :</b> '+esc(result.objet)+'</p>'+(sections||'<p>Aucun thème détecté automatiquement. Complétez la préparation manuellement.</p>')+cstQualificationHtml+fsQualificationHtml+agendaHtml+calendarHtml+researchHtml+'<div class="pricing-note"><strong>Limite de cette fiche</strong><span>'+esc(result.notice)+'</span></div>';
   $('#instanceResult').classList.remove('hidden');
  }catch(e){msg('#instanceMessage',e.message,true);$('#instanceMessage').classList.remove('hidden');}
 }
