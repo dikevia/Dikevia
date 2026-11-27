@@ -554,9 +554,7 @@ FS_OPERATIONAL_RULES: tuple[dict[str, Any], ...] = (
 )
 
 FS_OPERATIONAL_REFERENCES = [
-    {"article": "CGFP R. 253-35", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549861"},
-    {"article": "CGFP R. 253-37 à R. 253-63", "url": "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050549693/2026-08-01/"},
-    {"article": "CGFP R. 254-42", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050550063"},
+    {"article": "CGFP R. 253-35 à R. 253-63", "url": "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050549693/2026-08-01/"},
 ]
 
 
