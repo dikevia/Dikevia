@@ -490,10 +490,12 @@ def _ai_safe_conversation_history(rows):
                 "employer", "public_service", "facts_date",
                 "facts_start_date", "facts_end_date", "situation_ongoing",
             }
-            record["metadata"] = {
+            safe_metadata = {
                 key: value for key, value in (metadata.items() if isinstance(metadata, dict) else [])
                 if key in allowed
             }
+            if safe_metadata:
+                record["metadata"] = safe_metadata
         safe.append(record)
     return safe
 
