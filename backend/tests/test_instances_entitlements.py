@@ -86,7 +86,7 @@ def test_cap_refusal_of_titularisation_is_distinguished_from_generic_stage_quest
 
 
 def test_cap_individual_referral_mentions_current_r263_10_scope():
-    result = prepare_instance("CAP", "Refus de télétravail")
+    result = prepare_instance("CAP", "Contestation du compte rendu d'entretien professionnel d'un fonctionnaire")
     point = next(item for item in result["points"] if item["code"] == "individual_decision_on_request")
     joined = " ".join(point["questions"])
     assert "R. 263-10" in joined
