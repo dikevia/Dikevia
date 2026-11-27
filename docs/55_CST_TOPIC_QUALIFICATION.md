@@ -142,3 +142,24 @@ Le helper `qualify_fs_operational_topic` ajoute un repérage indicatif des proc�
 - En l'absence de FS, le résultat demande de vérifier les compétences exercées par le CST et les dispositions visant expressément le comité en l'absence de formation spécialisée. Il ne transpose pas mécaniquement toutes les dispositions FS au CST.
 
 Sources officielles : [CGFP, chapitre III — attributions des formations spécialisées](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050549693/2026-08-01/), [CGFP, procédure DGI R. 253-58 à R. 253-65](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050549863/).
+
+
+## Registre santé-sécurité, rapports et suivi des suites
+
+Le repérage opérationnel couvre également les obligations d'information, de rapport et de suivi prévues par les articles suivants :
+
+- **R. 253-30 — rapport annuel et programme de prévention** : saisine annuelle pour avis sur le rapport écrit et le programme annuel de prévention ; le programme précise les actions, leurs conditions d'exécution et leur coût estimé. Les motifs des mesures non réalisées sont annexés au rapport annuel. La FS est associée au suivi du DUERP.
+- **R. 253-35 — registre santé et sécurité au travail** : la FS prend connaissance des observations et suggestions inscrites au registre coté, relatives à la prévention et à l'amélioration des conditions de travail. Ce registre est distinct du registre spécial DGI.
+- **R. 253-47 — rapport de visite** : les missions de la délégation donnent lieu à un rapport présenté à la FS.
+- **R. 253-52 — suites des enquêtes** : la FS est informée des conclusions de chaque enquête et des suites qui leur sont réservées.
+
+Les checklists invitent à distinguer :
+1. le constat ou signalement initial ;
+2. le rapport de la délégation ou les conclusions de l'enquête ;
+3. les propositions ou avis de la FS ;
+4. la décision de l'autorité territoriale ;
+5. les mesures effectivement réalisées, les échéances et les motifs des mesures non réalisées.
+
+**Limite de la version actuelle :** Dikévia génère des points de contrôle et des éléments à demander. Il ne conserve pas encore un registre persistant des recommandations, responsables, échéances et états d'avancement. Ce suivi durable nécessitera un module de dossiers avec droits d'accès, cloisonnement organisationnel, historique et règles de conservation ; il ne doit pas être simulé par une simple fiche temporaire.
+
+Sources officielles : [CGFP R. 253-30](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549791/), [CGFP R. 253-35](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549803/), [CGFP R. 253-47](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549833/), [CGFP R. 253-52](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549847/).
