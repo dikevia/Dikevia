@@ -932,7 +932,7 @@ def test_system_prompt_allows_cautious_legal_analysis_and_documented_options():
     assert "les conséquences juridiques possibles" in SYSTEM_PROMPT
     assert "présente les démarches et recours juridiquement possibles comme des options" in SYSTEM_PROMPT
     assert "ne prétends pas choisir à la place de l'agent" in SYSTEM_PROMPT
-    assert "Ne rends pas de décision opposable" in SYSTEM_PROMPT
+    assert "Tu ne rends pas de décision opposable" in SYSTEM_PROMPT
 
 
 def test_entailment_prompt_distinguishes_legal_evidence_from_user_stated_facts():
