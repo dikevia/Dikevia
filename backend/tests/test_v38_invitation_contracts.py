@@ -9,7 +9,7 @@ def test_invitation_uses_auth0_universal_login_without_keycloak_provisioning():
     assert "KeycloakAdmin" not in main
     assert "keycloak_ready" not in main
     assert 'settings.oidc_provider == "auth0"' in main
-    assert "Auth0 Universal Login owns account creation and email verification." in main
+    assert "Auth0 Universal Login handles authentication and any sign-up/email-verification flow enabled in the tenant." in main
     assert "await asyncio.to_thread(send_invitation_email" in main
     assert 'delivery = "SMTP_EMAIL_SENT"' in main
     assert 'result["invitation_token"] = token' in main  # manual fallback only
