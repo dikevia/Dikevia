@@ -63,6 +63,16 @@ Branches comparées :
 
 Décision : comparer les implémentations Auth0 avec le code courant de `main`, puis reprendre uniquement les corrections non déjà présentes. Ne pas récupérer de fichier de configuration Render ou de migration d'identité sans vérifier les valeurs et l'environnement cible. Ne pas exécuter de migration de comptes sans plan explicite et procédure de retour arrière.
 
+### Audit complémentaire du code Auth0 actuel dans main
+
+- `backend/app/dependencies.py` valide les jetons Auth0, vérifie le jeton d'identité OIDC et peut mapper une identité historique uniquement via issuer/subject et RLS, sans rapprochement par e-mail.
+- `backend/app/security.py` vérifie la signature, issuer, audience, expiration, algorithmes et concordance subject/issuer des jetons.
+- `backend/app/config.py` garde néanmoins le choix `oidc_provider` entre `keycloak` et `auth0`, ainsi que les paramètres Keycloak Admin.
+- `backend/app/main.py` importe encore `KeycloakAdmin` et conserve un chemin de provisionnement Keycloak conditionnel. Le chemin Auth0 s'appuie sur Universal Login et envoie seulement l'invitation Dikévia.
+- `render.yaml` contient encore deux services historiques, l'API sur l'ancienne branche et Keycloak. Son commentaire interdit explicitement une synchronisation sans plan de migration production.
+
+Conclusion : l'authentification Auth0 existe dans le code, mais l'élimination complète de Keycloak n'est pas encore démontrée. La transition doit être effectuée en conservant la compatibilité des comptes et des invitations, puis en retirant le code et service Keycloak seulement après validation du dernier compte et des flux de récupération.
+
 ## 5. Chatbot et recherche juridique
 
 Constats de comparaison :
