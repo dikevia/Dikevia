@@ -266,3 +266,18 @@ Le commit `015fd60a` raccorde ce client à l'écran de prévisualisation Android
 - L'API est actuellement dérivée de l'URL staging inscrite dans les variantes Android. La configuration prod doit être explicitement définie avant une publication.
 - Le contrat API est aligné sur le code actuel : `Authorization: Bearer`, `X-OIDC-ID-Token`, `X-Organization-ID`. Il reste à valider avec un vrai compte et le tenant Auth0 sur appareil physique.
 - La CI backend sur le commit `6d3c7ead` a 10 échecs parmi 1 547 tests : certains sont des assertions frontend devenues obsolètes après le cache-busting et le nouveau gestionnaire de clic ; les autres touchent au prompt juridique, à la normalisation du contexte utilisateur et au statut de vérification des sources. Ils doivent être diagnostiqués séparément, sans désactiver les contrôles juridiques.
+
+
+### 16. Passage conditionnel au lanceur natif et continuité JURIS — 27 novembre 2026
+
+Le commit `20d3d791` ajoute dans `MainActivity` un basculement automatique vers `NativePreviewActivity` dès qu'un véritable Client ID Auth0 natif est injecté à la compilation. Tant que la valeur de garde est présente, l'application conserve la WebView existante. Cela évite de distribuer une application native qui ne peut pas authentifier ses utilisateurs.
+
+Les commits `1a3c7b9f`, `a1d42935` et `6ad5b7f1` ajoutent la continuité conversationnelle :
+- envoi du `conversation_id` au backend sur les tours suivants ;
+- récupération du `conversation_id` retourné par l'API ;
+- conservation du contexte entre questions dans la même organisation ;
+- remise à zéro du contexte lorsque l'utilisateur change d'organisation.
+
+Le backend reste l'autorité pour la vérification des jetons, les adhésions, les droits et la persistance des messages. Le client Android ne décide pas lui-même des droits.
+
+Le build Android des commits précédents `015fd60a` a réussi. Le build du dernier commit `6ad5b7f1` est relancé pour valider les changements du lanceur et du contexte conversationnel. Aucun APK issu du commit final ne doit être considéré comme validé avant la réussite de ce workflow.
