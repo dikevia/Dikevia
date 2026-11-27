@@ -325,7 +325,7 @@ def test_ai_authority_references_must_exist_in_retrieved_sources():
 
 def test_production_requires_distinct_ingestion_database_role():
     from app.config import Settings, validate_runtime_configuration
-    base = dict(app_env="production", oidc_provider="keycloak", database_url="postgresql://cfdt_juris_app:app@db/cfdt_juris",
+    base = dict(app_env="production", oidc_provider="auth0", oidc_client_id="test-auth0-client", oidc_authorization_audience="cfdt-juris", oidc_identity_compat_issuer="https://legacy-issuer.example", oidc_identity_subject_prefix="auth0|", database_url="postgresql://cfdt_juris_app:app@db/cfdt_juris",
         oidc_issuer="https://id.example", oidc_audience="cfdt-juris-api",
         oidc_jwks_url="https://id.example/jwks", cors_origins="https://juris.example",
         aws_endpoint_url_s3="https://storage.example", aws_region="us-east-2",
