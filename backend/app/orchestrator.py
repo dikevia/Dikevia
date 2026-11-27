@@ -913,7 +913,7 @@ def _provider_context_history(
             if not content:
                 continue
             limit = 1200 if item["role"] == "user" else 1800
-            history.append({"role": item["role"], "content": content[-limit:]})
+            history.append({"role": item["role"], "content": content[:limit] if item["role"] == "user" else content[-limit:]})
         if assistant_context and (
             not history or history[-1]["role"] != "assistant"
             or history[-1]["content"] != assistant_context.strip()[-1800:]
