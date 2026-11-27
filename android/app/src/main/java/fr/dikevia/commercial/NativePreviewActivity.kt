@@ -200,6 +200,7 @@ class NativePreviewActivity : FragmentActivity() {
         val endDate = factsEndDate.trim().ifBlank { null }
         val ongoing = situationOngoing
         val allowLocalAiTransfer = confirmLocalDocumentAiTransfer
+        confirmLocalDocumentAiTransfer = false
         if (session == null || organizationId == null) {
             chatStatus = "Authentifiez-vous et sélectionnez une organisation avant d'interroger JURIS."
             return
