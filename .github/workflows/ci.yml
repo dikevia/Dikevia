@@ -224,8 +224,8 @@ jobs:
       - name: Upload developer kit
         uses: actions/upload-artifact@v7
         with:
-          name: CFDT-JURIS-V3.38-Kit-Developpeur
-          path: dist/CFDT_JURIS_V3_38_Kit_Developpeur.zip
+          name: Dikevia-Kit-Developpeur
+          path: dist/DIKEVIA_Kit_Developpeur.zip
           if-no-files-found: error
           retention-days: 30
 

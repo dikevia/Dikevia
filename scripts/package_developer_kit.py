@@ -14,12 +14,21 @@ EXCLUDED_DIRS = {
     ".idea", ".DS_Store",
 }
 ALLOWED_ENV_EXAMPLES = {".env.example", ".env.staging.example"}
+ALLOWED_TOP_LEVEL_DIRS = {
+    ".github", "android", "backend", "benchmark", "corpus_national",
+    "database", "deploy", "docs", "frontend", "scripts",
+}
+ALLOWED_ROOT_FILES = {".gitignore", "Dockerfile", "README.md", "CHANGELOG_V3.md", "render.yaml"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".pem", ".p12", ".pfx", ".zip", ".sqlite", ".db", ".log"}
 EXCLUDED_NAMES = {".env", ".env.runtime", ".env.staging.runtime", ".DS_Store", "id_rsa", "id_ed25519"}
 
 
 def include_file(path: Path) -> bool:
     relative = path.relative_to(ROOT)
+    if len(relative.parts) == 1 and relative.name not in ALLOWED_ROOT_FILES:
+        return False
+    if len(relative.parts) > 1 and relative.parts[0] not in ALLOWED_TOP_LEVEL_DIRS:
+        return False
     if any(part in EXCLUDED_DIRS for part in relative.parts):
         return False
     name = path.name
@@ -34,7 +43,7 @@ def include_file(path: Path) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default="dist/CFDT_JURIS_V3_38_Kit_Developpeur.zip")
+    parser.add_argument("--output", default="dist/DIKEVIA_Kit_Developpeur.zip")
     args = parser.parse_args()
     output = (ROOT / args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -51,7 +60,7 @@ def main() -> int:
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         manifest_lines.append(f"{digest}  {path.relative_to(ROOT).as_posix()}")
 
-    root_name = "CFDT_JURIS_V3_38_Kit_Developpeur"
+    root_name = "DIKEVIA_Kit_Developpeur"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in files:
             archive.write(path, f"{root_name}/{path.relative_to(ROOT).as_posix()}")
