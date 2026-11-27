@@ -103,6 +103,39 @@ La CCP peut être saisie à la demande de l'agent contractuel intéressé pour :
 
 Ces saisines à la demande de l'agent sont distinctes des avis obligatoires de R. 272-19 et du conseil de discipline de R. 272-20.
 
+## Réintégration et réemploi après congé ou disponibilité
+
+### Fonctionnaires territoriaux : disponibilité
+
+Il faut qualifier le fondement de la disponibilité avant de déterminer les droits au retour. Les articles L. 514-6 à L. 514-8 du CGFP ne décrivent pas un régime unique :
+
+- L. 514-6 vise la disponibilité d'office à l'issue de certains congés pour raison de santé et la disponibilité de droit pour raisons familiales. Le suivi du conjoint ou partenaire fait l'objet d'une règle particulière lorsque la disponibilité dépasse trois ans.
+- L. 514-7 prévoit, dans les autres cas et lorsque la disponibilité n'a pas excédé trois ans, la proposition d'une des trois premières vacances dans la collectivité ou l'établissement d'origine.
+- L. 514-8 permet le licenciement après refus successifs de trois postes proposés en vue de la réintégration, situés dans le ressort territorial du cadre d'emplois pour un fonctionnaire territorial, après avis de la CAP. Ce licenciement n'est pas automatique.
+
+Pour une disponibilité sur demande, l'article 26 du décret n° 86-68 impose en principe d'annoncer le souhait de renouveler ou de réintégrer au moins trois mois avant l'échéance, sauf disponibilité n'excédant pas trois mois. En cas d'inaptitude physique empêchant la réintégration, il faut examiner séparément le reclassement, la disponibilité d'office pour raison de santé et les éventuelles issues statutaires. Ne pas confondre la règle des trois premières vacances (L. 514-7) avec les trois refus successifs (L. 514-8).
+
+Le régime de l'article 20 du décret n° 86-68, applicable après le refus d'un emploi à l'issue ou au cours d'un détachement ou d'un congé parental, constitue encore une situation distincte : disponibilité d'office pouvant aller jusqu'à trois ans, propositions d'emplois correspondant au grade et articulation avec L. 514-8.
+
+### Fonctionnaires territoriaux : fin du congé parental
+
+L'article L. 515-11 du CGFP prévoit la réintégration de plein droit du fonctionnaire territorial dans sa collectivité ou son établissement d'origine, au besoin en surnombre. À sa demande et à son choix, la réintégration s'effectue dans l'ancien emploi ou dans un emploi le plus proche du dernier lieu de travail ou du domicile lorsque celui-ci a changé pour assurer l'unité de la famille. Ce régime ne doit pas être confondu avec la disponibilité pour élever un enfant.
+
+La réintégration après congé parental ne déclenche pas, à elle seule, une saisine automatique de la CAP. Il faut identifier la décision effectivement contestée et le texte qui prévoit éventuellement l'avis de la commission.
+
+### Agents contractuels : réemploi après congé
+
+Les articles 13, 33 et 34 du décret n° 88-145 doivent être lus ensemble, en tenant compte du type de congé et du contrat :
+
+- Pour les congés énumérés à l'article 33, l'agent apte à reprendre et remplissant toujours les conditions requises reprend son emploi dans la mesure où les nécessités du service le permettent ; à défaut, il bénéficie d'une priorité pour un emploi similaire assorti d'une rémunération équivalente.
+- L'article 34 limite en principe l'application de l'article 33 aux CDI et aux CDD dont le terme est postérieur à la date à laquelle l'agent peut prétendre au réemploi ; le réemploi d'un CDD ne porte alors que sur la durée restant à courir. Le texte mentionne toutefois l'annulation juridictionnelle de son application aux congés parentaux et aux congés liés à l'exercice d'un mandat parlementaire.
+- Le congé parental relève d'une garantie spéciale de réintégration de plein droit, au besoin en surnombre, dans l'ancien emploi ou un emploi le plus proche du dernier lieu de travail ou du domicile dans les conditions prévues par l'article 33.
+- Pour le congé lié à l'exercice d'un mandat parlementaire visé à l'article 19, l'article 33 prévoit une réintégration à la demande, au besoin en surnombre, dans l'emploi antérieur ou un emploi analogue assorti d'une rémunération identique, dans les deux mois suivant l'information de l'employeur.
+- Pour les congés pour convenances personnelles ou création d'entreprise, vérifier les exclusions visant certains fondements de recrutement (L. 333-1, L. 333-12 et L. 343-1).
+- Pour un contrat de projet, l'article 13 I prévoit une règle spécifique : le terme doit être postérieur à la demande de réemploi et le projet ou l'opération ne doit pas être réalisé ; le réemploi ne porte que sur la période restant à courir.
+
+En cas d'impossibilité de réemploi, ne pas qualifier immédiatement la situation de licenciement ni appliquer automatiquement le reclassement de l'article 39-5. Il faut établir le congé, le fondement du recrutement, le terme contractuel, les nécessités du service, les emplois similaires examinés et la décision effectivement prise. Distinguer le réemploi, le non-renouvellement à échéance et le licenciement pour impossibilité de réemploi du 5° du I de l'article 39-3.
+
 ## Références officielles
 
 - [CGFP R. 263-6 à R. 263-10 — CAP territoriales](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050550427/2026-10-29)
