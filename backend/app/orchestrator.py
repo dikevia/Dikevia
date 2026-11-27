@@ -676,7 +676,7 @@ async def apply_semantic_source_relevance(
                 source["semantic_relevance"] = verdict
     except AIProviderUnavailable as exc:
         # The semantic pass is optional; retain the deterministic lexical assessment.
-        logger.warning("Semantic source relevance unavailable; using lexical fallback: %s", exc)
+        logger.warning("Semantic source relevance unavailable; using lexical fallback (error_type=%s).", type(exc).__name__)
 
 
 def _source_relevant_to_any_research_axis(
@@ -1075,7 +1075,7 @@ class LegalOrchestrator:
             source_metadata = None
             for query, result in zip(research_queries, results_by_query):
                 if isinstance(result, BaseException) or not isinstance(result, dict):
-                    logger.warning("Recherche index CGFP indisponible pour un axe (%s): %r", query[:100], result)
+                    logger.warning("Recherche index CGFP indisponible (request_id=%s, query_length=%s, error_type=%s).", request_id, len(query), type(result).__name__)
                     failed_queries.append(query)
                     continue
                 source_metadata = source_metadata or result.get("source")
@@ -1181,13 +1181,13 @@ class LegalOrchestrator:
                 endpoint = date_roles[requested_date]
                 for query, code_at_date in zip(code_research_queries, code_queries_result):
                     if isinstance(code_at_date, BaseException) or not isinstance(code_at_date, list):
-                        logger.warning("Recherche code Légifrance en échec (%s) à %s : %r", query[:100], requested_date, code_at_date)
+                        logger.warning("Recherche code Légifrance en échec (request_id=%s, date=%s, query_length=%s, error_type=%s).", request_id, requested_date, len(query), type(code_at_date).__name__)
                         code_failures.append((requested_date.isoformat(), query))
                     else:
                         code_result.extend(_tag_official_versions(code_at_date, requested_date, endpoint))
                 for query, regulatory_at_date in zip(regulatory_queries, regulatory_queries_result):
                     if isinstance(regulatory_at_date, BaseException) or not isinstance(regulatory_at_date, list):
-                        logger.warning("Recherche réglementaire Légifrance en échec (%s) à %s : %r", query[:100], requested_date, regulatory_at_date)
+                        logger.warning("Recherche réglementaire Légifrance en échec (request_id=%s, date=%s, query_length=%s, error_type=%s).", request_id, requested_date, len(query), type(regulatory_at_date).__name__)
                         regulatory_failures.append((requested_date.isoformat(), query))
                     else:
                         regulatory_result.extend(_tag_official_versions(regulatory_at_date, requested_date, endpoint))
@@ -1214,7 +1214,7 @@ class LegalOrchestrator:
             case_search_succeeded = 0
             for query, result in zip(research_queries, case_results):
                 if isinstance(result, BaseException) or not isinstance(result, list):
-                    logger.warning("Recherche CETAT en échec (%s) : %r", query[:100], result)
+                    logger.warning("Recherche CETAT en échec (request_id=%s, query_length=%s, error_type=%s).", request_id, len(query), type(result).__name__)
                     case_search_failed = True
                     case_results_by_query.append([])
                 else:
@@ -1403,7 +1403,7 @@ class LegalOrchestrator:
                 )
                 for result in consultation_results:
                     if isinstance(result, BaseException):
-                        logger.warning("Consultation intégrale CETAT indisponible : %r", result)
+                        logger.warning("Consultation intégrale CETAT indisponible (request_id=%s, error_type=%s).", request_id, type(result).__name__)
                         case_law_fulltext_issue = (
                             "Au moins une décision CETAT n'a pas pu être consultée en texte intégral ; "
                             "son résultat de recherche reste une métadonnée non probante."
@@ -1485,10 +1485,10 @@ class LegalOrchestrator:
                                 conn, organization_id, request.employer,
                                 local_query[:500], effective_date, limit=5,
                             )
-                        except Exception:
-                            logger.exception(
-                                "Échec de la recherche locale pour un axe juridique (%s).",
-                                local_query[:100],
+                        except Exception as exc:
+                            logger.warning(
+                                "Échec de la recherche locale pour un axe juridique (request_id=%s, query_length=%s, error_type=%s).",
+                                request_id, len(local_query), type(exc).__name__,
                             )
                             local_failed_queries.append(local_query)
                             continue
@@ -1539,8 +1539,11 @@ class LegalOrchestrator:
                                 f"{hit.get('title') or 'Document local'} — situation au {local_date.isoformat()}"
                             )
                             local_sources.append(hit)
-                except Exception:
-                    logger.exception("Échec de la recherche dans le corpus local tenant-scoped.")
+                except Exception as exc:
+                    logger.warning(
+                        "Échec de la recherche dans le corpus local tenant-scoped (request_id=%s, error_type=%s).",
+                        request_id, type(exc).__name__,
+                    )
                     local_issue = "La recherche dans les documents de l'employeur n'a pas pu être exécutée."
 
 
@@ -1602,11 +1605,10 @@ class LegalOrchestrator:
                             "reference_role": "PERSONAL_CONTEXT_ONLY",
                         },
                     })
-            except Exception:
+            except Exception as exc:
                 logger.warning(
-                    "Échec de la recherche dans le corpus documentaire personnel (request_id=%s).",
-                    request_id,
-                    exc_info=True,
+                    "Échec de la recherche dans le corpus documentaire personnel (request_id=%s, error_type=%s).",
+                    request_id, type(exc).__name__,
                 )
 
         permanent_sources: list[dict] = []
@@ -1623,7 +1625,7 @@ class LegalOrchestrator:
                             conn, query, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
                         )
                     except Exception as exc:
-                        logger.warning("Recherche du corpus juridique en échec (%s) : %r", query[:100], exc)
+                        logger.warning("Recherche du corpus juridique en échec (request_id=%s, query_length=%s, error_type=%s).", request_id, len(query), type(exc).__name__)
                         stored_search_failed = True
                         stored_by_query.append([])
                     else:
@@ -1639,7 +1641,7 @@ class LegalOrchestrator:
                             query_embedding=request.query_embedding,
                         )
                     except Exception as exc:
-                        logger.warning("Recherche vectorielle indisponible ; maintien du repli lexical : %r", exc)
+                        logger.warning("Recherche vectorielle indisponible ; maintien du repli lexical (request_id=%s, error_type=%s).", request_id, type(exc).__name__)
                         stored_search_failed = True
                     else:
                         stored_by_query.insert(0, vector_results if isinstance(vector_results, list) else [])
@@ -1695,8 +1697,11 @@ class LegalOrchestrator:
                             else item.get("reference_role")
                         ),
                     })
-            except Exception:
-                logger.exception("Échec de la recherche dans le corpus juridique national.")
+            except Exception as exc:
+                logger.warning(
+                    "Échec de la recherche dans le corpus juridique national (request_id=%s, error_type=%s).",
+                    request_id, type(exc).__name__,
+                )
                 permanent_issue = "Le corpus juridique permanent n'a pas pu être interrogé."
         else:
             permanent_issue = "Le corpus juridique permanent n'est pas connecté à cette analyse."
