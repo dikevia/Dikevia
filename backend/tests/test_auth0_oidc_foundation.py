@@ -16,6 +16,10 @@ ROOT = Path(__file__).resolve().parents[2]
 KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
+def test_auth0_is_the_default_oidc_provider():
+    assert Settings(_env_file=None).oidc_provider == "auth0"
+
+
 def production_base():
     return dict(
         app_env="production",
