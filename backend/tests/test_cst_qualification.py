@@ -6,6 +6,8 @@ from app.cst_qualification import (
     assess_fs_nine_month_trigger,
     calculate_fs_inspector_request_deadlines,
     calculate_cst_meeting_deadlines,
+    assess_annual_instance_meeting_frequency,
+    calculate_cst_written_request_deadline,
     qualify_cst_topic,
 )
 from app.instances import prepare_instance
@@ -214,3 +216,45 @@ def test_fs_inspector_request_deadlines():
     assert result["authority_convocation_deadline"] == "2026-12-05"
     assert result["meeting_deadline"] == "2026-12-27"
     assert result["legal_conclusion"] is False
+
+
+
+def test_annual_meeting_frequency_distinguishes_cst_fs_and_no_fs():
+    cst_with_fs = assess_annual_instance_meeting_frequency(
+        instance="CST", meetings_held=2, formation_specialisee_exists=True
+    )
+    cst_without_fs_missing_extra = assess_annual_instance_meeting_frequency(
+        instance="CST", meetings_held=2, formation_specialisee_exists=False,
+        health_safety_meetings_held=0,
+    )
+    cst_without_fs_complete = assess_annual_instance_meeting_frequency(
+        instance="CST", meetings_held=2, formation_specialisee_exists=False,
+        health_safety_meetings_held=1,
+    )
+    fs = assess_annual_instance_meeting_frequency(instance="FS", meetings_held=3)
+
+    assert cst_with_fs["minimum_reached"] is True
+    assert cst_without_fs_missing_extra["minimum_reached"] is False
+    assert cst_without_fs_complete["minimum_reached"] is True
+    assert fs["minimum_annual_meetings"] == 3
+    assert fs["minimum_reached"] is True
+
+
+def test_cst_written_request_requires_half_and_sets_two_month_deadline():
+    from datetime import date
+
+    required = calculate_cst_written_request_deadline(
+        received_date=date(2026, 12, 31),
+        titular_representatives=7,
+        requesting_titular_representatives=4,
+    )
+    insufficient = calculate_cst_written_request_deadline(
+        received_date=date(2026, 12, 31),
+        titular_representatives=7,
+        requesting_titular_representatives=3,
+    )
+
+    assert required["deadline_date"] == "2027-02-28"
+    assert required["status"] == "MEETING_WITHIN_TWO_MONTHS_REQUIRED"
+    assert insufficient["deadline_date"] is None
+    assert insufficient["status"] == "REQUEST_THRESHOLD_NOT_REACHED"
