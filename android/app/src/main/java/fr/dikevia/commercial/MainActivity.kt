@@ -42,8 +42,10 @@ class MainActivity : Activity() {
         // Switch to the native Compose application only when a real Auth0 Native
         // Client ID is injected at build time. Until then, retain the known web
         // fallback rather than shipping a native login that cannot authenticate.
-        if (BuildConfig.AUTH0_CLIENT_ID.isNotBlank() &&
-            BuildConfig.AUTH0_CLIENT_ID != "AUTH0_NATIVE_CLIENT_ID_REQUIRED"
+        if (BuildConfig.DEBUG || (
+            BuildConfig.AUTH0_CLIENT_ID.isNotBlank() &&
+                BuildConfig.AUTH0_CLIENT_ID != "AUTH0_NATIVE_CLIENT_ID_REQUIRED"
+            )
         ) {
             startActivity(Intent(this, NativePreviewActivity::class.java))
             finish()
