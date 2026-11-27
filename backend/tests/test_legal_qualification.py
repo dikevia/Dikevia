@@ -755,3 +755,19 @@ def test_structured_case_context_never_promotes_assistant_claims_to_user_facts()
     assert state["agent_status_declare"] is None
     assert state["temps_travail_declare"] is None
     assert state["facts_origin"] == "USER_DECLARATIONS_ONLY"
+
+
+def test_explicit_user_correction_supersedes_older_status_and_working_time():
+    from app.legal_qualification import build_legal_conversation_state
+
+    state = build_legal_conversation_state(
+        "Je ne suis plus contractuel et je ne suis plus à temps partiel.",
+        [{
+            "role": "user",
+            "content": "Je suis agent contractuel en CDD et je travaille à temps partiel.",
+        }],
+        is_followup=True,
+    )
+    assert state["agent_status_declare"] == "Je ne suis plus contractuel"
+    assert state["temps_travail_declare"] == "Je ne suis plus à temps partiel"
+    assert state["type_contrat_declare"] == "JE NE SUIS PLUS EN CDD"
