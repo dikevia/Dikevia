@@ -30,3 +30,21 @@ def redact_direct_identifiers(value: str | None) -> str:
     text = _FRENCH_PHONE.sub("[NUMÉRO DE TÉLÉPHONE MASQUÉ]", text)
     text = _EMAIL.sub("[ADRESSE E-MAIL MASQUÉE]", text)
     return text
+
+
+def redact_provider_payload(value):
+    """Recursively minimize direct identifiers in every value sent to an AI provider.
+
+    Source excerpts, metadata and conversation context can contain personal data
+    even when the current question does not. Dictionary keys and non-text values
+    are preserved so the provider payload keeps its schema and legal dates.
+    """
+    if isinstance(value, str):
+        return redact_direct_identifiers(value)
+    if isinstance(value, dict):
+        return {key: redact_provider_payload(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [redact_provider_payload(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(redact_provider_payload(item) for item in value)
+    return value
