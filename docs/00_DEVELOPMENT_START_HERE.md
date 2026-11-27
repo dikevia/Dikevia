@@ -45,21 +45,22 @@ En cas de contradiction, le code de `main`, les workflows réellement exécutés
 
 ## 4. Authentification : point de vigilance
 
-Auth0 est le fournisseur retenu et le porteur du projet a confirmé que le chantier est terminé. Les journaux staging contrôlés ont montré le chargement de la configuration Auth0, le retour OIDC et une réponse HTTP 200 de `/api/v1/auth/me`. Ne pas rouvrir cette intégration, réinitialiser le tenant ou créer une nouvelle application Auth0 sans demande explicite. La validation Auth0 sur staging ne certifie pas à elle seule chaque appareil Android ni l'environnement de production.
+Auth0 est le fournisseur retenu et le porteur du projet a confirmé que le chantier est terminé. Le défaut de configuration du backend est maintenant `auth0`. Le fallback statique navigateur est volontairement vide : sans configuration Auth0 serveur, l'authentification reste désactivée au lieu de basculer silencieusement vers un ancien IdP. Le Compose par défaut et `scripts/bootstrap.sh` ne démarrent plus Keycloak ; ses services restent disponibles uniquement via le profil explicite `legacy-keycloak` pour préserver les éléments historiques. Ne pas rouvrir la configuration Auth0, réinitialiser le tenant ou créer une nouvelle application sans demande explicite. La validation Auth0 sur staging ne certifie pas à elle seule chaque appareil Android ni l'environnement de production.
 
-Le fichier `render.yaml` et certains fichiers de configuration historiques contiennent encore des références Keycloak et une ancienne branche. Ils sont incohérents avec l'orientation Auth0 documentée et doivent être audités avant toute synchronisation Blueprint ou tout déploiement. Ne pas les utiliser comme preuve de la configuration Render active.
+Le fichier `render.yaml` reste un Blueprint historique relié à l'ancienne branche et à l'infrastructure Keycloak de production. Il n'a pas été modifié, car une synchronisation pourrait affecter les services réels. Ne pas synchroniser ce Blueprint ni déclencher un déploiement avant un plan de migration distinct. Les anciens fichiers Keycloak sont conservés comme compatibilité/historique, pas comme configuration par défaut.
 
 ## 5. État de validation constaté
 
-Au commit de référence audité `8bf70bf3737ca06675a9ed05f427c640f65b5044` (27 novembre 2026), le run CI `46006150361` est terminé avec succès :
+Au commit fonctionnel `8462631d9f3cd8582ce65672d71c15b359d2349f` (27 novembre 2026), le run CI [46013359956](https://github.com/dikevia/Dikevia/actions/runs/46013359956) est terminé avec succès :
 
-- **1 489 tests passent** sur ce commit ; les tests unitaires, contractuels et d'intégration PostgreSQL/RLS sont verts ;
-- la consolidation a ensuite ajouté la migration 033 à la CI ; le run du commit documentaire courant doit être vérifié avant de considérer cette dernière modification validée ;
+- **1 491 tests passent**, dont les tests unitaires, contractuels et l'intégration PostgreSQL/RLS sur base jetable ;
+- la migration 033 est exécutée après 032 dans la CI ;
+- le nouveau parcours Auth0 par défaut, le fallback fail-closed, le Compose sans Keycloak par défaut et les workflows de déploiement désactivés sont couverts par les contrôles du dépôt ;
 - les contrôles de syntaxe, lint, analyse statique de sécurité, audit de dépendances, scripts shell, Docker Compose et kit développeur passent ;
 - le workflow de génération des APK Android avait également réussi sur le commit `dfc6bbf59ceed2871a001a399d0cfc9c22a1ecf0` ;
 - le succès de compilation d'un APK ne prouve pas le parcours utilisateur complet sur un appareil Android réel.
 
-Le CI vert valide le dépôt et les tests automatisés ; il ne remplace pas une recette Android sur appareil réel, une vérification des générations IA en conditions réelles, ni une validation de pertinence juridique. Ne pas annoncer une mise en production sur la seule base du CI.
+Le CI vert valide le dépôt et les tests automatisés ; il ne remplace pas une recette Android sur appareil réel, une vérification des générations IA en conditions réelles, ni une validation de pertinence juridique. Un avertissement non bloquant subsiste dans la suite de tests sur l'intégration httpx/Starlette. Ne pas annoncer une mise en production sur la seule base du CI.
 
 ## 6. Procédure de validation locale
 
