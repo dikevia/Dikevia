@@ -86,6 +86,48 @@ jobs:
         run: |
           node --input-type=module --check < frontend/legal-embedding-worker.js
           node --check frontend/oidc-auth.js
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import subprocess
+          import tempfile
+
+          class InlineScriptParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.current = None
+                  self.scripts = []
+
+              def handle_starttag(self, tag, attrs):
+                  if tag == "script":
+                      attributes = dict(attrs)
+                      self.current = {
+                          "src": attributes.get("src"),
+                          "type": attributes.get("type", "").strip().lower(),
+                          "parts": [],
+                      }
+
+              def handle_data(self, data):
+                  if self.current is not None:
+                      self.current["parts"].append(data)
+
+              def handle_endtag(self, tag):
+                  if tag == "script" and self.current is not None:
+                      script = self.current
+                      if not script["src"] and script["type"] in ("", "text/javascript", "module"):
+                          self.scripts.append((script["type"], "".join(script["parts"])))
+                      self.current = None
+
+          parser = InlineScriptParser()
+          parser.feed(Path("frontend/index.html").read_text(encoding="utf-8"))
+          with tempfile.TemporaryDirectory() as directory:
+              for index, (script_type, source) in enumerate(parser.scripts):
+                  suffix = ".mjs" if script_type == "module" else ".js"
+                  path = Path(directory) / f"inline-{index}{suffix}"
+                  path.write_text(source, encoding="utf-8")
+                  subprocess.run(["node", "--check", str(path)], check=True)
+          print(f"Validated {len(parser.scripts)} inline JavaScript blocks in frontend/index.html.")
+          PY
       - name: Compile Python and audit environment template
         run: |
           python -m compileall -q backend/app scripts
