@@ -128,7 +128,8 @@ INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
             "questions": (
                 "Quelle décision individuelle est contestée et relève-t-elle exactement d'un des cas limitativement énumérés à R. 263-10 ?",
                 "La demande est-elle présentée par le fonctionnaire intéressé et dans les délais applicables à la décision concernée ?",
-                "Pour l'entretien professionnel, le recours hiérarchique préalable et sa réponse sont-ils établis ?",
+                "Pour l'entretien professionnel, le recours préalable de révision a-t-il été formé dans les quinze jours francs suivant la notification du compte rendu (article 7 du décret n° 2014-1526) ?",
+                "Pour ce recours, l'autorité territoriale a-t-elle répondu dans les quinze jours suivant sa réception et la CAP a-t-elle été saisie dans le mois suivant la notification de cette réponse ?",
                 "Pour le CPF ou une action de formation, s'agit-il du cas légal précis visé par R. 263-10, notamment du second refus pour certaines actions ?",
             ),
             "documents": ("Décision contestée et preuve de notification", "Demande initiale et échanges avec l'autorité", "Recours hiérarchique préalable et réponse lorsqu'ils sont requis", "Pièces démontrant le cas de saisine prévu par R. 263-10"),
@@ -235,6 +236,8 @@ INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
             "questions": (
                 "La décision contestée figure-t-elle exactement parmi les cas énumérés à R. 272-21 : temps partiel, révision de l'entretien professionnel, CPF, télétravail ou compte épargne-temps ?",
                 "La saisine est-elle demandée par l'agent contractuel intéressé et dans les délais applicables ?",
+                "Pour la révision d'un compte rendu d'entretien professionnel, l'agent a-t-il été recruté sur un emploi permanent en CDI ou en CDD de plus d'un an, y compris par contrat de projet (article 1-3 du décret n° 88-145) ?",
+                "Pour cette révision, la demande a-t-elle été formée dans les quinze jours francs suivant la notification, l'autorité a-t-elle répondu dans les quinze jours francs suivant sa réception, et la CCP a-t-elle été saisie dans le mois suivant la notification de la réponse ?",
                 "Les démarches préalables, la décision contestée et sa notification sont-elles documentées ?",
             ),
             "documents": ("Décision contestée et preuve de notification", "Demande initiale et échanges", "Recours hiérarchique et réponse lorsqu'ils sont requis", "Pièces démontrant le cas de saisine prévu par R. 272-21"),
