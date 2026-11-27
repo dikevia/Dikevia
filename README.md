@@ -1,9 +1,10 @@
-# Dikevia — Kit développeur V3.38.5
+# Dikévia — dépôt historique et documentation développeur
 
-> **Développeurs :** commencez par [`docs/00_DEVELOPMENT_START_HERE.md`](docs/00_DEVELOPMENT_START_HERE.md). La branche de référence est `main`. Ce guide précise l'architecture présente, les validations connues et les éléments historiques à ne pas réactiver sans audit.
+> **Point d'entrée obligatoire :** [`docs/00_DEVELOPMENT_START_HERE.md`](docs/00_DEVELOPMENT_START_HERE.md), puis [`docs/57_ETAT_CONSOLIDE_2026-11-27.md`](docs/57_ETAT_CONSOLIDE_2026-11-27.md). La seule branche de travail et d'intégration est `main`.
 
-> **État courant — 26 novembre 2026 :** ce README contient encore des sections historiques V3.30/V3.38 et des références à Keycloak qui ne décrivent pas nécessairement le staging actuel. Pour la situation fiable, suivre dans cet ordre : `docs/00_DEVELOPMENT_START_HERE.md`, `docs/47_AUTH0_MIGRATION.md`, puis `android/README.md`. Le staging est préparé pour Auth0 ; la migration de production n'est pas effectuée. Les APK de test chargent le staging et leur authentification Android doit encore être validée sur appareils réels. Ne pas utiliser les anciens numéros de tests, instructions de migration ou états de déploiement ci-dessous comme preuve actuelle.
+> **Attention — README historique :** les sections ci-dessous proviennent des versions V3.30/V3.38. Elles contiennent des procédures obsolètes (anciennes migrations, Keycloak, Stripe, commandes d'installation et résultats de tests historiques). Elles sont conservées comme archive technique, mais ne constituent plus une procédure opérationnelle. Ne pas les exécuter ni les utiliser pour déduire la configuration actuelle. Auth0 est le fournisseur retenu ; les résidus Keycloak sont historiques et font l'objet d'un nettoyage distinct. La production n'est pas alignée sur `main` et ne doit pas être modifiée par ce guide.
 
+> **Règles de travail :** aucun autre branche de développement, aucune PR/merge, aucun déploiement de production, aucun fournisseur ou service payant activé. Toute modification utile doit être faite directement sur `main`, testée, puis documentée avec son niveau réel de validation.
 
 La V3.30 renforce le moteur juridique : import préparé du CGFP, recherche des textes réglementaires complémentaires sur Légifrance et interrogation sécurisée des documents propres à l’employeur.
 
