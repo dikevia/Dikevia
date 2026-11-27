@@ -308,3 +308,37 @@ def test_ccp_union_mandate_nonrenewal_matches_natural_wording():
     )
     assert any(item["code"] == "union_mandate_nonrenewal" for item in result["points"])
 
+def test_cap_availability_reintegration_distinguishes_the_three_legal_routes():
+    result = prepare_instance("CAP", "Demande de réintégration après disponibilité sur demande")
+    point = next(item for item in result["points"] if item["code"] == "availability_reintegration")
+    joined = " ".join(point["questions"])
+    assert "L. 514-6" in joined
+    assert "L. 514-7" in joined
+    assert "L. 514-8" in joined
+    assert "trois mois" in joined
+    assert "trois premières vacances" in joined
+    assert "avis de la CAP" in joined
+
+
+def test_cap_parental_leave_reintegration_is_not_confused_with_availability():
+    result = prepare_instance("CAP", "Réintégration après congé parental d'un fonctionnaire territorial")
+    point = next(item for item in result["points"] if item["code"] == "parental_leave_reintegration")
+    joined = " ".join(point["questions"])
+    assert "L. 515-11" in joined
+    assert "de plein droit" in joined
+    assert "au besoin en surnombre" in joined
+    assert "disponibilité pour élever un enfant" in joined
+    assert "pas, à elle seule, une saisine automatique" in joined
+
+
+def test_ccp_contract_reemployment_distinguishes_leave_types_and_contract_term():
+    result = prepare_instance("CCP", "Réemploi après congé maladie d'un agent contractuel en CDI")
+    point = next(item for item in result["points"] if item["code"] == "return_after_leave")
+    joined = " ".join(point["questions"])
+    assert "articles 33 et 34" in joined
+    assert "emploi similaire assorti d'une rémunération équivalente" in joined
+    assert "contrat de projet" in joined
+    assert "Conseil d'État a annulé son application à ce congé" in joined
+    assert "article 39-5" in joined
+    assert not any(item["code"] == "dismissal_after_unpaid_leave" for item in result["points"])
+
