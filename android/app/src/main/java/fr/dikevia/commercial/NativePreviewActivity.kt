@@ -28,6 +28,9 @@ class NativePreviewActivity : FragmentActivity() {
     private var authenticated by mutableStateOf(false)
     private var organizations by mutableStateOf<List<DikeviaOrganization>>(emptyList())
     private var selectedOrganizationId by mutableStateOf<String?>(null)
+    private var publicService by mutableStateOf("FPT")
+    private var employer by mutableStateOf("NATIONAL")
+    private var employerDetails by mutableStateOf("")
     private var conversationId: String? = null
     private var chatAnswer by mutableStateOf("")
     private var chatStatus by mutableStateOf("")
@@ -63,6 +66,31 @@ class NativePreviewActivity : FragmentActivity() {
                 authenticated = authenticated,
                 organizations = organizations,
                 selectedOrganizationId = selectedOrganizationId,
+                publicService = publicService,
+                onPublicServiceChange = {
+                    if (publicService != it) {
+                        publicService = it
+                        employer = "NATIONAL"
+                        employerDetails = ""
+                        conversationId = null
+                        chatAnswer = ""
+                        chatStatus = "Versant modifié. Une nouvelle conversation sera ouverte."
+                    }
+                },
+                employer = employer,
+                onEmployerChange = {
+                    if (employer != it) {
+                        employer = it
+                        conversationId = null
+                        chatAnswer = ""
+                    }
+                },
+                employerDetails = employerDetails,
+                onEmployerDetailsChange = {
+                    employerDetails = it
+                    conversationId = null
+                    chatAnswer = ""
+                },
                 onSelectOrganization = {
                     if (selectedOrganizationId != it) {
                         selectedOrganizationId = it
@@ -164,6 +192,8 @@ class NativePreviewActivity : FragmentActivity() {
                     session.idToken,
                     organizationId,
                     question,
+                    publicService,
+                    if (publicService == "FPT") employer else employerDetails.trim().ifBlank { "NATIONAL" },
                     conversationId
                 )
                 runOnUiThread {
