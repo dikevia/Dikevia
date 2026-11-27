@@ -42,19 +42,21 @@ def test_staging_configuration_is_separate_and_uses_sandbox_piste():
     env = (ROOT / "deploy" / ".env.staging.example").read_text(encoding="utf-8")
     assert "JURIS_RUNTIME_ENV_FILE=../.env.staging.runtime" in env
     assert "API_PORT=18000" in env
-    assert "KEYCLOAK_PORT=18081" in env
+    assert "OIDC_PROVIDER=auth0" in env
+    assert "OIDC_PROVIDER=keycloak" not in env
     assert "LEGIFRANCE_ENVIRONMENT=sandbox" in env
     assert "APP_ENV=production" in env
     assert "https://juris-staging.example.org" in env
 
 
-def test_monitoring_configuration_contains_api_database_and_keycloak_probes():
+def test_monitoring_configuration_contains_api_and_database_probes_only():
     compose = (ROOT / "deploy" / "docker-compose.monitoring.yml").read_text(encoding="utf-8")
     prometheus = (ROOT / "deploy" / "monitoring" / "prometheus.yml").read_text(encoding="utf-8")
     alerts = (ROOT / "deploy" / "monitoring" / "alerts.yml").read_text(encoding="utf-8")
     assert "postgres-exporter" in compose
     assert "http://api:8000/ready" in prometheus
-    assert "http://keycloak:9000/health/ready" in prometheus
+    assert "keycloak" not in prometheus.lower()
+    assert "JurisKeycloakReadinessDown" not in alerts
     assert "JurisPostgresDown" in alerts
     assert (ROOT / "deploy/monitoring/juris-overview.json").is_file()
 
