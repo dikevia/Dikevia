@@ -5,6 +5,7 @@ from app.orchestrator import (
     _build_targeted_regulatory_queries,
     filter_irrelevant_sources_for_display,
     _source_relevant_to_any_research_axis,
+    apply_semantic_source_relevance,
 )
 
 
@@ -645,3 +646,48 @@ def test_medico_social_ihts_detection_handles_official_territorial_cadre_wording
     for question in questions:
         queries = _build_targeted_regulatory_queries(question, "FPT")
         assert any("2002-598" in query for query in queries)
+
+
+@pytest.mark.asyncio
+async def test_semantic_relevance_cannot_resurrect_unrelated_sources_for_nbi(monkeypatch):
+    import app.orchestrator as orchestrator
+
+    question = "C est quoi une NBI et comment son montant est-il calculé ?"
+    unrelated = {
+        "source_id": "unrelated-remuneration",
+        "title": "Code général de la fonction publique — article D444-9",
+        "text": "Rémunération globale antérieure et rémunération résultant de l'intégration.",
+    }
+    national_police = {
+        "source_id": "national-police-nbi",
+        "title": "Arrêté relatif à la NBI dans la gendarmerie nationale",
+        "text": "Nouvelle bonification indiciaire attribuée aux personnels concernés.",
+    }
+    relevant = {
+        "source_id": "territorial-nbi",
+        "title": "Décret n° 2006-779 — nouvelle bonification indiciaire territoriale",
+        "text": "Les fonctionnaires territoriaux exerçant les fonctions listées bénéficient de points de NBI.",
+    }
+
+    async def direct_semantic_verdicts(**kwargs):
+        return {
+            "unrelated-remuneration": "DIRECT",
+            "national-police-nbi": "DIRECT",
+            "territorial-nbi": "DIRECT",
+        }
+
+    monkeypatch.setattr(orchestrator, "evaluate_source_relevance", direct_semantic_verdicts)
+    sources = [unrelated, national_police, relevant]
+    await apply_semantic_source_relevance(
+        question=question,
+        research_axes=[question],
+        sources=sources,
+        target_versant="FPT",
+    )
+
+    assert unrelated["research_axis_relevant"] is False
+    assert unrelated["semantic_relevance"] == "BLOCKED_BY_TOPIC_GUARD"
+    assert national_police["research_axis_relevant"] is False
+    assert national_police["semantic_relevance"] == "BLOCKED_BY_TOPIC_GUARD"
+    assert relevant["research_axis_relevant"] is True
+    assert relevant["semantic_relevance"] == "DIRECT"
