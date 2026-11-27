@@ -61,6 +61,10 @@ class DikeviaApiClient {
         question: String,
         publicService: String,
         employer: String,
+        factsStartDate: String?,
+        factsEndDate: String?,
+        situationOngoing: Boolean,
+        confirmLocalDocumentAiTransfer: Boolean,
         conversationId: String? = null
     ): DikeviaAnswer {
         require(publicService in setOf("FPT", "FPE", "FPH")) { "Versant de la fonction publique invalide." }
@@ -69,6 +73,10 @@ class DikeviaApiClient {
             .put("employer", employer)
             .put("public_service", publicService)
             .put("question", question)
+            .put("situation_ongoing", situationOngoing)
+            .put("confirm_local_document_ai_transfer", confirmLocalDocumentAiTransfer)
+        if (!factsStartDate.isNullOrBlank()) payload.put("facts_start_date", factsStartDate)
+        if (!factsEndDate.isNullOrBlank()) payload.put("facts_end_date", factsEndDate)
         if (!conversationId.isNullOrBlank()) payload.put("conversation_id", conversationId)
         val response = request(
             "/api/v1/chat/ask",
