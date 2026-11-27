@@ -216,6 +216,7 @@ def prepare_instance(
         result["cst_qualification"] = qualify_cst_topic(
             objet, formation_specialisee_exists=formation_specialisee_exists
         )
+        result["fs_qualification"] = qualify_fs_topic(objet)
     elif key == "FS":
         result["fs_qualification"] = qualify_fs_topic(objet)
     return result
