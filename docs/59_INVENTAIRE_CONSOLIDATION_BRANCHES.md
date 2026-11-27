@@ -255,3 +255,10 @@ Le fichier de test historique `test_v338_local_document_ai_privacy.py` n'existe 
 - `feature/dikevia-pwa-android-shell` et `test/pwa-ci-validation` renforcent une architecture PWA/WebView. Elles ne répondent pas à la décision d'applications Android/iOS natives prioritaires ; ne pas les substituer au socle mobile natif.
 - `refactor/dikevia-shells-2026-11-26`, `android/apk-auth0-staging` et `android/release-auth0-staging-2026-11-26` sont des snapshots WebView/anciens contrats et contiennent les migrations Auth0 Google incompatibles. Pas de merge en bloc.
 
+
+### Contrôles JARVIS et état de validation
+
+Le test `backend/tests/test_dikevia_visual_identity.py` a été renforcé pour contrôler le bloc final JARVIS, sa palette glacier/acier/bleu nuit, l'animation de la sphère, la réduction des animations et les icônes Android standard/administration. Le test vérifie l'existence des sélecteurs CSS `is-generating` et `is-speaking`, mais l'audit JavaScript confirme qu'ils ne sont pas activés dans `frontend/index.html`. La réactivité visuelle réelle du chatbot reste donc à implémenter après la consolidation de l'architecture.
+
+Commit des tests : `dc0de20c01cb7f07690a5e8d27fa88c3adf69484`. Le commit a été vérifié sur GitHub ; aucun statut de contrôle ni workflow n'a été retourné. Les tests n'ont pas été exécutés dans cet environnement.
+
