@@ -184,3 +184,14 @@ def test_chat_ai_prompts_use_structured_case_context_without_promoting_history_t
     assert "Une déclaration conservée dans la conversation n'est pas une preuve matérielle" in SYSTEM_PROMPT
     assert "n'importe pas les faits personnels d'un dossier précédent" in SYSTEM_PROMPT
     assert "ne constitue jamais une règle de droit, un fait établi ou une preuve" in SYSTEM_PROMPT
+
+
+def test_long_previous_assistant_turn_retains_its_final_clarification_question():
+    from app.orchestrator import _immediate_prior_assistant_messages
+
+    long_answer = "Explication juridique détaillée. " * 80 + "Quel est votre statut : titulaire ou contractuel ?"
+    history = [{"role": "assistant", "content": long_answer}]
+    retained = _immediate_prior_assistant_messages(history)
+    assert retained
+    assert retained[0].endswith("Quel est votre statut : titulaire ou contractuel ?")
+    assert len(retained[0]) <= 1800
