@@ -321,3 +321,25 @@ async def test_archive_replacement_deletes_only_matching_archive_before_reimport
     assert conn.upserts == ["fpt"]
     assert result["records_replaced"] == 7
     assert result["records_imported"] == 1
+
+
+def test_administrative_xml_docket_metadata_must_match_opening_procedural_text():
+    from app.legal_ingestion import _administrative_case_number_matches_body
+
+    body = (
+        "Vu la procédure suivante : Par une requête enregistrée le 21 septembre 2026 "
+        "sous le n° 2604412, Mme X demande l'annulation d'une décision administrative."
+    )
+    assert _administrative_case_number_matches_body("2604412", body)
+    assert not _administrative_case_number_matches_body("2604414", body)
+
+
+def test_administrative_xml_docket_check_ignores_incidental_later_citations():
+    from app.legal_ingestion import _administrative_case_number_matches_body
+
+    body = (
+        "Vu la procédure suivante : La requête a été enregistrée au greffe. "
+        "Après examen, le tribunal statue sur le litige. Le jugement n° 2604412 "
+        "cité dans les motifs est une décision antérieure."
+    )
+    assert _administrative_case_number_matches_body("2604414", body)
