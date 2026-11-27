@@ -116,6 +116,11 @@ def _build_targeted_cgfp_article_queries(question: str, public_service: str = "F
     if str(public_service or "").upper() != "FPT":
         return []
     folded = _fold(str(question or ""))
+    nbi_markers = (
+        "nbi", "nouvelle bonification indiciaire", "bonification indiciaire",
+    )
+    if any(marker in folded for marker in nbi_markers):
+        return ["article L712-12", "article L712-13"]
     if not any(marker in folded for marker in (
         "conge de maladie ordinaire", "maladie ordinaire",
         "conge maladie", "conge de maladie",
@@ -162,6 +167,16 @@ def _build_targeted_regulatory_queries(
             ),
         }
         queries.extend(branch_availability_articles.get(public_service, ()))
+
+    nbi_question = any(marker in folded for marker in (
+        "nbi", "nouvelle bonification indiciaire", "bonification indiciaire",
+    ))
+    if public_service == "FPT" and nbi_question:
+        queries.extend([
+            "décret n° 93-863 du 18 juin 1993 conditions de mise en œuvre nouvelle bonification indiciaire fonction publique territoriale",
+            "décret n° 2006-779 du 3 juillet 2006 annexe fonctions territoriales ouvrant droit nouvelle bonification indiciaire nombre de points indice majoré",
+            "décret n° 2006-780 du 3 juillet 2006 nouvelle bonification indiciaire fonctions territoriales zones urbaines sensibles",
+        ])
 
     ordinary_sick_leave = any(marker in folded for marker in (
         "congé de maladie ordinaire", "conge de maladie ordinaire",
