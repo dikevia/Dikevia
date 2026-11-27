@@ -2,6 +2,7 @@ import SwiftUI
 
 struct JurisOrbView: View {
     @State private var pulse = false
+    @Environment(\\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -39,10 +40,10 @@ struct JurisOrbView: View {
         }
         .accessibilityLabel("JURIS, assistant prêt")
         .onAppear {
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 3.8).repeatForever(autoreverses: true)) {
                 pulse = true
             }
         }
-        .accessibilityReduceMotion(pulse ? .reduce : .noPreference)
     }
 }
