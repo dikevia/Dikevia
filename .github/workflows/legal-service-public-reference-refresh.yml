@@ -1,0 +1,146 @@
+name: "Dikévia — actualisation ciblée des références Service-Public sur staging"
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Dry-run ou actualisation réelle de la base Neon staging"
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - apply-staging
+        default: dry-run
+
+permissions:
+  contents: read
+
+concurrency:
+  group: legal-service-public-reference-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh-service-public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ inputs.mode == 'apply-staging' && secrets.LEGAL_CORPUS_INGEST_DATABASE_URL || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-embeddings.txt
+
+      - name: Install importer dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Export current Service-Public data and validate reference provenance
+        run: |
+          python scripts/import_service_public_to_legal_corpus.py --export-json /tmp/service-public-refresh.json
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          payload = json.loads(Path("/tmp/service-public-refresh.json").read_text(encoding="utf-8"))
+          documents = payload.get("documents")
+          assert isinstance(documents, list) and documents, "Aucune fiche Service-Public exportée."
+          refs = 0
+          official_ids = 0
+          for document in documents:
+              metadata = document.get("raw_metadata") or {}
+              references = metadata.get("references_juridiques") or []
+              for reference in references:
+                  assert isinstance(reference, dict), "Référence non structurée."
+                  source_id = str(reference.get("source_reference_id") or "").strip()
+                  assert source_id, "Identifiant de référence source absent."
+                  official_id = str(reference.get("id_legifrance") or "").strip()
+                  if official_id:
+                      assert re.fullmatch(r"(?:LEGIARTI|LEGITEXT|JORFTEXT|JORFARTI|CETATEXT)\\d{8,}", official_id, re.I), "Identifiant Légifrance non reconnu."
+                      assert official_id.casefold() == source_id.casefold(), "Identifiant source/Légifrance incohérent."
+                      official_ids += 1
+                  refs += 1
+          print({
+              "mode": "${{ inputs.mode }}",
+              "documents": len(documents),
+              "references": refs,
+              "recognized_legifrance_ids": official_ids,
+              "write_operations": 0 if "${{ inputs.mode }}" == "dry-run" else "pending_apply_step",
+          })
+          PY
+
+      - name: Verify staging identity and source policy before writes
+        if: inputs.mode == 'apply-staging'
+        run: |
+          python - <<'PY'
+          import asyncio, os
+          from urllib.parse import urlparse
+          import asyncpg
+          async def main():
+              dsn = os.environ["LEGAL_CORPUS_INGEST_DATABASE_URL"]
+              parsed = urlparse(dsn)
+              assert parsed.scheme in {"postgres", "postgresql"}
+              assert parsed.username == "cfdt_juris_ingest", "Rôle d'ingestion dédié requis."
+              conn = await asyncpg.connect(dsn, command_timeout=30)
+              try:
+                  async with conn.transaction(readonly=True):
+                      role = await conn.fetchval("SELECT current_user")
+                      marker = await conn.fetchval("SELECT marker FROM public.dikevia_staging_guard")
+                      policy = await conn.fetchrow("""
+                        SELECT metadata_ingestion_allowed, full_text_ingestion_allowed,
+                               verification_status, reuse_basis
+                        FROM legal_source_registry WHERE source_key='SERVICE_PUBLIC_DATA'
+                      """)
+                      assert role == "cfdt_juris_ingest"
+                      assert marker == "br-billowing-haze-bd5a1cns", "Branche Neon non staging."
+                      assert policy and policy["metadata_ingestion_allowed"] and policy["full_text_ingestion_allowed"]
+                      assert policy["verification_status"] == "VERIFIED"
+                      print({"database_role": role, "staging_marker": marker, "source_policy": "verified_and_ingestion_allowed"})
+              finally:
+                  await conn.close()
+          asyncio.run(main())
+          PY
+
+      - name: Refresh Service-Public documents on staging
+        if: inputs.mode == 'apply-staging'
+        run: python scripts/import_service_public_to_legal_corpus.py --apply
+
+      - name: Regenerate local embeddings for refreshed staging chunks
+        if: inputs.mode == 'apply-staging'
+        run: |
+          pip install -r backend/requirements-embeddings.txt
+          python scripts/generate_legal_embeddings.py --batch-size 16
+
+      - name: Verify reference provenance and embedding coverage
+        if: inputs.mode == 'apply-staging'
+        run: |
+          PYTHONPATH=backend python scripts/audit_staging_reference_provenance.py
+          python - <<'PY'
+          import asyncio, os
+          import asyncpg
+          async def main():
+              conn = await asyncpg.connect(os.environ["LEGAL_CORPUS_INGEST_DATABASE_URL"], command_timeout=30)
+              try:
+                  async with conn.transaction(readonly=True):
+                      marker = await conn.fetchval("SELECT marker FROM public.dikevia_staging_guard")
+                      assert marker == "br-billowing-haze-bd5a1cns"
+                      result = await conn.fetchrow("""
+                        SELECT count(*) AS chunks,
+                               count(*) FILTER (WHERE c.embedding_384 IS NOT NULL
+                                 AND c.embedding_384_model='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+                                 AND c.embedding_384_dimensions=384) AS embedded
+                        FROM legal_chunks c
+                        JOIN legal_document_versions v ON v.id=c.version_id
+                        JOIN legal_documents d ON d.id=v.document_id
+                        WHERE d.source_type='SERVICE_PUBLIC_PART'
+                      """)
+                      print({"service_public_chunks": result["chunks"], "compatible_embeddings": result["embedded"]})
+                      assert result["chunks"] > 0 and result["chunks"] == result["embedded"]
+              finally:
+                  await conn.close()
+          asyncio.run(main())
+          PY
