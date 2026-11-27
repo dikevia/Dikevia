@@ -5,7 +5,7 @@ def test_prompt_prioritizes_understanding_the_current_request_over_lexical_match
     assert "MÉTHODE DE COMPRÉHENSION ET DE RESTITUTION DES SOURCES" in SYSTEM_PROMPT
     assert "comprendre exactement la demande actuelle" in SYSTEM_PROMPT
     assert "Écarte les sources qui ne répondent pas au sujet précis" in SYSTEM_PROMPT
-    assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
+    assert "Tu ne rends pas de décision opposable" in SYSTEM_PROMPT
 
 
 def test_prompt_requires_understanding_the_request_and_presenting_relevant_texts():
@@ -94,11 +94,10 @@ def test_prompt_restricts_later_case_law_to_interpretative_use_for_historical_cl
     assert "rattache toute conclusion à un texte ou à une décision antérieure" in SYSTEM_PROMPT
 
 
-def test_personal_case_without_date_does_not_authorize_individual_conclusions():
-    assert "utilise les faits personnels uniquement pour identifier les textes à rechercher" in SYSTEM_PROMPT
-    assert "sans qualifier la situation individuelle" in SYSTEM_PROMPT
-    assert "donne déjà les éléments de réponse que le droit actuel permet d'établir" not in SYSTEM_PROMPT
-
+def test_personal_case_without_date_allows_current_law_analysis_with_explicit_limits():
+    assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
+    assert "confronte prudemment les faits déclarés aux conditions" in SYSTEM_PROMPT
+    assert "ne présente jamais un droit comme acquis" in SYSTEM_PROMPT
 
 def test_prompt_requires_coverage_of_each_retrieval_axis():
     assert "axes_recherche_documentaire" in SYSTEM_PROMPT
@@ -110,8 +109,7 @@ def test_prompt_distinguishes_current_general_information_from_undated_personal_
     assert "GENERAL_CURRENT_LAW_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
     assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
     assert "réponds à la question générale à partir des règles actuelles documentées" in SYSTEM_PROMPT
-    assert "utilise les faits personnels uniquement pour identifier les textes à rechercher" in SYSTEM_PROMPT
-    assert "sans qualifier la situation individuelle" in SYSTEM_PROMPT
+    assert "confronte prudemment les faits déclarés aux conditions des règles actuelles documentées" in SYSTEM_PROMPT
     assert "Ne bloque pas la recherche au seul motif que la date des faits manque" in SYSTEM_PROMPT
     assert "une vérification historique sera nécessaire uniquement si la date peut modifier les dispositions applicables" in SYSTEM_PROMPT
     assert "Ne demande pas automatiquement la date des faits" in SYSTEM_PROMPT
