@@ -111,6 +111,22 @@ Décision : priorité aux correctifs étroits encore absents de `main`, avec tes
 
 Ces familles restent à comparer individuellement. Les branches relatives à Stripe/paiement ne doivent pas activer de paiement ni de fournisseur payant ; les branches Keycloak ne doivent pas réintroduire Keycloak dans la cible.
 
+## 6 bis. Contrôles supplémentaires effectués le 27 novembre 2026
+
+### Branches de tests et de CI
+
+- `fix/p0-ai-usage-outcome-constraint` : la migration 020 et le test de contrat de contrainte sont strictement identiques à `main`. Aucun transfert.
+- `test/provider-http-status-matrix-main` : la branche est moins avancée que `main` ; le test courant contient déjà les scénarios supplémentaires de timeout et de cache. Aucun transfert.
+- `fix/disable-recurring-startup-provider-probes` : sa version de `main.py` est une génération antérieure, avec moins de routes et des protections Auth0/session/RLS absentes. Le code de cette branche est rejeté comme source de fusion.
+- `fix/telemetry-failure-isolation` : le test d'isolation de télémétrie est déjà identique à `main`. Le code applicatif de la branche est trop ancien et contient des parcours de paiement Stripe actifs qui ne correspondent pas aux décisions actuelles. Aucun transfert.
+- `fix/service-public-reference-id-provenance` : le script d'import Service-Public et son test principal sont identiques à `main`. Aucun transfert.
+- `fix/sig-official-source-page-urls` : son registre de sources est plus ancien. Il marque encore les données ouvertes de la justice administrative comme `CANDIDATE`, alors que `main` a enregistré la revue d'accès du 26 novembre et le statut `ACCESS_REVIEWED`. La version de cette branche ne doit pas écraser le registre actuel.
+- `security/runtime-role-guard` : seul son complément de tests a été repris (voir section 4 bis).
+
+### Décision
+
+Ces comparaisons confirment qu'un grand nombre de commits propres à des branches ne sont pas des évolutions manquantes : ce sont des versions antérieures ou des duplications de fichiers déjà intégrés dans `main`. La consolidation doit être basée sur le contenu des fichiers, et non sur le nombre de commits en avance.
+
 ## 7. Consolidation des comptes et des services
 
 La cible d'exploitation doit éviter les identités et configurations dispersées :
