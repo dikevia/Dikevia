@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/legal-corpus-caa-ta-dry-run.yml"
+      - "backend/app/legal_ingestion.py"
+      - "scripts/import_administrative_open_data_archives.py"
 
 permissions:
   contents: read
