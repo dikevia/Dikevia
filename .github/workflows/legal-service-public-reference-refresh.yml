@@ -1,6 +1,11 @@
 name: "Dikévia — actualisation ciblée des références Service-Public sur staging"
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/legal-service-public-reference-refresh.yml"
   workflow_dispatch:
     inputs:
       mode:
