@@ -231,3 +231,12 @@ Le fichier de test historique `test_v338_local_document_ai_privacy.py` n'existe 
 - Les documents `docs/beta-migration-019-sync` et `docs/android-twa-beta-gate` décrivent d'anciens parcours et des enveloppes TWA/WebView ; ils ne changent pas la cible native Android/iOS.
 - Les branches archive staging sont des archives et ne sont pas des sources de livraison.
 
+
+### Recherche juridique, sources CIG et thèmes alternatifs
+
+- `feat/chatbot-cig-public-sources` : les cinq fichiers métier/documentaires comparés (deux modules CIG, deux tests et la documentation) sont identiques octet pour octet dans `main`. Les 16 commits propres de cette branche ne justifient pas de transfert.
+- `feature/hybrid-legal-rag` et `fix/gemini-cgfp-fallback-main` n'ont aucun commit propre par rapport à `main`.
+- `fix/gemini-cgfp-snapshot-fallback`, `fix/gemini-staging-diagnostics`, `feat/conversational-legal-analysis` et `fix/chatbot-relevance-gemini-commercial` contiennent des snapshots fonctionnels anciens. Ils sont conservés comme références d'audit, mais le développement métier/chatbot est suspendu jusqu'à conformité de l'architecture.
+- `feature/dikevia-free-vector-search-poc` contient une migration Auth0/Google par identité historique et un ancien prototype mobile ; ne pas fusionner (risque de collision migration 029/030 et dépendances historiques).
+- `feature/ui-five-color-themes` introduit un système de thèmes alternatifs concurrent. Il ne doit pas remplacer l'identité JARVIS verrouillée.
+
