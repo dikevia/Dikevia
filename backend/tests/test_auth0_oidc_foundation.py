@@ -130,7 +130,7 @@ def test_auth0_runtime_configuration_is_server_supplied_and_has_no_secret():
     assert '@app.get("/auth-config.js"' in main
     assert "settings.oidc_client_id" in main
     assert "settings.oidc_authorization_audience" in main
-    assert 'src="/auth-config.js"' in frontend
+    assert 'src="/auth-config.js?v=20261127-oidc-fix"' in frontend
     assert "params.audience=cfg.audience" in oidc
     assert "scope:cfg.scopes||'openid profile email',state,nonce" in oidc
     assert "data.id_token" in oidc
