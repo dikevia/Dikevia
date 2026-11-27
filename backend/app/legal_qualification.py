@@ -87,9 +87,9 @@ _LONG_CONTEXTUAL_FOLLOWUP = re.compile(
     r"suite à (?:ce|cette|mon|ma)|par rapport à (?:ce|cette|mon|ma)|"
     r"comme je (?:l['’]ai|l['’]avais) indiqué|"
     r"pour préciser (?:ma|cette) situation|"
-    r"(?:peux[- ]tu|pourrais[- ]tu)\\s+(?:préciser|détailler|développer|expliquer|reprendre)\\s+"
+    r"(?:peux[- ]tu|pourrais[- ]tu)\s+(?:préciser|détailler|développer|expliquer|reprendre)\s+"
     r"(?:le (?:premier|première|deuxième|second|seconde|dernier|dernière) point|"
-    r"ce point|cette règle|cette disposition|ta réponse|ce que tu as dit))\\b",
+    r"ce point|cette règle|cette disposition|ta réponse|ce que tu as dit))\b",
     re.IGNORECASE,
 )
 
