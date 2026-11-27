@@ -230,7 +230,7 @@ def test_chat_route_persists_a_controlled_response_when_orchestration_raises():
     )
     ask_source = ast.get_source_segment(source, ask_node)
     assert "try:" in ask_source
-    assert "except Exception:" in ask_source
+    assert "except Exception as exc:" in ask_source
     assert "_chat_orchestration_failure(conversation_id)" in ask_source
     assert "logger.error(" in ask_source
     assert "error_type=%s" in ask_source
