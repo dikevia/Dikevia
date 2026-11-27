@@ -46,3 +46,18 @@ L'urgence ne modifie dans ce calcul que le délai de convocation. Le calcul ne t
 ## Évolutions non couvertes
 
 Cette première livraison ne qualifie pas encore automatiquement les consultations propres aux autres textes, les compétences détaillées de la formation spécialisée, les demandes d'inscription à l'ordre du jour, les règles de quorum, les avis défavorables ou les suites données aux avis. Ces sujets nécessitent des règles dédiées et des tests juridiques distincts.
+
+
+## Demandes d'inscription à l'ordre du jour
+
+L'API de préparation CST peut recevoir, en complément du sujet :
+
+- `titular_representatives` : nombre total de représentants titulaires du personnel ;
+- `requesting_titular_representatives` : nombre de titulaires ayant demandé l'inscription ;
+- `requested_topic_in_competence` : appréciation humaine facultative indiquant si le sujet relève de la compétence du CST ou de la formation spécialisée.
+
+Le helper `assess_cst_agenda_request` applique le seuil d'au moins la moitié des représentants titulaires prévu par l'article R. 254-43 du CGFP. Il distingue le seuil non atteint, la compétence à vérifier, la compétence contestée et le cas où l'inscription est indiquée comme requise sous réserve des données déclarées.
+
+La compétence n'est jamais déduite par mots-clés. Si elle n'est pas renseignée, le résultat reste `COMPETENCE_TO_VERIFY`. Le résultat porte toujours `legal_conclusion: false`. Le calcul est une aide de contrôle fondée sur les effectifs saisis, qui doivent être vérifiés.
+
+Source officielle : [CGFP, article R. 254-43](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050550047/2026-06-17/).
