@@ -67,3 +67,58 @@ def test_all_four_instances_have_a_defined_preparation_path():
         result = prepare_instance(instance, text)
         assert result["instance"] == instance
         assert result["points"]
+
+def test_cap_disciplinary_referral_is_limited_to_groups_two_to_four():
+    result = prepare_instance(
+        "CAP",
+        "Sanction disciplinaire : exclusion temporaire de quatre à quinze jours",
+    )
+    point = next(item for item in result["points"] if item["code"] == "discipline")
+    joined = " ".join(point["questions"])
+    assert "deuxième, troisième ou quatrième groupes" in joined
+    assert "premier groupe" in joined
+
+
+def test_cap_refusal_of_titularisation_is_distinguished_from_generic_stage_questions():
+    result = prepare_instance("CAP", "Refus de titularisation après stage")
+    assert any(item["code"] == "refus_titularisation" for item in result["points"])
+    assert not any(item["code"] == "stage_licenciement" for item in result["points"])
+
+
+def test_cap_individual_referral_mentions_current_r263_10_scope():
+    result = prepare_instance("CAP", "Refus de télétravail")
+    point = next(item for item in result["points"] if item["code"] == "individual_decision_on_request")
+    joined = " ".join(point["questions"])
+    assert "R. 263-10" in joined
+    assert "limitativement énumérés" in joined
+
+
+def test_ccp_nonrenewal_does_not_assume_mandate_consultation():
+    result = prepare_instance("CCP", "Non-renouvellement d'un contrat")
+    point = next(item for item in result["points"] if item["code"] == "fin_contrat")
+    joined = " ".join(point["questions"])
+    assert "mandat syndical" in joined
+    assert "ne doit pas être généralisée" in joined
+    assert not any(item["code"] == "union_mandate_nonrenewal" for item in result["points"])
+
+
+def test_ccp_union_mandate_nonrenewal_has_specific_referral_candidate():
+    result = prepare_instance("CCP", "Non-renouvellement mandat syndical")
+    assert any(item["code"] == "union_mandate_nonrenewal" for item in result["points"])
+
+
+def test_ccp_discipline_excludes_first_group_sanctions_in_checklist():
+    result = prepare_instance("CCP", "Sanction disciplinaire : avertissement")
+    point = next(item for item in result["points"] if item["code"] == "discipline")
+    joined = " ".join(point["questions"])
+    assert "avertissement" in joined
+    assert "trois jours au maximum" in joined
+
+
+def test_ccp_individual_referral_is_separate_from_mandatory_consultation():
+    result = prepare_instance("CCP", "Refus de télétravail agent contractuel")
+    point = next(item for item in result["points"] if item["code"] == "refusal_individual_decision")
+    joined = " ".join(point["questions"])
+    assert "R. 272-21" in joined
+    assert "à la demande" in point["label"]
+
