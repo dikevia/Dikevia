@@ -689,7 +689,7 @@ def build_legal_conversation_state(
             )
             if match:
                 declaration = match.group(0)[:120].strip()
-                working_time_declaration = declaration[:1].upper() + declaration[1:]
+                working_time_declaration = declaration
         if contract_declaration is None:
             match = re.search(
                 r"\bje ne suis plus en (CDD|CDI)\b",
