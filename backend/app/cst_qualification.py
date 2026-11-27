@@ -463,3 +463,150 @@ def assess_cst_fs_competence_routing(
         "initiative": cst_evocation_initiative,
         "notice": "Sous réserve des conditions de R. 253-81, le CST peut examiner directement la question non encore examinée par la FS ; son avis se substitue alors à celui de la FS. Pour une initiative du président, vérifier l'accord de la moitié des membres représentants du personnel.",
     }
+
+
+FS_OPERATIONAL_RULES: tuple[dict[str, Any], ...] = (
+    {
+        "code": "risk_analysis_prevention",
+        "label": "Analyse des risques et prévention",
+        "reference": "CGFP R. 253-37 à R. 253-40",
+        "keywords": ("analyse des risques professionnels", "risques professionnels", "prévention des risques", "harcèlement moral", "harcèlement sexuel", "violences sexistes et sexuelles"),
+        "actions": (
+            "Décrire les risques et les agents ou postes exposés, y compris les expositions particulières.",
+            "Identifier les mesures de prévention déjà prises, leur suivi et les actions complémentaires proposées.",
+            "Pour une FS créée en raison de risques particuliers, vérifier que l'analyse initiale de ces risques et le périmètre du site ou service ont été établis.",
+        ),
+    },
+    {
+        "code": "service_visit",
+        "label": "Visite de service par une délégation",
+        "reference": "CGFP R. 253-41 à R. 253-47",
+        "keywords": ("visite de service", "visite de site", "visite des locaux", "visite de la formation spécialisée", "visite fs"),
+        "actions": (
+            "Vérifier la délibération fixant l'objet, le secteur géographique et la composition de la délégation.",
+            "Vérifier que la délégation comprend le président ou son représentant et des représentants du personnel membres de la FS.",
+            "Prévoir les conditions d'accès aux locaux et les éventuelles restrictions réglementaires d'accès.",
+            "Pour une visite au domicile d'un agent en télétravail, recueillir son accord écrit préalable.",
+            "Formaliser un rapport présenté à la formation spécialisée.",
+        ),
+    },
+    {
+        "code": "serious_accident",
+        "label": "Accident ayant entraîné ou pouvant entraîner des conséquences graves",
+        "reference": "CGFP R. 253-48",
+        "keywords": ("accident grave", "accident ayant pu entraîner des conséquences graves", "accident aux conséquences graves"),
+        "actions": (
+            "Vérifier si l'accident a entraîné ou aurait pu entraîner des conséquences graves.",
+            "Préparer la réunion de la formation spécialisée compétente dans les plus brefs délais.",
+            "Conserver les éléments factuels utiles et distinguer cette réunion de l'enquête formalisée prévue à R. 253-49.",
+        ),
+    },
+    {
+        "code": "mandatory_investigation",
+        "label": "Enquête de la formation spécialisée",
+        "reference": "CGFP R. 253-49 à R. 253-52",
+        "keywords": ("accidents répétés", "accident répété", "maladie professionnelle grave", "incapacité permanente", "enquête après accident", "enquête de la formation spécialisée"),
+        "actions": (
+            "Vérifier le caractère grave, le risque révélé et, pour les situations répétées, l'identité ou la similarité des postes ou fonctions concernés.",
+            "Vérifier la composition de la délégation : président ou représentant et au moins un représentant du personnel de la FS.",
+            "Identifier les personnes ressources pouvant participer dans les conditions du texte.",
+            "Demander communication des conclusions de l'enquête et des suites réservées à la FS.",
+        ),
+    },
+    {
+        "code": "neighbor_nuisance",
+        "label": "Nuisances provenant d'un établissement voisin",
+        "reference": "CGFP R. 253-53",
+        "keywords": ("nuisances établissement voisin", "nuisances d'un établissement voisin", "nuisances provenant d'un établissement voisin"),
+        "actions": (
+            "Décrire les nuisances particulières et leur exposition pour les agents du ressort de la FS.",
+            "Examiner la demande d'audition ou d'observations de l'employeur voisin par l'intermédiaire de l'autorité territoriale.",
+            "Suivre les suites réservées aux observations de la FS.",
+        ),
+    },
+    {
+        "code": "certified_expert",
+        "label": "Recours à un expert certifié",
+        "reference": "CGFP R. 253-54 à R. 253-57",
+        "keywords": ("expert certifié", "expertise risque grave", "recours à un expert", "recours a un expert"),
+        "actions": (
+            "Vérifier l'un des cas légaux : risque grave, révélé ou non par un accident ou une maladie professionnelle, ou projet important modifiant santé, sécurité ou conditions de travail hors réorganisation de service.",
+            "Vérifier que la FS ne dispose pas des éléments nécessaires à l'évaluation.",
+            "Tracer l'initiative du président ou la délibération de la FS et la décision motivée en cas de refus.",
+            "Pour la FPT, vérifier le délai maximal d'un mois prévu lorsque l'expertise est demandée par le président.",
+            "En cas de désaccord sérieux et persistant, examiner la procédure spécifique de R. 253-57 et son articulation avec R. 253-62.",
+        ),
+    },
+    {
+        "code": "serious_imminent_danger",
+        "label": "Alerte en cas de danger grave et imminent",
+        "reference": "CGFP R. 253-58 à R. 253-60 et R. 253-62 à R. 253-63",
+        "keywords": ("danger grave et imminent", "dgi", "registre spécial danger grave"),
+        "actions": (
+            "Alerter immédiatement l'autorité territoriale ou son représentant.",
+            "Consigner l'avis dans le registre spécial dédié au danger grave et imminent ; ne pas le confondre avec le registre santé et sécurité au travail.",
+            "Vérifier que l'inscription est datée, signée et identifie les postes, la nature et la cause du danger ainsi que les personnes exposées.",
+            "L'autorité territoriale doit mener immédiatement une enquête avec le représentant de la FS et prendre les mesures nécessaires.",
+            "En cas de divergence sur le danger ou les moyens de le faire cesser, la FS compétente est réunie en urgence dans un délai maximal de 24 heures ; l'inspecteur du travail est informé et peut assister.",
+            "En FPT, en l'absence d'accord après intervention de l'agent chargé des fonctions d'inspection, l'inspecteur du travail est obligatoirement saisi ; vérifier le rapport et la réponse motivée sous quinze jours.",
+        ),
+    },
+)
+
+FS_OPERATIONAL_REFERENCES = [
+    {"article": "CGFP R. 253-35", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549861"},
+    {"article": "CGFP R. 253-37 à R. 253-63", "url": "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050549693/2026-08-01/"},
+    {"article": "CGFP R. 254-42", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050550063"},
+]
+
+
+def qualify_fs_operational_topic(
+    objet: str,
+    *,
+    formation_specialisee_exists: bool | None = True,
+) -> dict[str, Any]:
+    """Identify FS operational-procedure candidates without deciding applicability."""
+    normalized = f" {_fold(objet)} "
+    candidates: list[dict[str, Any]] = []
+    for rule in FS_OPERATIONAL_RULES:
+        matched = next(
+            (term for term in rule["keywords"] if f" {_fold(term)} " in normalized),
+            None,
+        )
+        if matched:
+            candidates.append({
+                "code": rule["code"],
+                "label": rule["label"],
+                "reference": rule["reference"],
+                "matched_term": matched,
+                "actions_to_check": list(rule["actions"]),
+                "status": "candidate_a_verifier",
+            })
+
+    if formation_specialisee_exists is False:
+        routing = "CST_SANS_FS_A_EXAMINER"
+        routing_note = (
+            "Aucune formation spécialisée n'est déclarée. Vérifier les compétences exercées par le CST "
+            "en l'absence de FS et les dispositions qui visent expressément la délégation du CST."
+        )
+    elif formation_specialisee_exists is None:
+        routing = "INSTANCE_INDETERMINEE"
+        routing_note = "L'existence et le périmètre de la formation spécialisée doivent être établis."
+    else:
+        routing = "FS_A_EXAMINER"
+        routing_note = "Vérifier l'existence, le périmètre et la compétence de la formation spécialisée concernée."
+
+    return {
+        "status": "CANDIDATES_FOUND" if candidates else "NO_OPERATIONAL_TRIGGER",
+        "candidates": candidates,
+        "instance_routing": routing,
+        "routing_note": routing_note,
+        "formation_specialisee_exists": formation_specialisee_exists,
+        "legal_conclusion": False,
+        "notice": (
+            "Repérage lexical d'une procédure possible, non constat de sa réunion des conditions légales. "
+            "Vérifier les faits, le périmètre de la FS, le versant, les textes en vigueur et les pièces du dossier. "
+            "Les délais d'urgence ne doivent jamais être traités comme un simple calendrier prévisionnel."
+        ),
+        "official_references": FS_OPERATIONAL_REFERENCES,
+    }
