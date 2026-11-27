@@ -374,3 +374,18 @@ def test_cst_fs_routing_controls_are_wired_to_frontend():
     assert "cst_staff_representatives_supporting" in source
     assert "cst_fs_competence_routing" in source
     assert "fsQualificationHtml" in source
+
+
+
+def test_cst_prepare_also_exposes_health_safety_candidates_for_articulation():
+    result = prepare_instance(
+        "CST",
+        "Projet de mise à jour du DUERP",
+        formation_specialisee_exists=False,
+    )
+
+    assert result["fs_qualification"]["legal_conclusion"] is False
+    assert any(
+        item["reference"] == "R. 253-24, 6°"
+        for item in result["fs_qualification"]["candidates"]
+    )
