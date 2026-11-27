@@ -440,6 +440,10 @@ def test_fs_major_work_and_new_technology_topics_are_detected_as_candidates():
 
 def test_fs_operational_catalog_covers_visits_accidents_investigations_expertise_and_dgi():
     assert {rule["code"] for rule in FS_OPERATIONAL_RULES} == {
+        "annual_health_safety_report_program",
+        "health_safety_register",
+        "visit_report_followup",
+        "investigation_conclusion_followup",
         "risk_analysis_prevention",
         "service_visit",
         "serious_accident",
@@ -522,3 +526,39 @@ def test_fs_operational_qualification_is_exposed_in_instance_preparation_and_fro
     assert cst_without_fs["fs_operational_qualification"]["instance_routing"] == "CST_SANS_FS_A_EXAMINER"
     assert "fsOperationalHtml" in source
     assert "Procédures opérationnelles santé-sécurité" in source
+
+
+def test_fs_register_health_safety_requires_review_and_separates_dgi_register():
+    result = qualify_fs_operational_topic(
+        "Observations consignées au registre santé et sécurité au travail"
+    )
+    candidate = next(item for item in result["candidates"] if item["code"] == "health_safety_register")
+    joined = " ".join(candidate["actions_to_check"])
+
+    assert candidate["reference"] == "CGFP R. 253-35"
+    assert "prend connaissance" in joined
+    assert "registre spécial" in joined
+    assert result["legal_conclusion"] is False
+
+
+def test_fs_annual_report_program_tracks_unimplemented_prevention_measures_and_duerp():
+    result = qualify_fs_operational_topic("Présentation du rapport annuel et du PAPRIPACT")
+    candidate = next(item for item in result["candidates"] if item["code"] == "annual_health_safety_report_program")
+    joined = " ".join(candidate["actions_to_check"])
+
+    assert "chaque année" in joined
+    assert "coût estimé" in joined
+    assert "motifs" in joined
+    assert "document unique" in joined
+
+
+def test_fs_visit_and_investigation_followup_distinguish_report_conclusions_and_authority_decisions():
+    visit = qualify_fs_operational_topic("Suivi des recommandations de visite de service")
+    investigation = qualify_fs_operational_topic("Communication des conclusions de l'enquête et suites réservées")
+    visit_actions = " ".join(next(x for x in visit["candidates"] if x["code"] == "visit_report_followup")["actions_to_check"])
+    investigation_actions = " ".join(next(x for x in investigation["candidates"] if x["code"] == "investigation_conclusion_followup")["actions_to_check"])
+
+    assert "présenté à la formation spécialisée" in visit_actions
+    assert "décision de l'autorité territoriale" in visit_actions
+    assert "responsables" in investigation_actions
+    assert "échéances" in investigation_actions
