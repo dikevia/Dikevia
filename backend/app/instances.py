@@ -199,7 +199,7 @@ INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
         },
         "union_mandate_nonrenewal": {
             "label": "Non-renouvellement du contrat d'un agent investi d'un mandat syndical",
-            "keywords": ("non-renouvellement agent mandat syndical", "non renouvellement mandat syndical", "non-renouvellement représentant syndical contractuel", "non-renouvellement agent investi d'un mandat syndical"),
+            "keywords": ("non-renouvellement agent mandat syndical", "non renouvellement mandat syndical", "non-renouvellement représentant syndical contractuel", "non-renouvellement agent investi d'un mandat syndical", "mandat syndical"),
             "questions": (
                 "L'agent contractuel est-il investi d'un mandat syndical à la date pertinente ?",
                 "Le projet porte-t-il bien sur le non-renouvellement du contrat à son terme ?",
