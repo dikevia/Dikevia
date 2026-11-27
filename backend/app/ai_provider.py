@@ -19,7 +19,7 @@ import httpx
 from .config import settings
 from .legal_qualification import RECENT_USER_CONTEXT_LIMIT
 from .evidence_text import build_legal_evidence_text, normalize_evidence_text
-from .ai_privacy import redact_direct_identifiers
+from .ai_privacy import redact_direct_identifiers, redact_provider_payload
 
 logger = logging.getLogger(__name__)
 
@@ -705,11 +705,11 @@ async def evaluate_source_relevance(*, question: str, research_axes: list[str], 
         "temperature": 0,
         "messages": [
             {"role": "system", "content": system},
-            {"role": "user", "content": json.dumps({
+            {"role": "user", "content": json.dumps(redact_provider_payload({
                 "question": redact_direct_identifiers(str(question or ""))[:5000],
                 "research_axes": [str(axis)[:500] for axis in axes_records[:8] if isinstance(axis, str)],
                 "documents": candidates,
-            }, ensure_ascii=False)},
+            }), ensure_ascii=False)},
         ],
     }
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
@@ -794,7 +794,7 @@ async def plan_legal_research(*, question: str, employer: str, facts_period: dic
             for item in history_records if item.get("role") == "assistant"
         ][-1:],
     }
-    payload = {"model": settings.ai_model, "temperature": 0.1, "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)}]}
+    payload = {"model": settings.ai_model, "temperature": 0.1, "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(redact_provider_payload(user_payload), ensure_ascii=False)}]}
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
     started_at = time.perf_counter()
     data = None
@@ -847,7 +847,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
         "temperature": 0.1,
         "messages": [
             {"role": "system", "content": _system_prompt_for_versant(context.get("versant_fonction_publique", "FPT"))},
-            {"role": "user", "content": json.dumps({
+            {"role": "user", "content": json.dumps(redact_provider_payload({
                 "question_actuelle": redact_direct_identifiers(question), "employeur": employer, "date_de_reference_pour_la_recherche": facts_date,
                 "periode_de_la_situation": period or {"exact_date": facts_date},
                 "qualification_juridique_pre_recherche": context,
@@ -898,7 +898,7 @@ async def analyze_question(*, question: str, employer: str, facts_date: str | No
                     "collectivite": s.get("collectivity"), "classement_juridique": _as_mapping(s.get("legal_assurance")),
                     "integrite_citation": _as_mapping(s.get("citation_integrity")), "role_reference": s.get("reference_role"),
                 } for s in sources]
-            }, ensure_ascii=False)}
+            }), ensure_ascii=False)}
         ]
     }
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
@@ -1332,7 +1332,7 @@ async def verify_claim_entailment(*, question: str, claims: list[dict], sources:
         "temperature": 0,
         "messages": [
             {"role": "system", "content": ENTAILMENT_SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps({"question_actuelle": redact_direct_identifiers(question), "versant_selectionne": public_service, "items_to_verify": evidence}, ensure_ascii=False)},
+            {"role": "user", "content": json.dumps(redact_provider_payload({"question_actuelle": redact_direct_identifiers(question), "versant_selectionne": public_service, "items_to_verify": evidence}), ensure_ascii=False)},
         ],
     }
     headers = {"Authorization": f"Bearer {settings.ai_api_key}", "Content-Type": "application/json"}
