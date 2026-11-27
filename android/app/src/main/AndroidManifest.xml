@@ -9,6 +9,10 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:supportsRtl="true">
         <activity
+            android:name=".NativePreviewActivity"
+            android:exported="false"
+            android:label="Dikévia — prévisualisation native" />
+        <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true"
