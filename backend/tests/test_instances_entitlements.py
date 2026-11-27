@@ -124,3 +124,24 @@ def test_ccp_individual_referral_is_separate_from_mandatory_consultation():
     assert "R. 272-21" in joined
     assert "à la demande" in point["label"]
 
+def test_cap_mandatory_training_refusal_is_distinct_from_agent_requested_referral():
+    result = prepare_instance("CAP", "Second refus de formation")
+    point = next(item for item in result["points"] if item["code"] == "mandatory_training_refusal")
+    joined = " ".join(point["questions"])
+    assert "R. 263-7" in joined
+    assert "R. 263-10" in joined
+
+
+def test_cap_reinstatement_after_civil_disqualification_is_covered():
+    result = prepare_instance("CAP", "Réintégration après privation des droits civiques")
+    point = next(item for item in result["points"] if item["code"] == "reinstatement_after_civil_disqualification")
+    assert "R. 263-8" in " ".join(point["questions"])
+
+
+def test_ccp_union_mandate_nonrenewal_matches_natural_wording():
+    result = prepare_instance(
+        "CCP",
+        "Non-renouvellement d'un agent contractuel investi d'un mandat syndical",
+    )
+    assert any(item["code"] == "union_mandate_nonrenewal" for item in result["points"])
+
