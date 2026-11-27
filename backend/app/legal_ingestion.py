@@ -317,8 +317,16 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             info for info in archive.infolist()
             if not info.is_dir() and re.search(r"\.xml(?:_[a-z0-9]+)?$", info.filename.lower())
         ]
-        if not xml_entries or len(xml_entries) > 5000:
-            raise ValueError("L'archive doit contenir entre 1 et 5 000 fichiers XML.")
+        if not xml_entries:
+            preview = [info.filename for info in archive.infolist()[:12]]
+            raise ValueError(
+                f"Archive {archive_name}: aucun fichier XML reconnu parmi "
+                f"{len(archive.infolist())} entrées ZIP ; exemples : {preview!r}."
+            )
+        if len(xml_entries) > 5000:
+            raise ValueError(
+                f"Archive {archive_name}: {len(xml_entries)} fichiers XML, limite de 5 000 dépassée."
+            )
         total_size = sum(info.file_size for info in xml_entries)
         if total_size > 500 * 1024 * 1024:
             raise ValueError("Le volume XML décompressé dépasse 500 Mo.")
