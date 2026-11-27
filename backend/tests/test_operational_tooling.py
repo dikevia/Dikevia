@@ -38,6 +38,34 @@ def test_migration_runner_protects_baseline_and_requires_down_migration():
     assert not any(line.strip().upper() in {"BEGIN;", "COMMIT;"} for line in stripped.splitlines())
 
 
+def test_production_preflight_requires_auth0_and_not_keycloak(tmp_path):
+    module = load_script("audit_production_env", ROOT / "scripts" / "audit_production_env.py")
+    env = tmp_path / "production.env"
+    env.write_text("\n".join([
+        "APP_ENV=production",
+        "DEBUG=false",
+        "POSTGRES_MIGRATION_PASSWORD=migration-secret-unique-000000000001",
+        "POSTGRES_APP_PASSWORD=application-secret-unique-0000000002",
+        "POSTGRES_INGEST_PASSWORD=ingestion-secret-unique-00000000003",
+        "POSTGRES_MONITOR_PASSWORD=monitor-secret-unique-000000000004",
+        "DATABASE_URL=postgresql://cfdt_juris_app:application-secret-unique-0000000002@db/cfdt_juris",
+        "LEGAL_CORPUS_INGEST_DATABASE_URL=postgresql://cfdt_juris_ingest:ingestion-secret-unique-00000000003@db/cfdt_juris",
+        "PUBLIC_APP_URL=https://juris.example.org",
+        "OIDC_PROVIDER=auth0",
+        "OIDC_ISSUER=https://tenant.example.auth0.com/",
+        "OIDC_JWKS_URL=https://tenant.example.auth0.com/.well-known/jwks.json",
+        "OIDC_CLIENT_ID=auth0-client-id",
+        "OIDC_AUDIENCE=https://api.example.org",
+        "OIDC_AUTHORIZATION_AUDIENCE=https://api.example.org",
+        "OIDC_IDENTITY_COMPAT_ISSUER=https://legacy-identity.example.org/realms/cfdt",
+        "OIDC_IDENTITY_SUBJECT_PREFIX=auth0|",
+        "OIDC_ALGORITHMS=RS256",
+        "CORS_ORIGINS=https://juris.example.org",
+        "BACKUP_AGE_RECIPIENT=age1qexamplepublickey",
+    ]), encoding="utf-8")
+    assert module.audit(env) == []
+
+
 def test_staging_configuration_is_separate_and_uses_sandbox_piste():
     env = (ROOT / "deploy" / ".env.staging.example").read_text(encoding="utf-8")
     assert "JURIS_RUNTIME_ENV_FILE=../.env.staging.runtime" in env
