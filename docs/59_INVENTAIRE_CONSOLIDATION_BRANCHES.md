@@ -347,3 +347,10 @@ Le runtime applicatif a été épuré sur `main` :
 Périmètre volontairement conservé : `backend/app/keycloak_admin.py`, les fichiers de realm, le profil Docker Compose legacy, les paramètres d'amorçage du conteneur local et le service Render d'identité n'ont pas été supprimés ni arrêtés. Leur retrait physique dépend encore de l'audit des comptes historiques, de la confirmation du tenant Auth0 de référence et d'un plan de retour arrière. La fonction `_resolve_auth0_legacy_identity` de `backend/app/dependencies.py` n'a pas été modifiée.
 
 Validation : les fichiers ont été modifiés et relus via GitHub. Les tests Python n'ont pas été exécutés dans cet environnement et aucun statut/workflow CI n'est considéré comme réussi tant qu'un résultat concret n'est pas disponible.
+
+
+### Rectification de nomenclature et état visuel courant — 27 novembre 2026
+
+Les mentions JARVIS ci-dessus décrivent l'état historique observé lors de l'audit initial. La décision produit a depuis été rectifiée : le nom officiel de la sphère et de l'identité de l'assistant est **JURIS**. Le composant Compose, son fichier source `JurisOrb.kt`, les animations CSS et les tests de régression utilisent désormais cette nomenclature. Le document de référence est `docs/60_IDENTITE_VISUELLE_JURIS.md`.
+
+La palette de référence reste glacier / acier / bleu nuit. Les couches historiques Émeraude & Or subsistent encore dans la partie ancienne du CSS et sont neutralisées par les règles finales sur les modes concernés ; une vérification visuelle réelle des deux éditions reste nécessaire. Les états de sphère ne doivent pas être présentés comme reliés aux événements réels tant que leur orchestration n'est pas implémentée et testée.
