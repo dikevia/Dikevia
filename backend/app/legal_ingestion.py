@@ -323,9 +323,9 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
                 f"Archive {archive_name}: aucun fichier XML reconnu parmi "
                 f"{len(archive.infolist())} entrées ZIP ; exemples : {preview!r}."
             )
-        if len(xml_entries) > 5000:
+        if len(xml_entries) > 25000:
             raise ValueError(
-                f"Archive {archive_name}: {len(xml_entries)} fichiers XML, limite de 5 000 dépassée."
+                f"Archive {archive_name}: {len(xml_entries)} fichiers XML, limite de 25 000 dépassée."
             )
         total_size = sum(info.file_size for info in xml_entries)
         if total_size > 500 * 1024 * 1024:
