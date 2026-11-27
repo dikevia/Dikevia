@@ -28,7 +28,6 @@ from .orchestrator import LegalOrchestrator
 from .cgfp import search_cgfp, get_cgfp_article
 from .document_processing import scan_with_clamav, ScannerUnavailable, MalwareDetected, extract_document_text, document_sha256_matches
 from .document_storage import StorageError, StorageNotFound, delete_private_file, read_private_file, store_private_file
-from .keycloak_admin import KeycloakAdmin, KeycloakAdminConfig, KeycloakAdminError
 from .mailer import send_invitation_email
 from .legifrance import connector as legifrance, LegifranceUnavailable
 from .jurisprudence import AdministrativeCaseLawConnector, DECISION_ID_RE
@@ -2452,23 +2451,11 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
     if not row:
         raise HTTPException(409, "Une invitation est déjà en attente pour cette adresse dans cette organisation.")
     delivery = "MANUAL_SECURE_DELIVERY"
-    keycloak_user_id = None
     smtp_ready = bool(settings.smtp_host and settings.smtp_from)
-    keycloak_ready = bool(settings.keycloak_admin_base_url and settings.keycloak_admin_client_secret)
     auth0_ready = settings.oidc_provider == "auth0" and bool(settings.oidc_client_id)
-    if smtp_ready and (keycloak_ready or auth0_ready):
+    if smtp_ready and auth0_ready:
         try:
-            if settings.oidc_provider == "keycloak":
-                admin = KeycloakAdmin(KeycloakAdminConfig(
-                    base_url=settings.keycloak_admin_base_url, realm=settings.keycloak_admin_realm,
-                    client_id=settings.keycloak_admin_client_id, client_secret=settings.keycloak_admin_client_secret,
-                    timeout=settings.keycloak_admin_timeout_seconds))
-                keycloak_user_id, created_in_keycloak, email_verified = await admin.ensure_user(email)
-                if not email_verified:
-                    await admin.send_verification(
-                        keycloak_user_id, settings.invitation_base_url.rstrip("/") + "/", created_in_keycloak
-                    )
-            # Auth0 handles account creation and email verification through Universal Login.
+            # Auth0 Universal Login owns account creation and email verification.
             # Dikévia sends only its own single-use organization invitation token.
             organization = await ctx.conn.fetchrow("SELECT display_name FROM organizations WHERE id=$1::uuid", ctx.organization_id)
             organization_name = organization["display_name"] if organization else "votre organisation"
@@ -2479,17 +2466,14 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
             delivery = "SMTP_EMAIL_SENT"
         except Exception:
             await ctx.conn.execute("UPDATE invitations SET status='REVOKED' WHERE id=$1::uuid", row["id"])
-            raise HTTPException(503, "L'invitation n'a pas été envoyée. Vérifiez le fournisseur d'identité et le serveur SMTP.")
+            raise HTTPException(503, "L'invitation Auth0 n'a pas été envoyée. Vérifiez la configuration Auth0 et le serveur SMTP.")
     await ctx.conn.execute("""
       INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id,metadata)
       VALUES($1::uuid,$2::uuid,'INVITATION_CREATED','invitation',$3::uuid,jsonb_build_object('role',$4,'email',$5,'delivery',$6))
     """, ctx.organization_id, ctx.user_id, row["id"], payload.role, email, delivery)
     result = {"id": str(row["id"]), "email": row["email_normalized"], "role": row["role"],
               "status": row["status"], "expires_at": row["expires_at"], "delivery": delivery}
-    if delivery == "SMTP_EMAIL_SENT":
-        if keycloak_user_id:
-            result["keycloak_user_id"] = keycloak_user_id
-    else:
+    if delivery != "SMTP_EMAIL_SENT":
         result["invitation_token"] = token
         result["warning"] = "Le provisionnement automatique n'est pas configuré. Transmettez ce jeton par un canal sûr."
     return result
