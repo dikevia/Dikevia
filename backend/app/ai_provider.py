@@ -33,14 +33,12 @@ def _log_provider_failure(operation: str, exc: Exception) -> None:
     """Log actionable provider diagnostics without logging credentials or request payloads."""
     if isinstance(exc, httpx.HTTPStatusError):
         response = exc.response
-        detail = response.text or ""
-        if settings.ai_api_key:
-            detail = detail.replace(settings.ai_api_key, "[REDACTED]")
-        detail = detail[:400]
+        # Provider error bodies can echo request fragments. Never persist them in
+        # application logs, even after credential masking.
         logger.warning(
-            "AI_PROVIDER_REQUEST_FAILED provider=%s model=%s operation=%s http_status=%s detail=%s",
+            "AI_PROVIDER_REQUEST_FAILED provider=%s model=%s operation=%s http_status=%s",
             "gemini" if _is_gemini_provider() else "openai_compatible",
-            settings.ai_model or "not-configured", operation, response.status_code, detail,
+            settings.ai_model or "not-configured", operation, response.status_code,
         )
         return
     logger.warning(
