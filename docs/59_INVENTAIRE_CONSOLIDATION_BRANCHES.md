@@ -204,3 +204,13 @@ Les branches `security/chat-explicit-ownership` et `security/chat-local-document
 
 Le fichier de test historique `test_v338_local_document_ai_privacy.py` n'existe pas sous ce nom dans `main`, mais ses scénarios ont été regroupés dans le test actuel `test_chat_ownership_privacy.py`. Aucun transfert de code ni de test n'est nécessaire pour cette famille.
 
+
+### Facturation, offres et privilège fondateur
+
+- Dans `main`, `STRIPE_BILLING_ENABLED` est à `false` par défaut. La validation de configuration exige les deux secrets Stripe lorsque cette option est activée et impose les contrôles de configuration associés. Les tests actuels vérifient que Stripe reste désactivé par défaut.
+- Les branches `fix/stripe-billing-explicit-opt-in`, `feature/new-economic-pricing-grid` et `feature/pricing-ui-alignment-v2` sont très en retard et ne doivent pas remplacer la logique commerciale actuelle.
+- `feature/72h-trial-founder-access-design` est explicitement incompatible avec la décision d'accès fondateur permanent : sa période d'essai de 72 h et sa migration dédiée ne doivent pas être reprises.
+- La migration 026 de `main` stocke `user_id`, `oidc_issuer` et `oidc_subject`, interdit les écritures directes du rôle applicatif et expose l'attribution/révocation via des fonctions réservées à l'administration plateforme. La policy RLS de lecture vérifie l'issuer et le subject du contexte OIDC ; l'attribution ne repose pas sur l'e-mail.
+- `resolve_entitlements(founder=True)` supprime le quota quotidien (valeur `None`) et active les outils syndicat, mais retourne actuellement `max_users=15`. Cela ne limite pas le nombre de questions, mais reste un plafond d'accès organisationnel à vérifier si le privilège fondateur devait aussi être illimité en nombre de sièges. Aucun changement n'a été effectué sur ce point.
+- Aucun paiement, activation Stripe, attribution d'accès fondateur ou migration n'a été exécuté pendant cet audit.
+
