@@ -28,6 +28,7 @@ def test_keycloak_compose_uses_separate_database_and_pinned_image():
     assert "quay.io/keycloak/keycloak:26.8.2" in compose
     assert "keycloak-db:" in compose
     assert "keycloak_data:/var/lib/postgresql/data" in compose
+    assert compose.count('profiles: ["legacy-keycloak"]') == 2
     assert "./keycloak/import:/opt/keycloak/data/import:ro" in compose
     assert '"${KEYCLOAK_BIND_ADDRESS:-127.0.0.1}:${KEYCLOAK_PORT:-8081}:8080"' in compose
 
