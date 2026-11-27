@@ -59,8 +59,9 @@ def test_frontend_static_assets_are_mounted_and_config_is_present():
     main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
     assert 'app.mount("/static", StaticFiles' in main
-    assert '/static/auth-config.js' in html and '/static/oidc-auth.js' in html
-    assert (ROOT / "frontend/auth-config.js").exists()
+    assert 'src="/auth-config.js?v=20261127-oidc-fix"' in html
+    assert 'src="/static/oidc-auth.js?v=20261127-oidc-fix"' in html
+    assert '@app.get("/auth-config.js"' in main
 
 
 def test_v326_juris_chat_uses_existing_api_without_demo_or_local_token_storage():
