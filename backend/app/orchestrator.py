@@ -643,6 +643,17 @@ def _semantic_hard_topic_exclusion(question: str, source: dict) -> bool:
         for key in ("title", "article", "article_id", "article_number", "text", "full_text", "excerpt")
     )
     source_topics = _matched_topic_families(source_text[:500_000])
+    # NBI is a distinct pay mechanism: generic remuneration provisions and
+    # documents for national police/gendarmerie cannot ground an FPT NBI answer.
+    if "NBI" in question_topics:
+        source_title = _fold(str(source.get("title") or ""))
+        national_police_source = any(
+            marker in source_title
+            for marker in ("police nationale", "gendarmerie nationale")
+        )
+        if "NBI" not in source_topics or national_police_source:
+            return True
+
     # CITIS (service-related incapacity) is not evidence for ordinary sick leave.
     return (
         "CITIS" in source_topics
