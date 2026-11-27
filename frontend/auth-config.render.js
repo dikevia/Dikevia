@@ -1,10 +1,3 @@
-// OIDC Render configuration shared by production and isolated staging deployments.
-// Redirects are scoped to the current application origin; no client secret is exposed.
-const appOrigin = window.location.origin;
-window.CFDT_JURIS_OIDC = {
-  "issuer": "https://dikevia-identity-l2r8.onrender.com/realms/cfdt",
-  "client_id": "cfdt-juris-web",
-  "redirect_uri": appOrigin + "/",
-  "silent_redirect_uri": appOrigin + "/static/silent-check-sso.html",
-  "scopes": "openid"
-};
+// Deliberately empty static fallback. The backend must provide the public Auth0
+// configuration at /auth-config.js; never silently fall back to a legacy Keycloak issuer.
+window.CFDT_JURIS_OIDC = Object.freeze({});
