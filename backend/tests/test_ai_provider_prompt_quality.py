@@ -59,10 +59,10 @@ def test_prompt_warns_that_case_law_excerpts_may_be_partial():
     assert "Les extraits d'une décision peuvent être partiels" in SYSTEM_PROMPT
     assert "n'infère pas le dispositif" in SYSTEM_PROMPT
 
-def test_prompt_documents_titular_termination_mechanisms_without_judging_individual_cases():
+def test_prompt_documents_titular_termination_mechanisms_and_allows_cautious_case_application():
     assert "Pour une question demandant si une collectivité peut mettre fin aux fonctions d'un titulaire" in SYSTEM_PROMPT
     assert "Présente leurs motifs, conditions et procédures tels qu'ils figurent dans les sources" in SYSTEM_PROMPT
-    assert "sans apprécier le cas individuel" in SYSTEM_PROMPT
+    assert "confronte les faits déclarés à ces conditions" in SYSTEM_PROMPT
 
 
 
