@@ -1,17 +1,17 @@
-# Dikévia — identité visuelle JARVIS
+# Dikévia — identité visuelle JURIS
 
 Statut : direction visuelle de référence retrouvée dans le code de `main`.  
-Source d'implémentation : `frontend/dikevia-chat-theme.css`, notamment le bloc final `DIKEVIA JARVIS`, ainsi que `android/app/src/main/java/fr/dikevia/commercial/MainActivity.kt`.
+Source d'implémentation : `frontend/dikevia-chat-theme.css`, notamment le bloc final `DIKEVIA JURIS`, ainsi que `android/app/src/main/java/fr/dikevia/commercial/MainActivity.kt`.
 
 ## 1. Direction retenue
 
-Dikévia utilise l'identité visuelle surnommée **JARVIS** : une présence IA matérialisée par une sphère lumineuse, avec un mouvement subtil et vivant. Ce n'est pas une identité Émeraude & Or.
+Dikévia utilise l'identité visuelle surnommée **JURIS** : une présence IA matérialisée par une sphère lumineuse, avec un mouvement subtil et vivant. Ce n'est pas une identité Émeraude & Or.
 
 La palette finale de l'application standard est explicitement décrite dans le CSS comme « glacier / acier / bleu nuit ». Le thème final est clair, avec surfaces blanches, bleus glacier, bleus acier et texte bleu nuit. L'administration reprend la même identité avec une interface de pilotage dédiée.
 
 ## 2. Couleurs observées dans le code
 
-Les valeurs ci-dessous proviennent du bloc final JARVIS de `frontend/dikevia-chat-theme.css`, pas d'une proposition nouvelle :
+Les valeurs ci-dessous proviennent du bloc final JURIS de `frontend/dikevia-chat-theme.css`, pas d'une proposition nouvelle :
 
 | Rôle | Valeur |
 |---|---|
@@ -25,14 +25,14 @@ Les valeurs ci-dessous proviennent du bloc final JARVIS de `frontend/dikevia-cha
 | Bleu clair | `#eaf3fb` |
 | Accent de focus | `#68b4df` |
 
-L'or et l'émeraude ne sont pas des couleurs de marque dans cette direction. Des couches CSS historiques les contiennent encore plus haut dans le fichier, mais le bloc final JARVIS les neutralise pour les surfaces de l'application standard. Ne pas réactiver ces anciennes couches.
+L'or et l'émeraude ne sont pas des couleurs de marque dans cette direction. Des couches CSS historiques les contiennent encore plus haut dans le fichier, mais le bloc final JURIS les neutralise pour les surfaces de l'application standard. Ne pas réactiver ces anciennes couches.
 
-## 3. Sphère JARVIS : éléments effectivement présents
+## 3. Sphère JURIS : éléments effectivement présents
 
 Le code actuel comporte déjà plusieurs éléments de cette identité :
 
 - Sphère d'accueil `.juris-welcome-icon` : cercle de 86 px, centre lumineux radial, anneaux concentriques et halo bleu.
-- Animation `jarvis-core-pulse` : pulsation de 3,8 secondes avec légère variation d'échelle et de luminosité.
+- Animation `juris-core-pulse` : pulsation de 3,8 secondes avec légère variation d'échelle et de luminosité.
 - Icône de marque dans l'en-tête : centre lumineux et anneaux circulaires.
 - Marque de l'administration : motif radial circulaire avec halo bleu.
 - Anciennes animations `dikevia-breathe` et `dikevia-orbit` : respiration et rotation d'anneau.
@@ -51,7 +51,7 @@ Le code actuel démontre l'identité visuelle, mais ne prouve pas encore une sph
 
 ## 5. Cible d'évolution
 
-La cible est une sphère JARVIS interactive, animée et réactive à l'état réel de l'IA, sans inventer d'activité :
+La cible est une sphère JURIS interactive, animée et réactive à l'état réel de l'IA, sans inventer d'activité :
 
 | État de l'assistant | Comportement visuel cible |
 |---|---|
@@ -74,4 +74,9 @@ Les états doivent être pilotés par des événements d'interface/backend fiabl
 
 ## 7. Règle de consolidation
 
-Toute branche contenant une ancienne identité Émeraude & Or, un logo juridique statique ou un thème concurrent doit être traitée comme historique. La référence est le bloc final JARVIS actuellement présent dans `frontend/dikevia-chat-theme.css`. Toute modification doit être évaluée contre cette source de vérité et testée sur les éditions standard et administration.
+Toute branche contenant une ancienne identité Émeraude & Or, un logo juridique statique ou un thème concurrent doit être traitée comme historique. La référence est le bloc final JURIS actuellement présent dans `frontend/dikevia-chat-theme.css`. Toute modification doit être évaluée contre cette source de vérité et testée sur les éditions standard et administration.
+
+
+## Rectification de nomenclature — 27 novembre 2026
+
+Le nom officiel de la sphère et de l'identité de l'assistant est **JURIS**. Toute occurrence de JARVIS dans les anciens échanges, historiques ou commits est obsolète et ne doit pas être reprise dans l'interface, le code nouveau ou les documents actifs.
