@@ -184,6 +184,7 @@ def test_chat_ai_prompts_use_structured_case_context_without_promoting_history_t
     assert "Une déclaration conservée dans la conversation n'est pas une preuve matérielle" in SYSTEM_PROMPT
     assert "n'importe pas les faits personnels d'un dossier précédent" in SYSTEM_PROMPT
     assert "ne constitue jamais une règle de droit, un fait établi ou une preuve" in SYSTEM_PROMPT
+    assert "question_clarification_precedente" in SYSTEM_PROMPT
 
 
 def test_long_previous_assistant_turn_retains_its_final_clarification_question():
