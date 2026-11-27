@@ -190,3 +190,17 @@ La branche `android/native-compose-integration` fournit des composants Jetpack C
 
 Les détails de l'audit et la trajectoire Android Compose / iOS SwiftUI sont dans `docs/61_AUDIT_MOBILE_ET_MIGRATION_NATIVE.md`. Le README Android a été rectifié pour ne plus présenter les WebView comme des applications natives.
 
+
+### Sécurité des conversations et confidentialité des documents locaux
+
+Les branches `security/chat-explicit-ownership` et `security/chat-local-documents-opt-in` ont été comparées à `main`. Leurs fichiers sont fortement en retard et ne doivent pas être fusionnés. L'examen des tests montre toutefois que les contrôles essentiels ont déjà été repris et consolidés dans `main`, notamment dans `backend/tests/test_chat_ownership_privacy.py` :
+- les requêtes de conversations et dossiers filtrent par organisation et propriétaire ;
+- les documents locaux sont exclus du payload IA sans consentement ;
+- le planificateur de recherche ne reçoit pas les documents locaux du tenant ;
+- les documents locaux dans l'historique ne sont pas réutilisés par l'IA sans consentement ;
+- deux opt-in indépendants sont exigés (paramétrage serveur et confirmation explicite de la requête) ;
+- l'interface demande une case à cocher fraîche pour chaque transfert ;
+- l'historique utilisateur conservé est limité à une liste autorisée de métadonnées.
+
+Le fichier de test historique `test_v338_local_document_ai_privacy.py` n'existe pas sous ce nom dans `main`, mais ses scénarios ont été regroupés dans le test actuel `test_chat_ownership_privacy.py`. Aucun transfert de code ni de test n'est nécessaire pour cette famille.
+
