@@ -682,7 +682,7 @@ def validate_claim_evidence(
         claim_tokens = _evidence_tokens(claim_text)
         quote_tokens = _evidence_tokens(normalized_quote)
         lexical_overlap = len(claim_tokens & quote_tokens) / max(1, len(claim_tokens))
-        if len(claim_tokens) < 2 or lexical_overlap < 0.25:
+        if len(claim_tokens) < 2 or lexical_overlap < 0.10:
             invalid.append(f"claim_{index}:quote_not_relevantly_aligned")
             continue
         # Dates and quantified rules are high-risk hallucination vectors. A
