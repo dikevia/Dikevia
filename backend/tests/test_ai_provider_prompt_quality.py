@@ -98,6 +98,8 @@ def test_personal_case_without_date_allows_current_law_analysis_with_explicit_li
     assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in SYSTEM_PROMPT
     assert "confronte prudemment les faits déclarés aux conditions" in SYSTEM_PROMPT
     assert "ne présente jamais un droit comme acquis" in SYSTEM_PROMPT
+    assert "Tu peux analyser la situation au regard du droit actuellement documenté" in SYSTEM_PROMPT
+    assert "distingue cette appréciation provisoire d'une conclusion sur le droit applicable à la date des faits" in SYSTEM_PROMPT
 
 def test_prompt_requires_coverage_of_each_retrieval_axis():
     assert "axes_recherche_documentaire" in SYSTEM_PROMPT
