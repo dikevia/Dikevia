@@ -771,3 +771,24 @@ def test_explicit_user_correction_supersedes_older_status_and_working_time():
     assert state["agent_status_declare"] == "Je ne suis plus contractuel"
     assert state["temps_travail_declare"] == "Je ne suis plus à temps partiel"
     assert state["type_contrat_declare"] == "NON_CONTRACTUEL"
+
+
+def test_long_reference_to_previous_assistant_point_retains_its_case_context():
+    from app.legal_qualification import build_contextual_research_context
+
+    current = (
+        "Peux-tu détailler le deuxième point de ta réponse, notamment les conditions "
+        "qui doivent être réunies, les pièces permettant de les vérifier et les "
+        "conséquences si mon employeur n'a pas respecté cette procédure ? "
+        + "Je souhaite comprendre les implications concrètes. " * 5
+    )
+    prior = "Je suis titulaire et ma collectivité refuse de reconnaître mes heures supplémentaires."
+    context = build_contextual_research_context(
+        current,
+        [prior],
+        ["Le deuxième point portait sur la preuve des heures effectuées."],
+    )
+    assert context.is_followup is True
+    assert current.strip() in context.question
+    assert prior in context.question
+    assert context.assistant_context == "Le deuxième point portait sur la preuve des heures effectuées."
