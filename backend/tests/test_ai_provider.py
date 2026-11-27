@@ -939,7 +939,7 @@ def test_entailment_prompt_distinguishes_legal_evidence_from_user_stated_facts()
     from app.ai_provider import ENTAILMENT_SYSTEM_PROMPT
 
     assert "le noyau juridique de la proposition" in ENTAILMENT_SYSTEM_PROMPT
-    assert "les faits explicitement décrits dans la question actuelle" in ENTAILMENT_SYSTEM_PROMPT
+    assert "des faits explicitement décrits dans la question actuelle" in ENTAILMENT_SYSTEM_PROMPT
     assert "N'exige pas que les faits de l'utilisateur figurent dans le texte juridique" in ENTAILMENT_SYSTEM_PROMPT
     assert "Refuse toute application qui ajoute un fait, une condition, une exception ou une conséquence non démontrés" in ENTAILMENT_SYSTEM_PROMPT
 
