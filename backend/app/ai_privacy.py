@@ -47,7 +47,7 @@ def redact_direct_identifiers(value: str | None) -> str:
         label = match.group("label")
         if label.casefold().startswith("date de naissance"):
             return f"année de naissance : {year}"
-        return f"{label} en {year}"
+        return f"{'née' if label.casefold().startswith('née') else 'né'} en {year}"
 
     text = _BIRTH_DATE.sub(preserve_birth_year, text)
     return text
