@@ -15,17 +15,17 @@ def test_prompt_requires_understanding_the_request_and_presenting_relevant_texts
     assert "strictement fidèle au texte ou à la décision citée" in SYSTEM_PROMPT
 
 
-def test_prompt_forbids_personal_legal_opinions_and_individual_case_judgments():
-    assert "Ne donne aucun avis personnel" in SYSTEM_PROMPT
-    assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
-    assert "aucune appréciation sur le comportement de l'employeur" in SYSTEM_PROMPT
+def test_prompt_allows_cautious_case_analysis_without_overstating_legal_certainty():
+    assert "apprécier prudemment la conformité apparente" in SYSTEM_PROMPT
+    assert "les faits retenus, les incertitudes et les limites" in SYSTEM_PROMPT
+    assert "les conséquences juridiques possibles" in SYSTEM_PROMPT
+    assert "les voies de recours documentées" in SYSTEM_PROMPT
 
-
-
-def test_prompt_claims_must_summarize_sources_without_recommendations():
-    assert "restituer une disposition ou un apport jurisprudentiel précis" in SYSTEM_PROMPT
-    assert "sans avis, diagnostic de la situation individuelle ni recommandation" in SYSTEM_PROMPT
-
+def test_prompt_claims_can_explain_legal_effect_and_apply_rules_to_declared_facts():
+    assert "interprétation fidèle" in SYSTEM_PROMPT
+    assert "application prudente aux faits déclarés" in SYSTEM_PROMPT
+    assert "incidence possible sur la situation" in SYSTEM_PROMPT
+    assert "signaler les éléments manquants" in SYSTEM_PROMPT
 
 def test_prompt_enforces_the_territorial_public_service_legal_hierarchy():
     assert "RÈGLES DE QUALIFICATION JURIDIQUE FPT" in SYSTEM_PROMPT
@@ -204,27 +204,23 @@ def test_research_planner_distinguishes_the_user_from_comparative_or_third_party
     assert "Une mention d'un autre versant dans une comparaison ou à propos d'un tiers" in prompt_source
     assert "distingue toujours le sujet de la question et la personne dont la situation est décrite" in prompt_source
 
-def test_all_versants_explain_current_rules_and_source_based_procedures_without_overclaiming():
-    from app.ai_provider import _system_prompt_for_versant
-
+def test_all_versants_allow_documented_application_and_options_without_overclaiming():
     for versant in ("FPT", "FPE", "FPH"):
         prompt = _system_prompt_for_versant(versant)
         assert "PERSONAL_CASE_WITHOUT_FACTS_DATE" in prompt
+        assert "confronte prudemment les faits déclarés" in prompt
+        assert "options documentées" in prompt
         assert "Ne demande pas automatiquement la date des faits" in prompt
-        assert "procédures, autorités compétentes, délais et conditions expressément documentés" in prompt
-        assert "ne propose aucune stratégie personnelle" in prompt
 
-
-def test_fpt_prompt_explains_documented_procedures_without_personal_strategy():
+def test_fpt_prompt_explains_procedures_as_options_and_preserves_agent_choice():
     assert "même si l'utilisateur n'a pas explicitement demandé" in SYSTEM_PROMPT
     assert "l'autorité compétente" in SYSTEM_PROMPT
-    assert "jamais comme une stratégie ou une recommandation personnalisée" in SYSTEM_PROMPT
-    assert "Ne suggère aucune action individuelle" in SYSTEM_PROMPT
+    assert "présente les démarches et recours juridiquement possibles comme des options" in SYSTEM_PROMPT
+    assert "ne prétends pas choisir à la place de l'agent" in SYSTEM_PROMPT
 
-
-def test_fpe_and_fph_prompts_explain_documented_procedures_without_personal_strategy():
+def test_fpe_and_fph_prompts_explain_procedures_as_documented_options():
     for versant in ("FPE", "FPH"):
         prompt = _system_prompt_for_versant(versant)
         assert "même sans demande explicite de démarches" in prompt
         assert "l'autorité compétente" in prompt
-        assert "jamais d'une recommandation d'action ou d'une stratégie individuelle" in prompt
+        assert "présente les voies possibles et leurs conditions comme des options" in prompt
