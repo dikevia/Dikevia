@@ -3,6 +3,9 @@ from datetime import date
 from app.cst_qualification import (
     CST_TOPIC_RULES,
     assess_cst_agenda_request,
+    assess_fs_nine_month_trigger,
+    calculate_fs_inspector_request_deadlines,
+    calculate_cst_meeting_deadlines,
     calculate_cst_meeting_deadlines,
     qualify_cst_topic,
 )
@@ -160,3 +163,55 @@ def test_cst_agenda_request_controls_are_wired_to_instance_preparation_ui():
     assert "requested_topic_in_competence" in source
     assert "cst_agenda_request" in source
     assert "R. 254-43" in source
+
+
+
+def test_cst_meeting_deadlines_normal_and_urgent():
+    from datetime import date
+
+    normal = calculate_cst_meeting_deadlines(date(2026, 12, 20))
+    urgent = calculate_cst_meeting_deadlines(date(2026, 12, 20), urgent=True)
+
+    assert normal["convocation_target_date"] == "2026-12-05"
+    assert normal["documents_target_date"] == "2026-12-12"
+    assert urgent["convocation_target_date"] == "2026-12-12"
+    assert urgent["documents_target_date"] == "2026-12-12"
+
+
+def test_fs_nine_month_trigger_requires_elapsed_period_and_half_of_titulars():
+    from datetime import date
+
+    not_elapsed = assess_fs_nine_month_trigger(
+        last_meeting_date=date(2026, 1, 31),
+        as_of_date=date(2026, 10, 30),
+        titular_representatives=7,
+        requesting_titular_representatives=4,
+    )
+    eligible = assess_fs_nine_month_trigger(
+        last_meeting_date=date(2026, 1, 31),
+        as_of_date=date(2026, 10, 31),
+        titular_representatives=7,
+        requesting_titular_representatives=4,
+    )
+    insufficient = assess_fs_nine_month_trigger(
+        last_meeting_date=date(2026, 1, 31),
+        as_of_date=date(2026, 10, 31),
+        titular_representatives=7,
+        requesting_titular_representatives=3,
+    )
+
+    assert not_elapsed["status"] == "NINE_MONTHS_NOT_REACHED"
+    assert eligible["status"] == "INSPECTOR_REFERRAL_POSSIBLE"
+    assert eligible["nine_month_threshold_date"] == "2026-10-31"
+    assert insufficient["status"] == "REQUEST_THRESHOLD_NOT_REACHED"
+    assert eligible["legal_conclusion"] is False
+
+
+def test_fs_inspector_request_deadlines():
+    from datetime import date
+
+    result = calculate_fs_inspector_request_deadlines(date(2026, 11, 27))
+
+    assert result["authority_convocation_deadline"] == "2026-12-05"
+    assert result["meeting_deadline"] == "2026-12-27"
+    assert result["legal_conclusion"] is False
