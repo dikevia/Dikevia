@@ -7,7 +7,6 @@ import hashlib
 import json
 import re
 import secrets
-import os
 import zipfile
 from io import BytesIO
 from datetime import date, datetime, timezone
