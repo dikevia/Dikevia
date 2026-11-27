@@ -61,6 +61,7 @@ fun NativeHomeScreen(
     administrationEdition: Boolean,
     authenticated: Boolean,
     onSignIn: () -> Unit,
+    onSignOut: () -> Unit,
     onSendQuestion: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -85,8 +86,8 @@ fun NativeHomeScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
-                    TextButton(onClick = onSignIn, enabled = !authenticated) {
-                        Text(if (authenticated) "Connecté" else "Se connecter", color = SteelBlue)
+                    TextButton(onClick = if (authenticated) onSignOut else onSignIn) {
+                        Text(if (authenticated) "Se déconnecter" else "Se connecter", color = SteelBlue)
                     }
                 }
 
