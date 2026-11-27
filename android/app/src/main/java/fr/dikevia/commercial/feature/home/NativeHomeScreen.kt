@@ -11,9 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -94,7 +93,7 @@ fun NativeHomeScreen(
     MaterialTheme {
         Surface(modifier = modifier.fillMaxSize(), color = Glacier) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 18.dp),
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
@@ -142,24 +141,30 @@ fun NativeHomeScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(Modifier.height(12.dp))
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(instances) { instance ->
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Border),
-                                shape = RoundedCornerShape(18.dp),
-                                modifier = Modifier.height(126.dp)
+                        instances.chunked(2).forEach { pair ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                    Text(instance.acronym, color = SteelBlue, fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                                    Text(instance.title, color = Navy, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 15.sp)
-                                    Text(instance.description, color = Color(0xFF62768A), fontSize = 10.sp, lineHeight = 13.sp)
+                                pair.forEach { instance ->
+                                    Card(
+                                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                                        shape = RoundedCornerShape(18.dp),
+                                        modifier = Modifier.weight(1f).height(126.dp)
+                                    ) {
+                                        Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                            Text(instance.acronym, color = SteelBlue, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                            Text(instance.title, color = Navy, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 15.sp)
+                                            Text(instance.description, color = Color(0xFF62768A), fontSize = 10.sp, lineHeight = 13.sp)
+                                        }
+                                    }
                                 }
+                                if (pair.size == 1) Spacer(Modifier.weight(1f))
                             }
                         }
                     }
