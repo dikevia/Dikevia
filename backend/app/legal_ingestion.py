@@ -333,7 +333,7 @@ def _administrative_case_number_matches_body(case_number: str, body: str) -> boo
     opening = clean_text(body or "")[:8000]
     pattern = re.compile(
         r"(?:requ[eê]te|demande|appel|instance)[^\n.]{0,500}?"
-        r"(?:enregistr[eé]e?|inscrit[e]?e?|introduit[e]?e?)[^\\n.]{0,120}?"
+        r"(?:enregistr[eé]e?|inscrit[e]?e?|introduit[e]?e?)[^\n.]{0,120}?"
         r"(?:sous\s+le\s+)?(?:n[°ºo]|num[eé]ro)\s*[:：]?\s*(\d{5,10})",
         re.IGNORECASE,
     )
