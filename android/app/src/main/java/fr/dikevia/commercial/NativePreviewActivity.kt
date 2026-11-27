@@ -2,7 +2,7 @@ package fr.dikevia.commercial
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,7 +15,7 @@ import fr.dikevia.commercial.feature.home.NativeHomeScreen
  * It remains outside the launcher path until the native Auth0 client and API
  * contract have been configured and validated.
  */
-class NativePreviewActivity : ComponentActivity() {
+class NativePreviewActivity : FragmentActivity() {
     private lateinit var auth: Auth0NativeAuth
     private var authenticated by mutableStateOf(false)
 
