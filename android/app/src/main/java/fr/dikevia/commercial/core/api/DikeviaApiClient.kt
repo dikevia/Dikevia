@@ -14,6 +14,7 @@ data class DikeviaOrganization(
 )
 
 data class DikeviaAnswer(
+    val conversationId: String?,
     val answer: String,
     val verificationStatus: String,
     val sources: List<String>,
@@ -57,12 +58,14 @@ class DikeviaApiClient {
         accessToken: String,
         idToken: String,
         organizationId: String,
-        question: String
+        question: String,
+        conversationId: String? = null
     ): DikeviaAnswer {
         val payload = JSONObject()
             .put("employer", "NATIONAL")
             .put("public_service", "FPT")
             .put("question", question)
+        if (!conversationId.isNullOrBlank()) payload.put("conversation_id", conversationId)
         val response = request(
             "/api/v1/chat/ask",
             "POST",
@@ -73,6 +76,7 @@ class DikeviaApiClient {
         ) as JSONObject
         val sources = response.optJSONArray("sources") ?: JSONArray()
         return DikeviaAnswer(
+            conversationId = response.optString("conversation_id").takeIf { it.isNotBlank() && it != "null" },
             answer = response.optString("answer", "Aucune réponse exploitable n'a été renvoyée."),
             verificationStatus = response.optString("verification_status", "NON_VERIFIE"),
             sources = buildList {
