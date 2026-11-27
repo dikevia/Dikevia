@@ -38,6 +38,7 @@ class NativePreviewActivity : FragmentActivity() {
     private var conversationId: String? = null
     private var chatAnswer by mutableStateOf("")
     private var chatStatus by mutableStateOf("")
+    private var sending by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,6 +117,7 @@ class NativePreviewActivity : FragmentActivity() {
                 },
                 chatAnswer = chatAnswer,
                 chatStatus = chatStatus,
+                sending = sending,
                 onSignIn = {
                     auth.login(
                         onSuccess = { signedIn ->
@@ -200,6 +202,7 @@ class NativePreviewActivity : FragmentActivity() {
         val endDate = factsEndDate.trim().ifBlank { null }
         val ongoing = situationOngoing
         val allowLocalAiTransfer = confirmLocalDocumentAiTransfer
+        val conversationAtSend = conversationId
         confirmLocalDocumentAiTransfer = false
         if (session == null || organizationId == null) {
             chatStatus = "Authentifiez-vous et sélectionnez une organisation avant d'interroger JURIS."
@@ -207,6 +210,7 @@ class NativePreviewActivity : FragmentActivity() {
         }
         chatStatus = "JURIS analyse votre question et vérifie les sources…"
         chatAnswer = ""
+        sending = true
         io.execute {
             try {
                 val answer = api.ask(
@@ -220,11 +224,12 @@ class NativePreviewActivity : FragmentActivity() {
                     endDate,
                     ongoing,
                     allowLocalAiTransfer,
-                    conversationId
+                    conversationAtSend
                 )
                 runOnUiThread {
+                    sending = false
+                    if (selectedOrganizationId != organizationId || publicService != selectedVersant) return@runOnUiThread
                     conversationId = answer.conversationId
-                    confirmLocalDocumentAiTransfer = false
                     chatAnswer = buildString {
                         append(answer.answer)
                         answer.clarificationQuestion?.let {
@@ -240,7 +245,10 @@ class NativePreviewActivity : FragmentActivity() {
                 }
             } catch (error: Exception) {
                 runOnUiThread {
-                    chatStatus = error.message ?: "Le service JURIS est momentanément indisponible."
+                    sending = false
+                    if (selectedOrganizationId == organizationId && publicService == selectedVersant) {
+                        chatStatus = error.message ?: "Le service JURIS est momentanément indisponible."
+                    }
                 }
             }
         }
