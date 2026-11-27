@@ -923,13 +923,16 @@ def test_system_prompt_treats_fpt_reference_sources_as_non_applicable_without_lo
     assert "ne conclus pas au droit individuel" in SYSTEM_PROMPT
 
 
-def test_system_prompt_requires_neutral_documentary_explanations_without_case_advice():
-    assert "Tu peux reformuler un passage en langage clair" in SYSTEM_PROMPT
-    assert "strictement fidèle au texte ou à la décision citée" in SYSTEM_PROMPT
-    assert "Ne donne aucun avis personnel" in SYSTEM_PROMPT
-    assert "Ne transforme pas la restitution des textes en consultation juridique" in SYSTEM_PROMPT
-    assert "Présente ces éléments comme une explication documentaire générale" in SYSTEM_PROMPT
-    assert "Ne suggère aucune action individuelle, aucun recours à engager ni aucune stratégie personnelle" in SYSTEM_PROMPT
+def test_system_prompt_allows_cautious_legal_analysis_and_documented_options():
+    from app.ai_provider import SYSTEM_PROMPT
+
+    assert "interprète leur portée en langage courant" in SYSTEM_PROMPT
+    assert "analyse juridique appliquée" in SYSTEM_PROMPT
+    assert "apprécier prudemment la conformité apparente" in SYSTEM_PROMPT
+    assert "les conséquences juridiques possibles" in SYSTEM_PROMPT
+    assert "présente les démarches et recours juridiquement possibles comme des options" in SYSTEM_PROMPT
+    assert "ne prétends pas choisir à la place de l'agent" in SYSTEM_PROMPT
+    assert "Ne rends pas de décision opposable" in SYSTEM_PROMPT
 
 
 def test_entailment_prompt_distinguishes_legal_evidence_from_user_stated_facts():
