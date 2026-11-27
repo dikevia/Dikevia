@@ -21,7 +21,7 @@ def test_only_asymmetric_oidc_algorithms_are_accepted():
 
 
 def test_production_requires_database_oidc_and_explicit_https_cors():
-    base = dict(app_env="production", oidc_provider="keycloak", database_url="postgresql://db/app",
+    base = dict(app_env="production", oidc_provider="auth0", oidc_client_id="test-auth0-client", oidc_authorization_audience="cfdt-juris", oidc_identity_compat_issuer="https://legacy-issuer.example", oidc_identity_subject_prefix="auth0|", database_url="postgresql://db/app",
                 legal_corpus_ingest_database_url="postgresql://cfdt_juris_ingest:secret@db/app",
                 platform_admin_database_url="postgresql://cfdt_juris_platform_admin:platform@db/app",
                 oidc_issuer="https://issuer.example", oidc_audience="cfdt-juris",
