@@ -343,6 +343,21 @@ def test_answer_citation_accepts_exact_local_or_official_source_id_tag():
 
 
 
+def test_claim_evidence_allows_cautious_application_with_facts_not_repeated_in_legal_quote():
+    from app.legal_assurance import validate_claim_evidence
+
+    source = _claim_source()
+    result = validate_claim_evidence({
+        "claims": [{
+            "text": "Au regard des faits rapportés, le temps supplémentaire effectué par l'agent ouvre droit à un repos compensateur.",
+            "source_id": source["source_id"],
+            "quote": source["excerpt"],
+        }]
+    }, [source])
+    assert result["valid"] is True
+    assert result["claim_count"] == 1
+
+
 def test_claim_evidence_rejects_an_exact_but_unrelated_quote():
     from app.legal_assurance import validate_claim_evidence
 
@@ -378,6 +393,25 @@ def test_entailment_verifier_fails_closed_on_unsupported_or_mismatched_verdicts(
 
     invented_quote = {"verdicts": [{**valid["verdicts"][0], "support_quote": "L'agent reçoit toujours une prime garantie."}]}
     assert validate_entailment_verdicts(invented_quote, [claim], [source])["valid"] is False
+
+
+def test_entailment_verdict_allows_rule_application_that_mentions_user_facts():
+    from app.ai_provider import validate_entailment_verdicts
+
+    claim = {
+        "source_id": "LEGIARTI000012345678",
+        "text": "Au regard des faits rapportés, le temps supplémentaire effectué par l'agent ouvre droit à un repos compensateur.",
+    }
+    quote = "L'agent peut bénéficier d'un repos compensateur selon les conditions fixées."
+    source = {"source_id": claim["source_id"], "text": quote}
+    result = validate_entailment_verdicts({
+        "verdicts": [{
+            "claim_index": 0, "source_id": claim["source_id"],
+            "verdict": "SUPPORTED", "support_quote": quote,
+        }]
+    }, [claim], [source])
+    assert result["valid"] is True
+    assert result["supported_claim_indices"] == [0]
 
 
 def test_entailment_verifier_rejects_exact_quote_from_unrelated_part_of_same_source():
