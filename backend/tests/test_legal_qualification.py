@@ -818,3 +818,19 @@ def test_case_context_does_not_inherit_facts_from_an_older_independent_topic():
     assert state["messages_utilisateur_pertinents"] == [
         "Comment fonctionne le compte épargne-temps ?"
     ]
+
+
+def test_short_clarification_reply_becomes_a_structured_user_declaration():
+    from app.legal_qualification import build_legal_conversation_state
+
+    state = build_legal_conversation_state(
+        "Contractuel",
+        [
+            {"role": "user", "content": "Comment sont rémunérées mes heures supplémentaires ?"},
+            {"role": "assistant", "content": "Quel est votre statut : titulaire ou contractuel ?"},
+        ],
+        is_followup=True,
+    )
+    assert state["agent_status_declare"].startswith("Contractuel")
+    assert "clarification précédente" in state["agent_status_declare"]
+    assert state["question_clarification_precedente"] == "Quel est votre statut : titulaire ou contractuel ?"
