@@ -229,15 +229,21 @@ def test_annual_meeting_frequency_distinguishes_cst_fs_and_no_fs():
         instance="CST", meetings_held=2, formation_specialisee_exists=False,
         health_safety_meetings_held=0,
     )
-    cst_without_fs_complete = assess_annual_instance_meeting_frequency(
+    cst_without_fs_not_additional = assess_annual_instance_meeting_frequency(
         instance="CST", meetings_held=2, formation_specialisee_exists=False,
+        health_safety_meetings_held=1,
+    )
+    cst_without_fs_complete = assess_annual_instance_meeting_frequency(
+        instance="CST", meetings_held=3, formation_specialisee_exists=False,
         health_safety_meetings_held=1,
     )
     fs = assess_annual_instance_meeting_frequency(instance="FS", meetings_held=3)
 
     assert cst_with_fs["minimum_reached"] is True
     assert cst_without_fs_missing_extra["minimum_reached"] is False
+    assert cst_without_fs_not_additional["minimum_reached"] is False
     assert cst_without_fs_complete["minimum_reached"] is True
+    assert cst_without_fs_complete["minimum_annual_meetings"] == 3
     assert fs["minimum_annual_meetings"] == 3
     assert fs["minimum_reached"] is True
 
