@@ -714,7 +714,7 @@ def build_legal_conversation_state(
     ):
         contract_declaration = "NON_CONTRACTUEL"
     previous_clarification = None
-    if history and history[-1].get("role") == "assistant":
+    if is_followup and history and history[-1].get("role") == "assistant":
         previous_answer = str(history[-1].get("content") or "").strip()
         questions = re.findall(r"[^?]{1,260}\\?", previous_answer[-1600:])
         if questions:
@@ -775,7 +775,7 @@ def build_legal_conversation_state(
         if str(record.get("content") or "").strip()
     ]
     state["messages_utilisateur_pertinents"] = relevant_user_messages
-    if history and history[-1].get("role") == "assistant":
+    if is_followup and history and history[-1].get("role") == "assistant":
         previous_answer = str(history[-1].get("content") or "").strip()
         questions = re.findall(r"[^?]{1,260}\?", previous_answer[-1600:])
         if questions:
