@@ -591,7 +591,7 @@ async def test_ai_gateway_availability_check_uses_only_non_billable_model_catalo
         ]})
 
     result = await check_provider_availability(transport=httpx.MockTransport(handler))
-    assert result == {"status": "AVAILABLE"}
+    assert result == {"status": "MODEL_CONFIGURED"}
 
 
 @pytest.mark.asyncio
@@ -649,7 +649,7 @@ async def test_gemini_model_availability_uses_read_only_models_get_and_header_ke
         })
 
     result = await check_provider_availability(transport=httpx.MockTransport(handler))
-    assert result == {"status": "AVAILABLE"}
+    assert result == {"status": "MODEL_CONFIGURED"}
 
 
 @pytest.mark.asyncio
