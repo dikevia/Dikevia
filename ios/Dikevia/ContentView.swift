@@ -1,10 +1,10 @@
 import SwiftUI
 
 private enum DikeviaPalette {
-    static let background = Color(red: 243/255, green: 247/255, blue: 251/255)
-    static let navy = Color(red: 23/255, green: 40/255, blue: 59/255)
-    static let blue = Color(red: 40/255, green: 127/255, blue: 189/255)
-    static let border = Color(red: 220/255, green: 230/255, blue: 240/255)
+    static let background = Color(red: 0.953, green: 0.969, blue: 0.984)
+    static let navy = Color(red: 0.090, green: 0.157, blue: 0.231)
+    static let blue = Color(red: 0.157, green: 0.498, blue: 0.741)
+    static let border = Color(red: 0.863, green: 0.902, blue: 0.941)
 }
 
 struct ContentView: View {
