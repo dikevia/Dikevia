@@ -97,7 +97,8 @@ def parse_circulaires_xml(xml_bytes: bytes) -> list[dict[str, Any]]:
     if b"<!DOCTYPE" in payload_upper or b"<!ENTITY" in payload_upper:
         raise ValueError("Les déclarations DTD/ENTITY ne sont pas acceptées.")
     try:
-        root = ET.fromstring(xml_bytes)  # nosec B314: ET is defusedxml.ElementTree.
+        # ET is imported from defusedxml; DTD and ENTITY declarations are rejected above.
+        root = ET.fromstring(xml_bytes)  # nosec B314
     except (ET.ParseError, DefusedXmlException) as exc:
         raise ValueError("Le fichier XML CIRCULAIRES est invalide.") from exc
 

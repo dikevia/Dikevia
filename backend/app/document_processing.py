@@ -81,7 +81,8 @@ def extract_document_text(data: bytes, mime: str, max_chars: int = 2_000_000) ->
                 info = archive.getinfo("word/document.xml")
                 if info.file_size > 20 * 1024 * 1024:
                     return "", "TOO_LARGE_TO_EXTRACT"
-                root = ElementTree.fromstring(archive.read("word/document.xml"))  # nosec B314: ElementTree is defusedxml.ElementTree.
+                # ElementTree is imported from defusedxml, not the standard library.
+                root = ElementTree.fromstring(archive.read("word/document.xml"))  # nosec B314
                 namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
                 paragraphs = []
                 for paragraph in root.iter(namespace + "p"):

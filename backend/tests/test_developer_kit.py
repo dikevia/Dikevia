@@ -15,6 +15,7 @@ def test_developer_kit_contains_only_current_source_of_truth_paths():
     assert include_file(ROOT / "frontend/index.html")
     assert include_file(ROOT / "docs/57_ETAT_CONSOLIDE_2026-11-27.md")
     assert include_file(ROOT / "render.yaml")
+    assert include_file(ROOT / "pytest.ini")
 
 
 def test_legacy_root_duplicates_are_archived_and_excluded_from_developer_kit():
