@@ -12,6 +12,8 @@ from datetime import date
 import unicodedata
 from typing import Any
 
+from .cst_qualification import qualify_cst_topic
+
 
 INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
     "CST": {
@@ -191,7 +193,7 @@ def prepare_instance(instance: str, objet: str) -> dict[str, Any]:
             })
             documents.extend(rule["documents"])
 
-    return {
+    result = {
         "instance": key,
         "objet": objet.strip(),
         "points": points,
@@ -205,6 +207,9 @@ def prepare_instance(instance: str, objet: str) -> dict[str, Any]:
             "doivent être vérifiés avant toute utilisation."
         ),
     }
+    if key == "CST":
+        result["cst_qualification"] = qualify_cst_topic(objet)
+    return result
 
 
 # One bounded search per official source family. These are discovery queries,
