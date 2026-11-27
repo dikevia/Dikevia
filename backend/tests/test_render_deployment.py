@@ -9,10 +9,9 @@ def test_render_api_image_uses_origin_scoped_oidc_configuration():
     dockerfile = (ROOT / "Dockerfile").read_text()
     auth = (ROOT / "frontend/auth-config.render.js").read_text()
     assert "COPY frontend/auth-config.render.js /srv/frontend/auth-config.js" in dockerfile
-    assert 'const appOrigin = window.location.origin' in auth
-    assert '"redirect_uri": appOrigin + "/"' in auth
-    assert '"silent_redirect_uri": appOrigin + "/static/silent-check-sso.html"' in auth
-    assert "cfdt-juris-web" in auth
+    assert "Object.freeze({})" in auth
+    assert "keycloak" not in auth.lower()
+    assert "cfdt-juris-web" not in auth
     api = (ROOT / "backend/app/main.py").read_text()
     browser_auth = (ROOT / "frontend/oidc-auth.js").read_text()
     assert '@app.get("/auth-config.js"' in api
