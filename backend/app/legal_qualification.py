@@ -636,6 +636,17 @@ def build_legal_conversation_state(
         if isinstance(item, dict) and item.get("role") in {"user", "assistant"}
     ]
     user_records = [item for item in history if item.get("role") == "user"]
+    # Restrict inherited facts to the latest substantive user topic and its
+    # short follow-ups. Older independent topics are not part of this case.
+    relevant_user_records = []
+    for record in reversed(relevant_user_records):
+        content = str(record.get("content") or "").strip()
+        if not content:
+            continue
+        relevant_user_records.append(record)
+        if not _CONTEXTUAL_FOLLOWUP.match(content) and not _CLARIFICATION_REPLY.match(content):
+            break
+    relevant_user_records.reverse()
     current = " ".join(str(current_question or "").split())
 
     def metadata_of(record: dict) -> dict:
@@ -645,7 +656,7 @@ def build_legal_conversation_state(
         return {}
 
     current_meta = current_turn_metadata if isinstance(current_turn_metadata, dict) else {}
-    records = user_records + [{"role": "user", "content": current, "metadata": current_meta}]
+    records = relevant_user_records + [{"role": "user", "content": current, "metadata": current_meta}]
 
     status_declaration = None
     working_time_declaration = None
@@ -707,7 +718,7 @@ def build_legal_conversation_state(
 
     employer = current_meta.get("employer")
     if not employer or employer == "NATIONAL":
-        for record in reversed(user_records):
+        for record in reversed(relevant_user_records):
             previous_employer = metadata_of(record).get("employer")
             if previous_employer and previous_employer != "NATIONAL":
                 employer = previous_employer
@@ -717,7 +728,7 @@ def build_legal_conversation_state(
     period_keys = ("facts_date", "facts_start_date", "facts_end_date", "situation_ongoing")
     current_period = {key: current_meta.get(key) for key in period_keys}
     if not any(current_period.get(key) for key in period_keys):
-        for record in reversed(user_records):
+        for record in reversed(relevant_user_records):
             candidate = {key: metadata_of(record).get(key) for key in period_keys}
             if any(candidate.get(key) for key in period_keys):
                 current_period = candidate
@@ -733,7 +744,7 @@ def build_legal_conversation_state(
 
     relevant_user_messages = [
         str(record.get("content") or "").strip()[:1200]
-        for record in user_records[-6:]
+        for record in relevant_user_records[-6:]
         if str(record.get("content") or "").strip()
     ]
     state["messages_utilisateur_pertinents"] = relevant_user_messages
