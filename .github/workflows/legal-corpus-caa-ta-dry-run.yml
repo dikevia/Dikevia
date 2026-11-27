@@ -42,11 +42,4 @@ jobs:
             --max-archives 4 \
             --delay-seconds 2 \
             --export-json legal-corpus-caa-ta-dry-run.json
-
-      - name: Publish dry-run report
-        uses: actions/upload-artifact@v4
-        with:
-          name: legal-corpus-caa-ta-dry-run
-          path: legal-corpus-caa-ta-dry-run.json
-          if-no-files-found: error
-          retention-days: 7
+          cat legal-corpus-caa-ta-dry-run.json
