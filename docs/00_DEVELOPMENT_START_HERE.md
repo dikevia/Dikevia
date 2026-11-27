@@ -36,7 +36,7 @@ Le Dockerfile racine lance `uvicorn app.main:app` avec `PYTHONPATH=/srv/backend`
 ## 3. Documents à lire en priorité
 
 1. `README.md` — présentation et consignes générales, à confronter à ce guide lorsque des indications historiques divergent.
-2. `docs/47_AUTH0_MIGRATION.md` — conception et paramètres documentés de l'intégration Auth0.
+2. `docs/57_ETAT_CONSOLIDE_2026-11-27.md` — état opérationnel de référence ; `docs/47_AUTH0_MIGRATION.md` reste une documentation technique/historique de l'intégration Auth0.
 3. `docs/39_LIVRAISON_DEVELOPPEUR_V3_30.md` — dossier de transfert historique, à ne pas considérer comme un état opérationnel actuel.
 4. `docs/44_PREPARATION_RECETTE_DEVELOPPEUR.md` — procédure de validation préparée ; certaines références à Keycloak sont historiques et doivent être adaptées avant une recette OIDC réelle.
 5. `docs/50_BETA_READINESS_2026-11-24.md` — état daté de la bêta ; ses indications d'environnement et de fournisseur d'identité ne remplacent pas une vérification actuelle.
@@ -45,23 +45,21 @@ En cas de contradiction, le code de `main`, les workflows réellement exécutés
 
 ## 4. Authentification : point de vigilance
 
-Auth0 est l'orientation documentée pour le navigateur. Le flux attendu est OIDC Authorization Code + PKCE ; les autorisations applicatives et les appartenances restent gérées par Dikévia en base.
-
-Ne pas réinitialiser le tenant, créer une nouvelle application Auth0 ou modifier ses listes d'URL pour corriger une régression sans diagnostic préalable. L'authentification fonctionnait avant les derniers changements d'interface et d'application Android, selon le retour du porteur du projet.
+Auth0 est le fournisseur retenu et le porteur du projet a confirmé que le chantier est terminé. Les journaux staging contrôlés ont montré le chargement de la configuration Auth0, le retour OIDC et une réponse HTTP 200 de `/api/v1/auth/me`. Ne pas rouvrir cette intégration, réinitialiser le tenant ou créer une nouvelle application Auth0 sans demande explicite. La validation Auth0 sur staging ne certifie pas à elle seule chaque appareil Android ni l'environnement de production.
 
 Le fichier `render.yaml` et certains fichiers de configuration historiques contiennent encore des références Keycloak et une ancienne branche. Ils sont incohérents avec l'orientation Auth0 documentée et doivent être audités avant toute synchronisation Blueprint ou tout déploiement. Ne pas les utiliser comme preuve de la configuration Render active.
 
 ## 5. État de validation constaté
 
-Au commit `8bf70bf3737ca06675a9ed05f427c640f65b5044` (27 novembre 2026), voir le run CI courant et les précisions du bilan consolidé :
+Au commit de référence audité `8bf70bf3737ca06675a9ed05f427c640f65b5044` (27 novembre 2026), le run CI `46006150361` est terminé avec succès :
 
-- le workflow CI général est terminé avec succès ;
-- **1 489 tests passent** ; les tests unitaires, contractuels et d'intégration PostgreSQL/RLS sont verts ;
+- **1 489 tests passent** sur ce commit ; les tests unitaires, contractuels et d'intégration PostgreSQL/RLS sont verts ;
+- la consolidation a ensuite ajouté la migration 033 à la CI ; le run du commit documentaire courant doit être vérifié avant de considérer cette dernière modification validée ;
 - les contrôles de syntaxe, lint, analyse statique de sécurité, audit de dépendances, scripts shell, Docker Compose et kit développeur passent ;
 - le workflow de génération des APK Android avait également réussi sur le commit `dfc6bbf59ceed2871a001a399d0cfc9c22a1ecf0` ;
-- le succès de compilation d'un APK ne prouve toujours pas que le parcours de connexion Auth0 fonctionne sur un appareil réel.
+- le succès de compilation d'un APK ne prouve pas le parcours utilisateur complet sur un appareil Android réel.
 
-Le CI vert valide le dépôt et les tests automatisés ; il ne remplace pas une recette fonctionnelle Auth0, Android, IA, Légifrance et hébergement. Ne pas annoncer une mise en production sur la seule base du CI.
+Le CI vert valide le dépôt et les tests automatisés ; il ne remplace pas une recette Android sur appareil réel, une vérification des générations IA en conditions réelles, ni une validation de pertinence juridique. Ne pas annoncer une mise en production sur la seule base du CI.
 
 ## 6. Procédure de validation locale
 
