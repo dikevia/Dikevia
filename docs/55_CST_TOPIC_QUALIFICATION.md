@@ -117,3 +117,28 @@ Références officielles :
 - [CGFP, article R. 253-79](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549927)
 - [CGFP, article R. 253-80](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051968704)
 - [CGFP, article R. 253-81](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549931)
+
+
+## Procédures opérationnelles de la formation spécialisée
+
+Le helper `qualify_fs_operational_topic` ajoute un repérage indicatif des procédures prévues par le CGFP. Il est exposé dans la préparation FS et, lorsque l'utilisateur indique l'absence de FS, dans la préparation CST avec une orientation à vérifier.
+
+### Référentiel couvert
+
+- **Analyse et prévention des risques** : analyse des expositions, risques particuliers, prévention, harcèlement et violences sexistes et sexuelles (R. 253-37 à R. 253-40).
+- **Visites** : délibération définissant objet, secteur géographique et délégation ; composition de la délégation ; accès aux locaux ; accord écrit préalable pour accéder au domicile d'un télétravailleur ; rapport à la FS (R. 253-41 à R. 253-47).
+- **Accident grave ou potentiellement grave** : réunion de la FS compétente dans les plus brefs délais (R. 253-48).
+- **Enquêtes** : cas d'accident grave ou de maladie professionnelle grave, danger grave révélé, ou répétition d'accidents/maladies sur des postes ou fonctions identiques ou similaires ; composition de la délégation et information de la FS sur les conclusions et suites (R. 253-49 à R. 253-52).
+- **Nuisances d'un établissement voisin** : possibilité de demander une audition ou des observations de l'employeur voisin par l'intermédiaire de l'autorité territoriale (R. 253-53).
+- **Expert certifié** : risque grave ou projet important hors réorganisation, conditions de recours, frais à la charge de l'employeur public, délai maximal d'un mois dans le cas FPT où l'expertise est demandée par le président, motivation du refus et procédure de désaccord sérieux et persistant (R. 253-54 à R. 253-57).
+- **Danger grave et imminent** : alerte immédiate, registre spécial, contenu de l'inscription, enquête immédiate, réunion d'urgence sous 24 heures en cas de divergence, rôle de l'inspection du travail et réponse motivée sous quinze jours après rapport dans la procédure FPT (R. 253-58 à R. 253-60 et R. 253-62 à R. 253-63).
+
+### Précautions juridiques intégrées
+
+- Les déclencheurs lexicaux produisent uniquement des candidats ; ils ne déterminent ni la gravité d'un accident, ni le caractère répété, ni l'existence d'un risque grave, ni l'applicabilité d'une expertise.
+- La procédure DGI FPT est distinguée des procédures propres aux comités sociaux d'administration et d'établissement. Le code ne doit pas appliquer automatiquement R. 253-61 ou R. 253-65 à une collectivité territoriale.
+- Le registre spécial DGI de R. 253-58 et R. 253-59 est distinct du registre santé et sécurité au travail consulté par la FS au titre de R. 253-35.
+- Les délais de 24 heures et de quinze jours sont des délais procéduraux déclenchés par des événements définis par le texte ; ils ne sont pas assimilés à de simples échéances de réunion.
+- En l'absence de FS, le résultat demande de vérifier les compétences exercées par le CST et les dispositions visant expressément le comité en l'absence de formation spécialisée. Il ne transpose pas mécaniquement toutes les dispositions FS au CST.
+
+Sources officielles : [CGFP, chapitre III — attributions des formations spécialisées](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050549693/2026-08-01/), [CGFP, procédure DGI R. 253-58 à R. 253-65](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050549863/), [CGFP, article R. 254-42](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050550063).
