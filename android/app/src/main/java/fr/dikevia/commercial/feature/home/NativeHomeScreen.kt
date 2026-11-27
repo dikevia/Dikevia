@@ -21,6 +21,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -67,6 +68,12 @@ fun NativeHomeScreen(
     onSignOut: () -> Unit,
     organizations: List<DikeviaOrganization>,
     selectedOrganizationId: String?,
+    publicService: String,
+    onPublicServiceChange: (String) -> Unit,
+    employer: String,
+    onEmployerChange: (String) -> Unit,
+    employerDetails: String,
+    onEmployerDetailsChange: (String) -> Unit,
     onSelectOrganization: (String) -> Unit,
     chatAnswer: String,
     chatStatus: String,
@@ -149,6 +156,45 @@ fun NativeHomeScreen(
                     }
 
                     Spacer(Modifier.height(18.dp))
+                    Text("Versant de la fonction publique", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf("FPT" to "Territoriale", "FPE" to "État", "FPH" to "Hospitalière").forEach { (code, label) ->
+                            FilterChip(
+                                selected = publicService == code,
+                                onClick = { onPublicServiceChange(code) },
+                                label = { Text(label, fontSize = 11.sp) }
+                            )
+                        }
+                    }
+                    if (publicService == "FPT") {
+                        var employerMenuExpanded by remember { mutableStateOf(false) }
+                        val employerLabels = mapOf(
+                            "NATIONAL" to "National / non précisé",
+                            "VILLE_SAINT_ETIENNE" to "Ville de Saint-Étienne",
+                            "SAINT_ETIENNE_METROPOLE" to "Saint-Étienne Métropole"
+                        )
+                        TextButton(onClick = { employerMenuExpanded = true }) {
+                            Text("Employeur : ${employerLabels[employer] ?: employer}", color = SteelBlue)
+                        }
+                        DropdownMenu(expanded = employerMenuExpanded, onDismissRequest = { employerMenuExpanded = false }) {
+                            employerLabels.forEach { (code, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = { onEmployerChange(code); employerMenuExpanded = false }
+                                )
+                            }
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = employerDetails,
+                            onValueChange = onEmployerDetailsChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(if (publicService == "FPE") "Ministère ou administration (facultatif)" else "Établissement hospitalier (facultatif)") },
+                            placeholder = { Text(if (publicService == "FPE") "Ministère, rectorat, préfecture…" else "Centre hospitalier, CHU…") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                    }
                     if (authenticated) {
                         var organizationMenuExpanded by remember { mutableStateOf(false) }
                         val selectedOrganization = organizations.firstOrNull { it.id == selectedOrganizationId }
