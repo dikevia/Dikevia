@@ -146,45 +146,77 @@ def safe_official_url(value: str | None) -> str | None:
 
 
 def resolve_legal_source_key(item: dict[str, Any]) -> str | None:
-    """Resolve an imported document to its reviewed source-registry entry."""
-    explicit = item.get("source_key")
-    if isinstance(explicit, str) and explicit.strip():
-        return explicit.strip()
+    """Resolve and validate a document's source key against its actual source type."""
     source_type = str(item.get("source_type") or "").strip().upper()
     metadata = item.get("raw_metadata") if isinstance(item.get("raw_metadata"), dict) else {}
     source_id = str(metadata.get("source_id") or "").strip().lower()
-    if source_type in {"LEGIFRANCE_LEGI", "LEGIFRANCE_LODA", "LEGIFRANCE_CETAT", "LEGIFRANCE_JORF"}:
-        return "LEGIFRANCE_PISTE"
-    if source_type == "CGFP_SNAPSHOT":
-        return "CGFP_SNAPSHOT"
-    if source_type == "SERVICE_PUBLIC_PART":
-        return "SERVICE_PUBLIC_DATA"
-    if source_type == "DILA_CIRCULAIRES":
-        return "DILA_CIRCULAIRES"
-    if source_type == "OTHER_OFFICIAL" and metadata.get("import_method") == "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML":
-        return "JUSTICE_ADMIN_OPEN_DATA"
-    institutional_sources = {
-        "cdg-35": "CDG35",
-        "cdg-59": "CDG59",
-        "cdg-69": "CDG69",
-        "cig-petite-couronne": "CIG_PETITE_COURONNE",
-        "cnfpt": "CNFPT",
-        "dgafp": "DGAFP",
-        "info-gouv": "INFO_GOUV",
-        "dgcl": "DGCL",
-        "cdg-44": "CDG44",
-        "cig-grande-couronne": "CIG_GRANDE_COURONNE",
-        "cdg-departements": "CDG_DEPARTMENTS",
-        "wikiterritorial-cnfpt": "CNFPT_WIKITERRITORIAL",
-        "cfdt-interco": "CFDT_INTERCO",
-        "cfdt-fonctions-publiques": "CFDT_UFFA",
-        "cftc-fonction-publique": "CFTC_FONCTION_PUBLIQUE",
-        "cgt-fonction-publique": "CGT_FONCTION_PUBLIQUE",
-        "fo-fonction-publique": "FO_FONCTION_PUBLIQUE",
-        "solidaires-fonction-publique": "SOLIDAIRES_FONCTION_PUBLIQUE",
-        "unsa-fonction-publique": "UNSA_FONCTION_PUBLIQUE",
-    }
-    return institutional_sources.get(source_id)
+    resolved: str | None = None
+
+    if source_type in {
+        "LEGIFRANCE_API", "LEGIFRANCE_LEGI", "LEGIFRANCE_LODA",
+        "LEGIFRANCE_CETAT", "LEGIFRANCE_CETAT_FULL_TEXT", "LEGIFRANCE_JORF",
+    }:
+        resolved = "LEGIFRANCE_PISTE"
+    elif source_type == "CGFP_SNAPSHOT":
+        resolved = "CGFP_SNAPSHOT"
+    elif source_type == "SERVICE_PUBLIC_PART":
+        resolved = "SERVICE_PUBLIC_DATA"
+    elif source_type == "DILA_CIRCULAIRES":
+        resolved = "DILA_CIRCULAIRES"
+    elif source_type == "OTHER_OFFICIAL" and metadata.get("import_method") == "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML":
+        resolved = "JUSTICE_ADMIN_OPEN_DATA"
+    elif source_type == "ARIANEWEB":
+        resolved = "ARIANEWEB"
+    elif source_type == "INSTITUTIONAL_GUIDANCE":
+        institutional_sources = {
+            "cdg-35": "CDG35",
+            "cdg-44": "CDG44",
+            "cdg-59": "CDG59",
+            "cdg-69": "CDG69",
+            "cig-petite-couronne": "CIG_PETITE_COURONNE",
+            "cig-grande-couronne": "CIG_GRANDE_COURONNE",
+            "cdg-departements": "CDG_DEPARTMENTS",
+            "cnfpt": "CNFPT",
+            "wikiterritorial-cnfpt": "CNFPT_WIKITERRITORIAL",
+            "dgafp": "DGAFP",
+            "dgafp-circulaires": "DGAFP_CIRCULAIRES",
+            "dgafp-documents-opposables": "DGAFP_DOCUMENTS_OPPOSABLES",
+            "dgafp-vigie": "DGAFP_VIGIE",
+            "dgcl": "DGCL",
+            "info-gouv": "INFO_GOUV",
+            "cfdt-interco": "CFDT_INTERCO",
+            "cfdt-fonctions-publiques": "CFDT_UFFA",
+            "cftc-fonction-publique": "CFTC_FONCTION_PUBLIQUE",
+            "cgt-fonction-publique": "CGT_FONCTION_PUBLIQUE",
+            "fo-fonction-publique": "FO_FONCTION_PUBLIQUE",
+            "solidaires-fonction-publique": "SOLIDAIRES_FONCTION_PUBLIQUE",
+            "unsa-fonction-publique": "UNSA_FONCTION_PUBLIQUE",
+        }
+        resolved = institutional_sources.get(source_id)
+    elif source_type == "SECONDARY_DOCTRINE":
+        secondary_sources = {
+            "landot": "LANDOT",
+            "gazette": "GAZETTE_COMMUNES",
+            "gazette-des-communes": "GAZETTE_COMMUNES",
+            "localtis": "LOCALtis",
+            "weka": "WEKA",
+            "dalloz": "DALLOZ",
+            "lexisnexis": "LEXISNEXIS",
+        }
+        resolved = secondary_sources.get(source_id)
+    elif source_type == "COMPETITOR":
+        competitors = {
+            "delibia": "DELIBIA",
+            "communia": "COMMUNIA",
+            "kolectivia": "KOLECTIVIA",
+        }
+        resolved = competitors.get(source_id)
+
+    explicit = item.get("source_key")
+    if isinstance(explicit, str) and explicit.strip():
+        if resolved is None or explicit.strip() != resolved:
+            raise ValueError("Clé de provenance incohérente avec le type et l'identité de la source.")
+    return resolved
 
 
 async def upsert_legal_document(conn, item: dict[str, Any]) -> dict[str, Any]:
