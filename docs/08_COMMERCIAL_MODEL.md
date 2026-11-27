@@ -1,34 +1,49 @@
-# 08 — Modèle économique et droits
+# 08 — Modèle commercial actuel de Dikévia
 
-## Principe commercial retenu
-- Organisation initiale CFDT Saint-Étienne : accès gratuit.
-- Produit conçu pour être commercialisé ultérieurement à d'autres OS en France.
-- Un seul socle logiciel, plusieurs espaces cloisonnés.
-- Les données nationales publiques peuvent être mutualisées.
-- Les actes locaux, documents internes, utilisateurs, réglages et factures sont propres à chaque organisation.
+Ce document remplace les anciennes hypothèses de prix et de capacité. La référence technique des droits est également décrite dans [54_AGENT_UNION_ACCESS_MODEL.md](54_AGENT_UNION_ACCESS_MODEL.md).
 
-## Hypothèses de monétisation (à tester, non validées)
-Possibilités :
-1. Abonnement par organisation.
-2. Paliers selon nombre d'utilisateurs actifs.
-3. Paliers selon nombre de collectivités/corpus locaux.
-4. Offre fédération ou grande structure sur devis.
-5. Frais optionnels d'intégration documentaire et formation.
+## Agent individuel
 
-Ne pas intégrer des tarifs définitifs dans le code. Les offres doivent être configurables en base et dans l'interface d'administration.
+- Tarif cible : **5 € TTC par mois**.
+- Un seul accès.
+- Chatbot juridique uniquement.
+- Limite commerciale : **5 questions par jour civil**, selon le fuseau Europe/Paris.
+- Les modules CST, formation spécialisée, CAP, CCP, défense et outils syndicaux ne sont pas inclus dans cette offre.
 
-## Gratuité de l'organisation fondatrice
-La gratuité doit être formalisée : bénéficiaire exact, périmètre, durée (permanente ou durée déterminée), services inclus, plafond éventuel, support, hébergement, coûts IA, évolution et sortie du dispositif. « Gratuit » ne signifie pas que les coûts d'exploitation disparaissent.
+## Abonnements syndicaux
 
-## Droits et propriété intellectuelle
-Avant toute commercialisation, formaliser par écrit :
-- propriétaire du code et cession/licence des droits patrimoniaux par le développeur ;
-- titulaire du nom et de la marque CFDT JURIS, après vérification des droits ;
-- autorisation éventuelle d'utiliser logo et identité CFDT ;
-- droit de commercialiser auprès d'autres OS ;
-- répartition des revenus, maintenance et responsabilité ;
-- licence des composants open source et conditions des sources juridiques ;
-- propriété et réutilisation des corpus locaux ;
-- contrats clients, CGU/CGV, politique de confidentialité, DPA et support.
+Trois capacités sont prévues :
 
-Une marque CFDT peut créer une confusion si le service est commercialisé à des organisations concurrentes. Étudier une marque produit neutre, en conservant éventuellement « CFDT JURIS » comme nom de l'espace pilote, sous réserve des autorisations.
+| Offre | Accès | Fonctionnalités | Quota commercial de questions |
+|---|---:|---|---|
+| Syndicat 5 | 5 | Toutes les fonctionnalités Dikévia | Aucun |
+| Syndicat 10 | 10 | Toutes les fonctionnalités Dikévia | Aucun |
+| Syndicat 15 | 15 | Toutes les fonctionnalités Dikévia | Aucun |
+
+Les prix de ces trois abonnements ne sont pas encore définis. Ne pas inventer de prix, de crédits ou de plafonds de questions.
+
+## Périmètre commercial
+
+- Aucune offre collectivité n'est commercialisée.
+- Les collectivités peuvent être des périmètres documentaires dans le travail syndical, mais ne constituent pas une catégorie de client ou d'abonnement à ce stade.
+- Le modèle privé historique à 10 membres n'est pas une offre commerciale actuelle et reste désactivé par défaut.
+- Le privilège fondateur permanent est distinct d'un abonnement commercial. Il doit être rattaché à une identité OIDC vérifiée par issuer et subject, jamais à une adresse e-mail seule.
+
+## Paiement et période de bêta
+
+- Dikévia reste gratuit pendant la phase actuelle.
+- Aucun paiement, checkout, rechargement de crédits ou service payant n'est activé.
+- Stripe reste désactivé. Ne pas réactiver les anciens flux de facturation sans prix validés et autorisation explicite.
+- Aucun coût externe ne doit être généré sans accord explicite.
+
+## Application des droits
+
+- Les droits sont calculés côté serveur à partir de l'identité, de l'appartenance à l'organisation et de l'abonnement actif.
+- Les restrictions ne doivent jamais reposer uniquement sur le masquage d'éléments de l'interface.
+- Le quota quotidien de cinq questions concerne l'offre Agent individuelle.
+- Les limites techniques anti-abus (par minute, concurrence, taille de requête) sont distinctes des quotas commerciaux.
+- Les abonnements syndicaux donnent accès aux modules syndicaux sans quota commercial de questions.
+
+## Référence d'état
+
+Pour les validations réellement exécutées, les limites connues et les tâches restantes, consulter [57_ETAT_CONSOLIDE_2026-11-27.md](57_ETAT_CONSOLIDE_2026-11-27.md). Les prix syndicaux restent à définir ; ne pas créer de checkout en attendant.

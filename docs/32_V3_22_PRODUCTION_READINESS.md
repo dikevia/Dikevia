@@ -1,3 +1,5 @@
+> **RAPPORT HISTORIQUE V3.22.** Les conclusions, branches, fournisseurs et procédures de mise en production de ce rapport ne décrivent pas l'état actuel. Ne pas utiliser comme feu vert de production. Voir `docs/57`.
+
 # CFDT JURIS V3.22 — validation d'exploitation, migrations et préproduction
 
 ## 1. Périmètre de cette livraison

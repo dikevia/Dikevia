@@ -1,3 +1,5 @@
+> **DOCUMENT HISTORIQUE — KEYCLOAK N'EST PLUS LE FOURNISSEUR PAR DÉFAUT.** Auth0 est le fournisseur retenu et validé sur staging. Le Compose normal ne démarre plus Keycloak ; ne pas suivre les étapes de démarrage ou de migration de ce document. Voir `docs/57`.
+
 # V3.7 — Fournisseur d'identité Keycloak
 
 ## Objectif et périmètre

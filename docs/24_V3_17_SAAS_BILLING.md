@@ -1,3 +1,5 @@
+> **DOCUMENT HISTORIQUE — PAIEMENTS DÉSACTIVÉS.** Les anciens tarifs Stripe et plafonds décrits ici ne correspondent plus au modèle Agent/Syndicat actuel. Aucun checkout ni paiement n'est actif. Voir `docs/08` et `docs/57`.
+
 # V3.17 — Abonnements SaaS et plafonds d'utilisateurs
 
 ## Offres implémentées
