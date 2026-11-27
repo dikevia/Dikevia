@@ -1841,7 +1841,7 @@ class LegalOrchestrator:
             item["scope_evidence"] = scope_check["evidence"]
             item["analysis_eligible"] = scope_check["analysis_eligible"]
             item["claim_eligible"] = scope_check.get("claim_eligible", scope_check["analysis_eligible"])
-            item["research_axis_relevant"] = _source_relevant_for_target(research_queries, item, request.public_service)
+            item["research_axis_relevant"] = _source_relevant_for_target(regulatory_queries, item, request.public_service)
             sources.append({**item, "source_status": "OFFICIAL_API_RESPONSE",
                 "temporal_status": "VERSION_RETRIEVED_AT_REQUESTED_DATE",
                 "version_matches_facts_date": bool(
@@ -2025,8 +2025,14 @@ class LegalOrchestrator:
         # request on every chat turn. Keep the deterministic topic/versant filter as
         # the baseline; reserve model calls for research planning and evidence analysis.
         for source in sources:
+            source_type = source.get("source_type")
+            source_queries = (
+                regulatory_queries if source_type == "LEGIFRANCE_LODA"
+                else code_research_queries if source_type == "LEGIFRANCE_API"
+                else research_queries
+            )
             source["research_axis_relevant"] = _source_relevant_for_target(
-                research_queries, source, request.public_service,
+                source_queries, source, request.public_service,
             )
 
 
