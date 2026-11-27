@@ -658,8 +658,8 @@ def build_legal_conversation_state(
                 status_declaration = match.group(0)[:180]
         if working_time_declaration is None:
             match = re.search(
-                r"\\b(?:je suis|je travaille)\\s+(?:à|a)\\s+temps\\s+"
-                r"(?:partiel|complet|non complet)\\b",
+                r"\b(?:je suis|je travaille)\s+(?:à|a)\s+temps\s+"
+                r"(?:partiel|complet|non complet)\b",
                 content,
                 re.IGNORECASE,
             )
@@ -667,7 +667,7 @@ def build_legal_conversation_state(
                 working_time_declaration = match.group(0)[:120]
         if contract_declaration is None:
             match = re.search(
-                r"\\b(?:je suis en|mon contrat est un)\\s+(CDD|CDI)\\b",
+                r"\b(?:je suis en|mon contrat est un)\s+(CDD|CDI)\b",
                 content,
                 re.IGNORECASE,
             )
@@ -711,7 +711,7 @@ def build_legal_conversation_state(
     state["messages_utilisateur_pertinents"] = relevant_user_messages
     if history and history[-1].get("role") == "assistant":
         previous_answer = str(history[-1].get("content") or "").strip()
-        questions = re.findall(r"[^?]{1,260}\\?", previous_answer[-1600:])
+        questions = re.findall(r"[^?]{1,260}\?", previous_answer[-1600:])
         if questions:
             state["question_clarification_precedente"] = " ".join(questions[-1].split())[-260:]
     return state
