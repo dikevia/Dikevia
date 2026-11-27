@@ -303,7 +303,7 @@ def test_cst_and_fs_calendar_controls_are_wired_to_instance_ui():
 
 def test_fs_topics_are_candidates_and_not_legal_conclusions():
     duerp = qualify_fs_topic("Mise à jour du DUERP")
-    prevention = qualify_fs_topic("Programme annuel de prévention des risques professionnels")
+    prevention = qualify_fs_topic("Programme annuel de prévention des risques professionnels (PAPRIPACT)")
 
     assert any(item["reference"] == "R. 253-24, 6°" for item in duerp["candidates"])
     assert any(item["reference"] == "R. 253-27" for item in prevention["candidates"])
