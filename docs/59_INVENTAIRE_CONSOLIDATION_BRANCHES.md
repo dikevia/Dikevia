@@ -328,3 +328,6 @@ Aucune migration SQL de ces branches n'a été exécutée. Aucun service Render,
 - `frontend/index.html` affiche un texte « Analyse juridique en cours… » pendant l'appel, mais l'audit n'a pas établi de liaison complète des classes d'état JARVIS `is-generating` et `is-speaking` avec des événements réels. La sphère vivante réactive reste à construire ; ne pas simuler une écoute vocale qui n'existe pas.
 
 Conclusion de cette passe : les candidats ciblés qui paraissaient apporter des tests manquants sont, pour les exemples ouverts, déjà consolidés dans `main`. Les branches restantes apportent surtout des versions historiques et des changements groupés. La priorité de travail reste donc l'architecture native Android/iOS et la réduction contrôlée des dépendances Keycloak, pas l'intégration artificielle de commits anciens.
+
+
+Complément de contrôle : `fix/stripe-billing-explicit-opt-in` présente 15 commits propres mais reste 2 163 commits derrière `main`. Son diff porte sur l'ancienne implémentation billing, la configuration, le backend et les tests. Cette version ne doit pas remplacer le dispositif courant : Stripe demeure désactivé par défaut et aucun paiement ne doit être activé sans accord explicite.
