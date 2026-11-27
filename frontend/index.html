@@ -745,7 +745,7 @@ async function prepareInstance(){
    cstQualificationHtml='<section><h3>Qualification indicative du sujet CST</h3>'+(candidateRows?'<ul>'+candidateRows+'</ul>':'<p>Aucun thème du référentiel n’a été détecté. Cela ne signifie pas qu’aucune consultation n’est requise.</p>')+'<p><b>Orientation santé / sécurité :</b> '+esc(cstQualification.routing_note||'À vérifier.')+'</p><p class="muted">'+esc(cstQualification.notice||'Qualification documentaire indicative, sans conclusion juridique.')+'</p><p class="muted">Références : '+refLinks+'</p></section>';
   }
   const agenda=result.cst_agenda_request||null;
-  const meetingDeadlines=result.cst_meeting_deadlines||null;
+  const meetingDeadlines=result.instance_meeting_deadlines||null;
   const fsNineMonths=result.fs_nine_month_assessment||null;
   const fsInspectorDeadlines=result.fs_inspector_request_deadlines||null;
   const writtenRequestDeadline=result.cst_written_request_deadline||null;
