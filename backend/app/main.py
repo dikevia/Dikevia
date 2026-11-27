@@ -45,6 +45,8 @@ from .entitlements import resolve_entitlements
 from .instances import prepare_instance_with_legal_sources
 from .cst_qualification import (
     assess_cst_agenda_request,
+    assess_annual_instance_meeting_frequency,
+    calculate_cst_written_request_deadline,
     assess_fs_nine_month_trigger,
     calculate_cst_meeting_deadlines,
     calculate_fs_inspector_request_deadlines,
@@ -1140,10 +1142,19 @@ async def prepare_social_instance(
     last_fs_meeting_raw = payload.get("last_fs_meeting_date")
     fs_as_of_raw = payload.get("fs_as_of_date")
     inspector_request_received_raw = payload.get("inspector_request_received_date")
+    cst_written_request_raw = payload.get("cst_written_request_received_date")
+    annual_meeting_count = payload.get("annual_meetings_held")
+    annual_health_safety_count = payload.get("annual_health_safety_meetings_held", 0)
     if not isinstance(meeting_urgent, bool):
         raise HTTPException(422, "meeting_urgent doit être un booléen.")
-    if instance.upper() != "CST" and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw)):
+    if instance.upper() != "CST" and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw, cst_written_request_raw, annual_health_safety_count)):
         raise HTTPException(422, "Les paramètres de calendrier CST/FS ne sont disponibles que pour une préparation CST.")
+    if annual_meeting_count is not None and (
+        isinstance(annual_meeting_count, bool) or not isinstance(annual_meeting_count, int) or annual_meeting_count < 0
+    ):
+        raise HTTPException(422, "annual_meetings_held doit être un entier positif ou nul.")
+    if isinstance(annual_health_safety_count, bool) or not isinstance(annual_health_safety_count, int) or annual_health_safety_count < 0:
+        raise HTTPException(422, "annual_health_safety_meetings_held doit être un entier positif ou nul.")
     agenda_context_supplied = any(
         value is not None
         for value in (titular_representatives, requesting_titular_representatives, requested_topic_in_competence)
@@ -1197,6 +1208,25 @@ async def prepare_social_instance(
             except (TypeError, ValueError) as exc:
                 raise HTTPException(422, "inspector_request_received_date doit être au format AAAA-MM-JJ.") from exc
             result["fs_inspector_request_deadlines"] = calculate_fs_inspector_request_deadlines(inspector_received_date)
+        if cst_written_request_raw:
+            if titular_representatives is None or requesting_titular_representatives is None:
+                raise HTTPException(422, "La demande écrite nécessite les deux effectifs de représentants titulaires.")
+            try:
+                written_request_date = date.fromisoformat(cst_written_request_raw)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(422, "cst_written_request_received_date doit être au format AAAA-MM-JJ.") from exc
+            result["cst_written_request_deadline"] = calculate_cst_written_request_deadline(
+                received_date=written_request_date,
+                titular_representatives=titular_representatives,
+                requesting_titular_representatives=requesting_titular_representatives,
+            )
+        if annual_meeting_count is not None:
+            result["annual_meeting_frequency"] = assess_annual_instance_meeting_frequency(
+                instance="CST",
+                meetings_held=annual_meeting_count,
+                formation_specialisee_exists=formation_specialisee_exists,
+                health_safety_meetings_held=annual_health_safety_count,
+            )
         return result
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
