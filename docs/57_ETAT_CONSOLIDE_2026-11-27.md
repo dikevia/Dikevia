@@ -46,7 +46,7 @@ La migration 033 est désormais ajoutée à la séquence PostgreSQL jetable de l
 
 ### Écart d'infrastructure à traiter séparément
 
-- Le service staging Render contrôlé est associé à `main`, en déploiement manuel, et son dernier commit live connu est `e8bd12a`. Le staging n'est donc pas nécessairement à jour avec les derniers développements de `main`.
+- Le service staging Render contrôlé est associé à `main`, en déploiement manuel, et son dernier commit live connu après le correctif de rendu de la page Abonnement est `732966a`. Le correctif n'a toutefois pas résolu le problème constaté par l'utilisateur, qui a demandé de laisser ce réglage de côté. Le staging n'est donc pas nécessairement à jour avec les derniers développements de `main`.
 - Le service de production contrôlé est toujours associé à l'ancienne branche `feature/dikevia-v3.38.5-cgfp-chat` et au commit `198ee805d73381fa8f10683e791ec74cf1d78c97`, pas au `main` courant.
 - Un service Render historique nommé `dikevia-keycloak` reste actif selon le contrôle précédent. Le Blueprint `render.yaml` et certaines configurations/documentations contiennent encore des références Keycloak et à l'ancienne branche.
 - Cet écart est un risque de gouvernance et de cohérence. Aucune suppression, modification de service, migration de production ou bascule de branche n'est incluse dans cette consolidation.
