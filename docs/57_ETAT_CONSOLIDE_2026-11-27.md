@@ -2,7 +2,7 @@
 
 **Date de référence : 27 novembre 2026**  
 **Branche de travail : `main` uniquement**  
-**Commit de référence contrôlé après stabilisation CI : `d88b7f6e1be8f954a0d69fea4fe34a026d3342fc`**
+**Commit fonctionnel contrôlé : `8462631d9f3cd8582ce65672d71c15b359d2349f`**
 
 Ce document est le point de situation opérationnel. Il prévaut sur les anciens états de livraison datés lorsqu'ils décrivent un état antérieur. Il ne constitue ni une recette complète, ni une certification juridique, ni une autorisation de mise en production.
 
@@ -24,10 +24,11 @@ Ce document est le point de situation opérationnel. Il prévaut sur les anciens
 
 - Dépôt : `dikevia/Dikevia`.
 - Branche : `main`.
-- Commit contrôlé : `d88b7f6e1be8f954a0d69fea4fe34a026d3342fc`.
-- Dernière CI entièrement terminée et vérifiée : run [46011116281](https://github.com/dikevia/Dikevia/actions/runs/46011116281), sur le commit parent `f65bd2f`, conclusion `success`.
-- Cette exécution comprend les 1 489 tests, l'intégration PostgreSQL/RLS réelle sur base jetable, les contrôles de lint/sécurité/dépendances et l'exécution effective de la migration 033 après 032 (confirmée dans les logs du job).
-- Une nouvelle CI a été déclenchée après le nettoyage du workflow sur le commit `d88b7f6` ; son résultat doit être contrôlé avant de certifier le dernier état.
+- Commit fonctionnel contrôlé : `8462631d9f3cd8582ce65672d71c15b359d2349f`.
+- Dernière CI complète vérifiée : run [46013359956](https://github.com/dikevia/Dikevia/actions/runs/46013359956), conclusion `success`.
+- **1 491 tests réussis, 0 échec, 1 avertissement** ; lint, analyse statique, audit des dépendances, scripts shell, Docker Compose et génération du kit développeur passent.
+- L'intégration PostgreSQL/RLS s'exécute sur une base jetable. La migration 033 est exécutée après 032 dans cette CI.
+- L'avertissement de test restant concerne l'usage de `httpx` par `starlette.testclient` ; il n'a pas fait échouer la suite.
 - Le succès CI ne prouve pas le fonctionnement des fournisseurs IA en conditions réelles, la pertinence juridique des réponses, la recette sur appareil Android ni l'alignement de la production.
 
 ### Correctif de consolidation CI
@@ -44,9 +45,15 @@ La migration 033 est désormais exécutée après 032 dans la séquence PostgreS
 
 ## 3. Authentification et environnements
 
-### Auth0
+### Auth0 et suppression du chemin par défaut Keycloak
 
 - Auth0 est le fournisseur retenu ; le porteur du projet a confirmé que le chantier est fait.
+- `backend/app/config.py` utilise désormais `auth0` comme fournisseur par défaut.
+- Les modèles `.env.example` et `.env.staging.example` n'activent plus Keycloak ; le modèle local laisse les paramètres Auth0 vides afin de ne pas embarquer de tenant ou de secret.
+- Le fallback statique navigateur est vide et l'endpoint `/auth-config.js` échoue fermé si les paramètres Auth0 ne sont pas fournis.
+- Le Compose local ne démarre plus Keycloak ; les deux services Keycloak ne sont accessibles que via le profil optionnel `legacy-keycloak`. Le script bootstrap ne les démarre plus.
+- Les sondes Prometheus et alertes Keycloak ont été retirées de la supervision par défaut.
+- Les fichiers Keycloak et le code d'administration associé restent présents comme compatibilité historique ; ils ne sont plus le chemin par défaut.
 - Les journaux staging contrôlés montrent le chargement de la configuration Auth0, le retour OIDC et une réponse HTTP 200 de `/api/v1/auth/me`.
 - Ces traces démontrent un parcours Auth0 fonctionnel sur le staging au moment du contrôle ; elles ne certifient pas tous les scénarios de session, tous les appareils Android ni la production.
 - Ne pas recommencer la migration Auth0 ni réintroduire Keycloak dans le produit.
@@ -56,7 +63,7 @@ La migration 033 est désormais exécutée après 032 dans la séquence PostgreS
 - Le service staging Render contrôlé est associé à `main`, en déploiement manuel, et son dernier commit live connu après le correctif de rendu de la page Abonnement est `732966a`. Le correctif n'a toutefois pas résolu le problème constaté par l'utilisateur, qui a demandé de laisser ce réglage de côté. Le staging n'est donc pas nécessairement à jour avec les derniers développements de `main`.
 - Le service de production contrôlé est toujours associé à l'ancienne branche `feature/dikevia-v3.38.5-cgfp-chat` et au commit `198ee805d73381fa8f10683e791ec74cf1d78c97`, pas au `main` courant.
 - Un service Render historique nommé `dikevia-keycloak` reste actif selon le contrôle précédent. Le Blueprint `render.yaml` et certaines configurations/documentations contiennent encore des références Keycloak et à l'ancienne branche.
-- Cet écart est un risque de gouvernance et de cohérence. Aucune suppression, modification de service, migration de production ou bascule de branche n'est incluse dans cette consolidation.
+- Cet écart est un risque de gouvernance et de cohérence. Les workflows SSH historiques de déploiement staging/production et le smoke test commercial Keycloak ont été désactivés dans `main` pour éviter toute activation accidentelle ou réveil de service facturable. Le Blueprint `render.yaml` n'a pas été modifié ni synchronisé. Aucune suppression, modification de service, migration de production ou bascule de branche n'est incluse dans cette consolidation.
 
 ## 4. Corpus juridique et recherche
 
@@ -117,8 +124,8 @@ Limite : les contrôles disponibles n'ont pas permis de prouver une requête cha
 
 1. **Production non alignée sur main** : l'environnement de production utilise encore une ancienne branche. Ne pas modifier sans décision distincte et plan de migration/retour arrière.
 2. **Protection de main** : le contrôle GitHub a indiqué que la branche n'était pas protégée et n'avait pas de vérifications obligatoires. C'est une mesure de gouvernance à mettre en place avec les droits d'administration appropriés ; aucun changement de paramètres n'est effectué ici.
-3. **CI migrations** : la migration 033 est maintenant incluse dans le workflow ; attendre le run CI pour constater son résultat.
-4. **Documentation historique** : README, checklist de mise en production, documents Keycloak et anciens états de bêta comportent encore des informations périmées. Ils doivent être clairement étiquetés comme historiques ou actualisés sans supprimer les preuves.
+3. **CI migrations** : la migration 033 est maintenant incluse et son exécution a été confirmée dans la CI verte.
+4. **Documentation historique** : le README, la checklist de mise en production et l'ancien état de bêta sont maintenant signalés comme archives historiques. Des consignes plus anciennes subsistent dans leur corps ; les développeurs doivent suivre `docs/00_DEVELOPMENT_START_HERE.md` et ce document.
 5. **Parcours métier** : audit détaillé à terminer sur les droits individuels/syndicaux, quotas serveur, invitations, séparation Admin, isolation multi-organisation et persistance conversationnelle.
 6. **Documents agents** : OCR des PDF image et parcours complet d'analyse documentaire restent à développer/valider.
 7. **Dossiers et instances** : persistance du suivi des avis, suites, délais, dossiers et historique des actions reste à construire.
