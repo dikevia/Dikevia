@@ -19,6 +19,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -37,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.dikevia.commercial.designsystem.JurisOrb
 import fr.dikevia.commercial.designsystem.JurisOrbState
+import fr.dikevia.commercial.core.api.DikeviaOrganization
 
 private val Glacier = Color(0xFFF3F7FB)
 private val Navy = Color(0xFF17283B)
@@ -62,6 +65,11 @@ fun NativeHomeScreen(
     authenticated: Boolean,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
+    organizations: List<DikeviaOrganization>,
+    selectedOrganizationId: String?,
+    onSelectOrganization: (String) -> Unit,
+    chatAnswer: String,
+    chatStatus: String,
     onSendQuestion: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -141,11 +149,41 @@ fun NativeHomeScreen(
                     }
 
                     Spacer(Modifier.height(18.dp))
+                    if (authenticated) {
+                        var organizationMenuExpanded by remember { mutableStateOf(false) }
+                        val selectedOrganization = organizations.firstOrNull { it.id == selectedOrganizationId }
+                        Text(
+                            if (selectedOrganization == null) "Aucune organisation active disponible" else "Espace : ${selectedOrganization.displayName}",
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Navy,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (organizations.size > 1) {
+                            TextButton(onClick = { organizationMenuExpanded = true }) {
+                                Text("Changer d'organisation", color = SteelBlue)
+                            }
+                            DropdownMenu(
+                                expanded = organizationMenuExpanded,
+                                onDismissRequest = { organizationMenuExpanded = false }
+                            ) {
+                                organizations.forEach { organization ->
+                                    DropdownMenuItem(
+                                        text = { Text(organization.displayName) },
+                                        onClick = {
+                                            onSelectOrganization(organization.id)
+                                            organizationMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     OutlinedTextField(
                         value = question,
                         onValueChange = { question = it },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = authenticated,
+                        enabled = authenticated && selectedOrganizationId != null,
                         placeholder = { Text(if (authenticated) "Posez votre question à JURIS…" else "Connectez-vous pour interroger JURIS") },
                         shape = RoundedCornerShape(18.dp),
                         minLines = 2
@@ -159,12 +197,33 @@ fun NativeHomeScreen(
                                 question = ""
                             }
                         },
-                        enabled = authenticated && question.isNotBlank(),
+                        enabled = authenticated && selectedOrganizationId != null && question.isNotBlank(),
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Text("Envoyer à JURIS")
+                    }
+                    if (chatStatus.isNotBlank()) {
+                        Text(
+                            chatStatus,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            color = SteelBlue,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    if (chatAnswer.isNotBlank()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text("Réponse de JURIS", color = Navy, fontWeight = FontWeight.Bold)
+                                Text(chatAnswer, color = Navy, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
                     }
                     if (!authenticated) {
                         Text(
