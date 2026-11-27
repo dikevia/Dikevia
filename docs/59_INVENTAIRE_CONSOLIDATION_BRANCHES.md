@@ -262,3 +262,16 @@ Le test `backend/tests/test_dikevia_visual_identity.py` a été renforcé pour c
 
 Commit des tests : `dc0de20c01cb7f07690a5e8d27fa88c3adf69484`. Le commit a été vérifié sur GitHub ; aucun statut de contrôle ni workflow n'a été retourné. Les tests n'ont pas été exécutés dans cet environnement.
 
+
+
+### Complément d'audit Auth0 / Keycloak — 27 novembre 2026
+
+Le contrôle des fichiers et tests de `main` précise le périmètre de retrait :
+
+- Auth0 est le fournisseur par défaut dans `backend/app/config.py`. Les jetons d'accès sont vérifiés par signature, issuer, audience, expiration et JWKS ; le jeton d'identité est lié au même couple issuer/subject.
+- `backend/app/dependencies.py` conserve une compatibilité historique strictement fondée sur le préfixe de subject Auth0 et une recherche exacte de l'ancien issuer + subject dans PostgreSQL sous RLS. Aucun rapprochement par email n'est utilisé dans cette fonction. Cette compatibilité ne doit pas être supprimée avant migration contrôlée des identités et vérification des comptes historiques.
+- Le chemin Keycloak Admin est encore présent dans `backend/app/main.py` pour provisionner les comptes invités lorsque `OIDC_PROVIDER=keycloak`. Les paramètres et validations correspondants restent dans `backend/app/config.py`.
+- Les contrats historiques qui imposent encore Keycloak sont notamment `backend/tests/test_v37_keycloak_contracts.py`, `test_v38_invitation_contracts.py`, `test_v39_invitation_integrity.py`, ainsi que des configurations de test dans `test_v35_runtime_security.py` et `test_legal_knowledge_base.py`. Une suppression partielle de l'import ou des paramètres ferait échouer ces contrats ou pourrait rendre la configuration incohérente.
+- `deploy/.env.example` et `deploy/docker-compose.yml` contiennent encore un profil Keycloak historique. Le fichier Compose déclare ce profil comme optionnel/legacy ; ce n'est pas une preuve que le service Render Keycloak peut être arrêté.
+
+Décision : ne pas supprimer Keycloak en une seule modification. Le lot de migration devra (1) figer Auth0 comme seul fournisseur runtime, (2) retirer uniquement le provisionnement Keycloak des invitations et basculer le flux vers Universal Login + invitation Dikévia, (3) remplacer les tests qui exigent Keycloak par des contrats Auth0, (4) préserver et tester séparément la résolution des anciens comptes par issuer/subject, (5) auditer les comptes en base et le service Render d'identité avant toute désactivation physique. Aucun rapprochement par email, aucune écriture de production et aucun arrêt de service dans ce lot.
