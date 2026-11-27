@@ -43,6 +43,7 @@ from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request, consume_daily_chat_question
 from .entitlements import resolve_entitlements
 from .instances import prepare_instance_with_legal_sources
+from .cst_qualification import assess_cst_agenda_request
 from .personal_documents import router as personal_documents_router
 from .auth_sessions import router as oidc_sessions_router
 import httpx
@@ -1124,10 +1125,23 @@ async def prepare_social_instance(
     formation_specialisee_exists = payload.get("formation_specialisee_exists")
     if formation_specialisee_exists is not None and not isinstance(formation_specialisee_exists, bool):
         raise HTTPException(422, "formation_specialisee_exists doit être un booléen ou absent.")
+    titular_representatives = payload.get("titular_representatives")
+    requesting_titular_representatives = payload.get("requesting_titular_representatives")
+    requested_topic_in_competence = payload.get("requested_topic_in_competence")
+    if requested_topic_in_competence is not None and not isinstance(requested_topic_in_competence, bool):
+        raise HTTPException(422, "requested_topic_in_competence doit être un booléen ou absent.")
+    agenda_context_supplied = any(
+        value is not None
+        for value in (titular_representatives, requesting_titular_representatives, requested_topic_in_competence)
+    )
+    if agenda_context_supplied and (
+        titular_representatives is None or requesting_titular_representatives is None
+    ):
+        raise HTTPException(422, "Les deux effectifs de représentants titulaires sont nécessaires.")
     try:
         if legifrance.configured:
             await enforce_legal_connector_rate_limit(ctx)
-        return await prepare_instance_with_legal_sources(
+        result = await prepare_instance_with_legal_sources(
             instance,
             objet,
             legifrance_connector=legifrance,
@@ -1135,6 +1149,13 @@ async def prepare_social_instance(
             effective_date=datetime.now(ZoneInfo("Europe/Paris")).date(),
             formation_specialisee_exists=formation_specialisee_exists,
         )
+        if result.get("instance") == "CST" and agenda_context_supplied:
+            result["cst_agenda_request"] = assess_cst_agenda_request(
+                titular_representatives=titular_representatives,
+                requesting_titular_representatives=requesting_titular_representatives,
+                requested_topic_in_competence=requested_topic_in_competence,
+            )
+        return result
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
