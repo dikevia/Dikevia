@@ -1,3 +1,5 @@
+import pytest
+
 from app.fpt_scope import _matched_topic_families, classify_public_service_scope, is_topic_relevant_source
 from app.orchestrator import (
     _build_code_research_queries,
