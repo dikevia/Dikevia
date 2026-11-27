@@ -173,10 +173,17 @@ _TOPIC_EXPANSIONS = (
         "accident de service maladie professionnelle CGFP décret 87-602",
     ),
     (
-        ("ifse", "rifseep", "nbi", "regime indemnitaire",
+        ("nouvelle bonification indiciaire", "bonification indiciaire", "nbi"),
+        "nouvelle bonification indiciaire NBI fonctionnaires territoriaux "
+        "CGFP articles L712-12 L712-13 décret 93-863 du 18 juin 1993 "
+        "décret 2006-779 du 3 juillet 2006 décret 2006-780 du 3 juillet 2006 "
+        "points indice majoré fonctions éligibles",
+    ),
+    (
+        ("ifse", "rifseep", "regime indemnitaire",
          "remuneration", "traitement indiciaire", "baisse de primes",
          "suppression de primes"),
-        "rémunération fonctionnaires territoriaux régime indemnitaire RIFSEEP IFSE NBI "
+        "rémunération fonctionnaires territoriaux régime indemnitaire RIFSEEP IFSE "
         "délibération locale décret 91-875 CGFP",
     ),
     (
@@ -619,9 +626,16 @@ _TOPIC_RESEARCH_AXES = (
         ),
     ),
     (
-        ("ifse", "rifseep", "nbi", "regime indemnitaire", "régime indemnitaire", "remuneration", "rémunération", "traitement indiciaire", "baisse de primes", "suppression de primes"),
+        ("nouvelle bonification indiciaire", "bonification indiciaire", "nbi"),
         (
-            "rémunération agents territoriaux CGFP régime indemnitaire RIFSEEP IFSE NBI délibération locale",
+            "CGFP articles L712-12 et L712-13 nouvelle bonification indiciaire fonctionnaires territoriaux",
+            "décret 93-863 du 18 juin 1993 décret 2006-779 du 3 juillet 2006 décret 2006-780 du 3 juillet 2006 NBI fonctions territoriales points indice majoré",
+        ),
+    ),
+    (
+        ("ifse", "rifseep", "regime indemnitaire", "régime indemnitaire", "remuneration", "rémunération", "traitement indiciaire", "baisse de primes", "suppression de primes"),
+        (
+            "rémunération agents territoriaux CGFP régime indemnitaire RIFSEEP IFSE délibération locale",
             "fonction publique territoriale décret 91-875 régime indemnitaire équivalence corps délibération assemblée",
         ),
     ),
