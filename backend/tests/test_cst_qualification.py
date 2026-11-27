@@ -544,7 +544,7 @@ def test_fs_register_health_safety_requires_review_and_separates_dgi_register():
     assert result["legal_conclusion"] is False
 
 
-def test_fs_annual_prevention_program_tracks_unimplemented_measures_and_duerp():
+def test_fs_annual_prevention_program_tracks_unimplemented_measures_and_rsu():
     result = qualify_fs_operational_topic("Présentation du rapport annuel et du PAPRIPACT")
     candidate = next(item for item in result["candidates"] if item["code"] == "annual_prevention_program")
     joined = " ".join(candidate["actions_to_check"])
@@ -552,7 +552,7 @@ def test_fs_annual_prevention_program_tracks_unimplemented_measures_and_duerp():
     assert "chaque année" in joined
     assert "coût estimé" in joined
     assert "motifs" in joined
-    assert "document unique" in joined
+    assert "rapport social unique" in joined
 
 
 def test_fs_visit_and_investigation_followup_distinguish_report_conclusions_and_authority_decisions():
