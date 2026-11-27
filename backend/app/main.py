@@ -1171,6 +1171,19 @@ async def prepare_social_instance(
             raise HTTPException(422, f"{field_name} doit être un booléen ou absent.")
     if cst_evocation_initiative is not None and (not isinstance(cst_evocation_initiative, str) or cst_evocation_initiative not in {"PRESIDENT", "STAFF_REPRESENTATIVES"}):
         raise HTTPException(422, "cst_evocation_initiative doit être PRESIDENT ou STAFF_REPRESENTATIVES.")
+    if cst_evocation_initiative is not None:
+        if cst_staff_representatives_total is None or cst_staff_representatives_supporting is None:
+            raise HTTPException(422, "L'initiative R. 253-81 nécessite les effectifs et le nombre de soutiens des représentants du personnel.")
+        if (
+            isinstance(cst_staff_representatives_total, bool)
+            or isinstance(cst_staff_representatives_supporting, bool)
+            or not isinstance(cst_staff_representatives_total, int)
+            or not isinstance(cst_staff_representatives_supporting, int)
+            or cst_staff_representatives_total < 1
+            or cst_staff_representatives_supporting < 0
+            or cst_staff_representatives_supporting > cst_staff_representatives_total
+        ):
+            raise HTTPException(422, "Les effectifs de représentants du personnel au CST sont invalides.")
     if fs_secretary_consulted is not None and instance.upper() != "FS":
         raise HTTPException(422, "Le contrôle du secrétaire concerne la formation spécialisée.")
     if cst_written_request_raw and instance.upper() != "CST":
