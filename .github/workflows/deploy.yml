@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: ${{ inputs.confirm == 'DEPLOY' }}
+    if: ${{ false }} # Disabled: legacy Keycloak/SSH deployment path requires an Auth0-only replacement.
     runs-on: ubuntu-latest
     environment: production
     steps:
