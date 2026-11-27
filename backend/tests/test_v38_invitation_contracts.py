@@ -7,11 +7,14 @@ def test_invitation_uses_auth0_universal_login_without_keycloak_provisioning():
     main = (ROOT / "backend/app/main.py").read_text()
     config = (ROOT / "backend/app/config.py").read_text()
     assert "KeycloakAdmin" not in main
+    assert "management/v2" not in main
     assert "keycloak_ready" not in main
     assert 'settings.oidc_provider == "auth0"' in main
     assert "Auth0 Universal Login handles authentication and any sign-up/email-verification flow enabled in the tenant." in main
     assert "await asyncio.to_thread(send_invitation_email" in main
     assert 'delivery = "SMTP_EMAIL_SENT"' in main
+    assert "UPDATE invitations SET status='REVOKED'" in main
+    assert "raise HTTPException(503" in main
     assert 'result["invitation_token"] = token' in main  # manual fallback only
     assert 'if config.oidc_provider != "auth0"' in config
 
