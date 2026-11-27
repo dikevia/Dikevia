@@ -357,3 +357,74 @@ def test_all_ai_research_and_answer_stages_receive_versant_consistent_employer()
     assert source.count(
         "_effective_employer_for_versant(request.public_service, request.employer)"
     ) == 4
+
+
+def test_provider_context_history_keeps_bounded_recent_turns_for_followup_only():
+    from app.orchestrator import _provider_context_history
+
+    prior = [
+        {"role": "user", "content": "Je suis titulaire et mon employeur refuse mes heures supplémentaires."},
+        {"role": "assistant", "content": "Les règles de décompte doivent être vérifiées."},
+        {"role": "user", "content": "J'ai demandé une récupération et elle a été refusée."},
+        {"role": "assistant", "content": "Avez-vous une décision écrite de refus ?"},
+    ]
+    history = _provider_context_history(
+        "Oui, j'ai reçu un courrier.\nJ'ai demandé une récupération et elle a été refusée.",
+        True,
+        prior_history=prior,
+    )
+    assert history == prior
+    assert _provider_context_history(
+        "Comment fonctionne le CET ?", False, prior_history=prior,
+    ) == []
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_inherits_declared_case_period_and_employer_on_followup(monkeypatch):
+    captured = {}
+
+    async def ask_plan(**kwargs):
+        captured.update(kwargs)
+        return LegalResearchPlan(
+            queries=[],
+            legal_issues=[],
+            clarification_needed="Pouvez-vous préciser la date du refus ?",
+        )
+
+    monkeypatch.setattr(orchestrator_module, "plan_legal_research", ask_plan)
+
+    history = [
+        {
+            "role": "user",
+            "content": (
+                "Je suis agent contractuel en CDD et je travaille à temps partiel. "
+                "Mon employeur refuse mes heures supplémentaires."
+            ),
+            "metadata": {
+                "employer": "VILLE_SAINT_ETIENNE",
+                "public_service": "FPT",
+                "facts_start_date": "2024-02-01",
+                "facts_end_date": None,
+                "situation_ongoing": True,
+            },
+        },
+        {"role": "assistant", "content": "Avez-vous reçu une décision écrite de refus ?"},
+    ]
+
+    response = await LegalOrchestrator().ask(
+        AskRequest(employer="NATIONAL", question="Oui, j'ai reçu un courrier."),
+        "00000000-0000-0000-0000-000000000001",
+        conversation_history=history,
+    )
+
+    assert response.clarification_question == "Pouvez-vous préciser la date du refus ?"
+    assert captured["employer"] == "VILLE_SAINT_ETIENNE"
+    assert captured["facts_period"]["period_start"] == "2024-02-01"
+    assert captured["facts_period"]["ongoing"] is True
+    assert captured["facts_period"]["period_inherited_from_conversation"] is True
+    context = captured["legal_context"]["contexte_conversationnel_juridique"]
+    assert context["agent_status_declare"] == "Je suis agent contractuel"
+    assert context["type_contrat_declare"] == "CDD"
+    assert context["temps_travail_declare"] == "je travaille à temps partiel"
+    assert context["employeur_selectionne"] == "VILLE_SAINT_ETIENNE"
+    assert len(captured["conversation_history"]) == 2
