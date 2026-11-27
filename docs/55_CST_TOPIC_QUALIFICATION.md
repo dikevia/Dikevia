@@ -22,7 +22,7 @@ Une correspondance de mots-clés est un **candidat à vérifier**, jamais une co
 - qu'une autre disposition spéciale ne modifie pas l'analyse ;
 - que le sujet relève du CST ou de la formation spécialisée.
 
-Pour les sujets de santé, sécurité et conditions de travail, l'orientation reste indéterminée tant que l'existence de la formation spécialisée n'est pas renseignée. Le seuil et les cas de création sont prévus à l'article L. 251-9 du CGFP. Son existence ne suffit pas à elle seule : son périmètre et les règles de compétence doivent encore être contrôlés.
+Pour les sujets de santé, sécurité et conditions de travail, l'orientation reste indéterminée tant que l'existence de la formation spécialisée n'est pas renseignée. En FPT, une FS est obligatoire dans les collectivités et établissements employant au moins 200 agents ; en dessous, elle peut être créée par délibération lorsque des risques professionnels particuliers le justifient. Une FS est instituée dans chaque SDIS sans condition d'effectif (CGFP L. 251-9). Son existence ne suffit pas à elle seule : son périmètre et les règles de compétence doivent encore être contrôlés.
 
 ## Délais de séance
 
