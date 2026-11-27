@@ -63,7 +63,14 @@ class NativePreviewActivity : FragmentActivity() {
                 authenticated = authenticated,
                 organizations = organizations,
                 selectedOrganizationId = selectedOrganizationId,
-                onSelectOrganization = { selectedOrganizationId = it },
+                onSelectOrganization = {
+                    if (selectedOrganizationId != it) {
+                        selectedOrganizationId = it
+                        conversationId = null
+                        chatAnswer = ""
+                        chatStatus = "Organisation changée. Une nouvelle conversation sera ouverte."
+                    }
+                },
                 chatAnswer = chatAnswer,
                 chatStatus = chatStatus,
                 onSignIn = {
