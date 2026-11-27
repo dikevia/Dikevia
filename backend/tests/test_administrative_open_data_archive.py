@@ -343,3 +343,42 @@ def test_administrative_xml_docket_check_ignores_incidental_later_citations():
         "cité dans les motifs est une décision antérieure."
     )
     assert _administrative_case_number_matches_body("2604414", body)
+
+
+def test_administrative_xml_docket_check_uses_current_caa_appeal_number():
+    from app.legal_ingestion import _administrative_case_number_matches_body
+
+    body = (
+        "Procédure contentieuse antérieure : Par une requête enregistrée sous le n° 2301814, "
+        "les requérants ont saisi le tribunal administratif.\n"
+        "Procédure devant la Cour : Par une requête enregistrée le 16 septembre 2026, "
+        "sous le n° 26MA3089, les requérants demandent l'annulation du jugement."
+    )
+    assert _administrative_case_number_matches_body("26MA03089", body)
+    assert not _administrative_case_number_matches_body("26MA03090", body)
+
+
+def test_administrative_xml_docket_check_does_not_use_related_case_in_vu_list():
+    from app.legal_ingestion import _administrative_case_number_matches_body
+
+    body = (
+        "Vu la procédure suivante : Par une requête, enregistrée le 3 septembre 2026, "
+        "M. A demande la suspension d'une décision.\n"
+        "Vu : la requête en annulation enregistrée le 10 juin 2026 sous le n° 2600762."
+    )
+    assert _administrative_case_number_matches_body("2600764", body)
+
+
+def test_administrative_xml_docket_check_accepts_joined_proceedings():
+    from app.legal_ingestion import _administrative_case_number_matches_body
+
+    body = (
+        "Vu les procédures suivantes :\n"
+        "I.- Par une demande enregistrée le 19 novembre 2024, sous le n° 2600808, "
+        "M. A demande l'exécution d'un jugement.\n"
+        "II.- Par une demande enregistrée le 19 novembre 2024, sous le n° 2600810, "
+        "M. A demande également l'exécution de ce jugement.\n"
+        "Vu : les autres pièces du dossier."
+    )
+    assert _administrative_case_number_matches_body("2600808", body)
+    assert _administrative_case_number_matches_body("2600810", body)
