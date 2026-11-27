@@ -1,6 +1,10 @@
 from datetime import date
 
-from app.cst_qualification import (\n    CST_TOPIC_RULES,\n    calculate_cst_meeting_deadlines,\n    qualify_cst_topic,\n)
+from app.cst_qualification import (
+    CST_TOPIC_RULES,
+    calculate_cst_meeting_deadlines,
+    qualify_cst_topic,
+)
 from app.instances import prepare_instance
 
 
