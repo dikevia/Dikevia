@@ -1,3 +1,6 @@
+# HISTORICAL BLUEPRINT — DO NOT SYNC FROM MAIN WITHOUT AN EXPLICIT PRODUCTION MIGRATION PLAN.
+# This file still describes the legacy production branch and Keycloak identity service.
+# The production service is intentionally not aligned with main; changing/syncing this file can affect live infrastructure.
 services:
   - type: web
     name: dikevia-commercial-api
