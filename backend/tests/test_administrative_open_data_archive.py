@@ -175,3 +175,29 @@ async def test_archive_importer_counts_rejected_fpt_items_without_losing_success
     assert result["records_imported"] == 1
     assert result["records_rejected"] == 1
     assert conn.last_update[1][1:5] == ("PARTIAL", 2, 1, 1)
+
+
+
+@pytest.mark.asyncio
+async def test_archive_importer_skips_archives_with_a_previous_successful_run():
+    module = _load_archive_importer()
+
+    class FakeConn:
+        def __init__(self):
+            self.query = None
+            self.args = None
+        async def fetchval(self, query, *args):
+            self.query = query
+            self.args = args
+            return True
+
+    conn = FakeConn()
+    assert await module.archive_already_imported(conn, "CAA_202603.zip") is True
+    assert "status='SUCCEEDED'" in conn.query
+    assert conn.args == ("CAA_202603.zip",)
+
+
+def test_archive_downloader_rejects_non_official_hosts_before_network_access():
+    module = _load_archive_importer()
+    with pytest.raises(ValueError, match="hôte officiel HTTPS"):
+        module.download_archive(None, "https://example.com/archive.zip")

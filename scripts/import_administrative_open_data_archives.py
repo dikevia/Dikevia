@@ -89,6 +89,20 @@ def download_archive(client: httpx.Client, url: str) -> bytes | None:
     return raw
 
 
+async def archive_already_imported(conn, archive_name: str) -> bool:
+    """Avoid downloading and reprocessing an archive already imported successfully."""
+    return bool(await conn.fetchval(
+        """SELECT EXISTS(
+             SELECT 1 FROM legal_ingestion_runs
+             WHERE source_type='OTHER_OFFICIAL'
+               AND run_mode='BULK_XML_IMPORT'
+               AND query_text=$1
+               AND status='SUCCEEDED'
+           )""",
+        archive_name[:250],
+    ))
+
+
 async def import_archive(
     conn,
     court: str,
@@ -190,6 +204,10 @@ async def run(args) -> dict:
         with httpx.Client(timeout=timeout, follow_redirects=False) as client:
             for index, (court, month, url) in enumerate(planned):
                 archive_name = url.rsplit("/", 1)[-1]
+                if conn is not None and not args.reimport_existing:
+                    if await archive_already_imported(conn, archive_name):
+                        results.append({"archive": archive_name, "status": "ALREADY_IMPORTED"})
+                        continue
                 raw = download_archive(client, url)
                 if raw is None:
                     results.append({"archive": archive_name, "status": "NOT_PUBLISHED"})
@@ -236,6 +254,7 @@ def main() -> int:
     parser.add_argument("--max-archives", type=int, default=36, help="Garde-fou sur le nombre d'archives téléchargées.")
     parser.add_argument("--delay-seconds", type=float, default=1.0, help="Pause entre deux archives.")
     parser.add_argument("--apply", action="store_true", help="Écrit dans le corpus ; sans cette option, exécution en dry-run.")
+    parser.add_argument("--reimport-existing", action="store_true", help="Force la réimportation des archives déjà réussies.")
     parser.add_argument("--export-json", type=Path, help="Exporte le bilan JSON.")
     args = parser.parse_args()
     if args.max_archives < 1 or args.delay_seconds < 0 or args.delay_seconds > 30:
