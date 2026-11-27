@@ -335,7 +335,10 @@ def rerank_legal_evidence_sources(
         assurance = source.get("legal_assurance")
         assurance = assurance if isinstance(assurance, dict) else {}
         # A small tie-breaker only; never let abstract source rank outrun topical fit.
-        authority_score = min(100, max(0, int(assurance.get("review_priority") or 0)))
+        try:
+            authority_score = min(100, max(0, int(assurance.get("review_priority") or 0)))
+        except (TypeError, ValueError):
+            authority_score = 0
         return (topical_fit, question_match, temporal_score, integrity_score + content_score, authority_score)
 
     indexed = list(enumerate(records))
