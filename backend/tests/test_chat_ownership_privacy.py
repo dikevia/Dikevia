@@ -269,3 +269,50 @@ def test_frontend_requires_a_fresh_checkbox_for_each_local_document_transfer():
     assert "confirm_local_document_ai_transfer:confirmLocalDocumentAITransfer" in html
     assert 'id="confirmComplianceLocalDocumentAITransfer"' in html
     assert "confirm_local_document_ai_transfer:String(consent)" in html
+
+
+def test_ai_safe_history_preserves_only_allowlisted_user_case_metadata():
+    from app.main import _ai_safe_conversation_history
+
+    rows = [{
+        "role": "user",
+        "content": "Dans cette situation, quels sont mes recours ?",
+        "metadata": {
+            "employer": "VILLE_SAINT_ETIENNE",
+            "public_service": "FPT",
+            "facts_start_date": "2024-02-01",
+            "facts_end_date": None,
+            "situation_ongoing": True,
+            "confirm_local_document_ai_transfer": True,
+            "uploaded_document_id": "private-file-123",
+            "arbitrary_secret": "must-not-pass",
+        },
+    }]
+    history = _ai_safe_conversation_history(rows)
+    assert history == [{
+        "role": "user",
+        "content": "Dans cette situation, quels sont mes recours ?",
+        "metadata": {
+            "employer": "VILLE_SAINT_ETIENNE",
+            "public_service": "FPT",
+            "facts_start_date": "2024-02-01",
+            "facts_end_date": None,
+            "situation_ongoing": True,
+        },
+    }]
+
+
+def test_ai_safe_history_still_excludes_assistant_turns_with_local_documents():
+    from app.main import _ai_safe_conversation_history
+
+    rows = [
+        {"role": "assistant", "content": "Réponse contenant un document personnel.", "metadata": {
+            "contains_local_documents": True,
+            "sources": [{"source_type": "PERSONAL_DOCUMENT"}],
+        }},
+        {"role": "user", "content": "Et dans ce cas ?", "metadata": {"public_service": "FPT"}},
+    ]
+    assert _ai_safe_conversation_history(rows) == [{
+        "role": "user", "content": "Et dans ce cas ?",
+        "metadata": {"public_service": "FPT"},
+    }]
