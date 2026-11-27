@@ -155,3 +155,18 @@ Aucune application native Auth0 n'a été créée, aucun paramètre du tenant n'
 7. Recetter la connexion, la rotation/expiration de session, la déconnexion, les erreurs 401/403 et les permissions sur appareil physique.
 
 La migration de la WebView doit être une bascule explicite et réversible : garder l'ancien chemin de build jusqu'à validation du premier APK natif, sans distribuer ni déployer ce dernier prématurément.
+
+
+## 11. Première fondation Compose native créée sur main — 27 novembre 2026
+
+Une première brique de code native, isolée du parcours WebView encore en service, a été ajoutée :
+
+- `android/build.gradle.kts` : déclaration du plugin Kotlin Compose versionné avec Kotlin 2.0.21 ;
+- `android/app/build.gradle.kts` : activation de Compose et ajout du BOM Compose 2024.12.01, UI, graphics, Material 3 et tooling ;
+- `android/app/src/main/java/fr/dikevia/commercial/designsystem/JarvisOrb.kt` : composant Compose JARVIS, palette glacier/acier/bleu nuit, noyau lumineux, anneaux, pulsation et états sémantiques `READY`, `LISTENING`, `ANALYZING`, `GENERATING`, `COMPLETED`, `ERROR`.
+
+Le composant reçoit explicitement son état du client appelant. Il ne simule pas de microphone, de recherche ni de génération par lui-même. L'appelant ne devra passer `LISTENING` que lorsqu'une capture vocale réelle sera active.
+
+**Limites actuelles :** le composant n'est pas encore branché à `MainActivity`, qui reste une WebView. Il n'y a pas encore de ViewModel d'état assistant, de tests Compose, de validation de build Gradle, de gestion de réduction des animations, ni d'intégration Auth0 native. Aucun APK natif n'a été construit ou distribué. Les modifications constituent une fondation UI isolée, pas une application native achevée.
+
+Le premier contrôle de compilation doit être exécuté dans un environnement Android/Gradle avec SDK 35 et JDK 17 avant toute bascule du point d'entrée de l'application.
