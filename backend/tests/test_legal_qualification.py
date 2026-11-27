@@ -650,3 +650,108 @@ def test_refused_part_time_is_not_misclassified_as_a_leave_followup():
     assert context.question == question
     qualification = qualify_legal_question(context.question)
     assert qualification["topic"] == "WORKING_TIME"
+
+
+def test_long_followup_keeps_the_current_message_and_prior_case_referent():
+    from app.legal_qualification import build_contextual_research_context
+
+    current = (
+        "Dans cette situation, mon responsable vient de m'adresser un courrier "
+        "qui reprend les faits déjà évoqués et ajoute une nouvelle décision. "
+        "Je souhaite comprendre si cette décision change l'analyse, quelles garanties "
+        "procédurales doivent être respectées et quelles pièces peuvent être utiles. "
+        + "Je précise les circonstances complémentaires. " * 5
+    )
+    prior = "Je suis titulaire dans une commune et ma collectivité refuse de payer mes heures supplémentaires."
+    context = build_contextual_research_context(
+        current, [prior], ["La réponse précédente distinguait le régime des IHTS."]
+    )
+    assert context.is_followup is True
+    assert current in context.question
+    assert prior in context.question
+    assert context.assistant_context == "La réponse précédente distinguait le régime des IHTS."
+
+
+def test_long_standalone_question_is_not_attached_to_previous_case():
+    from app.legal_qualification import build_contextual_research_context
+
+    current = "Je souhaite connaître les règles relatives aux congés annuels. " * 6
+    context = build_contextual_research_context(
+        current,
+        ["Je suis titulaire et mon employeur refuse mes heures supplémentaires."],
+        ["La réponse précédente concernait les IHTS."],
+    )
+    assert context.is_followup is False
+    assert context.question == current.strip()
+    assert context.assistant_context is None
+
+
+def test_structured_case_context_inherits_only_explicit_user_facts_on_followup():
+    from app.legal_qualification import build_legal_conversation_state
+
+    history = [
+        {
+            "role": "user",
+            "content": "Je suis agent contractuel en CDD et je travaille à temps partiel.",
+            "metadata": {
+                "employer": "VILLE_SAINT_ETIENNE",
+                "facts_start_date": "2024-02-01",
+                "facts_end_date": None,
+                "situation_ongoing": True,
+            },
+        },
+        {"role": "assistant", "content": "Votre contrat et votre temps de travail sont à préciser."},
+    ]
+    state = build_legal_conversation_state(
+        "Et dans ce cas, quels sont mes recours ?",
+        history,
+        is_followup=True,
+        current_turn_metadata={"employer": "NATIONAL"},
+    )
+    assert state["continuity"] == "FOLLOW_UP"
+    assert state["agent_status_declare"] == "Je suis agent contractuel"
+    assert state["type_contrat_declare"] == "CDD"
+    assert state["temps_travail_declare"] == "je travaille à temps partiel"
+    assert state["employeur_selectionne"] == "VILLE_SAINT_ETIENNE"
+    assert state["periode_faits_declaree"] == {
+        "date_exacte": None,
+        "debut": "2024-02-01",
+        "fin": None,
+        "situation_en_cours": True,
+        "origine": "déclaration utilisateur dans cette conversation",
+    }
+
+
+def test_structured_case_context_does_not_inherit_personal_facts_to_new_topic():
+    from app.legal_qualification import build_legal_conversation_state
+
+    state = build_legal_conversation_state(
+        "Comment fonctionne le compte épargne-temps ?",
+        [{
+            "role": "user",
+            "content": "Je suis agent contractuel en CDD.",
+            "metadata": {"employer": "VILLE_SAINT_ETIENNE", "facts_start_date": "2024-02-01"},
+        }],
+        is_followup=False,
+        current_turn_metadata={"employer": "NATIONAL"},
+    )
+    assert state["continuity"] == "NEW_TOPIC"
+    assert state["agent_status_declare"] is None
+    assert state["employeur_selectionne"] is None
+    assert state["periode_faits_declaree"] is None
+
+
+def test_structured_case_context_never_promotes_assistant_claims_to_user_facts():
+    from app.legal_qualification import build_legal_conversation_state
+
+    state = build_legal_conversation_state(
+        "Et dans ce cas ?",
+        [
+            {"role": "user", "content": "Mon employeur refuse ma demande."},
+            {"role": "assistant", "content": "Vous êtes probablement contractuel et à temps partiel."},
+        ],
+        is_followup=True,
+    )
+    assert state["agent_status_declare"] is None
+    assert state["temps_travail_declare"] is None
+    assert state["facts_origin"] == "USER_DECLARATIONS_ONLY"
