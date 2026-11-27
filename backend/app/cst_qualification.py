@@ -137,3 +137,58 @@ def calculate_cst_meeting_deadlines(meeting_date: date, *, urgent: bool = False)
         "references": ["CGFP R. 254-38", "CGFP R. 254-39"],
         "notice": "Dates calculées en jours calendaires par soustraction de dates. Vérifier les règles de computation applicables et les circonstances particulières du dossier ; en urgence, seul le délai de convocation est ramené à huit jours.",
     }
+
+
+
+def assess_cst_agenda_request(
+    *,
+    titular_representatives: int | None = None,
+    requesting_titular_representatives: int | None = None,
+    requested_topic_in_competence: bool | None = None,
+) -> dict[str, Any]:
+    """Assess the statutory agenda-inclusion threshold under CGFP R. 254-43.
+
+    Competence must be assessed separately; the helper never infers it from
+    keywords. Counts refer to titular staff representatives, not all members.
+    """
+    if titular_representatives is None and requesting_titular_representatives is None:
+        return {
+            "status": "NOT_ASSESSED",
+            "reference": "CGFP R. 254-43",
+            "legal_conclusion": False,
+            "notice": "Renseigner le nombre total de représentants titulaires du personnel et le nombre de demandeurs.",
+        }
+    if (
+        isinstance(titular_representatives, bool)
+        or isinstance(requesting_titular_representatives, bool)
+        or not isinstance(titular_representatives, int)
+        or not isinstance(requesting_titular_representatives, int)
+        or titular_representatives < 1
+        or requesting_titular_representatives < 0
+        or requesting_titular_representatives > titular_representatives
+    ):
+        raise ValueError("Les effectifs de représentants titulaires sont invalides.")
+    threshold = (titular_representatives + 1) // 2
+    reaches_threshold = requesting_titular_representatives >= threshold
+    if not reaches_threshold:
+        status = "THRESHOLD_NOT_REACHED"
+        notice = "Le seuil de la moitié des représentants titulaires n'est pas atteint sur la base des effectifs déclarés."
+    elif requested_topic_in_competence is True:
+        status = "AGENDA_INCLUSION_REQUIRED"
+        notice = "Sous réserve de l'exactitude des effectifs et de la compétence de l'instance, la question doit être inscrite à l'ordre du jour."
+    elif requested_topic_in_competence is False:
+        status = "COMPETENCE_DISPUTED"
+        notice = "Le seuil numérique est atteint, mais la question doit relever de la compétence du CST ou de la formation spécialisée pour bénéficier de l'inscription obligatoire."
+    else:
+        status = "COMPETENCE_TO_VERIFY"
+        notice = "Le seuil numérique est atteint. Vérifier la compétence du CST ou de la formation spécialisée avant de conclure à l'inscription obligatoire."
+    return {
+        "status": status,
+        "reference": "CGFP R. 254-43",
+        "titular_representatives": titular_representatives,
+        "requesting_titular_representatives": requesting_titular_representatives,
+        "minimum_requesters": threshold,
+        "requested_topic_in_competence": requested_topic_in_competence,
+        "legal_conclusion": False,
+        "notice": notice,
+    }
