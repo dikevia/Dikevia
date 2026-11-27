@@ -1,4 +1,6 @@
-# Dikévia — état de préparation de la bêta
+# Dikévia — état de préparation de la bêta (archive datée)
+
+> **État historique du 25 novembre 2026.** Les observations Keycloak/production ci-dessous ne décrivent pas nécessairement l'état courant et ne constituent pas une consigne de réactivation. Pour l'état opérationnel actuel, consulter `docs/57_ETAT_CONSOLIDE_2026-11-27.md`.
 
 **Contrôle actualisé : 25 novembre 2026, 04:05 UTC**  
 **Branche commerciale :** `feature/dikevia-v3.38.5-cgfp-chat`  
