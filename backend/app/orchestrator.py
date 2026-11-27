@@ -906,7 +906,7 @@ def _provider_context_history(
         return []
     if isinstance(prior_history, list):
         history = []
-        for item in prior_history[-8:]:
+        for item in prior_history[-4:]:
             if not isinstance(item, dict) or item.get("role") not in {"user", "assistant"}:
                 continue
             content = str(item.get("content") or "").strip()
@@ -922,7 +922,7 @@ def _provider_context_history(
                 "role": "assistant",
                 "content": assistant_context.strip()[-1800:],
             })
-        return history[-8:]
+        return history[-4:]
 
     normalized_question = str(contextual_question or "").replace("\\n", "\n")
     parts = normalized_question.split("\n", 1)
