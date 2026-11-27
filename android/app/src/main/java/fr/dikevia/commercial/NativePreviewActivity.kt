@@ -28,6 +28,7 @@ class NativePreviewActivity : FragmentActivity() {
     private var authenticated by mutableStateOf(false)
     private var organizations by mutableStateOf<List<DikeviaOrganization>>(emptyList())
     private var selectedOrganizationId by mutableStateOf<String?>(null)
+    private var conversationId: String? = null
     private var chatAnswer by mutableStateOf("")
     private var chatStatus by mutableStateOf("")
 
@@ -72,6 +73,7 @@ class NativePreviewActivity : FragmentActivity() {
                                 credentials = signedIn
                                 authenticated = true
                                 chatAnswer = ""
+                                conversationId = null
                                 chatStatus = "Connexion réussie. Chargement de vos organisations…"
                             }
                             loadOrganizations(signedIn)
@@ -92,6 +94,7 @@ class NativePreviewActivity : FragmentActivity() {
                                 authenticated = false
                                 organizations = emptyList()
                                 selectedOrganizationId = null
+                                conversationId = null
                                 chatAnswer = ""
                                 chatStatus = ""
                                 Toast.makeText(this, "Déconnexion effectuée.", Toast.LENGTH_SHORT).show()
@@ -153,9 +156,11 @@ class NativePreviewActivity : FragmentActivity() {
                     session.accessToken,
                     session.idToken,
                     organizationId,
-                    question
+                    question,
+                    conversationId
                 )
                 runOnUiThread {
+                    conversationId = answer.conversationId
                     chatAnswer = buildString {
                         append(answer.answer)
                         answer.clarificationQuestion?.let {
