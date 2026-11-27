@@ -142,3 +142,9 @@ async def test_non_gemini_read_timeout_retries_primary_without_model_fallback(mo
         )
 
     assert client.models == ["primary-model", "primary-model"]
+
+
+def test_catalog_confirmed_model_configuration_keeps_success_cache_ttl():
+    assert ai_provider._provider_availability_cache_ttl(
+        {"status": "MODEL_CONFIGURED"}
+    ) == 60.0
