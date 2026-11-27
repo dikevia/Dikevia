@@ -75,7 +75,7 @@ async def test_gemini_availability_uses_free_fallback_after_retired_primary(monk
         })
 
     result = await ai_provider._check_provider_availability_uncached(transport=httpx.MockTransport(handler))
-    assert result == {"status": "AVAILABLE"}
+    assert result == {"status": "MODEL_CONFIGURED"}
     assert calls == ["gemini-2.5-flash-lite", "gemini-3.5-flash-lite"]
 
 
