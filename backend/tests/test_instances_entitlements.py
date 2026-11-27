@@ -229,6 +229,16 @@ def test_ccp_dismissal_checks_notice_period_and_redeployment_exceptions():
     assert "cinq jours ouvrables" in joined
 
 
+def test_ccp_ordinary_nonrenewal_uses_post_2025_article_38_1_version():
+    result = prepare_instance("CCP", "Non-renouvellement d'un CDD ordinaire")
+    point = next(item for item in result["points"] if item["code"] == "fin_contrat")
+    joined = " ".join(point["questions"])
+    assert "Depuis le 1er octobre 2025" in joined
+    assert "I et II de l'article 38-1" in joined
+    assert "sont abrogés" in joined
+    assert "Ne pas appliquer par défaut les délais du contrat de projet" in joined
+
+
 def test_ccp_project_contract_end_notice_is_not_generalized_to_all_nonrenewals():
     project = prepare_instance("CCP", "Fin de contrat de projet au terme prévu")
     point = next(item for item in project["points"] if item["code"] == "fin_contrat")
