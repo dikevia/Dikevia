@@ -2,7 +2,7 @@
 
 **Date de référence : 27 novembre 2026**  
 **Branche de travail : `main` uniquement**  
-**Commit fonctionnel contrôlé : `8462631d9f3cd8582ce65672d71c15b359d2349f`**
+**Commit fonctionnel contrôlé : `286cd0a4bbe93b059adc45c266e567ab1ae86afa`**
 
 Ce document est le point de situation opérationnel. Il prévaut sur les anciens états de livraison datés lorsqu'ils décrivent un état antérieur. Il ne constitue ni une recette complète, ni une certification juridique, ni une autorisation de mise en production.
 
@@ -20,13 +20,15 @@ Ce document est le point de situation opérationnel. Il prévaut sur les anciens
 
 ## 2. État du code et de la CI
 
+Les anciens modules, scripts, fichiers Compose, index et documents présents à la racine ont été déplacés dans `archive/legacy-root/` après audit des références. Le code courant reste dans les répertoires `backend/`, `frontend/`, `scripts/`, `database/`, `deploy/`, `android/`, `corpus_national/` et `docs/`. L'archive est exclue du kit développeur.
+
 ### Référence de dépôt
 
 - Dépôt : `dikevia/Dikevia`.
 - Branche : `main`.
 - Commit fonctionnel contrôlé : `8462631d9f3cd8582ce65672d71c15b359d2349f`.
-- Dernière CI complète vérifiée : run [46013359956](https://github.com/dikevia/Dikevia/actions/runs/46013359956), conclusion `success`.
-- **1 491 tests réussis, 0 échec, 1 avertissement** ; lint, analyse statique, audit des dépendances, scripts shell, Docker Compose et génération du kit développeur passent.
+- Dernière CI complète vérifiée : run [46015790927](https://github.com/dikevia/Dikevia/actions/runs/46013359956), conclusion `success`.
+- **1 494 tests réussis, 0 échec, 1 avertissement** ; lint, analyse statique, audit des dépendances, scripts shell, Docker Compose et génération du kit développeur passent.
 - L'intégration PostgreSQL/RLS s'exécute sur une base jetable. La migration 033 est exécutée après 032 dans cette CI.
 - L'avertissement de test restant concerne l'usage de `httpx` par `starlette.testclient` ; il n'a pas fait échouer la suite.
 - Le succès CI ne prouve pas le fonctionnement des fournisseurs IA en conditions réelles, la pertinence juridique des réponses, la recette sur appareil Android ni l'alignement de la production.
@@ -40,6 +42,7 @@ La migration 033 est désormais exécutée après 032 dans la séquence PostgreS
 ### Nettoyage du workflow CI
 
 - Les déclencheurs `push` et `pull_request` sont limités à `main` ; les branches historiques ne sont plus des cibles CI.
+- Les actions GitHub du workflow CI principal ont été mises à jour vers des versions compatibles Node 24.
 - L'ancien job d'embeddings conditionné par une branche POC et l'ancien job de smoke test qui contactait des endpoints de production/Keycloak ont été désactivés. Le workflow dédié `legal-embeddings-staging.yml` reste le seul parcours d'embeddings staging.
 - La CI standard ne contacte donc plus les services Render de production. Les contrôles live Auth0/Android restent à faire dans une recette distincte, sans les déclencher automatiquement ni générer de frais.
 
@@ -52,6 +55,7 @@ La migration 033 est désormais exécutée après 032 dans la séquence PostgreS
 - Les modèles `.env.example` et `.env.staging.example` n'activent plus Keycloak ; le modèle local laisse les paramètres Auth0 vides afin de ne pas embarquer de tenant ou de secret.
 - Le fallback statique navigateur est vide et l'endpoint `/auth-config.js` échoue fermé si les paramètres Auth0 ne sont pas fournis.
 - Le Compose local ne démarre plus Keycloak ; les deux services Keycloak ne sont accessibles que via le profil optionnel `legacy-keycloak`. Le script bootstrap ne les démarre plus.
+- `PRIVATE_INSTANCE_MODE=false` dans les deux modèles d'environnement ; l'ancien mode privé à 10 membres ne contourne plus les droits du modèle Agent/Syndicat par défaut.
 - Les sondes Prometheus et alertes Keycloak ont été retirées de la supervision par défaut.
 - Les fichiers Keycloak et le code d'administration associé restent présents comme compatibilité historique ; ils ne sont plus le chemin par défaut.
 - Les journaux staging contrôlés montrent le chargement de la configuration Auth0, le retour OIDC et une réponse HTTP 200 de `/api/v1/auth/me`.

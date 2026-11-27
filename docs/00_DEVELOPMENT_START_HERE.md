@@ -29,9 +29,10 @@ Ce document est le point d'entrée rapide pour les développeurs. Il décrit ce 
 | `android/` | Applications Android standard et administration |
 | `.github/workflows/` | CI, contrôles et génération des APK |
 | `docs/` | Documentation fonctionnelle, technique, sécurité et exploitation |
+| `archive/legacy-root/` | Anciens fichiers racine conservés hors des chemins actifs, non exécutables par défaut |
 | `Dockerfile` | Image API : copie notamment `backend`, `frontend`, `database`, `scripts` et `corpus_national` |
 
-Le Dockerfile racine lance `uvicorn app.main:app` avec `PYTHONPATH=/srv/backend`. Le code applicatif utilisé par cette image se trouve donc dans `backend/app/`. Des modules Python historiques existent encore à la racine ; ils ne doivent pas être supprimés avant une recherche complète de leurs références dans les scripts, workflows et outils locaux.
+Le Dockerfile racine lance `uvicorn app.main:app` avec `PYTHONPATH=/srv/backend`. Le code applicatif utilisé par cette image se trouve donc dans `backend/app/`. Après recherche des références dans le code, les workflows et les scripts actifs, les anciens modules, scripts, Compose et documents racine ont été déplacés dans `archive/legacy-root/`. Ils ne sont pas importés par le runtime et ne sont pas inclus dans le kit développeur.
 
 ## 3. Documents à lire en priorité
 
@@ -51,12 +52,12 @@ Le fichier `render.yaml` reste un Blueprint historique relié à l'ancienne bran
 
 ## 5. État de validation constaté
 
-Au commit fonctionnel `8462631d9f3cd8582ce65672d71c15b359d2349f` (27 novembre 2026), le run CI [46013359956](https://github.com/dikevia/Dikevia/actions/runs/46013359956) est terminé avec succès :
+Au commit fonctionnel `8462631d9f3cd8582ce65672d71c15b359d2349f` (27 novembre 2026), le run CI [46015790927](https://github.com/dikevia/Dikevia/actions/runs/46013359956) est terminé avec succès :
 
-- **1 491 tests passent**, dont les tests unitaires, contractuels et l'intégration PostgreSQL/RLS sur base jetable ;
+- **1 494 tests passent**, dont les tests unitaires, contractuels et l'intégration PostgreSQL/RLS sur base jetable ;
 - la migration 033 est exécutée après 032 dans la CI ;
 - le nouveau parcours Auth0 par défaut, le fallback fail-closed, le Compose sans Keycloak par défaut et les workflows de déploiement désactivés sont couverts par les contrôles du dépôt ;
-- les contrôles de syntaxe, lint, analyse statique de sécurité, audit de dépendances, scripts shell, Docker Compose et kit développeur passent ;
+- les contrôles de syntaxe, lint, analyse statique de sécurité, audit de dépendances, scripts shell, Docker Compose et le kit développeur Dikévia, limité aux chemins actifs, passent ;
 - le workflow de génération des APK Android avait également réussi sur le commit `dfc6bbf59ceed2871a001a399d0cfc9c22a1ecf0` ;
 - le succès de compilation d'un APK ne prouve pas le parcours utilisateur complet sur un appareil Android réel.
 

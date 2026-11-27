@@ -18,7 +18,7 @@ ALLOWED_TOP_LEVEL_DIRS = {
     ".github", "android", "backend", "benchmark", "corpus_national",
     "database", "deploy", "docs", "frontend", "scripts",
 }
-ALLOWED_ROOT_FILES = {".gitignore", "Dockerfile", "README.md", "CHANGELOG_V3.md", "render.yaml"}
+ALLOWED_ROOT_FILES = {".gitignore", "Dockerfile", "README.md", "render.yaml"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".pem", ".p12", ".pfx", ".zip", ".sqlite", ".db", ".log"}
 EXCLUDED_NAMES = {".env", ".env.runtime", ".env.staging.runtime", ".DS_Store", "id_rsa", "id_ed25519"}
 

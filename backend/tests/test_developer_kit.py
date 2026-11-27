@@ -17,7 +17,7 @@ def test_developer_kit_contains_only_current_source_of_truth_paths():
     assert include_file(ROOT / "render.yaml")
 
 
-def test_developer_kit_excludes_legacy_root_level_duplicates_and_old_compose():
+def test_legacy_root_duplicates_are_archived_and_excluded_from_developer_kit():
     for path in (
         "main.py",
         "index.html",
@@ -27,4 +27,7 @@ def test_developer_kit_excludes_legacy_root_level_duplicates_and_old_compose():
         "01_PRODUCT_REQUIREMENTS.md",
         "02_ARCHITECTURE.md",
     ):
-        assert not include_file(ROOT / path), path
+        assert not (ROOT / path).exists(), path
+        archived = ROOT / "archive" / "legacy-root" / path
+        assert archived.is_file(), str(archived)
+        assert not include_file(archived), str(archived)
