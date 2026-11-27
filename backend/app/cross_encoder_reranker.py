@@ -18,6 +18,11 @@ class CrossEncoderUnavailable(RuntimeError):
     """Raised when the optional local cross-encoder cannot be used."""
 
 
+def should_run_cross_encoder(*, globally_enabled: bool, founder_entitled: bool) -> bool:
+    """Fail closed: the feature flag alone never grants a user access."""
+    return globally_enabled is True and founder_entitled is True
+
+
 @lru_cache(maxsize=2)
 def _load_runtime(
     onnx_model_path: str,
