@@ -1175,7 +1175,7 @@ async def prepare_social_instance(
         raise HTTPException(422, "Le contrôle du secrétaire concerne la formation spécialisée.")
     if cst_written_request_raw and instance.upper() != "CST":
         raise HTTPException(422, "La demande de réunion dans le délai de deux mois concerne ici le CST territorial.")
-    if instance.upper() not in {"CST", "FS"} and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw, cst_written_request_raw, fs_titular_representatives, fs_requesting_titular_representatives, annual_health_safety_count, annual_meeting_count)):
+    if instance.upper() not in {"CST", "FS"} and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw, cst_written_request_raw, fs_titular_representatives, fs_requesting_titular_representatives, annual_health_safety_count, annual_meeting_count, agenda_vote_points_identified, topic_in_cst_own_competence, topic_in_fs_mandatory_consultation, fs_consultation_already_examined, cst_evocation_initiative, cst_staff_representatives_total, cst_staff_representatives_supporting)):
         raise HTTPException(422, "Les paramètres de calendrier sont réservés aux préparations CST ou FS.")
     if annual_meeting_count is not None and (
         isinstance(annual_meeting_count, bool) or not isinstance(annual_meeting_count, int) or annual_meeting_count < 0
