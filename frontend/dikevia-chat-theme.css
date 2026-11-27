@@ -1123,7 +1123,7 @@ html.dikevia-standard-app .juris-status.warn {
   }
 }
 
-/* DIKEVIA JARVIS — palette verrouillée : glacier / acier / bleu nuit.
+/* DIKEVIA JURIS — palette verrouillée : glacier / acier / bleu nuit.
    Override final volontairement placé après les anciennes couches visuelles. */
 html.dikevia-standard-app {
   color-scheme: light!important;
@@ -1184,7 +1184,7 @@ html.dikevia-standard-app .juris-welcome-icon {
     radial-gradient(circle,transparent 0 43%,rgba(129,203,239,.8) 44% 46%,transparent 47%),
     linear-gradient(145deg,#fafdff,#e5f4fc)!important;
   box-shadow:0 0 0 8px rgba(92,180,229,.07),0 0 34px rgba(76,173,226,.24),inset 0 0 20px rgba(91,184,235,.18)!important;
-  animation:jarvis-core-pulse 3.8s ease-in-out infinite!important;
+  animation:juris-core-pulse 3.8s ease-in-out infinite!important;
 }
 html.dikevia-standard-app .juris-welcome-icon:before {
   content:""!important;position:absolute!important;inset:8px!important;width:auto!important;height:auto!important;
@@ -1289,7 +1289,7 @@ html.dikevia-standard-app .standard-drawer-footer {border-color:#dce8f1!importan
 html.dikevia-standard-app :focus-visible {outline:3px solid rgba(67,157,209,.45)!important;outline-offset:3px}
 html.dikevia-standard-app .juris-messages,
 html.dikevia-standard-app .standard-drawer {scrollbar-color:#a8cde5 transparent!important}
-@keyframes jarvis-core-pulse {
+@keyframes juris-core-pulse {
   0%,100% {transform:scale(1);filter:brightness(1);box-shadow:0 0 0 8px rgba(92,180,229,.07),0 0 30px rgba(76,173,226,.20),inset 0 0 20px rgba(91,184,235,.18)}
   50% {transform:scale(1.035);filter:brightness(1.08);box-shadow:0 0 0 12px rgba(92,180,229,.05),0 0 42px rgba(76,173,226,.32),inset 0 0 24px rgba(91,184,235,.24)}
 }
@@ -1303,7 +1303,7 @@ html.dikevia-standard-app .standard-drawer {scrollbar-color:#a8cde5 transparent!
 }
 
 
-/* JARVIS — surfaces communes de l'application standard.
+/* JURIS — surfaces communes de l'application standard.
    Les anciennes couches historiques restent neutralisées sur tous les écrans. */
 html.dikevia-standard-app .panel,
 html.dikevia-standard-app .card,
@@ -1359,7 +1359,7 @@ html.dikevia-standard-app .pill.warn {background:#f2f7fb!important;color:#527eaf
 html.dikevia-standard-app .message {border:1px solid #d5e8f4!important;background:#eff8fd!important;color:#315d7d!important}
 html.dikevia-standard-app .message.error {border-color:#f0d0d0!important;background:#fff3f3!important;color:#a84f58!important}
 
-/* JARVIS — application Administration : même identité, interface de pilotage dédiée. */
+/* JURIS — application Administration : même identité, interface de pilotage dédiée. */
 html.dikevia-admin-mode {
   color-scheme:light;
   --ja-bg:#f3f7fb;--ja-surface:#fff;--ja-surface-soft:#f7fbfe;
