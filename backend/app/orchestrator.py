@@ -1054,8 +1054,8 @@ class LegalOrchestrator:
         # questions never inherit unrelated topics or facts.
         if is_followup and prior_user_questions:
             inherited_question = (
-                contextual_question.split("\\n", 1)[1]
-                if "\\n" in contextual_question else ""
+                contextual_question.split("\n", 1)[1]
+                if "\n" in contextual_question else ""
             )
             if inherited_question.startswith("Contexte antérieur de la situation :"):
                 inherited_question = inherited_question.split(":", 1)[1].strip()
