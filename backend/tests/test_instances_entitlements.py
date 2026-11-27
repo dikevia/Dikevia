@@ -91,6 +91,8 @@ def test_cap_individual_referral_mentions_current_r263_10_scope():
     joined = " ".join(point["questions"])
     assert "R. 263-10" in joined
     assert "limitativement énumérés" in joined
+    assert "quinze jours francs" in joined
+    assert "dans le mois" in joined
 
 
 def test_ccp_nonrenewal_does_not_assume_mandate_consultation():
@@ -115,6 +117,19 @@ def test_ccp_discipline_does_not_trigger_for_first_group_sanctions():
 def test_cap_discipline_does_not_trigger_for_first_group_sanctions():
     result = prepare_instance("CAP", "Sanction disciplinaire : blâme du premier groupe")
     assert not any(item["code"] == "discipline" for item in result["points"])
+
+
+def test_ccp_professional_review_referral_checks_contract_eligibility_and_deadlines():
+    result = prepare_instance(
+        "CCP",
+        "Contestation du compte rendu d'entretien professionnel d'un agent en CDI sur emploi permanent",
+    )
+    point = next(item for item in result["points"] if item["code"] == "refusal_individual_decision")
+    joined = " ".join(point["questions"])
+    assert "emploi permanent en CDI ou en CDD de plus d'un an" in joined
+    assert "contrat de projet" in joined
+    assert "quinze jours francs" in joined
+    assert "dans le mois" in joined
 
 
 def test_ccp_individual_referral_is_separate_from_mandatory_consultation():
