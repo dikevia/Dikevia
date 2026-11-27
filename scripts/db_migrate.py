@@ -148,7 +148,14 @@ async def status(conn) -> None:
             state = f"INCLUS DANS LE BASELINE V{baseline_version}"
         elif version in known:
             expected = sha256(path.read_bytes())
-            state = "APPLIQUÉ" if known[version]["checksum"].strip() == expected else "ALERTE: CHECKSUM MODIFIÉ"
+            recorded = (known[version]["name"], known[version]["checksum"].strip())
+            legacy = KNOWN_LEGACY_MIGRATIONS.get(version)
+            if recorded[1] == expected:
+                state = "APPLIQUÉ"
+            elif recorded == legacy:
+                state = "APPLIQUÉ (identité historique explicitement reconnue)"
+            else:
+                state = "ALERTE: CHECKSUM MODIFIÉ"
         elif version > current:
             state = "EN ATTENTE" if down_path(path).is_file() else "EN ATTENTE — down.sql manquant, application bloquée"
         else:
