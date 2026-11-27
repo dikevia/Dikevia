@@ -336,9 +336,9 @@ async def browser_oidc_configuration():
     """Expose only public OIDC client settings; never return provider secrets."""
     if not settings.oidc_client_id or not settings.oidc_issuer:
         return Response(
-            "/* Runtime OIDC override not configured; use the static fallback. */",
+            "window.CFDT_JURIS_OIDC = Object.freeze({}); /* Auth0 runtime configuration is required. */",
             media_type="application/javascript",
-            headers={"Cache-Control": "no-store"},
+            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
         )
     redirect_origin = settings.oidc_redirect_uri.rstrip("/") if settings.oidc_redirect_uri else (settings.invitation_base_url.rstrip("/") if settings.invitation_base_url else "")
     redirect_uri = json.dumps(redirect_origin + "/") if redirect_origin else "window.location.origin + '/'"
