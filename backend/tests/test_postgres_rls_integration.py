@@ -312,6 +312,7 @@ async def _run_administrative_case_law_search_sql_scenario():
             "status": "UNKNOWN",
             "source_status": "OFFICIAL_XML_IMPORTED",
             "raw_metadata": {
+                "import_method": "JUSTICE_ADMINISTRATIVE_OPEN_DATA_XML",
                 "source_license": "Licence Ouverte version 2.0",
                 "publication_code": "C",
                 "source_xml_sha256": "a" * 64,

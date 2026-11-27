@@ -388,3 +388,24 @@ async def test_institutional_guidance_import_requires_source_and_individual_seed
         })
     assert len(conn.fetchrow_calls) == 1
     assert conn.execute_calls == []
+
+
+
+@pytest.mark.asyncio
+async def test_upsert_rejects_source_key_spoofing_before_database_access():
+    from app.legal_corpus import upsert_legal_document
+
+    class NeverCalledConn:
+        async def fetchrow(self, query, *args):
+            raise AssertionError("A spoofed source key must be rejected before database access.")
+
+    with pytest.raises(ValueError, match="incohérente"):
+        await upsert_legal_document(NeverCalledConn(), {
+            "source_type": "SECONDARY_DOCTRINE",
+            "source_key": "LEGIFRANCE_PISTE",
+            "source_id": "WEKA_ARTICLE_1",
+            "title": "Article professionnel",
+            "document_kind": "PROFESSIONAL_GUIDANCE",
+            "raw_metadata": {"source_id": "weka"},
+            "full_text": "Texte éditorial de test non autorisé. " * 20,
+        })
