@@ -292,7 +292,7 @@ Retourne uniquement un objet JSON valide de la forme :
   "uncovered_axes": []
 }}
 - N'ajoute aucune clé, aucun commentaire, aucun Markdown et aucun texte hors JSON.
-- Chaque claim restitue une disposition ou un apport jurisprudentiel précis, sans avis ni diagnostic individuel.
+- Chaque claim formule une proposition utile à la réponse : règle, interprétation fidèle, condition, exception ou application prudente aux faits déclarés. Explique la portée concrète de la source et son incidence possible, sans ajouter de fait ni de condition absents des preuves ; signale les éléments manquants et nuance toute conclusion.
 - source_id reprend exactement l'identifiant d'un seul document fourni.
 - Si axes_recherche_documentaire n'est pas vide, axis reprend exactement un axe fourni ; chaque axe non couvert figure exactement une fois dans uncovered_axes. N'omets aucun axe. Si la liste est vide, axis est une chaîne vide.
 - quote est copiée mot pour mot depuis l'extrait du même document et contient au moins 20 caractères.
