@@ -692,6 +692,15 @@ def build_legal_conversation_state(
                 )
                 if match:
                     contract_declaration = match.group(1).upper()
+    if (
+        status_declaration
+        and re.search(r"\bje ne suis (?:plus|pas|jamais) "
+                      r"(?:(?:un|une|agent(?:e)?)\s+)?contractuel(?:le)?s?\b",
+                      status_declaration, re.IGNORECASE)
+        and not re.search(r"\b(?:je suis en|mon contrat est un)\s+(?:CDD|CDI)\b",
+                          current, re.IGNORECASE)
+    ):
+        contract_declaration = "NON_CONTRACTUEL"
     state["agent_status_declare"] = status_declaration
     state["temps_travail_declare"] = working_time_declaration
     state["type_contrat_declare"] = contract_declaration
