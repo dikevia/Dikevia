@@ -1231,7 +1231,7 @@ def validate_entailment_verdicts(payload, claims, sources):
         claim_tokens = _entailment_tokens(claim.get("text"))
         quote_tokens = _entailment_tokens(normalized_quote)
         overlap = len(claim_tokens & quote_tokens) / max(1, len(claim_tokens))
-        if len(claim_tokens) < 2 or overlap < 0.25:
+        if len(claim_tokens) < 2 or overlap < 0.10:
             invalid.append(f"verdict_{index}:support_quote_not_relevantly_aligned")
             continue
         endpoint_dates = (
