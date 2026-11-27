@@ -275,3 +275,24 @@ Le contrôle des fichiers et tests de `main` précise le périmètre de retrait 
 - `deploy/.env.example` et `deploy/docker-compose.yml` contiennent encore un profil Keycloak historique. Le fichier Compose déclare ce profil comme optionnel/legacy ; ce n'est pas une preuve que le service Render Keycloak peut être arrêté.
 
 Décision : ne pas supprimer Keycloak en une seule modification. Le lot de migration devra (1) figer Auth0 comme seul fournisseur runtime, (2) retirer uniquement le provisionnement Keycloak des invitations et basculer le flux vers Universal Login + invitation Dikévia, (3) remplacer les tests qui exigent Keycloak par des contrats Auth0, (4) préserver et tester séparément la résolution des anciens comptes par issuer/subject, (5) auditer les comptes en base et le service Render d'identité avant toute désactivation physique. Aucun rapprochement par email, aucune écriture de production et aucun arrêt de service dans ce lot.
+
+
+
+### Analyse détaillée du parcours d'invitation Auth0 — 27 novembre 2026
+
+L'examen de l'endpoint d'invitation dans `backend/app/main.py`, du client `backend/app/keycloak_admin.py`, de la configuration et des contrats de tests établit le comportement exact :
+
+- En mode Auth0, l'envoi automatique est autorisé lorsque SMTP (`SMTP_HOST` et `SMTP_FROM`), `INVITATION_BASE_URL` et `OIDC_CLIENT_ID` sont configurés. Le code envoie uniquement le jeton d'invitation Dikévia à usage unique par SMTP. Il ne crée aucun utilisateur via Auth0 Management API et ne nécessite aucun secret Management API.
+- Le lien du courriel ouvre l'application Dikévia avec `invitation_token`. L'utilisateur s'authentifie ensuite dans le parcours OIDC de l'application (Universal Login/Auth0), puis l'endpoint `/api/v1/invitations/accept` valide le jeton, l'expiration, l'état à usage unique et l'adresse e-mail vérifiée portée par l'identité authentifiée. L'adresse e-mail n'est pas prise depuis le corps de la requête.
+- Le client `KeycloakAdmin` n'est appelé que lorsque `OIDC_PROVIDER=keycloak`. Il recherche/crée alors le compte Keycloak et déclenche, si nécessaire, la vérification d'adresse. Cette branche est distincte du parcours Auth0.
+- La configuration ne rend pas les secrets Keycloak obligatoires en mode Auth0. Elle les exige seulement si SMTP est demandé avec `OIDC_PROVIDER=keycloak`. Le fournisseur est toutefois encore configurable comme `keycloak` ou `auth0` : Auth0 n'est donc pas encore imposé comme fournisseur runtime.
+- Si SMTP n'est pas configuré, le backend conserve un parcours manuel et retourne le jeton d'invitation dans la réponse API. Ce mode de secours doit être explicitement revu avant une ouverture commerciale ; il ne faut pas exposer ce jeton dans un canal non sûr.
+- Si l'envoi SMTP échoue après création de l'invitation, le code révoque l'invitation et renvoie une erreur 503. Cette propriété doit être conservée dans les tests de remplacement.
+
+Contrats de tests à traiter dans le lot Auth0 :
+- `test_v37_keycloak_contracts.py` teste encore le template de realm Keycloak, le profil Docker legacy et le script de configuration. Ces tests décrivent des artefacts historiques, pas le parcours Auth0 ; ils ne doivent pas être supprimés avant d'avoir déterminé quels fichiers de déploiement legacy seront conservés ou archivés.
+- `test_v38_invitation_contracts.py` impose explicitement la présence de `KeycloakAdmin` dans `main.py`, tout en vérifiant le chemin Auth0 et l'envoi SMTP. Il devra être remplacé par des tests de contrat Auth0 qui prouvent l'absence d'appel Keycloak, l'envoi du jeton Dikévia et le maintien du flux d'acceptation.
+- `test_v39_invitation_integrity.py` couvre surtout l'unicité, le caractère à usage unique et la protection du rôle de membre. Seul son test de validation de l'URL Keycloak Admin est obsolète pour le runtime Auth0 ; les invariants d'intégrité doivent être conservés.
+- `test_v35_runtime_security.py` et `test_legal_knowledge_base.py` utilisent encore `oidc_provider="keycloak"` dans des configurations de test de production. Ces cas doivent être migrés vers Auth0 avec toutes les valeurs Auth0 exigées par la validation de production, sans affaiblir les contrôles généraux de sécurité.
+
+Décision de séquencement affinée : le retrait du provisionnement Keycloak des invitations est techniquement isolable du flux Auth0, mais il doit être committé avec le remplacement des tests d'invitation et l'ajustement des tests de configuration. Ne pas encore supprimer `keycloak_admin.py`, les variables legacy, le template realm, les profils Docker ni le service Render identité. La désactivation physique reste conditionnée à l'inventaire des comptes historiques, à la validation du tenant Auth0 et à un plan de retour arrière. Aucun appel Auth0, aucune écriture DB, aucune modification Render ou déploiement n'a été effectué pendant cet audit.
