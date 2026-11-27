@@ -118,7 +118,7 @@ def rerank_sources_with_cross_encoder(
         raise CrossEncoderUnavailable("Chemins du modèle et du tokenizer non configurés.")
 
     limit = max(2, min(100, int(top_k)))
-    max_tokens = max(64, min(512, int(max_length)))
+    max_tokens = max(64, min(384, int(max_length)))
     candidate_indices: list[int] = []
     passages: list[str] = []
     for index, source in enumerate(records):
