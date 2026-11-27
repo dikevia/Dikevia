@@ -1,9 +1,11 @@
 # Dikévia — point d'entrée développeur
 
 **Référence de travail : `main` uniquement.**  
-**État du dépôt contrôlé : 26 novembre 2026.**
+**État du dépôt contrôlé : 27 novembre 2026.**
 
 Ce document est le point d'entrée rapide pour les développeurs. Il décrit ce qui est constaté dans le dépôt ; il ne certifie pas la disponibilité des services externes ni le fonctionnement en production.
+
+**État de référence actuel :** lire d'abord [`docs/57_ETAT_CONSOLIDE_2026-11-27.md`](57_ETAT_CONSOLIDE_2026-11-27.md) pour le bilan consolidé, les limites connues et l'ordre des prochains travaux. Les autres documents de livraison datés restent des traces historiques tant qu'ils n'ont pas été explicitement actualisés.
 
 ## 1. Règle de travail
 
@@ -51,10 +53,10 @@ Le fichier `render.yaml` et certains fichiers de configuration historiques conti
 
 ## 5. État de validation constaté
 
-Au commit `f99e0ca01db414399d467a2b3c46653fa2cf7e28` (26 novembre 2026) :
+Au commit `8bf70bf3737ca06675a9ed05f427c640f65b5044` (27 novembre 2026), voir le run CI courant et les précisions du bilan consolidé :
 
 - le workflow CI général est terminé avec succès ;
-- **1 293 tests passent** ; les tests unitaires, contractuels et d'intégration PostgreSQL/RLS sont verts ;
+- **1 489 tests passent** ; les tests unitaires, contractuels et d'intégration PostgreSQL/RLS sont verts ;
 - les contrôles de syntaxe, lint, analyse statique de sécurité, audit de dépendances, scripts shell, Docker Compose et kit développeur passent ;
 - le workflow de génération des APK Android avait également réussi sur le commit `dfc6bbf59ceed2871a001a399d0cfc9c22a1ecf0` ;
 - le succès de compilation d'un APK ne prouve toujours pas que le parcours de connexion Auth0 fonctionne sur un appareil réel.
@@ -83,7 +85,7 @@ Les tests d'intégration PostgreSQL doivent utiliser une base jetable et des rô
 
 - Poursuivre l'audit des branches historiques ; ne récupérer que les changements précis absents de `main`, sans fusion globale.
 - Maintenir le CI vert à chaque évolution.
-- Terminer la recette fonctionnelle Auth0 sur navigateur et Android ; la compilation APK ne suffit pas.
+- Auth0 est le fournisseur retenu et le chantier est déclaré terminé par le porteur du projet ; ne pas rouvrir cette intégration. La recette Android sur appareils réels reste à distinguer de la validation Auth0 déjà réalisée sur staging.
 - Réconcilier `render.yaml`, les fichiers de configuration historiques et la configuration Render réellement active.
 - Auditer les modules Python racine, les anciens fichiers Keycloak et les documents de versions successives avant suppression.
 - Réduire la documentation à un index actuel et un historique clairement séparé, sans supprimer les preuves techniques ou procédures encore utiles.
