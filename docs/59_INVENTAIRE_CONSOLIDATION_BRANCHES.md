@@ -247,3 +247,11 @@ Le fichier de test historique `test_v338_local_document_ai_privacy.py` n'existe 
 - `feat/android-launcher-icons` contient des icônes Émeraude & Or, alors que `main` contient les icônes bleues actuelles. Ne pas reprendre.
 - Les branches `fix/android-oidc-login-bootstrap`, `fix/oidc-login-integration-beta`, `fix/oidc-silent-sso-session-restore`, `fix/oidc-api-401-diagnostics-2026-11-20`, `fix/oidc-browser-discovery-timeout-2026-11-20`, `fix/oidc-login-visibility`, `fix/dikevia-oidc-branding-init` et `release/oidc-client-id-blueprint` sont des implémentations ou configurations anciennes, en partie liées à Keycloak. Aucun merge global ; reprendre uniquement une correction isolée après comparaison avec le flux Auth0 actuel.
 
+
+### Branches Keycloak et PWA
+
+- `fix/keycloak-admin-recovery`, `fix/keycloak-sub-mapper-source-of-truth-2026-11-20` et `ops/keycloak-recovery-workflow` concernent la maintenance de l'ancien service Keycloak. Elles ne doivent pas être reprises dans l'architecture cible Auth0.
+- `fix/keycloak-link-minimal-oidc-scope` contient les migrations de liaison Google/Auth0 029–030 rejetées plus haut ; ne pas intégrer.
+- `feature/dikevia-pwa-android-shell` et `test/pwa-ci-validation` renforcent une architecture PWA/WebView. Elles ne répondent pas à la décision d'applications Android/iOS natives prioritaires ; ne pas les substituer au socle mobile natif.
+- `refactor/dikevia-shells-2026-11-26`, `android/apk-auth0-staging` et `android/release-auth0-staging-2026-11-26` sont des snapshots WebView/anciens contrats et contiennent les migrations Auth0 Google incompatibles. Pas de merge en bloc.
+
