@@ -16,6 +16,8 @@ La minimisation récursive couvre aussi les extraits documentaires, les titres e
 
 Les clés des objets, valeurs numériques et booléennes sont conservées. Les références juridiques, dates de textes, dates de faits et montants ne sont pas supprimés par principe.
 
+Les journaux applicatifs ont également été resserrés : les requêtes de recherche ne sont plus écrites en clair dans les messages de diagnostic, et les corps de réponse d'erreur des fournisseurs IA ne sont plus copiés dans les logs. Les diagnostics conservent le type d'erreur, l'opération, le statut HTTP, la date ou la longueur de requête et l'identifiant de requête lorsque cela est utile.
+
 ## Limites importantes
 
 Ce mécanisme est une **minimisation partielle**, pas une anonymisation ni une pseudonymisation garantie.
