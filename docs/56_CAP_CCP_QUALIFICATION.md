@@ -38,6 +38,8 @@ Depuis le 1er août 2026, la liste comprend :
 
 La saisine à la demande de l'agent ne doit pas être confondue avec les cas où la CAP est saisie obligatoirement pour avis.
 
+Pour la révision du compte rendu d'entretien professionnel (article 7 du décret n° 2014-1526), le fonctionnaire doit d'abord demander la révision dans les quinze jours francs suivant la notification du compte rendu. L'autorité territoriale répond dans les quinze jours suivant la réception. La CAP doit ensuite être saisie dans le mois suivant la notification de cette réponse. La saisine de la CAP est donc subordonnée à cette démarche préalable.
+
 ## CCP — agents contractuels territoriaux
 
 ### Avis obligatoires (R. 272-19)
@@ -49,6 +51,8 @@ La CCP est saisie pour avis :
 - de certains refus de congé de formation en matière d'hygiène, de sécurité et de conditions de travail, de congé de formation syndicale, d'utilisation du CPF dans le cas visé et d'action de formation après un second refus.
 
 Un non-renouvellement ordinaire ne doit donc pas être présenté comme entraînant automatiquement la consultation de la CCP. Le mandat syndical doit être vérifié.
+
+Pour la révision du compte rendu d'entretien professionnel prévue à l'article 1-3 du décret n° 88-145, vérifier d'abord que l'agent a été recruté sur un emploi permanent en CDI ou en CDD de plus d'un an, y compris par contrat de projet. La demande préalable de révision doit être formée dans les quinze jours francs suivant la notification du compte rendu ; l'autorité territoriale répond dans les quinze jours francs suivant la réception ; la CCP doit être saisie dans le mois suivant la notification de cette réponse. Ces règles ne doivent pas être étendues automatiquement à tout agent contractuel.
 
 ### Discipline (R. 272-20 et décret n° 88-145)
 
@@ -73,3 +77,4 @@ Ces saisines à la demande de l'agent sont distinctes des avis obligatoires de R
 - [CGFP R. 272-19 à R. 272-21 — CCP territoriales](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050550837/)
 - [CGFP L. 533-1 — échelle des sanctions des fonctionnaires](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044425388/)
 - [Décret n° 88-145 — agents contractuels territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/)
+- [Décret n° 2014-1526 — évaluation professionnelle des fonctionnaires territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/)
