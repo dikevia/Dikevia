@@ -221,3 +221,13 @@ Le fichier de test historique `test_v338_local_document_ai_privacy.py` n'existe 
 - La branche `corpus/add-sig-info-gouv-guidance` est une version antérieure du registre : `main` contient déjà le domaine `info-gouv`, les tests de registre et davantage de contrôles de gouvernance. Son registre ne doit pas écraser la version actuelle.
 - Les branches documentaires Auth0 et readiness examinées sont des versions antérieures de documents déjà consolidés ; aucun remplacement global n'est justifié.
 
+
+### Déploiement, CI et anciennes branches d'intégration
+
+- `fix/deployment-branch-ci-trigger` et `fix/main-render-api-ci-trigger` n'ont aucun commit propre par rapport à `main` : leurs changements sont déjà intégrés ou dépassés.
+- `fix/production-branch-push-ci` ne contient qu'un commit propre sur le workflow CI, mais la branche est très ancienne (plus de 2 100 commits derrière). Le workflow actuel de `main` doit rester la référence ; aucune reprise sans comparaison ligne par ligne.
+- `integration/beta-commercial-security` est une branche très divergente (116 commits en avance, 2 149 en retard) et contient d'anciennes migrations 020–022, un realm Keycloak, l'ancien backend et le prototype Android. Ses numéros de migration entrent en collision avec l'historique courant ; fusion globale interdite.
+- `ops/pin-production-safety-flags` et `release/production-sync-main-safe` contiennent des snapshots de `render.yaml` et de backend antérieurs. Ne pas les utiliser pour synchroniser Render.
+- Les documents `docs/beta-migration-019-sync` et `docs/android-twa-beta-gate` décrivent d'anciens parcours et des enveloppes TWA/WebView ; ils ne changent pas la cible native Android/iOS.
+- Les branches archive staging sont des archives et ne sont pas des sources de livraison.
+
