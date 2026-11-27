@@ -2455,7 +2455,7 @@ async def create_invitation(payload: InvitationCreate, response: Response, ctx: 
     auth0_ready = settings.oidc_provider == "auth0" and bool(settings.oidc_client_id)
     if smtp_ready and auth0_ready:
         try:
-            # Auth0 Universal Login owns account creation and email verification.
+            # Auth0 Universal Login handles authentication and any sign-up/email-verification flow enabled in the tenant.
             # Dikévia sends only its own single-use organization invitation token.
             organization = await ctx.conn.fetchrow("SELECT display_name FROM organizations WHERE id=$1::uuid", ctx.organization_id)
             organization_name = organization["display_name"] if organization else "votre organisation"
