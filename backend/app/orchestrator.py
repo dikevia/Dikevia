@@ -10,7 +10,9 @@ import time
 
 from .schemas import AskRequest, AskResponse
 from .config import settings
-from .cross_encoder_reranker import CrossEncoderUnavailable, rerank_sources_with_cross_encoder
+from .cross_encoder_reranker import (
+    CrossEncoderUnavailable, rerank_sources_with_cross_encoder, should_run_cross_encoder,
+)
 from .cgfp import get_cgfp_article
 from .cgfp_relevance import search_cgfp
 from .fpt_scope import _fold, _matched_topic_families, classify_public_service_scope, is_ihts_relevant_source, is_ihts_question, is_topic_relevant_source
@@ -2334,7 +2336,10 @@ class LegalOrchestrator:
                     # Optional local cross-encoder: scores question/document pairs
                     # on CPU. It only changes order; deterministic eligibility,
                     # temporal and citation-integrity gates remain authoritative.
-                    if settings.legal_cross_encoder_enabled and founder_cross_encoder_access:
+                    if should_run_cross_encoder(
+                        globally_enabled=settings.legal_cross_encoder_enabled,
+                        founder_entitled=founder_cross_encoder_access,
+                    ):
                         try:
                             base_ai_sources = await asyncio.to_thread(
                                 rerank_sources_with_cross_encoder,
