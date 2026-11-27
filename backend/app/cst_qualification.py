@@ -467,16 +467,16 @@ def assess_cst_fs_competence_routing(
 
 FS_OPERATIONAL_RULES: tuple[dict[str, Any], ...] = (
     {
-        "code": "annual_health_safety_report_program",
-        "label": "Rapport annuel santé-sécurité et programme annuel de prévention",
-        "reference": "CGFP R. 253-30",
-        "keywords": ("rapport annuel santé sécurité", "rapport annuel santé-sécurité", "programme annuel de prévention", "papripact", "programme de prévention", "bilan annuel santé sécurité"),
+        "code": "annual_prevention_program",
+        "label": "Programme annuel de prévention des risques et d'amélioration des conditions de travail",
+        "reference": "CGFP R. 253-27",
+        "keywords": ("programme annuel de prévention", "papripact", "programme de prévention", "plan annuel de prévention"),
         "actions": (
-            "Vérifier que la formation spécialisée est saisie chaque année pour avis sur le rapport annuel écrit relatif à la situation générale santé-sécurité-conditions de travail et aux actions menées.",
-            "Vérifier que le programme annuel est établi à partir de l'analyse du rapport social unique et comporte les actions, leurs conditions d'exécution et leur coût estimé.",
-            "Tracer les propositions éventuelles de priorisation et de mesures supplémentaires formulées par la formation spécialisée.",
-            "Vérifier que les motifs des mesures de prévention non réalisées figurent en annexe du rapport annuel.",
-            "Vérifier l'association de la formation spécialisée au suivi du document unique d'évaluation des risques professionnels.",
+            "Vérifier que la formation spécialisée du comité social territorial est saisie chaque année pour avis sur le programme annuel de prévention.",
+            "Vérifier que le programme est établi à partir de l'analyse prévue à R. 253-38 et des informations santé-sécurité-conditions de travail du rapport social unique.",
+            "Vérifier que le programme détaille les actions de l'année à venir, leurs conditions d'exécution et leur coût estimé.",
+            "Tracer les propositions de priorisation et de mesures supplémentaires formulées par la formation spécialisée.",
+            "Vérifier que les motifs des mesures prévues mais non prises sont annexés au programme annuel.",
         ),
     },
     {
@@ -605,6 +605,7 @@ FS_OPERATIONAL_RULES: tuple[dict[str, Any], ...] = (
 )
 
 FS_OPERATIONAL_REFERENCES = [
+    {"article": "CGFP R. 253-27", "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549783/"},
     {"article": "CGFP R. 253-35 à R. 253-63", "url": "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050549693/2026-08-01/"},
 ]
 
