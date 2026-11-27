@@ -101,3 +101,10 @@ def test_frontend_exposes_instances_only_to_union_entitlements_and_removes_old_p
     assert "Essentiel · 1 accès" not in frontend
     assert "Collectivité & Syndicats · 15 accès" not in frontend
     assert "Préparation des instances" in frontend
+
+
+def test_local_and_staging_templates_use_current_agent_syndicate_entitlement_model():
+    for name in (".env.example", ".env.staging.example"):
+        env = (ROOT / "deploy" / name).read_text(encoding="utf-8")
+        assert "PRIVATE_INSTANCE_MODE=false" in env
+        assert "PRIVATE_INSTANCE_MODE=true" not in env
