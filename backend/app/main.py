@@ -1141,6 +1141,8 @@ async def prepare_social_instance(
     meeting_urgent = payload.get("meeting_urgent", False)
     last_fs_meeting_raw = payload.get("last_fs_meeting_date")
     fs_as_of_raw = payload.get("fs_as_of_date")
+    fs_titular_representatives = payload.get("fs_titular_representatives")
+    fs_requesting_titular_representatives = payload.get("fs_requesting_titular_representatives")
     inspector_request_received_raw = payload.get("inspector_request_received_date")
     cst_written_request_raw = payload.get("cst_written_request_received_date")
     annual_meeting_count = payload.get("annual_meetings_held")
@@ -1188,9 +1190,16 @@ async def prepare_social_instance(
             result["cst_meeting_deadlines"] = calculate_cst_meeting_deadlines(meeting_date, urgent=meeting_urgent)
         elif meeting_urgent:
             raise HTTPException(422, "Une date de séance est nécessaire pour calculer les délais.")
-        if last_fs_meeting_raw or fs_as_of_raw:
-            if not last_fs_meeting_raw or not fs_as_of_raw or titular_representatives is None or requesting_titular_representatives is None:
-                raise HTTPException(422, "Pour le contrôle des neuf mois, renseignez la dernière réunion FS, la date d'évaluation et les deux effectifs de titulaires.")
+        fs_context_supplied = any(
+            value is not None
+            for value in (last_fs_meeting_raw, fs_as_of_raw, fs_titular_representatives, fs_requesting_titular_representatives)
+        )
+        if fs_context_supplied:
+            if (
+                not last_fs_meeting_raw or not fs_as_of_raw
+                or fs_titular_representatives is None or fs_requesting_titular_representatives is None
+            ):
+                raise HTTPException(422, "Pour le contrôle des neuf mois, renseignez les dates et les effectifs propres aux représentants titulaires de la FS.")
             try:
                 last_fs_meeting_date = date.fromisoformat(last_fs_meeting_raw)
                 fs_as_of_date = date.fromisoformat(fs_as_of_raw)
@@ -1199,8 +1208,8 @@ async def prepare_social_instance(
             result["fs_nine_month_assessment"] = assess_fs_nine_month_trigger(
                 last_meeting_date=last_fs_meeting_date,
                 as_of_date=fs_as_of_date,
-                titular_representatives=titular_representatives,
-                requesting_titular_representatives=requesting_titular_representatives,
+                titular_representatives=fs_titular_representatives,
+                requesting_titular_representatives=fs_requesting_titular_representatives,
             )
         if inspector_request_received_raw:
             try:
