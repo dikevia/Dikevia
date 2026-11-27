@@ -876,3 +876,23 @@ def test_structured_case_context_includes_current_turn_facts_for_a_new_topic():
     assert state["employeur_selectionne"] == "VILLE_SAINT_ETIENNE"
     assert state["periode_faits_declaree"]["debut"] == "2025-03-01"
     assert state["messages_utilisateur_pertinents"] == []
+
+
+
+def test_negative_status_correction_is_not_overridden_by_inherited_positive_status():
+    from app.legal_qualification import build_contextual_research_context
+
+    prior_question = "Je suis agent contractuel en CDD. Mon employeur refuse mes heures supplémentaires."
+    previous_assistant = "Quel est votre statut actuel : êtes-vous toujours contractuel ?"
+    current = "Je ne suis plus contractuel."
+
+    context = build_contextual_research_context(
+        current,
+        [prior_question],
+        [previous_assistant],
+    )
+    qualification = qualify_legal_question(context.question)
+
+    assert context.is_followup is True
+    assert "Contexte de statut déclaré précédemment" not in context.question
+    assert qualification["agent_status"] == "NOT_SPECIFIED"
