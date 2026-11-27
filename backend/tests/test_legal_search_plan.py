@@ -267,6 +267,19 @@ def test_citis_question_builds_specific_territorial_research_axes():
     assert "imputabilité au service" in queries[2]
 
 
+def test_nbi_question_builds_dedicated_cgfp_and_fpt_decree_search_axes():
+    question = "C est quoi une NBI ? et comment sont montants calculés?"
+    query = build_official_search_query(question)
+    queries = build_official_search_queries(question)
+    axes = build_official_research_axes(question)
+    assert "L712-12" in query
+    assert "L712-13" in query
+    assert "décret 2006-779" in query
+    assert any("L712-12" in item and "L712-13" in item for item in queries)
+    assert any("93-863" in item and "2006-779" in item for item in queries)
+    assert axes and all("NBI" in axis or "bonification indiciaire" in axis for axis in axes)
+
+
 def test_remuneration_question_builds_fpt_and_local_deliberation_axes():
     queries = build_official_search_queries("Ma collectivité refuse de verser mon IFSE.")
     assert len(queries) == 3
