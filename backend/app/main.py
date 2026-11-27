@@ -1145,10 +1145,18 @@ async def prepare_social_instance(
     fs_requesting_titular_representatives = payload.get("fs_requesting_titular_representatives")
     inspector_request_received_raw = payload.get("inspector_request_received_date")
     cst_written_request_raw = payload.get("cst_written_request_received_date")
+    fs_secretary_consulted = payload.get("fs_secretary_consulted_before_agenda")
+    agenda_vote_points_identified = payload.get("agenda_vote_points_identified")
     annual_meeting_count = payload.get("annual_meetings_held")
     annual_health_safety_count = payload.get("annual_health_safety_meetings_held", 0)
     if not isinstance(meeting_urgent, bool):
         raise HTTPException(422, "meeting_urgent doit être un booléen.")
+    if fs_secretary_consulted is not None and not isinstance(fs_secretary_consulted, bool):
+        raise HTTPException(422, "fs_secretary_consulted_before_agenda doit être un booléen ou absent.")
+    if agenda_vote_points_identified is not None and not isinstance(agenda_vote_points_identified, bool):
+        raise HTTPException(422, "agenda_vote_points_identified doit être un booléen ou absent.")
+    if fs_secretary_consulted is not None and instance.upper() != "FS":
+        raise HTTPException(422, "Le contrôle du secrétaire concerne la formation spécialisée.")
     if instance.upper() not in {"CST", "FS"} and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw, cst_written_request_raw, fs_titular_representatives, fs_requesting_titular_representatives, annual_health_safety_count, annual_meeting_count)):
         raise HTTPException(422, "Les paramètres de calendrier CST/FS ne sont disponibles que pour une préparation CST.")
     if annual_meeting_count is not None and (
@@ -1236,6 +1244,27 @@ async def prepare_social_instance(
                 formation_specialisee_exists=formation_specialisee_exists,
                 health_safety_meetings_held=annual_health_safety_count,
             )
+        if fs_secretary_consulted is not None:
+            result["fs_agenda_preparation"] = {
+                "status": "SECRETARY_CONSULTED" if fs_secretary_consulted else "SECRETARY_CONSULTATION_NOT_CONFIRMED",
+                "reference": "CGFP R. 254-40",
+                "legal_conclusion": False,
+                "notice": (
+                    "La consultation préalable du secrétaire de la formation spécialisée est déclarée effectuée. "
+                    "Conserver la trace de cette consultation."
+                    if fs_secretary_consulted else
+                    "Le secrétaire de la formation spécialisée doit être consulté avant la définition de l'ordre du jour ; il peut proposer l'inscription de points."
+                ),
+            }
+        if agenda_vote_points_identified is not None:
+            result["agenda_convocation_check"] = {
+                "status": "VOTE_POINTS_IDENTIFIED" if agenda_vote_points_identified else "VOTE_POINTS_NOT_CONFIRMED",
+                "reference": "CGFP R. 254-38",
+                "legal_conclusion": False,
+                "notice": (
+                    "La convocation doit fixer l'ordre du jour et préciser les points soumis au vote."
+                ),
+            }
         return result
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
