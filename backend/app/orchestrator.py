@@ -2121,7 +2121,9 @@ class LegalOrchestrator:
             )
         else:
             provider_status = await check_provider_availability()
-            if provider_status.get("status") != "AVAILABLE":
+            # The provider check is catalog-only: it confirms the configured model is
+            # listed and generative, not that a live inference request will succeed.
+            if provider_status.get("status") not in {"MODEL_CONFIGURED", "AVAILABLE"}:
                 ai_answer = None
                 if provider_status.get("status") == "MODEL_DISABLED" and provider_status.get("reason") == "paid_plan_required":
                     missing.insert(
