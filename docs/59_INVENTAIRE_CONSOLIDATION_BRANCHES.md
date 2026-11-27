@@ -214,3 +214,10 @@ Le fichier de test historique `test_v338_local_document_ai_privacy.py` n'existe 
 - `resolve_entitlements(founder=True)` supprime le quota quotidien (valeur `None`) et active les outils syndicat, mais retourne actuellement `max_users=15`. Cela ne limite pas le nombre de questions, mais reste un plafond d'accès organisationnel à vérifier si le privilège fondateur devait aussi être illimité en nombre de sièges. Aucun changement n'a été effectué sur ce point.
 - Aucun paiement, activation Stripe, attribution d'accès fondateur ou migration n'a été exécuté pendant cet audit.
 
+
+### Provenance des références et registre des sources
+
+- La branche `chore/audit-service-public-reference-provenance` contient `scripts/audit_staging_reference_provenance.py` et ses tests, mais les deux fichiers sont déjà strictement identiques dans `main`. Aucun transfert.
+- La branche `corpus/add-sig-info-gouv-guidance` est une version antérieure du registre : `main` contient déjà le domaine `info-gouv`, les tests de registre et davantage de contrôles de gouvernance. Son registre ne doit pas écraser la version actuelle.
+- Les branches documentaires Auth0 et readiness examinées sont des versions antérieures de documents déjà consolidés ; aucun remplacement global n'est justifié.
+
