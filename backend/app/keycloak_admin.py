@@ -1,7 +1,9 @@
-"""Minimal Keycloak Admin REST client for invitation provisioning.
+"""Legacy Keycloak Admin REST client retained for migration reference only.
 
-Uses a confidential service account with realm-management/manage-users only.
-Never exposes admin credentials or tokens to browser clients.
+The application runtime no longer imports or invokes this client. It must not be
+used for new invitations; Auth0 Universal Login is the sole supported identity
+flow. Physical removal is deferred until the historical identity service audit
+and rollback plan are complete.
 """
 from dataclasses import dataclass
 import httpx
