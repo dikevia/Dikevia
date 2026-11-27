@@ -342,3 +342,41 @@ def test_ccp_contract_reemployment_distinguishes_leave_types_and_contract_term()
     assert "article 39-5" in joined
     assert not any(item["code"] == "dismissal_after_unpaid_leave" for item in result["points"])
 
+def test_ccp_article_18_1_three_month_reemployment_request_and_silence_procedure():
+    result = prepare_instance("CCP", "Demande de réemploi après congé pour convenances personnelles d'un contractuel")
+    point = next(item for item in result["points"] if item["code"] == "leave_18_1_request_deadline")
+    joined = " ".join(point["questions"])
+    assert "article 15" in joined
+    assert "article 17" in joined
+    assert "article 18" in joined
+    assert "trois mois avant son terme" in joined
+    assert "lettre recommandée" in joined
+    assert "quinze jours" in joined
+    assert "motif grave" in joined
+    assert "ne doit pas être étendu aux autres congés" in joined
+
+
+def test_ccp_national_service_and_reserve_return_is_distinct_from_article_18_1():
+    result = prepare_instance("CCP", "Réemploi après une période dans la réserve opérationnelle d'un agent contractuel")
+    point = next(item for item in result["points"] if item["code"] == "national_service_reserve_return")
+    joined = " ".join(point["questions"])
+    assert "service national actif" in joined
+    assert "trente jours cumulés" in joined
+    assert "quinze jours cumulés" in joined
+    assert "réserve sanitaire" in joined
+    assert "dix-huit mois" in joined
+    assert "soixante jours" in joined
+    assert "article 18-1" in joined
+    assert "article 35, abrogé" in joined
+    assert not any(item["code"] == "leave_18_1_request_deadline" for item in result["points"])
+
+
+def test_ccp_article_18_1_does_not_trigger_for_national_service_return():
+    result = prepare_instance("CCP", "Réemploi après libération du service national d'un agent contractuel")
+    point = next(item for item in result["points"] if item["code"] == "national_service_reserve_return")
+    joined = " ".join(point["questions"])
+    assert "article 33" in joined
+    assert "article 34" in joined
+    assert "Ne pas appliquer à ces situations le délai de trois mois de l'article 18-1" in joined
+    assert not any(item["code"] == "leave_18_1_request_deadline" for item in result["points"])
+
