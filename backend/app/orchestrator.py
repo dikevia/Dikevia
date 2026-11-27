@@ -1158,6 +1158,11 @@ class LegalOrchestrator:
         case_law_issue = None
         case_law_fulltext_issue = None
         cgfp_issue = None
+        # These query sets are also used later when source relevance is assessed.
+        # Initialize them in the enclosing scope and refresh them on every official
+        # search pass, including the optional AI-guided refinement pass.
+        code_research_queries: list[str] = list(research_queries)
+        regulatory_queries: list[str] = list(research_queries)
 
         async def search_cgfp_index():
             if not settings.cgfp_enabled:
@@ -1220,6 +1225,7 @@ class LegalOrchestrator:
             }, None
 
         async def search_official_pillars(cgfp_article_queries: list[str] | None = None):
+            nonlocal code_research_queries, regulatory_queries
             if not legifrance.configured:
                 issue = "Identifiants PISTE non configurés : les recherches officielles Légifrance n'ont pas été exécutées."
                 return [], [], [], issue, issue, issue, issue, []
