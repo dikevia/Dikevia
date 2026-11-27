@@ -24,15 +24,18 @@ async def _fake_piste_token(self):
 
 
 
-def _structured_claim(source, text):
+def _structured_claim(source, text, legal_context=None):
     evidence = source.get("excerpt") or source.get("text", "")[:1800]
     quote = " ".join(str(evidence).split())[:120]
+    axes = (legal_context or {}).get("axes_recherche_documentaire") or []
     return json.dumps({
         "claims": [{
             "text": text,
             "source_id": source["source_id"],
+            "axis": axes[0] if axes else "",
             "quote": quote,
-        }]
+        }],
+        "uncovered_axes": axes[1:],
     }, ensure_ascii=False)
 
 
@@ -186,7 +189,7 @@ async def test_orchestrator_uses_date_scoped_loda_texts_as_regulatory_sources(mo
     async def fake_ai(**kwargs):
         captured["sources"] = kwargs["sources"]
         source = next(s for s in kwargs["sources"] if s["source_type"] == "LEGIFRANCE_LODA")
-        return _structured_claim(source, "Le décret n° 2024-100 doit être vérifié au regard de la situation exposée.")
+        return _structured_claim(source, "Le décret n° 2024-100 doit être vérifié au regard de la situation exposée.", kwargs.get("legal_context"))
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", no_code_articles)
     monkeypatch.setattr(module.legifrance, "search_regulatory_texts", regulatory_texts)
@@ -772,6 +775,7 @@ async def test_ihts_query_retrieves_decree_91_875_and_filters_irrelevant_cgfp_hi
         return _structured_claim(
             source,
             "Le décret n° 91-875 concerne le régime indemnitaire des fonctionnaires territoriaux.",
+            kwargs.get("legal_context"),
         )
 
     monkeypatch.setattr(module.legifrance, "search_code_articles", code_articles)
