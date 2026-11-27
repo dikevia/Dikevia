@@ -15,10 +15,10 @@ android {
         versionCode = 3
         versionName = "0.3.0"
 
-        // Public Native client configuration. Supply the real Client ID locally
-        // with -Pauth0AndroidClientId=... after the Native Auth0 app is created.
+        // Auth0 Native Client ID is public application configuration (never a secret).
+        // Keep a local Gradle override available for isolated tenant environments.
         val nativeClientId = providers.gradleProperty("auth0AndroidClientId")
-            .orElse("AUTH0_NATIVE_CLIENT_ID_REQUIRED").get()
+            .orElse("nxJSApdmOBBviDXs5WaSkkstLxYIdgWe").get()
         buildConfigField("String", "AUTH0_CLIENT_ID", "\"$nativeClientId\"")
         buildConfigField("String", "AUTH0_DOMAIN", "\"dev-brlgaz1yh2de3mjo.us.auth0.com\"")
         buildConfigField("String", "AUTH0_API_AUDIENCE", "\"https://api.dikevia.fr\"")
