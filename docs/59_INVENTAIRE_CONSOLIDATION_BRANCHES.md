@@ -240,3 +240,10 @@ Le fichier de test historique `test_v338_local_document_ai_privacy.py` n'existe 
 - `feature/dikevia-free-vector-search-poc` contient une migration Auth0/Google par identité historique et un ancien prototype mobile ; ne pas fusionner (risque de collision migration 029/030 et dépendances historiques).
 - `feature/ui-five-color-themes` introduit un système de thèmes alternatifs concurrent. Il ne doit pas remplacer l'identité JARVIS verrouillée.
 
+
+### Android, OIDC et icônes
+
+- `fix/android-15-system-bars` propose un état Android 15 antérieur à la palette JARVIS et conserve les couleurs vertes. `main` a déjà les insets Android 15, les barres système claires et le fond bleu glacier : ne pas écraser le fichier actuel.
+- `feat/android-launcher-icons` contient des icônes Émeraude & Or, alors que `main` contient les icônes bleues actuelles. Ne pas reprendre.
+- Les branches `fix/android-oidc-login-bootstrap`, `fix/oidc-login-integration-beta`, `fix/oidc-silent-sso-session-restore`, `fix/oidc-api-401-diagnostics-2026-11-20`, `fix/oidc-browser-discovery-timeout-2026-11-20`, `fix/oidc-login-visibility`, `fix/dikevia-oidc-branding-init` et `release/oidc-client-id-blueprint` sont des implémentations ou configurations anciennes, en partie liées à Keycloak. Aucun merge global ; reprendre uniquement une correction isolée après comparaison avec le flux Auth0 actuel.
+
