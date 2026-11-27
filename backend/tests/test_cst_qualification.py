@@ -6,7 +6,6 @@ from app.cst_qualification import (
     assess_fs_nine_month_trigger,
     calculate_fs_inspector_request_deadlines,
     calculate_cst_meeting_deadlines,
-    calculate_cst_meeting_deadlines,
     qualify_cst_topic,
 )
 from app.instances import prepare_instance
