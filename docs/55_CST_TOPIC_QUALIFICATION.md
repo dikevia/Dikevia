@@ -88,3 +88,32 @@ Références officielles :
 - [CGFP, article R. 254-40](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050550063)
 - [CGFP, article R. 254-42](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050550069)
 - [CGFP, article R. 254-43](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050550071)
+
+
+## Consultations propres à la formation spécialisée et articulation CST / FS
+
+Pour la fonction publique territoriale, le référentiel FS indicatif couvre désormais les sujets des articles R. 253-24 à R. 253-27 :
+
+- **R. 253-24** : questions de santé physique et mentale, hygiène et sécurité, organisation du travail, télétravail, déconnexion, amélioration des conditions de travail et élaboration / mise à jour du DUERP, sous réserve de l'exclusion des questions mentionnées à R. 253-7.
+- **R. 253-25** : projets importants d'aménagement modifiant la santé, la sécurité ou les conditions de travail, hors cas visé au 2° de R. 253-7 ; projets importants de nouvelles technologies susceptibles d'avoir des conséquences sur la santé et la sécurité.
+- **R. 253-26** : mesures de mise, remise ou maintien au travail des personnes visées par le texte, notamment aménagement de poste ; mesures générales de reclassement des agents reconnus inaptes.
+- **R. 253-27** : programme annuel de prévention des risques professionnels et d'amélioration des conditions de travail, établi à partir de l'analyse des risques et des informations santé-sécurité du RSU.
+
+Les mots-clés ne sont que des déclencheurs documentaires. Les exclusions, la nature du projet, son importance, son périmètre et les conditions propres à chaque article doivent être examinés humainement.
+
+### Règles d'articulation
+
+- **Sans FS instituée** : le CST exerce les compétences attribuées à la FS dans les sous-sections 1 à 4 de la section 2 (R. 253-79).
+- **Compétence partagée** : le CST est seul consulté sur une question ou un projet relevant de ses propres attributions et qui aurait également pu relever de la FS (R. 253-80).
+- **Substitution exceptionnelle** : avant examen par la FS, un projet ou une question soumis à consultation obligatoire de celle-ci peut, sous les conditions de R. 253-81, être inscrit directement à l'ordre du jour du CST. En FPT, si l'inscription est à l'initiative du président du CST, elle nécessite l'accord de la moitié des membres représentants du personnel. L'inscription peut également être à l'initiative de la moitié de ces membres. L'avis du CST se substitue alors à celui de la FS.
+
+L'outil demande une qualification humaine séparée des attributions propres du CST, de la consultation obligatoire de la FS et de l'état d'examen par la FS. Pour R. 253-81, il contrôle les effectifs et soutiens déclarés. Il ne vérifie ni la réalité de l'accord, ni la qualité des membres, ni la portée exacte du projet. Le résultat conserve toujours `legal_conclusion: false`.
+
+Références officielles :
+- [CGFP, article R. 253-24](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549777)
+- [CGFP, article R. 253-25](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549779)
+- [CGFP, article R. 253-26](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549781)
+- [CGFP, article R. 253-27](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549783)
+- [CGFP, article R. 253-79](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549927)
+- [CGFP, article R. 253-80](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051968704)
+- [CGFP, article R. 253-81](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000050549931)
