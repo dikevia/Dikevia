@@ -7,6 +7,19 @@ private enum DikeviaPalette {
     static let border = Color(red: 0.863, green: 0.902, blue: 0.941)
 }
 
+private struct InstanceItem: Identifiable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let description: String
+}
+
+private struct AdminItem: Identifiable {
+    let id: String
+    let title: String
+    let subtitle: String
+}
+
 struct ContentView: View {
     @State private var question = ""
     // Authentication and API wiring are deliberately injected in a later,
@@ -14,11 +27,11 @@ struct ContentView: View {
     private let isAuthenticated = false
     private let isAdministrationEdition = false
 
-    private let instances: [(String, String, String)] = [
-        ("CST", "Comité social territorial", "Organisation et conditions de travail"),
-        ("CAP", "Commission administrative paritaire", "Carrière et situations individuelles"),
-        ("CCP", "Commission consultative paritaire", "Agents contractuels"),
-        ("F3SCT", "Formation spécialisée", "Santé, sécurité et conditions de travail")
+    private let instances: [InstanceItem] = [
+        InstanceItem(id: "CST", title: "CST", subtitle: "Comité social territorial", description: "Organisation et conditions de travail"),
+        InstanceItem(id: "CAP", title: "CAP", subtitle: "Commission administrative paritaire", description: "Carrière et situations individuelles"),
+        InstanceItem(id: "CCP", title: "CCP", subtitle: "Commission consultative paritaire", description: "Agents contractuels"),
+        InstanceItem(id: "F3SCT", title: "F3SCT", subtitle: "Formation spécialisée", description: "Santé, sécurité et conditions de travail")
     ]
 
     var body: some View {
@@ -65,15 +78,15 @@ struct ContentView: View {
                                 .font(.headline)
                                 .foregroundStyle(DikeviaPalette.navy)
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                                ForEach(instances, id: \.0) { item in
+                                ForEach(instances) { item in
                                     VStack(alignment: .leading, spacing: 7) {
-                                        Text(item.0)
+                                        Text(item.title)
                                             .font(.title3.bold())
                                             .foregroundStyle(DikeviaPalette.blue)
-                                        Text(item.1)
+                                        Text(item.subtitle)
                                             .font(.subheadline.weight(.semibold))
                                             .foregroundStyle(DikeviaPalette.navy)
-                                        Text(item.2)
+                                        Text(item.description)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
@@ -125,14 +138,14 @@ struct ContentView: View {
             Text("Gestion des utilisateurs, collectivités, droits et abonnements.")
                 .foregroundStyle(.secondary)
             ForEach([
-                ("Utilisateurs et accès", "Comptes, invitations et rôles"),
-                ("Collectivités", "Organisations et rattachements"),
-                ("Abonnements", "Offres, droits et facturation"),
-                ("Supervision", "Disponibilité et activité du service")
-            ], id: \.0) { item in
+                AdminItem(id: "users", title: "Utilisateurs et accès", subtitle: "Comptes, invitations et rôles"),
+                AdminItem(id: "collectivities", title: "Collectivités", subtitle: "Organisations et rattachements"),
+                AdminItem(id: "subscriptions", title: "Abonnements", subtitle: "Offres, droits et facturation"),
+                AdminItem(id: "monitoring", title: "Supervision", subtitle: "Disponibilité et activité du service")
+            ]) { item in
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(item.0).font(.headline).foregroundStyle(DikeviaPalette.navy)
-                    Text(item.1).font(.caption).foregroundStyle(.secondary)
+                    Text(item.title).font(.headline).foregroundStyle(DikeviaPalette.navy)
+                    Text(item.subtitle).font(.caption).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
