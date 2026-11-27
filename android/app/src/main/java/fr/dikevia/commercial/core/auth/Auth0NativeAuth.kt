@@ -5,9 +5,7 @@ import android.content.Context
 import com.auth0.android.Auth0
 import com.auth0.android.authentication.AuthenticationAPIClient
 import com.auth0.android.authentication.AuthenticationException
-import com.auth0.android.authentication.storage.AuthenticationLevel
 import com.auth0.android.authentication.storage.CredentialsManagerException
-import com.auth0.android.authentication.storage.LocalAuthenticationOptions
 import com.auth0.android.authentication.storage.SecureCredentialsManager
 import com.auth0.android.authentication.storage.SharedPreferencesStorage
 import com.auth0.android.callback.Callback
@@ -27,19 +25,12 @@ class Auth0NativeAuth(
     private val appContext = context.applicationContext
     private val account = Auth0.getInstance(BuildConfig.AUTH0_CLIENT_ID, BuildConfig.AUTH0_DOMAIN)
     private val authentication = AuthenticationAPIClient(account)
-    private val localAuthenticationOptions = LocalAuthenticationOptions.Builder()
-        .setTitle("Déverrouiller Dikévia")
-        .setDescription("Vérifiez votre identité pour accéder à votre session.")
-        .setAuthenticationLevel(AuthenticationLevel.STRONG)
-        .setNegativeButtonText("Annuler")
-        .setDeviceCredentialFallback(true)
-        .build()
+    // Encrypted Android Keystore-backed storage without forcing a biometric prompt
+    // on every app launch. Auth0 still refreshes credentials through the SDK.
     private val credentialsManager = SecureCredentialsManager(
         appContext,
         account,
-        SharedPreferencesStorage(appContext),
-        hostActivity,
-        localAuthenticationOptions
+        SharedPreferencesStorage(appContext)
     )
 
     fun isConfigured(): Boolean =
