@@ -39,6 +39,15 @@ hf download Horizon-Labs/multilingual-reranker-small \
 
 Dépendances Python ajoutées : `onnxruntime` et `tokenizers`. Aucun PyTorch ni service d'inférence hébergé n'est requis par ce chemin ONNX.
 
+## Accès limité au fondateur
+
+L'orchestrateur ne lance le modèle que si les deux conditions suivantes sont réunies :
+
+1. le réglage serveur global `LEGAL_CROSS_ENCODER_ENABLED` est activé ;
+2. le compte authentifié possède une ligne active dans `platform_founder_entitlements`.
+
+Cette autorisation est vérifiée côté serveur à partir de l'identité OIDC résolue et de l'identifiant utilisateur interne. Aucun paramètre envoyé par le navigateur ne peut accorder cet accès. Les autres comptes restent sur le reranking déterministe.
+
 ## Configuration
 
 Désactivé par défaut :
