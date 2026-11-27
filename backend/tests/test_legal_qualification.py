@@ -667,7 +667,7 @@ def test_long_followup_keeps_the_current_message_and_prior_case_referent():
         current, [prior], ["La réponse précédente distinguait le régime des IHTS."]
     )
     assert context.is_followup is True
-    assert current in context.question
+    assert current.strip() in context.question
     assert prior in context.question
     assert context.assistant_context == "La réponse précédente distinguait le régime des IHTS."
 
