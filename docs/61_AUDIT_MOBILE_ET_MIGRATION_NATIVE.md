@@ -244,3 +244,25 @@ Un workflow GitHub Actions `.github/workflows/android-native-build.yml` a été 
 7. Ne remplacer la WebView qu'après recette et conservation d'un chemin de repli.
 
 Aucun déploiement Render, aucune modification du tenant Auth0, aucun secret et aucune dépense n'ont été effectués.
+
+
+## 15. Client API Android natif — 27 novembre 2026
+
+Le commit `e01908a0` ajoute `DikeviaApiClient.kt` :
+
+- base API dérivée de l'URL HTTPS de la variante Android (staging actuellement) ;
+- appel `GET /api/v1/organizations` avec Bearer access token, `X-OIDC-ID-Token` et contrôle de l'issuer/subject côté serveur ;
+- appel `POST /api/v1/chat/ask` avec le même couple de jetons et l'en-tête `X-Organization-ID` ;
+- lecture du statut de vérification, de la réponse, des demandes de précision et des titres des sources ;
+- aucun jeton écrit dans les logs ni dans le stockage de ce client.
+
+Le commit `015fd60a` raccorde ce client à l'écran de prévisualisation Android : restauration de session, chargement des organisations, sélection explicite lorsqu'il y en a plusieurs, question JURIS, affichage de la réponse et déconnexion. L'édition Administration n'envoie aucune question à JURIS.
+
+### Limites avant recette
+
+- Le Client ID Auth0 natif reste à créer et configurer dans le tenant ; la valeur de garde empêche toute connexion si ce paramètre manque.
+- L'activité native demeure une prévisualisation non lancée par l'icône de l'application. La WebView est encore le point d'entrée de production.
+- Le chat natif ne conserve pas encore le `conversation_id` retourné pour les questions de suivi ; il ne faut donc pas le présenter comme une conversation multi-tours finalisée.
+- L'API est actuellement dérivée de l'URL staging inscrite dans les variantes Android. La configuration prod doit être explicitement définie avant une publication.
+- Le contrat API est aligné sur le code actuel : `Authorization: Bearer`, `X-OIDC-ID-Token`, `X-Organization-ID`. Il reste à valider avec un vrai compte et le tenant Auth0 sur appareil physique.
+- La CI backend sur le commit `6d3c7ead` a 10 échecs parmi 1 547 tests : certains sont des assertions frontend devenues obsolètes après le cache-busting et le nouveau gestionnaire de clic ; les autres touchent au prompt juridique, à la normalisation du contexte utilisateur et au statut de vérification des sources. Ils doivent être diagnostiqués séparément, sans désactiver les contrôles juridiques.
