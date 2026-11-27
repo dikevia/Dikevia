@@ -183,6 +183,66 @@ def test_cap_reinstatement_after_civil_disqualification_is_covered():
     assert "R. 263-8" in " ".join(point["questions"])
 
 
+def test_cap_reclassement_ppr_tracks_medical_opinion_and_procedural_deadlines():
+    result = prepare_instance(
+        "CAP",
+        "Période de préparation au reclassement après avis du conseil médical pour inaptitude aux fonctions du grade",
+    )
+    point = next(item for item in result["points"] if item["code"] == "reclassement_inaptitude")
+    joined = " ".join(point["questions"])
+    assert "un an" in joined
+    assert "deux mois" in joined
+    assert "quinze jours" in joined
+    assert "trois mois" in joined
+    assert "recours gracieux" in joined
+    assert "avis de la commission administrative paritaire" in joined
+
+
+def test_ccp_physical_unfitness_checks_article_13_specific_redeployment_path():
+    result = prepare_instance(
+        "CCP",
+        "Licenciement pour inaptitude physique définitive d'un agent contractuel",
+    )
+    point = next(item for item in result["points"] if item["code"] == "physical_unfitness")
+    joined = " ".join(point["questions"])
+    assert "article 13 III" in joined
+    assert "L. 332-8" in joined
+    assert "cinq jours ouvrables" in joined
+    assert "moitié du préavis" in joined
+    assert "trois mois maximum" in joined
+    assert "dix semaines" in joined
+    assert "dossier médical" in joined
+
+
+def test_ccp_dismissal_checks_notice_period_and_redeployment_exceptions():
+    result = prepare_instance(
+        "CCP",
+        "Licenciement après période d'essai d'un agent contractuel pour suppression de poste",
+    )
+    point = next(item for item in result["points"] if item["code"] == "dismissal_after_trial")
+    joined = " ".join(point["questions"])
+    assert "huit jours" in joined
+    assert "un mois" in joined
+    assert "deux mois" in joined
+    assert "L. 332-8" in joined
+    assert "emplois de projet" in joined
+    assert "cinq jours ouvrables" in joined
+
+
+def test_ccp_project_contract_end_notice_is_not_generalized_to_all_nonrenewals():
+    project = prepare_instance("CCP", "Fin de contrat de projet au terme prévu")
+    point = next(item for item in project["points"] if item["code"] == "fin_contrat")
+    joined = " ".join(point["questions"])
+    assert "deux mois" in joined
+    assert "trois mois" in joined
+    assert "Ne pas étendre ces délais spécifiques à tous les CDD" in joined
+
+    ordinary = prepare_instance("CCP", "Non-renouvellement d'un CDD ordinaire")
+    ordinary_point = next(item for item in ordinary["points"] if item["code"] == "fin_contrat")
+    ordinary_joined = " ".join(ordinary_point["questions"])
+    assert "Ne pas appliquer par défaut les délais du contrat de projet" in ordinary_joined
+
+
 def test_ccp_union_mandate_nonrenewal_matches_natural_wording():
     result = prepare_instance(
         "CCP",
