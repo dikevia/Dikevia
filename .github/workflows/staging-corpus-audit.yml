@@ -11,7 +11,7 @@ on:
       - "backend/requirements-embeddings.txt"
   push:
     branches:
-      - ci/staging-corpus-audit
+      - main
     paths:
       - ".github/workflows/staging-corpus-audit.yml"
       - "scripts/audit_staging_guidance_eligibility.py"
