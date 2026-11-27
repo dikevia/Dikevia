@@ -107,12 +107,14 @@ def test_ccp_union_mandate_nonrenewal_has_specific_referral_candidate():
     assert any(item["code"] == "union_mandate_nonrenewal" for item in result["points"])
 
 
-def test_ccp_discipline_excludes_first_group_sanctions_in_checklist():
+def test_ccp_discipline_does_not_trigger_for_first_group_sanctions():
     result = prepare_instance("CCP", "Sanction disciplinaire : avertissement")
-    point = next(item for item in result["points"] if item["code"] == "discipline")
-    joined = " ".join(point["questions"])
-    assert "avertissement" in joined
-    assert "trois jours au maximum" in joined
+    assert not any(item["code"] == "discipline" for item in result["points"])
+
+
+def test_cap_discipline_does_not_trigger_for_first_group_sanctions():
+    result = prepare_instance("CAP", "Sanction disciplinaire : blâme du premier groupe")
+    assert not any(item["code"] == "discipline" for item in result["points"])
 
 
 def test_ccp_individual_referral_is_separate_from_mandatory_consultation():
