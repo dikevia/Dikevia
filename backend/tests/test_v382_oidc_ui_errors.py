@@ -8,7 +8,7 @@ def test_oidc_login_and_logout_errors_are_shown_in_the_ui():
     assert "Connexion impossible :" in html
     assert "Déconnexion locale effectuée." in html
     assert '<button id="logout" class="secondary" type="button" aria-label="Se déconnecter de Dikévia">Déconnexion</button>' in html
-    assert "finally{button.disabled=false;}" in html
+    assert "}).finally(() => { button.disabled = false; });" in html
 
 def test_juris_visual_identity_and_shared_instance_entry_points_are_present():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
