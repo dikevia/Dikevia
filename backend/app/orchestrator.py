@@ -888,7 +888,7 @@ def _immediate_prior_assistant_messages(history: list[dict]) -> list[str]:
     if latest.get("role") != "assistant":
         return []
     content = str(latest.get("content") or "").strip()
-    return [content[:1200]] if content else []
+    return [content[-1800:]] if content else []
 
 
 def _provider_context_history(
