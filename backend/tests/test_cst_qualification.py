@@ -9,6 +9,8 @@ from app.cst_qualification import (
     assess_annual_instance_meeting_frequency,
     calculate_cst_written_request_deadline,
     qualify_cst_topic,
+    qualify_fs_topic,
+    assess_cst_fs_competence_routing,
 )
 from app.instances import prepare_instance
 
@@ -288,3 +290,58 @@ def test_cst_and_fs_calendar_controls_are_wired_to_instance_ui():
     assert "fs_nine_month_assessment" in source
     assert "cst_written_request_deadline" in source
     assert "annual_meeting_frequency" in source
+
+
+
+def test_fs_topics_are_candidates_and_not_legal_conclusions():
+    duerp = qualify_fs_topic("Mise à jour du DUERP")
+    prevention = qualify_fs_topic("Programme annuel de prévention des risques professionnels")
+
+    assert any(item["reference"] == "R. 253-24, 6°" for item in duerp["candidates"])
+    assert any(item["reference"] == "R. 253-27" for item in prevention["candidates"])
+    assert duerp["legal_conclusion"] is False
+    assert prevention["legal_conclusion"] is False
+
+
+def test_cst_fs_routing_without_fs_and_r25380_subsidiarity():
+    without_fs = assess_cst_fs_competence_routing(formation_specialisee_exists=False)
+    cst_only = assess_cst_fs_competence_routing(
+        formation_specialisee_exists=True,
+        topic_in_cst_own_competence=True,
+        topic_in_fs_mandatory_consultation=True,
+    )
+
+    assert without_fs["status"] == "CST_EXERCISES_FS_COMPETENCES"
+    assert cst_only["status"] == "CST_SOLELY_CONSULTED"
+    assert cst_only["legal_conclusion"] is False
+
+
+def test_cst_r25381_substitution_requires_unexamined_fs_topic_and_half_support():
+    threshold_not_met = assess_cst_fs_competence_routing(
+        formation_specialisee_exists=True,
+        topic_in_cst_own_competence=False,
+        topic_in_fs_mandatory_consultation=True,
+        fs_consultation_already_examined=False,
+        cst_evocation_initiative="PRESIDENT",
+        cst_staff_representatives_total=7,
+        cst_staff_representatives_supporting=3,
+    )
+    substituted = assess_cst_fs_competence_routing(
+        formation_specialisee_exists=True,
+        topic_in_cst_own_competence=False,
+        topic_in_fs_mandatory_consultation=True,
+        fs_consultation_already_examined=False,
+        cst_evocation_initiative="STAFF_REPRESENTATIVES",
+        cst_staff_representatives_total=7,
+        cst_staff_representatives_supporting=4,
+    )
+    already_examined = assess_cst_fs_competence_routing(
+        formation_specialisee_exists=True,
+        topic_in_cst_own_competence=False,
+        topic_in_fs_mandatory_consultation=True,
+        fs_consultation_already_examined=True,
+    )
+
+    assert threshold_not_met["status"] == "EVOCATION_THRESHOLD_NOT_REACHED"
+    assert substituted["status"] == "CST_OPINION_SUBSTITUTES_FS"
+    assert already_examined["status"] == "FS_ALREADY_EXAMINED"
