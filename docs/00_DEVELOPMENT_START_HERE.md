@@ -41,6 +41,7 @@ Le Dockerfile racine lance `uvicorn app.main:app` avec `PYTHONPATH=/srv/backend`
 3. `docs/39_LIVRAISON_DEVELOPPEUR_V3_30.md` — dossier de transfert historique, à ne pas considérer comme un état opérationnel actuel.
 4. `docs/44_PREPARATION_RECETTE_DEVELOPPEUR.md` — procédure de validation préparée ; certaines références à Keycloak sont historiques et doivent être adaptées avant une recette OIDC réelle.
 5. `docs/50_BETA_READINESS_2026-11-24.md` — état daté de la bêta ; ses indications d'environnement et de fournisseur d'identité ne remplacent pas une vérification actuelle.
+6. `docs/AI_DATA_MINIMIZATION_AND_RETENTION.md` — périmètre réel du filtrage avant transfert IA, limites, conservation et prérequis RGPD.
 
 En cas de contradiction, le code de `main`, les workflows réellement exécutés et la configuration active de l'hébergeur doivent être vérifiés. Une documentation datée ne constitue pas une preuve d'état courant.
 
@@ -86,7 +87,7 @@ Les tests d'intégration PostgreSQL doivent utiliser une base jetable et des rô
 - Maintenir `main` comme seule branche de travail et conserver la CI verte après chaque modification ; les workflows PR ont été retirés.
 - Ne récupérer d'anciennes branches qu'un correctif précis démontré absent de `main`, jamais une branche entière.
 - Faire réaliser le benchmark conversationnel et juridique par les développeurs ; les tests CI ne certifient pas la pertinence des réponses.
-- Finaliser les garanties RGPD : anonymisation réelle avant LLM, garanties contractuelles du fournisseur, politique de rétention/purge, registre, information et AIPD si nécessaire.
+- Finaliser les garanties RGPD : le filtrage actuel des identifiants directs est une minimisation partielle, pas une anonymisation ; restent à traiter les noms, adresses, garanties contractuelles du fournisseur, politique de rétention/purge, registre, information et AIPD si nécessaire. Voir `docs/AI_DATA_MINIMIZATION_AND_RETENTION.md`.
 - Compléter l'OCR des PDF numérisés et le suivi persistant des suites CST/FS/CAP/CCP.
 - Valider Auth0 et les deux applications Android sur appareils réels ; ne pas rouvrir l'intégration Auth0 déjà validée sur staging.
 - Préparer séparément la migration de production : le service actif reste sur une ancienne branche et le Blueprint Render ne doit pas être synchronisé sans plan dédié.
