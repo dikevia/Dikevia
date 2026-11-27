@@ -801,7 +801,8 @@ async function prepareInstance(){
   }
   if(competenceRouting){
    const routingLabels={FS_EXISTENCE_TO_VERIFY:'Existence de la FS à vérifier',CST_EXERCISES_FS_COMPETENCES:'Le CST exerce les compétences de la FS',CST_SOLELY_CONSULTED:'Consultation du CST seul à examiner',COMPETENCE_TO_VERIFY:'Compétences à qualifier',CST_COMPETENCE_TO_EXAMINE:'Compétence propre du CST à examiner',NO_AUTOMATIC_INSTANCE_ROUTING:'Aucune orientation automatique',FS_EXAMINATION_STATUS_TO_VERIFY:'Examen antérieur de la FS à vérifier',FS_ALREADY_EXAMINED:'Consultation FS déjà examinée',FS_MANDATORY_CONSULTATION_TO_EXAMINE:'Consultation obligatoire de la FS à examiner',EVOCATION_THRESHOLD_NOT_REACHED:'Seuil de substitution non atteint',CST_OPINION_SUBSTITUTES_FS:'Substitution par avis du CST possible sous conditions'};
-   calendarHtml+='<section><h3>Articulation CST / FS · CGFP R. 253-79 à R. 253-81</h3><p><b>'+esc(routingLabels[competenceRouting.status]||competenceRouting.status)+'</b></p><p>'+esc(competenceRouting.notice)+'</p><p class="muted">Qualification déclarative, à confirmer au regard du texte applicable et du périmètre des instances.</p></section>';
+   const routingLinks=(competenceRouting.official_references||[]).map(item=>'<a href="'+esc(item.url)+'" target="_blank" rel="noopener noreferrer">'+esc(item.article)+'</a>').join(' · ');
+   calendarHtml+='<section><h3>Articulation CST / FS · CGFP R. 253-79 à R. 253-81</h3><p><b>'+esc(routingLabels[competenceRouting.status]||competenceRouting.status)+'</b></p><p>'+esc(competenceRouting.notice)+'</p><p class="muted">Qualification déclarative, à confirmer au regard du texte applicable et du périmètre des instances.</p><p class="muted">Références : '+routingLinks+'</p></section>';
   }
   let agendaHtml='';
   if(agenda){
