@@ -85,6 +85,7 @@ fun NativeHomeScreen(
     onSelectOrganization: (String) -> Unit,
     chatAnswer: String,
     chatStatus: String,
+    sending: Boolean,
     onSendQuestion: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -277,7 +278,7 @@ fun NativeHomeScreen(
                         value = question,
                         onValueChange = { question = it },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = authenticated && selectedOrganizationId != null,
+                        enabled = authenticated && selectedOrganizationId != null && !sending,
                         placeholder = { Text(if (authenticated) "Posez votre question à JURIS…" else "Connectez-vous pour interroger JURIS") },
                         shape = RoundedCornerShape(18.dp),
                         minLines = 2
@@ -291,12 +292,12 @@ fun NativeHomeScreen(
                                 question = ""
                             }
                         },
-                        enabled = authenticated && selectedOrganizationId != null && question.isNotBlank(),
+                        enabled = authenticated && selectedOrganizationId != null && question.isNotBlank() && !sending,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("Envoyer à JURIS")
+                        Text(if (sending) "Analyse en cours…" else "Envoyer à JURIS")
                     }
                     if (chatStatus.isNotBlank()) {
                         Text(
