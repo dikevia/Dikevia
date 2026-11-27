@@ -43,6 +43,8 @@ def test_server_sessions_are_opt_in_and_require_encryption_and_https_redirect():
 
     enabled = Settings(
         oidc_server_sessions_enabled=True,
+        oidc_provider="auth0",
+        oidc_scopes="openid profile email offline_access",
         oidc_client_id="cfdt-juris-web",
         oidc_issuer="https://identity.example/realms/cfdt",
         oidc_audience="dikevia-api",
