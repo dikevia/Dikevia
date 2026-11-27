@@ -31,6 +31,10 @@ class NativePreviewActivity : FragmentActivity() {
     private var publicService by mutableStateOf("FPT")
     private var employer by mutableStateOf("NATIONAL")
     private var employerDetails by mutableStateOf("")
+    private var factsStartDate by mutableStateOf("")
+    private var factsEndDate by mutableStateOf("")
+    private var situationOngoing by mutableStateOf(false)
+    private var confirmLocalDocumentAiTransfer by mutableStateOf(false)
     private var conversationId: String? = null
     private var chatAnswer by mutableStateOf("")
     private var chatStatus by mutableStateOf("")
@@ -91,6 +95,17 @@ class NativePreviewActivity : FragmentActivity() {
                     conversationId = null
                     chatAnswer = ""
                 },
+                factsStartDate = factsStartDate,
+                onFactsStartDateChange = { factsStartDate = it },
+                factsEndDate = factsEndDate,
+                onFactsEndDateChange = { factsEndDate = it },
+                situationOngoing = situationOngoing,
+                onSituationOngoingChange = {
+                    situationOngoing = it
+                    if (it) factsEndDate = ""
+                },
+                confirmLocalDocumentAiTransfer = confirmLocalDocumentAiTransfer,
+                onConfirmLocalDocumentAiTransferChange = { confirmLocalDocumentAiTransfer = it },
                 onSelectOrganization = {
                     if (selectedOrganizationId != it) {
                         selectedOrganizationId = it
@@ -179,6 +194,12 @@ class NativePreviewActivity : FragmentActivity() {
         }
         val session = credentials
         val organizationId = selectedOrganizationId
+        val selectedVersant = publicService
+        val selectedEmployer = if (selectedVersant == "FPT") employer else employerDetails.trim().ifBlank { "NATIONAL" }
+        val startDate = factsStartDate.trim().ifBlank { null }
+        val endDate = factsEndDate.trim().ifBlank { null }
+        val ongoing = situationOngoing
+        val allowLocalAiTransfer = confirmLocalDocumentAiTransfer
         if (session == null || organizationId == null) {
             chatStatus = "Authentifiez-vous et sélectionnez une organisation avant d'interroger JURIS."
             return
@@ -192,12 +213,17 @@ class NativePreviewActivity : FragmentActivity() {
                     session.idToken,
                     organizationId,
                     question,
-                    publicService,
-                    if (publicService == "FPT") employer else employerDetails.trim().ifBlank { "NATIONAL" },
+                    selectedVersant,
+                    selectedEmployer,
+                    startDate,
+                    endDate,
+                    ongoing,
+                    allowLocalAiTransfer,
                     conversationId
                 )
                 runOnUiThread {
                     conversationId = answer.conversationId
+                    confirmLocalDocumentAiTransfer = false
                     chatAnswer = buildString {
                         append(answer.answer)
                         answer.clarificationQuestion?.let {
