@@ -138,7 +138,7 @@ async def test_archive_importer_records_source_provenance_and_only_imports_fpt_d
     assert calls == ["fpt", "common"]
     assert "source_key" in conn.insert[0]
     assert "JUSTICE_ADMIN_OPEN_DATA" in conn.insert[0]
-    assert conn.updates[0][1][1:5] == ("SUCCEEDED", 2, 2, 0)
+    assert conn.updates[0][1][1:5] == ("SUCCEEDED", 3, 2, 0)
 
 
 @pytest.mark.asyncio
@@ -274,3 +274,50 @@ def test_fpt_scope_rejects_urban_planning_case_with_incidental_hr_terms():
         body,
         {"scope": "FPT", "analysis_eligible": True},
     )
+
+
+@pytest.mark.asyncio
+async def test_archive_replacement_deletes_only_matching_archive_before_reimport(monkeypatch):
+    module = _load_archive_importer()
+
+    class Transaction:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeConn:
+        def __init__(self):
+            self.deleted_args = None
+            self.upserts = []
+            self.updates = []
+        def transaction(self):
+            return Transaction()
+        async def fetchrow(self, query, *args):
+            return {"id": "run-id"}
+        async def fetchval(self, query, *args):
+            assert "DELETE FROM legal_documents" in query
+            assert "source_key='JUSTICE_ADMIN_OPEN_DATA'" in query
+            assert "raw_metadata->>'source_archive'=$1" in query
+            self.deleted_args = args
+            return 7
+        async def execute(self, query, *args):
+            self.updates.append((query, args))
+
+    async def fake_upsert(conn, item):
+        conn.upserts.append(item["source_id"])
+
+    monkeypatch.setattr(module, "upsert_legal_document", fake_upsert)
+    conn = FakeConn()
+    result = await module.import_archive(
+        conn, "CAA", date(2026, 10, 1), "CAA_202610.zip", b"PK\\x03\\x04",
+        parsed_items=[
+            {"source_id": "fpt", "raw_metadata": {"public_service_scope": "FPT"}},
+            {"source_id": "fpe", "raw_metadata": {"public_service_scope": "FPE"}},
+        ],
+        replace_existing=True,
+    )
+    assert conn.deleted_args == ("CAA_202610.zip",)
+    assert conn.upserts == ["fpt"]
+    assert result["records_replaced"] == 7
+    assert result["records_imported"] == 1
