@@ -761,6 +761,13 @@ async function prepareInstance(){
    const links=(fsQualification.official_references||[]).map(item=>'<a href="'+esc(item.url)+'" target="_blank" rel="noopener noreferrer">'+esc(item.article)+'</a>').join(' · ');
    fsQualificationHtml='<section><h3>Pistes santé-sécurité / FS · qualification indicative</h3>'+(rows?'<ul>'+rows+'</ul>':'<p>Aucun thème du référentiel FS n’a été détecté. Cela ne signifie pas qu’aucune consultation n’est requise.</p>')+'<p class="muted">'+esc(fsQualification.notice||'Pistes documentaires à vérifier.')+'</p><p class="muted">Références : '+links+'</p></section>';
   }
+  const fsOperational=result.fs_operational_qualification||null;
+  let fsOperationalHtml='';
+  if(fsOperational){
+   const operationalRows=(fsOperational.candidates||[]).map(item=>'<li><b>'+esc(item.label)+'</b> <span class="muted">('+esc(item.reference)+')</span><br><span class="muted">Déclencheur : '+esc(item.matched_term)+' · procédure à vérifier</span><ul>'+(item.actions_to_check||[]).map(action=>'<li>'+esc(action)+'</li>').join('')+'</ul></li>').join('');
+   const operationalLinks=(fsOperational.official_references||[]).map(item=>'<a href="'+esc(item.url)+'" target="_blank" rel="noopener noreferrer">'+esc(item.article)+'</a>').join(' · ');
+   fsOperationalHtml='<section><h3>Procédures opérationnelles santé-sécurité · qualification indicative</h3>'+(operationalRows?'<ul>'+operationalRows+'</ul>':'<p>Aucun déclencheur procédural repéré. Cela ne permet pas d’exclure une procédure applicable.</p>')+'<p><b>Instance à vérifier :</b> '+esc(fsOperational.routing_note||'À vérifier.')+'</p><p class="muted">'+esc(fsOperational.notice||'Pistes de procédure à vérifier.')+'</p><p class="muted">Références : '+operationalLinks+'</p></section>';
+  }
   if(cstQualification){
    const categoryLabels={consultation:'Consultation pour avis à vérifier',debate:'Débat annuel à vérifier',information:'Information à vérifier'};
    const candidateRows=(cstQualification.candidates||[]).map(item=>'<li><b>'+esc(categoryLabels[item.category]||item.category)+'</b> · '+esc(item.label)+' <span class="muted">('+esc(item.reference)+')</span><br><span class="muted">Déclencheur : '+esc(item.matched_term)+' · qualification indicative</span></li>').join('');
@@ -825,7 +832,7 @@ async function prepareInstance(){
    }).join('');
    researchHtml='<section><h3>Recherche juridique · Légifrance</h3><p><b>'+esc(statusLabels[research.status]||research.status)+'</b> · Date de référence : '+esc(research.requested_date||'—')+'</p>'+(searchRows?'<ul>'+searchRows+'</ul>':'')+(sourceCards||'<p>Aucune source exploitable retournée par les recherches.</p>')+'<div class="pricing-note"><strong>Précaution juridique</strong><span>'+esc(research.notice||'Les résultats sont des pistes documentaires. Leur applicabilité doit être vérifiée.')+' L’absence de résultat ne prouve pas l’absence de règle.</span></div></section>';
   }
-  $('#instanceResult').innerHTML='<h2>Fiche de préparation · '+esc(result.instance)+'</h2><p><b>Objet :</b> '+esc(result.objet)+'</p>'+(sections||'<p>Aucun thème détecté automatiquement. Complétez la préparation manuellement.</p>')+cstQualificationHtml+fsQualificationHtml+agendaHtml+calendarHtml+researchHtml+'<div class="pricing-note"><strong>Limite de cette fiche</strong><span>'+esc(result.notice)+'</span></div>';
+  $('#instanceResult').innerHTML='<h2>Fiche de préparation · '+esc(result.instance)+'</h2><p><b>Objet :</b> '+esc(result.objet)+'</p>'+(sections||'<p>Aucun thème détecté automatiquement. Complétez la préparation manuellement.</p>')+cstQualificationHtml+fsQualificationHtml+fsOperationalHtml+agendaHtml+calendarHtml+researchHtml+'<div class="pricing-note"><strong>Limite de cette fiche</strong><span>'+esc(result.notice)+'</span></div>';
   $('#instanceResult').classList.remove('hidden');
  }catch(e){msg('#instanceMessage',e.message,true);$('#instanceMessage').classList.remove('hidden');}
 }
