@@ -43,7 +43,12 @@ from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request, consume_daily_chat_question
 from .entitlements import resolve_entitlements
 from .instances import prepare_instance_with_legal_sources
-from .cst_qualification import assess_cst_agenda_request
+from .cst_qualification import (
+    assess_cst_agenda_request,
+    assess_fs_nine_month_trigger,
+    calculate_cst_meeting_deadlines,
+    calculate_fs_inspector_request_deadlines,
+)
 from .personal_documents import router as personal_documents_router
 from .auth_sessions import router as oidc_sessions_router
 import httpx
@@ -1130,6 +1135,15 @@ async def prepare_social_instance(
     requested_topic_in_competence = payload.get("requested_topic_in_competence")
     if requested_topic_in_competence is not None and not isinstance(requested_topic_in_competence, bool):
         raise HTTPException(422, "requested_topic_in_competence doit être un booléen ou absent.")
+    meeting_date_raw = payload.get("meeting_date")
+    meeting_urgent = payload.get("meeting_urgent", False)
+    last_fs_meeting_raw = payload.get("last_fs_meeting_date")
+    fs_as_of_raw = payload.get("fs_as_of_date")
+    inspector_request_received_raw = payload.get("inspector_request_received_date")
+    if not isinstance(meeting_urgent, bool):
+        raise HTTPException(422, "meeting_urgent doit être un booléen.")
+    if instance.upper() != "CST" and any((meeting_date_raw, last_fs_meeting_raw, fs_as_of_raw, inspector_request_received_raw)):
+        raise HTTPException(422, "Les paramètres de calendrier CST/FS ne sont disponibles que pour une préparation CST.")
     agenda_context_supplied = any(
         value is not None
         for value in (titular_representatives, requesting_titular_representatives, requested_topic_in_competence)
@@ -1155,6 +1169,34 @@ async def prepare_social_instance(
                 requesting_titular_representatives=requesting_titular_representatives,
                 requested_topic_in_competence=requested_topic_in_competence,
             )
+        if meeting_date_raw:
+            try:
+                meeting_date = date.fromisoformat(meeting_date_raw)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(422, "meeting_date doit être au format AAAA-MM-JJ.") from exc
+            result["cst_meeting_deadlines"] = calculate_cst_meeting_deadlines(meeting_date, urgent=meeting_urgent)
+        elif meeting_urgent:
+            raise HTTPException(422, "Une date de séance est nécessaire pour calculer les délais.")
+        if last_fs_meeting_raw or fs_as_of_raw:
+            if not last_fs_meeting_raw or not fs_as_of_raw or titular_representatives is None or requesting_titular_representatives is None:
+                raise HTTPException(422, "Pour le contrôle des neuf mois, renseignez la dernière réunion FS, la date d'évaluation et les deux effectifs de titulaires.")
+            try:
+                last_fs_meeting_date = date.fromisoformat(last_fs_meeting_raw)
+                fs_as_of_date = date.fromisoformat(fs_as_of_raw)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(422, "Les dates FS doivent être au format AAAA-MM-JJ.") from exc
+            result["fs_nine_month_assessment"] = assess_fs_nine_month_trigger(
+                last_meeting_date=last_fs_meeting_date,
+                as_of_date=fs_as_of_date,
+                titular_representatives=titular_representatives,
+                requesting_titular_representatives=requesting_titular_representatives,
+            )
+        if inspector_request_received_raw:
+            try:
+                inspector_received_date = date.fromisoformat(inspector_request_received_raw)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(422, "inspector_request_received_date doit être au format AAAA-MM-JJ.") from exc
+            result["fs_inspector_request_deadlines"] = calculate_fs_inspector_request_deadlines(inspector_received_date)
         return result
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
