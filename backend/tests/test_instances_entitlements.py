@@ -229,6 +229,36 @@ def test_ccp_dismissal_checks_notice_period_and_redeployment_exceptions():
     assert "cinq jours ouvrables" in joined
 
 
+def test_ccp_professional_inadequacy_checks_file_access_and_procedure():
+    result = prepare_instance(
+        "CCP",
+        "Licenciement pour insuffisance professionnelle d'un agent contractuel territorial",
+    )
+    point = next(item for item in result["points"] if item["code"] == "professional_inadequacy")
+    joined = " ".join(point["questions"])
+    assert "article 39-2" in joined
+    assert "toute pièce" in joined
+    assert "cinq jours ouvrables" in joined
+    assert "R. 272-19" in joined
+    assert "article 42-1" in joined
+    assert "article 39-5" in joined
+    assert not any(item["code"] == "discipline" for item in result["points"])
+
+
+def test_ccp_unpaid_leave_non_reemployment_is_separate_from_redeployment():
+    result = prepare_instance(
+        "CCP",
+        "Licenciement pour impossibilité de réemploi après congé sans rémunération",
+    )
+    point = next(item for item in result["points"] if item["code"] == "dismissal_after_unpaid_leave")
+    joined = " ".join(point["questions"])
+    assert "5° du I de l'article 39-3" in joined
+    assert "article 33" in joined
+    assert "emploi similaire" in joined
+    assert "article 39-5 est expressément exclu" in joined
+    assert "article 42-1" in joined
+
+
 def test_ccp_ordinary_nonrenewal_uses_post_2025_article_38_1_version():
     result = prepare_instance("CCP", "Non-renouvellement d'un CDD ordinaire")
     point = next(item for item in result["points"] if item["code"] == "fin_contrat")
