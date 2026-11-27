@@ -196,6 +196,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f database/migrations/030_chat_daily_question_quota.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/031_union_plan_commercial_reporting.sql
           psql -v ON_ERROR_STOP=1 -f database/migrations/032_legal_source_registry.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/033_chat_daily_question_quota_repair.sql
       - name: Unit, contract and real PostgreSQL RLS integration tests
         env:
           PYTHONPATH: backend
