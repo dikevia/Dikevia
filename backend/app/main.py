@@ -47,6 +47,7 @@ from .cst_qualification import (
     assess_cst_agenda_request,
     assess_annual_instance_meeting_frequency,
     calculate_cst_written_request_deadline,
+    assess_cst_fs_competence_routing,
     assess_fs_nine_month_trigger,
     calculate_cst_meeting_deadlines,
     calculate_fs_inspector_request_deadlines,
@@ -1147,6 +1148,12 @@ async def prepare_social_instance(
     cst_written_request_raw = payload.get("cst_written_request_received_date")
     fs_secretary_consulted = payload.get("fs_secretary_consulted_before_agenda")
     agenda_vote_points_identified = payload.get("agenda_vote_points_identified")
+    topic_in_cst_own_competence = payload.get("topic_in_cst_own_competence")
+    topic_in_fs_mandatory_consultation = payload.get("topic_in_fs_mandatory_consultation")
+    fs_consultation_already_examined = payload.get("fs_consultation_already_examined")
+    cst_evocation_initiative = payload.get("cst_evocation_initiative")
+    cst_staff_representatives_total = payload.get("cst_staff_representatives_total")
+    cst_staff_representatives_supporting = payload.get("cst_staff_representatives_supporting")
     annual_meeting_count = payload.get("annual_meetings_held")
     annual_health_safety_count = payload.get("annual_health_safety_meetings_held", 0)
     if not isinstance(meeting_urgent, bool):
@@ -1155,6 +1162,15 @@ async def prepare_social_instance(
         raise HTTPException(422, "fs_secretary_consulted_before_agenda doit être un booléen ou absent.")
     if agenda_vote_points_identified is not None and not isinstance(agenda_vote_points_identified, bool):
         raise HTTPException(422, "agenda_vote_points_identified doit être un booléen ou absent.")
+    for field_name, field_value in (
+        ("topic_in_cst_own_competence", topic_in_cst_own_competence),
+        ("topic_in_fs_mandatory_consultation", topic_in_fs_mandatory_consultation),
+        ("fs_consultation_already_examined", fs_consultation_already_examined),
+    ):
+        if field_value is not None and not isinstance(field_value, bool):
+            raise HTTPException(422, f"{field_name} doit être un booléen ou absent.")
+    if cst_evocation_initiative is not None and cst_evocation_initiative not in {"PRESIDENT", "STAFF_REPRESENTATIVES"}:
+        raise HTTPException(422, "cst_evocation_initiative doit être PRESIDENT ou STAFF_REPRESENTATIVES.")
     if fs_secretary_consulted is not None and instance.upper() != "FS":
         raise HTTPException(422, "Le contrôle du secrétaire concerne la formation spécialisée.")
     if cst_written_request_raw and instance.upper() != "CST":
@@ -1191,6 +1207,16 @@ async def prepare_social_instance(
                 titular_representatives=titular_representatives,
                 requesting_titular_representatives=requesting_titular_representatives,
                 requested_topic_in_competence=requested_topic_in_competence,
+            )
+        if result.get("instance") in {"CST", "FS"}:
+            result["cst_fs_competence_routing"] = assess_cst_fs_competence_routing(
+                formation_specialisee_exists=True if result.get("instance") == "FS" else formation_specialisee_exists,
+                topic_in_cst_own_competence=topic_in_cst_own_competence,
+                topic_in_fs_mandatory_consultation=topic_in_fs_mandatory_consultation,
+                fs_consultation_already_examined=fs_consultation_already_examined,
+                cst_evocation_initiative=cst_evocation_initiative,
+                cst_staff_representatives_total=cst_staff_representatives_total,
+                cst_staff_representatives_supporting=cst_staff_representatives_supporting,
             )
         if meeting_date_raw:
             try:
