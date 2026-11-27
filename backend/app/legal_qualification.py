@@ -116,6 +116,11 @@ def build_contextual_research_context(
     current = " ".join(str(current_question or "").split())
     if not current:
         return ContextualResearchContext(question="", is_followup=False)
+    prior_questions = [
+        str(item).strip()
+        for item in (prior_user_questions or [])
+        if str(item).strip()
+    ]
     if len(current) >= 220:
         if _LONG_CONTEXTUAL_FOLLOWUP.match(current) and prior_questions:
             prior = next(
@@ -156,11 +161,6 @@ def build_contextual_research_context(
             )
         return ContextualResearchContext(question=current[:5000], is_followup=False)
 
-    prior_questions = [
-        str(item).strip()
-        for item in (prior_user_questions or [])
-        if str(item).strip()
-    ]
     if _ASSISTANT_REFERENTIAL_FOLLOWUP.match(current):
         assistants = [
             str(item).strip()
@@ -168,7 +168,7 @@ def build_contextual_research_context(
             if str(item).strip()
         ]
         if not prior_questions or not assistants:
-            return ContextualResearchContext(question=current[:500], is_followup=False)
+            return ContextualResearchContext(question=current[:5000], is_followup=False)
         prior = next(
             (
                 item for item in reversed(prior_questions)
@@ -179,8 +179,8 @@ def build_contextual_research_context(
         current_topics = _matched_question_topics(current)
         prior_topics = _matched_question_topics(prior)
         if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
-            return ContextualResearchContext(question=current[:500], is_followup=False)
-        contextual = f"{current[:300]}\n{prior[:180]}"
+            return ContextualResearchContext(question=current[:5000], is_followup=False)
+        contextual = f"{current[:5000]}\n{prior[:1200]}"
         if not _EXPLICIT_STATUS_DECLARATION.search(current):
             for earlier_question in reversed(prior_questions):
                 declaration = _EXPLICIT_STATUS_DECLARATION.search(earlier_question)
@@ -207,7 +207,7 @@ def build_contextual_research_context(
 
     if _CONTEXTUAL_FOLLOWUP.match(current):
         if not prior_questions:
-            return ContextualResearchContext(question=current[:500], is_followup=True)
+            return ContextualResearchContext(question=current[:5000], is_followup=True)
         # A chain of short follow-ups keeps the last substantive user subject.
         prior = next(
             (
@@ -226,12 +226,12 @@ def build_contextual_research_context(
         ):
             # Unknown named subjects are safer as independent questions than
             # as accidental continuations of an unrelated legal topic.
-            return ContextualResearchContext(question=current[:500], is_followup=False)
+            return ContextualResearchContext(question=current[:5000], is_followup=False)
         if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
             # A short "Et pour ..." that names a different legal family is a
             # new question, not a continuation of the previous legal issue.
-            return ContextualResearchContext(question=current[:500], is_followup=False)
-        contextual = f"{current[:300]}\n{prior[:180]}"
+            return ContextualResearchContext(question=current[:5000], is_followup=False)
+        contextual = f"{current[:5000]}\n{prior[:1200]}"
         # Retain a first-person status declared in an earlier user turn across
         # a genuine follow-up, unless the current turn declares a new status.
         if not _EXPLICIT_STATUS_DECLARATION.search(current):
@@ -278,7 +278,7 @@ def build_contextual_research_context(
                 if current_topics and prior_topics and current_topics.isdisjoint(prior_topics):
                     # A substantive new legal topic must not be mistaken for
                     # an answer merely because it starts with "Je suis".
-                    return ContextualResearchContext(question=current[:500], is_followup=False)
+                    return ContextualResearchContext(question=current[:5000], is_followup=False)
                 clarification = " ".join(fragments[-1].split())[-200:]
                 contextual = (
                     f"{current[:100]}\n{prior[:160]}\n"
@@ -287,7 +287,7 @@ def build_contextual_research_context(
                 return ContextualResearchContext(question=contextual, is_followup=True)
 
     # Independent questions never inherit unrelated facts or topics.
-    return ContextualResearchContext(question=current[:500], is_followup=False)
+    return ContextualResearchContext(question=current[:5000], is_followup=False)
 
 
 def build_contextual_research_question(
