@@ -252,6 +252,97 @@ def assess_source_set(sources: list[dict[str, Any]]) -> dict[str, Any]:
         "status": "A_COMPARER" if local and national else ("VERIFICATION_INCOMPLETE" if warnings else "SOURCES_A_EXAMINER"),
     }
 
+_RERANK_STOPWORDS = {
+    "avec", "dans", "pour", "sans", "sous", "entre", "chez", "elle", "elles",
+    "vous", "nous", "cela", "cette", "ces", "leur", "leurs", "etre", "avoir",
+    "fait", "faits", "faire", "agent", "agents", "fonction", "publique",
+    "territoriale", "territorial", "publique", "question", "droit", "droits",
+    "article", "articles", "code", "general", "generale", "quelle", "quels",
+    "quelles", "comment", "pourquoi", "quand", "est", "sont", "peut", "doit",
+    "doivent", "peuvent", "mon", "ma", "mes", "son", "sa", "ses", "un", "une",
+    "des", "les", "aux", "du", "de", "la", "le", "et", "ou", "en", "au",
+}
+
+
+def _rerank_tokens(value: object) -> set[str]:
+    folded = unicodedata.normalize("NFKD", str(value or "").casefold())
+    folded = "".join(char for char in folded if not unicodedata.combining(char))
+    return {
+        token for token in re.findall(r"[a-z0-9]{3,}", folded)
+        if token not in _RERANK_STOPWORDS
+    }
+
+
+def rerank_legal_evidence_sources(
+    sources: list[dict[str, Any]],
+    *,
+    question: str,
+    research_axes: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Order already-admissible evidence by topical fit, then temporal and source quality.
+
+    This is a deterministic ordering pass only: it never adds, removes, validates,
+    or upgrades a source, and it does not treat the source-family review priority
+    as a universal legal hierarchy.
+    """
+    if not isinstance(sources, (list, tuple)):
+        return []
+    records = [source for source in sources if isinstance(source, dict)]
+    if len(records) < 2:
+        return list(records)
+
+    question_tokens = _rerank_tokens(question)
+    axis_tokens = set().union(*(
+        _rerank_tokens(axis) for axis in (research_axes or []) if isinstance(axis, str)
+    )) if research_axes else set()
+    query_tokens = question_tokens | axis_tokens
+
+    def score(source: dict[str, Any]) -> tuple[float, float, int, int, int]:
+        title_tokens = _rerank_tokens(" ".join(str(source.get(key) or "") for key in (
+            "title", "article", "article_id", "official_number",
+        )))
+        excerpt = " ".join(str(source.get(key) or "") for key in (
+            "analysis_excerpt", "excerpt",
+        ))
+        if not excerpt.strip():
+            excerpt = str(source.get("text") or source.get("full_text") or "")[:5000]
+        excerpt_tokens = _rerank_tokens(excerpt[:12000])
+        title_match = len(title_tokens & query_tokens) / max(1, len(query_tokens))
+        excerpt_match = len(excerpt_tokens & query_tokens) / max(1, len(query_tokens))
+        question_match = len(excerpt_tokens & question_tokens) / max(1, len(question_tokens))
+        topical_fit = (title_match * 2.0) + excerpt_match + (question_match * 0.5)
+
+        temporal = str(source.get("temporal_status") or "")
+        if source.get("version_matches_facts_date") is True:
+            temporal_score = 5
+        elif temporal in {
+            "IN_FORCE_ON_REQUESTED_DATE", "IN_FORCE_ON_FACTS_DATE",
+            "VERSION_RETRIEVED_AT_REQUESTED_DATE", "VERIFIED_APPLICABLE",
+            "DECISION_ANTERIOR_OR_CONTEMPORANEOUS_TO_FACTS",
+            "DECISION_DATE_VERIFIED_NO_FACTS_DATE",
+        }:
+            temporal_score = 4
+        elif temporal == "DECISION_POSTERIOR_TO_FACTS":
+            temporal_score = 2
+        elif source.get("general_info_eligible") is True:
+            temporal_score = 1
+        else:
+            temporal_score = 0
+
+        integrity = source.get("citation_integrity")
+        integrity_score = 1 if isinstance(integrity, dict) and integrity.get("valid") is True else 0
+        content_score = 1 if source.get("content_kind") == "FULL_TEXT" else 0
+        assurance = source.get("legal_assurance")
+        assurance = assurance if isinstance(assurance, dict) else {}
+        # A small tie-breaker only; never let abstract source rank outrun topical fit.
+        authority_score = min(100, max(0, int(assurance.get("review_priority") or 0)))
+        return (topical_fit, question_match, temporal_score, integrity_score + content_score, authority_score)
+
+    indexed = list(enumerate(records))
+    indexed.sort(key=lambda pair: score(pair[1]), reverse=True)
+    return [source for _, source in indexed]
+
+
 def _normalize_citation_reference(value: Any) -> str:
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
