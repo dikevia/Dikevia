@@ -111,10 +111,11 @@ async def import_archive(
     raw: bytes,
     *,
     parsed_items: list[dict] | None = None,
+    replace_existing: bool = False,
 ) -> dict:
     parsed = parsed_items if parsed_items is not None else parse_administrative_open_data_zip(raw, archive_name)
     selected = filter_administrative_open_data_items(parsed, versant="FPT")
-    if not selected:
+    if not selected and not replace_existing:
         return {
             "archive": archive_name,
             "status": "NO_FPT_DECISIONS",
@@ -130,9 +131,20 @@ async def import_archive(
            RETURNING id""",
         archive_name[:250],
     )
-    imported = rejected = 0
+    imported = rejected = deleted = 0
     try:
         async with conn.transaction():
+            if replace_existing:
+                deleted = await conn.fetchval(
+                    """WITH removed AS (
+                         DELETE FROM legal_documents
+                         WHERE source_key='JUSTICE_ADMIN_OPEN_DATA'
+                           AND raw_metadata->>'source_archive'=$1
+                         RETURNING 1
+                       )
+                       SELECT count(*) FROM removed""",
+                    archive_name[:250],
+                )
             for item in selected:
                 try:
                     async with conn.transaction():
@@ -140,18 +152,18 @@ async def import_archive(
                     imported += 1
                 except (ValueError, TypeError):
                     rejected += 1
-        status = "SUCCEEDED" if imported and not rejected else "PARTIAL" if imported else "FAILED"
-        error_summary = (
-            f"{rejected} enregistrement(s) rejeté(s) par les contrôles de provenance ou de métadonnées."
-            if rejected else None
-        )
-        await conn.execute(
-            """UPDATE legal_ingestion_runs
-               SET status=$2,records_seen=$3,records_imported=$4,records_rejected=$5,
-                   error_summary=$6,finished_at=now()
-               WHERE id=$1""",
-            run["id"], status, len(selected), imported, rejected, error_summary,
-        )
+            status = "SUCCEEDED" if not rejected else "PARTIAL" if imported else "FAILED"
+            error_summary = (
+                f"{rejected} enregistrement(s) rejeté(s) par les contrôles de provenance ou de métadonnées."
+                if rejected else None
+            )
+            await conn.execute(
+                """UPDATE legal_ingestion_runs
+                   SET status=$2,records_seen=$3,records_imported=$4,records_rejected=$5,
+                       error_summary=$6,finished_at=now()
+                   WHERE id=$1""",
+                run["id"], status, len(parsed), imported, rejected, error_summary,
+            )
         return {
             "archive": archive_name,
             "status": status,
@@ -159,6 +171,7 @@ async def import_archive(
             "records_selected": len(selected),
             "records_imported": imported,
             "records_rejected": rejected,
+            **({"records_replaced": deleted} if replace_existing else {}),
         }
     except Exception as exc:
         await conn.execute(
@@ -166,7 +179,6 @@ async def import_archive(
             run["id"], type(exc).__name__,
         )
         raise
-
 
 async def run(args) -> dict:
     start, end = parse_month(args.from_month), parse_month(args.to_month)
@@ -204,7 +216,7 @@ async def run(args) -> dict:
         with httpx.Client(timeout=timeout, follow_redirects=False) as client:
             for index, (court, month, url) in enumerate(planned):
                 archive_name = url.rsplit("/", 1)[-1]
-                if conn is not None and not args.reimport_existing:
+                if conn is not None and not args.reimport_existing and not args.replace_archives:
                     if await archive_already_imported(conn, archive_name):
                         results.append({"archive": archive_name, "status": "ALREADY_IMPORTED"})
                         continue
@@ -223,7 +235,8 @@ async def run(args) -> dict:
                         })
                     else:
                         results.append(await import_archive(
-                            conn, court, month, archive_name, raw, parsed_items=parsed
+                            conn, court, month, archive_name, raw, parsed_items=parsed,
+                            replace_existing=args.replace_archives,
                         ))
                 if args.delay_seconds and index + 1 < len(planned):
                     time.sleep(args.delay_seconds)
@@ -255,10 +268,16 @@ def main() -> int:
     parser.add_argument("--delay-seconds", type=float, default=1.0, help="Pause entre deux archives.")
     parser.add_argument("--apply", action="store_true", help="Écrit dans le corpus ; sans cette option, exécution en dry-run.")
     parser.add_argument("--reimport-existing", action="store_true", help="Force la réimportation des archives déjà réussies.")
+    parser.add_argument(
+        "--replace-archives", action="store_true",
+        help="Remplace atomiquement les documents des seules archives demandées sur la base cible.",
+    )
     parser.add_argument("--export-json", type=Path, help="Exporte le bilan JSON.")
     args = parser.parse_args()
     if args.max_archives < 1 or args.delay_seconds < 0 or args.delay_seconds > 30:
         parser.error("--max-archives doit être positif et --delay-seconds compris entre 0 et 30.")
+    if args.replace_archives and not args.apply:
+        parser.error("--replace-archives exige --apply.")
     try:
         summary = asyncio.run(run(args))
     except Exception as exc:
