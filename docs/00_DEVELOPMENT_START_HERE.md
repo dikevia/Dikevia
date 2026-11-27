@@ -55,6 +55,8 @@ Le fichier `render.yaml` reste un Blueprint historique relié à l'ancienne bran
 
 Au commit contrôlé `691c35514b961ec29dafcf77430819ad5ec6500e` (27 novembre 2026), le run CI [46017735647](https://github.com/dikevia/Dikevia/actions/runs/46017735647) est terminé avec succès :
 
+**Portée de cette preuve :** ce succès est historique et ne valide pas les commits ultérieurs. Les évolutions postérieures, notamment l'OCR PDF puis la minimisation récursive des données transmises aux fournisseurs IA et le durcissement des journaux, doivent être couvertes par une CI verte sur le dernier SHA de `main` avant d'être annoncées comme validées.
+
 - **1 494 tests passent**, dont les tests unitaires, contractuels et l'intégration PostgreSQL/RLS sur base jetable ;
 - la migration 033 est exécutée après 032 dans la CI ;
 - le nouveau parcours Auth0 par défaut, le fallback fail-closed, le Compose sans Keycloak par défaut et les workflows de déploiement désactivés sont couverts par les contrôles du dépôt ;
