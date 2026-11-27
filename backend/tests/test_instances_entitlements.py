@@ -195,7 +195,7 @@ def test_cap_reclassement_ppr_tracks_medical_opinion_and_procedural_deadlines():
     assert "quinze jours" in joined
     assert "trois mois" in joined
     assert "recours gracieux" in joined
-    assert "avis de la commission administrative paritaire" in joined
+    assert "CAP a-t-elle été consultée" in joined
 
 
 def test_ccp_physical_unfitness_checks_article_13_specific_redeployment_path():
