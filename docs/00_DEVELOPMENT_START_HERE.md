@@ -5,7 +5,7 @@
 
 Ce document est le point d'entrée rapide pour les développeurs. Il décrit ce qui est constaté dans le dépôt ; il ne certifie pas la disponibilité des services externes ni le fonctionnement en production.
 
-**État de référence actuel :** lire d'abord [`docs/57_ETAT_CONSOLIDE_2026-11-27.md`](57_ETAT_CONSOLIDE_2026-11-27.md) pour le bilan consolidé, les limites connues et l'ordre des prochains travaux. Les autres documents de livraison datés restent des traces historiques tant qu'ils n'ont pas été explicitement actualisés.
+**État de référence actuel :** lire d'abord [`docs/57_ETAT_CONSOLIDE_2026-11-27.md`](57_ETAT_CONSOLIDE_2026-11-27.md) pour le bilan consolidé, les limites connues et l'ordre des prochains travaux. Index des documents historiques : [docs/ARCHIVE_INDEX.md](ARCHIVE_INDEX.md). Les autres documents de livraison datés restent des traces historiques tant qu'ils n'ont pas été explicitement actualisés.
 
 ## 1. Règle de travail
 

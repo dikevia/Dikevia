@@ -2,9 +2,9 @@
 
 **Date de référence : 27 novembre 2026**  
 **Branche de travail : `main` uniquement**  
-**Commit fonctionnel contrôlé : `286cd0a4bbe93b059adc45c266e567ab1ae86afa`**
+**Commit fonctionnel contrôlé : `691c35514b961ec29dafcf77430819ad5ec6500e`**
 
-Ce document est le point de situation opérationnel. Il prévaut sur les anciens états de livraison datés lorsqu'ils décrivent un état antérieur. Il ne constitue ni une recette complète, ni une certification juridique, ni une autorisation de mise en production.
+Ce document est le point de situation opérationnel. Il prévaut sur les anciens états de livraison datés lorsqu'ils décrivent un état antérieur. Il ne constitue ni une recette complète, ni une certification juridique, ni une autorisation de mise en production. Index des documents historiques : [ARCHIVE_INDEX.md](ARCHIVE_INDEX.md).
 
 ## 1. Règles de conduite du projet
 
