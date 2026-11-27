@@ -27,11 +27,6 @@ class Settings(BaseSettings):
     oidc_email_verified_claim: str = "email_verified"
     cors_origins: str = ""
     invitation_base_url: str = ""
-    keycloak_admin_base_url: str = ""
-    keycloak_admin_realm: str = "cfdt"
-    keycloak_admin_client_id: str = "cfdt-juris-provisioner"
-    keycloak_admin_client_secret: str = ""
-    keycloak_admin_timeout_seconds: float = 8.0
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_username: str = ""
@@ -112,8 +107,8 @@ def validate_runtime_configuration(config: Settings) -> None:
     algorithms = [part.strip() for part in config.oidc_algorithms.split(",") if part.strip()]
     if not algorithms or any(alg not in {"RS256", "ES256"} for alg in algorithms):
         raise RuntimeError("OIDC_ALGORITHMS doit contenir uniquement RS256 et/ou ES256.")
-    if config.oidc_provider not in {"keycloak", "auth0"}:
-        raise RuntimeError("OIDC_PROVIDER doit être keycloak ou auth0.")
+    if config.oidc_provider != "auth0":
+        raise RuntimeError("OIDC_PROVIDER doit être auth0. Keycloak n’est plus un fournisseur runtime pris en charge.")
     if config.oidc_server_sessions_enabled:
         if not config.oidc_client_id or not config.oidc_issuer:
             raise RuntimeError("Les sessions OIDC serveur exigent OIDC_CLIENT_ID et OIDC_ISSUER.")
@@ -238,20 +233,6 @@ def validate_runtime_configuration(config: Settings) -> None:
     if not 1 <= config.clamav_port <= 65535 or not 1 <= config.clamav_timeout_seconds <= 60:
         raise RuntimeError("Configuration ClamAV invalide.")
 
-    admin_values = (config.keycloak_admin_base_url, config.keycloak_admin_client_secret)
-    if any(admin_values) and not all(admin_values):
-        raise RuntimeError("Configuration Keycloak Admin incomplète : URL et secret requis ensemble.")
-    if config.keycloak_admin_base_url:
-        admin_url = urlparse(config.keycloak_admin_base_url)
-        if not admin_url.hostname or admin_url.query or admin_url.fragment or admin_url.path not in ("", "/"):
-            raise RuntimeError("KEYCLOAK_ADMIN_BASE_URL doit être une origine sans chemin, paramètres ni fragment.")
-        if config.app_env == "production" and admin_url.scheme != "https":
-            raise RuntimeError("KEYCLOAK_ADMIN_BASE_URL doit utiliser HTTPS en production.")
-        if config.app_env != "production" and admin_url.scheme not in {"http", "https"}:
-            raise RuntimeError("KEYCLOAK_ADMIN_BASE_URL doit utiliser HTTP ou HTTPS.")
-    if not 1 <= config.keycloak_admin_timeout_seconds <= 30:
-        raise RuntimeError("KEYCLOAK_ADMIN_TIMEOUT_SECONDS doit être compris entre 1 et 30.")
-
     smtp_values = (config.smtp_host, config.smtp_from)
     if any(smtp_values) and not all(smtp_values):
         raise RuntimeError("Configuration SMTP incomplète : hôte et adresse expéditeur requis.")
@@ -261,10 +242,6 @@ def validate_runtime_configuration(config: Settings) -> None:
     if smtp_requested:
         if not all((config.smtp_host, config.smtp_from, config.invitation_base_url)):
             raise RuntimeError("Invitations par e-mail : SMTP_HOST, SMTP_FROM et INVITATION_BASE_URL sont requis ensemble.")
-        if config.oidc_provider == "keycloak" and not all((
-            config.keycloak_admin_base_url, config.keycloak_admin_client_secret
-        )):
-            raise RuntimeError("Avec Keycloak, les invitations automatiques exigent également Keycloak Admin.")
         if not _valid_https_or_local(config.invitation_base_url, config.app_env != "production"):
             raise RuntimeError("INVITATION_BASE_URL doit utiliser HTTPS en production (HTTP localhost autorisé en développement).")
 
