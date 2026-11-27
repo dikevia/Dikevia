@@ -58,6 +58,8 @@ La CCP est saisie pour avis :
 
 Un non-renouvellement ordinaire ne doit donc pas être présenté comme entraînant automatiquement la consultation de la CCP. Le mandat syndical doit être vérifié.
 
+Depuis le 1er octobre 2025, les I et II de l'article 38-1 du décret n° 88-145 sont abrogés par le décret n° 2025-695 du 24 juillet 2025. Les anciens délais généraux de notification de l'intention de renouveler ou non (huit jours, un mois, deux mois ou trois mois selon la durée) ne doivent donc pas être réutilisés pour les situations relevant de la version en vigueur. Le III de l'article 38-1 conserve un régime propre aux contrats de projet : notification de fin au plus tard deux mois avant le terme pour un engagement d'au plus trois ans, trois mois au-delà. Il faut dater les faits et appliquer la version du texte pertinente.
+
 Pour un contrat de projet, la notification de fin de contrat est faite par LRAR ou remise en main propre contre signature au plus tard deux mois avant le terme lorsque l'engagement est d'une durée inférieure ou égale à trois ans, et trois mois avant le terme lorsqu'il dépasse trois ans (article 38-1 III). Ces délais spécifiques ne doivent pas être généralisés à tous les CDD. La rupture anticipée du contrat de projet à l'initiative de l'employeur n'est possible qu'après un an et dans les deux cas prévus par l'article 38-2 : impossibilité de réalisation ou réalisation anticipée du projet.
 
 ### Licenciement, reclassement et délais
