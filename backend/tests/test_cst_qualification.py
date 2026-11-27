@@ -480,10 +480,13 @@ def test_fs_dgi_candidate_contains_territorial_24_hour_divergence_and_15_day_fol
     joined = " ".join(candidate["actions_to_check"])
 
     assert "registre spécial" in joined
+    assert "datée et signée" in joined
+    assert "membres de la FS" in joined
     assert "24 heures" in joined
-    assert "FPT" in joined
-    assert "quinze jours" in joined
     assert "R. 253-62" in candidate["reference"]
+    assert "quinze jours" in joined
+    assert "réponse motivée" in joined
+    assert "médecine professionnelle et préventive" in joined
     assert result["legal_conclusion"] is False
 
 
