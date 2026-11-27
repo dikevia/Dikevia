@@ -28,8 +28,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
           cache: pip
@@ -222,7 +222,7 @@ jobs:
       - name: Build clean developer kit
         run: python scripts/package_developer_kit.py
       - name: Upload developer kit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CFDT-JURIS-V3.38-Kit-Developpeur
           path: dist/CFDT_JURIS_V3_38_Kit_Developpeur.zip
@@ -238,8 +238,8 @@ jobs:
     env:
       LEGAL_CORPUS_INGEST_DATABASE_URL: ${{ secrets.LEGAL_CORPUS_INGEST_DATABASE_URL }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
