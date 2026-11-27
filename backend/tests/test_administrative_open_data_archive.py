@@ -216,3 +216,16 @@ def test_open_data_zip_error_reports_entries_when_no_xml_is_found():
     with pytest.raises(ValueError, match="README.txt"):
         parse_administrative_open_data_zip(payload.getvalue(), "CAA_202610.zip")
 
+def test_open_data_zip_accepts_more_than_5000_small_xml_entries():
+    import io
+    import zipfile
+
+    from app.legal_ingestion import parse_administrative_open_data_zip
+
+    payload = io.BytesIO()
+    with zipfile.ZipFile(payload, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for index in range(5001):
+            archive.writestr(f"decision_{index:05d}.xml", "<Decision />")
+
+    assert parse_administrative_open_data_zip(payload.getvalue(), "TA_202610.zip") == []
+
