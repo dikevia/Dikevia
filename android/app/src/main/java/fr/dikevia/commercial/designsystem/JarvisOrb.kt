@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
  * Real UI state supplied by the host assistant. This component never infers
  * that the assistant is listening, searching or generating on its own.
  */
-enum class JarvisOrbState(val accessibilityLabel: String, val pulseDurationMs: Int) {
+enum class JurisOrbState(val accessibilityLabel: String, val pulseDurationMs: Int) {
     READY("Assistant prêt", 3800),
     LISTENING("Entrée vocale active", 1500),
     ANALYZING("Analyse en cours", 2100),
@@ -44,31 +44,31 @@ enum class JarvisOrbState(val accessibilityLabel: String, val pulseDurationMs: I
  * Do not pass LISTENING unless microphone capture is genuinely active.
  */
 @Composable
-fun JarvisOrb(
-    state: JarvisOrbState,
+fun JurisOrb(
+    state: JurisOrbState,
     modifier: Modifier = Modifier,
     diameter: Dp = 160.dp
 ) {
-    val transition = rememberInfiniteTransition(label = "jarvis-orb")
+    val transition = rememberInfiniteTransition(label = "juris-orb")
     val scale by transition.animateFloat(
         initialValue = 0.96f,
-        targetValue = if (state == JarvisOrbState.ERROR) 1.0f else 1.045f,
+        targetValue = if (state == JurisOrbState.ERROR) 1.0f else 1.045f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = state.pulseDurationMs),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "jarvis-breath"
+        label = "juris-breath"
     )
     val rotation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = if (state == JarvisOrbState.ANALYZING) 9000 else 24000
+                durationMillis = if (state == JurisOrbState.ANALYZING) 9000 else 24000
             ),
             repeatMode = RepeatMode.Restart
         ),
-        label = "jarvis-orbit"
+        label = "juris-orbit"
     )
 
     Box(
