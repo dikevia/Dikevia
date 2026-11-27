@@ -242,6 +242,7 @@ def test_annual_meeting_frequency_distinguishes_cst_fs_and_no_fs():
     assert cst_with_fs["minimum_reached"] is True
     assert cst_without_fs_missing_extra["minimum_reached"] is False
     assert cst_without_fs_not_additional["minimum_reached"] is False
+    assert cst_without_fs_not_additional["status"] == "MINIMUM_NOT_YET_REACHED"
     assert cst_without_fs_complete["minimum_reached"] is True
     assert cst_without_fs_complete["minimum_annual_meetings"] == 3
     assert fs["minimum_annual_meetings"] == 3
