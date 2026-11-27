@@ -1,3 +1,5 @@
+> **DOCUMENT HISTORIQUE — CONSOLE COMMERCIALE ET STRIPE NON ACTIVÉS.** Les métriques de revenus, factures et flux Stripe décrits ici ne sont pas un périmètre commercial actif. Le modèle actuel ne comporte pas d'offre collectivité et aucun paiement n'est activé. Voir `docs/08` et `docs/57`.
+
 # V3.24 — Espace commercial et client
 
 ## Fonctionnalités

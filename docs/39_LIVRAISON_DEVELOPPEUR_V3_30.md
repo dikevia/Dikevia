@@ -1,3 +1,5 @@
+> **LIVRAISON HISTORIQUE V3.30.** Ce document ne constitue pas l'état actuel du dépôt. Les sources de vérité et validations récentes sont dans `README.md`, `docs/00` et `docs/57`.
+
 # Livraison technique développeur — CFDT JURIS V3.30
 
 ## 1. Objet de la livraison

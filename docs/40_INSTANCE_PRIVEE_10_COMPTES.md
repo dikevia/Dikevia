@@ -1,3 +1,5 @@
+> **MODE HISTORIQUE OPTIONNEL.** L'ancien mode privé à 10 membres n'est pas le modèle commercial actuel et reste désactivé par défaut (`PRIVATE_INSTANCE_MODE=false`). Ne pas l'activer pour contourner les droits Agent/Syndicat. Voir `docs/08`, `docs/54` et `docs/57`.
+
 # Instance privée CFDT JURIS — V3.30
 
 ## Règles fonctionnelles

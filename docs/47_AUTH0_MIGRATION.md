@@ -1,3 +1,5 @@
+> **DOSSIER HISTORIQUE DE MIGRATION AUTH0.** L'intégration Auth0 est terminée sur staging. Ne pas recréer de tenant, réimporter des utilisateurs ou relancer cette migration. La production reste un chantier séparé qui nécessite une autorisation explicite. Voir `docs/57`.
+
 # Auth0 — intégration et migration contrôlée
 
 ## Objectif et périmètre

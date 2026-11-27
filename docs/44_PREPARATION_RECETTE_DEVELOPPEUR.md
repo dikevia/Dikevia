@@ -1,3 +1,5 @@
+> **GUIDE HISTORIQUE DE RECETTE.** Les instructions de branche parallèle, PR et fusion de ce document sont obsolètes. Les modifications se font directement sur `main`, sans branche ni PR. Voir `docs/00`.
+
 # V3.38 — Préparation de recette développeur
 
 ## Objectif
