@@ -395,7 +395,7 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
     )
 
     models = [(primary_model, 2)] + [(model, 1) for model in fallback_models]
-    for model, max_attempts in models:
+    for model_index, (model, max_attempts) in enumerate(models):
         request_payload = dict(payload)
         if model:
             request_payload["model"] = model
@@ -407,8 +407,18 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
         ):
             request_payload.setdefault("response_format", {"type": "json_object"})
         model_not_found = False
+        last_timeout = None
+        response = None
         for attempt in range(max_attempts):
-            response = await client.post(url, headers=headers, json=request_payload)
+            try:
+                response = await client.post(url, headers=headers, json=request_payload)
+                last_timeout = None
+            except httpx.TimeoutException as exc:
+                last_timeout = exc
+                if attempt + 1 < max_attempts:
+                    await asyncio.sleep(0.6)
+                    continue
+                break
             if _is_gemini_provider() and _is_gemini_model_not_found_response(response):
                 model_not_found = True
                 break
@@ -424,8 +434,14 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
                 await asyncio.sleep(0.6)
                 continue
             response.raise_for_status()
-        if response.status_code == 503 or model_not_found:
+        if model_not_found or (response is not None and response.status_code == 503):
             continue
+        if last_timeout is not None:
+            if model_index + 1 < len(models):
+                continue
+            raise last_timeout
+    if response is None:
+        raise httpx.TimeoutException("Le fournisseur IA n'a répondu sur aucun modèle configuré.")
     response.raise_for_status()
 
 
@@ -933,7 +949,7 @@ def _gemini_fallback_model_candidates(primary_model: str | None) -> list[str]:
 
 
 async def _check_provider_availability_uncached(*, transport: httpx.AsyncBaseTransport | None = None) -> dict:
-    """Check model availability through a read-only provider endpoint; never generate text."""
+    """Check catalog configuration only; this does not prove live text generation works."""
     if not (settings.ai_api_key and settings.ai_model and settings.ai_api_base_url):
         return {"status": "NOT_CONFIGURED"}
     base = _provider_api_base()
@@ -957,7 +973,7 @@ async def _check_provider_availability_uncached(*, transport: httpx.AsyncBaseTra
                     payload = response.json()
                     methods = payload.get("supportedGenerationMethods", []) if isinstance(payload, dict) else []
                     if isinstance(methods, list) and "generateContent" in methods:
-                        return {"status": "AVAILABLE"}
+                        return {"status": "MODEL_CONFIGURED"}
                     return {"status": "MODEL_NOT_GENERATIVE"}
                 return {"status": "MODEL_NOT_FOUND"}
             response = await client.get(
@@ -981,7 +997,7 @@ async def _check_provider_availability_uncached(*, transport: httpx.AsyncBaseTra
                 "reason": str(selected.get("unavailable_reason") or "not_enabled")[:80],
             }
         if selected.get("enabled") is True:
-            return {"status": "AVAILABLE"}
+            return {"status": "MODEL_CONFIGURED"}
         return {"status": "MODEL_STATUS_UNKNOWN"}
     except httpx.HTTPStatusError as exc:
         _log_provider_failure("availability_check", exc)
