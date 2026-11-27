@@ -1,31 +1,57 @@
-# Dikévia Android — éditions standard et administration
+# Dikévia Android — état actuel et trajectoire native
 
-Les deux applications Android sont des enveloppes natives distinctes de l'application web Dikévia. Elles partagent le frontend et l'API, mais conservent des parcours d'interface distincts : l'application standard porte l'assistant juridique ; l'application Administration est réservée au pilotage et ne contient pas le chatbot utilisateur.
+## État réel de `main`
 
-## Éditions bêta
+Les deux variantes Android actuellement présentes (`standard` et `admin`) sont des **conteneurs Android WebView** qui chargent le frontend web depuis Render. Elles ne constituent pas encore des applications Android natives.
 
-- **Dikévia standard** — package bêta `fr.dikevia.commercial.beta`. Ouvre l'espace de travail des agents, avec l'assistant juridique et les fonctions de leur organisation.
-- **Dikévia Administration** — package bêta `fr.dikevia.admin.beta`. Ouvre l'administration générale. L'accès aux fonctions d'administration reste contrôlé côté API par les droits plateforme.
+- `standard` : package `fr.dikevia.commercial`, avec suffixe `.beta` en debug.
+- `admin` : package `fr.dikevia.admin`, avec suffixe `.beta` en debug.
+- Les deux variantes chargent actuellement le même hôte staging Render, avec un paramètre de mode différent.
+- La liste des hôtes de confiance contient encore plusieurs hôtes Render historiques et un ancien hôte Keycloak : cette configuration est transitoire et ne doit pas servir de référence de production.
+- Le flux Auth0 dans la WebView n'est pas validé sur appareil réel.
 
-Les APK bêta construites par le workflow pointent vers le staging Render `https://dikevia-vector-beta-staging.onrender.com`. Le staging est préparé pour Auth0 avec le tenant de développement documenté dans [la procédure Auth0](../docs/47_AUTH0_MIGRATION.md). **Le parcours complet de connexion Auth0 dans la WebView Android n'est pas encore validé sur appareil réel.** Ne pas présenter ces APK comme une version de production.
+Le fait de disposer de deux APK ne signifie donc pas que les interfaces sont natives. Ne pas annoncer une application Android native terminée.
 
-La production n'a pas été migrée par ce chantier : son fournisseur d'identité et ses services restent hors périmètre. Aucun mot de passe, secret client ou jeton d'accès n'est embarqué dans les APK.
+## Direction produit
 
-## Construction et livraison de test
+Dikévia doit être une application Android et iOS native en priorité. Le web reste une interface complémentaire. L'édition standard contient l'assistant juridique conversationnel ; l'édition Administration est dédiée au pilotage et ne doit pas exposer le chatbot agent.
 
-Le workflow GitHub Actions **Dikévia — APK standard et administration** construit les deux variantes debug et publie deux artefacts distincts :
+La référence visuelle est JARVIS, documentée dans [l'identité visuelle JARVIS](../docs/60_IDENTITE_VISUELLE_JARVIS.md). Ne pas réintroduire l'identité Émeraude & Or.
 
-- `dikevia-standard-beta-apk`
-- `dikevia-administration-beta-apk`
+## Prototype natif historique — non intégrable tel quel
 
-Les APK bêta sont signées avec la clé debug Android du pipeline et leur téléchargement est temporaire (14 jours). Elles sont destinées aux tests contrôlés, pas à une diffusion publique ni au Play Store.
+La branche historique `android/native-compose-integration` contient un prototype Kotlin + Jetpack Compose. Elle fournit des éléments réutilisables à auditer : navigation, écrans, appels API, client HTTP, OIDC AppAuth/PKCE et composants Compose.
 
-## Recette obligatoire avant livraison publique
+Elle ne peut pas être fusionnée directement :
+- URL API codée en dur vers l'ancien service Render ;
+- issuer Keycloak codé en dur ;
+- client OIDC Keycloak et scopes anciens ;
+- palette Émeraude & Or explicitement abandonnée ;
+- une seule activité monolithique d'environ 500 lignes ;
+- aucune preuve que les endpoints utilisés correspondent tous aux contrats actuels de `main`.
 
-- Valider les connexions Auth0 et les retours OIDC sur appareils Android réels, pour les deux éditions.
-- Vérifier les liens profonds, le retour après authentification et la conservation du mode standard/administration.
-- Vérifier que l'application Administration n'expose aucun écran de conversation.
-- Vérifier les rôles et les autorisations côté API, sans se fier au seul masquage de l'interface.
-- Préparer une clé de signature dédiée et conservée hors du dépôt, une stratégie de mise à jour/versionnement et une publication séparée.
+Le prototype doit être traité comme une référence de composants et de flux, pas comme une base de livraison. Toute récupération doit adapter Auth0, les contrats API, l'identité JARVIS et les éditions standard/administration.
 
-Ne jamais ajouter de secret de signature, de mot de passe ou de jeton au dépôt ou aux artefacts.
+## Construction actuelle
+
+Depuis `android/`, avec Java 17 et Android SDK :
+
+```bash
+gradle --no-daemon :app:assembleStandardDebug :app:assembleAdminDebug
+```
+
+Le build ne prouve ni la conformité native, ni la connexion Auth0 sur appareil réel, ni la disponibilité des fonctions backend.
+
+## Conditions préalables à une livraison native
+
+- Auth0 Authorization Code + PKCE, client public natif et Universal Login via navigateur système/AppAuth ou SDK officiel approprié ; aucun secret client dans l'application.
+- URI de redirection et logout propres à chaque application, configurées dans Auth0.
+- Base URL API injectée par configuration de build/environnement, jamais ancienne URL Render codée en dur.
+- Jetons stockés selon les recommandations de sécurité Android/iOS, pas dans les logs ni les préférences non chiffrées.
+- Contrats API vérifiés contre `main`, autorisations contrôlées côté serveur.
+- Sphère JARVIS intégrée à l'expérience standard et réagissant uniquement à des états réellement émis par l'application/backend.
+- Interface Administration séparée du parcours agent, sans chatbot conversationnel.
+- Tests unitaires, tests UI, tests OIDC, tests API, accessibilité et essais sur appareils physiques.
+- Signature de production et secrets conservés hors Git.
+
+Aucun déploiement, publication, dépense ou migration de fournisseur n'est autorisé par cette documentation.
