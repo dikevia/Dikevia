@@ -712,6 +712,32 @@ def build_legal_conversation_state(
                           current, re.IGNORECASE)
     ):
         contract_declaration = "NON_CONTRACTUEL"
+    previous_clarification = None
+    if history and history[-1].get("role") == "assistant":
+        previous_answer = str(history[-1].get("content") or "").strip()
+        questions = re.findall(r"[^?]{1,260}\\?", previous_answer[-1600:])
+        if questions:
+            previous_clarification = " ".join(questions[-1].split())[-260:]
+    if previous_clarification:
+        if (
+            status_declaration is None
+            and re.search(r"statut|titulaire|contractuel|fonctionnaire", previous_clarification, re.IGNORECASE)
+            and re.fullmatch(r"(?:agent(?:e)?\\s+)?(?:contractuel(?:le)?|titulaire|stagiaire|fonctionnaire)", current, re.IGNORECASE)
+        ):
+            status_declaration = current[:120] + " (réponse explicite à la clarification précédente)"
+        if (
+            contract_declaration is None
+            and re.search(r"\\bCDD\\b|\\bCDI\\b", previous_clarification, re.IGNORECASE)
+            and re.fullmatch(r"(?:en\\s+)?(?:CDD|CDI)", current, re.IGNORECASE)
+        ):
+            contract_declaration = re.sub(r"^en\\s+", "", current, flags=re.IGNORECASE).upper()
+        if (
+            working_time_declaration is None
+            and re.search(r"temps\\s+(?:partiel|complet|non complet)", previous_clarification, re.IGNORECASE)
+            and re.fullmatch(r"(?:à|a)\\s+temps\\s+(?:partiel|complet|non complet)", current, re.IGNORECASE)
+        ):
+            working_time_declaration = current[:120]
+
     state["agent_status_declare"] = status_declaration
     state["temps_travail_declare"] = working_time_declaration
     state["type_contrat_declare"] = contract_declaration
