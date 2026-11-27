@@ -124,7 +124,7 @@ INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
         },
         "individual_decision_on_request": {
             "label": "Saisine de la CAP à la demande du fonctionnaire",
-            "keywords": ("recours cap", "saisine cap à la demande", "contestation compte rendu entretien professionnel", "révision compte rendu entretien professionnel", "refus de temps partiel", "litige temps partiel", "refus de démission", "refus de télétravail", "interruption du télétravail", "refus congé compte épargne temps", "refus utilisation compte personnel de formation", "refus congé formation syndicale", "refus congé formation santé sécurité", "second refus de formation"),
+            "keywords": ("recours cap", "saisine cap à la demande", "contestation compte rendu entretien professionnel", "contestation du compte rendu d'entretien professionnel", "révision compte rendu entretien professionnel", "révision du compte rendu d'entretien professionnel", "refus de temps partiel", "litige temps partiel", "refus de démission", "refus de télétravail", "interruption du télétravail", "refus congé compte épargne temps", "refus utilisation compte personnel de formation", "refus congé formation syndicale", "refus congé formation santé sécurité", "second refus de formation"),
             "questions": (
                 "Quelle décision individuelle est contestée et relève-t-elle exactement d'un des cas limitativement énumérés à R. 263-10 ?",
                 "La demande est-elle présentée par le fonctionnaire intéressé et dans les délais applicables à la décision concernée ?",
@@ -232,7 +232,7 @@ INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
         },
         "refusal_individual_decision": {
             "label": "Saisine de la CCP à la demande de l'agent contractuel",
-            "keywords": ("recours ccp", "saisine ccp à la demande", "refus de temps partiel agent contractuel", "litige temps partiel contractuel", "contestation compte rendu entretien professionnel contractuel", "révision compte rendu entretien professionnel contractuel", "refus utilisation compte personnel formation contractuel", "refus de télétravail agent contractuel", "interruption télétravail agent contractuel", "refus congé compte épargne temps contractuel"),
+            "keywords": ("recours ccp", "saisine ccp à la demande", "refus de temps partiel agent contractuel", "litige temps partiel contractuel", "contestation compte rendu entretien professionnel contractuel", "contestation du compte rendu d'entretien professionnel", "révision compte rendu entretien professionnel contractuel", "révision du compte rendu d'entretien professionnel", "refus utilisation compte personnel formation contractuel", "refus de télétravail agent contractuel", "interruption télétravail agent contractuel", "refus congé compte épargne temps contractuel"),
             "questions": (
                 "La décision contestée figure-t-elle exactement parmi les cas énumérés à R. 272-21 : temps partiel, révision de l'entretien professionnel, CPF, télétravail ou compte épargne-temps ?",
                 "La saisine est-elle demandée par l'agent contractuel intéressé et dans les délais applicables ?",
