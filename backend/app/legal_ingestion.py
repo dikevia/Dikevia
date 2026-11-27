@@ -194,6 +194,20 @@ def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) ->
         any(marker in opening for marker in local_authority_hr_decisions)
         and any(marker in opening for marker in hr_subjects)
     )
+    direct_local_hr_relationship = (
+        any(marker in opening for marker in (
+            "service des ressources humaines de la commune",
+            "service des ressources humaines de la mairie",
+            "service rh de la commune",
+            "service rh de la mairie",
+            "aupres du service des ressources humaines de la commune",
+            "aupres du service des ressources humaines de la mairie",
+        ))
+        and any(marker in opening for marker in (
+            "protection fonctionnelle", "harcelement", "sanction disciplinaire",
+            "affectation", "remuneration", "conge de maladie",
+        ))
+    )
 
     # Explicit FPT language is strong evidence, except when the opening
     # identifies a different public employer and no local HR decision is at issue.
@@ -205,7 +219,7 @@ def _is_fpt_employment_case_law(title: str, body: str, scope: dict[str, Any]) ->
     ))
     if has_explicit_fpt and (not state_or_hospital_employer or has_local_hr_decision):
         return True
-    if has_local_hr_decision:
+    if has_local_hr_decision or direct_local_hr_relationship:
         return True
     return False
 
