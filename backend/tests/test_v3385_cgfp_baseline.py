@@ -72,7 +72,7 @@ async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(m
         axes = kwargs.get("legal_context", {}).get("axes_recherche_documentaire") or []
         return json.dumps({
             "claims": [{
-                "text": "Le décret n° 2024-100 doit être examiné au regard des faits.",
+                "text": "Le texte concerne les droits des agents territoriaux et la fonction publique territoriale.",
                 "source_id": source["source_id"],
                 "axis": axes[0] if axes else "",
                 "quote": quote,
