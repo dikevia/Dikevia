@@ -4,18 +4,20 @@ Date : 27 novembre 2026
 Référence : branche `main` et prototypes Android historiques  
 Statut : audit de code, aucune migration mobile exécutée
 
-## 1. Constat sur main
+## 1. Constat actualisé sur main — 27 novembre 2026
 
-Le répertoire `android/` de `main` contient :
-- une activité Android de 7,8 Ko basée sur `android.webkit.WebView` ;
-- deux product flavors Gradle (`standard` et `admin`) qui chargent le même hôte staging avec des paramètres d'édition différents ;
-- aucune dépendance Jetpack Compose ;
-- aucun projet iOS (`ios/`, Xcode project ou Swift package) trouvé à la racine.
+Le répertoire `android/` contient désormais une première fondation Jetpack Compose, ajoutée sans basculer le point d'entrée de l'application :
 
-Le build Android actuel produit donc deux conteneurs WebView, pas deux applications mobiles natives.
+- `android/app/src/main/java/fr/dikevia/commercial/MainActivity.kt` instancie toujours explicitement une `WebView` : les éditions livrées restent des conteneurs web.
+- Les variantes Gradle `standard` et `admin` chargent le même hôte staging avec un paramètre d'édition différent.
+- Le plugin Kotlin Compose est déclaré à la version 2.0.21 ; le module active Compose et importe le BOM 2024.12.01, UI, graphics et Material 3.
+- `designsystem/JurisOrb.kt` contient le premier composant Compose JURIS, avec états sémantiques et animation locale.
+- Aucun projet iOS (`ios/`, projet Xcode ou Swift Package) n'a été retrouvé dans `main`.
 
-La liste `TRUSTED_HOSTS` vérifiée dans `android/app/src/main/java/fr/dikevia/commercial/MainActivity.kt` contient actuellement deux hôtes exacts : `dikevia-vector-beta-staging.onrender.com` et l'issuer Auth0 de développement `dev-brlgaz1yh2de3mjo.us.auth0.com`. Les anciens hôtes API Render et Keycloak ont été retirés de cette liste. Cette configuration reste provisoire : elle pointe vers le staging et devra être remplacée lorsque l'URL de l'unique service applicatif cible et les domaines Auth0 définitifs seront validés. Ne pas ajouter de wildcard.
+Le build peut donc produire les deux APK WebView existants ; la présence de Compose et de la sphère JURIS ne transforme pas encore ces APK en applications natives. La compilation de cette nouvelle fondation doit être confirmée par le workflow Android et les tests associés.
 
+La liste `TRUSTED_HOSTS` vérifiée dans `MainActivity.kt` contient actuellement deux hôtes exacts : `dikevia-vector-beta-staging.onrender.com` et `dev-brlgaz1yh2de3mjo.us.auth0.com`. Les anciens hôtes API Render et Keycloak ont été retirés. Cette configuration reste provisoire : elle pointe vers le staging. Ne pas ajouter de wildcard.
+ 
 ## 2. Prototype Android Compose examiné
 
 Branche : `android/native-compose-integration`.
@@ -58,15 +60,16 @@ La comparaison actualisée de `android/native-compose-integration` avec `main` a
 
 Aucune branche iOS n'a été trouvée avec la recherche de branches `ios`, et la recherche de fichiers SwiftUI/Xcode n'a révélé aucun projet iOS.
 
-## 3. Dépendance Keycloak résiduelle dans le backend `main`
+## 3. État Keycloak actualisé dans le backend — 27 novembre 2026
 
-L'authentification des requêtes prend en charge Auth0, et `oidc_provider` vaut `auth0` par défaut. Toutefois, Keycloak n'est pas encore entièrement retiré du code opérationnel :
-- `backend/app/main.py` importe toujours `KeycloakAdmin`, `KeycloakAdminConfig` et `KeycloakAdminError` ;
-- le parcours d'invitation conserve une branche conditionnelle `settings.oidc_provider == "keycloak"` qui provisionne les comptes via l'API d'administration Keycloak ;
-- `backend/app/config.py` accepte encore `oidc_provider` égal à `keycloak` et conserve les paramètres `KEYCLOAK_ADMIN_*` ainsi que leur validation ;
-- `backend/app/keycloak_admin.py` reste présent et un test de contrat vérifie explicitement la coexistence des deux parcours.
+Le runtime applicatif sur `main` a été basculé vers Auth0 :
 
-La suppression de Keycloak exige donc de traiter le parcours d'invitation et ses tests, puis de vérifier les flux de comptes historiques et les données d'identité avant retrait. Ne pas supprimer simplement l'import ou les paramètres : cela pourrait casser les invitations ou la compatibilité des comptes existants. Aucune migration d'identité ni rapprochement par email ne doit être effectué.
+- `backend/app/main.py` ne contient plus d'import `KeycloakAdmin` ni de branche de provisionnement Keycloak dans les invitations.
+- `backend/app/config.py` définit Auth0 comme fournisseur par défaut et ne contient plus de sélection runtime Keycloak ni de paramètres de provisionnement Admin Keycloak.
+- Le flux d'invitation Auth0 envoie un jeton Dikévia à usage unique par SMTP ; l'utilisateur s'authentifie ensuite via Universal Login. Aucun appel Auth0 Management API n'est utilisé dans ce parcours.
+- Les contrôles d'intégrité des invitations, la vérification d'adresse portée par l'identité authentifiée et la compatibilité des identités historiques exactes `issuer + subject` sont conservés.
+
+Le retrait runtime ne signifie pas que tous les artefacts historiques ont été supprimés : le module `backend/app/keycloak_admin.py`, les fichiers realm, profils Docker legacy et le service Render historique d'identité doivent encore faire l'objet d'un inventaire et d'un plan de retrait réversible. Aucun rapprochement de compte par email n'est autorisé et aucune désactivation du service Render n'a été effectuée.
 
 ## 4. Authentification native cible
 
@@ -175,3 +178,8 @@ Le premier contrôle de compilation doit être exécuté dans un environnement A
 ## Rectification de nomenclature — 27 novembre 2026
 
 Le nom de la sphère interactive est **JURIS** (et non JARVIS). Le composant natif est donc nommé `JurisOrb` et son état `JurisOrbState`. La direction visuelle reste la sphère lumineuse organique glacier/acier/bleu nuit.
+
+
+## 12. Rectification du nom de la sphère — 27 novembre 2026
+
+Le nom officiel est **JURIS**. Le composant natif, les animations CSS et les tests de régression sont nommés JURIS. Les mentions JARVIS dans les constats historiques décrivent uniquement l'ancien nom employé avant rectification ; elles ne constituent plus la nomenclature du produit.
