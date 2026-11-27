@@ -1,4 +1,6 @@
-# CFDT JURIS — Parcours de mise en service
+# CFDT JURIS — Parcours de mise en service (archive historique)
+
+> **Document obsolète — ne pas utiliser comme procédure d'exploitation.** Cette checklist décrit des versions anciennes (Keycloak, Stripe, migrations V3.17/V3.18). Pour l'état actuel, les règles de travail et les validations connues, consulter `docs/00_DEVELOPMENT_START_HERE.md` puis `docs/57_ETAT_CONSOLIDE_2026-11-27.md`. Aucun déploiement ni activation de paiement ne découle de ce document.
 
 Ce document sépare l'installation technique de la mise en production commerciale. Une compilation réussie ne vaut ni recette de sécurité ni validation juridique.
 
