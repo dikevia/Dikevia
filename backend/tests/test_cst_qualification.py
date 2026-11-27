@@ -480,7 +480,7 @@ def test_fs_dgi_candidate_contains_territorial_24_hour_divergence_and_15_day_fol
     joined = " ".join(candidate["actions_to_check"])
 
     assert "registre spécial" in joined
-    assert "datée et signée" in joined
+    assert "daté et signé" in joined
     assert "membres de la FS" in joined
     assert "24 heures" in joined
     assert "R. 253-62" in candidate["reference"]
@@ -544,9 +544,9 @@ def test_fs_register_health_safety_requires_review_and_separates_dgi_register():
     assert result["legal_conclusion"] is False
 
 
-def test_fs_annual_report_program_tracks_unimplemented_prevention_measures_and_duerp():
+def test_fs_annual_prevention_program_tracks_unimplemented_measures_and_duerp():
     result = qualify_fs_operational_topic("Présentation du rapport annuel et du PAPRIPACT")
-    candidate = next(item for item in result["candidates"] if item["code"] == "annual_health_safety_report_program")
+    candidate = next(item for item in result["candidates"] if item["code"] == "annual_prevention_program")
     joined = " ".join(candidate["actions_to_check"])
 
     assert "chaque année" in joined
