@@ -175,3 +175,13 @@ def test_short_answer_does_not_inherit_topic_when_assistant_did_not_ask_a_questi
         ["Voici les règles applicables au CITIS."],
     )
     assert resolved == "Contractuel"
+
+
+def test_chat_ai_prompts_use_structured_case_context_without_promoting_history_to_evidence():
+    from app.ai_provider import SYSTEM_PROMPT
+
+    assert "structured_legal_case_context" in SYSTEM_PROMPT
+    assert "contexte_conversationnel_juridique" in SYSTEM_PROMPT
+    assert "Une déclaration conservée dans la conversation n'est pas une preuve matérielle" in SYSTEM_PROMPT
+    assert "n'importe pas les faits personnels d'un dossier précédent" in SYSTEM_PROMPT
+    assert "ne constitue jamais une règle de droit, un fait établi ou une preuve" in SYSTEM_PROMPT
