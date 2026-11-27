@@ -2,7 +2,7 @@
 
 **Date de référence : 27 novembre 2026**  
 **Branche de travail : `main` uniquement**  
-**Commit de référence au démarrage de cette consolidation : `8bf70bf3737ca06675a9ed05f427c640f65b5044`**
+**Commit de référence contrôlé après stabilisation CI : `d88b7f6e1be8f954a0d69fea4fe34a026d3342fc`**
 
 Ce document est le point de situation opérationnel. Il prévaut sur les anciens états de livraison datés lorsqu'ils décrivent un état antérieur. Il ne constitue ni une recette complète, ni une certification juridique, ni une autorisation de mise en production.
 
@@ -24,16 +24,23 @@ Ce document est le point de situation opérationnel. Il prévaut sur les anciens
 
 - Dépôt : `dikevia/Dikevia`.
 - Branche : `main`.
-- Commit contrôlé : `8bf70bf3737ca06675a9ed05f427c640f65b5044`.
-- CI générale associée : run [46006150361](https://github.com/dikevia/Dikevia/actions/runs/46006150361), conclusion `success`.
-- Le contrôle rapporté pour ce commit comprend 1 489 tests réussis, sans échec, avec un avertissement de dépréciation Starlette/httpx.
+- Commit contrôlé : `d88b7f6e1be8f954a0d69fea4fe34a026d3342fc`.
+- Dernière CI entièrement terminée et vérifiée : run [46011116281](https://github.com/dikevia/Dikevia/actions/runs/46011116281), sur le commit parent `f65bd2f`, conclusion `success`.
+- Cette exécution comprend les 1 489 tests, l'intégration PostgreSQL/RLS réelle sur base jetable, les contrôles de lint/sécurité/dépendances et l'exécution effective de la migration 033 après 032 (confirmée dans les logs du job).
+- Une nouvelle CI a été déclenchée après le nettoyage du workflow sur le commit `d88b7f6` ; son résultat doit être contrôlé avant de certifier le dernier état.
 - Le succès CI ne prouve pas le fonctionnement des fournisseurs IA en conditions réelles, la pertinence juridique des réponses, la recette sur appareil Android ni l'alignement de la production.
 
 ### Correctif de consolidation CI
 
 La migration `033_chat_daily_question_quota_repair.sql` existe et a été appliquée sur la base de staging. Elle répare de façon additive la table de quota quotidien, active et force RLS et accorde au rôle applicatif les droits de colonnes nécessaires. Avant cette consolidation, le workflow CI s'arrêtait à la migration 032.
 
-La migration 033 est désormais ajoutée à la séquence PostgreSQL jetable de la CI, après 032. Son exécution effective sera confirmée uniquement par le résultat du prochain run CI. Cette modification CI n'exécute aucune migration sur staging ou production.
+La migration 033 est désormais exécutée après 032 dans la séquence PostgreSQL jetable de la CI. Son exécution a été confirmée dans les logs du run 46011116281, avec succès. Cette validation ne touche ni staging ni production.
+
+### Nettoyage du workflow CI
+
+- Les déclencheurs `push` et `pull_request` sont limités à `main` ; les branches historiques ne sont plus des cibles CI.
+- L'ancien job d'embeddings conditionné par une branche POC et l'ancien job de smoke test qui contactait des endpoints de production/Keycloak ont été désactivés. Le workflow dédié `legal-embeddings-staging.yml` reste le seul parcours d'embeddings staging.
+- La CI standard ne contacte donc plus les services Render de production. Les contrôles live Auth0/Android restent à faire dans une recette distincte, sans les déclencher automatiquement ni générer de frais.
 
 ## 3. Authentification et environnements
 
