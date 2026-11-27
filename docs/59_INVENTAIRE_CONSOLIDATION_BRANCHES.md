@@ -123,6 +123,18 @@ Ces familles restent à comparer individuellement. Les branches relatives à Str
 - `fix/sig-official-source-page-urls` : son registre de sources est plus ancien. Il marque encore les données ouvertes de la justice administrative comme `CANDIDATE`, alors que `main` a enregistré la revue d'accès du 26 novembre et le statut `ACCESS_REVIEWED`. La version de cette branche ne doit pas écraser le registre actuel.
 - `security/runtime-role-guard` : seul son complément de tests a été repris (voir section 4 bis).
 
+### Identités Auth0 historiques : migration par e-mail rejetée
+
+La branche `fix/auth0-google-legacy-account-linking` propose une fonction SQL `link_auth0_google_legacy_user` qui rattache un sujet Google Auth0 à un compte Keycloak historique sur la base d'une adresse e-mail vérifiée et unique. Même si la migration est limitée à un issuer Auth0 de staging et refuse les correspondances multiples, cette approche utilise l'e-mail comme clé de rapprochement. Elle ne respecte pas la règle de Dikévia : l'accès fondateur et l'identité applicative doivent être attachés à l'identité OIDC vérifiée (issuer + subject), et jamais attribués ou fusionnés sur la seule adresse e-mail. La migration 029 de cette branche entre également en conflit de numérotation/contenu avec la migration 029 déjà présente sur `main` (sessions OIDC). **Ne pas intégrer et ne pas exécuter cette migration.**
+
+La famille `feat/dual-proof-keycloak-auth0-linking` dépend de cette migration 029 et ajoute une migration 030 ; elle est également exclue de toute fusion en bloc. Toute migration de comptes historiques devra être conçue sur une preuve de contrôle des deux identités, une table de correspondance auditable et un parcours explicite, sans attribution par e-mail.
+
+### Design mobile et identité visuelle
+
+La branche `design/emerald-interface-refresh` contenait un document de système de design cohérent avec les décisions visuelles Dikévia : émeraude comme couleur de marque et d'action, or limité aux libellés de boutons principaux sur vert profond et à quelques détails, jamais aux contenus juridiques ou fonds généraux. Le document a été adapté pour couvrir Android, iOS et le web complémentaire puis intégré sur `main` sous `docs/60_SYSTEME_DESIGN_EMERAUDE_OR.md`.
+
+Commit : `da4fbd75ae1006b7e3ade40ac0d32eb557c52c58`. Aucun écran applicatif n'a été modifié dans ce transfert documentaire.
+
 ### Décision
 
 Ces comparaisons confirment qu'un grand nombre de commits propres à des branches ne sont pas des évolutions manquantes : ce sont des versions antérieures ou des duplications de fichiers déjà intégrés dans `main`. La consolidation doit être basée sur le contenu des fichiers, et non sur le nombre de commits en avance.
