@@ -98,7 +98,9 @@ La cible d'exploitation doit éviter les identités et configurations dispersée
 - un tenant Auth0 de référence, avec séparation documentée des environnements/clients et des callbacks ;
 - un seul projet Neon de référence, avec branches/bases séparées pour les environnements et aucune confusion des données.
 
-Cette cible ne signifie pas qu'il faut supprimer ou fusionner les comptes fournisseurs, transférer la propriété ou révoquer des accès immédiatement. Avant toute opération de compte, vérifier propriétaires, rôles, facturation, domaines, secrets, données et capacité de récupération. Ne jamais partager un compte administrateur personnel ni centraliser des secrets dans Git.
+Cette cible signifie une source de vérité et un périmètre de propriété clair par fournisseur, pas le partage de mots de passe ni l'utilisation d'un compte personnel commun. Pour GitHub, privilégier un dépôt canonique dans une organisation contrôlée par le propriétaire du produit, avec des accès nominatifs. Pour Render, un workspace propriétaire et un service applicatif. Pour Auth0, un tenant de référence avec des applications/clients distincts si les environnements l'exigent. Pour Neon, un projet de référence avec des branches de base de données distinctes par environnement.
+
+Lors de l'audit Render précédent, un seul workspace Render était visible ; le problème identifié est donc la multiplicité des services et des branches de déploiement, pas la preuve de plusieurs comptes Render. Ne pas déplacer la propriété ou fusionner des comptes fournisseurs sans vérifier les propriétaires, rôles, facturation, domaines, secrets, données et capacité de récupération. Ne jamais partager un compte administrateur personnel ni centraliser des secrets dans Git.
 
 ## 8. Prochaines actions ordonnées
 
