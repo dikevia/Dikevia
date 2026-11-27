@@ -467,6 +467,57 @@ def assess_cst_fs_competence_routing(
 
 FS_OPERATIONAL_RULES: tuple[dict[str, Any], ...] = (
     {
+        "code": "annual_health_safety_report_program",
+        "label": "Rapport annuel santé-sécurité et programme annuel de prévention",
+        "reference": "CGFP R. 253-30",
+        "keywords": ("rapport annuel santé sécurité", "rapport annuel santé-sécurité", "programme annuel de prévention", "papripact", "programme de prévention", "bilan annuel santé sécurité"),
+        "actions": (
+            "Vérifier que la formation spécialisée est saisie chaque année pour avis sur le rapport annuel écrit relatif à la situation générale santé-sécurité-conditions de travail et aux actions menées.",
+            "Vérifier que le programme annuel est établi à partir de l'analyse du rapport social unique et comporte les actions, leurs conditions d'exécution et leur coût estimé.",
+            "Tracer les propositions éventuelles de priorisation et de mesures supplémentaires formulées par la formation spécialisée.",
+            "Vérifier que les motifs des mesures de prévention non réalisées figurent en annexe du rapport annuel.",
+            "Vérifier l'association de la formation spécialisée au suivi du document unique d'évaluation des risques professionnels.",
+        ),
+    },
+    {
+        "code": "health_safety_register",
+        "label": "Observations consignées au registre santé et sécurité au travail",
+        "reference": "CGFP R. 253-35",
+        "keywords": ("registre santé et sécurité au travail", "registre santé sécurité au travail", "registre santé-sécurité au travail", "registre ssct", "observations du registre santé"),
+        "actions": (
+            "Recueillir les observations et suggestions relatives à la prévention des risques professionnels et à l'amélioration des conditions de travail.",
+            "Vérifier que la formation spécialisée en prend connaissance.",
+            "Regrouper les observations par service, risque, exposition et date sans effacer les signalements individuels.",
+            "Demander quelles suites ont été données, quelles mesures restent en attente et pour quels motifs.",
+            "Ne pas confondre ce registre avec le registre spécial de danger grave et imminent.",
+        ),
+    },
+    {
+        "code": "visit_report_followup",
+        "label": "Rapport de visite et suivi des suites",
+        "reference": "CGFP R. 253-47",
+        "keywords": ("rapport de visite", "suite de visite de service", "suivi des recommandations de visite", "recommandations de la formation spécialisée"),
+        "actions": (
+            "Vérifier que le rapport de la délégation a été présenté à la formation spécialisée.",
+            "Pour chaque constat, consigner le risque, le service ou poste concerné, les mesures proposées et le responsable de la réponse.",
+            "Demander la position de l'autorité territoriale, les mesures retenues, leur échéance annoncée et les motifs des mesures non retenues.",
+            "Inscrire les points non résolus à l'ordre du jour d'une séance ultérieure lorsque cela relève des règles de fonctionnement de l'instance.",
+            "Distinguer les recommandations de la délégation, l'avis de la formation spécialisée et la décision de l'autorité territoriale.",
+        ),
+    },
+    {
+        "code": "investigation_conclusion_followup",
+        "label": "Conclusions d'enquête et suites réservées",
+        "reference": "CGFP R. 253-52",
+        "keywords": ("conclusions de l'enquête", "suites de l'enquête", "suivi enquête accident", "suivi enquête maladie professionnelle"),
+        "actions": (
+            "Vérifier que la formation spécialisée est informée des conclusions de chaque enquête.",
+            "Obtenir la traçabilité des suites réservées aux conclusions : mesures décidées, responsables, échéances et état d'avancement communiqué.",
+            "Identifier les recommandations restées sans suite et demander les motifs ou mesures alternatives.",
+            "Ne pas confondre l'information obligatoire de la formation spécialisée avec un pouvoir de décision attribué à celle-ci.",
+        ),
+    },
+    {
         "code": "risk_analysis_prevention",
         "label": "Analyse des risques et prévention",
         "reference": "CGFP R. 253-37 à R. 253-40",
