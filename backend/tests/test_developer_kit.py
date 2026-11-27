@@ -1,9 +1,13 @@
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
-
-from scripts.package_developer_kit import include_file
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SPEC = spec_from_file_location("package_developer_kit", ROOT / "scripts" / "package_developer_kit.py")
+MODULE = module_from_spec(SPEC)
+assert SPEC and SPEC.loader
+SPEC.loader.exec_module(MODULE)
+include_file = MODULE.include_file
 
 
 def test_developer_kit_contains_only_current_source_of_truth_paths():
