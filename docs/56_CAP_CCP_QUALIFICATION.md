@@ -36,6 +36,12 @@ Depuis le 1er août 2026, la liste comprend :
 - refus de congé au titre du compte épargne-temps ;
 - engagement d'une procédure de reclassement dans les conditions de l'article 3-1 du décret n° 85-1054.
 
+### Inaptitude et reclassement (décret n° 85-1054)
+
+Distinguer l'inaptitude aux fonctions du grade de l'inaptitude à toute activité. Après avis du conseil médical, l'autorité informe le fonctionnaire de son droit à la période de préparation au reclassement (PPR). Celle-ci peut durer jusqu'à un an, avec prolongation dans les cas de congés prévus par le texte ; l'agent reste en position d'activité et conserve les éléments de rémunération prévus. La convention de PPR doit être notifiée au plus tard deux mois après le début de la période et l'agent dispose de quinze jours pour la signer (articles 2, 2-1 et 2-3).
+
+Lorsque l'agent demande son reclassement, plusieurs emplois pouvant être pourvus par détachement doivent être proposés ; l'impossibilité de le faire doit être motivée et la procédure est conduite dans une durée maximale de trois mois à compter de la demande (article 3). En l'absence de demande, l'article 3-1 encadre une procédure après entretien, sous conditions d'inaptitude permanente et de situation de l'agent. Le recours gracieux contre la décision engageant cette procédure est instruit après avis de la CAP. Ce n'est pas une consultation automatique de la CAP pour toute PPR ou toute recherche de reclassement.
+
 La saisine à la demande de l'agent ne doit pas être confondue avec les cas où la CAP est saisie obligatoirement pour avis.
 
 Pour la révision du compte rendu d'entretien professionnel (article 7 du décret n° 2014-1526), le fonctionnaire doit d'abord demander la révision dans les quinze jours francs suivant la notification du compte rendu. L'autorité territoriale répond dans les quinze jours suivant la réception. La CAP doit ensuite être saisie dans le mois suivant la notification de cette réponse. La saisine de la CAP est donc subordonnée à cette démarche préalable.
@@ -51,6 +57,18 @@ La CCP est saisie pour avis :
 - de certains refus de congé de formation en matière d'hygiène, de sécurité et de conditions de travail, de congé de formation syndicale, d'utilisation du CPF dans le cas visé et d'action de formation après un second refus.
 
 Un non-renouvellement ordinaire ne doit donc pas être présenté comme entraînant automatiquement la consultation de la CCP. Le mandat syndical doit être vérifié.
+
+Pour un contrat de projet, la notification de fin de contrat est faite par LRAR ou remise en main propre contre signature au plus tard deux mois avant le terme lorsque l'engagement est d'une durée inférieure ou égale à trois ans, et trois mois avant le terme lorsqu'il dépasse trois ans (article 38-1 III). Ces délais spécifiques ne doivent pas être généralisés à tous les CDD. La rupture anticipée du contrat de projet à l'initiative de l'employeur n'est possible qu'après un an et dans les deux cas prévus par l'article 38-2 : impossibilité de réalisation ou réalisation anticipée du projet.
+
+### Licenciement, reclassement et délais
+
+Pour les licenciements relevant de l'article 39-3 I, vérifier le motif exact et le fondement de recrutement avant d'appliquer l'article 39-5. Le reclassement prévu par cet article concerne les agents recrutés sur emploi permanent L. 332-8 en CDI ou en CDD dont le terme est postérieur à la date de la demande. Il ne faut pas l'étendre aux motifs exclus par le texte, aux contrats de projet relevant du II ni aux emplois de direction L. 343-1 relevant du III. L'offre doit être écrite, précise, compatible avec les compétences et porter sur les services de l'autorité employeur ; elle relève en principe de la même catégorie hiérarchique, ou d'une catégorie inférieure avec accord exprès.
+
+Dans ce régime de l'article 39-5, la lettre de licenciement invite l'agent à présenter une demande écrite de reclassement dans un délai égal à la moitié du préavis. En l'absence de demande dans ce délai ou en cas de refus de la procédure, le licenciement intervient au terme du préavis. Si une demande a été formulée mais qu'aucun reclassement ne peut être proposé avant la fin du préavis, un congé sans traitement de trois mois maximum suspend la date d'effet du licenciement. Les motifs empêchant le reclassement sont portés à la connaissance de la CCP.
+
+Pour l'inaptitude physique définitive, appliquer le régime distinct de l'article 13 III à V du décret n° 88-145 : constat médical par médecin agréé après les congés visés, conditions de recrutement sur emploi permanent L. 332-8, emplois compatibles avec l'état de santé et les compétences, offre écrite et précise, entretien préalable, consultation de la CCP avant notification, délai de demande de reclassement égal à la moitié du préavis et congé sans rémunération maximal de trois mois si nécessaire. Vérifier également le différé de licenciement de dix semaines après l'expiration des congés visés à l'article 10 et le droit de demander communication du dossier médical et individuel.
+
+L'article 40 fixe le préavis à huit jours pour moins de six mois d'ancienneté, un mois de six mois à moins de deux ans et deux mois à partir de deux ans ; les durées sont doublées pour les bénéficiaires concernés d'une obligation d'emploi lorsque la reconnaissance du handicap a été déclarée dans les délais requis. Les exceptions prévues par le texte doivent être contrôlées.
 
 ### Licenciement et agents protégés
 
@@ -85,3 +103,10 @@ Ces saisines à la demande de l'agent sont distinctes des avis obligatoires de R
 - [Décret n° 88-145 — agents contractuels territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/)
 - [Décret n° 89-677 — procédure disciplinaire des fonctionnaires territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/)
 - [Décret n° 2014-1526 — évaluation professionnelle des fonctionnaires territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/)
+- [Décret n° 85-1054 — reclassement des fonctionnaires territoriaux inaptes](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000682037/)
+- [Décret n° 88-145, article 13 — inaptitude physique et reclassement des contractuels](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054175609/)
+- [Décret n° 88-145, article 39-3 — motifs de licenciement](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000051980593/)
+- [Décret n° 88-145, article 39-5 — reclassement dans certains licenciements](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000046185820/)
+- [Décret n° 88-145, article 40 — préavis](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000051980585/)
+- [Décret n° 88-145, article 42 — entretien préalable](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000046185817/)
+- [Décret n° 88-145, article 42-2 — consultation préalable des agents protégés](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000051980578/)
