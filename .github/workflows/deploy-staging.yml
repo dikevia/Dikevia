@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: ${{ inputs.confirm == 'STAGING' }}
+    if: ${{ false }} # Disabled: legacy Keycloak/SSH deployment path is not the active Render staging workflow.
     runs-on: ubuntu-latest
     environment: staging
     steps:
