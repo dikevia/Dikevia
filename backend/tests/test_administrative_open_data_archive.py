@@ -201,3 +201,18 @@ def test_archive_downloader_rejects_non_official_hosts_before_network_access():
     module = _load_archive_importer()
     with pytest.raises(ValueError, match="hôte officiel HTTPS"):
         module.download_archive(None, "https://example.com/archive.zip")
+
+def test_open_data_zip_error_reports_entries_when_no_xml_is_found():
+    import io
+    import zipfile
+
+    from app.legal_ingestion import parse_administrative_open_data_zip
+
+    payload = io.BytesIO()
+    with zipfile.ZipFile(payload, "w") as archive:
+        archive.writestr("README.txt", "archive metadata")
+        archive.writestr("data.json", "{}")
+
+    with pytest.raises(ValueError, match="README.txt"):
+        parse_administrative_open_data_zip(payload.getvalue(), "CAA_202610.zip")
+
