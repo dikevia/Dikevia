@@ -565,6 +565,34 @@ def test_union_assistance_topic_does_not_match_generic_union_representative_righ
     assert "UNION_ASSISTANCE" in _matched_topic_families(question)
     assert is_topic_relevant_source(question, unrelated) is False
 
+def test_nbi_question_rejects_unrelated_remuneration_and_national_police_sources():
+    question = "C est quoi une NBI et comment son montant est-il calculé ?"
+    unrelated = [
+        {
+            "title": "Code général de la fonction publique — article D444-9",
+            "article": "D444-9",
+            "text": "Pour le calcul de l'indemnité, sont prises en compte la rémunération globale antérieure et la rémunération résultant de l'intégration.",
+        },
+        {
+            "title": "Code général de la fonction publique — article R213-11",
+            "article": "R213-11",
+            "text": "Le coût de la rémunération nette d'un agent territorial est déterminé selon un indice médian.",
+        },
+        {
+            "title": "Arrêté fixant la liste des emplois éligibles à la NBI dans la gendarmerie nationale",
+            "text": "Nouvelle bonification indiciaire attribuée aux personnels de la gendarmerie nationale.",
+        },
+    ]
+    relevant = {
+        "title": "Décret n° 2006-779 du 3 juillet 2006 portant attribution de la NBI à certains personnels de la fonction publique territoriale",
+        "text": "Une nouvelle bonification indiciaire est versée aux fonctionnaires territoriaux exerçant les fonctions figurant en annexe.",
+    }
+
+    assert "NBI" in _matched_topic_families(question)
+    assert all(is_topic_relevant_source(question, source) is False for source in unrelated)
+    assert is_topic_relevant_source(question, relevant) is True
+
+
 def test_nbi_queries_target_fpt_cgfp_and_implementing_decrees_only():
     question = "C est quoi une NBI et comment son montant est-il calculé ?"
     assert _build_targeted_cgfp_article_queries(question, "FPT") == [
