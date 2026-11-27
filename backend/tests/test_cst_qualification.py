@@ -2,6 +2,7 @@ from datetime import date
 
 from app.cst_qualification import (
     CST_TOPIC_RULES,
+    assess_cst_agenda_request,
     calculate_cst_meeting_deadlines,
     qualify_cst_topic,
 )
@@ -102,3 +103,45 @@ def test_cst_instance_page_exposes_specialized_committee_context_and_candidate_o
     assert "formation_specialisee_exists" in source
     assert "cst_qualification" in source
     assert "Qualification indicative du sujet CST" in source
+
+
+
+def test_cst_agenda_request_requires_half_of_titular_representatives_and_competence():
+    below = assess_cst_agenda_request(
+        titular_representatives=7,
+        requesting_titular_representatives=3,
+        requested_topic_in_competence=True,
+    )
+    pending = assess_cst_agenda_request(
+        titular_representatives=7,
+        requesting_titular_representatives=4,
+        requested_topic_in_competence=None,
+    )
+    required = assess_cst_agenda_request(
+        titular_representatives=7,
+        requesting_titular_representatives=4,
+        requested_topic_in_competence=True,
+    )
+    disputed = assess_cst_agenda_request(
+        titular_representatives=8,
+        requesting_titular_representatives=4,
+        requested_topic_in_competence=False,
+    )
+
+    assert below["status"] == "THRESHOLD_NOT_REACHED"
+    assert pending["status"] == "COMPETENCE_TO_VERIFY"
+    assert required["status"] == "AGENDA_INCLUSION_REQUIRED"
+    assert required["minimum_requesters"] == 4
+    assert disputed["status"] == "COMPETENCE_DISPUTED"
+    assert all(item["legal_conclusion"] is False for item in (below, pending, required, disputed))
+
+
+def test_cst_agenda_request_rejects_invalid_representative_counts():
+    import pytest
+
+    with pytest.raises(ValueError):
+        assess_cst_agenda_request(
+            titular_representatives=5,
+            requesting_titular_representatives=6,
+            requested_topic_in_competence=True,
+        )
