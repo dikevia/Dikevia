@@ -1467,3 +1467,68 @@ html.dikevia-admin-mode footer {color:#8193a5}
 @media(max-width:390px) {
   html.dikevia-admin-mode #platformScreen .cards {grid-template-columns:1fr}
 }
+
+
+/* JURIS identity: animated blue/cyan sphere shared across the assistant UI. */
+html.dikevia-standard-app .juris-brand-mark {
+  display:grid;place-items:center;overflow:visible;
+  background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.98),rgba(213,235,255,.92) 42%,rgba(125,178,225,.2) 74%,transparent 76%);
+  border:1px solid rgba(112,169,221,.35);
+  box-shadow:0 0 0 5px rgba(109,170,225,.07),0 0 24px rgba(80,158,220,.16);
+}
+.juris-orb {
+  position:relative;display:block;width:24px;height:24px;border-radius:50%;
+  background:radial-gradient(circle at 31% 25%,#f8fdff 0%,#a8d7f5 20%,#5ca9d8 52%,#2778b4 78%,#195a91 100%);
+  box-shadow:inset -4px -5px 9px rgba(15,62,112,.3),0 0 13px rgba(75,166,224,.48);
+  animation:juris-orb-breathe 4s ease-in-out infinite;
+}
+.juris-orb:before,.juris-orb:after {
+  content:"";position:absolute;inset:-6px;border:1px solid rgba(87,165,220,.52);
+  border-radius:50%;transform:rotate(-28deg) scaleX(1.35);
+}
+.juris-orb:after {
+  inset:-10px;border-color:rgba(93,193,221,.26);transform:rotate(54deg) scaleX(1.18);
+  animation:dikevia-orbit 11s linear infinite;
+}
+.juris-orb-large {width:48px;height:48px}
+.juris-orb-large:before {inset:-10px}
+.juris-orb-large:after {inset:-16px}
+@keyframes juris-orb-breathe {
+  0%,100% {transform:scale(.96);filter:saturate(.95);box-shadow:inset -4px -5px 9px rgba(15,62,112,.3),0 0 12px rgba(75,166,224,.4)}
+  50% {transform:scale(1.06);filter:saturate(1.15);box-shadow:inset -4px -5px 9px rgba(15,62,112,.3),0 0 22px rgba(75,166,224,.7)}
+}
+html.dikevia-standard-app .juris-welcome-icon {display:grid;place-items:center;overflow:visible}
+html.dikevia-standard-app .juris-welcome-icon:before,
+html.dikevia-standard-app .juris-welcome-icon:after {content:none}
+.instance-launch-grid {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:0 0 15px;
+}
+.instance-launch-card {
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;
+  padding:15px;text-align:left;border:1px solid #e1e8f0;border-radius:14px;
+  background:linear-gradient(155deg,#fff,#f7faff);color:#35465d;cursor:pointer;
+  transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.instance-launch-card:hover,.instance-launch-card.active {
+  border-color:#83b8dd;box-shadow:0 7px 20px rgba(42,111,163,.10);transform:translateY(-1px);
+}
+.instance-launch-code {
+  display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:27px;
+  padding:0 9px;border-radius:8px;background:#eaf4fc;color:#337eae;
+  font-size:11px;font-weight:850;letter-spacing:.08em;
+}
+.instance-launch-card strong {font-size:12px;line-height:1.35}
+.instance-launch-card small {font-size:10px;line-height:1.5;color:#8290a2}
+@media(max-width:850px) {
+  .instance-launch-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:420px) {
+  .instance-launch-grid {gap:7px}
+  .instance-launch-card {padding:11px;gap:6px}
+  .instance-launch-card strong {font-size:11px}
+  .instance-launch-card small {font-size:9px}
+}
+@media(prefers-reduced-motion:reduce) {
+  .juris-orb,.juris-orb:after {animation:none!important}
+  .instance-launch-card {transition:none}
+}
