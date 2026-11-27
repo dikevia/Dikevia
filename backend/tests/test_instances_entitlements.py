@@ -255,8 +255,26 @@ def test_ccp_unpaid_leave_non_reemployment_is_separate_from_redeployment():
     assert "5° du I de l'article 39-3" in joined
     assert "article 33" in joined
     assert "emploi similaire" in joined
-    assert "article 39-5 est expressément exclu" in joined
+    assert "article 39-5 exclut le 5° du I" in joined
+    assert "contrat de projet" in joined
+    assert "article 38-2" in joined
+    assert "après un an" in joined
     assert "article 42-1" in joined
+
+
+
+
+def test_ccp_project_contract_early_termination_is_not_a_general_reemployment_case():
+    result = prepare_instance(
+        "CCP",
+        "Licenciement pour impossibilité de réemploi après congé sans rémunération d'un agent en contrat de projet",
+    )
+    point = next(item for item in result["points"] if item["code"] == "dismissal_after_unpaid_leave")
+    joined = " ".join(point["questions"])
+    assert "contrat de projet" in joined
+    assert "article 39-3" in joined
+    assert "article 39-5" in joined
+    assert "article 38-2" in joined
 
 
 def test_ccp_ordinary_nonrenewal_uses_post_2025_article_38_1_version():
