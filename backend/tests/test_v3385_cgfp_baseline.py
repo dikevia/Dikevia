@@ -69,11 +69,16 @@ async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(m
         captured["sources"] = kwargs["sources"]
         source = next(s for s in kwargs["sources"] if s["source_type"] == "LEGIFRANCE_LODA")
         quote = " ".join(source["excerpt"].split())[:120]
-        return json.dumps({"claims": [{
-            "text": "Le décret n° 2024-100 doit être examiné au regard des faits.",
-            "source_id": source["source_id"],
-            "quote": quote,
-        }]}, ensure_ascii=False)
+        axes = kwargs.get("legal_context", {}).get("axes_recherche_documentaire") or []
+        return json.dumps({
+            "claims": [{
+                "text": "Le décret n° 2024-100 doit être examiné au regard des faits.",
+                "source_id": source["source_id"],
+                "axis": axes[0] if axes else "",
+                "quote": quote,
+            }],
+            "uncovered_axes": axes[1:],
+        }, ensure_ascii=False)
 
     monkeypatch.setattr(module, "analyze_question", fake_ai)
     async def provider_available():
