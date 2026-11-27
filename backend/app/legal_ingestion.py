@@ -317,6 +317,30 @@ def _public_service_employment_case_law_scope(title: str, body: str) -> dict[str
             return scope
     return None
 
+def _administrative_case_number_matches_body(case_number: str, body: str) -> bool:
+    """Reject XML records whose docket metadata contradicts the opening procedural text.
+
+    The monthly feed can contain XML metadata whose Numero_Dossier does not match
+    the case number stated in the decision body. We only compare docket numbers
+    attached to an opening request/application registration; incidental citations
+    later in the decision must not be used to infer the record identity.
+    If the opening text contains no recognizable docket number, retain the record
+    and let the other provenance checks decide its eligibility.
+    """
+    expected = re.sub(r"\\D", "", str(case_number or ""))
+    if not expected:
+        return False
+    opening = clean_text(body or "")[:8000]
+    pattern = re.compile(
+        r"(?:requ[eê]te|demande|appel|instance)[^\\n.]{0,500}?"
+        r"(?:enregistr[eé]e?|inscrit[e]?e?|introduit[e]?e?).{0,180}?"
+        r"(?:sous\\s+le\\s+)?(?:n[°ºo]|num[eé]ro)\\s*[:：]?\\s*(\\d{5,10})",
+        re.IGNORECASE,
+    )
+    docket_numbers = {match.group(1) for match in pattern.finditer(opening)}
+    return not docket_numbers or expected in docket_numbers
+
+
 def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> list[dict[str, Any]]:
     """Import dated, full-text administrative decisions relevant to public-service HR law.
 
@@ -410,6 +434,8 @@ def parse_administrative_open_data_zip(zip_bytes: bytes, archive_name: str) -> l
             )
             body = clean_text(body_source)
             if not 80 <= len(body) <= 100000:
+                continue
+            if not _administrative_case_number_matches_body(case_number, body):
                 continue
 
             title = f"Décision du {court_name} n° {case_number} du {decision_date.isoformat()}"
