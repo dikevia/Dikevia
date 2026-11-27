@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import date, timedelta
+import calendar
 from typing import Any
 
 
@@ -191,4 +192,82 @@ def assess_cst_agenda_request(
         "requested_topic_in_competence": requested_topic_in_competence,
         "legal_conclusion": False,
         "notice": notice,
+    }
+
+
+def _add_months(value: date, months: int) -> date:
+    month_index = value.month - 1 + months
+    year = value.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def assess_fs_nine_month_trigger(
+    *,
+    last_meeting_date: date,
+    as_of_date: date,
+    titular_representatives: int,
+    requesting_titular_representatives: int,
+) -> dict[str, Any]:
+    """Assess the R. 254-42 nine-month trigger and R. 254-35 request threshold."""
+    if not isinstance(last_meeting_date, date) or not isinstance(as_of_date, date):
+        raise TypeError("Les dates doivent être des objets date.")
+    if last_meeting_date > as_of_date:
+        raise ValueError("La dernière réunion ne peut pas être postérieure à la date d'évaluation.")
+    if (
+        isinstance(titular_representatives, bool)
+        or isinstance(requesting_titular_representatives, bool)
+        or not isinstance(titular_representatives, int)
+        or not isinstance(requesting_titular_representatives, int)
+        or titular_representatives < 1
+        or requesting_titular_representatives < 0
+        or requesting_titular_representatives > titular_representatives
+    ):
+        raise ValueError("Les effectifs de représentants titulaires sont invalides.")
+    threshold_date = _add_months(last_meeting_date, 9)
+    threshold_reached = as_of_date >= threshold_date
+    minimum_requesters = (titular_representatives + 1) // 2
+    request_threshold_reached = requesting_titular_representatives >= minimum_requesters
+    eligible = threshold_reached and request_threshold_reached
+    if not threshold_reached:
+        status = "NINE_MONTHS_NOT_REACHED"
+    elif not request_threshold_reached:
+        status = "REQUEST_THRESHOLD_NOT_REACHED"
+    else:
+        status = "INSPECTOR_REFERRAL_POSSIBLE"
+    return {
+        "status": status,
+        "last_meeting_date": last_meeting_date.isoformat(),
+        "as_of_date": as_of_date.isoformat(),
+        "nine_month_threshold_date": threshold_date.isoformat(),
+        "nine_month_period_reached": threshold_reached,
+        "titular_representatives": titular_representatives,
+        "requesting_titular_representatives": requesting_titular_representatives,
+        "minimum_requesters": minimum_requesters,
+        "request_threshold_reached": request_threshold_reached,
+        "inspector_referral_possible": eligible,
+        "reference": "CGFP R. 254-42 et R. 254-35",
+        "legal_conclusion": False,
+        "notice": (
+            "Le délai d'au moins neuf mois et le seuil de demande sont atteints sur la base des dates et effectifs déclarés. "
+            "Les représentants titulaires peuvent envisager de saisir l'agent chargé des fonctions d'inspection ; vérifier "
+            "la réalité de la dernière réunion, la qualité des demandeurs et les conditions du dossier."
+            if eligible else
+            "Les conditions cumulatives de l'article R. 254-42 ne sont pas toutes réunies sur la base des données déclarées."
+        ),
+    }
+
+
+def calculate_fs_inspector_request_deadlines(received_date: date) -> dict[str, Any]:
+    """Calculate R. 254-42 outer deadlines after the inspector's request is received."""
+    if not isinstance(received_date, date):
+        raise TypeError("received_date doit être une date.")
+    return {
+        "inspector_request_received_date": received_date.isoformat(),
+        "authority_convocation_deadline": (received_date + timedelta(days=8)).isoformat(),
+        "meeting_deadline": _add_months(received_date, 1).isoformat(),
+        "reference": "CGFP R. 254-42",
+        "legal_conclusion": False,
+        "notice": "Délais calculés à compter de la réception de la demande de l'agent chargé des fonctions d'inspection. Vérifier la date de réception et les circonstances particulières.",
     }
