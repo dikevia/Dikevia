@@ -5,6 +5,7 @@ from app.cross_encoder_reranker import (
     _rank_with_scores,
     _source_passage,
     rerank_sources_with_cross_encoder,
+    should_run_cross_encoder,
 )
 
 
@@ -76,3 +77,10 @@ def test_cross_encoder_is_disabled_by_default():
     assert config.legal_cross_encoder_enabled is False
     assert config.legal_cross_encoder_top_k == 30
     assert config.legal_cross_encoder_max_length == 384
+
+
+def test_cross_encoder_requires_both_global_flag_and_founder_entitlement():
+    assert should_run_cross_encoder(globally_enabled=True, founder_entitled=True)
+    assert not should_run_cross_encoder(globally_enabled=True, founder_entitled=False)
+    assert not should_run_cross_encoder(globally_enabled=False, founder_entitled=True)
+    assert not should_run_cross_encoder(globally_enabled=False, founder_entitled=False)
