@@ -811,7 +811,8 @@ def test_case_context_does_not_inherit_facts_from_an_older_independent_topic():
         is_followup=True,
         current_turn_metadata={"employer": "NATIONAL"},
     )
-    assert state["agent_status_declare"] is None
+    assert state["agent_status_declare"].startswith("Contractuel")
+    assert "clarification précédente" in state["agent_status_declare"]
     assert state["type_contrat_declare"] is None
     assert state["employeur_selectionne"] is None
     assert state["periode_faits_declaree"] is None
