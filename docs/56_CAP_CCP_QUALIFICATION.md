@@ -134,6 +134,33 @@ Les articles 13, 33 et 34 du décret n° 88-145 doivent être lus ensemble, en t
 - Pour les congés pour convenances personnelles ou création d'entreprise, vérifier les exclusions visant certains fondements de recrutement (L. 333-1, L. 333-12 et L. 343-1).
 - Pour un contrat de projet, l'article 13 I prévoit une règle spécifique : le terme doit être postérieur à la demande de réemploi et le projet ou l'opération ne doit pas être réalisé ; le réemploi ne porte que sur la période restant à courir.
 
+### Délais de réemploi : article 18-1 et limites de son champ
+
+L'article 18-1 du décret n° 88-145 concerne exclusivement les congés des articles 15, 17 et 18 :
+- article 15 : congé sans rémunération pour raisons familiales, ouvert à l'agent employé depuis plus d'un an ;
+- article 17 : congé pour convenances personnelles, réservé à l'agent en CDI ;
+- article 18 : congé pour création ou reprise d'entreprise, dans sa rédaction en vigueur depuis le 1er octobre 2025.
+
+Pour ces trois congés, l'agent doit demander le renouvellement ou le réemploi au moins trois mois avant le terme, par LRAR. En l'absence de réponse dans ce délai, l'agent est présumé renoncer à son emploi, mais le contrat ne prend pas fin immédiatement : l'autorité doit d'abord l'informer sans délai par LRAR des conséquences de son silence ; ce n'est qu'en l'absence de réponse dans les quinze jours suivant la réception de cette information que le contrat prend fin de plein droit, sans indemnité, au terme du congé.
+
+L'agent peut aussi demander une fin anticipée du congé avec un préavis de trois mois. En cas de motif grave, notamment une diminution des revenus du ménage, les conditions de réemploi du titre VIII s'appliquent dès réception de la demande par l'autorité.
+
+Ce délai de trois mois ne doit pas être généralisé aux congés de l'article 13, au congé lié à l'exercice d'un mandat public de l'article 19 ou aux situations de service national et de réserve de l'article 20. L'ancien article 35, qui prévoyait notamment un délai d'un mois après la libération du service national, est abrogé depuis le 1er janvier 2016 : il ne doit pas être appliqué aux situations actuelles.
+
+### Service national, instruction militaire et réserves : article 20
+
+L'article 20 distingue plusieurs statuts et régimes de rémunération :
+- accomplissement du service national actif : position d'accomplissement du service national et perte du droit au traitement ;
+- période d'instruction militaire : congé avec traitement pendant la période ;
+- réserve opérationnelle sur le temps de travail : congé avec traitement jusqu'à trente jours cumulés par année civile, puis sans traitement au-delà ;
+- réserve de sécurité civile sur le temps de travail : congé avec traitement jusqu'à quinze jours cumulés par année civile, puis sans traitement au-delà ;
+- réserve sanitaire sur le temps de travail : congé avec rémunération pendant toute la période d'activité ou de formation ;
+- préparation et encadrement des séjours de cohésion du SNU : congé avec rémunération si le contrat, renouvellements compris, atteint au moins dix-huit mois, sous réserve des nécessités de service et dans la limite de soixante jours sur douze mois consécutifs.
+
+À l'issue d'une période d'activité dans l'une des réserves visées ou des fonctions d'encadrement du SNU, l'article 20 prévoit le réemploi sur l'emploi précédent ou un emploi équivalent, dans les conditions des articles 33 et 34. Pour l'agent libéré du service national, l'article 33 prévoit également le réemploi ; l'article 34 impose de vérifier que le contrat est un CDI ou que le terme du CDD est postérieur à la date à laquelle l'agent peut prétendre au réemploi, lequel ne porte alors que sur la période restant à courir.
+
+Il faut donc contrôler le type exact d'engagement, la nature de l'absence, le décompte annuel des jours, les justificatifs de libération ou de fin d'activité, le terme du contrat et l'emploi de retour. Ne pas appliquer mécaniquement l'article 18-1 ni l'ancien délai abrogé de l'article 35.
+
 En cas d'impossibilité de réemploi, ne pas qualifier immédiatement la situation de licenciement ni appliquer automatiquement le reclassement de l'article 39-5. Il faut établir le congé, le fondement du recrutement, le terme contractuel, les nécessités du service, les emplois similaires examinés et la décision effectivement prise. Distinguer le réemploi, le non-renouvellement à échéance et le licenciement pour impossibilité de réemploi du 5° du I de l'article 39-3.
 
 ## Références officielles
@@ -146,6 +173,8 @@ En cas d'impossibilité de réemploi, ne pas qualifier immédiatement la situati
 - [Décret n° 2014-1526 — évaluation professionnelle des fonctionnaires territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/)
 - [Décret n° 85-1054 — reclassement des fonctionnaires territoriaux inaptes](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000682037/)
 - [Décret n° 88-145, article 13 — inaptitude physique et reclassement des contractuels](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054175609/)
+- [Décret n° 88-145, article 18-1 — délai de demande de réemploi et fin anticipée du congé](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000031834387/)
+- [Décret n° 88-145, articles 19 et 20 — mandat public, service national et réserves](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/)
 - [Décret n° 88-145, article 33 — conditions de réemploi](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000054175595/)
 - [Décret n° 88-145, article 38-2 — rupture anticipée du contrat de projet](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000041656272/)
 - [Décret n° 88-145, article 39-2 — insuffisance professionnelle et accès au dossier](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000031835197/)
