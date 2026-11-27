@@ -10,7 +10,7 @@ Le repérage lexical produit des pistes de préparation, pas une décision sur l
 
 ### Conseil de discipline
 
-La CAP siège en conseil de discipline pour les propositions de sanctions des deuxième, troisième et quatrième groupes (CGFP R. 263-6). Le premier groupe n'entraîne pas cette saisine disciplinaire. L'échelle est définie à L. 533-1 : deuxième groupe (notamment radiation du tableau d'avancement, abaissement d'échelon, exclusion de 4 à 15 jours), troisième groupe (rétrogradation, exclusion de 16 jours à 2 ans), quatrième groupe (mise à la retraite d'office, révocation).
+La CAP siège en conseil de discipline pour les propositions de sanctions des deuxième, troisième et quatrième groupes (CGFP R. 263-6). Le premier groupe n'entraîne pas cette saisine disciplinaire. L'échelle est définie à L. 533-1 : deuxième groupe (notamment radiation du tableau d'avancement, abaissement d'échelon, exclusion de 4 à 15 jours), troisième groupe (rétrogradation, exclusion de 16 jours à 2 ans), quatrième groupe (mise à la retraite d'office, révocation). La procédure du décret n° 89-677 impose notamment l'information écrite sur les faits, l'accès au dossier complet et au rapport, un délai suffisant pour préparer la défense, des pièces numérotées et l'assistance d'un ou plusieurs conseils. L'agent est convoqué par lettre recommandée avec avis de réception au moins quinze jours avant la séance ; il peut présenter des observations écrites ou orales et citer des témoins (articles 4 à 6). Le conseil se prononce dans les deux mois de sa saisine, délai ramené à un mois en cas de suspension, sous réserve des prolongations légales liées au report (article 13). Son avis est communiqué sans délai et l'autorité territoriale statue par décision motivée (article 14).
 
 ### Avis obligatoires (R. 263-7)
 
@@ -52,13 +52,19 @@ La CCP est saisie pour avis :
 
 Un non-renouvellement ordinaire ne doit donc pas être présenté comme entraînant automatiquement la consultation de la CCP. Le mandat syndical doit être vérifié.
 
+### Licenciement et agents protégés
+
+L'article 42 du décret n° 88-145 impose un entretien préalable : la convocation est envoyée par lettre recommandée avec avis de réception ou remise en main propre contre signature, précise son objet et doit parvenir au moins cinq jours ouvrables avant l'entretien. L'agent peut être accompagné par la personne de son choix.
+
+En application de l'article 42-2, pour certaines catégories protégées, la CCP doit être consultée avant cet entretien préalable : agent siégeant dans un organisme consultatif, agent ayant bénéficié dans les douze mois précédents de certaines autorisations spéciales d'absence syndicale, agent disposant d'une décharge d'activité d'au moins 20 %, ancien représentant du personnel pendant les douze mois suivant la fin du mandat et candidat non élu pendant les six mois suivant l'élection. Cette consultation préalable spécifique ne doit pas être confondue avec la consultation de la CCP avant la décision de licenciement prévue par R. 272-19.
+
 Pour la révision du compte rendu d'entretien professionnel prévue à l'article 1-3 du décret n° 88-145, vérifier d'abord que l'agent a été recruté sur un emploi permanent en CDI ou en CDD de plus d'un an, y compris par contrat de projet. La demande préalable de révision doit être formée dans les quinze jours francs suivant la notification du compte rendu ; l'autorité territoriale répond dans les quinze jours francs suivant la réception ; la CCP doit être saisie dans le mois suivant la notification de cette réponse. Ces règles ne doivent pas être étendues automatiquement à tout agent contractuel.
 
 ### Discipline (R. 272-20 et décret n° 88-145)
 
 La CCP siégeant en conseil de discipline examine les propositions de sanction autres que l'avertissement, le blâme et l'exclusion temporaire de fonctions de trois jours au maximum. L'article 36-1 du décret n° 88-145 prévoit notamment les sanctions applicables aux contractuels et soumet les sanctions plus lourdes à consultation de la CCP.
 
-L'article 36 du décret n° 88-145 prévoit un délai de prescription disciplinaire de trois ans à compter de la connaissance effective par l'administration de la réalité, de la nature et de l'ampleur des faits, sous réserve de l'interruption prévue en cas de poursuites pénales. L'article 37 garantit l'accès à l'intégralité du dossier et l'assistance de défenseurs choisis. L'article 37-4 encadre le rapport de saisine du conseil de discipline pour les sanctions concernées.
+L'article 36 du décret n° 88-145 prévoit un délai de prescription disciplinaire de trois ans à compter de la connaissance effective par l'administration de la réalité, de la nature et de l'ampleur des faits, sous réserve de l'interruption prévue en cas de poursuites pénales. L'article 37 garantit l'accès à l'intégralité du dossier et l'assistance de défenseurs choisis. L'article 37-4 encadre le rapport de saisine du conseil de discipline pour les sanctions concernées. L'article 37-1 rend applicables aux conseils de discipline des contractuels les articles 3, 4, 6 à 14, 16, 17, 30 et 30-1 du décret n° 89-677. Cela comprend notamment la convocation au moins quinze jours avant la séance, les droits à observations, témoins et assistance, ainsi que le délai de deux mois pour statuer, ramené à un mois en cas de suspension, et la communication sans délai de l'avis suivie d'une décision motivée. L'article 37-2 prévoit une présidence par un magistrat administratif et une composition paritaire. Pour les sanctions des 3° et 4° de l'article 36-1, l'article 37-4 impose un rapport décrivant les faits et leurs circonstances, que l'agent doit être invité à consulter.
 
 ### Saisines à la demande de l'agent (R. 272-21)
 
@@ -77,4 +83,5 @@ Ces saisines à la demande de l'agent sont distinctes des avis obligatoires de R
 - [CGFP R. 272-19 à R. 272-21 — CCP territoriales](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044416551/LEGISCTA000050550837/)
 - [CGFP L. 533-1 — échelle des sanctions des fonctionnaires](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044425388/)
 - [Décret n° 88-145 — agents contractuels territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000871608/)
+- [Décret n° 89-677 — procédure disciplinaire des fonctionnaires territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000335719/)
 - [Décret n° 2014-1526 — évaluation professionnelle des fonctionnaires territoriaux](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000029918006/)
