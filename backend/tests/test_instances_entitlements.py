@@ -122,7 +122,7 @@ def test_cap_discipline_does_not_trigger_for_first_group_sanctions():
 def test_ccp_professional_review_referral_checks_contract_eligibility_and_deadlines():
     result = prepare_instance(
         "CCP",
-        "Contestation du compte rendu d'entretien professionnel d'un agent en CDI sur emploi permanent",
+        "Contestation du compte rendu d'entretien professionnel d'un agent contractuel en CDI sur emploi permanent",
     )
     point = next(item for item in result["points"] if item["code"] == "refusal_individual_decision")
     joined = " ".join(point["questions"])
