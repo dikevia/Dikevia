@@ -40,7 +40,7 @@ Depuis `android/`, avec Java 17 et Android SDK :
 gradle --no-daemon :app:assembleStandardDebug :app:assembleAdminDebug
 ```
 
-Le build ne prouve ni la conformité native, ni la connexion Auth0 sur appareil réel, ni la disponibilité des fonctions backend.
+Le Client ID Native public du tenant de développement est fourni par défaut dans la configuration Gradle. Une surcharge locale reste possible avec `-Pauth0AndroidClientId=...`. Le build ne prouve ni la connexion Auth0 sur appareil réel, ni la disponibilité des fonctions backend.
 
 ## Conditions préalables à une livraison native
 
@@ -63,16 +63,11 @@ Le module `core/auth/Auth0NativeAuth.kt` utilise le SDK officiel Auth0.Android *
 
 Le module utilise `SecureCredentialsManager` avec un stockage chiffré adossé à Android Keystore. Aucun contrôle biométrique n'est imposé à chaque ouverture. Il ne journalise ni jeton ni code d'autorisation et ne contient aucun secret client.
 
-### Configuration locale du Client ID
+### Configuration du Client ID
 
-Le Client ID Auth0 natif Android n'est pas encore créé dans le tenant. Le Client ID SPA web ne doit pas être réutilisé. Après création de l'application Native Android dans Auth0, injecter le Client ID public localement :
+L'application Native **Dikévia Android** a été créée dans Auth0. Le Client ID public de ce client natif est configuré par défaut dans `android/app/build.gradle.kts` afin que les builds CI puissent fonctionner sans secret GitHub. Le Client ID d'une application native est une donnée publique : il ne constitue pas un secret.
 
-```bash
-cd android
-gradle --no-daemon -Pauth0AndroidClientId=VOTRE_CLIENT_ID_NATIVE :app:assembleStandardDebug
-```
-
-Ne pas committer le Client ID réel dans le dépôt. La propriété Gradle peut être conservée dans `~/.gradle/gradle.properties` sous la forme `auth0AndroidClientId=...`. Ce Client ID est une donnée publique d'application native, contrairement à un secret client qui ne doit jamais exister dans le binaire.
+Une surcharge locale reste possible avec `-Pauth0AndroidClientId=...`. Aucun Client Secret ne doit être ajouté au dépôt, aux workflows ou au binaire Android. Le Client ID SPA web ne doit pas être réutilisé.
 
 Le domaine de développement configuré est `dev-brlgaz1yh2de3mjo.us.auth0.com`, l'audience API est `https://api.dikevia.fr`, et les scopes demandés sont `openid profile email offline_access`. Le renouvellement de session exige que l'autorisation `offline_access` et la rotation des refresh tokens soient activées et vérifiées côté Auth0 avant recette.
 
@@ -89,11 +84,11 @@ https://dev-brlgaz1yh2de3mjo.us.auth0.com/android/fr.dikevia.admin.beta/callback
 
 Le SDK doit également être autorisé à demander un access token pour l'audience `https://api.dikevia.fr`. Ne pas ajouter de wildcard aux URI de callback ou de logout.
 
-### Limites avant activation
+### Limites avant activation générale
 
-- Le module d'authentification est ajouté, mais le point d'entrée de l'application reste la WebView pour conserver un chemin de repli.
-- L'écran Compose de prévisualisation n'est pas encore l'écran de lancement distribué.
-- Le Client ID natif et ses URI ne sont pas encore enregistrés/confirmés dans le tenant Auth0.
-- Le client API natif n'est pas encore raccordé. Une authentification réussie ne doit pas encore débloquer artificiellement l'envoi de questions JURIS.
-- Le workflow CI actuel ne compile pas Android ; un build Gradle Android dédié reste à mettre en place et à faire passer avant de remplacer le point d'entrée.
-- La validation finale doit inclure un aller-retour Auth0 sur appareil Android physique, restauration/expiration de session, logout, puis appel réel au backend avec access token et ID token conformément au contrat serveur.
+- Le SDK Auth0 natif et le Client ID public sont configurés dans le code ; les quatre URI de callback et de logout ont été ajoutées au client Native dans le tableau de bord Auth0.
+- Le flux doit encore être validé sur appareil Android physique avec un compte réel : connexion, restauration, renouvellement après expiration de l'access token et déconnexion.
+- L'autorisation `offline_access` doit être confirmée côté API Auth0 pour l'audience `https://api.dikevia.fr`.
+- Le client API natif est présent dans le prototype, mais l'intégration de bout en bout doit être validée contre le backend réellement déployé et ses règles d'autorisation.
+- Les workflows GitHub Actions `android-beta-apk.yml` et `android-native-build.yml` compilent les variantes Android. Le succès du build ne prouve pas le succès d'une authentification réelle.
+- Ne pas considérer les APK debug comme une version de production : la signature, les tests de sécurité, les tests fonctionnels et la recette complète restent nécessaires.
