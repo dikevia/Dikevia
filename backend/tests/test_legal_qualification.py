@@ -854,3 +854,25 @@ def test_status_correction_after_assistant_clarification_keeps_case_continuity()
         question, history, is_followup=context.is_followup,
     )
     assert state["agent_status_declare"] == "Je ne suis plus contractuel"
+
+
+def test_structured_case_context_includes_current_turn_facts_for_a_new_topic():
+    from app.legal_qualification import build_legal_conversation_state
+
+    state = build_legal_conversation_state(
+        "Je suis agent titulaire et je travaille à temps partiel. Mon employeur refuse ma demande.",
+        [{"role": "user", "content": "Je suis agent contractuel en CDD."}],
+        is_followup=False,
+        current_turn_metadata={
+            "employer": "VILLE_SAINT_ETIENNE",
+            "facts_start_date": "2025-03-01",
+            "situation_ongoing": True,
+        },
+    )
+    assert state["continuity"] == "NEW_TOPIC"
+    assert state["agent_status_declare"] == "Je suis agent titulaire"
+    assert state["temps_travail_declare"] == "je travaille à temps partiel"
+    assert state["type_contrat_declare"] is None
+    assert state["employeur_selectionne"] == "VILLE_SAINT_ETIENNE"
+    assert state["periode_faits_declaree"]["debut"] == "2025-03-01"
+    assert state["messages_utilisateur_pertinents"] == []
