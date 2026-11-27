@@ -28,11 +28,11 @@ class MainActivity : Activity() {
     companion object {
         private val APP_URL = BuildConfig.APP_URL
         private const val FILE_CHOOSER_REQUEST = 4107
+        // Only the active staging app and its Auth0 issuer stay inside the WebView.
+        // Legacy Render API and Keycloak hosts must never be treated as trusted origins.
         private val TRUSTED_HOSTS = setOf(
             "dikevia-vector-beta-staging.onrender.com",
-            "dev-brlgaz1yh2de3mjo.us.auth0.com",
-            "dikevia-commercial-api-l2r8.onrender.com",
-            "dikevia-identity-l2r8.onrender.com"
+            "dev-brlgaz1yh2de3mjo.us.auth0.com"
         )
     }
 
