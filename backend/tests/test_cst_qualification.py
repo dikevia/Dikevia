@@ -1,6 +1,6 @@
 from datetime import date
 
-from app.cst_qualification import calculate_cst_meeting_deadlines, qualify_cst_topic
+from app.cst_qualification import (\n    CST_TOPIC_RULES,\n    calculate_cst_meeting_deadlines,\n    qualify_cst_topic,\n)
 from app.instances import prepare_instance
 
 
@@ -77,3 +77,24 @@ def test_cst_preparation_uses_declared_specialized_committee_context():
     )
 
     assert result["cst_qualification"]["health_safety_routing"] == "formation_specialisee_a_examiner"
+
+def test_cst_reference_catalog_covers_current_cgfp_rubric_counts():
+    consultation = [item for item in CST_TOPIC_RULES if item["kind"] == "consultation"]
+    debates = [item for item in CST_TOPIC_RULES if item["kind"] == "debate"]
+    information = [item for item in CST_TOPIC_RULES if item["kind"] == "information"]
+
+    assert len(consultation) == 24
+    assert len(debates) == 12  # R. 253-8 annual programming + 11 R. 253-9 subjects
+    assert len(information) == 4
+
+
+def test_cst_instance_page_exposes_specialized_committee_context_and_candidate_output():
+    from pathlib import Path
+
+    frontend = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+    source = frontend.read_text(encoding="utf-8")
+
+    assert "formationSpecialiseeStatus" in source
+    assert "formation_specialisee_exists" in source
+    assert "cst_qualification" in source
+    assert "Qualification indicative du sujet CST" in source
