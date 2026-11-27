@@ -395,3 +395,29 @@ def test_cst_prepare_also_exposes_health_safety_candidates_for_articulation():
         item["reference"] == "R. 253-24, 6°"
         for item in result["fs_qualification"]["candidates"]
     )
+
+
+
+def test_cst_president_evocation_requires_half_agreement_and_valid_counts():
+    president_allowed = assess_cst_fs_competence_routing(
+        formation_specialisee_exists=True,
+        topic_in_cst_own_competence=False,
+        topic_in_fs_mandatory_consultation=True,
+        fs_consultation_already_examined=False,
+        cst_evocation_initiative="PRESIDENT",
+        cst_staff_representatives_total=8,
+        cst_staff_representatives_supporting=4,
+    )
+    president_blocked = assess_cst_fs_competence_routing(
+        formation_specialisee_exists=True,
+        topic_in_cst_own_competence=False,
+        topic_in_fs_mandatory_consultation=True,
+        fs_consultation_already_examined=False,
+        cst_evocation_initiative="PRESIDENT",
+        cst_staff_representatives_total=8,
+        cst_staff_representatives_supporting=3,
+    )
+
+    assert president_allowed["status"] == "CST_OPINION_SUBSTITUTES_FS"
+    assert president_blocked["status"] == "EVOCATION_THRESHOLD_NOT_REACHED"
+    assert "official_references" in president_allowed
