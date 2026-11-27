@@ -271,3 +271,90 @@ def calculate_fs_inspector_request_deadlines(received_date: date) -> dict[str, A
         "legal_conclusion": False,
         "notice": "Délais calculés à compter de la réception de la demande de l'agent chargé des fonctions d'inspection. Vérifier la date de réception et les circonstances particulières.",
     }
+
+
+def assess_annual_instance_meeting_frequency(
+    *,
+    instance: str,
+    meetings_held: int,
+    formation_specialisee_exists: bool | None = None,
+    health_safety_meetings_held: int = 0,
+) -> dict[str, Any]:
+    """Compare declared annual meeting counts with CGFP R. 254-35 to R. 254-37."""
+    normalized = instance.strip().upper() if isinstance(instance, str) else ""
+    if normalized not in {"CST", "FS"}:
+        raise ValueError("instance doit être CST ou FS.")
+    for value in (meetings_held, health_safety_meetings_held):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError("Les nombres de réunions doivent être des entiers positifs ou nuls.")
+    if normalized == "FS":
+        required = 3
+        return {
+            "instance": "FS",
+            "minimum_annual_meetings": required,
+            "meetings_held": meetings_held,
+            "minimum_reached": meetings_held >= required,
+            "status": "MINIMUM_REACHED" if meetings_held >= required else "MINIMUM_NOT_YET_REACHED",
+            "legal_conclusion": False,
+            "reference": "CGFP R. 254-37",
+            "notice": "La formation spécialisée du CST se réunit au moins trois fois par an. Le décompte doit être vérifié sur l'année concernée.",
+        }
+    if formation_specialisee_exists is None:
+        return {
+            "instance": "CST",
+            "status": "FS_EXISTENCE_TO_VERIFY",
+            "legal_conclusion": False,
+            "reference": "CGFP R. 254-35 et R. 254-36",
+            "notice": "Préciser si une formation spécialisée existe pour déterminer si la réunion annuelle supplémentaire consacrée à la santé, à la sécurité et aux conditions de travail s'applique.",
+        }
+    base_required = 2
+    extra_health_required = 0 if formation_specialisee_exists else 1
+    base_met = meetings_held >= base_required
+    health_met = extra_health_required == 0 or health_safety_meetings_held >= extra_health_required
+    return {
+        "instance": "CST",
+        "minimum_annual_meetings": base_required,
+        "meetings_held": meetings_held,
+        "base_minimum_reached": base_met,
+        "additional_health_safety_meetings_required": extra_health_required,
+        "health_safety_meetings_held": health_safety_meetings_held,
+        "health_safety_minimum_reached": health_met,
+        "minimum_reached": base_met and health_met,
+        "status": "MINIMUM_REACHED" if base_met and health_met else "MINIMUM_NOT_YET_REACHED",
+        "legal_conclusion": False,
+        "reference": "CGFP R. 254-35 et R. 254-36",
+        "notice": "Le CST se réunit au moins deux fois par an. En l'absence de formation spécialisée, il tient en outre au moins une réunion annuelle portant sur la santé, la sécurité et les conditions de travail, hors exceptions prévues par le texte.",
+    }
+
+
+def calculate_cst_written_request_deadline(
+    *,
+    received_date: date,
+    titular_representatives: int,
+    requesting_titular_representatives: int,
+) -> dict[str, Any]:
+    """Calculate the two-month meeting deadline when half of titular reps request in writing."""
+    if not isinstance(received_date, date):
+        raise TypeError("received_date doit être une date.")
+    if (
+        isinstance(titular_representatives, bool)
+        or isinstance(requesting_titular_representatives, bool)
+        or not isinstance(titular_representatives, int)
+        or not isinstance(requesting_titular_representatives, int)
+        or titular_representatives < 1
+        or requesting_titular_representatives < 0
+        or requesting_titular_representatives > titular_representatives
+    ):
+        raise ValueError("Les effectifs de représentants titulaires sont invalides.")
+    minimum = (titular_representatives + 1) // 2
+    reached = requesting_titular_representatives >= minimum
+    return {
+        "written_request_received_date": received_date.isoformat(),
+        "minimum_requesters": minimum,
+        "requesting_titular_representatives": requesting_titular_representatives,
+        "deadline_date": _add_months(received_date, 2).isoformat() if reached else None,
+        "status": "MEETING_WITHIN_TWO_MONTHS_REQUIRED" if reached else "REQUEST_THRESHOLD_NOT_REACHED",
+        "reference": "CGFP R. 254-35",
+        "legal_conclusion": False,
+        "notice": "Si la demande écrite émane d'au moins la moitié des représentants titulaires, le CST doit se réunir dans le délai de deux mois. Vérifier la réception de la demande, la qualité des signataires et les effectifs.",
+    }
