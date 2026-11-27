@@ -35,8 +35,8 @@ class Auth0NativeAuth(
         .setDeviceCredentialFallback(true)
         .build()
     private val credentialsManager = SecureCredentialsManager(
-        authentication,
         appContext,
+        account,
         SharedPreferencesStorage(appContext),
         hostActivity,
         localAuthenticationOptions
