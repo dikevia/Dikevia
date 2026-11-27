@@ -175,3 +175,7 @@ Lors de l'audit Render précédent, un seul workspace Render était visible ; le
 - Aucun test IA réel consommant quota sans autorisation distincte.
 - Aucun développement métier tant que l'architecture cible n'est pas conforme.
 - Les travaux d'architecture doivent être commits directement sur `main`.
+
+### Rectification de l'identité visuelle
+
+Le document `docs/60_SYSTEME_DESIGN_EMERAUDE_OR.md` a été supprimé de `main` : la direction Émeraude & Or avait été abandonnée et ne constitue pas l'identité de Dikévia. La référence visuelle à retrouver et à consolider est l'expérience surnommée « Jarvis », centrée sur une sphère IA interactive animée donnant une présence visuelle vivante à l'assistant. Les spécifications précises (forme, palette, états, animation, interaction) doivent être retrouvées dans les branches/historiques et validées à partir des travaux existants ; ne pas inventer de nouveau design ni remplacer cette direction par une autre.
