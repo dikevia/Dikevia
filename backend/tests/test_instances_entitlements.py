@@ -77,6 +77,9 @@ def test_cap_disciplinary_referral_is_limited_to_groups_two_to_four():
     joined = " ".join(point["questions"])
     assert "deuxième, troisième ou quatrième groupes" in joined
     assert "premier groupe" in joined
+    assert "quinze jours" in joined
+    assert "deux mois" in joined
+    assert "un mois en cas de suspension" in joined
 
 
 def test_cap_refusal_of_titularisation_is_distinguished_from_generic_stage_questions():
@@ -107,6 +110,33 @@ def test_ccp_nonrenewal_does_not_assume_mandate_consultation():
 def test_ccp_union_mandate_nonrenewal_has_specific_referral_candidate():
     result = prepare_instance("CCP", "Non-renouvellement mandat syndical")
     assert any(item["code"] == "union_mandate_nonrenewal" for item in result["points"])
+
+
+def test_ccp_disciplinary_council_inherits_procedure_deadlines_and_composition_rules():
+    result = prepare_instance(
+        "CCP",
+        "Conseil de discipline : sanction disciplinaire, exclusion temporaire de quatre jours",
+    )
+    point = next(item for item in result["points"] if item["code"] == "discipline")
+    joined = " ".join(point["questions"])
+    assert "article 37-1" in joined
+    assert "quinze jours" in joined
+    assert "deux mois" in joined
+    assert "magistrat administratif" in joined
+    assert "article 37-4" in joined
+
+
+def test_ccp_protected_agent_dismissal_checks_interview_timing_and_prior_consultation():
+    result = prepare_instance(
+        "CCP",
+        "Licenciement après période d'essai d'un agent contractuel représentant du personnel",
+    )
+    point = next(item for item in result["points"] if item["code"] == "dismissal_after_trial")
+    joined = " ".join(point["questions"])
+    assert "cinq jours ouvrables" in joined
+    assert "avant l'entretien préalable" in joined
+    assert "20 %" in joined
+    assert "six mois" in joined
 
 
 def test_ccp_discipline_does_not_trigger_for_first_group_sanctions():
