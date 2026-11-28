@@ -121,3 +121,14 @@ new Function("self", "env", "pipeline", "Float32Array", "Math", "String", "Numbe
     assert payload["message"]["id"] == 17
     assert len(actual) == 384
     assert max(abs(left - right) for left, right in zip(actual, expected)) < 1e-6
+
+def test_frontend_discloses_when_vector_retrieval_falls_back_to_lexical_search():
+    from pathlib import Path
+
+    frontend = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+    source = frontend.read_text(encoding="utf-8")
+    assert "Recherche vectorielle non exécutée" in source
+    assert "Recherche vectorielle désactivée dans cet environnement" in source
+    assert "La recherche lexicale reste utilisée" in source
+    assert "Cette réponse ne doit pas être considérée comme issue de pgvector" in source
+
