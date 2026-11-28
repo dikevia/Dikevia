@@ -24,6 +24,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.rememberDrawerState
+import kotlinx.coroutines.launch
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -374,9 +380,48 @@ fun NativeHomeScreen(
     var sessionDate by remember { mutableStateOf("") }
     var sessionMinutes by remember { mutableStateOf("") }
     var openedSession by remember { mutableStateOf<DikeviaInstanceSession?>(null) }
-    var instanceMenuExpanded by remember { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val drawerScope = rememberCoroutineScope()
 
     MaterialTheme {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            gesturesEnabled = !administrationEdition,
+            drawerContent = {
+                if (!administrationEdition) {
+                    ModalDrawerSheet {
+                        Text(
+                            "Dikévia — Instances",
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
+                            color = Navy,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        instances.forEach { instance ->
+                            NavigationDrawerItem(
+                                label = {
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(instance.acronym, fontWeight = FontWeight.SemiBold)
+                                        Text(instance.title, style = MaterialTheme.typography.bodySmall)
+                                        Text(instance.description, style = MaterialTheme.typography.labelSmall, color = Color(0xFF62768A))
+                                    }
+                                },
+                                selected = selectedInstance == instance.acronym,
+                                onClick = {
+                                    selectedInstance = instance.acronym
+                                    instanceObjet = ""
+                                    sessionTitle = ""
+                                    sessionDate = ""
+                                    sessionMinutes = ""
+                                    drawerScope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(horizontal = 10.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        ) {
         Surface(modifier = modifier.fillMaxSize(), color = Glacier) {
             Column(
                 modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 18.dp),
@@ -425,34 +470,11 @@ fun NativeHomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Préparer une instance", color = Navy, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                            Text(selectedInstance?.let { "Instance sélectionnée : $it" } ?: "Les instances sont accessibles depuis le menu", color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
+                            Text("JURIS", color = Navy, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(selectedInstance?.let { "Parcours actif : $it" } ?: "Votre assistant juridique territorial", color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
                         }
-                        Box {
-                            TextButton(onClick = { instanceMenuExpanded = true }) {
-                                Text("Instances  ▾", color = SteelBlue, fontWeight = FontWeight.SemiBold)
-                            }
-                            DropdownMenu(expanded = instanceMenuExpanded, onDismissRequest = { instanceMenuExpanded = false }) {
-                                instances.forEach { instance ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(instance.acronym, color = Navy, fontWeight = FontWeight.SemiBold)
-                                                Text(instance.title, color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
-                                            }
-                                        },
-                                        onClick = {
-                                            selectedInstance = instance.acronym
-                                            instanceObjet = ""
-                                            sessionTitle = ""
-                                            sessionDate = ""
-                                            sessionMinutes = ""
-                                            instanceMenuExpanded = false
-                                        },
-                                        enabled = !preparingInstance
-                                    )
-                                }
-                            }
+                        TextButton(onClick = { drawerScope.launch { drawerState.open() } }) {
+                            Text("☰  Instances", color = SteelBlue, fontWeight = FontWeight.SemiBold)
                         }
                     }
 
@@ -821,6 +843,7 @@ fun NativeHomeScreen(
                     }
                 }
             }
+        }
         }
     }
 }
