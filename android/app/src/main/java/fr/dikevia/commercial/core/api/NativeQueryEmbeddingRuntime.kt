@@ -9,10 +9,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.view.Gravity
 import android.widget.FrameLayout
-import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
-import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -79,6 +77,18 @@ class NativeQueryEmbeddingRuntime(
                 error: android.webkit.WebResourceError?
             ) {
                 super.onReceivedError(view, request, error)
+                if (request?.isForMainFrame == true) {
+                    failAll()
+                    view?.postDelayed({ if (!disposed && !pageReady) view.reload() }, 1500)
+                }
+            }
+
+            override fun onReceivedHttpError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                errorResponse: android.webkit.WebResourceResponse?
+            ) {
+                super.onReceivedHttpError(view, request, errorResponse)
                 if (request?.isForMainFrame == true) failAll()
             }
         }
