@@ -910,7 +910,7 @@ function fillInstanceSessionForm(d){
   'Sources récupérées : '+String((research.sources||[]).length),
   String(prep.notice||'')
  ].filter(Boolean):['Aucune préparation JURIS enregistrée dans ce dossier.'];
- $('#instanceSessionPreparation').textContent=prepLines.join('\\n');
+ $('#instanceSessionPreparation').textContent=prepLines.join('\n');
  $('#instanceSessionPreparation').classList.remove('hidden');
 }
 async function loadInstanceSessions(){
