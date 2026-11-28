@@ -73,3 +73,36 @@ def serialize_instance_session(row: Any) -> dict:
         "created_at": get("created_at"),
         "updated_at": get("updated_at"),
     }
+
+
+def render_instance_session_pdf(session: dict) -> bytes:
+    """Render a saved session record without generating or approving its minutes."""
+    import json
+    from .dossier_pdf import render_legal_dossier_pdf
+
+    agenda = session.get("agenda") or []
+    questions = session.get("questions") or []
+    documents = session.get("documents") or []
+    actions = session.get("action_items") or []
+    preparation = session.get("preparation") or {}
+    content = {
+        "title": session.get("title") or "Dossier de séance",
+        "status": session.get("meeting_status") or "PREPARATION",
+        "employer": "Instance " + str(session.get("instance_code") or ""),
+        "objective": "Date de séance : " + str(session.get("meeting_date") or "à fixer"),
+        "facts_summary": "Ordre du jour\n" + "\n".join(
+            str(item.get("title") or item) if isinstance(item, dict) else str(item) for item in agenda
+        ),
+        "chronology": "",
+        "instance_preparation": json.dumps(preparation, ensure_ascii=False, indent=2) if preparation else "",
+        "documents_and_evidence": documents,
+        "points_to_verify": questions,
+        "conclusion": session.get("minutes") or "Compte rendu non renseigné.",
+        "action_plan": actions,
+        "warning": (
+            "Dossier de séance de travail. Les questions, notes et comptes rendus sont saisis "
+            "par les utilisateurs et ne constituent pas une validation juridique. Vérifier les "
+            "faits, les textes applicables, les citations et les décisions avant diffusion."
+        ),
+    }
+    return render_legal_dossier_pdf(content, str(session.get("id") or ""))
