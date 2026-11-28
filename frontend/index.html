@@ -486,6 +486,7 @@ html.dikevia-standard-app footer{display:none}
  <div class="row"><div class="field"><label for="sessionDate">Date de séance</label><input id="sessionDate" type="date"></div><div class="field"><label for="sessionStatus">État</label><select id="sessionStatus"><option value="PREPARATION">Préparation</option><option value="CONVOQUEE">Convoquée</option><option value="TENUE">Tenue</option><option value="COMPTE_RENDU_A_VALIDER">Compte rendu à valider</option><option value="CLOTUREE">Clôturée</option></select></div></div>
  <div class="field"><label for="sessionAgenda">Ordre du jour (un point par ligne)</label><textarea id="sessionAgenda" rows="4" maxlength="12000"></textarea></div>
  <div class="field"><label for="sessionQuestions">Questions à poser pendant la séance (une par ligne)</label><textarea id="sessionQuestions" rows="4" maxlength="12000"></textarea></div>
+ <div class="field"><label for="sessionDocumentSearch">Rechercher un document déjà présent dans le corpus de l'organisation</label><div class="row"><input id="sessionDocumentSearch" type="search" minlength="3" maxlength="300" placeholder="Titre, numéro ou mots du document"><button type="button" class="secondary" id="searchSessionDocuments">Rechercher</button></div><div id="sessionDocumentResults" class="muted" aria-live="polite"></div><div id="sessionAttachedDocuments" class="muted"></div></div>
  <div class="field"><label for="sessionDocuments">Documents à obtenir ou examiner (un par ligne)</label><textarea id="sessionDocuments" rows="4" maxlength="12000"></textarea></div>
  <div class="field"><label for="sessionMinutes">Compte rendu / notes de séance</label><textarea id="sessionMinutes" rows="8" maxlength="50000"></textarea></div>
  <div class="field"><label for="sessionActions">Actions à suivre (une par ligne)</label><textarea id="sessionActions" rows="4" maxlength="12000"></textarea></div>
@@ -886,6 +887,7 @@ function sessionMessage(text,error=false){const el=$('#instanceSessionMessage');
 function clearInstanceSessionForm(){
  activeInstanceSession=null;
  $('#instanceType').disabled=false;
+ attachedSessionDocuments=[];renderAttachedSessionDocuments();
  ['sessionTitle','sessionDate','sessionAgenda','sessionQuestions','sessionDocuments','sessionMinutes','sessionActions'].forEach(id=>$('#'+id).value='');
  $('#sessionStatus').value='PREPARATION';$('#saveInstanceSession').disabled=true;$('#exportInstanceSessionPdf').disabled=true;$('#continueSessionWithJuris').disabled=true;$('#createInstanceSession').disabled=false;
  $('#instanceSessionPreparation').classList.add('hidden');$('#instanceSessionPreparation').textContent='';
@@ -897,7 +899,8 @@ function fillInstanceSessionForm(d){
  $('#sessionTitle').value=d.title||'';$('#sessionDate').value=d.meeting_date||'';$('#sessionStatus').value=d.meeting_status||'PREPARATION';
  $('#sessionAgenda').value=(d.agenda||[]).map(x=>typeof x==='string'?x:(x.title||JSON.stringify(x))).join('\n');
  $('#sessionQuestions').value=(d.questions||[]).map(x=>typeof x==='string'?x:JSON.stringify(x)).join('\n');
- $('#sessionDocuments').value=(d.documents||[]).map(x=>typeof x==='string'?x:(x.name||JSON.stringify(x))).join('\n');
+ attachedSessionDocuments=(d.documents||[]).filter(x=>x&&typeof x==='object'&&x.document_id).map(x=>({...x}));renderAttachedSessionDocuments();
+ $('#sessionDocuments').value=(d.documents||[]).filter(x=>typeof x==='string'||!x.document_id).map(x=>typeof x==='string'?x:(x.name||JSON.stringify(x))).join('\n');
  $('#sessionMinutes').value=d.minutes||'';
  $('#sessionActions').value=(d.action_items||[]).map(x=>typeof x==='string'?x:(x.task||JSON.stringify(x))).join('\n');
  $('#saveInstanceSession').disabled=false;$('#exportInstanceSessionPdf').disabled=false;$('#continueSessionWithJuris').disabled=false;$('#createInstanceSession').disabled=true;
@@ -926,9 +929,22 @@ async function openInstanceSession(id){
  try{const d=await api('/api/v1/instances/sessions/'+encodeURIComponent(id));fillInstanceSessionForm(d);sessionMessage('Dossier chargé.');}
  catch(e){sessionMessage('Impossible d’ouvrir le dossier : '+e.message,true);}
 }
+let attachedSessionDocuments=[];
+function renderAttachedSessionDocuments(){
+ $('#sessionAttachedDocuments').innerHTML=attachedSessionDocuments.length?attachedSessionDocuments.map((d,i)=>'<div class="row" style="align-items:center;margin:5px 0"><span>'+esc(d.title)+' · '+esc(d.validation_status||'statut inconnu')+' · '+esc(d.collectivity_name||'')+'</span><button type="button" class="secondary" data-remove-session-document="'+i+'">Retirer</button></div>').join(''):'Aucun document du corpus rattaché.';
+ $('[data-remove-session-document]').forEach(b=>b.addEventListener('click',()=>{attachedSessionDocuments.splice(Number(b.dataset.removeSessionDocument),1);renderAttachedSessionDocuments();}));
+}
+$('#searchSessionDocuments').addEventListener('click',async()=>{
+ const q=$('#sessionDocumentSearch').value.trim();if(q.length<3){$('#sessionDocumentResults').textContent='Saisissez au moins 3 caractères.';return;}
+ $('#sessionDocumentResults').textContent='Recherche en cours…';
+ try{const rows=await api('/api/v1/documents/search?q='+encodeURIComponent(q)+'&limit=20');
+  $('#sessionDocumentResults').innerHTML=rows.length?rows.map(d=>'<div class="row" style="align-items:center;margin:5px 0"><span>'+esc(d.title)+' · '+esc(d.validation_status||'statut inconnu')+' · '+esc(d.collectivity_name||'')+'</span><button type="button" class="secondary" data-add-session-document="'+esc(d.id)+'">Rattacher</button></div>').join(''):'Aucun document trouvé.';
+  $('[data-add-session-document]').forEach(b=>b.addEventListener('click',()=>{const d=rows.find(x=>x.id===b.dataset.addSessionDocument);if(d&&!attachedSessionDocuments.some(x=>x.document_id===d.id)){attachedSessionDocuments.push({document_id:d.id,title:d.title,document_type:d.document_type,validation_status:d.validation_status,collectivity_name:d.collectivity_name});renderAttachedSessionDocuments();}}));
+ }catch(e){$('#sessionDocumentResults').textContent='Recherche impossible : '+e.message;}
+});
 function instanceSessionPayload(){
  return {instance_code:$('#instanceType').value==='FS'?'F3SCT':$('#instanceType').value,title:$('#sessionTitle').value.trim(),meeting_date:$('#sessionDate').value||null,meeting_status:$('#sessionStatus').value,
-  agenda:sessionLines('sessionAgenda'),questions:sessionLines('sessionQuestions'),documents:sessionLines('sessionDocuments'),minutes:$('#sessionMinutes').value,
+  agenda:sessionLines('sessionAgenda'),questions:sessionLines('sessionQuestions'),documents:[...attachedSessionDocuments,...sessionLines('sessionDocuments')],minutes:$('#sessionMinutes').value,
   action_items:sessionLines('sessionActions'),preparation:activeInstanceSession?activeInstanceSession.preparation:(latestInstancePreparation||{})};
 }
 $('#continueSessionWithJuris').addEventListener('click',async()=>{
