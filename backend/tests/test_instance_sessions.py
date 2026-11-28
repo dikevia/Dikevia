@@ -131,6 +131,25 @@ def test_instance_session_api_has_list_create_read_and_update_routes():
     assert ("/api/v1/instances/sessions/{session_id}/pdf", "GET") in routes
 
 
+def test_chat_request_supports_explicit_session_document_ids_with_consent_gate():
+    from app.schemas import AskRequest
+    from uuid import uuid4
+
+    doc_id = uuid4()
+    base = {"question": "Analyse cette séance", "local_document_ids": [str(doc_id)]}
+    request = AskRequest(**base)
+    assert request.local_document_ids == [doc_id]
+    assert request.confirm_local_document_ai_transfer is False
+    request_with_consent = AskRequest(**{**base, "confirm_local_document_ai_transfer": True})
+    assert request_with_consent.confirm_local_document_ai_transfer is True
+
+
+def test_selected_session_documents_are_added_to_orchestrator_local_sources():
+    source = (ROOT / "backend/app/orchestrator.py").read_text()
+    assert "additional_local_sources: list[dict] | None = None" in source
+    assert "local_sources.extend(explicitly_selected_local_sources)" in source
+
+
 def test_session_document_reference_validation_is_tenant_scoped_and_server_resolved():
     from app.main import validate_instance_session_document_refs
     import inspect
