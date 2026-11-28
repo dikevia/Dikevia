@@ -101,6 +101,7 @@ class NativePreviewActivity : FragmentActivity() {
                 onEmployerDetailsChange = {
                     employerDetails = it
                     conversationId = null
+                    conversationEpoch += 1
                     chatTranscript.clear()
                 },
                 factsStartDate = factsStartDate,
