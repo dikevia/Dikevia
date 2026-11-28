@@ -265,4 +265,4 @@ def test_native_instance_result_is_bound_to_the_selected_instance():
     source = native.read_text(encoding="utf-8")
     assert "preparationMatchesInstance(instancePreparation, selectedInstance)" in source
     assert 'selectedInstance.equals("F3SCT", ignoreCase = true)' in source
-    assert 'append("F3SCT (FS)")' in source
+    assert '"F3SCT (FS)"' in source
