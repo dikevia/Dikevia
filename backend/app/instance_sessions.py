@@ -50,6 +50,15 @@ def validate_instance_session(payload: Any, *, partial: bool = False) -> dict:
     return result
 
 
+def ensure_instance_identity_unchanged(stored_instance_code: str, payload: dict) -> None:
+    """Reject attempts to move a saved session dossier to another instance."""
+    requested_instance = payload.get("instance_code", stored_instance_code)
+    if requested_instance != stored_instance_code:
+        raise ValueError(
+            "L'instance d'un dossier de séance ne peut pas être modifiée. Créez un nouveau dossier."
+        )
+
+
 def serialize_instance_session(row: Any) -> dict:
     def get(key):
         value = row[key]
