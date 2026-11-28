@@ -105,7 +105,9 @@ logger.setLevel(logging.INFO)
 
 async def _startup_external_diagnostics() -> None:
     """Non-billable startup checks: PISTE ping/search and AI model catalog only."""
-    if settings.app_env != "production" or not settings.startup_external_diagnostics_enabled:
+    # Explicit opt-in enables the read-only connector probes on staging as well as production.
+    # Never run external diagnostics in automated test environments.
+    if settings.app_env == "test" or not settings.startup_external_diagnostics_enabled:
         return
 
     logger.warning(
@@ -301,10 +303,9 @@ async def lifespan(app: FastAPI):
     await open_pool(settings.database_url, settings.legal_corpus_ingest_database_url, settings.platform_admin_database_url)
     if settings.database_url:
         await assert_runtime_role_is_safe()
-    diagnostics_enabled = settings.app_env == "production" and settings.startup_external_diagnostics_enabled
+    diagnostics_enabled = settings.app_env != "test" and settings.startup_external_diagnostics_enabled
     diagnostic_tasks = (
-        [asyncio.create_task(_startup_external_diagnostics()),
-         asyncio.create_task(_startup_ai_provider_diagnostic())]
+        [asyncio.create_task(_startup_external_diagnostics())]
         if diagnostics_enabled else []
     )
     try:
