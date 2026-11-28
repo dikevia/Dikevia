@@ -881,7 +881,7 @@ async function prepareInstance(){
  }catch(e){msg('#instanceMessage',e.message,true);$('#instanceMessage').classList.remove('hidden');}
 }
 let activeInstanceSession=null;
-function sessionLines(id){return $('#'+id).value.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);}
+function sessionLines(id){return $('#'+id).value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);}
 function sessionMessage(text,error=false){const el=$('#instanceSessionMessage');el.textContent=text;el.style.color=error?'#a33':'';}
 function clearInstanceSessionForm(){
  activeInstanceSession=null;
@@ -893,7 +893,7 @@ function fillInstanceSessionForm(d){
  activeInstanceSession=d;
  $('#instanceType').value=d.instance_code==='F3SCT'?'FS':d.instance_code;
  $('#sessionTitle').value=d.title||'';$('#sessionDate').value=d.meeting_date||'';$('#sessionStatus').value=d.meeting_status||'PREPARATION';
- $('#sessionAgenda').value=(d.agenda||[]).map(x=>typeof x==='string'?x:(x.title||JSON.stringify(x))).join('\\n');
+ $('#sessionAgenda').value=(d.agenda||[]).map(x=>typeof x==='string'?x:(x.title||JSON.stringify(x))).join('\n');
  $('#sessionQuestions').value=(d.questions||[]).map(x=>typeof x==='string'?x:JSON.stringify(x)).join('\\n');
  $('#sessionDocuments').value=(d.documents||[]).map(x=>typeof x==='string'?x:(x.name||JSON.stringify(x))).join('\\n');
  $('#sessionMinutes').value=d.minutes||'';
@@ -917,7 +917,7 @@ async function openInstanceSession(id){
 function instanceSessionPayload(){
  return {instance_code:$('#instanceType').value==='FS'?'F3SCT':$('#instanceType').value,title:$('#sessionTitle').value.trim(),meeting_date:$('#sessionDate').value||null,meeting_status:$('#sessionStatus').value,
   agenda:sessionLines('sessionAgenda'),questions:sessionLines('sessionQuestions'),documents:sessionLines('sessionDocuments'),minutes:$('#sessionMinutes').value,
-  action_items:sessionLines('sessionActions'),preparation:latestInstancePreparation||activeInstanceSession?.preparation||{}};
+  action_items:sessionLines('sessionActions'),preparation:activeInstanceSession?activeInstanceSession.preparation:(latestInstancePreparation||{})};
 }
 $('#exportInstanceSessionPdf').addEventListener('click',async()=>{
  if(!activeInstanceSession)return;
