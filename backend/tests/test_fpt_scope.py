@@ -622,3 +622,21 @@ def test_generic_medical_personnel_mention_does_not_establish_fph_source_scope()
     assert result["scope"] == "OUT_OF_SCOPE_OR_UNCONFIRMED"
     assert result["analysis_eligible"] is False
 
+def test_ihts_hard_guard_cannot_be_bypassed_by_a_broad_secondary_query():
+    from app.orchestrator import _source_relevant_to_any_research_axis
+
+    unrelated = {
+        "source_type": "LEGIFRANCE_API",
+        "article": "R431-3",
+        "title": "Code général de la fonction publique — article R431-3",
+        "text": (
+            "Les périodes d'astreintes mentionnées à l'article 5 du décret "
+            "n° 2001-623 du 12 juillet 2001 ne constituent pas du télétravail."
+        ),
+    }
+    queries = [
+        "dispositions applicables aux agents territoriaux",
+        "indemnités horaires pour travaux supplémentaires heures supplémentaires IHTS",
+    ]
+
+    assert _source_relevant_to_any_research_axis(queries, unrelated) is False

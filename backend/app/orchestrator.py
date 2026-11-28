@@ -711,11 +711,19 @@ async def apply_semantic_source_relevance(
 def _source_relevant_to_any_research_axis(
     research_queries: list[str], source: dict, target_versant: str = "FPT",
 ) -> bool:
-    """Require topic relevance while applying FPT-only safeguards to FPT questions."""
+    """Require topic relevance and enforce hard mechanism guards across all query variants."""
+    queries = [query for query in research_queries if isinstance(query, str) and query.strip()]
+    # A broad secondary query must never bypass the IHTS-specific exclusion.
+    # Otherwise an unrelated provision can pass merely because another
+    # retrieval axis does not repeat the mechanism.
+    ihts_queries = [query for query in queries if is_ihts_question(query)]
+    if ihts_queries and not is_ihts_relevant_source(
+        ihts_queries[0], source, target_versant=target_versant,
+    ):
+        return False
     return any(
         is_topic_relevant_source(query, source, target_versant=target_versant)
-        and is_ihts_relevant_source(query, source, target_versant=target_versant)
-        for query in research_queries
+        for query in queries
     )
 
 
@@ -2037,9 +2045,22 @@ class LegalOrchestrator:
                 else code_research_queries if source_type == "LEGIFRANCE_API"
                 else research_queries
             )
-            source["research_axis_relevant"] = _source_relevant_for_target(
-                source_queries, source, request.public_service,
-            )
+            if not fallback_axes:
+                # Broad legal-information questions have no independently
+                # recognized mandatory axis. Assess sources against the user's
+                # actual wording, not speculative AI query expansions.
+                source["research_axis_relevant"] = (
+                    is_topic_relevant_source(
+                        request.question, source, target_versant=request.public_service,
+                    )
+                    and is_ihts_relevant_source(
+                        request.question, source, target_versant=request.public_service,
+                    )
+                )
+            else:
+                source["research_axis_relevant"] = _source_relevant_for_target(
+                    source_queries, source, request.public_service,
+                )
 
 
         # A direct request for the text/content of a numbered CGFP article is an
