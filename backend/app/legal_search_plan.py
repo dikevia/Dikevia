@@ -418,6 +418,13 @@ def build_official_search_query(question: str, max_length: int = 500) -> str:
 # and provider load while avoiding a single overloaded keyword string.
 _TOPIC_RESEARCH_AXES = (
     (
+        ("nbi", "nouvelle bonification indiciaire", "bonification indiciaire"),
+        (
+            "fonction publique territoriale nouvelle bonification indiciaire décret 2006-779 du 3 juillet 2006 annexe fonctions éligibles points indice majoré",
+            "fonction publique territoriale NBI décret 93-863 du 18 juin 1993 conditions mise en oeuvre maintien temps partiel temps partiel thérapeutique décret 2006-780 zones à caractère sensible",
+        ),
+    ),
+    (
         ("temps partiel therapeutique", "temps partiel pour raison therapeutique",
          "mi temps therapeutique", "mi-temps therapeutique", "tpt"),
         (
