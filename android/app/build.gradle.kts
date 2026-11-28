@@ -56,7 +56,10 @@ android {
         debug {
             applicationIdSuffix = ".beta"
             versionNameSuffix = "-beta"
-            buildConfigField("boolean", "ENABLE_NATIVE_PREVIEW", "true")
+            // The production WebView frontend owns the complete JURIS chat pipeline,
+            // including the local 384d query embedding worker and hybrid pgvector retrieval.
+            // Keep the native Compose preview opt-in until it implements that same contract.
+            buildConfigField("boolean", "ENABLE_NATIVE_PREVIEW", "false")
         }
         release {
             isMinifyEnabled = false
