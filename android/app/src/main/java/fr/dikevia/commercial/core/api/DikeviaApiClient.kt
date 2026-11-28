@@ -187,7 +187,8 @@ class DikeviaApiClient {
         factsEndDate: String?,
         situationOngoing: Boolean,
         confirmLocalDocumentAiTransfer: Boolean,
-        conversationId: String? = null
+        conversationId: String? = null,
+        queryEmbedding: List<Float>? = null
     ): DikeviaAnswer {
         require(publicService in setOf("FPT", "FPE", "FPH")) { "Versant de la fonction publique invalide." }
         require(employer.isNotBlank()) { "Précisez l'employeur ou choisissez « National / non précisé »." }
@@ -200,6 +201,15 @@ class DikeviaApiClient {
         if (!factsStartDate.isNullOrBlank()) payload.put("facts_start_date", factsStartDate)
         if (!factsEndDate.isNullOrBlank()) payload.put("facts_end_date", factsEndDate)
         if (!conversationId.isNullOrBlank()) payload.put("conversation_id", conversationId)
+        if (queryEmbedding != null) {
+            require(queryEmbedding.size == 384 && queryEmbedding.all { it.isFinite() }) {
+                "Le vecteur de recherche doit contenir exactement 384 valeurs finies."
+            }
+            payload.put("query_embedding_model", "Xenova/paraphrase-multilingual-MiniLM-L12-v2")
+            payload.put("query_embedding", JSONArray().apply {
+                queryEmbedding.forEach { put(it.toDouble()) }
+            })
+        }
         val response = request(
             "/api/v1/chat/ask",
             "POST",
