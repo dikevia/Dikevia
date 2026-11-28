@@ -956,7 +956,7 @@ $('#exportInstanceSessionPdf').addEventListener('click',async()=>{
  try{
   const blob=await api('/api/v1/instances/sessions/'+encodeURIComponent(activeInstanceSession.id)+'/pdf',{responseType:'blob'});
   const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;
-  link.download='dossier-seance-'+activeInstanceSession.id+'.pdf';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+  link.download='dossier-seance-'+activeInstanceSession.id+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   sessionMessage('Export PDF généré à partir du dossier enregistré.');
  }catch(e){sessionMessage('Export PDF impossible : '+e.message,true);}
 });
