@@ -24,6 +24,8 @@ def test_dossier_compiles_user_exchanges_assistant_answers_and_verified_sources_
     assert content["legal_sources"][0]["source_id"] == "LEGIARTI123"
     assert content["points_to_verify"] == ["Vérifier la délibération locale."]
     assert content["status"] == "BROUILLON_A_VALIDER"
+    content["instance_preparation"] = "Instance : CST\\nObjet : consultation du CST"
+    assert validate_dossier_content(content)["instance_preparation"].startswith("Instance : CST")
     assert "ne vaut ni validation juridique" in content["warning"]
 
 
@@ -100,6 +102,11 @@ def test_server_pdf_export_renders_dossier_without_losing_legal_caveats():
     assert "NON_VERIFIE" in extracted
     assert "ne vaut ni validation juridique" in extracted
     assert "CGFP L. 621-1" in extracted
+    content["instance_preparation"] = "Instance : F3SCT\\nObjet : DUERP et programme annuel"
+    instance_pdf = render_legal_dossier_pdf(content, "test-instance-dossier")
+    instance_text = "\\n".join(page.extract_text() or "" for page in PdfReader(BytesIO(instance_pdf)).pages)
+    assert "Préparation de l’instance" in instance_text
+    assert "DUERP et programme annuel" in instance_text
 
 
 def test_dossier_pdf_route_is_authenticated_and_private():
