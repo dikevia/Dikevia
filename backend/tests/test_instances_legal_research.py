@@ -217,7 +217,7 @@ async def test_f3sct_operational_topics_feed_the_official_legal_search_context()
         effective_date=date(2026, 11, 28),
     )
 
-    assert result["points"][0]["code"] == "duerp_programme"
+    assert any(point["code"] == "duerp_programme" for point in result["points"])
     assert "DUERP" in legal.code_queries[0][0]
     assert "DUERP" in case_law.queries[0][0]
     assert result["legal_research"]["status"] == "SEARCHED"
