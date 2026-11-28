@@ -894,10 +894,10 @@ function fillInstanceSessionForm(d){
  $('#instanceType').value=d.instance_code==='F3SCT'?'FS':d.instance_code;
  $('#sessionTitle').value=d.title||'';$('#sessionDate').value=d.meeting_date||'';$('#sessionStatus').value=d.meeting_status||'PREPARATION';
  $('#sessionAgenda').value=(d.agenda||[]).map(x=>typeof x==='string'?x:(x.title||JSON.stringify(x))).join('\n');
- $('#sessionQuestions').value=(d.questions||[]).map(x=>typeof x==='string'?x:JSON.stringify(x)).join('\\n');
- $('#sessionDocuments').value=(d.documents||[]).map(x=>typeof x==='string'?x:(x.name||JSON.stringify(x))).join('\\n');
+ $('#sessionQuestions').value=(d.questions||[]).map(x=>typeof x==='string'?x:JSON.stringify(x)).join('\n');
+ $('#sessionDocuments').value=(d.documents||[]).map(x=>typeof x==='string'?x:(x.name||JSON.stringify(x))).join('\n');
  $('#sessionMinutes').value=d.minutes||'';
- $('#sessionActions').value=(d.action_items||[]).map(x=>typeof x==='string'?x:(x.task||JSON.stringify(x))).join('\\n');
+ $('#sessionActions').value=(d.action_items||[]).map(x=>typeof x==='string'?x:(x.task||JSON.stringify(x))).join('\n');
  $('#saveInstanceSession').disabled=false;$('#exportInstanceSessionPdf').disabled=false;$('#createInstanceSession').disabled=true;
  const prep=d.preparation||{};
  $('#instanceSessionPreparation').textContent=Object.keys(prep).length?JSON.stringify(prep,null,2):'Aucune préparation JURIS enregistrée dans ce dossier.';
