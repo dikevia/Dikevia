@@ -1763,6 +1763,7 @@ class LegalOrchestrator:
                 # The client computes the user's original-question embedding locally.
                 # Generated research axes remain lexical so no server-side model is loaded.
                 if settings.vector_search_enabled and request.query_embedding is not None:
+                    vector_started_at = time.perf_counter()
                     try:
                         vector_results = await search_legal_corpus(
                             conn, request.question, effective_date, limit=LEGAL_CORPUS_CANDIDATE_LIMIT,
@@ -1772,7 +1773,17 @@ class LegalOrchestrator:
                         logger.warning("Recherche vectorielle indisponible ; maintien du repli lexical (request_id=%s, error_type=%s).", request_id, type(exc).__name__)
                         stored_search_failed = True
                     else:
-                        stored_by_query.insert(0, vector_results if isinstance(vector_results, list) else [])
+                        vector_results = vector_results if isinstance(vector_results, list) else []
+                        stored_by_query.insert(0, vector_results)
+                        logger.info(
+                            "Recherche vectorielle exécutée (request_id=%s, result_count=%s, elapsed_ms=%s).",
+                            request_id, len(vector_results),
+                            round((time.perf_counter() - vector_started_at) * 1000),
+                        )
+                elif not settings.vector_search_enabled:
+                    logger.info("Recherche vectorielle non exécutée : feature flag désactivé (request_id=%s).", request_id)
+                else:
+                    logger.info("Recherche vectorielle non exécutée : vecteur navigateur absent (request_id=%s).", request_id)
                 stored = select_multi_source_chunks(
                     stored_by_query, limit=LEGAL_CORPUS_INTERLEAVED_LIMIT,
                 )
