@@ -469,20 +469,47 @@ fun NativeHomeScreen(
                             TextButton(onClick = { drawerScope.launch { drawerState.open() } }) { Text("☰", color = SteelBlue, fontWeight = FontWeight.Bold) }
                         }
 
-                        if (chatTranscript.isEmpty()) {
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    JurisOrb(
-                                        state = if (sending) JurisOrbState.ANALYZING else JurisOrbState.READY,
-                                        diameter = 248.dp
-                                    )
-                                    Spacer(Modifier.height(16.dp))
-                                    Text("JURIS", color = Navy, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
-                                    Text(
-                                        if (sending) "Analyse de votre demande…" else "Votre assistant juridique territorial",
-                                        color = Color(0xFF52677C),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                        val hasAssistantResponse = chatTranscript.any { it.role != "user" }
+                        if (!hasAssistantResponse) {
+                            Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                                if (chatTranscript.isNotEmpty()) {
+                                    Column(
+                                        modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(chatScrollState),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        chatTranscript.forEach { message ->
+                                            Card(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = CardDefaults.cardColors(containerColor = Color(0xFFE7F1FA)),
+                                                border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                                                shape = RoundedCornerShape(16.dp)
+                                            ) {
+                                                Column(Modifier.padding(15.dp)) {
+                                                    Text("Vous", color = SteelBlue, fontWeight = FontWeight.Bold)
+                                                    Spacer(Modifier.height(6.dp))
+                                                    Text(message.content, color = Navy, style = MaterialTheme.typography.bodyMedium)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                Box(
+                                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        JurisOrb(
+                                            state = if (sending) JurisOrbState.ANALYZING else JurisOrbState.READY,
+                                            diameter = 248.dp
+                                        )
+                                        Spacer(Modifier.height(16.dp))
+                                        Text("JURIS", color = Navy, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+                                        Text(
+                                            if (sending) "Analyse de votre demande…" else "Votre assistant juridique territorial",
+                                            color = Color(0xFF52677C),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
                                 }
                             }
                         } else {
