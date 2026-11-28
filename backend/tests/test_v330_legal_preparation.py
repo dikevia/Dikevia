@@ -518,7 +518,7 @@ async def test_orchestrator_uses_only_verified_local_documents_for_local_employe
 
     response = await LegalOrchestrator().ask(
         AskRequest(employer="VILLE_SAINT_ETIENNE", facts_date="2024-06-01",
-                   question="Quelles règles locales encadrent le temps de travail ?"),
+                   question="Quelles règles locales encadrent le temps de travail à Saint-Étienne ?"),
         "00000000-0000-0000-0000-000000000001",
         conn=object(),
     )
@@ -563,7 +563,7 @@ async def test_orchestrator_does_not_use_unverified_local_documents_for_ai(monke
 
     response = await LegalOrchestrator().ask(
         AskRequest(employer="VILLE_SAINT_ETIENNE", facts_date="2024-06-01",
-                   question="Quelles règles locales encadrent le temps de travail ?"),
+                   question="Quelles règles locales encadrent le temps de travail à Saint-Étienne ?"),
         "00000000-0000-0000-0000-000000000001",
         conn=object(),
     )
