@@ -398,6 +398,10 @@ class NativePreviewActivity : FragmentActivity() {
         val allowLocalAiTransfer = confirmLocalDocumentAiTransfer
         val conversationAtSend = conversationId
         val conversationEpochAtSend = conversationEpoch
+        if (attachments.isNotEmpty() && !allowLocalAiTransfer) {
+            chatStatus = "Pour analyser ces pièces, confirmez d'abord leur transfert au service IA dans le champ de consentement."
+            return
+        }
         confirmLocalDocumentAiTransfer = false
         if (session == null || organizationId == null) {
             chatStatus = "Authentifiez-vous et sélectionnez une organisation avant d'interroger JURIS."
