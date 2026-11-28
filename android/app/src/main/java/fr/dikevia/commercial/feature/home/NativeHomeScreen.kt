@@ -886,7 +886,7 @@ fun NativeHomeScreen(
                                 InstancePreparationContent(instancePreparation)
                                 Button(
                                     onClick = {
-                                        onSendQuestion(buildJurisInstancePrompt(instancePreparation))
+                                        onSendQuestion(buildJurisInstancePrompt(instancePreparation), emptyList())
                                         instancePanelOpen = false
                                     },
                                     enabled = authenticated && selectedOrganizationId != null && !sending,
