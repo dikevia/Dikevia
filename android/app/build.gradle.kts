@@ -24,7 +24,9 @@ android {
         buildConfigField("String", "AUTH0_API_AUDIENCE", "\"https://api.dikevia.fr\"")
         buildConfigField("String", "AUTH0_OIDC_SCOPES", "\"openid profile email offline_access\"")
         manifestPlaceholders["auth0Domain"] = "dev-brlgaz1yh2de3mjo.us.auth0.com"
-        manifestPlaceholders["auth0Scheme"] = "https"
+        // Package-specific custom scheme avoids Samsung HTTPS App Link callback failures.
+        // The manifest merger resolves ${applicationId} separately for each flavor/build type.
+        manifestPlaceholders["auth0Scheme"] = "\${applicationId}.auth0"
     }
 
     // Deux APK indépendants, construits depuis le même socle vérifié.
