@@ -641,6 +641,17 @@ fun NativeHomeScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     TextButton(onClick = { onCreateZip(attachments.toList()) }) { Text("Créer ZIP") }
                                 }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(
+                                        checked = confirmLocalDocumentAiTransfer,
+                                        onCheckedChange = onConfirmLocalDocumentAiTransferChange
+                                    )
+                                    Text(
+                                        "J'autorise l'analyse de ces pièces par le service IA.",
+                                        color = Navy,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     attachments.forEachIndexed { index, attachment ->
                                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -712,7 +723,7 @@ fun NativeHomeScreen(
                                             attachments = emptyList()
                                         }
                                     },
-                                    enabled = authenticated && selectedOrganizationId != null && (question.isNotBlank() || attachments.isNotEmpty()) && !sending,
+                                    enabled = authenticated && selectedOrganizationId != null && (question.isNotBlank() || attachments.isNotEmpty()) && (attachments.isEmpty() || confirmLocalDocumentAiTransfer) && !sending,
                                     colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
                                     shape = RoundedCornerShape(14.dp)
                                 ) { Text(if (sending) "Analyse…" else "Envoyer") }
