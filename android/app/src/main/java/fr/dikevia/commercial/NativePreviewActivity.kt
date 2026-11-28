@@ -373,16 +373,33 @@ class NativePreviewActivity : FragmentActivity() {
             chatStatus = "Authentifiez-vous et sélectionnez une organisation avant d'interroger JURIS."
             return
         }
-        chatTranscript.add(JurisChatMessage("user", question.trim()))
-        chatStatus = "JURIS analyse votre question et vérifie les sources…"
+        chatTranscript.add(JurisChatMessage("user", buildString {
+            append(question.trim())
+            if (attachments.isNotEmpty()) append("\n\nPièces jointes : ").append(attachments.joinToString(", ") { it.fileName })
+        }))
+        chatStatus = if (attachments.isEmpty()) "JURIS analyse votre question et vérifie les sources…" else "JURIS prépare la lecture de vos pièces jointes…"
         sending = true
         io.execute {
             try {
+                var enrichedQuestion = question.trim()
+                if (attachments.isNotEmpty()) {
+                    val extracted = attachments.map { attachment ->
+                        api.uploadChatAttachment(
+                            session.accessToken,
+                            session.idToken,
+                            attachment.fileName,
+                            attachment.mimeType,
+                            attachment.bytes
+                        )
+                    }.joinToString("\n\n").take(60_000)
+                    enrichedQuestion += "\n\nPIÈCES JOINTES TRANSMISES ET TEXTE EXTRAIT :\n$extracted\n\nAnalyse ces pièces dans le cadre de ma question. Distingue les éléments lisibles des éléments non extraits. N'invente pas le contenu des fichiers."
+                }
+                runOnUiThread { chatStatus = "JURIS analyse votre demande et vérifie les sources…" }
                 val answer = api.ask(
                     session.accessToken,
                     session.idToken,
                     organizationId,
-                    question,
+                    enrichedQuestion,
                     selectedVersant,
                     selectedEmployer,
                     startDate,
