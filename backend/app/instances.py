@@ -611,6 +611,10 @@ _INSTANCE_TOPIC_TERMS: dict[str, dict[str, str]] = {
         "risques": "santé sécurité prévention risques professionnels DUERP",
         "accident": "accident de service enquête prévention danger grave imminent",
         "rps": "risques psychosociaux charge de travail prévention",
+        "danger_grave_imminent": "danger grave imminent alerte registre spécial droit de retrait enquête conjointe",
+        "visites": "visite locaux services conditions réelles de travail constats prévention suivi préconisations",
+        "enquete": "enquête accident service incident agression analyse causes prévention",
+        "duerp_programme": "document unique évaluation risques professionnels DUERP programme annuel prévention PAPRiPACT",
     },
 }
 
