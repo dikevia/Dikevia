@@ -149,6 +149,10 @@ def test_instance_ui_renders_law_sources_and_does_not_hide_metadata_only_jurispr
     assert "latestInstancePreparation=null" in source
     assert "$('#instanceObject').addEventListener('input',invalidateInstancePreparation)" in source
     assert "card.dataset.instanceChoice===$('#instanceType').value" in source
+    assert "SOURCES RETOURNÉES" in source
+    assert "full_text_retrieved" in source
+    assert "MISSION JURIS" in source
+    assert "data.cst_qualification" in source
 
 
 @pytest.mark.asyncio
