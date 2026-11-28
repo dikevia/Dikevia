@@ -711,12 +711,22 @@ async def apply_semantic_source_relevance(
 def _source_relevant_to_any_research_axis(
     research_queries: list[str], source: dict, target_versant: str = "FPT",
 ) -> bool:
-    """Require topic relevance and enforce hard mechanism guards across all query variants."""
+    """Require topic relevance while preserving independent axes in compound questions."""
     queries = [query for query in research_queries if isinstance(query, str) and query.strip()]
-    # A broad secondary query must never bypass the IHTS-specific exclusion.
-    # Otherwise an unrelated provision can pass merely because another
-    # retrieval axis does not repeat the mechanism.
     ihts_queries = [query for query in queries if is_ihts_question(query)]
+    # A genuinely independent, topic-specific axis may keep its own evidence
+    # even when the same user request also contains an IHTS question.
+    non_ihts_topic_queries = [
+        query for query in queries
+        if not is_ihts_question(query)
+        and bool(_matched_topic_families(query) - {"WORKING_TIME", "REMUNERATION"})
+    ]
+    if any(
+        is_topic_relevant_source(query, source, target_versant=target_versant)
+        for query in non_ihts_topic_queries
+    ):
+        return True
+    # Broad/unspecific query variants cannot override the hard IHTS guard.
     if ihts_queries and not is_ihts_relevant_source(
         ihts_queries[0], source, target_versant=target_versant,
     ):
