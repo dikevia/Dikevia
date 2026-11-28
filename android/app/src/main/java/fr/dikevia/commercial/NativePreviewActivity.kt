@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import fr.dikevia.commercial.core.api.DikeviaApiClient
 import fr.dikevia.commercial.core.api.DikeviaOrganization
+import fr.dikevia.commercial.core.api.DikeviaInstanceSession
 import fr.dikevia.commercial.core.auth.Auth0NativeAuth
 import fr.dikevia.commercial.feature.home.NativeHomeScreen
 import fr.dikevia.commercial.feature.home.JurisChatMessage
@@ -43,6 +44,8 @@ class NativePreviewActivity : FragmentActivity() {
     private var chatStatus by mutableStateOf("")
     private var sending by mutableStateOf(false)
     private var instancePreparation by mutableStateOf("")
+    private var savedSessions by mutableStateOf<List<DikeviaInstanceSession>>(emptyList())
+    private var savingSession by mutableStateOf(false)
     private var preparingInstance by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -131,6 +134,8 @@ class NativePreviewActivity : FragmentActivity() {
                 onSelectOrganization = {
                     if (selectedOrganizationId != it) {
                         selectedOrganizationId = it
+                        savedSessions = emptyList()
+                        refreshInstanceSessions(it)
                         conversationId = null
                         conversationEpoch += 1
                         chatTranscript.clear()
@@ -142,6 +147,10 @@ class NativePreviewActivity : FragmentActivity() {
                 sending = sending,
                 instancePreparation = instancePreparation,
                 preparingInstance = preparingInstance,
+                savedSessions = savedSessions,
+                savingSession = savingSession,
+                onSaveSession = ::saveInstanceSession,
+                onRefreshSessions = ::refreshInstanceSessions,
                 onPrepareInstance = ::prepareInstance,
                 onSignIn = {
                     auth.login(
@@ -172,6 +181,7 @@ class NativePreviewActivity : FragmentActivity() {
                                 authenticated = false
                                 organizations = emptyList()
                                 selectedOrganizationId = null
+                                savedSessions = emptyList()
                                 conversationId = null
                                 conversationEpoch += 1
                                 chatTranscript.clear()
@@ -206,6 +216,7 @@ class NativePreviewActivity : FragmentActivity() {
                     organizations = result
                     selectedOrganizationId = result.singleOrNull()?.id
                         ?: selectedOrganizationId?.takeIf { id -> result.any { it.id == id } }
+                    selectedOrganizationId?.let { refreshInstanceSessions(it, session) }
                     chatStatus = when {
                         result.isEmpty() -> "Aucune organisation active n'est rattachée à ce compte. Contactez l'administrateur."
                         result.size > 1 && selectedOrganizationId == null -> "Sélectionnez l'organisation à utiliser."
@@ -217,6 +228,58 @@ class NativePreviewActivity : FragmentActivity() {
                     organizations = emptyList()
                     selectedOrganizationId = null
                     chatStatus = error.message ?: "Impossible de charger vos organisations."
+                }
+            }
+        }
+    }
+
+
+    private fun refreshInstanceSessions(organizationId: String, restored: Credentials? = credentials) {
+        val session = restored ?: return
+        io.execute {
+            try {
+                val result = api.listInstanceSessions(session.accessToken, session.idToken, organizationId)
+                runOnUiThread {
+                    if (selectedOrganizationId == organizationId) savedSessions = result
+                }
+            } catch (error: Exception) {
+                runOnUiThread {
+                    if (selectedOrganizationId == organizationId) {
+                        chatStatus = error.message ?: "Impossible de charger les dossiers de séance."
+                    }
+                }
+            }
+        }
+    }
+
+    private fun saveInstanceSession(instance: String, title: String, meetingDate: String, minutes: String) {
+        if (BuildConfig.FLAVOR == "admin") return
+        val session = credentials
+        val organizationId = selectedOrganizationId
+        if (session == null || organizationId == null) {
+            chatStatus = "Authentifiez-vous et sélectionnez une organisation avant d'enregistrer une séance."
+            return
+        }
+        val preparation = runCatching { org.json.JSONObject(instancePreparation) }.getOrElse { org.json.JSONObject() }
+        savingSession = true
+        chatStatus = "Enregistrement du dossier de séance…"
+        io.execute {
+            try {
+                val created = api.createInstanceSession(
+                    session.accessToken, session.idToken, organizationId,
+                    instance, title, meetingDate.ifBlank { null }, preparation, minutes
+                )
+                runOnUiThread {
+                    savingSession = false
+                    if (selectedOrganizationId == organizationId) {
+                        savedSessions = listOf(created) + savedSessions.filterNot { it.id == created.id }
+                        chatStatus = "Séance enregistrée. Tu peux la retrouver dans tes dossiers."
+                    }
+                }
+            } catch (error: Exception) {
+                runOnUiThread {
+                    savingSession = false
+                    chatStatus = error.message ?: "L'enregistrement de la séance a échoué."
                 }
             }
         }
