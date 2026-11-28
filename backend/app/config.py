@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     oidc_algorithms: str = "RS256"
     oidc_provider: str = "auth0"
     oidc_client_id: str = ""
+    # Optional additional OIDC ID-token audience for the native Android client.
+    # Kept separate from the server-side web authorization-code client.
+    oidc_native_client_id: str = ""
     oidc_scopes: str = "openid profile email"
     oidc_server_sessions_enabled: bool = False
     oidc_session_encryption_key: str = ""
