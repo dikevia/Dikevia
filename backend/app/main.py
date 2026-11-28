@@ -594,8 +594,21 @@ async def billing_plans():
 @app.get("/api/v1/billing/subscription")
 async def billing_subscription(ctx: TenantContext = Depends(get_tenant_context)):
     founder_entitlement = await ctx.conn.fetchval(
-        "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements WHERE user_id=$1::uuid AND revoked_at IS NULL)",
-        ctx.user_id,
+        """SELECT (
+            EXISTS(SELECT 1 FROM platform_founder_entitlements
+                   WHERE user_id=$1::uuid AND revoked_at IS NULL)
+            OR EXISTS(
+                SELECT 1 FROM users u
+                JOIN platform_free_email_access f
+                  ON f.email_normalized=lower(trim(u.email))
+                WHERE u.id=$1::uuid
+                  AND lower(trim(u.email))=lower(trim($2))
+                  AND $3::boolean IS TRUE
+                  AND f.revoked_at IS NULL
+                  AND (f.expires_at IS NULL OR f.expires_at>now())
+            )
+        )""",
+        ctx.user_id, ctx.principal.email, ctx.principal.email_verified,
     )
     if settings.private_instance_mode:
         active = await ctx.conn.fetchval(
@@ -1607,9 +1620,21 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
                 ctx.organization_id,
             )
             founder = await conn.fetchval(
-                "SELECT EXISTS(SELECT 1 FROM platform_founder_entitlements "
-                "WHERE user_id=$1::uuid AND revoked_at IS NULL)",
-                ctx.user_id,
+                """SELECT (
+                    EXISTS(SELECT 1 FROM platform_founder_entitlements
+                           WHERE user_id=$1::uuid AND revoked_at IS NULL)
+                    OR EXISTS(
+                        SELECT 1 FROM users u
+                        JOIN platform_free_email_access f
+                          ON f.email_normalized=lower(trim(u.email))
+                        WHERE u.id=$1::uuid
+                          AND lower(trim(u.email))=lower(trim($2))
+                          AND $3::boolean IS TRUE
+                          AND f.revoked_at IS NULL
+                          AND (f.expires_at IS NULL OR f.expires_at>now())
+                    )
+                )""",
+                ctx.user_id, ctx.principal.email, ctx.principal.email_verified,
             )
             entitlements = resolve_entitlements(
                 subscription["plan_code"] if subscription else None,
