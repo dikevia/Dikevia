@@ -225,6 +225,74 @@ class DikeviaApiClient {
         )
     }
 
+    fun uploadChatAttachment(
+        accessToken: String,
+        idToken: String,
+        filename: String,
+        mimeType: String,
+        bytes: ByteArray
+    ): String {
+        require(bytes.isNotEmpty()) { "Le fichier est vide." }
+        require(bytes.size <= 20 * 1024 * 1024 || filename.endsWith(".zip", ignoreCase = true)) {
+            "Le fichier dépasse la limite autorisée."
+        }
+        val safeName = filename.replace(Regex("[^A-Za-z0-9._-]"), "_").take(180).ifBlank { "piece_jointe" }
+        val boundary = "DikeviaBoundary" + java.util.UUID.randomUUID().toString().replace("-", "")
+        val isZip = safeName.endsWith(".zip", ignoreCase = true)
+        val endpoint = if (isZip) "/api/v1/personal-documents/import-zip" else "/api/v1/personal-documents"
+        val connection = URL(baseUrl + endpoint).openConnection() as HttpURLConnection
+        try {
+            connection.requestMethod = "POST"
+            connection.connectTimeout = 15_000
+            connection.readTimeout = 120_000
+            connection.doOutput = true
+            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("Authorization", "Bearer $accessToken")
+            connection.setRequestProperty("X-OIDC-ID-Token", idToken)
+            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            connection.outputStream.use { output ->
+                output.write("--$boundary\r\n".toByteArray())
+                output.write("Content-Disposition: form-data; name=\"file\"; filename=\"$safeName\"\r\n".toByteArray())
+                output.write("Content-Type: $mimeType\r\n\r\n".toByteArray())
+                output.write(bytes)
+                output.write("\r\n--$boundary--\r\n".toByteArray())
+            }
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val responseText = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            if (status !in 200..299) {
+                val detail = runCatching { JSONObject(responseText).optString("detail") }.getOrNull()
+                throw DikeviaApiException(status, detail?.takeIf { it.isNotBlank() } ?: "Le fichier n'a pas pu être analysé.")
+            }
+            val response = JSONObject(responseText)
+            return if (isZip) {
+                val documents = response.optJSONArray("documents") ?: JSONArray()
+                buildString {
+                    for (index in 0 until documents.length()) {
+                        val document = documents.optJSONObject(index) ?: continue
+                        val title = document.optString("title", "Document")
+                        val text = document.optString("extracted_text")
+                        if (text.isNotBlank()) {
+                            append("\n\n--- ").append(title).append(" ---\n")
+                            append(text.take(30_000))
+                        } else {
+                            append("\n\n--- ").append(title).append(" : aucun texte exploitable extrait ---")
+                        }
+                    }
+                }.take(60_000)
+            } else {
+                val extracted = response.optString("extracted_text")
+                if (extracted.isBlank()) {
+                    "[Le fichier $safeName a été importé, mais aucun texte n'a pu être extrait automatiquement. Demander une version textuelle ou une meilleure numérisation.]"
+                } else {
+                    "--- Pièce jointe : $safeName ---\n" + extracted.take(60_000)
+                }
+            }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     private fun request(
         path: String,
         method: String,
