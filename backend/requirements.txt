@@ -16,4 +16,4 @@ pytesseract>=0.3.13,<1
 onnxruntime>=1.19,<2
 tokenizers>=0.20,<1
 reportlab>=4.2,<5
-Pillow>=10,<13
+Pillow>=13,<14
