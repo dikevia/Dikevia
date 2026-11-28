@@ -696,6 +696,28 @@ fun NativeHomeScreen(
                                                 }
                                             }
                                         }
+                    if (instancePreparation.isNotBlank() && preparationMatchesInstance(instancePreparation, selectedInstance)) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Résultat de la préparation", color = Navy, fontWeight = FontWeight.Bold)
+                                InstancePreparationContent(instancePreparation)
+                                Button(
+                                    onClick = {
+                                        onSendQuestion(buildJurisInstancePrompt(instancePreparation))
+                                        instancePanelOpen = false
+                                    },
+                                    enabled = authenticated && selectedOrganizationId != null && !sending,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SteelBlue)
+                                ) { Text(if (sending) "JURIS analyse…" else "Approfondir avec JURIS") }
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = { TextButton(onClick = { instancePanelOpen = false }) { Text("Fermer") }
@@ -859,26 +881,6 @@ fun NativeHomeScreen(
                             )
                         }
 
-    if (instancePreparation.isNotBlank() && preparationMatchesInstance(instancePreparation, selectedInstance) && !instancePanelOpen) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("Résultat de la préparation $selectedInstance", color = Navy) },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    InstancePreparationContent(instancePreparation)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { onSendQuestion(buildJurisInstancePrompt(instancePreparation)) }, enabled = authenticated && selectedOrganizationId != null && !sending) {
-                    Text("Approfondir avec JURIS")
-                }
-            },
-            dismissButton = { TextButton(onClick = { instancePanelOpen = true }) { Text("Fermer") } }
-        )
-    }
 }
 
 @Composable
