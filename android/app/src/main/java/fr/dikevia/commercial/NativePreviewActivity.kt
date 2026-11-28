@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import fr.dikevia.commercial.core.api.DikeviaApiClient
+import fr.dikevia.commercial.core.api.NativeQueryEmbeddingRuntime
 import fr.dikevia.commercial.core.api.DikeviaOrganization
 import fr.dikevia.commercial.core.api.DikeviaInstanceSession
 import fr.dikevia.commercial.core.auth.Auth0NativeAuth
@@ -35,6 +36,7 @@ import java.util.zip.ZipOutputStream
 class NativePreviewActivity : FragmentActivity() {
     private lateinit var auth: Auth0NativeAuth
     private val api = DikeviaApiClient()
+    private var queryEmbeddingRuntime: NativeQueryEmbeddingRuntime? = null
     private val io = Executors.newSingleThreadExecutor()
     private var textToSpeech: TextToSpeech? = null
     private var speaking by mutableStateOf(false)
@@ -261,6 +263,9 @@ class NativePreviewActivity : FragmentActivity() {
                 onCreateZip = ::createAttachmentZip
             )
         }
+        if (BuildConfig.FLAVOR != "admin") {
+            queryEmbeddingRuntime = NativeQueryEmbeddingRuntime(this, BuildConfig.APP_URL)
+        }
     }
 
     private fun resetConversationForContextChange() {
@@ -428,7 +433,17 @@ class NativePreviewActivity : FragmentActivity() {
                     }.joinToString("\n\n").take(60_000)
                     enrichedQuestion += "\n\nPIÈCES JOINTES TRANSMISES ET TEXTE EXTRAIT :\n$extracted\n\nAnalyse ces pièces dans le cadre de ma question. Distingue les éléments lisibles des éléments non extraits. N'invente pas le contenu des fichiers."
                 }
-                runOnUiThread { chatStatus = "JURIS analyse votre demande et vérifie les sources…" }
+                runOnUiThread {
+                    chatStatus = "Préparation de la recherche sémantique sur cet appareil (premier chargement possible)…"
+                }
+                val queryEmbedding = queryEmbeddingRuntime?.embedBlocking(question.trim())
+                runOnUiThread {
+                    chatStatus = if (queryEmbedding != null) {
+                        "Recherche juridique lexicale et vectorielle en cours…"
+                    } else {
+                        "Moteur sémantique indisponible : recherche lexicale de secours…"
+                    }
+                }
                 val answer = api.ask(
                     session.accessToken,
                     session.idToken,
@@ -440,7 +455,8 @@ class NativePreviewActivity : FragmentActivity() {
                     endDate,
                     ongoing,
                     allowLocalAiTransfer,
-                    conversationAtSend
+                    conversationAtSend,
+                    queryEmbedding = queryEmbedding
                 )
                 runOnUiThread {
                     sending = false
@@ -563,6 +579,7 @@ class NativePreviewActivity : FragmentActivity() {
     override fun onDestroy() {
         textToSpeech?.stop()
         textToSpeech?.shutdown()
+        queryEmbeddingRuntime?.dispose()
         io.shutdown()
         super.onDestroy()
     }
