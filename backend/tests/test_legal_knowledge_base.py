@@ -530,6 +530,8 @@ async def test_search_uses_vector_candidates_only_when_a_valid_query_embedding_i
     await search_legal_corpus(conn, "temps partiel thérapeutique", date(2026, 11, 23),
                               limit=6, query_embedding=vector)
     assert "vector_ranked AS" in conn.query
+    assert "to_tsquery('french', array_to_string(" in conn.query
+    assert "tsvector_to_array(to_tsvector('french',$2))" in conn.query
     assert "c.embedding_384 <=> $4::vector" in conn.query
     assert conn.args[3].startswith("[1.00000000,")
     assert len(conn.args[3].split(",")) == 384
