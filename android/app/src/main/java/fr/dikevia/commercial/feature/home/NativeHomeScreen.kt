@@ -86,10 +86,15 @@ fun NativeHomeScreen(
     chatAnswer: String,
     chatStatus: String,
     sending: Boolean,
+    instancePreparation: String,
+    preparingInstance: Boolean,
+    onPrepareInstance: (String, String) -> Unit,
     onSendQuestion: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var question by remember { mutableStateOf("") }
+    var selectedInstance by remember { mutableStateOf<String?>(null) }
+    var instanceObjet by remember { mutableStateOf("") }
 
     MaterialTheme {
         Surface(modifier = modifier.fillMaxSize(), color = Glacier) {
@@ -153,8 +158,16 @@ fun NativeHomeScreen(
                             ) {
                                 pair.forEach { instance ->
                                     Card(
+                                        onClick = {
+                                            selectedInstance = instance.acronym
+                                            instanceObjet = ""
+                                        },
+                                        enabled = authenticated && selectedOrganizationId != null && !preparingInstance,
                                         colors = CardDefaults.cardColors(containerColor = Color.White),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            if (selectedInstance == instance.acronym) 2.dp else 1.dp,
+                                            if (selectedInstance == instance.acronym) SteelBlue else Border
+                                        ),
                                         shape = RoundedCornerShape(18.dp),
                                         modifier = Modifier.weight(1f).height(126.dp)
                                     ) {
@@ -166,6 +179,57 @@ fun NativeHomeScreen(
                                     }
                                 }
                                 if (pair.size == 1) Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
+
+                    if (selectedInstance != null) {
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Préparer $selectedInstance",
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Navy,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        OutlinedTextField(
+                            value = instanceObjet,
+                            onValueChange = { instanceObjet = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = authenticated && selectedOrganizationId != null && !preparingInstance,
+                            label = { Text("Objet ou point de l'ordre du jour") },
+                            placeholder = { Text("Décrivez le sujet à examiner…") },
+                            minLines = 2,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                selectedInstance?.let { onPrepareInstance(it, instanceObjet.trim()) }
+                            },
+                            enabled = authenticated && selectedOrganizationId != null &&
+                                instanceObjet.isNotBlank() && !preparingInstance,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(if (preparingInstance) "Préparation en cours…" else "Préparer avec JURIS")
+                        }
+                    }
+                    if (instancePreparation.isNotBlank()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text("Résultat de la préparation", color = Navy, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    instancePreparation,
+                                    color = Navy,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
                         }
                     }
