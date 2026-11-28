@@ -1531,6 +1531,60 @@ async def prepare_social_instance(
         raise HTTPException(422, str(exc)) from exc
 
 
+async def load_explicit_session_document_sources(conn, organization_id: str, document_ids: list, requested_date: date) -> list[dict]:
+    """Load explicitly selected, tenant-owned, clean and hash-matched document text."""
+    if not document_ids:
+        return []
+    ids = list(dict.fromkeys(str(value) for value in document_ids))
+    rows = await conn.fetch("""
+      SELECT d.id,d.title,d.document_type,d.official_number,d.official_url,d.adopted_at,d.published_at,
+             d.effective_from,d.effective_to,d.validation_status,d.sha256,d.scan_status,
+             c.name AS collectivity_name,c.code AS collectivity_code,
+             dt.extracted_text,dt.extraction_status,dt.sha256 AS extracted_sha256,dt.version_number
+      FROM documents d
+      JOIN collectivities c ON c.id=d.collectivity_id AND c.organization_id=d.organization_id
+      LEFT JOIN LATERAL (
+        SELECT x.extracted_text,x.extraction_status,x.sha256,x.version_number
+        FROM document_text x WHERE x.organization_id=d.organization_id AND x.document_id=d.id
+        ORDER BY x.version_number DESC LIMIT 1
+      ) dt ON true
+      WHERE d.organization_id=$1::uuid AND d.id=ANY($2::uuid[])
+    """, organization_id, ids)
+    found = {str(row["id"]): row for row in rows}
+    if len(found) != len(ids):
+        raise HTTPException(422, "Un document sélectionné n'appartient pas à l'organisation active ou n'existe plus.")
+    sources = []
+    from .local_corpus import local_document_temporal_status
+    for document_id in ids:
+        row = found[document_id]
+        if row["scan_status"] != "CLEAN":
+            raise HTTPException(409, "Un document sélectionné n'a pas un contrôle antivirus concluant.")
+        if row["extraction_status"] != "EXTRACTED" or not row["extracted_text"]:
+            raise HTTPException(409, "Un document sélectionné ne possède pas de texte extrait exploitable.")
+        hash_matches = bool(row["sha256"] and row["extracted_sha256"] and str(row["sha256"]) == str(row["extracted_sha256"]))
+        if not hash_matches:
+            raise HTTPException(409, "Le texte extrait ne correspond plus à la version actuelle du document. Réindexez-le.")
+        validation_status = str(row["validation_status"] or "COLLECTED_UNVERIFIED")
+        sources.append({
+            "source_type": "LOCAL_DOCUMENT", "source_id": f"LOCAL-DOC:{document_id}",
+            "title": row["title"], "document_kind": "LOCAL_DOCUMENT",
+            "local_document_type": row["document_type"], "official_number": row["official_number"],
+            "official_url": row["official_url"],
+            "signature_date": row["adopted_at"].isoformat() if row["adopted_at"] else None,
+            "publication_date": row["published_at"].isoformat() if row["published_at"] else None,
+            "effective_from": row["effective_from"].isoformat() if row["effective_from"] else None,
+            "effective_to": row["effective_to"].isoformat() if row["effective_to"] else None,
+            "validation_status": validation_status,
+            "temporal_status": local_document_temporal_status(row["effective_from"], row["effective_to"], validation_status, requested_date),
+            "collectivity": row["collectivity_name"], "collectivity_code": row["collectivity_code"],
+            "source_status": "TENANT_DOCUMENT_TEXT_EXTRACTED", "content_kind": "FULL_TEXT",
+            "excerpt": str(row["extracted_text"])[:12000], "text": str(row["extracted_text"])[:12000],
+            "relevance": 1.0, "explicitly_selected_for_session": True,
+            "citation_integrity": {"valid": True, "verification_scope": "TENANT_DOCUMENT_SHA256_AND_CLEAN_SCAN", "document_hash_matches_text_record": True},
+        })
+    return sources
+
+
 @app.post("/api/v1/chat/ask",response_model=AskResponse)
 async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity)):
     pool = get_pool()
@@ -1599,6 +1653,19 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
 
     # No connection or transaction is held while the orchestrator plans or calls providers.
     scoped_reader = _TenantScopedReadConnection(pool, ctx)
+    explicit_session_sources = []
+    if payload.local_document_ids:
+        if not payload.confirm_local_document_ai_transfer:
+            raise HTTPException(422, "Cochez le consentement de transmission des documents pour cette demande.")
+        if not settings.ai_local_documents_in_chat_enabled:
+            raise HTTPException(503, "La transmission de documents locaux au fournisseur IA est désactivée sur ce service.")
+        try:
+            requested_date = date.fromisoformat(payload.facts_date or payload.facts_start_date) if (payload.facts_date or payload.facts_start_date) else date.today()
+        except ValueError:
+            requested_date = date.today()
+        explicit_session_sources = await load_explicit_session_document_sources(
+            scoped_reader, ctx.organization_id, payload.local_document_ids, requested_date,
+        )
     try:
         result = await orchestrator.ask(
             payload, ctx.organization_id, conn=scoped_reader, conversation_history=history,
@@ -1608,6 +1675,7 @@ async def ask(payload: AskRequest,ctx: TenantContext=Depends(get_tenant_identity
             ),
             personal_user_id=ctx.user_id,
             founder_cross_encoder_access=bool(founder),
+            additional_local_sources=explicit_session_sources,
         )
     except Exception as exc:
         failure = _chat_orchestration_failure(conversation_id)
