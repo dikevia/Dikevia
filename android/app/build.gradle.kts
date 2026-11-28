@@ -15,8 +15,7 @@ android {
         versionCode = 3
         versionName = "0.3.0"
 
-        // Auth0 Native Client ID is public application configuration (never a secret).
-        // Keep a local Gradle override available for isolated tenant environments.
+        // Public Auth0 Native Client ID; no client secret belongs in the APK.
         val nativeClientId = providers.gradleProperty("auth0AndroidClientId")
             .orElse("nxJSApdmOBBviDXs5WaSkkstLxYIdgWe").get()
         buildConfigField("String", "AUTH0_CLIENT_ID", "\"$nativeClientId\"")
@@ -24,13 +23,9 @@ android {
         buildConfigField("String", "AUTH0_API_AUDIENCE", "\"https://api.dikevia.fr\"")
         buildConfigField("String", "AUTH0_OIDC_SCOPES", "\"openid profile email offline_access\"")
         manifestPlaceholders["auth0Domain"] = "dev-brlgaz1yh2de3mjo.us.auth0.com"
-        // Package-specific custom scheme avoids Samsung HTTPS App Link callback failures.
-        // The manifest merger resolves ${applicationId} separately for each flavor/build type.
         manifestPlaceholders["auth0Scheme"] = "\${applicationId}.auth0"
     }
 
-    // Deux APK indépendants, construits depuis le même socle vérifié.
-    // Les deux utilisent Auth0 pour l'identité et la même API Dikévia.
     flavorDimensions += "edition"
     productFlavors {
         create("standard") {
@@ -56,15 +51,13 @@ android {
         debug {
             applicationIdSuffix = ".beta"
             versionNameSuffix = "-beta"
-            // The production WebView frontend owns the complete JURIS chat pipeline,
-            // including the local 384d query embedding worker and hybrid pgvector retrieval.
-            // Keep the native Compose preview opt-in until it implements that same contract.
-            buildConfigField("boolean", "ENABLE_NATIVE_PREVIEW", "false")
+            // Beta APKs launch the actual Jetpack Compose implementation for native testing.
+            buildConfigField("boolean", "ENABLE_NATIVE_PREVIEW", "true")
         }
         release {
             isMinifyEnabled = false
-            // Keep the validated WebView launcher in release until native
-            // Auth0 and API acceptance tests are completed on physical devices.
+            // Keep the release launcher unchanged until native feature parity and device
+            // acceptance tests are complete.
             buildConfigField("boolean", "ENABLE_NATIVE_PREVIEW", "false")
         }
     }
@@ -78,11 +71,9 @@ android {
     }
 }
 
-
 dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
-    // Auth0.Android v3 retains support for minSdk 24; v4 requires API 26.
     implementation("com.auth0.android:auth0:3.21.3")
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
