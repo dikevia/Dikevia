@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     document_storage_bucket: str = ""
     cgfp_index_path: str = ""
     cgfp_enabled: bool = True
-    vector_search_enabled: bool = False
+    vector_search_enabled: bool = True
     # Optional local-only ONNX cross-encoder. Disabled until model files and
     # available RAM/CPU have been validated on the target runtime.
     legal_cross_encoder_enabled: bool = False
