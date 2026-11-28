@@ -18,8 +18,8 @@ import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Runs the same Transformers.js model and preprocessing as the web client,
- * inside the Android WebView. Question text stays on-device; only the 384-float
- * vector is sent to the authenticated chat API.
+ * inside the Android WebView. Raw text is never sent to the model host; the normal
+ * chat question and the resulting 384-float vector are sent to Dikévia's API.
  *
  * Any model/network/runtime failure returns null so the API safely uses lexical
  * retrieval instead of blocking the user's question.
