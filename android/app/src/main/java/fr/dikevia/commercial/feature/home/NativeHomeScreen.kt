@@ -122,21 +122,21 @@ private fun buildJurisInstancePrompt(rawPreparation: String): String {
     }.joinToString("\n")
 
     val context = buildString {
-        append("Je souhaite approfondir la préparation de mon instance avec JURIS, dans cette conversation.\\n\\n")
-        append("INSTANCE : ").append(if (data.optString("instance") == "FS") "F3SCT (FS)" else data.optString("instance")).append("\\n")
-        append("OBJET : ").append(data.optString("objet")).append("\\n\\n")
-        append("PISTES DE PRÉPARATION :\\n").append(pointText.ifBlank { "Aucune règle de checklist déclenchée ; analyser le sujet à partir des faits et des sources." })
+        append("Je souhaite approfondir la préparation de mon instance avec JURIS, dans cette conversation.\n\n")
+        append("INSTANCE : ").append(if (data.optString("instance") == "FS") "F3SCT (FS)" else data.optString("instance")).append("\n")
+        append("OBJET : ").append(data.optString("objet")).append("\n\n")
+        append("PISTES DE PRÉPARATION :\n").append(pointText.ifBlank { "Aucune règle de checklist déclenchée ; analyser le sujet à partir des faits et des sources." })
         val notice = data.optString("notice")
-        if (notice.isNotBlank()) append("\\nNOTICE : ").append(notice.take(500))
-        if (qualifications.isNotBlank()) append("\\n\\nQUALIFICATIONS ET CONTRÔLES DÉCLARATIFS :\\n").append(qualifications)
+        if (notice.isNotBlank()) append("\nNOTICE : ").append(notice.take(500))
+        if (qualifications.isNotBlank()) append("\n\nQUALIFICATIONS ET CONTRÔLES DÉCLARATIFS :\n").append(qualifications)
         if (research != null) {
-            append("\\n\\nRECHERCHE JURIDIQUE : ").append(research.optString("status", "non précisée"))
+            append("\n\nRECHERCHE JURIDIQUE : ").append(research.optString("status", "non précisée"))
             append(" ; date de référence : ").append(research.optString("requested_date", "non précisée"))
         }
-        if (sourceText.isNotBlank()) append("\\nSOURCES RETOURNÉES :\\n").append(sourceText)
+        if (sourceText.isNotBlank()) append("\nSOURCES RETOURNÉES :\n").append(sourceText)
     }
     val mission = "MISSION JURIS : approfondis cette préparation. Vérifie la compétence de l'instance, les textes et leur version applicable à la date des faits, ainsi que la jurisprudence pertinente. Distingue les faits déclarés des faits établis, les sources intégralement récupérées des simples métadonnées et les hypothèses des conclusions. Identifie les informations manquantes, pose les questions de clarification nécessaires, prépare des questions argumentées pour la séance et un plan d'action syndical. N'invente aucune source et ne conclus pas sans éléments suffisants."
-    return (context.take(3800) + "\\n\\n" + mission).take(5000)
+    return (context.take(3800) + "\n\n" + mission).take(5000)
 }
 
 
