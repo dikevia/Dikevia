@@ -54,6 +54,13 @@ private data class InstanceCard(val acronym: String, val title: String, val desc
  * Transfers the structured instance preparation into the existing JURIS chat.
  * This is a prompt hand-off, not a second assistant or a separate chat endpoint.
  */
+private fun preparationMatchesInstance(rawPreparation: String, selectedInstance: String?): Boolean {
+    if (selectedInstance.isNullOrBlank()) return false
+    val prepared = runCatching { JSONObject(rawPreparation).optString("instance") }.getOrNull()
+    val expected = if (selectedInstance.equals("F3SCT", ignoreCase = true)) "FS" else selectedInstance
+    return prepared.equals(expected, ignoreCase = true)
+}
+
 private fun buildJurisInstancePrompt(rawPreparation: String): String {
     val data = runCatching { JSONObject(rawPreparation) }.getOrNull()
         ?: return "Je souhaite approfondir avec JURIS la préparation de l'instance suivante : $rawPreparation"
@@ -116,7 +123,7 @@ private fun buildJurisInstancePrompt(rawPreparation: String): String {
 
     return buildString {
         append("Je souhaite approfondir la préparation de mon instance avec JURIS, dans cette conversation.\n\n")
-        append("INSTANCE : ").append(data.optString("instance")).append("\n")
+        append("INSTANCE : ").append(if (data.optString("instance") == "FS") "F3SCT (FS)" else data.optString("instance")).append("\n")
         append("OBJET : ").append(data.optString("objet")).append("\n\n")
         append("PISTES DE PRÉPARATION :\n").append(pointText.ifBlank { "Aucune règle de checklist déclenchée ; analyser le sujet à partir des faits et des sources." })
         val notice = data.optString("notice")
@@ -312,7 +319,7 @@ fun NativeHomeScreen(
                             Text(if (preparingInstance) "Préparation en cours…" else "Préparer avec JURIS")
                         }
                     }
-                    if (instancePreparation.isNotBlank()) {
+                    if (instancePreparation.isNotBlank() && preparationMatchesInstance(instancePreparation, selectedInstance)) {
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
