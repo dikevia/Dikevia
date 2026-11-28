@@ -6,11 +6,13 @@ import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import fr.dikevia.commercial.core.api.DikeviaApiClient
 import fr.dikevia.commercial.core.api.DikeviaOrganization
 import fr.dikevia.commercial.core.auth.Auth0NativeAuth
 import fr.dikevia.commercial.feature.home.NativeHomeScreen
+import fr.dikevia.commercial.feature.home.JurisChatMessage
 import com.auth0.android.result.Credentials
 import java.util.concurrent.Executors
 
@@ -36,7 +38,7 @@ class NativePreviewActivity : FragmentActivity() {
     private var situationOngoing by mutableStateOf(false)
     private var confirmLocalDocumentAiTransfer by mutableStateOf(false)
     private var conversationId: String? = null
-    private var chatAnswer by mutableStateOf("")
+    private val chatTranscript = mutableStateListOf<JurisChatMessage>()
     private var chatStatus by mutableStateOf("")
     private var sending by mutableStateOf(false)
     private var instancePreparation by mutableStateOf("")
@@ -80,7 +82,7 @@ class NativePreviewActivity : FragmentActivity() {
                         employer = "NATIONAL"
                         employerDetails = ""
                         conversationId = null
-                        chatAnswer = ""
+                        chatTranscript.clear()
                         chatStatus = "Versant modifié. Une nouvelle conversation sera ouverte."
                     }
                 },
@@ -89,14 +91,14 @@ class NativePreviewActivity : FragmentActivity() {
                     if (employer != it) {
                         employer = it
                         conversationId = null
-                        chatAnswer = ""
+                        chatTranscript.clear()
                     }
                 },
                 employerDetails = employerDetails,
                 onEmployerDetailsChange = {
                     employerDetails = it
                     conversationId = null
-                    chatAnswer = ""
+                    chatTranscript.clear()
                 },
                 factsStartDate = factsStartDate,
                 onFactsStartDateChange = { factsStartDate = it },
@@ -113,11 +115,11 @@ class NativePreviewActivity : FragmentActivity() {
                     if (selectedOrganizationId != it) {
                         selectedOrganizationId = it
                         conversationId = null
-                        chatAnswer = ""
+                        chatTranscript.clear()
                         chatStatus = "Organisation changée. Une nouvelle conversation sera ouverte."
                     }
                 },
-                chatAnswer = chatAnswer,
+                chatTranscript = chatTranscript.toList(),
                 chatStatus = chatStatus,
                 sending = sending,
                 instancePreparation = instancePreparation,
@@ -129,7 +131,7 @@ class NativePreviewActivity : FragmentActivity() {
                             runOnUiThread {
                                 credentials = signedIn
                                 authenticated = true
-                                chatAnswer = ""
+                                chatTranscript.clear()
                                 conversationId = null
                                 chatStatus = "Connexion réussie. Chargement de vos organisations…"
                             }
@@ -152,7 +154,7 @@ class NativePreviewActivity : FragmentActivity() {
                                 organizations = emptyList()
                                 selectedOrganizationId = null
                                 conversationId = null
-                                chatAnswer = ""
+                                chatTranscript.clear()
                                 chatStatus = ""
                                 Toast.makeText(this, "Déconnexion effectuée.", Toast.LENGTH_SHORT).show()
                             }
@@ -250,8 +252,8 @@ class NativePreviewActivity : FragmentActivity() {
             chatStatus = "Authentifiez-vous et sélectionnez une organisation avant d'interroger JURIS."
             return
         }
+        chatTranscript.add(JurisChatMessage("user", question.trim()))
         chatStatus = "JURIS analyse votre question et vérifie les sources…"
-        chatAnswer = ""
         sending = true
         io.execute {
             try {
@@ -272,7 +274,7 @@ class NativePreviewActivity : FragmentActivity() {
                     sending = false
                     if (selectedOrganizationId != organizationId || publicService != selectedVersant) return@runOnUiThread
                     conversationId = answer.conversationId
-                    chatAnswer = buildString {
+                    val renderedAnswer = buildString {
                         append(answer.answer)
                         answer.clarificationQuestion?.let {
                             append("\n\nPrécision nécessaire : ")
@@ -283,6 +285,7 @@ class NativePreviewActivity : FragmentActivity() {
                             append(answer.sources.joinToString(" ; "))
                         }
                     }
+                    chatTranscript.add(JurisChatMessage("assistant", renderedAnswer))
                     chatStatus = "Statut de vérification : ${answer.verificationStatus}"
                 }
             } catch (error: Exception) {
