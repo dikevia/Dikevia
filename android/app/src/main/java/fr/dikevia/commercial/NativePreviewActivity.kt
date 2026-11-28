@@ -105,13 +105,26 @@ class NativePreviewActivity : FragmentActivity() {
                     chatTranscript.clear()
                 },
                 factsStartDate = factsStartDate,
-                onFactsStartDateChange = { factsStartDate = it },
+                onFactsStartDateChange = {
+                    if (factsStartDate != it) {
+                        factsStartDate = it
+                        resetConversationForContextChange()
+                    }
+                },
                 factsEndDate = factsEndDate,
-                onFactsEndDateChange = { factsEndDate = it },
+                onFactsEndDateChange = {
+                    if (factsEndDate != it) {
+                        factsEndDate = it
+                        resetConversationForContextChange()
+                    }
+                },
                 situationOngoing = situationOngoing,
                 onSituationOngoingChange = {
-                    situationOngoing = it
-                    if (it) factsEndDate = ""
+                    if (situationOngoing != it) {
+                        situationOngoing = it
+                        if (it) factsEndDate = ""
+                        resetConversationForContextChange()
+                    }
                 },
                 confirmLocalDocumentAiTransfer = confirmLocalDocumentAiTransfer,
                 onConfirmLocalDocumentAiTransferChange = { confirmLocalDocumentAiTransfer = it },
@@ -177,6 +190,12 @@ class NativePreviewActivity : FragmentActivity() {
                 onSendQuestion = ::sendQuestion
             )
         }
+    }
+
+    private fun resetConversationForContextChange() {
+        conversationId = null
+        conversationEpoch += 1
+        chatTranscript.clear()
     }
 
     private fun loadOrganizations(session: Credentials) {
