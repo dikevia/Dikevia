@@ -83,14 +83,20 @@ def verify_identity_token(token: str, access_principal: Principal) -> Principal:
     """Validate the OIDC ID token against the same subject as the API access token."""
     if not token or len(token) > MAX_ID_TOKEN_LENGTH:
         raise reject("id_token_empty_or_too_long")
-    if not settings.oidc_client_id:
+    accepted_client_ids = {
+        client_id for client_id in (
+            settings.oidc_client_id,
+            getattr(settings, "oidc_native_client_id", ""),
+        ) if isinstance(client_id, str) and client_id.strip()
+    }
+    if not accepted_client_ids:
         raise reject("oidc_client_id_missing", 503, "Configuration OIDC incomplète.")
     algorithms = [a.strip() for a in settings.oidc_algorithms.split(",") if a.strip()]
     try:
         key = jwks_client(settings.oidc_jwks_url).get_signing_key_from_jwt(token)
         claims = jwt.decode(
             token, key.key, algorithms=algorithms,
-            audience=settings.oidc_client_id, issuer=settings.oidc_issuer,
+            audience=sorted(accepted_client_ids), issuer=settings.oidc_issuer,
             options={"require": ["exp", "iat", "iss", "sub", "aud"], "verify_signature": True},
             leeway=30,
         )
@@ -103,7 +109,7 @@ def verify_identity_token(token: str, access_principal: Principal) -> Principal:
         if expires_at <= issued_at or expires_at - issued_at > MAX_ID_TOKEN_LIFETIME_SECONDS:
             raise reject("id_token_lifetime_invalid")
         audiences = claims.get("aud")
-        if isinstance(audiences, list) and len(audiences) > 1 and claims.get("azp") != settings.oidc_client_id:
+        if isinstance(audiences, list) and len(audiences) > 1 and claims.get("azp") not in accepted_client_ids:
             raise reject("id_token_authorized_party_mismatch")
         email = claims.get("email")
         if email is not None and (not isinstance(email, str) or len(email) > 320):
