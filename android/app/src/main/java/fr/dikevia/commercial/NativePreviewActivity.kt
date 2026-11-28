@@ -39,6 +39,8 @@ class NativePreviewActivity : FragmentActivity() {
     private var chatAnswer by mutableStateOf("")
     private var chatStatus by mutableStateOf("")
     private var sending by mutableStateOf(false)
+    private var instancePreparation by mutableStateOf("")
+    private var preparingInstance by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -118,6 +120,9 @@ class NativePreviewActivity : FragmentActivity() {
                 chatAnswer = chatAnswer,
                 chatStatus = chatStatus,
                 sending = sending,
+                instancePreparation = instancePreparation,
+                preparingInstance = preparingInstance,
+                onPrepareInstance = ::prepareInstance,
                 onSignIn = {
                     auth.login(
                         onSuccess = { signedIn ->
@@ -184,6 +189,41 @@ class NativePreviewActivity : FragmentActivity() {
                     organizations = emptyList()
                     selectedOrganizationId = null
                     chatStatus = error.message ?: "Impossible de charger vos organisations."
+                }
+            }
+        }
+    }
+
+    private fun prepareInstance(instance: String, objet: String) {
+        if (BuildConfig.FLAVOR == "admin") return
+        val session = credentials
+        val organizationId = selectedOrganizationId
+        if (session == null || organizationId == null) {
+            chatStatus = "Authentifiez-vous et sélectionnez une organisation avant de préparer une instance."
+            return
+        }
+        preparingInstance = true
+        instancePreparation = ""
+        chatStatus = "Préparation de l'ordre du jour $instance et recherche des sources juridiques…"
+        io.execute {
+            try {
+                val result = api.prepareInstance(
+                    session.accessToken,
+                    session.idToken,
+                    organizationId,
+                    instance,
+                    objet
+                )
+                runOnUiThread {
+                    preparingInstance = false
+                    if (selectedOrganizationId != organizationId) return@runOnUiThread
+                    instancePreparation = result
+                    chatStatus = "Préparation terminée. Les pistes et sources doivent être vérifiées avant la séance."
+                }
+            } catch (error: Exception) {
+                runOnUiThread {
+                    preparingInstance = false
+                    chatStatus = error.message ?: "La préparation de l'instance a échoué."
                 }
             }
         }
