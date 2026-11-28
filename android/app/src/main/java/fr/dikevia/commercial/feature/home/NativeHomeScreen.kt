@@ -293,90 +293,7 @@ fun NativeHomeScreen(
                         Spacer(Modifier.height(12.dp))
                         if (!authenticated || selectedOrganizationId == null) {
                             Text(
-            
-                        if (selectedInstance != null) {
-                            Spacer(Modifier.height(12.dp))
-                            Text("Dossier de séance", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
-                            OutlinedTextField(
-                                value = sessionTitle,
-                                onValueChange = { sessionTitle = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Intitulé du dossier") },
-                                placeholder = { Text("Ex. : séance CST – organisation du temps de travail") },
-                                singleLine = true,
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            OutlinedTextField(
-                                value = sessionDate,
-                                onValueChange = { sessionDate = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Date de séance (facultatif)") },
-                                placeholder = { Text("AAAA-MM-JJ") },
-                                singleLine = true,
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            OutlinedTextField(
-                                value = sessionMinutes,
-                                onValueChange = { sessionMinutes = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Compte rendu / notes de séance") },
-                                placeholder = { Text("Notes de travail, décisions, réserves et suites à donner…") },
-                                minLines = 3,
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            Button(
-                                onClick = {
-                                    val code = selectedInstance ?: return@Button
-                                    val title = sessionTitle.ifBlank { "$code — ${instanceObjet.take(150)}" }
-                                    onSaveSession(code, title, sessionDate, sessionMinutes)
-                                },
-                                enabled = authenticated && selectedOrganizationId != null &&
-                                    selectedInstance != null && (sessionTitle.length >= 3 || instanceObjet.length >= 3) && !savingSession,
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
-                                shape = RoundedCornerShape(14.dp)
-                            ) {
-                                Text(if (savingSession) "Enregistrement…" else "Enregistrer le dossier de séance")
-                            }
-                        }
-
-                        if (authenticated) {
-                            Spacer(Modifier.height(18.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Mes dossiers de séance", color = Navy, fontWeight = FontWeight.SemiBold)
-                                TextButton(onClick = onRefreshSessions) { Text("Actualiser", color = SteelBlue) }
-                            }
-                            if (savedSessions.isEmpty()) {
-                                Text("Aucun dossier de séance enregistré dans cette organisation.", color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
-                            } else {
-                                savedSessions.take(20).forEach { saved ->
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, Border),
-                                        shape = RoundedCornerShape(14.dp)
-                                    ) {
-                                        Column(Modifier.padding(13.dp)) {
-                                            Text(saved.instanceCode + " — " + saved.title, color = Navy, fontWeight = FontWeight.SemiBold)
-                                            Text(
-                                                "Date : " + (saved.meetingDate ?: "à fixer") + " · " + saved.meetingStatus,
-                                                color = Color(0xFF62768A),
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                            if (saved.minutes.isNotBlank()) {
-                                                Text(saved.minutes.take(260), color = Navy, style = MaterialTheme.typography.bodySmall)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    if (!authenticated) {
+                                if (!authenticated) {
                                     "Connectez-vous pour préparer cette instance avec JURIS."
                                 } else {
                                     "Aucune organisation active n'est sélectionnée pour ce compte."
@@ -415,7 +332,87 @@ fun NativeHomeScreen(
                         ) {
                             Text(if (preparingInstance) "Préparation en cours…" else "Préparer avec JURIS")
                         }
+                        Spacer(Modifier.height(12.dp))
+                        Text("Dossier de séance", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
+                        OutlinedTextField(
+                            value = sessionTitle,
+                            onValueChange = { sessionTitle = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Intitulé du dossier") },
+                            placeholder = { Text("Ex. : séance CST – organisation du temps de travail") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        OutlinedTextField(
+                            value = sessionDate,
+                            onValueChange = { sessionDate = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Date de séance (facultatif)") },
+                            placeholder = { Text("AAAA-MM-JJ") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        OutlinedTextField(
+                            value = sessionMinutes,
+                            onValueChange = { sessionMinutes = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Compte rendu / notes de séance") },
+                            placeholder = { Text("Notes de travail, décisions, réserves et suites à donner…") },
+                            minLines = 3,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        Button(
+                            onClick = {
+                                val code = selectedInstance ?: return@Button
+                                val title = sessionTitle.ifBlank { "$code — ${instanceObjet.take(150)}" }
+                                onSaveSession(code, title, sessionDate, sessionMinutes)
+                            },
+                            enabled = authenticated && selectedOrganizationId != null &&
+                                (sessionTitle.length >= 3 || instanceObjet.length >= 3) && !savingSession,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(if (savingSession) "Enregistrement…" else "Enregistrer le dossier de séance")
+                        }
                     }
+
+                    if (authenticated) {
+                        Spacer(Modifier.height(18.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Mes dossiers de séance", color = Navy, fontWeight = FontWeight.SemiBold)
+                            TextButton(onClick = onRefreshSessions) { Text("Actualiser", color = SteelBlue) }
+                        }
+                        if (savedSessions.isEmpty()) {
+                            Text("Aucun dossier de séance enregistré dans cette organisation.", color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
+                        } else {
+                            savedSessions.take(20).forEach { saved ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Column(Modifier.padding(13.dp)) {
+                                        Text(saved.instanceCode + " — " + saved.title, color = Navy, fontWeight = FontWeight.SemiBold)
+                                        Text(
+                                            "Date : " + (saved.meetingDate ?: "à fixer") + " · " + saved.meetingStatus,
+                                            color = Color(0xFF62768A),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        if (saved.minutes.isNotBlank()) {
+                                            Text(saved.minutes.take(260), color = Navy, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (instancePreparation.isNotBlank() && preparationMatchesInstance(instancePreparation, selectedInstance)) {
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
