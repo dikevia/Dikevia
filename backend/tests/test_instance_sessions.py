@@ -108,6 +108,16 @@ def test_instance_session_api_has_list_create_read_and_update_routes():
     assert ("/api/v1/instances/sessions/{session_id}/pdf", "GET") in routes
 
 
+def test_instance_session_update_route_enforces_immutable_instance_identity():
+    source = (ROOT / "backend/app/main.py").read_text()
+    start = source.index('@app.put("/api/v1/instances/sessions/{session_id}"')
+    end = source.index('@app.post("/api/v1/chat/conversations/{conversation_id}/dossier"', start)
+    route = source[start:end]
+    assert 'requested_instance = payload.get("instance_code", stored["instance_code"])' in route
+    assert 'if requested_instance != stored["instance_code"]' in route
+    assert "L'instance d'un dossier de séance ne peut pas être modifiée" in route
+
+
 def test_loaded_instance_session_cannot_be_reassigned_to_another_instance_in_ui():
     html = (ROOT / "frontend/index.html").read_text()
     assert "$('#instanceType').disabled=true" in html
