@@ -90,7 +90,7 @@ def test_instance_session_pdf_contains_agenda_notes_and_warning():
     assert "DUERP et programme annuel" in extracted
     assert "Quelles mesures de prévention" in extracted
     assert "calendrier" in extracted
-    assert "ne constituent pas une validation juridique" in extracted
+    assert "ne constituent pas une validation juridique" in " ".join(extracted.split())
 
 
 def test_instance_session_api_has_list_create_read_and_update_routes():
