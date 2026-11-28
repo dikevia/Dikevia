@@ -147,7 +147,8 @@ def test_chat_request_supports_explicit_session_document_ids_with_consent_gate()
 def test_selected_session_documents_are_added_to_orchestrator_local_sources():
     source = (ROOT / "backend/app/orchestrator.py").read_text()
     assert "additional_local_sources: list[dict] | None = None" in source
-    assert "local_sources.extend(explicitly_selected_local_sources)" in source
+    assert "local_sources.extend(\n            source for source in explicitly_selected_local_sources\n            if source.get(\"temporal_status\") == \"VERIFIED_APPLICABLE\"\n        )" in source
+    assert "personal_sources.extend(selected_fact_context)" in source
     assert '"claim_eligible": False' in source
     assert '"reference_role": "FACTUAL_CONTEXT_ONLY"' in source
     assert 'source.get("temporal_status") == "VERIFIED_APPLICABLE"' in source
