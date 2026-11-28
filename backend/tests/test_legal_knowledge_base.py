@@ -22,6 +22,32 @@ def test_clean_text_and_hash_are_deterministic():
     assert sha256_text("juris") != sha256_text("JURIS")
 
 
+def test_integrated_answer_renderer_weaves_verified_claims_into_prose():
+    from app.orchestrator import _render_integrated_claims
+
+    answer, source_titles = _render_integrated_claims([
+        {"text": "Le CGFP pose le principe applicable.", "source_id": "cgfp-v1",
+         "source_title": "CGFP — article L1", "axis": "Cadre juridique"},
+        {"text": "Le décret précise les conditions de mise en œuvre.", "source_id": "decret-v1",
+         "source_title": "Décret n° 1", "axis": "Cadre juridique"},
+        {"text": "La jurisprudence éclaire l'interprétation de ces conditions.",
+         "source_id": "case-v1", "source_title": "Conseil d'État", "axis": "Portée jurisprudentielle"},
+    ])
+
+    paragraphs = answer.split("\\n\\n")
+    assert len(paragraphs) == 2
+    assert "Le CGFP pose le principe applicable. [source:cgfp-v1] Le décret précise" in paragraphs[0]
+    assert "[source:decret-v1]" in paragraphs[0]
+    assert "La jurisprudence éclaire" in paragraphs[1]
+    assert "[source:case-v1]" in paragraphs[1]
+    assert "Textes et références à consulter" not in answer
+    assert source_titles == {
+        "cgfp-v1": "CGFP — article L1",
+        "decret-v1": "Décret n° 1",
+        "case-v1": "Conseil d'État",
+    }
+
+
 def test_multi_source_selection_reserves_cgfp_decree_and_case_law_when_available():
     results_by_query = [
         [
