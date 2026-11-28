@@ -145,6 +145,10 @@ def test_instance_ui_renders_law_sources_and_does_not_hide_metadata_only_jurispr
     assert "result.legal_research" in source
     assert "full_text_retrieved" in source
     assert "Consulter sur Légifrance" in source
+    assert "function invalidateInstancePreparation()" in source
+    assert "latestInstancePreparation=null" in source
+    assert "$('#instanceObject').addEventListener('input',invalidateInstancePreparation)" in source
+    assert "card.dataset.instanceChoice===$('#instanceType').value" in source
 
 
 @pytest.mark.asyncio
