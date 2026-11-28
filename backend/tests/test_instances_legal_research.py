@@ -251,3 +251,18 @@ def test_android_f3sct_label_maps_to_backend_fs_instance_key():
     assert 'instance.equals("F3SCT", ignoreCase = true)' in source
     assert 'else instance' in source
     assert 'backendInstance,' in source
+
+
+def test_native_instance_result_is_bound_to_the_selected_instance():
+    from pathlib import Path
+
+    native = (
+        Path(__file__).resolve().parents[2]
+        / "android" / "app" / "src" / "main" / "java"
+        / "fr" / "dikevia" / "commercial" / "feature" / "home"
+        / "NativeHomeScreen.kt"
+    )
+    source = native.read_text(encoding="utf-8")
+    assert "preparationMatchesInstance(instancePreparation, selectedInstance)" in source
+    assert 'selectedInstance.equals("F3SCT", ignoreCase = true)' in source
+    assert 'append("F3SCT (FS)")' in source
