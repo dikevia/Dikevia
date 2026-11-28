@@ -416,6 +416,55 @@ INSTANCE_RULES: dict[str, dict[str, dict[str, Any]]] = {
             ),
             "documents": ("Évaluation des risques psychosociaux", "Données anonymisées d'effectifs, absentéisme et accidents", "Plan de prévention et indicateurs de suivi"),
         },
+        "danger_grave_imminent": {
+            "label": "Danger grave et imminent, alerte et droit de retrait",
+            "keywords": ("danger grave et imminent", "dgi", "registre spécial", "droit de retrait", "alerte danger grave"),
+            "questions": (
+                "Quels faits précis, datés et localisés caractérisent le danger allégué, et quels agents ou activités sont exposés ?",
+                "L'agent ou le représentant a-t-il alerté immédiatement l'autorité territoriale et le représentant a-t-il consigné son avis dans le registre spécial prévu à cet effet ?",
+                "Une enquête immédiate a-t-elle été menée conjointement par l'autorité territoriale et le représentant ayant signalé le danger ?",
+                "Quelles mesures conservatoires ont été prises, et comment l'autorité a-t-elle motivé un éventuel désaccord sur la réalité du danger ou les mesures à prendre ?",
+                "En cas de désaccord persistant, la formation spécialisée a-t-elle été réunie dans les conditions et délais applicables, avec intervention éventuelle de l'inspection du travail ?",
+                "La situation individuelle de chaque agent et les conditions légales du droit de retrait ont-elles été examinées sans présumer automatiquement de sa validité ou de son invalidité ?",
+            ),
+            "documents": ("Extrait du registre spécial de danger grave et imminent", "Signalement daté et éléments factuels", "Compte rendu d'enquête conjointe", "Mesures conservatoires et plan de mise en sécurité", "Échanges motivés entre l'autorité et les représentants", "Convocations, avis et suites données à la réunion de la formation spécialisée"),
+        },
+        "visites": {
+            "label": "Visites de locaux et situations de travail",
+            "keywords": ("visite de locaux", "visite de service", "visite de site", "visite de travail", "visites de prévention"),
+            "questions": (
+                "La visite a-t-elle été inscrite dans le programme de travail de la formation spécialisée et son objet a-t-il été défini ?",
+                "Les représentants participants, les services visités et les conditions d'accès ont-ils été déterminés avec l'autorité territoriale ?",
+                "Les agents rencontrés ont-ils pu s'exprimer librement, sans présence hiérarchique susceptible d'altérer leurs réponses ?",
+                "Les constats distinguent-ils les faits observés, les déclarations recueillies et les analyses ou hypothèses ?",
+                "Les suites, responsables, échéances et modalités de suivi des préconisations sont-ils tracés ?",
+            ),
+            "documents": ("Programme et ordre de mission de la visite", "Grille de visite et constats factuels", "Comptes rendus anonymisés des échanges", "Photographies ou pièces utiles autorisées", "Plan d'actions avec responsables et échéances", "Suivi des recommandations antérieures"),
+        },
+        "enquete": {
+            "label": "Enquête après accident de service ou événement grave",
+            "keywords": ("enquête après accident", "enquête accident", "enquête après incident", "enquête après agression", "analyse accident du travail"),
+            "questions": (
+                "L'événement entre-t-il dans le champ justifiant une enquête de la formation spécialisée et les représentants ont-ils été associés ?",
+                "La méthode recherche-t-elle les causes immédiates et organisationnelles plutôt que la seule faute individuelle ?",
+                "Les témoignages, horaires, équipements, consignes et conditions réelles de travail ont-ils été recueillis de manière contradictoire et proportionnée ?",
+                "Les données personnelles et médicales non nécessaires ont-elles été écartées ou protégées ?",
+                "Les mesures correctives portent-elles sur la prévention à la source et leur efficacité sera-t-elle réévaluée ?",
+            ),
+            "documents": ("Déclaration et rapport d'événement expurgés des données non nécessaires", "Chronologie factuelle et éléments matériels", "Compte rendu d'enquête et analyse des causes", "Mesures correctives, responsables et échéances", "Évaluation de l'efficacité des mesures"),
+        },
+        "duerp_programme": {
+            "label": "DUERP et programme annuel de prévention",
+            "keywords": ("mise à jour duerp", "document unique d'évaluation des risques", "programme annuel de prévention", "papripact", "plan annuel de prévention"),
+            "questions": (
+                "Le DUERP couvre-t-il toutes les unités de travail, les risques réels et les situations de travail dégradées ?",
+                "Quelle méthode d'évaluation, quelle date de mise à jour et quelle association des agents et représentants sont documentées ?",
+                "Les actions du programme annuel sont-elles hiérarchisées, budgétées, assorties d'un responsable et d'une échéance ?",
+                "Les risques persistants, actions reportées et écarts entre prévisions et réalisations sont-ils explicitement présentés ?",
+                "Quels indicateurs permettent de mesurer la réduction effective de l'exposition aux risques ?",
+            ),
+            "documents": ("DUERP complet et historique de ses versions", "Cartographie des unités de travail et méthode d'évaluation", "Programme annuel de prévention ou document équivalent", "Budget, responsables, échéances et indicateurs", "Bilans d'avancement et justification des actions non réalisées"),
+        },
     },
 }
 
