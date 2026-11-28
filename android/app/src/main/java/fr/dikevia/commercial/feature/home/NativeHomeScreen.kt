@@ -465,6 +465,9 @@ fun NativeHomeScreen(
                                     Text("Parcours actif : $selectedInstance", color = SteelBlue, style = MaterialTheme.typography.labelSmall)
                                 }
                             }
+                            TextButton(onClick = if (authenticated) onSignOut else onSignIn) {
+                                Text(if (authenticated) "Déconnexion" else "Se connecter", color = SteelBlue)
+                            }
                             TextButton(onClick = { contextPanelOpen = true }) { Text("Contexte", color = SteelBlue) }
                             TextButton(onClick = { drawerScope.launch { drawerState.open() } }) { Text("☰", color = SteelBlue, fontWeight = FontWeight.Bold) }
                         }
