@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import fr.dikevia.commercial.designsystem.JurisOrb
 import fr.dikevia.commercial.designsystem.JurisOrbState
 import fr.dikevia.commercial.core.api.DikeviaOrganization
+import org.json.JSONObject
 
 private val Glacier = Color(0xFFF3F7FB)
 private val Navy = Color(0xFF17283B)
@@ -48,6 +49,73 @@ private val SteelBlue = Color(0xFF287FBD)
 private val Border = Color(0xFFDCE6F0)
 
 private data class InstanceCard(val acronym: String, val title: String, val description: String)
+
+/**
+ * Transfers the structured instance preparation into the existing JURIS chat.
+ * This is a prompt hand-off, not a second assistant or a separate chat endpoint.
+ */
+private fun buildJurisInstancePrompt(rawPreparation: String): String {
+    val data = runCatching { JSONObject(rawPreparation) }.getOrNull()
+        ?: return "Je souhaite approfondir avec JURIS la préparation de l'instance suivante : $rawPreparation"
+
+    val points = data.optJSONArray("points")
+    val pointText = buildString {
+        if (points != null) {
+            for (index in 0 until minOf(points.length(), 8)) {
+                val point = points.optJSONObject(index) ?: continue
+                append("- ").append(point.optString("libelle")).append("\\n")
+                append("  Questions : ")
+                val questions = point.optJSONArray("questions")
+                if (questions != null) {
+                    append((0 until minOf(questions.length(), 5)).joinToString(" ; ") { questions.optString(it) })
+                }
+                append("\\n  Documents : ")
+                val documents = point.optJSONArray("documents")
+                if (documents != null) {
+                    append((0 until minOf(documents.length(), 5)).joinToString(" ; ") { documents.optString(it) })
+                }
+                append("\\n")
+            }
+        }
+    }
+
+    val research = data.optJSONObject("legal_research")
+    val sources = research?.optJSONArray("sources")
+    val sourceText = buildString {
+        if (sources != null) {
+            for (index in 0 until minOf(sources.length(), 8)) {
+                val source = sources.optJSONObject(index) ?: continue
+                append("- ").append(source.optString("title", "Source sans titre"))
+                val article = source.optString("article")
+                val number = source.optString("official_number")
+                val date = source.optString("decision_date")
+                if (article.isNotBlank()) append(" — ").append(article)
+                if (number.isNotBlank()) append(" — ").append(number)
+                if (date.isNotBlank()) append(" — décision du ").append(date)
+                append(" — texte intégral récupéré : ").append(source.optBoolean("full_text_retrieved"))
+                val url = source.optString("official_url")
+                if (url.isNotBlank()) append(" — ").append(url)
+                append("\\n")
+            }
+        }
+    }
+
+    return buildString {
+        append("Je souhaite approfondir la préparation de mon instance avec JURIS, dans cette conversation.\\n\\n")
+        append("INSTANCE : ").append(data.optString("instance")).append("\\n")
+        append("OBJET : ").append(data.optString("objet")).append("\\n\\n")
+        append("PISTES DE PRÉPARATION :\\n").append(pointText.ifBlank { "Aucune règle de checklist déclenchée ; analyser le sujet à partir des faits et des sources." })
+        val notice = data.optString("notice")
+        if (notice.isNotBlank()) append("\\nNOTICE : ").append(notice.take(500))
+        if (research != null) {
+            append("\\n\\nRECHERCHE JURIDIQUE : ").append(research.optString("status", "non précisée"))
+            append(" ; date de référence : ").append(research.optString("requested_date", "non précisée"))
+        }
+        if (sourceText.isNotBlank()) append("\\nSOURCES RETOURNÉES :\\n").append(sourceText)
+        append("\\nMISSION JURIS : approfondis cette préparation. Vérifie la compétence de l'instance, les textes et leur version applicable à la date des faits, ainsi que la jurisprudence pertinente. Distingue les faits déclarés des faits établis, les sources intégralement récupérées des simples métadonnées et les hypothèses des conclusions. Identifie les informations manquantes, pose les questions de clarification nécessaires, prépare des questions argumentées pour la séance et un plan d'action syndical. N'invente aucune source et ne conclus pas sans éléments suffisants.")
+    }.take(5000)
+}
+
 
 private val instances = listOf(
     InstanceCard("CST", "Comité social territorial", "Organisation et conditions de travail"),
@@ -244,6 +312,16 @@ fun NativeHomeScreen(
                                     color = Navy,
                                     style = MaterialTheme.typography.bodySmall
                                 )
+                                Spacer(Modifier.height(12.dp))
+                                Button(
+                                    onClick = { onSendQuestion(buildJurisInstancePrompt(instancePreparation)) },
+                                    enabled = authenticated && selectedOrganizationId != null && !sending,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Text(if (sending) "JURIS analyse…" else "Approfondir cette préparation avec JURIS")
+                                }
                             }
                         }
                     }
