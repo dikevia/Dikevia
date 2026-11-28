@@ -547,6 +547,28 @@ def _classify_permanent_source_scope(source: dict, target_versant: str) -> dict:
     return classify_public_service_scope(source, target_versant=target_versant)
 
 
+def _is_usable_general_guidance_source(source: dict) -> bool:
+    """Allow verified full-text guidance to answer general questions, never to prove law."""
+    if not isinstance(source, dict):
+        return False
+    if source.get("source_type") not in {"SERVICE_PUBLIC_PART", "INSTITUTIONAL_GUIDANCE"}:
+        return False
+    if (
+        source.get("content_kind") != "FULL_TEXT"
+        or not _citation_is_valid(source)
+        or source.get("research_axis_relevant", True) is False
+        or source.get("general_info_eligible") is not True
+        or source.get("version_status") in {"REPEALED", "NOT_IN_FORCE"}
+    ):
+        return False
+    assurance = source.get("legal_assurance")
+    return (
+        isinstance(assurance, dict)
+        and assurance.get("usable_for_interpretation") is True
+        and assurance.get("claim_eligible") is False
+    )
+
+
 def _is_usable_permanent_source(source: dict, permanent_source_ids: set) -> bool:
     """Apply the final corpus-source eligibility gate, including historical versions."""
     if (
@@ -2185,7 +2207,16 @@ class LegalOrchestrator:
             and s.get("research_axis_relevant") is True
             and _citation_is_valid(s)
         ]
-        if not usable_official and not usable_permanent and not usable_local and not usable_snapshot_fallback:
+        # A non-normative full-text guide may answer a basic definition or explain
+        # terminology when no primary text is available. It must not be mistaken
+        # for a legal basis: claim_eligible remains false and the AI prompt labels it.
+        usable_general_guidance = [
+            s for s in sources if _is_usable_general_guidance_source(s)
+        ]
+        if (
+            not usable_official and not usable_permanent and not usable_local
+            and not usable_snapshot_fallback and not usable_general_guidance
+        ):
             missing = ["Aucune disposition législative ou réglementaire exploitable n'a été récupérée.",
                 "Recherche officielle Légifrance/PISTE et vérification des textes réglementaires complémentaires.",
                 "Recherche de jurisprudence pertinente et vérification des sources locales applicables."]
