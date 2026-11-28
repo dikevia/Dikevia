@@ -204,13 +204,14 @@ async def import_personal_documents_zip(
         with archive:
             infos = [info for info in archive.infolist() if not info.is_dir()]
             if not infos or len(infos) > MAX_ARCHIVE_DOCUMENTS:
-                raise HTTPException(422, "L'archive doit contenir entre 1 et 100 documents.")
+                raise HTTPException(422, "L'archive doit contenir entre 1 et 50 documents.")
             for info in infos:
                 raw_name = info.filename.replace("\\", "/")
                 path = PurePath(raw_name)
                 if (
                     path.is_absolute()
-                    or len(path.parts) != 1
+                    or raw_name.startswith("/")
+                    or re.match(r"^[A-Za-z]:", raw_name)
                     or any(part in {"", ".", ".."} for part in path.parts)
                     or "\x00" in raw_name
                     or stat.S_ISLNK(info.external_attr >> 16)
