@@ -1535,7 +1535,7 @@ async def load_explicit_session_document_sources(conn, organization_id: str, doc
     """Load explicitly selected, tenant-owned, clean and hash-matched document text."""
     if not document_ids:
         return []
-    ids = list(dict.fromkeys(str(value) for value in document_ids))
+    ids = list(dict.fromkeys(UUID(str(value)) for value in document_ids))
     rows = await conn.fetch("""
       SELECT d.id,d.title,d.document_type,d.official_number,d.official_url,d.adopted_at,d.published_at,
              d.effective_from,d.effective_to,d.validation_status,d.sha256,d.scan_status,
