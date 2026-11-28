@@ -37,8 +37,8 @@ def _gemini_provider(monkeypatch):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("status", [401, 403, 429])
-async def test_auth_and_quota_failures_are_not_retried_or_sent_to_fallback(status):
+@pytest.mark.parametrize("status", [401, 403])
+async def test_auth_failures_are_not_retried_or_sent_to_fallback(status):
     client = SequenceClient([status, 200])
     payload = {"model": "gemini-2.5-flash"}
 
@@ -52,6 +52,39 @@ async def test_auth_and_quota_failures_are_not_retried_or_sent_to_fallback(statu
 
     assert error.value.response.status_code == status
     assert client.models == ["gemini-2.5-flash"]
+
+
+@pytest.mark.asyncio
+async def test_http_429_uses_one_configured_fallback_without_retrying_primary():
+    client = SequenceClient([429, 200])
+    payload = {"model": "gemini-2.5-flash"}
+
+    response = await ai_provider._post_chat_completion(
+        client,
+        "https://example.test/v1/chat/completions",
+        headers={"Authorization": "Bearer test-only"},
+        payload=payload,
+    )
+
+    assert response.status_code == 200
+    assert client.models == ["gemini-2.5-flash", "gemini-3.5-flash-lite"]
+
+
+@pytest.mark.asyncio
+async def test_http_429_still_fails_when_configured_fallback_is_rate_limited():
+    client = SequenceClient([429, 429])
+    payload = {"model": "gemini-2.5-flash"}
+
+    with pytest.raises(httpx.HTTPStatusError) as error:
+        await ai_provider._post_chat_completion(
+            client,
+            "https://example.test/v1/chat/completions",
+            headers={"Authorization": "Bearer test-only"},
+            payload=payload,
+        )
+
+    assert error.value.response.status_code == 429
+    assert client.models == ["gemini-2.5-flash", "gemini-3.5-flash-lite"]
 
 
 @pytest.mark.asyncio
