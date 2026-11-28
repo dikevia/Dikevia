@@ -535,6 +535,85 @@ def prepare_instance(
             })
             documents.extend(rule["documents"])
 
+    if not points:
+        # Keep preparation useful for an agenda item that has no exact lexical
+        # trigger, without guessing the instance's legal competence.
+        fallback_by_instance = {
+            "CST": {
+                "label": "Point à qualifier — comité social territorial",
+                "questions": (
+                    "Quelle décision ou orientation la collectivité envisage-t-elle de soumettre, et à quel stade du projet se trouve-t-elle ?",
+                    "Quels services, métiers et agents sont concernés, avec quels effets prévisibles sur l'organisation et les conditions de travail ?",
+                    "Le sujet relève-t-il du CST, de sa formation spécialisée, ou nécessite-t-il une vérification de répartition des compétences ?",
+                    "Quels échanges préalables ont eu lieu avec les agents, les représentants du personnel et les services de prévention ?",
+                    "Quels textes, délibérations et avis antérieurs la collectivité invoque-t-elle pour justifier la procédure envisagée ?",
+                ),
+                "documents": (
+                    "Ordre du jour et note de présentation complète",
+                    "Projet de décision ou document soumis à l'instance",
+                    "Éléments d'impact RH, organisationnel et conditions de travail",
+                    "Avis antérieurs, échanges préparatoires et calendrier de consultation",
+                ),
+            },
+            "CAP": {
+                "label": "Situation individuelle à qualifier — commission administrative paritaire",
+                "questions": (
+                    "Quel est le statut exact de l'agent, son grade, son cadre d'emplois et sa position administrative ?",
+                    "Quelle décision individuelle est envisagée ou contestée, et à quelle date a-t-elle été prise ou notifiée ?",
+                    "Quel texte prévoit éventuellement une consultation de la CAP pour cette catégorie précise de décision ?",
+                    "Quelles voies de recours, délais, garanties contradictoires et pièces du dossier sont en jeu ?",
+                    "L'agent a-t-il reçu une information complète et pu présenter ses observations ou être assisté lorsque les textes le prévoient ?",
+                ),
+                "documents": (
+                    "Arrêtés de situation administrative et fiche de carrière de l'agent",
+                    "Décision contestée ou projet de décision et preuve de notification",
+                    "Textes statutaires et pièces invoqués par l'autorité",
+                    "Échanges avec l'administration et observations de l'agent",
+                ),
+            },
+            "CCP": {
+                "label": "Situation contractuelle à qualifier — commission consultative paritaire",
+                "questions": (
+                    "Quel est le fondement juridique du recrutement, la nature du contrat, sa durée et les éventuels renouvellements ?",
+                    "Quelle décision est envisagée ou contestée, et quels motifs l'administration avance-t-elle ?",
+                    "Le sujet entre-t-il dans les cas de consultation de la CCP prévus par les textes applicables à cet agent ?",
+                    "Quelles clauses contractuelles, garanties procédurales, délais et voies de recours doivent être vérifiés ?",
+                    "Les faits, évaluations, échanges et éventuelles propositions de reclassement sont-ils documentés ?",
+                ),
+                "documents": (
+                    "Contrat initial, avenants et décisions de renouvellement",
+                    "Décision contestée ou projet de décision et preuve de notification",
+                    "Fiche de poste, évaluations et pièces invoquées par l'employeur",
+                    "Échanges contradictoires et propositions éventuelles de reclassement",
+                ),
+            },
+            "FS": {
+                "label": "Risque ou situation de travail à qualifier — formation spécialisée",
+                "questions": (
+                    "Quel risque professionnel, événement ou situation de travail est précisément concerné ?",
+                    "Quels agents, unités de travail et lieux sont exposés, et selon quelle fréquence ou gravité ?",
+                    "Que prévoient le DUERP, le programme annuel de prévention et les éventuels plans d'action ?",
+                    "Des accidents, signalements, alertes, visites ou enquêtes antérieurs éclairent-ils la situation ?",
+                    "Quelles mesures immédiates, mesures de prévention et modalités de suivi peuvent être examinées ?",
+                ),
+                "documents": (
+                    "DUERP et programme annuel de prévention à jour",
+                    "Données anonymisées d'accidents, maladies professionnelles et signalements pertinents",
+                    "Rapports de visite, d'enquête et avis des acteurs de prévention",
+                    "Plan d'action, responsables désignés, échéances et indicateurs de suivi",
+                ),
+            },
+        }
+        fallback = fallback_by_instance[key]
+        points.append({
+            "code": "qualification_a_completer",
+            "libelle": fallback["label"],
+            "questions": list(fallback["questions"]),
+            "documents": list(fallback["documents"]),
+            "qualification": "piste_de_preparation_a_confirmer",
+        })
+        documents.extend(fallback["documents"])
+
     result = {
         "instance": key,
         "objet": objet.strip(),
