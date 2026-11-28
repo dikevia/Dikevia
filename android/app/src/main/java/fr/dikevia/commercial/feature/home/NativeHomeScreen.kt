@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -111,6 +112,27 @@ private fun preparationLabel(key: String): String = when (key) {
     "status" -> "Statut"
     "notice" -> "Information"
     else -> key.replace('_', ' ').replaceFirstChar { it.uppercase() }
+}
+
+@Composable
+private fun SessionItemsSection(title: String, items: List<String>) {
+    if (items.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(title, color = SteelBlue, fontWeight = FontWeight.SemiBold)
+        items.forEachIndexed { index, raw ->
+            val display = remember(raw) {
+                runCatching {
+                    val item = JSONObject(raw)
+                    listOf("title", "name", "description", "question", "document", "assignee", "due_date", "status")
+                        .mapNotNull { key -> item.optString(key).takeIf { it.isNotBlank() && it != "null" } }
+                        .distinct()
+                        .joinToString(" — ")
+                        .ifBlank { item.toString() }
+                }.getOrElse { raw }
+            }
+            Text("• $display", color = Navy, style = MaterialTheme.typography.bodySmall)
+        }
+    }
 }
 
 @Composable
@@ -572,13 +594,32 @@ fun NativeHomeScreen(
                     openedSession?.let { session ->
                         AlertDialog(
                             onDismissRequest = { openedSession = null },
-                            title = { Text(session.instanceCode + " — " + session.title, color = Navy) },
+                            title = {
+                                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(session.instanceCode + " — " + session.title, color = Navy)
+                                    Text("Dossier de séance complet", color = SteelBlue, style = MaterialTheme.typography.labelMedium)
+                                }
+                            },
                             text = {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("Date de séance : " + (session.meetingDate ?: "à fixer"))
-                                    Text("Statut : " + session.meetingStatus)
-                                    Text("Compte rendu / notes :")
-                                    Text(session.minutes.ifBlank { "Aucune note enregistrée." })
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text("Date de séance : " + (session.meetingDate ?: "à fixer"), color = Navy)
+                                    Text("Statut : " + session.meetingStatus, color = Navy)
+                                    SessionItemsSection("Ordre du jour", session.agenda)
+                                    if (session.preparation.isNotBlank()) {
+                                        Text("Préparation enregistrée", color = Navy, fontWeight = FontWeight.SemiBold)
+                                        InstancePreparationContent(session.preparation)
+                                    } else {
+                                        Text("Aucune préparation juridique n'est enregistrée dans ce dossier.", color = Color(0xFF8A5A16), style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    SessionItemsSection("Questions à traiter", session.questions)
+                                    SessionItemsSection("Documents associés", session.documents)
+                                    Text("Compte rendu / notes de séance", color = SteelBlue, fontWeight = FontWeight.SemiBold)
+                                    Text(session.minutes.ifBlank { "Aucun compte rendu ou note n'a encore été saisi." }, color = Navy)
+                                    SessionItemsSection("Actions à suivre", session.actionItems)
+                                    Text("Identifiant du dossier : " + session.id, color = Color(0xFF62768A), style = MaterialTheme.typography.labelSmall)
                                 }
                             },
                             confirmButton = {
