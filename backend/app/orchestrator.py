@@ -1968,7 +1968,24 @@ class LegalOrchestrator:
                 )
             sources.append(response_source)
 
-        local_sources.extend(explicitly_selected_local_sources)
+        # Explicitly attached but not yet human-verified documents may inform the factual
+        # narrative only. They are never admitted as evidence for legal conclusions.
+        selected_fact_context = [
+            {
+                **source,
+                "source_type": "LOCAL_COLLECTIVITY_DOCUMENT",
+                "claim_eligible": False,
+                "reference_role": "FACTUAL_CONTEXT_ONLY",
+                "transfer_status": "TRANSMITTED_FOR_THIS_REQUEST",
+            }
+            for source in explicitly_selected_local_sources
+            if source.get("temporal_status") != "VERIFIED_APPLICABLE"
+        ]
+        local_sources.extend(
+            source for source in explicitly_selected_local_sources
+            if source.get("temporal_status") == "VERIFIED_APPLICABLE"
+        )
+        personal_sources.extend(selected_fact_context)
         sources.extend(local_sources)
         sources.extend(personal_sources)
 
