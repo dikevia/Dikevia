@@ -54,6 +54,32 @@ class DikeviaApiClient {
         }
     }
 
+    fun prepareInstance(
+        accessToken: String,
+        idToken: String,
+        organizationId: String,
+        instance: String,
+        objet: String
+    ): String {
+        val endpointInstance = when (instance.uppercase()) {
+            "CST" -> "CST"
+            "CAP" -> "CAP"
+            "CCP" -> "CCP"
+            "F3SCT", "FS" -> "FS"
+            else -> throw IllegalArgumentException("Instance Dikévia inconnue.")
+        }
+        require(objet.isNotBlank()) { "Décrivez le point inscrit à l'ordre du jour." }
+        val response = request(
+            "/api/v1/instances/$endpointInstance/prepare",
+            "POST",
+            accessToken,
+            idToken,
+            organizationId,
+            JSONObject().put("objet", objet.trim())
+        ) as JSONObject
+        return response.toString(2)
+    }
+
     fun ask(
         accessToken: String,
         idToken: String,
