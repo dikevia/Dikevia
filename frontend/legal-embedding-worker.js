@@ -58,7 +58,7 @@ self.onmessage = async (event) => {
   }
   try {
     if (!extractorPromise) {
-      extractorPromise = pipeline("feature-extraction", MODEL_ID, { quantized: false });
+      extractorPromise = pipeline("feature-extraction", MODEL_ID, { quantized: true });
     }
     const extractor = await extractorPromise;
     const segments = splitForEmbedding(text.slice(0, 5000));
