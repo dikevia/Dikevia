@@ -48,4 +48,4 @@ Les fichiers d'export peuvent contenir des textes de questions et des vecteurs ;
 
 ## Sécurité d'activation
 
-La recherche vectorielle reste désactivée par défaut. Ne pas modifier les paramètres d'environnement ni activer le feature flag sur la base du seul passage de ce protocole. Toute activation ultérieure nécessite des mesures satisfaisantes, une vérification du comportement de recherche hybride et une procédure de retour arrière.
+Le code active désormais la recherche vectorielle par défaut (`VECTOR_SEARCH_ENABLED=true`), mais un paramètre d'environnement Render peut remplacer cette valeur. Le passage de ce protocole n'est pas encore attesté : la parité numérique des embeddings navigateur/FastEmbed et la pertinence du retrieval doivent être mesurées avant de considérer pgvector comme validé en production. La recherche vectorielle ne s'exécute que si le frontend reçoit le feature flag actif et transmet un vecteur de 384 dimensions. Ne pas modifier les paramètres d'environnement Render ni déployer sans autorisation explicite. Prévoir une procédure de retour arrière en désactivant le feature flag.
