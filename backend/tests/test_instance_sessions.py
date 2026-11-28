@@ -49,6 +49,19 @@ def test_instance_session_migration_enforces_tenant_rls_and_rollback():
     assert (ROOT / "database/migrations/rollback/035_instance_sessions.down.sql").exists()
 
 
+def test_instance_session_frontend_exposes_shared_session_dossier_workflow():
+    html = (ROOT / "frontend/index.html").read_text()
+    for control in (
+        "instanceSessionsPanel", "refreshInstanceSessions", "sessionTitle",
+        "sessionAgenda", "sessionQuestions", "sessionDocuments", "sessionMinutes",
+        "sessionActions", "createInstanceSession", "saveInstanceSession",
+        "/api/v1/instances/sessions",
+    ):
+        assert control in html
+    assert "loadInstanceSessions()" in html
+    assert "latestInstancePreparation||activeInstanceSession?.preparation" in html
+
+
 def test_instance_session_api_has_list_create_read_and_update_routes():
     from app.main import app
 
