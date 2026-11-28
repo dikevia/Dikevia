@@ -112,12 +112,17 @@ def extract_document_text(data: bytes, mime: str, max_chars: int = 2_000_000) ->
             try:
                 from PIL import Image, ImageOps
                 import pytesseract
-                image = Image.open(BytesIO(data))
-                image = ImageOps.exif_transpose(image).convert("RGB")
+                with Image.open(BytesIO(data)) as source_image:
+                    if source_image.width * source_image.height > 40_000_000:
+                        return "", "IMAGE_TOO_LARGE"
+                    image = ImageOps.exif_transpose(source_image).convert("RGB")
                 image.thumbnail((3200, 3200))
-                text = pytesseract.image_to_string(
-                    image, lang="fra+eng", config="--psm 6", timeout=8,
-                )[:max_chars].strip()
+                try:
+                    text = pytesseract.image_to_string(
+                        image, lang="fra+eng", config="--psm 6", timeout=8,
+                    )[:max_chars].strip()
+                finally:
+                    image.close()
             except ImportError as exc:
                 raise OCRUnavailable("Image OCR dependencies are unavailable") from exc
             except Exception as exc:
