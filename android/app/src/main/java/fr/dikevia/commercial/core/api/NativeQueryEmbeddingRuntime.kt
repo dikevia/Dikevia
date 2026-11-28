@@ -104,7 +104,7 @@ class NativeQueryEmbeddingRuntime(
         texts[id] = text.take(5000)
         main.post { dispatch(id) }
         return try {
-            future.get(120, TimeUnit.SECONDS)
+            future.get(90, TimeUnit.SECONDS)
         } catch (_: Exception) {
             null
         } finally {
@@ -125,7 +125,7 @@ class NativeQueryEmbeddingRuntime(
         }
     }
 
-    private inner class Bridge {
+    inner class Bridge {
         @JavascriptInterface
         fun onReady() {
             main.post {
@@ -171,7 +171,10 @@ class NativeQueryEmbeddingRuntime(
 
         @JavascriptInterface
         fun onRuntimeError(@Suppress("UNUSED_PARAMETER") message: String) {
-            main.post { failAll() }
+            main.post {
+                failAll()
+                if (!disposed) webView.reload()
+            }
         }
     }
 
