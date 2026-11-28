@@ -89,6 +89,22 @@ async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(m
         return {"valid": True, "invalid": []}
 
     monkeypatch.setattr(module, "verify_claim_entailment", supported_entailment)
+    original_validate = module.validate_answer_citations
+    def capture_citations(answer, sources, **kwargs):
+        result = original_validate(answer, sources, **kwargs)
+        captured["final_answer"] = answer
+        captured["citation_validation"] = result
+        return result
+    monkeypatch.setattr(module, "validate_answer_citations", capture_citations)
+    original_grounded = module.answer_references_are_grounded
+    def capture_grounding(answer, refs, authorities=None):
+        result = original_grounded(answer, refs, authorities)
+        captured["grounding_validation"] = {
+            "valid": result, "allowed_refs": sorted(str(x) for x in refs if x),
+            "allowed_authorities": sorted(str(x) for x in (authorities or set()) if x),
+        }
+        return result
+    monkeypatch.setattr(module, "answer_references_are_grounded", capture_grounding)
     response = await LegalOrchestrator().ask(
         AskRequest(
             employer="NATIONAL",
@@ -97,7 +113,7 @@ async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(m
         "00000000-0000-0000-0000-000000000001",
     )
 
-    print("DEBUG_CGFP_BASELINE", response.verification_status, response.missing_information, response.sources, captured.get("sources"))
+    print("DEBUG_CGFP_BASELINE", response.verification_status, response.missing_information, captured.get("final_answer"), captured.get("citation_validation"), captured.get("grounding_validation"))
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
     assert captured["sources"][0]["source_type"] == "LEGIFRANCE_LODA"
     assert not any(source["source_type"] == "CGFP_SNAPSHOT" for source in captured["sources"])
