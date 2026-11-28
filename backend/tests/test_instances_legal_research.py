@@ -153,6 +153,8 @@ def test_instance_ui_renders_law_sources_and_does_not_hide_metadata_only_jurispr
     assert "full_text_retrieved" in source
     assert "MISSION JURIS" in source
     assert "data.cst_qualification" in source
+    assert "event.target.id!=='instanceObject'" in source
+    assert "event.target.id!=='instanceType'" in source
 
 
 @pytest.mark.asyncio
