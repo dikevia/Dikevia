@@ -240,7 +240,7 @@ class DikeviaApiClient {
         try {
             connection.requestMethod = method
             connection.connectTimeout = 15_000
-            connection.readTimeout = 45_000
+            connection.readTimeout = 120_000
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Authorization", "Bearer $accessToken")
             connection.setRequestProperty("X-OIDC-ID-Token", idToken)
