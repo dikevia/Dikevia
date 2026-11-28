@@ -422,7 +422,90 @@ class NativePreviewActivity : FragmentActivity() {
         }
     }
 
+    private fun readAloud(text: String) {
+        val engine = textToSpeech
+        if (engine == null) {
+            Toast.makeText(this, "La synthèse vocale n'est pas encore prête.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val result = engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "juris-answer")
+        if (result == TextToSpeech.ERROR) {
+            Toast.makeText(this, "La lecture vocale n'a pas pu démarrer.", Toast.LENGTH_SHORT).show()
+        } else speaking = true
+    }
+
+    private fun exportAnswerPdf(text: String) {
+        pendingPdfText = text
+        createPdf.launch("JURIS-reponse.pdf")
+    }
+
+    private fun buildAnswerPdf(text: String): ByteArray {
+        val document = PdfDocument()
+        val pageWidth = 595
+        val pageHeight = 842
+        val margin = 48f
+        val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.rgb(23, 40, 59)
+            textSize = 11f
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        }
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.rgb(23, 40, 59)
+            textSize = 22f
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+        }
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.rgb(40, 127, 189)
+            textSize = 9f
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+        }
+        val maxWidth = pageWidth - margin * 2
+        val lines = mutableListOf<String>()
+        text.replace("\\r", "").split("\\n").forEach { paragraph ->
+            if (paragraph.isBlank()) lines.add("")
+            else {
+                var current = ""
+                paragraph.split(Regex("\\s+")).forEach { word ->
+                    val candidate = if (current.isEmpty()) word else "$current $word"
+                    if (bodyPaint.measureText(candidate) <= maxWidth) current = candidate
+                    else {
+                        if (current.isNotEmpty()) lines.add(current)
+                        current = word
+                    }
+                }
+                if (current.isNotEmpty()) lines.add(current)
+            }
+        }
+        var pageNumber = 1
+        var page = document.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create())
+        var y = 64f
+        page.canvas.drawText("JURIS", margin, y, titlePaint)
+        y += 22f
+        val date = java.text.SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE).format(java.util.Date())
+        page.canvas.drawText("Réponse de votre assistant juridique — $date", margin, y, labelPaint)
+        y += 30f
+        lines.forEach { line ->
+            if (y > pageHeight - 55f) {
+                page.canvas.drawText("Dikévia · JURIS", margin, pageHeight - 28f, labelPaint)
+                document.finishPage(page)
+                pageNumber += 1
+                page = document.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create())
+                y = 58f
+            }
+            if (line.isNotEmpty()) page.canvas.drawText(line, margin, y, bodyPaint)
+            y += 17f
+        }
+        page.canvas.drawText("Dikévia · JURIS", margin, pageHeight - 28f, labelPaint)
+        document.finishPage(page)
+        val output = java.io.ByteArrayOutputStream()
+        document.writeTo(output)
+        document.close()
+        return output.toByteArray()
+    }
+
     override fun onDestroy() {
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
         io.shutdown()
         super.onDestroy()
     }
