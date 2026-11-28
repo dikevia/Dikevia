@@ -44,6 +44,7 @@ import fr.dikevia.commercial.designsystem.JurisOrbState
 import fr.dikevia.commercial.core.api.DikeviaOrganization
 import fr.dikevia.commercial.core.api.DikeviaInstanceSession
 import org.json.JSONObject
+import org.json.JSONArray
 
 private val Glacier = Color(0xFFF3F7FB)
 private val Navy = Color(0xFF17283B)
@@ -63,6 +64,158 @@ private fun preparationMatchesInstance(rawPreparation: String, selectedInstance:
     val prepared = runCatching { JSONObject(rawPreparation).optString("instance") }.getOrNull()
     val expected = if (selectedInstance.equals("F3SCT", ignoreCase = true)) "FS" else selectedInstance
     return prepared.equals(expected, ignoreCase = true)
+}
+
+private fun preparationLabel(key: String): String = when (key) {
+    "instance" -> "Instance"
+    "objet" -> "Objet examiné"
+    "points" -> "Points de préparation"
+    "code" -> "Thème"
+    "libelle" -> "Sujet"
+    "questions" -> "Questions à poser"
+    "documents" -> "Documents à demander"
+    "documents_a_demander" -> "Documents à réunir"
+    "qualification" -> "Niveau de qualification"
+    "qualification_a_completer" -> "Qualification à compléter"
+    "notice" -> "Précautions"
+    "legal_research" -> "Recherche juridique"
+    "provider" -> "Source de recherche"
+    "status" -> "État de la recherche"
+    "requested_date" -> "Date de référence"
+    "sources" -> "Sources identifiées"
+    "searches" -> "Recherches effectuées"
+    "family" -> "Famille juridique"
+    "title" -> "Intitulé"
+    "article" -> "Article"
+    "official_number" -> "Référence officielle"
+    "decision_date" -> "Date de décision"
+    "case_number" -> "Numéro de décision"
+    "excerpt" -> "Extrait"
+    "official_url" -> "Lien officiel"
+    "full_text_retrieved" -> "Texte intégral récupéré"
+    "verification_note" -> "Note de vérification"
+    "version_status" -> "État de la version"
+    "valid_from" -> "En vigueur depuis"
+    "valid_to" -> "En vigueur jusqu'au"
+    "legal_conclusion" -> "Conclusion juridique établie"
+    "result_count" -> "Nombre de résultats"
+    "cst_qualification" -> "Compétence du CST"
+    "fs_qualification" -> "Compétence de la formation spécialisée"
+    "fs_operational_qualification" -> "Analyse opérationnelle de la formation spécialisée"
+    "cst_fs_competence_routing" -> "Répartition des compétences CST / formation spécialisée"
+    "cst_agenda_request" -> "Point inscrit à l'ordre du jour"
+    "instance_meeting_deadlines" -> "Délais de réunion"
+    "annual_meeting_frequency" -> "Fréquence annuelle"
+    "fs_agenda_preparation" -> "Préparation de l'ordre du jour"
+    "qualification" -> "Qualification"
+    "status" -> "Statut"
+    "notice" -> "Information"
+    else -> key.replace('_', ' ').replaceFirstChar { it.uppercase() }
+}
+
+@Composable
+private fun InstancePreparationContent(raw: String) {
+    val data = remember(raw) { runCatching { JSONObject(raw) }.getOrNull() }
+    if (data == null) {
+        Text("Le résultat de préparation n'a pas pu être interprété. Relancez la préparation ou contactez le support.", color = Navy)
+        return
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        val instance = data.optString("instance")
+        val objectText = data.optString("objet")
+        if (instance.isNotBlank()) Text(if (instance == "FS") "Formation spécialisée (F3SCT)" else instance, color = SteelBlue, fontWeight = FontWeight.Bold)
+        if (objectText.isNotBlank()) Text(objectText, color = Navy, fontWeight = FontWeight.SemiBold)
+        val points = data.optJSONArray("points")
+        if (points != null) {
+            for (i in 0 until points.length()) {
+                val point = points.optJSONObject(i) ?: continue
+                Card(colors = CardDefaults.cardColors(containerColor = Glacier), shape = RoundedCornerShape(12.dp)) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text(point.optString("libelle", "Point à examiner"), color = Navy, fontWeight = FontWeight.SemiBold)
+                        val questions = point.optJSONArray("questions")
+                        if (questions != null && questions.length() > 0) {
+                            Text("Questions à poser", color = SteelBlue, fontWeight = FontWeight.SemiBold)
+                            for (j in 0 until questions.length()) {
+                                Text("• " + questions.optString(j), color = Navy, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        val documents = point.optJSONArray("documents")
+                        if (documents != null && documents.length() > 0) {
+                            Text("Documents à demander", color = SteelBlue, fontWeight = FontWeight.SemiBold)
+                            for (j in 0 until documents.length()) {
+                                Text("• " + documents.optString(j), color = Navy, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        val qualification = point.optString("qualification")
+                        if (qualification.isNotBlank()) Text("Statut : piste à confirmer", color = Color(0xFF8A5A16), style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+        val documents = data.optJSONArray("documents_a_demander")
+        if (documents != null && documents.length() > 0) {
+            Text("Liste récapitulative des documents", color = Navy, fontWeight = FontWeight.SemiBold)
+            for (i in 0 until documents.length()) Text("• " + documents.optString(i), color = Navy, style = MaterialTheme.typography.bodySmall)
+        }
+        val research = data.optJSONObject("legal_research")
+        if (research != null) {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White), border = androidx.compose.foundation.BorderStroke(1.dp, Border), shape = RoundedCornerShape(12.dp)) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Recherche juridique", color = Navy, fontWeight = FontWeight.SemiBold)
+                    val status = research.optString("status", "NON PRÉCISÉ")
+                    Text("État : " + when (status) {
+                        "NOT_CONFIGURED" -> "Recherche en direct non configurée"
+                        "SEARCHED" -> "Recherche effectuée"
+                        "PARTIAL" -> "Recherche partielle"
+                        "NO_RESULT" -> "Aucun résultat trouvé"
+                        "UNAVAILABLE" -> "Service de recherche indisponible"
+                        else -> status
+                    }, color = if (status == "SEARCHED") SteelBlue else Color(0xFF8A5A16), style = MaterialTheme.typography.bodySmall)
+                    val date = research.optString("requested_date")
+                    if (date.isNotBlank()) Text("Date de référence : $date", color = Navy, style = MaterialTheme.typography.bodySmall)
+                    val sources = research.optJSONArray("sources")
+                    if (sources != null && sources.length() > 0) {
+                        Text("Sources identifiées", color = SteelBlue, fontWeight = FontWeight.SemiBold)
+                        for (i in 0 until sources.length()) {
+                            val source = sources.optJSONObject(i) ?: continue
+                            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(source.optString("title", "Source sans titre"), color = Navy, fontWeight = FontWeight.Medium)
+                                val article = source.optString("article")
+                                if (article.isNotBlank()) Text(article, color = Navy, style = MaterialTheme.typography.bodySmall)
+                                val note = source.optString("verification_note")
+                                if (note.isNotBlank()) Text(note, color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
+                                val excerpt = source.optString("excerpt")
+                                if (excerpt.isNotBlank()) Text(excerpt.take(700), color = Navy, style = MaterialTheme.typography.bodySmall)
+                                val url = source.optString("official_url")
+                                if (url.isNotBlank()) Text(url, color = SteelBlue, style = MaterialTheme.typography.bodySmall)
+                            }
+                            if (i < sources.length() - 1) Spacer(Modifier.height(6.dp))
+                        }
+                    } else {
+                        Text("Aucune source juridique n'a été retournée. La fiche de préparation ne constitue pas une recherche juridique.", color = Color(0xFF8A5A16), style = MaterialTheme.typography.bodySmall)
+                    }
+                    val notice = research.optString("notice")
+                    if (notice.isNotBlank()) Text(notice, color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        val notice = data.optString("notice")
+        if (notice.isNotBlank()) Text(notice, color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
+        listOf("cst_qualification", "fs_qualification", "fs_operational_qualification").forEach { key ->
+            val qualification = data.optJSONObject(key) ?: return@forEach
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White), border = androidx.compose.foundation.BorderStroke(1.dp, Border), shape = RoundedCornerShape(12.dp)) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(preparationLabel(key), color = Navy, fontWeight = FontWeight.SemiBold)
+                    val status = qualification.optString("status")
+                    if (status.isNotBlank()) Text("État : $status", color = SteelBlue, style = MaterialTheme.typography.bodySmall)
+                    val conclusion = qualification.optString("conclusion")
+                    if (conclusion.isNotBlank()) Text(conclusion, color = Navy, style = MaterialTheme.typography.bodySmall)
+                    val reasons = qualification.optJSONArray("reasons") ?: qualification.optJSONArray("questions")
+                    if (reasons != null) for (i in 0 until reasons.length()) Text("• " + reasons.optString(i), color = Navy, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
 }
 
 private fun buildJurisInstancePrompt(rawPreparation: String): String {
@@ -444,11 +597,7 @@ fun NativeHomeScreen(
                             Column(Modifier.padding(16.dp)) {
                                 Text("Résultat de la préparation", color = Navy, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.height(6.dp))
-                                Text(
-                                    instancePreparation,
-                                    color = Navy,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                                InstancePreparationContent(instancePreparation)
                                 Spacer(Modifier.height(12.dp))
                                 Button(
                                     onClick = { onSendQuestion(buildJurisInstancePrompt(instancePreparation)) },
