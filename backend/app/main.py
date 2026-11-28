@@ -37,6 +37,7 @@ from .legal_assurance import assess_source_set
 from .ai_provider import AIAnalysisResult, AIProviderUnavailable, analyze_question, answer_references_are_grounded, extract_analysis_content, check_provider_availability
 from .legal_ingestion import parse_circulaires_xml, parse_administrative_open_data_zip, administrative_open_data_archive_url, filter_administrative_open_data_items
 from .dossiers import build_dossier_content, validate_dossier_content
+from .instance_sessions import validate_instance_session, serialize_instance_session
 from .legal_qualification import CONVERSATION_HISTORY_MESSAGE_LIMIT
 from .rate_limit import consume_chat_request, consume_daily_chat_question
 from .entitlements import resolve_entitlements
@@ -995,6 +996,117 @@ async def delete_chat_conversation(conversation_id: str, ctx: TenantContext = De
     if result == "DELETE 0":
         raise HTTPException(404, "Conversation introuvable.")
     return None
+
+
+@app.get("/api/v1/instances/sessions", dependencies=[Depends(require_syndicate_subscription)])
+async def list_instance_sessions(limit: int = 50, ctx: TenantContext = Depends(get_tenant_context)):
+    if limit < 1 or limit > 100:
+        raise HTTPException(422, "La limite doit être comprise entre 1 et 100.")
+    rows = await ctx.conn.fetch(
+        """SELECT id,instance_code,title,meeting_date,meeting_status,agenda,preparation,
+                  questions,documents,minutes,action_items,created_by,created_at,updated_at
+           FROM instance_sessions WHERE organization_id=$1::uuid
+           ORDER BY meeting_date DESC NULLS LAST, updated_at DESC LIMIT $2""",
+        ctx.organization_id, limit,
+    )
+    return [serialize_instance_session(row) for row in rows]
+
+
+@app.post("/api/v1/instances/sessions", status_code=201, dependencies=[Depends(require_syndicate_subscription)])
+async def create_instance_session(payload: dict, ctx: TenantContext = Depends(get_tenant_context)):
+    try:
+        data = validate_instance_session(payload)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    data.setdefault("meeting_date", None)
+    data.setdefault("meeting_status", "PREPARATION")
+    data.setdefault("agenda", [])
+    data.setdefault("preparation", {})
+    data.setdefault("questions", [])
+    data.setdefault("documents", [])
+    data.setdefault("minutes", "")
+    data.setdefault("action_items", [])
+    row = await ctx.conn.fetchrow(
+        """INSERT INTO instance_sessions(
+             organization_id,created_by,instance_code,title,meeting_date,meeting_status,
+             agenda,preparation,questions,documents,minutes,action_items)
+           VALUES($1::uuid,$2::uuid,$3,$4,$5::date,$6,$7::jsonb,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12::jsonb)
+           RETURNING id,instance_code,title,meeting_date,meeting_status,agenda,preparation,
+                     questions,documents,minutes,action_items,created_by,created_at,updated_at""",
+        ctx.organization_id, ctx.user_id, data["instance_code"], data["title"], data["meeting_date"],
+        data["meeting_status"], json.dumps(data["agenda"], ensure_ascii=False),
+        json.dumps(data["preparation"], ensure_ascii=False), json.dumps(data["questions"], ensure_ascii=False),
+        json.dumps(data["documents"], ensure_ascii=False), data["minutes"],
+        json.dumps(data["action_items"], ensure_ascii=False),
+    )
+    await ctx.conn.execute(
+        """INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id)
+           VALUES($1::uuid,$2::uuid,'INSTANCE_SESSION_CREATED','instance_session',$3::uuid)""",
+        ctx.organization_id, ctx.user_id, row["id"],
+    )
+    return serialize_instance_session(row)
+
+
+@app.get("/api/v1/instances/sessions/{session_id}", dependencies=[Depends(require_syndicate_subscription)])
+async def get_instance_session(session_id: str, ctx: TenantContext = Depends(get_tenant_context)):
+    try:
+        session_uuid = str(UUID(session_id))
+    except ValueError:
+        raise HTTPException(422, "Identifiant de séance invalide.")
+    row = await ctx.conn.fetchrow(
+        """SELECT id,instance_code,title,meeting_date,meeting_status,agenda,preparation,
+                  questions,documents,minutes,action_items,created_by,created_at,updated_at
+           FROM instance_sessions WHERE id=$1::uuid AND organization_id=$2::uuid""",
+        session_uuid, ctx.organization_id,
+    )
+    if not row:
+        raise HTTPException(404, "Dossier de séance introuvable dans cette organisation.")
+    return serialize_instance_session(row)
+
+
+@app.put("/api/v1/instances/sessions/{session_id}", dependencies=[Depends(require_syndicate_subscription)])
+async def update_instance_session(session_id: str, payload: dict, ctx: TenantContext = Depends(get_tenant_context)):
+    try:
+        session_uuid = str(UUID(session_id))
+    except ValueError:
+        raise HTTPException(422, "Identifiant de séance invalide.")
+    existing = await ctx.conn.fetchrow(
+        """SELECT id,instance_code,title,meeting_date,meeting_status,agenda,preparation,
+                  questions,documents,minutes,action_items,created_by,created_at,updated_at
+           FROM instance_sessions WHERE id=$1::uuid AND organization_id=$2::uuid FOR UPDATE""",
+        session_uuid, ctx.organization_id,
+    )
+    if not existing:
+        raise HTTPException(404, "Dossier de séance introuvable dans cette organisation.")
+    stored = serialize_instance_session(existing)
+    merged = {key: stored[key] for key in (
+        "instance_code","title","meeting_date","meeting_status","agenda","preparation",
+        "questions","documents","minutes","action_items"
+    )}
+    merged.update(payload)
+    try:
+        data = validate_instance_session(merged)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    row = await ctx.conn.fetchrow(
+        """UPDATE instance_sessions SET instance_code=$3,title=$4,meeting_date=$5::date,meeting_status=$6,
+             agenda=$7::jsonb,preparation=$8::jsonb,questions=$9::jsonb,documents=$10::jsonb,
+             minutes=$11,action_items=$12::jsonb,updated_at=now()
+           WHERE id=$1::uuid AND organization_id=$2::uuid
+           RETURNING id,instance_code,title,meeting_date,meeting_status,agenda,preparation,
+                     questions,documents,minutes,action_items,created_by,created_at,updated_at""",
+        session_uuid, ctx.organization_id, data["instance_code"], data["title"], data.get("meeting_date"),
+        data.get("meeting_status","PREPARATION"), json.dumps(data.get("agenda",[]), ensure_ascii=False),
+        json.dumps(data.get("preparation",{}), ensure_ascii=False), json.dumps(data.get("questions",[]), ensure_ascii=False),
+        json.dumps(data.get("documents",[]), ensure_ascii=False), data.get("minutes",""),
+        json.dumps(data.get("action_items",[]), ensure_ascii=False),
+    )
+    await ctx.conn.execute(
+        """INSERT INTO audit_events(organization_id,actor_user_id,event_type,target_type,target_id)
+           VALUES($1::uuid,$2::uuid,'INSTANCE_SESSION_UPDATED','instance_session',$3::uuid)""",
+        ctx.organization_id, ctx.user_id, session_uuid,
+    )
+    return serialize_instance_session(row)
 
 
 @app.post("/api/v1/chat/conversations/{conversation_id}/dossier", status_code=201)
