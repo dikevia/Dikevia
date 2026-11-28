@@ -2531,7 +2531,7 @@ class LegalOrchestrator:
                                 else:
                                     rendered_claims.append(
                                         f"Cette réponse porte sur les règles consultées au {effective_date.isoformat()} ; "
-                                        + ("l'analyse d'une situation concrète reste limitée aux faits et pièces communiqués, et une vérification historique peut être nécessaire si la date des faits conduit à retenir une rédaction différente."
+                                        + ("l'analyse d'une situation concrète reste limitée aux faits et pièces communiqués, et une vérification historique est nécessaire uniquement si la date des faits conduit à retenir une rédaction différente."
                                            if parsed_date is None else
                                            "son analyse dépend aussi des faits établis et des éventuels actes locaux à examiner.")
                                     )
