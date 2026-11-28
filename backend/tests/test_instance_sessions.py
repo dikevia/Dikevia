@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.instance_sessions import validate_instance_session
+from app.instance_sessions import validate_instance_session, render_instance_session_pdf
 
 ROOT = Path(__file__).parents[2]
 
@@ -54,12 +54,39 @@ def test_instance_session_frontend_exposes_shared_session_dossier_workflow():
     for control in (
         "instanceSessionsPanel", "refreshInstanceSessions", "sessionTitle",
         "sessionAgenda", "sessionQuestions", "sessionDocuments", "sessionMinutes",
-        "sessionActions", "createInstanceSession", "saveInstanceSession",
+        "sessionActions", "createInstanceSession", "saveInstanceSession", "exportInstanceSessionPdf",
         "/api/v1/instances/sessions",
     ):
         assert control in html
     assert "loadInstanceSessions()" in html
     assert "latestInstancePreparation||activeInstanceSession?.preparation" in html
+    assert "/pdf" in html
+
+
+
+def test_instance_session_pdf_contains_agenda_notes_and_warning():
+    from pypdf import PdfReader
+    from io import BytesIO
+
+    pdf = render_instance_session_pdf({
+        "id": "test",
+        "instance_code": "F3SCT",
+        "title": "Séance F3SCT décembre",
+        "meeting_date": "2026-12-15",
+        "meeting_status": "TENUE",
+        "agenda": ["DUERP et programme annuel"],
+        "preparation": {"legal_research_status": "A_VERIFIER"},
+        "questions": ["Quelles mesures de prévention sont prévues ?"],
+        "documents": ["DUERP actualisé"],
+        "minutes": "Les représentants demandent un calendrier.",
+        "action_items": ["Transmettre le plan de prévention"],
+    })
+    assert pdf.startswith(b"%PDF-")
+    extracted = "\\n".join(page.extract_text() or "" for page in PdfReader(BytesIO(pdf)).pages)
+    assert "DUERP et programme annuel" in extracted
+    assert "Quelles mesures de prévention" in extracted
+    assert "calendrier" in extracted
+    assert "ne constituent pas une validation juridique" in extracted
 
 
 def test_instance_session_api_has_list_create_read_and_update_routes():
@@ -74,3 +101,4 @@ def test_instance_session_api_has_list_create_read_and_update_routes():
     assert ("/api/v1/instances/sessions", "POST") in routes
     assert ("/api/v1/instances/sessions/{session_id}", "GET") in routes
     assert ("/api/v1/instances/sessions/{session_id}", "PUT") in routes
+    assert ("/api/v1/instances/sessions/{session_id}/pdf", "GET") in routes
