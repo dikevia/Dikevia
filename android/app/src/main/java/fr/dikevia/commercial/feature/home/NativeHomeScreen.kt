@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -196,6 +197,7 @@ fun NativeHomeScreen(
     var sessionTitle by remember { mutableStateOf("") }
     var sessionDate by remember { mutableStateOf("") }
     var sessionMinutes by remember { mutableStateOf("") }
+    var openedSession by remember { mutableStateOf<DikeviaInstanceSession?>(null) }
 
     MaterialTheme {
         Surface(modifier = modifier.fillMaxSize(), color = Glacier) {
@@ -392,6 +394,7 @@ fun NativeHomeScreen(
                         } else {
                             savedSessions.take(20).forEach { saved ->
                                 Card(
+                                    onClick = { openedSession = saved },
                                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color.White),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Border),
@@ -411,6 +414,24 @@ fun NativeHomeScreen(
                                 }
                             }
                         }
+                    }
+
+                    openedSession?.let { session ->
+                        AlertDialog(
+                            onDismissRequest = { openedSession = null },
+                            title = { Text(session.instanceCode + " — " + session.title, color = Navy) },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Date de séance : " + (session.meetingDate ?: "à fixer"))
+                                    Text("Statut : " + session.meetingStatus)
+                                    Text("Compte rendu / notes :")
+                                    Text(session.minutes.ifBlank { "Aucune note enregistrée." })
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { openedSession = null }) { Text("Fermer") }
+                            }
+                        )
                     }
 
                     if (instancePreparation.isNotBlank() && preparationMatchesInstance(instancePreparation, selectedInstance)) {
