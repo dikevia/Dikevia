@@ -489,7 +489,7 @@ html.dikevia-standard-app footer{display:none}
  <div class="field"><label for="sessionDocuments">Documents à obtenir ou examiner (un par ligne)</label><textarea id="sessionDocuments" rows="4" maxlength="12000"></textarea></div>
  <div class="field"><label for="sessionMinutes">Compte rendu / notes de séance</label><textarea id="sessionMinutes" rows="8" maxlength="50000"></textarea></div>
  <div class="field"><label for="sessionActions">Actions à suivre (une par ligne)</label><textarea id="sessionActions" rows="4" maxlength="12000"></textarea></div>
- <div class="row"><button type="button" id="createInstanceSession">Créer le dossier de séance</button><button type="button" id="saveInstanceSession" class="secondary" disabled>Enregistrer les modifications</button><button type="button" id="newInstanceSession" class="secondary">Nouveau dossier</button></div>
+ <div class="row"><button type="button" id="createInstanceSession">Créer le dossier de séance</button><button type="button" id="saveInstanceSession" class="secondary" disabled>Enregistrer les modifications</button><button type="button" id="exportInstanceSessionPdf" class="secondary" disabled>Exporter en PDF</button><button type="button" id="newInstanceSession" class="secondary">Nouveau dossier</button></div>
  <p id="instanceSessionMessage" class="muted" aria-live="polite"></p>
  <div id="instanceSessionPreparation" class="dossier-readonly hidden"></div>
 </div></div>
@@ -886,7 +886,7 @@ function sessionMessage(text,error=false){const el=$('#instanceSessionMessage');
 function clearInstanceSessionForm(){
  activeInstanceSession=null;
  ['sessionTitle','sessionDate','sessionAgenda','sessionQuestions','sessionDocuments','sessionMinutes','sessionActions'].forEach(id=>$('#'+id).value='');
- $('#sessionStatus').value='PREPARATION';$('#saveInstanceSession').disabled=true;$('#createInstanceSession').disabled=false;
+ $('#sessionStatus').value='PREPARATION';$('#saveInstanceSession').disabled=true;$('#exportInstanceSessionPdf').disabled=true;$('#createInstanceSession').disabled=false;
  $('#instanceSessionPreparation').classList.add('hidden');$('#instanceSessionPreparation').textContent='';
 }
 function fillInstanceSessionForm(d){
@@ -898,7 +898,7 @@ function fillInstanceSessionForm(d){
  $('#sessionDocuments').value=(d.documents||[]).map(x=>typeof x==='string'?x:(x.name||JSON.stringify(x))).join('\\n');
  $('#sessionMinutes').value=d.minutes||'';
  $('#sessionActions').value=(d.action_items||[]).map(x=>typeof x==='string'?x:(x.task||JSON.stringify(x))).join('\\n');
- $('#saveInstanceSession').disabled=false;$('#createInstanceSession').disabled=true;
+ $('#saveInstanceSession').disabled=false;$('#exportInstanceSessionPdf').disabled=false;$('#createInstanceSession').disabled=true;
  const prep=d.preparation||{};
  $('#instanceSessionPreparation').textContent=Object.keys(prep).length?JSON.stringify(prep,null,2):'Aucune préparation JURIS enregistrée dans ce dossier.';
  $('#instanceSessionPreparation').classList.remove('hidden');
@@ -919,6 +919,15 @@ function instanceSessionPayload(){
   agenda:sessionLines('sessionAgenda'),questions:sessionLines('sessionQuestions'),documents:sessionLines('sessionDocuments'),minutes:$('#sessionMinutes').value,
   action_items:sessionLines('sessionActions'),preparation:latestInstancePreparation||activeInstanceSession?.preparation||{}};
 }
+$('#exportInstanceSessionPdf').addEventListener('click',async()=>{
+ if(!activeInstanceSession)return;
+ try{
+  const blob=await api('/api/v1/instances/sessions/'+encodeURIComponent(activeInstanceSession.id)+'/pdf',{responseType:'blob'});
+  const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;
+  link.download='dossier-seance-'+activeInstanceSession.id+'.pdf';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+  sessionMessage('Export PDF généré à partir du dossier enregistré.');
+ }catch(e){sessionMessage('Export PDF impossible : '+e.message,true);}
+});
 $('#refreshInstanceSessions').addEventListener('click',loadInstanceSessions);
 $('#newInstanceSession').addEventListener('click',()=>{clearInstanceSessionForm();sessionMessage('Nouveau dossier de séance.');});
 $('#createInstanceSession').addEventListener('click',async()=>{
