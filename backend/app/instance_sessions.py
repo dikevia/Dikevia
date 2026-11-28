@@ -92,6 +92,17 @@ def render_instance_session_pdf(session: dict) -> bytes:
     agenda = session.get("agenda") or []
     questions = session.get("questions") or []
     documents = session.get("documents") or []
+    documents = [
+        (
+            f"{item.get('title') or item.get('filename') or 'Document sans titre'} — "
+            f"collectivité : {item.get('collectivity_name') or 'non précisée'} — "
+            f"validation : {item.get('validation_status') or 'inconnue'} — "
+            f"analyse antivirus : {item.get('scan_status') or 'non renseignée'} — "
+            f"référence : {item.get('document_id')}"
+        ) if isinstance(item, dict) and item.get("document_id") else
+        (str(item.get("title") or item.get("name") or item) if isinstance(item, dict) else str(item))
+        for item in documents
+    ]
     actions = session.get("action_items") or []
     preparation = session.get("preparation") or {}
     content = {
