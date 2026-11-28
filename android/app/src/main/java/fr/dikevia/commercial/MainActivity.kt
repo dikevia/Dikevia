@@ -39,14 +39,10 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Switch to the native Compose application only when a real Auth0 Native
-        // Client ID is injected at build time. Until then, retain the known web
-        // fallback rather than shipping a native login that cannot authenticate.
-        if (BuildConfig.DEBUG || (
-            BuildConfig.AUTH0_CLIENT_ID.isNotBlank() &&
-                BuildConfig.AUTH0_CLIENT_ID != "AUTH0_NATIVE_CLIENT_ID_REQUIRED"
-            )
-        ) {
+        // Native Compose preview is explicitly enabled only in beta/debug builds.
+        // Release keeps the validated WebView launcher until physical-device
+        // Auth0 + API acceptance tests authorize the native launcher migration.
+        if (BuildConfig.ENABLE_NATIVE_PREVIEW) {
             startActivity(Intent(this, NativePreviewActivity::class.java))
             finish()
             return
