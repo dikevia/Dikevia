@@ -20,7 +20,12 @@ data class DikeviaInstanceSession(
     val title: String,
     val meetingDate: String?,
     val meetingStatus: String,
-    val minutes: String
+    val agenda: List<String>,
+    val preparation: String,
+    val questions: List<String>,
+    val documents: List<String>,
+    val minutes: String,
+    val actionItems: List<String>
 )
 
 data class DikeviaAnswer(
@@ -117,14 +122,33 @@ class DikeviaApiClient {
         return parseInstanceSession(response)
     }
 
-    private fun parseInstanceSession(item: JSONObject) = DikeviaInstanceSession(
-        id = item.getString("id"),
-        instanceCode = item.optString("instance_code"),
-        title = item.optString("title"),
-        meetingDate = item.optString("meeting_date").takeIf { it.isNotBlank() && it != "null" },
-        meetingStatus = item.optString("meeting_status", "PREPARATION"),
-        minutes = item.optString("minutes", "")
-    )
+    private fun parseInstanceSession(item: JSONObject): DikeviaInstanceSession {
+        fun readItems(key: String): List<String> {
+            val array = item.optJSONArray(key) ?: return emptyList()
+            return buildList {
+                for (index in 0 until array.length()) {
+                    val value = array.opt(index)
+                    if (value != null && value != JSONObject.NULL) {
+                        add(if (value is JSONObject || value is JSONArray) value.toString() else value.toString())
+                    }
+                }
+            }
+        }
+        val preparation = item.optJSONObject("preparation")?.toString(2).orEmpty()
+        return DikeviaInstanceSession(
+            id = item.getString("id"),
+            instanceCode = item.optString("instance_code"),
+            title = item.optString("title"),
+            meetingDate = item.optString("meeting_date").takeIf { it.isNotBlank() && it != "null" },
+            meetingStatus = item.optString("meeting_status", "PREPARATION"),
+            agenda = readItems("agenda"),
+            preparation = preparation,
+            questions = readItems("questions"),
+            documents = readItems("documents"),
+            minutes = item.optString("minutes", ""),
+            actionItems = readItems("action_items")
+        )
+    }
 
     fun prepareInstance(
         accessToken: String,
