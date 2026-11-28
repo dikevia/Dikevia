@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -381,8 +382,15 @@ fun NativeHomeScreen(
     var sessionDate by remember { mutableStateOf("") }
     var sessionMinutes by remember { mutableStateOf("") }
     var openedSession by remember { mutableStateOf<DikeviaInstanceSession?>(null) }
+    var instancePanelOpen by remember { mutableStateOf(false) }
+    var contextPanelOpen by remember { mutableStateOf(false) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val drawerScope = rememberCoroutineScope()
+    val chatScrollState = rememberScrollState()
+
+    LaunchedEffect(chatTranscript.size, sending) {
+        chatScrollState.animateScrollTo(chatScrollState.maxValue)
+    }
 
     MaterialTheme {
         ModalNavigationDrawer(
@@ -414,6 +422,7 @@ fun NativeHomeScreen(
                                     sessionTitle = ""
                                     sessionDate = ""
                                     sessionMinutes = ""
+                                    instancePanelOpen = true
                                     drawerScope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(horizontal = 10.dp)
@@ -423,438 +432,452 @@ fun NativeHomeScreen(
                 }
             }
         ) {
-        Surface(modifier = modifier.fillMaxSize(), color = Glacier) {
-            Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("DIKÉVIA", color = Navy, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                        Text(
-                            if (administrationEdition) "Administration" else "L'assistance juridique des agents",
-                            color = Navy,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    TextButton(onClick = if (authenticated) onSignOut else onSignIn) {
-                        Text(if (authenticated) "Se déconnecter" else "Se connecter", color = SteelBlue)
-                    }
-                }
-
-                Spacer(Modifier.height(24.dp))
-
+            Surface(modifier = modifier.fillMaxSize(), color = Glacier) {
                 if (administrationEdition) {
-                    AdminLanding()
-                } else {
-                    val hasAssistantResponse = chatTranscript.any { it.role != "user" }
-                    if (!hasAssistantResponse) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(300.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                JurisOrb(
-                                    state = if (sending) JurisOrbState.ANALYZING else JurisOrbState.READY,
-                                    diameter = 248.dp,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
-                                Spacer(Modifier.height(18.dp))
-                                Text("JURIS", color = Navy, fontSize = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
-                                Text(
-                                    if (sending) "Analyse de votre demande…" else "Votre assistant juridique territorial",
-                                    color = Color(0xFF52677C),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                    Column(
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 18.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.weight(1f)) {
+                                Text("DIKÉVIA", color = Navy, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                                Text("Administration", color = Navy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            }
+                            TextButton(onClick = if (authenticated) onSignOut else onSignIn) {
+                                Text(if (authenticated) "Se déconnecter" else "Se connecter", color = SteelBlue)
                             }
                         }
+                        Spacer(Modifier.height(24.dp))
+                        AdminLanding()
                     }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("JURIS", color = Navy, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                            Text(selectedInstance?.let { "Parcours actif : $it" } ?: "Votre assistant juridique territorial", color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
-                        }
-                        TextButton(onClick = { drawerScope.launch { drawerState.open() } }) {
-                            Text("☰  Instances", color = SteelBlue, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-
-                    if (selectedInstance != null) {
-                        Spacer(Modifier.height(12.dp))
-                        if (!authenticated || selectedOrganizationId == null) {
-                            Text(
-                                if (!authenticated) {
-                                    "Connectez-vous pour préparer cette instance avec JURIS."
-                                } else {
-                                    "Aucune organisation active n'est sélectionnée pour ce compte."
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                color = Color(0xFF8A5A16),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        Text(
-                            "Préparer $selectedInstance",
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Navy,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        OutlinedTextField(
-                            value = instanceObjet,
-                            onValueChange = { instanceObjet = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = authenticated && selectedOrganizationId != null && !preparingInstance,
-                            label = { Text("Objet ou point de l'ordre du jour") },
-                            placeholder = { Text("Décrivez le sujet à examiner…") },
-                            minLines = 2,
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Button(
-                            onClick = {
-                                selectedInstance?.let { onPrepareInstance(it, instanceObjet.trim()) }
-                            },
-                            enabled = authenticated && selectedOrganizationId != null &&
-                                instanceObjet.isNotBlank() && !preparingInstance,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Text(if (preparingInstance) "Préparation en cours…" else "Préparer avec JURIS")
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        Text("Dossier de séance", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
-                        OutlinedTextField(
-                            value = sessionTitle,
-                            onValueChange = { sessionTitle = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Intitulé du dossier") },
-                            placeholder = { Text("Ex. : séance CST – organisation du temps de travail") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                        OutlinedTextField(
-                            value = sessionDate,
-                            onValueChange = { sessionDate = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Date de séance (facultatif)") },
-                            placeholder = { Text("AAAA-MM-JJ") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                        OutlinedTextField(
-                            value = sessionMinutes,
-                            onValueChange = { sessionMinutes = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Compte rendu / notes de séance") },
-                            placeholder = { Text("Notes de travail, décisions, réserves et suites à donner…") },
-                            minLines = 3,
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                        Button(
-                            onClick = {
-                                val code = selectedInstance ?: return@Button
-                                val title = sessionTitle.ifBlank { "$code — ${instanceObjet.take(150)}" }
-                                onSaveSession(code, title, sessionDate, sessionMinutes)
-                            },
-                            enabled = authenticated && selectedOrganizationId != null &&
-                                (sessionTitle.length >= 3 || instanceObjet.length >= 3) && !savingSession,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Text(if (savingSession) "Enregistrement…" else "Enregistrer le dossier de séance")
-                        }
-                    }
-
-                    if (authenticated) {
-                        Spacer(Modifier.height(18.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Mes dossiers de séance", color = Navy, fontWeight = FontWeight.SemiBold)
-                            TextButton(onClick = onRefreshSessions) { Text("Actualiser", color = SteelBlue) }
-                        }
-                        if (savedSessions.isEmpty()) {
-                            Text("Aucun dossier de séance enregistré dans cette organisation.", color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
-                        } else {
-                            savedSessions.take(20).forEach { saved ->
-                                Card(
-                                    onClick = { openedSession = saved },
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Border),
-                                    shape = RoundedCornerShape(14.dp)
-                                ) {
-                                    Column(Modifier.padding(13.dp)) {
-                                        Text(saved.instanceCode + " — " + saved.title, color = Navy, fontWeight = FontWeight.SemiBold)
-                                        Text(
-                                            "Date : " + (saved.meetingDate ?: "à fixer") + " · " + saved.meetingStatus,
-                                            color = Color(0xFF62768A),
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                        if (saved.minutes.isNotBlank()) {
-                                            Text(saved.minutes.take(260), color = Navy, style = MaterialTheme.typography.bodySmall)
-                                        }
-                                    }
+                            Column(Modifier.weight(1f)) {
+                                Text("DIKÉVIA", color = Navy, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                                Text("JURIS · Assistance juridique", color = Navy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                if (selectedInstance != null) {
+                                    Text("Parcours actif : $selectedInstance", color = SteelBlue, style = MaterialTheme.typography.labelSmall)
                                 }
                             }
+                            TextButton(onClick = { contextPanelOpen = true }) { Text("Contexte", color = SteelBlue) }
+                            TextButton(onClick = { drawerScope.launch { drawerState.open() } }) { Text("☰", color = SteelBlue, fontWeight = FontWeight.Bold) }
                         }
-                    }
 
-                    openedSession?.let { session ->
-                        AlertDialog(
-                            onDismissRequest = { openedSession = null },
-                            title = {
-                                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                    Text(session.instanceCode + " — " + session.title, color = Navy)
-                                    Text("Dossier de séance complet", color = SteelBlue, style = MaterialTheme.typography.labelMedium)
-                                }
-                            },
-                            text = {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Text("Date de séance : " + (session.meetingDate ?: "à fixer"), color = Navy)
-                                    Text("Statut : " + session.meetingStatus, color = Navy)
-                                    SessionItemsSection("Ordre du jour", session.agenda)
-                                    if (session.preparation.isNotBlank()) {
-                                        Text("Préparation enregistrée", color = Navy, fontWeight = FontWeight.SemiBold)
-                                        InstancePreparationContent(session.preparation)
-                                    } else {
-                                        Text("Aucune préparation juridique n'est enregistrée dans ce dossier.", color = Color(0xFF8A5A16), style = MaterialTheme.typography.bodySmall)
-                                    }
-                                    SessionItemsSection("Questions à traiter", session.questions)
-                                    SessionItemsSection("Documents associés", session.documents)
-                                    Text("Compte rendu / notes de séance", color = SteelBlue, fontWeight = FontWeight.SemiBold)
-                                    Text(session.minutes.ifBlank { "Aucun compte rendu ou note n'a encore été saisi." }, color = Navy)
-                                    SessionItemsSection("Actions à suivre", session.actionItems)
-                                    Text("Identifiant du dossier : " + session.id, color = Color(0xFF62768A), style = MaterialTheme.typography.labelSmall)
-                                }
-                            },
-                            confirmButton = {
-                                TextButton(onClick = { openedSession = null }) { Text("Fermer") }
-                            }
-                        )
-                    }
-
-                    if (instancePreparation.isNotBlank() && preparationMatchesInstance(instancePreparation, selectedInstance)) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Border),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text("Résultat de la préparation", color = Navy, fontWeight = FontWeight.Bold)
-                                Spacer(Modifier.height(6.dp))
-                                InstancePreparationContent(instancePreparation)
-                                Spacer(Modifier.height(12.dp))
-                                Button(
-                                    onClick = { onSendQuestion(buildJurisInstancePrompt(instancePreparation)) },
-                                    enabled = authenticated && selectedOrganizationId != null && !sending,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
-                                    shape = RoundedCornerShape(14.dp)
-                                ) {
-                                    Text(if (sending) "JURIS analyse…" else "Approfondir cette préparation avec JURIS")
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(18.dp))
-                    Text("Versant de la fonction publique", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf("FPT" to "Territoriale", "FPE" to "État", "FPH" to "Hospitalière").forEach { (code, label) ->
-                            FilterChip(
-                                selected = publicService == code,
-                                onClick = { onPublicServiceChange(code) },
-                                label = { Text(label, fontSize = 11.sp) }
-                            )
-                        }
-                    }
-                    if (publicService == "FPT") {
-                        var employerMenuExpanded by remember { mutableStateOf(false) }
-                        val employerLabels = mapOf(
-                            "NATIONAL" to "National / non précisé",
-                            "VILLE_SAINT_ETIENNE" to "Ville de Saint-Étienne",
-                            "SAINT_ETIENNE_METROPOLE" to "Saint-Étienne Métropole"
-                        )
-                        TextButton(onClick = { employerMenuExpanded = true }) {
-                            Text("Employeur : ${employerLabels[employer] ?: employer}", color = SteelBlue)
-                        }
-                        DropdownMenu(expanded = employerMenuExpanded, onDismissRequest = { employerMenuExpanded = false }) {
-                            employerLabels.forEach { (code, label) ->
-                                DropdownMenuItem(
-                                    text = { Text(label) },
-                                    onClick = { onEmployerChange(code); employerMenuExpanded = false }
-                                )
-                            }
-                        }
-                    } else {
-                        OutlinedTextField(
-                            value = employerDetails,
-                            onValueChange = onEmployerDetailsChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(if (publicService == "FPE") "Ministère ou administration (facultatif)" else "Établissement hospitalier (facultatif)") },
-                            placeholder = { Text(if (publicService == "FPE") "Ministère, rectorat, préfecture…" else "Centre hospitalier, CHU…") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                    }
-                    Text("Période de la situation (facultatif)", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = factsStartDate,
-                            onValueChange = onFactsStartDateChange,
-                            modifier = Modifier.weight(1f),
-                            label = { Text("Début") },
-                            placeholder = { Text("AAAA-MM-JJ") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        OutlinedTextField(
-                            value = factsEndDate,
-                            onValueChange = onFactsEndDateChange,
-                            modifier = Modifier.weight(1f),
-                            label = { Text("Fin") },
-                            placeholder = { Text("AAAA-MM-JJ") },
-                            enabled = !situationOngoing,
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Checkbox(checked = situationOngoing, onCheckedChange = onSituationOngoingChange)
-                        Text("La situation est toujours en cours", color = Navy, style = MaterialTheme.typography.bodySmall)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Checkbox(checked = confirmLocalDocumentAiTransfer, onCheckedChange = onConfirmLocalDocumentAiTransferChange)
-                        Text(
-                            "Autoriser, pour cette demande, la transmission d'extraits de documents locaux au fournisseur IA",
-                            color = Color(0xFF52677C),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    if (authenticated) {
-                        var organizationMenuExpanded by remember { mutableStateOf(false) }
-                        val selectedOrganization = organizations.firstOrNull { it.id == selectedOrganizationId }
-                        Text(
-                            if (selectedOrganization == null) "Aucune organisation active disponible" else "Espace : ${selectedOrganization.displayName}",
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Navy,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        if (organizations.size > 1) {
-                            TextButton(onClick = { organizationMenuExpanded = true }) {
-                                Text("Changer d'organisation", color = SteelBlue)
-                            }
-                            DropdownMenu(
-                                expanded = organizationMenuExpanded,
-                                onDismissRequest = { organizationMenuExpanded = false }
-                            ) {
-                                organizations.forEach { organization ->
-                                    DropdownMenuItem(
-                                        text = { Text(organization.displayName) },
-                                        onClick = {
-                                            onSelectOrganization(organization.id)
-                                            organizationMenuExpanded = false
-                                        }
+                        if (chatTranscript.isEmpty()) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    JurisOrb(
+                                        state = if (sending) JurisOrbState.ANALYZING else JurisOrbState.READY,
+                                        diameter = 248.dp
+                                    )
+                                    Spacer(Modifier.height(16.dp))
+                                    Text("JURIS", color = Navy, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+                                    Text(
+                                        if (sending) "Analyse de votre demande…" else "Votre assistant juridique territorial",
+                                        color = Color(0xFF52677C),
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
                             }
-                        }
-                    }
-                    OutlinedTextField(
-                        value = question,
-                        onValueChange = { question = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = authenticated && selectedOrganizationId != null && !sending,
-                        placeholder = { Text(if (authenticated) "Posez votre question à JURIS…" else "Connectez-vous pour interroger JURIS") },
-                        shape = RoundedCornerShape(18.dp),
-                        minLines = 2
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Button(
-                        onClick = {
-                            val value = question.trim()
-                            if (value.isNotEmpty()) {
-                                onSendQuestion(value)
-                                question = ""
-                            }
-                        },
-                        enabled = authenticated && selectedOrganizationId != null && question.isNotBlank() && !sending,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Text(if (sending) "Analyse en cours…" else "Envoyer à JURIS")
-                    }
-                    if (chatStatus.isNotBlank()) {
-                        Text(
-                            chatStatus,
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            color = SteelBlue,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    if (chatTranscript.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp)
-                                .heightIn(max = 360.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            chatTranscript.forEachIndexed { index, message ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = if (message.role == "user") Color(0xFFE7F1FA) else Color.White
-                                    ),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Border),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Column(Modifier.padding(16.dp)) {
-                                        Text(
-                                            if (message.role == "user") "Vous" else "JURIS",
-                                            color = if (message.role == "user") SteelBlue else Navy,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(Modifier.height(6.dp))
-                                        Text(message.content, color = Navy, style = MaterialTheme.typography.bodyMedium)
+                        } else {
+                            Column(
+                                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(chatScrollState),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                chatTranscript.forEach { message ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (message.role == "user") Color(0xFFE7F1FA) else Color.White
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Column(Modifier.padding(15.dp)) {
+                                            Text(
+                                                if (message.role == "user") "Vous" else "JURIS",
+                                                color = if (message.role == "user") SteelBlue else Navy,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(Modifier.height(6.dp))
+                                            Text(message.content, color = Navy, style = MaterialTheme.typography.bodyMedium)
+                                        }
                                     }
+                                }
+                                if (sending) {
+                                    Text("JURIS analyse votre demande…", color = SteelBlue, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
-                    }
-                    if (!authenticated) {
-                        Text(
-                            "La connexion sécurisée est nécessaire pour accéder à vos espaces et à vos données.",
-                            color = Color(0xFF62768A),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = question,
+                                onValueChange = { question = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = authenticated && selectedOrganizationId != null && !sending,
+                                placeholder = { Text(if (authenticated) "Écrivez à JURIS…" else "Connectez-vous pour interroger JURIS") },
+                                shape = RoundedCornerShape(16.dp),
+                                minLines = 1,
+                                maxLines = 5
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    chatStatus.ifBlank { if (sending) "Analyse en cours…" else "JURIS · Sources juridiques à vérifier" },
+                                    modifier = Modifier.weight(1f),
+                                    color = SteelBlue,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                Button(
+                                    onClick = {
+                                        val value = question.trim()
+                                        if (value.isNotEmpty()) {
+                                            onSendQuestion(value)
+                                            question = ""
+                                        }
+                                    },
+                                    enabled = authenticated && selectedOrganizationId != null && question.isNotBlank() && !sending,
+                                    colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) { Text(if (sending) "Analyse…" else "Envoyer") }
+                            }
+                        }
+                        if (!authenticated) {
+                            Text(
+                                "La connexion sécurisée est nécessaire pour accéder à vos espaces et à vos données.",
+                                color = Color(0xFF62768A),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
             }
         }
-        }
+    }
+
+    if (instancePanelOpen && !administrationEdition) {
+        AlertDialog(
+            onDismissRequest = { instancePanelOpen = false },
+            title = { Text(selectedInstance?.let { "Espace $it" } ?: "Instances", color = Navy) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                                        if (selectedInstance != null) {
+                                            Spacer(Modifier.height(12.dp))
+                                            if (!authenticated || selectedOrganizationId == null) {
+                                                Text(
+                                                    if (!authenticated) {
+                                                        "Connectez-vous pour préparer cette instance avec JURIS."
+                                                    } else {
+                                                        "Aucune organisation active n'est sélectionnée pour ce compte."
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    color = Color(0xFF8A5A16),
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+                                            Text(
+                                                "Préparer $selectedInstance",
+                                                modifier = Modifier.fillMaxWidth(),
+                                                color = Navy,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            OutlinedTextField(
+                                                value = instanceObjet,
+                                                onValueChange = { instanceObjet = it },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                enabled = authenticated && selectedOrganizationId != null && !preparingInstance,
+                                                label = { Text("Objet ou point de l'ordre du jour") },
+                                                placeholder = { Text("Décrivez le sujet à examiner…") },
+                                                minLines = 2,
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                            Spacer(Modifier.height(8.dp))
+                                            Button(
+                                                onClick = {
+                                                    selectedInstance?.let { onPrepareInstance(it, instanceObjet.trim()) }
+                                                },
+                                                enabled = authenticated && selectedOrganizationId != null &&
+                                                    instanceObjet.isNotBlank() && !preparingInstance,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
+                                                shape = RoundedCornerShape(14.dp)
+                                            ) {
+                                                Text(if (preparingInstance) "Préparation en cours…" else "Préparer avec JURIS")
+                                            }
+                                            Spacer(Modifier.height(12.dp))
+                                            Text("Dossier de séance", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
+                                            OutlinedTextField(
+                                                value = sessionTitle,
+                                                onValueChange = { sessionTitle = it },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                label = { Text("Intitulé du dossier") },
+                                                placeholder = { Text("Ex. : séance CST – organisation du temps de travail") },
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                            OutlinedTextField(
+                                                value = sessionDate,
+                                                onValueChange = { sessionDate = it },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                label = { Text("Date de séance (facultatif)") },
+                                                placeholder = { Text("AAAA-MM-JJ") },
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                            OutlinedTextField(
+                                                value = sessionMinutes,
+                                                onValueChange = { sessionMinutes = it },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                label = { Text("Compte rendu / notes de séance") },
+                                                placeholder = { Text("Notes de travail, décisions, réserves et suites à donner…") },
+                                                minLines = 3,
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                            Button(
+                                                onClick = {
+                                                    val code = selectedInstance ?: return@Button
+                                                    val title = sessionTitle.ifBlank { "$code — ${instanceObjet.take(150)}" }
+                                                    onSaveSession(code, title, sessionDate, sessionMinutes)
+                                                },
+                                                enabled = authenticated && selectedOrganizationId != null &&
+                                                    (sessionTitle.length >= 3 || instanceObjet.length >= 3) && !savingSession,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
+                                                shape = RoundedCornerShape(14.dp)
+                                            ) {
+                                                Text(if (savingSession) "Enregistrement…" else "Enregistrer le dossier de séance")
+                                            }
+                                        }
+                                        if (authenticated) {
+                                            Spacer(Modifier.height(18.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text("Mes dossiers de séance", color = Navy, fontWeight = FontWeight.SemiBold)
+                                                TextButton(onClick = onRefreshSessions) { Text("Actualiser", color = SteelBlue) }
+                                            }
+                                            if (savedSessions.isEmpty()) {
+                                                Text("Aucun dossier de séance enregistré dans cette organisation.", color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
+                                            } else {
+                                                savedSessions.take(20).forEach { saved ->
+                                                    Card(
+                                                        onClick = { openedSession = saved },
+                                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                                                        border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                                                        shape = RoundedCornerShape(14.dp)
+                                                    ) {
+                                                        Column(Modifier.padding(13.dp)) {
+                                                            Text(saved.instanceCode + " — " + saved.title, color = Navy, fontWeight = FontWeight.SemiBold)
+                                                            Text(
+                                                                "Date : " + (saved.meetingDate ?: "à fixer") + " · " + saved.meetingStatus,
+                                                                color = Color(0xFF62768A),
+                                                                style = MaterialTheme.typography.bodySmall
+                                                            )
+                                                            if (saved.minutes.isNotBlank()) {
+                                                                Text(saved.minutes.take(260), color = Navy, style = MaterialTheme.typography.bodySmall)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                }
+            },
+            confirmButton = { TextButton(onClick = { instancePanelOpen = false }) { Text("Fermer") }
+            }
+        )
+    }
+
+    if (contextPanelOpen && !administrationEdition) {
+        AlertDialog(
+            onDismissRequest = { contextPanelOpen = false },
+            title = { Text("Contexte de la demande", color = Navy) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                                        Spacer(Modifier.height(18.dp))
+                                        Text("Versant de la fonction publique", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            listOf("FPT" to "Territoriale", "FPE" to "État", "FPH" to "Hospitalière").forEach { (code, label) ->
+                                                FilterChip(
+                                                    selected = publicService == code,
+                                                    onClick = { onPublicServiceChange(code) },
+                                                    label = { Text(label, fontSize = 11.sp) }
+                                                )
+                                            }
+                                        }
+                                        if (publicService == "FPT") {
+                                            var employerMenuExpanded by remember { mutableStateOf(false) }
+                                            val employerLabels = mapOf(
+                                                "NATIONAL" to "National / non précisé",
+                                                "VILLE_SAINT_ETIENNE" to "Ville de Saint-Étienne",
+                                                "SAINT_ETIENNE_METROPOLE" to "Saint-Étienne Métropole"
+                                            )
+                                            TextButton(onClick = { employerMenuExpanded = true }) {
+                                                Text("Employeur : ${employerLabels[employer] ?: employer}", color = SteelBlue)
+                                            }
+                                            DropdownMenu(expanded = employerMenuExpanded, onDismissRequest = { employerMenuExpanded = false }) {
+                                                employerLabels.forEach { (code, label) ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(label) },
+                                                        onClick = { onEmployerChange(code); employerMenuExpanded = false }
+                                                    )
+                                                }
+                                            }
+                                        } else {
+                                            OutlinedTextField(
+                                                value = employerDetails,
+                                                onValueChange = onEmployerDetailsChange,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                label = { Text(if (publicService == "FPE") "Ministère ou administration (facultatif)" else "Établissement hospitalier (facultatif)") },
+                                                placeholder = { Text(if (publicService == "FPE") "Ministère, rectorat, préfecture…" else "Centre hospitalier, CHU…") },
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                        }
+                                        Text("Période de la situation (facultatif)", modifier = Modifier.fillMaxWidth(), color = Navy, fontWeight = FontWeight.SemiBold)
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            OutlinedTextField(
+                                                value = factsStartDate,
+                                                onValueChange = onFactsStartDateChange,
+                                                modifier = Modifier.weight(1f),
+                                                label = { Text("Début") },
+                                                placeholder = { Text("AAAA-MM-JJ") },
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                            OutlinedTextField(
+                                                value = factsEndDate,
+                                                onValueChange = onFactsEndDateChange,
+                                                modifier = Modifier.weight(1f),
+                                                label = { Text("Fin") },
+                                                placeholder = { Text("AAAA-MM-JJ") },
+                                                enabled = !situationOngoing,
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                            Checkbox(checked = situationOngoing, onCheckedChange = onSituationOngoingChange)
+                                            Text("La situation est toujours en cours", color = Navy, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                            Checkbox(checked = confirmLocalDocumentAiTransfer, onCheckedChange = onConfirmLocalDocumentAiTransferChange)
+                                            Text(
+                                                "Autoriser, pour cette demande, la transmission d'extraits de documents locaux au fournisseur IA",
+                                                color = Color(0xFF52677C),
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                        if (authenticated) {
+                                            var organizationMenuExpanded by remember { mutableStateOf(false) }
+                                            val selectedOrganization = organizations.firstOrNull { it.id == selectedOrganizationId }
+                                            Text(
+                                                if (selectedOrganization == null) "Aucune organisation active disponible" else "Espace : ${selectedOrganization.displayName}",
+                                                modifier = Modifier.fillMaxWidth(),
+                                                color = Navy,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            if (organizations.size > 1) {
+                                                TextButton(onClick = { organizationMenuExpanded = true }) {
+                                                    Text("Changer d'organisation", color = SteelBlue)
+                                                }
+                                                DropdownMenu(
+                                                    expanded = organizationMenuExpanded,
+                                                    onDismissRequest = { organizationMenuExpanded = false }
+                                                ) {
+                                                    organizations.forEach { organization ->
+                                                        DropdownMenuItem(
+                                                            text = { Text(organization.displayName) },
+                                                            onClick = {
+                                                                onSelectOrganization(organization.id)
+                                                                organizationMenuExpanded = false
+                                                            }
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                }
+            },
+            confirmButton = { TextButton(onClick = { contextPanelOpen = false }) { Text("Terminer") } }
+        )
+    }
+
+                        openedSession?.let { session ->
+                            AlertDialog(
+                                onDismissRequest = { openedSession = null },
+                                title = {
+                                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        Text(session.instanceCode + " — " + session.title, color = Navy)
+                                        Text("Dossier de séance complet", color = SteelBlue, style = MaterialTheme.typography.labelMedium)
+                                    }
+                                },
+                                text = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text("Date de séance : " + (session.meetingDate ?: "à fixer"), color = Navy)
+                                        Text("Statut : " + session.meetingStatus, color = Navy)
+                                        SessionItemsSection("Ordre du jour", session.agenda)
+                                        if (session.preparation.isNotBlank()) {
+                                            Text("Préparation enregistrée", color = Navy, fontWeight = FontWeight.SemiBold)
+                                            InstancePreparationContent(session.preparation)
+                                        } else {
+                                            Text("Aucune préparation juridique n'est enregistrée dans ce dossier.", color = Color(0xFF8A5A16), style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        SessionItemsSection("Questions à traiter", session.questions)
+                                        SessionItemsSection("Documents associés", session.documents)
+                                        Text("Compte rendu / notes de séance", color = SteelBlue, fontWeight = FontWeight.SemiBold)
+                                        Text(session.minutes.ifBlank { "Aucun compte rendu ou note n'a encore été saisi." }, color = Navy)
+                                        SessionItemsSection("Actions à suivre", session.actionItems)
+                                        Text("Identifiant du dossier : " + session.id, color = Color(0xFF62768A), style = MaterialTheme.typography.labelSmall)
+                                    }
+                                },
+                                confirmButton = {
+                                    TextButton(onClick = { openedSession = null }) { Text("Fermer") }
+                                }
+                            )
+                        }
+
+    if (instancePreparation.isNotBlank() && preparationMatchesInstance(instancePreparation, selectedInstance) && !instancePanelOpen) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Résultat de la préparation $selectedInstance", color = Navy) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    InstancePreparationContent(instancePreparation)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { onSendQuestion(buildJurisInstancePrompt(instancePreparation)) }, enabled = authenticated && selectedOrganizationId != null && !sending) {
+                    Text("Approfondir avec JURIS")
+                }
+            },
+            dismissButton = { TextButton(onClick = { instancePanelOpen = true }) { Text("Fermer") } }
+        )
     }
 }
 
