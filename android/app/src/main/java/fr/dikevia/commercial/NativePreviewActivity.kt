@@ -207,11 +207,13 @@ class NativePreviewActivity : FragmentActivity() {
         chatStatus = "Préparation de l'ordre du jour $instance et recherche des sources juridiques…"
         io.execute {
             try {
+                // The backend's canonical instance key is FS; keep the public F3SCT label in the Android UI.
+                val backendInstance = if (instance.equals("F3SCT", ignoreCase = true)) "FS" else instance
                 val result = api.prepareInstance(
                     session.accessToken,
                     session.idToken,
                     organizationId,
-                    instance,
+                    backendInstance,
                     objet
                 )
                 runOnUiThread {
