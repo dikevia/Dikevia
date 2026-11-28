@@ -2525,15 +2525,15 @@ class LegalOrchestrator:
                                     rendered_claims.append(
                                         f"Réserve importante : PISTE n'a pas permis de vérifier ces dispositions. "
                                         f"Cette explication s'appuie sur le snapshot local du CGFP daté du {snapshot_date}. "
-                                        "Elle ne confirme pas que cette rédaction est toujours en vigueur ni qu'elle était applicable à une date antérieure. "
-                                        "Les décrets et autres textes complémentaires doivent être vérifiés séparément."
+                                        "Elle ne confirme ni que cette rédaction demeure en vigueur, ni qu'elle correspond à une date antérieure. "
+                                        "Les décrets et autres textes complémentaires restent à contrôler séparément."
                                     )
                                 else:
                                     rendered_claims.append(
                                         f"Cette réponse porte sur les règles consultées au {effective_date.isoformat()} ; "
-                                        + ("l'analyse d'une situation concrète reste limitée aux faits et pièces communiqués, et une vérification historique peut être nécessaire si la date des faits modifie la règle applicable."
+                                        + ("l'analyse d'une situation concrète reste limitée aux faits et pièces communiqués, et une vérification historique peut être nécessaire si la date des faits conduit à retenir une rédaction différente."
                                            if parsed_date is None else
-                                           "son application dépend aussi des faits établis et des éventuels actes locaux applicables.")
+                                           "son analyse dépend aussi des faits établis et des éventuels actes locaux à examiner.")
                                     )
                                 if rendered_claims and claims:
                                     ai_answer = "\n".join(rendered_claims).strip()
