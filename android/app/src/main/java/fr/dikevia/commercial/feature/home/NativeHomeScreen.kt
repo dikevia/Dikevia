@@ -50,6 +50,8 @@ private val Border = Color(0xFFDCE6F0)
 
 private data class InstanceCard(val acronym: String, val title: String, val description: String)
 
+data class JurisChatMessage(val role: String, val content: String)
+
 /**
  * Transfers the structured instance preparation into the existing JURIS chat.
  * This is a prompt hand-off, not a second assistant or a separate chat endpoint.
@@ -174,7 +176,7 @@ fun NativeHomeScreen(
     confirmLocalDocumentAiTransfer: Boolean,
     onConfirmLocalDocumentAiTransferChange: (Boolean) -> Unit,
     onSelectOrganization: (String) -> Unit,
-    chatAnswer: String,
+    chatTranscript: List<JurisChatMessage>,
     chatStatus: String,
     sending: Boolean,
     instancePreparation: String,
@@ -486,16 +488,30 @@ fun NativeHomeScreen(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    if (chatAnswer.isNotBlank()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Border),
-                            shape = RoundedCornerShape(16.dp)
+                    if (chatTranscript.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text("Réponse de JURIS", color = Navy, fontWeight = FontWeight.Bold)
-                                Text(chatAnswer, color = Navy, style = MaterialTheme.typography.bodyMedium)
+                            chatTranscript.forEachIndexed { index, message ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (message.role == "user") Color(0xFFE7F1FA) else Color.White
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Border),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Column(Modifier.padding(16.dp)) {
+                                        Text(
+                                            if (message.role == "user") "Vous" else "JURIS",
+                                            color = if (message.role == "user") SteelBlue else Navy,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(Modifier.height(6.dp))
+                                        Text(message.content, color = Navy, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
                             }
                         }
                     }
