@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src 'self'; connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://cdn-lfs.huggingface.co https://cas-bridge.xethub.hf.co;">
+  <title>Dikévia – moteur sémantique local</title>
+</head>
+<body>
+<script>
+(() => {
+  "use strict";
+  let worker;
+  try {
+    worker = new Worker("/static/legal-embedding-worker.js", { type: "module" });
+    worker.onmessage = (event) => {
+      const result = event.data || {};
+      if (window.AndroidEmbedding && Number.isInteger(result.id)) {
+        window.AndroidEmbedding.onResult(String(result.id), JSON.stringify(result));
+      }
+    };
+    worker.onerror = (event) => {
+      if (window.AndroidEmbedding) {
+        window.AndroidEmbedding.onRuntimeError(String(event.message || "Erreur du moteur sémantique."));
+      }
+    };
+    window.generateDikeviaEmbedding = (id, text) => {
+      if (!worker || !Number.isInteger(id) || typeof text !== "string") {
+        throw new Error("Paramètres d'embedding invalides.");
+      }
+      worker.postMessage({ id, text });
+    };
+    if (window.AndroidEmbedding) window.AndroidEmbedding.onReady();
+  } catch (error) {
+    if (window.AndroidEmbedding) {
+      window.AndroidEmbedding.onRuntimeError(String(error && error.message || error));
+    }
+  }
+})();
+</script>
+</body>
+</html>
