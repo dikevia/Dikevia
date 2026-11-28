@@ -162,7 +162,9 @@ fun NativeHomeScreen(
                                             selectedInstance = instance.acronym
                                             instanceObjet = ""
                                         },
-                                        enabled = authenticated && selectedOrganizationId != null && !preparingInstance,
+                                        // Instance cards remain selectable before sign-in or organization selection.
+                                        // Authentication and organization are required only to execute preparation.
+                                        enabled = !preparingInstance,
                                         colors = CardDefaults.cardColors(containerColor = Color.White),
                                         border = androidx.compose.foundation.BorderStroke(
                                             if (selectedInstance == instance.acronym) 2.dp else 1.dp,
@@ -185,6 +187,18 @@ fun NativeHomeScreen(
 
                     if (selectedInstance != null) {
                         Spacer(Modifier.height(12.dp))
+                        if (!authenticated || selectedOrganizationId == null) {
+                            Text(
+                                if (!authenticated) {
+                                    "Connectez-vous pour préparer cette instance avec JURIS."
+                                } else {
+                                    "Aucune organisation active n'est sélectionnée pour ce compte."
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = Color(0xFF8A5A16),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                         Text(
                             "Préparer $selectedInstance",
                             modifier = Modifier.fillMaxWidth(),
