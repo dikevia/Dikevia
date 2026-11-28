@@ -668,7 +668,7 @@ fun NativeHomeScreen(
                                             val directory = File(context.cacheDir, "camera").apply { mkdirs() }
                                             val file = File(directory, "juris_${System.currentTimeMillis()}.jpg")
                                             pendingPhotoUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                                            camera.launch(pendingPhotoUri)
+                                            pendingPhotoUri?.let { camera.launch(it) }
                                         }
                                     },
                                     enabled = authenticated && !sending && attachments.size < 8
