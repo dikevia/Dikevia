@@ -161,6 +161,8 @@ def test_instance_ui_renders_law_sources_and_does_not_hide_metadata_only_jurispr
     theme = frontend.with_name("dikevia-chat-theme.css").read_text(encoding="utf-8")
     assert "pointer-events:auto" in theme
     assert "touch-action:manipulation" in theme
+    assert "dikevia-chat-theme.css?v=20261128-instance-touch-fix-1" in source
+    assert "touch-action:manipulation" in theme
     assert ".instance-launch-card:focus-visible" in theme
 
 
