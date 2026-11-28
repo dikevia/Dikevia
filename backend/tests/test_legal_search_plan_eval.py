@@ -49,6 +49,10 @@ FPT_RETRIEVAL_CASES = [
         ("régime indemnitaire", "délibération locale"),
     ),
     (
+        "C’est quoi l’IFSE ?",
+        ("régime indemnitaire", "décret 91-875"),
+    ),
+    (
         "Dans mon service on n'est pas assez nombreux.",
         ("decret 85-603", "charge de travail"),
     ),
