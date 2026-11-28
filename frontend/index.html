@@ -900,13 +900,23 @@ function fillInstanceSessionForm(d){
  $('#sessionActions').value=(d.action_items||[]).map(x=>typeof x==='string'?x:(x.task||JSON.stringify(x))).join('\n');
  $('#saveInstanceSession').disabled=false;$('#exportInstanceSessionPdf').disabled=false;$('#continueSessionWithJuris').disabled=false;$('#createInstanceSession').disabled=true;
  const prep=d.preparation||{};
- $('#instanceSessionPreparation').textContent=Object.keys(prep).length?JSON.stringify(prep,null,2):'Aucune préparation JURIS enregistrée dans ce dossier.';
+ const prepPoints=(prep.points||[]).map((p,i)=>(i+1)+'. '+String(p.libelle||p.label||p.title||'Point de préparation')+' — '+(p.questions||[]).join(' ; '));
+ const research=prep.legal_research||{};
+ const prepLines=Object.keys(prep).length?[
+  'Instance : '+String(prep.instance||d.instance_code),
+  'Objet : '+String(prep.objet||'non précisé'),
+  'Points de préparation :',...prepPoints,
+  'Recherche juridique : '+String(research.status||'non renseignée'),
+  'Sources récupérées : '+String((research.sources||[]).length),
+  String(prep.notice||'')
+ ].filter(Boolean):['Aucune préparation JURIS enregistrée dans ce dossier.'];
+ $('#instanceSessionPreparation').textContent=prepLines.join('\\n');
  $('#instanceSessionPreparation').classList.remove('hidden');
 }
 async function loadInstanceSessions(){
  try{
   const rows=await api('/api/v1/instances/sessions');
-  $('#instanceSessionsList').innerHTML=rows.length?rows.map(x=>'<button type="button" class="secondary session-open" data-session-id="'+esc(x.id)+'" style="display:block;width:100%;text-align:left;margin:6px 0"><b>'+esc(x.instance_code)+' · '+esc(x.title)+'</b><span class="muted"> · '+esc(x.meeting_date||'Date non fixée')+' · '+esc(x.meeting_status)+'</span></button>').join(''):'Aucun dossier de séance enregistré dans cette organisation.';
+  $('#instanceSessionsList').innerHTML=rows.length?rows.map(x=>'<button type="button" class="secondary session-open" data-session-id="'+esc(x.id)+'" style="display:block;width:100%;text-align:left;margin:6px 0"><b>'+esc(x.instance_code)+' · '+esc(x.title)+'</b><span class="muted"> · '+esc(x.meeting_date?date(x.meeting_date):'Date non fixée')+' · '+esc(({PREPARATION:'Préparation',CONVOQUEE:'Convoquée',TENUE:'Tenue',COMPTE_RENDU_A_VALIDER:'Compte rendu à valider',CLOTUREE:'Clôturée'})[x.meeting_status]||x.meeting_status)+'</span></button>').join(''):'Aucun dossier de séance enregistré dans cette organisation.';
   $('.session-open').forEach(b=>b.addEventListener('click',()=>openInstanceSession(b.dataset.sessionId)));
  }catch(e){$('#instanceSessionsList').textContent='Impossible de charger les dossiers : '+e.message;}
 }
