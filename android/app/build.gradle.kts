@@ -54,9 +54,13 @@ android {
         debug {
             applicationIdSuffix = ".beta"
             versionNameSuffix = "-beta"
+            buildConfigField("boolean", "ENABLE_NATIVE_PREVIEW", "true")
         }
         release {
             isMinifyEnabled = false
+            // Keep the validated WebView launcher in release until native
+            // Auth0 and API acceptance tests are completed on physical devices.
+            buildConfigField("boolean", "ENABLE_NATIVE_PREVIEW", "false")
         }
     }
 
