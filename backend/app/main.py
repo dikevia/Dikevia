@@ -1039,6 +1039,30 @@ async def build_legal_dossier(conversation_id: str, ctx: TenantContext = Depends
             "updated_at": row["updated_at"], "created": created}
 
 
+@app.get("/api/v1/chat/conversations/{conversation_id}/dossier/pdf")
+async def download_legal_dossier_pdf(conversation_id: str, ctx: TenantContext = Depends(require_syndicate_subscription)):
+    """Download the caller-owned dossier as a server-rendered PDF."""
+    try:
+        conversation_uuid = str(UUID(conversation_id))
+    except ValueError:
+        raise HTTPException(422, "Identifiant de conversation invalide.")
+    row = await ctx.conn.fetchrow(
+        """SELECT id,content FROM legal_dossiers
+           WHERE conversation_id=$1::uuid AND organization_id=$2::uuid AND user_id=$3::uuid""",
+        conversation_uuid, ctx.organization_id, ctx.user_id,
+    )
+    if not row:
+        raise HTTPException(404, "Aucun dossier n'a encore été constitué pour cette conversation.")
+    from .dossier_pdf import render_legal_dossier_pdf
+    pdf_bytes = render_legal_dossier_pdf(decode_jsonb(row["content"]), str(row["id"]))
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="dossier-juridique-{row["id"]}.pdf"',
+                 "Cache-Control": "private, no-store"},
+    )
+
+
 @app.get("/api/v1/chat/conversations/{conversation_id}/dossier")
 async def get_legal_dossier(conversation_id: str, ctx: TenantContext = Depends(require_syndicate_subscription)):
     try:
