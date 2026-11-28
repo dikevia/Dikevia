@@ -40,6 +40,13 @@ def test_model_dimensions_are_explicit():
     assert MODULE.DIMENSIONS == 384
 
 
+def test_vector_search_is_enabled_by_default_but_remains_environment_overridable():
+    from app.config import Settings
+
+    config = Settings(_env_file=None)
+    assert config.vector_search_enabled is True
+
+
 def test_embedding_backfill_repairs_stale_model_and_dimension_metadata():
     source = SCRIPT.read_text(encoding="utf-8")
     assert "embedding_384_model IS DISTINCT FROM $1" in source
