@@ -130,5 +130,5 @@ def test_frontend_discloses_when_vector_retrieval_falls_back_to_lexical_search()
     assert "Recherche vectorielle non exécutée" in source
     assert "Recherche vectorielle désactivée dans cet environnement" in source
     assert "La recherche lexicale reste utilisée" in source
-    assert "Cette réponse ne doit pas être considérée comme issue de pgvector" in source
+    assert "cette réponse ne doit pas être considérée comme issue de pgvector" in source
 
