@@ -46,6 +46,8 @@ jobs:
           gradle --no-daemon -p android
           :app:assembleStandardDebug
           :app:assembleAdminDebug
+          :app:assembleStandardRelease
+          :app:assembleAdminRelease
 
       - name: Upload debug APKs
         uses: actions/upload-artifact@v4
