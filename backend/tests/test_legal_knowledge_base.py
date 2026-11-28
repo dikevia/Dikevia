@@ -34,7 +34,7 @@ def test_integrated_answer_renderer_weaves_verified_claims_into_prose():
          "source_id": "case-v1", "source_title": "Conseil d'État", "axis": "Portée jurisprudentielle"},
     ])
 
-    paragraphs = answer.split("\\n\\n")
+    paragraphs = answer.split("\n\n")
     assert len(paragraphs) == 2
     assert "Le CGFP pose le principe applicable. [source:cgfp-v1] Le décret précise" in paragraphs[0]
     assert "[source:decret-v1]" in paragraphs[0]
