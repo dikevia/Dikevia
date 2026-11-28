@@ -714,7 +714,7 @@ fun NativeHomeScreen(
                                     enabled = authenticated && selectedOrganizationId != null && !sending,
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = ButtonDefaults.buttonColors(containerColor = SteelBlue)
-                                ) { Text(if (sending) "JURIS analyse…" else "Approfondir avec JURIS") }
+                                ) { Text(if (sending) "JURIS analyse…" else "Approfondir cette préparation avec JURIS") }
                             }
                         }
                     }
