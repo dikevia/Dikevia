@@ -373,6 +373,7 @@ fun NativeHomeScreen(
     var sessionDate by remember { mutableStateOf("") }
     var sessionMinutes by remember { mutableStateOf("") }
     var openedSession by remember { mutableStateOf<DikeviaInstanceSession?>(null) }
+    var instanceMenuExpanded by remember { mutableStateOf(false) }
 
     MaterialTheme {
         Surface(modifier = modifier.fillMaxSize(), color = Glacier) {
@@ -417,51 +418,39 @@ fun NativeHomeScreen(
                     )
                     Spacer(Modifier.height(28.dp))
 
-                    Text(
-                        "Préparer vos instances",
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Navy,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        instances.chunked(2).forEach { pair ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                pair.forEach { instance ->
-                                    Card(
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Préparer une instance", color = Navy, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(selectedInstance?.let { "Instance sélectionnée : $it" } ?: "Les instances sont accessibles depuis le menu", color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
+                        }
+                        Box {
+                            TextButton(onClick = { instanceMenuExpanded = true }) {
+                                Text("Instances  ▾", color = SteelBlue, fontWeight = FontWeight.SemiBold)
+                            }
+                            DropdownMenu(expanded = instanceMenuExpanded, onDismissRequest = { instanceMenuExpanded = false }) {
+                                instances.forEach { instance ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(instance.acronym, color = Navy, fontWeight = FontWeight.SemiBold)
+                                                Text(instance.title, color = Color(0xFF62768A), style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        },
                                         onClick = {
                                             selectedInstance = instance.acronym
                                             instanceObjet = ""
                                             sessionTitle = ""
                                             sessionDate = ""
                                             sessionMinutes = ""
+                                            instanceMenuExpanded = false
                                         },
-                                        // Instance cards remain selectable before sign-in or organization selection.
-                                        // Authentication and organization are required only to execute preparation.
-                                        enabled = !preparingInstance,
-                                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                                        border = androidx.compose.foundation.BorderStroke(
-                                            if (selectedInstance == instance.acronym) 2.dp else 1.dp,
-                                            if (selectedInstance == instance.acronym) SteelBlue else Border
-                                        ),
-                                        shape = RoundedCornerShape(18.dp),
-                                        modifier = Modifier.weight(1f).height(126.dp)
-                                    ) {
-                                        Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                            Text(instance.acronym, color = SteelBlue, fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                                            Text(instance.title, color = Navy, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 15.sp)
-                                            Text(instance.description, color = Color(0xFF62768A), fontSize = 10.sp, lineHeight = 13.sp)
-                                        }
-                                    }
+                                        enabled = !preparingInstance
+                                    )
                                 }
-                                if (pair.size == 1) Spacer(Modifier.weight(1f))
                             }
                         }
                     }
@@ -792,7 +781,11 @@ fun NativeHomeScreen(
                     }
                     if (chatTranscript.isNotEmpty()) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp)
+                                .heightIn(max = 360.dp)
+                                .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             chatTranscript.forEachIndexed { index, message ->
