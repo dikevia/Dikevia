@@ -392,7 +392,7 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
     fallback may be tried because per-model rate limits can differ. The fallback uses
     the same provider and credentials; downstream legal evidence validation is unchanged.
     """
-    transient_statuses = {500, 502, 503, 504}
+    transient_statuses = {429, 500, 502, 503, 504}
     primary_model = payload.get("model")
     fallback_models = (
         _gemini_fallback_model_candidates(primary_model)
