@@ -432,6 +432,39 @@ async def test_search_prioritizes_original_terms_over_fpt_expansions():
     assert conn.args[4] == date(2026, 1, 1)
 
 
+def test_general_guidance_can_prevent_false_no_source_refusal_without_grounding_legal_claims():
+    from app.orchestrator import _is_usable_general_guidance_source
+    from app.legal_assurance import classify_legal_source
+
+    source = {
+        "source_type": "SERVICE_PUBLIC_PART",
+        "source_id": "service-public:F32515",
+        "document_kind": "ADMIN_GUIDANCE",
+        "content_kind": "FULL_TEXT",
+        "temporal_status": "TEMPORAL_SCOPE_INCOMPLETE",
+        "general_info_eligible": True,
+        "citation_integrity": {"valid": True},
+        "research_axis_relevant": True,
+        "version_status": "UNKNOWN",
+    }
+    source["legal_assurance"] = classify_legal_source(source)
+    assert source["legal_assurance"]["claim_eligible"] is False
+    assert source["legal_assurance"]["usable_for_interpretation"] is True
+    assert _is_usable_general_guidance_source(source) is True
+
+    # Missing integrity, missing general-information eligibility, or a repealed
+    # source must not turn a failed legal search into an apparently usable answer.
+    assert _is_usable_general_guidance_source({
+        **source, "citation_integrity": {"valid": False},
+    }) is False
+    assert _is_usable_general_guidance_source({
+        **source, "general_info_eligible": False,
+    }) is False
+    assert _is_usable_general_guidance_source({
+        **source, "version_status": "REPEALED",
+    }) is False
+
+
 def test_incomplete_dates_allow_general_information_but_not_verified_conclusion():
     from app.legal_assurance import classify_legal_source, assess_source_set
 
