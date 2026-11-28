@@ -934,7 +934,7 @@ $('#continueSessionWithJuris').addEventListener('click',async()=>{
    JSON.stringify(payload,null,2).slice(0,3200),
    '',
    'MISSION JURIS : tu es le même assistant conversationnel juridique de Dikévia. Vérifie la compétence de l’instance, les textes et leur version applicable à la date de séance, la jurisprudence pertinente et les éléments manquants. Distingue les faits établis, les déclarations, les hypothèses et les sources réellement vérifiées. Prépare une synthèse, les questions argumentées à poser, les demandes de pièces, un projet de compte rendu uniquement à partir des notes disponibles, puis un plan d’action syndical. Signale les informations manquantes et pose les questions utiles. N’invente aucune source, aucun propos tenu ni aucune décision.'
-  ].join('\\n').slice(0,5000);
+  ].join('\n').slice(0,5000);
   startNewChat();setView('ask');$('#askQuestion').value=prompt;$('#askCharCount').textContent=prompt.length+' / 5000';$('#askQuestion').focus();
   sessionMessage('Dossier enregistré. Son contexte a été transmis au chatbot JURIS partagé.');
  }catch(e){sessionMessage('Transmission à JURIS impossible : '+e.message,true);}
