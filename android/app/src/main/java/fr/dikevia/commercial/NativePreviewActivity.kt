@@ -2,6 +2,12 @@ package fr.dikevia.commercial
 
 import android.os.Bundle
 import android.widget.Toast
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.pdf.PdfDocument
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
@@ -14,8 +20,10 @@ import fr.dikevia.commercial.core.api.DikeviaInstanceSession
 import fr.dikevia.commercial.core.auth.Auth0NativeAuth
 import fr.dikevia.commercial.feature.home.NativeHomeScreen
 import fr.dikevia.commercial.feature.home.JurisChatMessage
+import fr.dikevia.commercial.feature.home.JurisChatAttachment
 import com.auth0.android.result.Credentials
 import java.util.concurrent.Executors
+import java.util.Locale
 
 /**
  * Native end-to-end preview: Auth0 -> organization membership -> existing chat API.
@@ -26,6 +34,18 @@ class NativePreviewActivity : FragmentActivity() {
     private lateinit var auth: Auth0NativeAuth
     private val api = DikeviaApiClient()
     private val io = Executors.newSingleThreadExecutor()
+    private var textToSpeech: TextToSpeech? = null
+    private var speaking by mutableStateOf(false)
+    private var pendingPdfText: String? = null
+    private val createPdf = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        val text = pendingPdfText
+        pendingPdfText = null
+        if (uri != null && text != null) {
+            runCatching { contentResolver.openOutputStream(uri)?.use { it.write(buildAnswerPdf(text)) } ?: error("Impossible d'écrire le PDF.") }
+                .onSuccess { Toast.makeText(this, "PDF JURIS enregistré.", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(this, it.message ?: "Échec de la création du PDF.", Toast.LENGTH_LONG).show() }
+        }
+    }
 
     private var credentials: Credentials? = null
     private var authenticated by mutableStateOf(false)
@@ -51,6 +71,13 @@ class NativePreviewActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         auth = Auth0NativeAuth(this, this)
+        textToSpeech = TextToSpeech(this) { status -> if (status == TextToSpeech.SUCCESS) textToSpeech?.language = Locale.FRANCE }
+        textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) { runOnUiThread { speaking = true } }
+            override fun onDone(utteranceId: String?) { runOnUiThread { speaking = false } }
+            @Deprecated("Deprecated by Android")
+            override fun onError(utteranceId: String?) { runOnUiThread { speaking = false } }
+        })
 
         auth.restore(
             onSuccess = { restored ->
@@ -197,7 +224,11 @@ class NativePreviewActivity : FragmentActivity() {
                         }
                     )
                 },
-                onSendQuestion = ::sendQuestion
+                onSendQuestion = ::sendQuestion,
+                onReadAloud = ::readAloud,
+                onStopReading = { textToSpeech?.stop(); speaking = false },
+                isSpeaking = speaking,
+                onExportPdf = ::exportAnswerPdf
             )
         }
     }
@@ -322,7 +353,7 @@ class NativePreviewActivity : FragmentActivity() {
         }
     }
 
-    private fun sendQuestion(question: String) {
+    private fun sendQuestion(question: String, attachments: List<JurisChatAttachment>) {
         if (BuildConfig.FLAVOR == "admin") {
             chatStatus = "L'application Administration ne donne pas accès à JURIS."
             return
