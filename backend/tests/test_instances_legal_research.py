@@ -287,7 +287,10 @@ def test_native_juris_chat_keeps_a_visible_multi_turn_transcript():
     assert 'chatTranscript.add(JurisChatMessage("user", question.trim()))' in activity
     assert 'chatTranscript.add(JurisChatMessage("assistant", renderedAnswer))' in activity
     assert "conversationAtSend" in activity
+    assert "conversationEpochAtSend" in activity
+    assert "conversationEpoch != conversationEpochAtSend" in activity
     assert "conversationId = answer.conversationId" in activity
+    assert "chatTranscript.add(JurisChatMessage(\"assistant\", \"La demande n'a pas pu être traitée : $message\"))" in activity
 
 @pytest.mark.parametrize(
     ("instance", "objet"),
