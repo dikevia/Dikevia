@@ -92,3 +92,6 @@ Les imports utilisent une connexion PostgreSQL dédiée `LEGAL_CORPUS_INGEST_DAT
 
 
 Depuis V3.28, un utilisateur peut constituer un dossier de travail privé à partir d'une conversation : `POST /api/v1/chat/conversations/{id}/dossier`, le consulter avec `GET` et enregistrer ses modifications avec `PUT`. Le contenu est cloisonné par RLS FORCE selon l'organisation et l'utilisateur. La compilation est fidèle aux messages et métadonnées enregistrés ; elle ne valide pas les faits, ne transforme pas les échanges en sources juridiques et ne récupère pas automatiquement les pièces jointes.
+
+
+Depuis l'export PDF serveur des dossiers, `GET /api/v1/chat/conversations/{id}/dossier/pdf` télécharge le dossier privé au format PDF. L'endpoint exige le même abonnement et le même contexte OIDC/organisation que les routes de dossier ; la requête SQL limite explicitement l'accès à l'organisation et à l'utilisateur courants. Le document reprend le contenu enregistré, conserve les statuts de vérification et les réserves, et est servi avec `Cache-Control: private, no-store`.
