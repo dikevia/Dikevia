@@ -108,6 +108,17 @@ def test_instance_session_api_has_list_create_read_and_update_routes():
     assert ("/api/v1/instances/sessions/{session_id}/pdf", "GET") in routes
 
 
+def test_session_document_reference_validation_is_tenant_scoped_and_server_resolved():
+    from app.main import validate_instance_session_document_refs
+    import inspect
+
+    source = inspect.getsource(validate_instance_session_document_refs)
+    assert "d.organization_id=$1::uuid" in source
+    assert "d.id=ANY($2::uuid[])" in source
+    assert '"scan_status": row["scan_status"]' in source
+    assert '"validation_status": row["validation_status"]' in source
+
+
 def test_instance_session_instance_identity_is_immutable_on_update():
     from app.instance_sessions import ensure_instance_identity_unchanged
 
