@@ -38,6 +38,7 @@ class NativePreviewActivity : FragmentActivity() {
     private var situationOngoing by mutableStateOf(false)
     private var confirmLocalDocumentAiTransfer by mutableStateOf(false)
     private var conversationId: String? = null
+    private var conversationEpoch: Long = 0L
     private val chatTranscript = mutableStateListOf<JurisChatMessage>()
     private var chatStatus by mutableStateOf("")
     private var sending by mutableStateOf(false)
@@ -82,6 +83,7 @@ class NativePreviewActivity : FragmentActivity() {
                         employer = "NATIONAL"
                         employerDetails = ""
                         conversationId = null
+                        conversationEpoch += 1
                         chatTranscript.clear()
                         chatStatus = "Versant modifié. Une nouvelle conversation sera ouverte."
                     }
@@ -91,6 +93,7 @@ class NativePreviewActivity : FragmentActivity() {
                     if (employer != it) {
                         employer = it
                         conversationId = null
+                        conversationEpoch += 1
                         chatTranscript.clear()
                     }
                 },
@@ -115,6 +118,7 @@ class NativePreviewActivity : FragmentActivity() {
                     if (selectedOrganizationId != it) {
                         selectedOrganizationId = it
                         conversationId = null
+                        conversationEpoch += 1
                         chatTranscript.clear()
                         chatStatus = "Organisation changée. Une nouvelle conversation sera ouverte."
                     }
@@ -133,6 +137,7 @@ class NativePreviewActivity : FragmentActivity() {
                                 authenticated = true
                                 chatTranscript.clear()
                                 conversationId = null
+                                conversationEpoch += 1
                                 chatStatus = "Connexion réussie. Chargement de vos organisations…"
                             }
                             loadOrganizations(signedIn)
@@ -154,6 +159,7 @@ class NativePreviewActivity : FragmentActivity() {
                                 organizations = emptyList()
                                 selectedOrganizationId = null
                                 conversationId = null
+                                conversationEpoch += 1
                                 chatTranscript.clear()
                                 chatStatus = ""
                                 Toast.makeText(this, "Déconnexion effectuée.", Toast.LENGTH_SHORT).show()
@@ -247,6 +253,7 @@ class NativePreviewActivity : FragmentActivity() {
         val ongoing = situationOngoing
         val allowLocalAiTransfer = confirmLocalDocumentAiTransfer
         val conversationAtSend = conversationId
+        val conversationEpochAtSend = conversationEpoch
         confirmLocalDocumentAiTransfer = false
         if (session == null || organizationId == null) {
             chatStatus = "Authentifiez-vous et sélectionnez une organisation avant d'interroger JURIS."
@@ -272,7 +279,7 @@ class NativePreviewActivity : FragmentActivity() {
                 )
                 runOnUiThread {
                     sending = false
-                    if (selectedOrganizationId != organizationId || publicService != selectedVersant) return@runOnUiThread
+                    if (selectedOrganizationId != organizationId || publicService != selectedVersant || conversationEpoch != conversationEpochAtSend) return@runOnUiThread
                     conversationId = answer.conversationId
                     val renderedAnswer = buildString {
                         append(answer.answer)
@@ -291,8 +298,10 @@ class NativePreviewActivity : FragmentActivity() {
             } catch (error: Exception) {
                 runOnUiThread {
                     sending = false
-                    if (selectedOrganizationId == organizationId && publicService == selectedVersant) {
-                        chatStatus = error.message ?: "Le service JURIS est momentanément indisponible."
+                    if (selectedOrganizationId == organizationId && publicService == selectedVersant && conversationEpoch == conversationEpochAtSend) {
+                        val message = error.message ?: "Le service JURIS est momentanément indisponible."
+                        chatTranscript.add(JurisChatMessage("assistant", "La demande n'a pas pu être traitée : $message"))
+                        chatStatus = message
                     }
                 }
             }
