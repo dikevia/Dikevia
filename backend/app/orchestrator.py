@@ -2599,21 +2599,30 @@ class LegalOrchestrator:
                                     )
                                 # The model is instructed to put the direct answer first.
                                 # Render it immediately instead of prefacing it with legal boilerplate.
-                                rendered_claims = []
+                                # Keep the verified propositions, but present them as a
+                                # connected legal explanation grouped by research axis.
+                                # The source panel already exposes document titles and links;
+                                # repeating a bibliography here made JURIS sound like a search engine.
                                 unique_sources = {}
+                                paragraphs = []
+                                current_axis = None
+                                current_parts = []
                                 for claim in claims:
                                     source_id = claim["source_id"]
-                                    source_title = " ".join(str(claim["source_title"]).split())[:300]
-                                    unique_sources[source_id] = source_title
-                                    # Lead with the plain-language explanation. The exact
-                                    # supporting quote remains available in the source panel,
-                                    # rather than overwhelming the agent's conversational answer.
-                                    rendered_claims.append(f"{claim['text']} [source:{source_id}]")
-                                    rendered_claims.append("")
-                                rendered_claims.append("Textes et références à consulter :")
-                                for source_id, source_title in unique_sources.items():
-                                    rendered_claims.append(f"• {source_title} [source:{source_id}]")
-                                rendered_claims.extend([""])
+                                    unique_sources[source_id] = " ".join(
+                                        str(claim["source_title"]).split()
+                                    )[:300]
+                                    axis = str(claim.get("axis") or "")
+                                    if current_parts and axis != current_axis:
+                                        paragraphs.append(" ".join(current_parts))
+                                        current_parts = []
+                                    current_axis = axis
+                                    text = " ".join(str(claim["text"]).split()).strip()
+                                    if text:
+                                        current_parts.append(f"{text} [source:{source_id}]")
+                                if current_parts:
+                                    paragraphs.append(" ".join(current_parts))
+                                rendered_claims = ["\n\n".join(paragraphs).strip(), ""]
                                 if any(
                                     source.get("source_type") == "CGFP_SNAPSHOT"
                                     and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
