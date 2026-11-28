@@ -1981,6 +1981,13 @@ class LegalOrchestrator:
             for source in explicitly_selected_local_sources
             if source.get("temporal_status") != "VERIFIED_APPLICABLE"
         ]
+        if selected_fact_context:
+            notice = (
+                "Les documents de séance non validés humainement ou dont la période d'effet "
+                "n'est pas établie ont été transmis uniquement comme contexte factuel ; "
+                "ils ne peuvent pas fonder une conclusion juridique."
+            )
+            local_issue = f"{local_issue} {notice}" if local_issue else notice
         local_sources.extend(
             source for source in explicitly_selected_local_sources
             if source.get("temporal_status") == "VERIFIED_APPLICABLE"
