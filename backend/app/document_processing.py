@@ -108,6 +108,22 @@ def extract_document_text(data: bytes, mime: str, max_chars: int = 2_000_000) ->
                     return "", ocr_status
                 if ocr_status != "OCR_EXTRACTED":
                     return text[:max_chars], ocr_status
+        elif mime in {"image/jpeg", "image/png", "image/webp"}:
+            try:
+                from PIL import Image, ImageOps
+                import pytesseract
+                image = Image.open(BytesIO(data))
+                image = ImageOps.exif_transpose(image).convert("RGB")
+                image.thumbnail((3200, 3200))
+                text = pytesseract.image_to_string(
+                    image, lang="fra+eng", config="--psm 6", timeout=8,
+                )[:max_chars].strip()
+            except ImportError as exc:
+                raise OCRUnavailable("Image OCR dependencies are unavailable") from exc
+            except Exception as exc:
+                if exc.__class__.__name__ in {"TesseractNotFoundError", "TesseractError"}:
+                    raise OCRUnavailable("Image OCR engine is unavailable") from exc
+                return "", "OCR_FAILED"
         elif mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
             with zipfile.ZipFile(BytesIO(data)) as archive:
                 info = archive.getinfo("word/document.xml")
