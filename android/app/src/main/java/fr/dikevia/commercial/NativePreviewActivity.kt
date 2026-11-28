@@ -150,7 +150,7 @@ class NativePreviewActivity : FragmentActivity() {
                 savedSessions = savedSessions,
                 savingSession = savingSession,
                 onSaveSession = ::saveInstanceSession,
-                onRefreshSessions = ::refreshInstanceSessions,
+                onRefreshSessions = { selectedOrganizationId?.let { refreshInstanceSessions(it) } },
                 onPrepareInstance = ::prepareInstance,
                 onSignIn = {
                     auth.login(
