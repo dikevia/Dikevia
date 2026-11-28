@@ -518,7 +518,7 @@ class NativePreviewActivity : FragmentActivity() {
         }
         val maxWidth = pageWidth - margin * 2
         val lines = mutableListOf<String>()
-        text.replace("\\r", "").split("\\n").forEach { paragraph ->
+        text.replace("\r", "").split("\n").forEach { paragraph ->
             if (paragraph.isBlank()) lines.add("")
             else {
                 var current = ""
