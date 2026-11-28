@@ -432,6 +432,16 @@ async def test_search_prioritizes_original_terms_over_fpt_expansions():
     assert conn.args[4] == date(2026, 1, 1)
 
 
+def test_saint_etienne_local_sources_require_explicit_city_mention():
+    from app.orchestrator import _question_mentions_saint_etienne
+
+    assert _question_mentions_saint_etienne("Quels sont les accords de la ville de Saint-Étienne ?")
+    assert _question_mentions_saint_etienne("Pour Saint Etienne, quelle délibération s'applique ?")
+    assert _question_mentions_saint_etienne("Les règles de St-Etienne sont-elles applicables ?")
+    assert not _question_mentions_saint_etienne("Quelles sont les règles de ma collectivité ?")
+    assert not _question_mentions_saint_etienne("Quels sont les droits des agents territoriaux ?")
+
+
 def test_general_guidance_can_prevent_false_no_source_refusal_without_grounding_legal_claims():
     from app.orchestrator import _is_usable_general_guidance_source
     from app.legal_assurance import classify_legal_source
