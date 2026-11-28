@@ -95,10 +95,24 @@ private fun buildJurisInstancePrompt(rawPreparation: String): String {
                 append(" — texte intégral récupéré : ").append(source.optBoolean("full_text_retrieved"))
                 val url = source.optString("official_url")
                 if (url.isNotBlank()) append(" — ").append(url)
+                val excerpt = source.optString("excerpt")
+                if (excerpt.isNotBlank()) append("\\n  Extrait : ").append(excerpt.take(500))
                 append("\\n")
             }
         }
     }
+    val qualifications = listOf(
+        "cst_qualification",
+        "fs_qualification",
+        "fs_operational_qualification",
+        "cst_fs_competence_routing",
+        "cst_agenda_request",
+        "instance_meeting_deadlines",
+        "annual_meeting_frequency",
+        "fs_agenda_preparation"
+    ).mapNotNull { key ->
+        data.optJSONObject(key)?.let { "$key : ${it.toString().take(700)}" }
+    }.joinToString("\\n")
 
     return buildString {
         append("Je souhaite approfondir la préparation de mon instance avec JURIS, dans cette conversation.\\n\\n")
@@ -107,6 +121,7 @@ private fun buildJurisInstancePrompt(rawPreparation: String): String {
         append("PISTES DE PRÉPARATION :\\n").append(pointText.ifBlank { "Aucune règle de checklist déclenchée ; analyser le sujet à partir des faits et des sources." })
         val notice = data.optString("notice")
         if (notice.isNotBlank()) append("\\nNOTICE : ").append(notice.take(500))
+        if (qualifications.isNotBlank()) append("\\n\\nQUALIFICATIONS ET CONTRÔLES DÉCLARATIFS :\\n").append(qualifications)
         if (research != null) {
             append("\\n\\nRECHERCHE JURIDIQUE : ").append(research.optString("status", "non précisée"))
             append(" ; date de référence : ").append(research.optString("requested_date", "non précisée"))
