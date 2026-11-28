@@ -385,11 +385,12 @@ def _is_gemini_model_not_found_response(response: httpx.Response) -> bool:
 
 
 async def _post_chat_completion(client, url: str, *, headers: dict, payload: dict):
-    """Bounded retries plus configured Gemini fallbacks for capacity or missing-model errors.
+    """Retry transient failures and fail over on model-specific capacity/quota errors.
 
-    Authentication, quota and unrelated route/request errors are never retried or
-    redirected to another model. The fallback uses the same provider, credentials
-    and prompt; downstream source/citation/claim validation remains unchanged.
+    Authentication and unrelated route/request errors are never retried or redirected.
+    A 429 is not retried against the same model: one explicitly configured Gemini
+    fallback may be tried because per-model rate limits can differ. The fallback uses
+    the same provider and credentials; downstream legal evidence validation is unchanged.
     """
     transient_statuses = {500, 502, 503, 504}
     primary_model = payload.get("model")
@@ -434,11 +435,21 @@ async def _post_chat_completion(client, url: str, *, headers: dict, payload: dic
                     await asyncio.sleep(0.6)
                     continue
                 break
+            if response.status_code == 429:
+                # Quota/rate limits are not transient on the same model. Do not
+                # spend another request retrying it; try only an explicit fallback.
+                if model_index + 1 < len(models):
+                    logger.warning(
+                        "AI_PROVIDER_MODEL_FAILOVER provider=gemini primary_model=%s fallback_model=%s reason=http_429",
+                        model or "unknown", models[model_index + 1][0] or "unknown",
+                    )
+                    break
+                response.raise_for_status()
             if attempt + 1 < max_attempts:
                 await asyncio.sleep(0.6)
                 continue
             response.raise_for_status()
-        if model_not_found or (response is not None and response.status_code == 503):
+        if model_not_found or (response is not None and response.status_code in {429, 503}):
             continue
         if last_timeout is not None:
             if model_index + 1 < len(models):
