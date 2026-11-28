@@ -36,6 +36,10 @@ MAX_ARCHIVE_UNCOMPRESSED_BYTES = 120 * 1024 * 1024
 ALLOWED = {
     ".pdf": "application/pdf",
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
 }
 
 
@@ -84,9 +88,16 @@ def _validate_upload(filename: str, mime_type: str, data: bytes) -> tuple[str, s
     suffix = PurePath(filename or "").suffix.lower()
     expected = ALLOWED.get(suffix)
     if not expected or mime_type not in {expected, "application/octet-stream"}:
-        raise HTTPException(415, "Seuls les fichiers PDF et DOCX sont acceptés.")
-    if suffix == ".pdf" and not data.startswith(b"%PDF-"):
-        raise HTTPException(415, "Le contenu du fichier ne correspond pas à un PDF.")
+        raise HTTPException(415, "Formats acceptés : PDF, DOCX, JPEG, PNG et WEBP.")
+    signatures = {
+        ".pdf": data.startswith(b"%PDF-"),
+        ".jpg": data.startswith(bytes.fromhex("ffd8ff")),
+        ".jpeg": data.startswith(bytes.fromhex("ffd8ff")),
+        ".png": data.startswith(bytes.fromhex("89504e470d0a1a0a")),
+        ".webp": len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP",
+    }
+    if suffix in signatures and not signatures[suffix]:
+        raise HTTPException(415, "Le contenu du fichier ne correspond pas à son extension.")
     if suffix == ".docx":
         import zipfile
         from io import BytesIO
@@ -164,7 +175,11 @@ async def upload_personal_document(
             except StorageError:
                 pass
         raise
-    return {**dict(row), "id": str(row["id"]), "created_at": row["created_at"].isoformat()}
+    return {
+        **dict(row), "id": str(row["id"]),
+        "created_at": row["created_at"].isoformat(),
+        "extracted_text": extracted_text[:100_000],
+    }
 
 
 
@@ -205,7 +220,7 @@ async def import_personal_documents_zip(
                 filename = path.name
                 suffix = PurePath(filename).suffix.lower()
                 if suffix not in ALLOWED:
-                    raise HTTPException(415, "L'archive ne doit contenir que des PDF ou DOCX.")
+                    raise HTTPException(415, "L'archive ne doit contenir que des PDF, DOCX, JPEG, PNG ou WEBP.")
                 if filename.casefold() in seen_names:
                     raise HTTPException(422, "L'archive contient des noms de fichiers en doublon.")
                 seen_names.add(filename.casefold())
@@ -308,6 +323,7 @@ async def import_personal_documents_zip(
                 documents.append({
                     **dict(row), "id": str(row["id"]),
                     "created_at": row["created_at"].isoformat(),
+                    "extracted_text": item["extracted_text"][:100_000],
                 })
     except Exception:
         for storage_key in stored_keys:
