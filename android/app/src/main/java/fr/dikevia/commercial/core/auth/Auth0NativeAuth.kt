@@ -33,6 +33,13 @@ class Auth0NativeAuth(
         SharedPreferencesStorage(appContext)
     )
 
+    private fun configurationDiagnostic(): String {
+        val clientIdPresent = BuildConfig.AUTH0_CLIENT_ID.isNotBlank() &&
+            BuildConfig.AUTH0_CLIENT_ID != "AUTH0_NATIVE_CLIENT_ID_REQUIRED"
+        val domainPresent = BuildConfig.AUTH0_DOMAIN.isNotBlank()
+        return "Configuration native — Client ID : ${if (clientIdPresent) "présent" else "absent"} ; domaine : ${if (domainPresent) "présent" else "absent"} ; application : ${BuildConfig.APPLICATION_ID}."
+    }
+
     fun isConfigured(): Boolean =
         BuildConfig.AUTH0_CLIENT_ID.isNotBlank() &&
             BuildConfig.AUTH0_CLIENT_ID != "AUTH0_NATIVE_CLIENT_ID_REQUIRED" &&
@@ -43,30 +50,34 @@ class Auth0NativeAuth(
         onError: (String) -> Unit
     ) {
         if (!isConfigured()) {
-            onError("La connexion native n'est pas configurée : Client ID Auth0 Android manquant.")
+            onError("La connexion native n'est pas configurée. ${configurationDiagnostic()}")
             return
         }
-        WebAuthProvider.login(account)
-            .withAudience(BuildConfig.AUTH0_API_AUDIENCE)
-            .withScope(BuildConfig.AUTH0_OIDC_SCOPES)
-            .start(hostActivity, object : Callback<Credentials, AuthenticationException> {
-                override fun onFailure(error: AuthenticationException) {
-                    onError(if (error.isAuthenticationCanceled) {
-                        "Connexion annulée."
-                    } else {
-                        "Échec de l'authentification. Vérifiez la configuration Auth0 et réessayez."
-                    })
-                }
-
-                override fun onSuccess(credentials: Credentials) {
-                    try {
-                        credentialsManager.saveCredentials(credentials)
-                        onSuccess(credentials)
-                    } catch (_: CredentialsManagerException) {
-                        onError("La session a été obtenue mais son stockage sécurisé a échoué.")
+        try {
+            WebAuthProvider.login(account)
+                .withAudience(BuildConfig.AUTH0_API_AUDIENCE)
+                .withScope(BuildConfig.AUTH0_OIDC_SCOPES)
+                .start(hostActivity, object : Callback<Credentials, AuthenticationException> {
+                    override fun onFailure(error: AuthenticationException) {
+                        onError(if (error.isAuthenticationCanceled) {
+                            "Connexion annulée."
+                        } else {
+                            "Échec de l'authentification Auth0 : ${error.message ?: "erreur non précisée"}"
+                        })
                     }
-                }
-            })
+
+                    override fun onSuccess(credentials: Credentials) {
+                        try {
+                            credentialsManager.saveCredentials(credentials)
+                            onSuccess(credentials)
+                        } catch (_: CredentialsManagerException) {
+                            onError("La session a été obtenue mais son stockage sécurisé a échoué.")
+                        }
+                    }
+                })
+        } catch (error: Exception) {
+            onError("Impossible de lancer la connexion Auth0 : ${error.message ?: error.javaClass.simpleName}. ${configurationDiagnostic()}")
+        }
     }
 
     fun restore(
