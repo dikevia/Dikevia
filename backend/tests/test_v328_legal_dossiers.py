@@ -50,6 +50,7 @@ def test_dossier_routes_are_authenticated_tenant_routes():
     from app.main import app
     paths = {r.path for r in app.routes if hasattr(r, "path")}
     assert "/api/v1/chat/conversations/{conversation_id}/dossier" in paths
+    assert "/api/v1/chat/conversations/{conversation_id}/dossier/pdf" in paths
     update_route = next(r for r in app.routes if getattr(r, "path", None) == "/api/v1/chat/conversations/{conversation_id}/dossier" and "PUT" in getattr(r, "methods", set()))
     import inspect
     source = inspect.getsource(update_route.endpoint)
@@ -59,7 +60,7 @@ def test_dossier_routes_are_authenticated_tenant_routes():
 
 def test_frontend_exposes_dossier_build_edit_save_and_print_actions():
     html = (ROOT / "frontend/index.html").read_text()
-    for item in ("buildDossier", "saveDossier", "printDossier", "dossierFacts", "dossierSources"):
+    for item in ("buildDossier", "saveDossier", "printDossier", "dossierFacts", "dossierSources", "/dossier/pdf", "responseType==='blob'"):
         assert item in html
     assert "localStorage" not in html
 
