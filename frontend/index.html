@@ -489,7 +489,7 @@ html.dikevia-standard-app footer{display:none}
  <div class="field"><label for="sessionDocuments">Documents à obtenir ou examiner (un par ligne)</label><textarea id="sessionDocuments" rows="4" maxlength="12000"></textarea></div>
  <div class="field"><label for="sessionMinutes">Compte rendu / notes de séance</label><textarea id="sessionMinutes" rows="8" maxlength="50000"></textarea></div>
  <div class="field"><label for="sessionActions">Actions à suivre (une par ligne)</label><textarea id="sessionActions" rows="4" maxlength="12000"></textarea></div>
- <div class="row"><button type="button" id="createInstanceSession">Créer le dossier de séance</button><button type="button" id="saveInstanceSession" class="secondary" disabled>Enregistrer les modifications</button><button type="button" id="exportInstanceSessionPdf" class="secondary" disabled>Exporter en PDF</button><button type="button" id="newInstanceSession" class="secondary">Nouveau dossier</button></div>
+ <div class="row"><button type="button" id="createInstanceSession">Créer le dossier de séance</button><button type="button" id="saveInstanceSession" class="secondary" disabled>Enregistrer les modifications</button><button type="button" id="exportInstanceSessionPdf" class="secondary" disabled>Exporter en PDF</button><button type="button" id="continueSessionWithJuris" class="secondary" disabled>Continuer avec JURIS</button><button type="button" id="newInstanceSession" class="secondary">Nouveau dossier</button></div>
  <p id="instanceSessionMessage" class="muted" aria-live="polite"></p>
  <div id="instanceSessionPreparation" class="dossier-readonly hidden"></div>
 </div></div>
@@ -886,7 +886,7 @@ function sessionMessage(text,error=false){const el=$('#instanceSessionMessage');
 function clearInstanceSessionForm(){
  activeInstanceSession=null;
  ['sessionTitle','sessionDate','sessionAgenda','sessionQuestions','sessionDocuments','sessionMinutes','sessionActions'].forEach(id=>$('#'+id).value='');
- $('#sessionStatus').value='PREPARATION';$('#saveInstanceSession').disabled=true;$('#exportInstanceSessionPdf').disabled=true;$('#createInstanceSession').disabled=false;
+ $('#sessionStatus').value='PREPARATION';$('#saveInstanceSession').disabled=true;$('#exportInstanceSessionPdf').disabled=true;$('#continueSessionWithJuris').disabled=true;$('#createInstanceSession').disabled=false;
  $('#instanceSessionPreparation').classList.add('hidden');$('#instanceSessionPreparation').textContent='';
 }
 function fillInstanceSessionForm(d){
@@ -898,7 +898,7 @@ function fillInstanceSessionForm(d){
  $('#sessionDocuments').value=(d.documents||[]).map(x=>typeof x==='string'?x:(x.name||JSON.stringify(x))).join('\n');
  $('#sessionMinutes').value=d.minutes||'';
  $('#sessionActions').value=(d.action_items||[]).map(x=>typeof x==='string'?x:(x.task||JSON.stringify(x))).join('\n');
- $('#saveInstanceSession').disabled=false;$('#exportInstanceSessionPdf').disabled=false;$('#createInstanceSession').disabled=true;
+ $('#saveInstanceSession').disabled=false;$('#exportInstanceSessionPdf').disabled=false;$('#continueSessionWithJuris').disabled=false;$('#createInstanceSession').disabled=true;
  const prep=d.preparation||{};
  $('#instanceSessionPreparation').textContent=Object.keys(prep).length?JSON.stringify(prep,null,2):'Aucune préparation JURIS enregistrée dans ce dossier.';
  $('#instanceSessionPreparation').classList.remove('hidden');
@@ -919,6 +919,26 @@ function instanceSessionPayload(){
   agenda:sessionLines('sessionAgenda'),questions:sessionLines('sessionQuestions'),documents:sessionLines('sessionDocuments'),minutes:$('#sessionMinutes').value,
   action_items:sessionLines('sessionActions'),preparation:activeInstanceSession?activeInstanceSession.preparation:(latestInstancePreparation||{})};
 }
+$('#continueSessionWithJuris').addEventListener('click',async()=>{
+ if(!activeInstanceSession)return;
+ try{
+  const saved=await api('/api/v1/instances/sessions/'+encodeURIComponent(activeInstanceSession.id),{method:'PUT',body:JSON.stringify(instanceSessionPayload())});
+  fillInstanceSessionForm(saved);
+  const payload={
+   instance:saved.instance_code,title:saved.title,meeting_date:saved.meeting_date,
+   agenda:saved.agenda,preparation:saved.preparation,questions:saved.questions,
+   documents:saved.documents,minutes:saved.minutes,action_items:saved.action_items
+  };
+  const prompt=[
+   'CONTEXTE DE SÉANCE — DOSSIER ENREGISTRÉ DANS DIKÉVIA',
+   JSON.stringify(payload,null,2).slice(0,3200),
+   '',
+   'MISSION JURIS : tu es le même assistant conversationnel juridique de Dikévia. Vérifie la compétence de l’instance, les textes et leur version applicable à la date de séance, la jurisprudence pertinente et les éléments manquants. Distingue les faits établis, les déclarations, les hypothèses et les sources réellement vérifiées. Prépare une synthèse, les questions argumentées à poser, les demandes de pièces, un projet de compte rendu uniquement à partir des notes disponibles, puis un plan d’action syndical. Signale les informations manquantes et pose les questions utiles. N’invente aucune source, aucun propos tenu ni aucune décision.'
+  ].join('\\n').slice(0,5000);
+  startNewChat();setView('ask');$('#askQuestion').value=prompt;$('#askCharCount').textContent=prompt.length+' / 5000';$('#askQuestion').focus();
+  sessionMessage('Dossier enregistré. Son contexte a été transmis au chatbot JURIS partagé.');
+ }catch(e){sessionMessage('Transmission à JURIS impossible : '+e.message,true);}
+});
 $('#exportInstanceSessionPdf').addEventListener('click',async()=>{
  if(!activeInstanceSession)return;
  try{
