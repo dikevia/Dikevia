@@ -24,6 +24,8 @@ import fr.dikevia.commercial.feature.home.JurisChatAttachment
 import com.auth0.android.result.Credentials
 import java.util.concurrent.Executors
 import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 /**
  * Native end-to-end preview: Auth0 -> organization membership -> existing chat API.
@@ -37,6 +39,33 @@ class NativePreviewActivity : FragmentActivity() {
     private var textToSpeech: TextToSpeech? = null
     private var speaking by mutableStateOf(false)
     private var pendingPdfText: String? = null
+    private var pendingZipAttachments: List<JurisChatAttachment> = emptyList()
+    private val createZip = registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        val files = pendingZipAttachments
+        pendingZipAttachments = emptyList()
+        if (uri != null && files.isNotEmpty()) {
+            runCatching {
+                contentResolver.openOutputStream(uri)?.use { stream ->
+                    ZipOutputStream(stream).use { zip ->
+                        val used = mutableSetOf<String>()
+                        files.forEachIndexed { index, item ->
+                            var name = item.fileName.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "document_$index" }
+                            val base = name.substringBeforeLast('.', name)
+                            val extension = name.substringAfterLast('.', "")
+                            var suffix = 1
+                            while (!used.add(name.lowercase(Locale.ROOT))) {
+                                name = if (extension.isBlank()) "${base}_${suffix++}" else "${base}_${suffix++}.$extension"
+                            }
+                            zip.putNextEntry(ZipEntry(name))
+                            zip.write(item.bytes)
+                            zip.closeEntry()
+                        }
+                    }
+                } ?: error("Impossible d'écrire l'archive ZIP.")
+            }.onSuccess { Toast.makeText(this, "Archive ZIP créée.", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(this, it.message ?: "Échec de création du ZIP.", Toast.LENGTH_LONG).show() }
+        }
+    }
     private val createPdf = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         val text = pendingPdfText
         pendingPdfText = null
@@ -228,7 +257,8 @@ class NativePreviewActivity : FragmentActivity() {
                 onReadAloud = ::readAloud,
                 onStopReading = { textToSpeech?.stop(); speaking = false },
                 isSpeaking = speaking,
-                onExportPdf = ::exportAnswerPdf
+                onExportPdf = ::exportAnswerPdf,
+                onCreateZip = ::createAttachmentZip
             )
         }
     }
@@ -449,6 +479,12 @@ class NativePreviewActivity : FragmentActivity() {
         if (result == TextToSpeech.ERROR) {
             Toast.makeText(this, "La lecture vocale n'a pas pu démarrer.", Toast.LENGTH_SHORT).show()
         } else speaking = true
+    }
+
+    private fun createAttachmentZip(attachments: List<JurisChatAttachment>) {
+        if (attachments.isEmpty()) return
+        pendingZipAttachments = attachments
+        createZip.launch("JURIS-pieces-jointes.zip")
     }
 
     private fun exportAnswerPdf(text: String) {
