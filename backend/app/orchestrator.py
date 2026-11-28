@@ -1125,16 +1125,22 @@ class LegalOrchestrator:
         )
         research_plan = None
         try:
-            research_plan = await plan_legal_research(
-                question=contextual_question,
-                employer=_effective_employer_for_versant(request.public_service, conversation_employer),
-                facts_period=temporal_context,
-                legal_context=legal_context,
-                conversation_history=provider_history,
-                **_provider_usage_kwargs(plan_legal_research, ai_usage_events),
+            research_plan = await asyncio.wait_for(
+                plan_legal_research(
+                    question=contextual_question,
+                    employer=_effective_employer_for_versant(request.public_service, conversation_employer),
+                    facts_period=temporal_context,
+                    legal_context=legal_context,
+                    conversation_history=provider_history,
+                    **_provider_usage_kwargs(plan_legal_research, ai_usage_events),
+                ),
+                timeout=min(10.0, settings.ai_timeout_seconds),
             )
-        except AIProviderUnavailable:
-            logger.warning("Planification IA de la recherche juridique indisponible ; utilisation du plan de secours.")
+        except (AIProviderUnavailable, asyncio.TimeoutError) as exc:
+            logger.warning(
+                "Planification IA indisponible ou trop lente ; utilisation du plan déterministe (request_id=%s, error_type=%s).",
+                request_id, type(exc).__name__,
+            )
         if research_plan is not None and research_plan.clarification_needed:
             clarification = research_plan.clarification_needed
             logger.info("Clarification juridique demandée avant recherche documentaire (request_id=%s).", request_id)
@@ -1431,19 +1437,25 @@ class LegalOrchestrator:
                 ),
             ]
             try:
-                refinement = await plan_legal_research(
-                    question=contextual_question,
-                    employer=_effective_employer_for_versant(request.public_service, conversation_employer),
-                    facts_period=temporal_context,
-                    legal_context=legal_context,
-                    conversation_history=provider_history,
-                    previous_queries=research_queries,
-                    retrieved_evidence=first_pass_evidence,
-                    **_provider_usage_kwargs(plan_legal_research, ai_usage_events),
+                refinement = await asyncio.wait_for(
+                    plan_legal_research(
+                        question=contextual_question,
+                        employer=_effective_employer_for_versant(request.public_service, conversation_employer),
+                        facts_period=temporal_context,
+                        legal_context=legal_context,
+                        conversation_history=provider_history,
+                        previous_queries=research_queries,
+                        retrieved_evidence=first_pass_evidence,
+                        **_provider_usage_kwargs(plan_legal_research, ai_usage_events),
+                    ),
+                    timeout=min(7.0, settings.ai_timeout_seconds),
                 )
-            except AIProviderUnavailable:
+            except (AIProviderUnavailable, asyncio.TimeoutError) as exc:
                 refinement = None
-                logger.warning("Affinage IA après première recherche indisponible ; les résultats initiaux sont conservés.")
+                logger.warning(
+                    "Affinage IA indisponible ou trop lent ; conservation des résultats initiaux (request_id=%s, error_type=%s).",
+                    request_id, type(exc).__name__,
+                )
             if refinement is not None:
                 additional_queries = [
                     query for query in refinement.queries
@@ -2446,15 +2458,18 @@ class LegalOrchestrator:
                     ai_sources = base_ai_sources + personal_context_sources if base_ai_sources else []
                     if ai_sources:
                         answer_started_at = time.perf_counter()
-                        ai_result = await analyze_question(
-                            question=contextual_question,
-                            employer=_effective_employer_for_versant(request.public_service, conversation_employer),
-                            facts_date=effective_date.isoformat(),
-                            facts_period=temporal_context,
-                            sources=ai_sources,
-                            conversation_history=provider_history,
-                            legal_context=legal_context,
-                            allow_local_documents=allow_local_documents,
+                        ai_result = await asyncio.wait_for(
+                            analyze_question(
+                                question=contextual_question,
+                                employer=_effective_employer_for_versant(request.public_service, conversation_employer),
+                                facts_date=effective_date.isoformat(),
+                                facts_period=temporal_context,
+                                sources=ai_sources,
+                                conversation_history=provider_history,
+                                legal_context=legal_context,
+                                allow_local_documents=allow_local_documents,
+                            ),
+                            timeout=min(35.0, settings.ai_timeout_seconds * 1.4),
                         )
                         if isinstance(ai_result, AIAnalysisResult):
                             raw_ai_content = ai_result.content
@@ -2501,13 +2516,16 @@ class LegalOrchestrator:
                                 "Le moteur IA n'a produit aucune affirmation pouvant être reliée à un extrait documentaire exact. Aucune conclusion n'est formulée.",
                             )
                         else:
-                            entailment_validation = await verify_claim_entailment(
-                                question=contextual_question,
-                                claims=claim_validation["claims"], sources=ai_sources,
-                                public_service=request.public_service,
-                                allow_local_documents=allow_local_documents,
-                                facts_period=temporal_context,
-                                **_provider_usage_kwargs(verify_claim_entailment, ai_usage_events),
+                            entailment_validation = await asyncio.wait_for(
+                                verify_claim_entailment(
+                                    question=contextual_question,
+                                    claims=claim_validation["claims"], sources=ai_sources,
+                                    public_service=request.public_service,
+                                    allow_local_documents=allow_local_documents,
+                                    facts_period=temporal_context,
+                                    **_provider_usage_kwargs(verify_claim_entailment, ai_usage_events),
+                                ),
+                                timeout=min(35.0, settings.ai_timeout_seconds * 1.4),
                             )
                             supported_indices = entailment_validation.get("supported_claim_indices", [])
                             if not entailment_validation.get("valid") and not supported_indices:
@@ -2598,8 +2616,12 @@ class LegalOrchestrator:
                         0,
                         "Analyse IA suspendue : aucune source documentaire contenant un extrait non vide n'est disponible. Aucune génération n'a été envoyée au fournisseur.",
                     )
-                except AIProviderUnavailable:
+                except (AIProviderUnavailable, asyncio.TimeoutError) as provider_error:
                     ai_answer = None
+                    logger.warning(
+                        "Génération ou vérification IA indisponible ou trop lente ; aucune conclusion non vérifiée ne sera publiée (request_id=%s, error_type=%s).",
+                        request_id, type(provider_error).__name__,
+                    )
                     # Record a provider attempt even when it fails; token usage remains unknown.
                     if ai_usage is None and settings.ai_api_base_url and settings.ai_model:
                         # The answer-generation event already exists when the later
