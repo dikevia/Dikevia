@@ -1,5 +1,11 @@
 package fr.dikevia.commercial.feature.home
 
+import android.content.Intent
+import android.graphics.Bitmap
+import android.provider.OpenableColumns
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +55,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import fr.dikevia.commercial.designsystem.JurisOrb
 import fr.dikevia.commercial.designsystem.JurisOrbState
 import fr.dikevia.commercial.core.api.DikeviaOrganization
@@ -64,6 +75,10 @@ private val Border = Color(0xFFDCE6F0)
 private data class InstanceCard(val acronym: String, val title: String, val description: String)
 
 data class JurisChatMessage(val role: String, val content: String)
+data class JurisChatAttachment(val fileName: String, val mimeType: String, val bytes: ByteArray)
+
+private fun isSupportedChatAttachment(name: String): Boolean =
+    name.substringAfterLast('.', "").lowercase() in setOf("pdf", "docx", "jpg", "jpeg", "png", "webp", "zip")
 
 /**
  * Transfers the structured instance preparation into the existing JURIS chat.
@@ -372,10 +387,17 @@ fun NativeHomeScreen(
     onSaveSession: (String, String, String, String) -> Unit,
     onRefreshSessions: () -> Unit,
     onPrepareInstance: (String, String) -> Unit,
-    onSendQuestion: (String) -> Unit,
+    onSendQuestion: (String, List<JurisChatAttachment>) -> Unit,
+    onReadAloud: (String) -> Unit,
+    onStopReading: () -> Unit,
+    isSpeaking: Boolean,
+    onExportPdf: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var question by remember { mutableStateOf("") }
+    var attachments by remember { mutableStateOf<List<JurisChatAttachment>>(emptyList()) }
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     var selectedInstance by remember { mutableStateOf<String?>(null) }
     var instanceObjet by remember { mutableStateOf("") }
     var sessionTitle by remember { mutableStateOf("") }
@@ -387,6 +409,35 @@ fun NativeHomeScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val drawerScope = rememberCoroutineScope()
     val chatScrollState = rememberScrollState()
+    val attachmentScope = rememberCoroutineScope()
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) attachmentScope.launch {
+            val loaded = withContext(Dispatchers.IO) {
+                uris.mapNotNull { uri ->
+                    runCatching {
+                        val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                            ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null } ?: "piece_jointe"
+                        require(isSupportedChatAttachment(name)) { "Format non pris en charge : $name" }
+                        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Impossible de lire $name")
+                        require(bytes.isNotEmpty() && bytes.size <= 60 * 1024 * 1024) { "Fichier vide ou supérieur à 60 Mo : $name" }
+                        JurisChatAttachment(name, context.contentResolver.getType(uri) ?: "application/octet-stream", bytes)
+                    }.getOrNull()
+                }
+            }
+            attachments = (attachments + loaded).take(8)
+        }
+    }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        if (bitmap != null) {
+            val output = java.io.ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 88, output)
+            attachments = (attachments + JurisChatAttachment("photo_${System.currentTimeMillis()}.jpg", "image/jpeg", output.toByteArray())).take(8)
+        }
+    }
+    val voiceInput = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (!spoken.isNullOrBlank()) question = listOf(question.trim(), spoken.trim()).filter { it.isNotBlank() }.joinToString(" ")
+    }
 
     LaunchedEffect(chatTranscript.size, sending) {
         chatScrollState.animateScrollTo(chatScrollState.maxValue)
@@ -491,6 +542,15 @@ fun NativeHomeScreen(
                                                     Text("Vous", color = SteelBlue, fontWeight = FontWeight.Bold)
                                                     Spacer(Modifier.height(6.dp))
                                                     Text(message.content, color = Navy, style = MaterialTheme.typography.bodyMedium)
+                                                    if (message.role != "user") {
+                                                        Spacer(Modifier.height(10.dp))
+                                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                            TextButton(onClick = { clipboard.setText(AnnotatedString(message.content)) }) { Text("Copier") }
+                                                            TextButton(onClick = { onReadAloud(message.content) }) { Text("Écouter") }
+                                                            TextButton(onClick = { onExportPdf(message.content) }) { Text("PDF") }
+                                                            if (isSpeaking) TextButton(onClick = onStopReading) { Text("Arrêter") }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -537,6 +597,15 @@ fun NativeHomeScreen(
                                             )
                                             Spacer(Modifier.height(6.dp))
                                             Text(message.content, color = Navy, style = MaterialTheme.typography.bodyMedium)
+                                            if (message.role != "user") {
+                                                Spacer(Modifier.height(10.dp))
+                                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                    TextButton(onClick = { clipboard.setText(AnnotatedString(message.content)) }) { Text("Copier") }
+                                                    TextButton(onClick = { onReadAloud(message.content) }) { Text("Écouter") }
+                                                    TextButton(onClick = { onExportPdf(message.content) }) { Text("PDF") }
+                                                    if (isSpeaking) TextButton(onClick = onStopReading) { Text("Arrêter") }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -550,6 +619,16 @@ fun NativeHomeScreen(
                             modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(10.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            if (attachments.isNotEmpty()) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    attachments.forEachIndexed { index, attachment ->
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("📎 ${attachment.fileName}", modifier = Modifier.weight(1f), color = Navy, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                            TextButton(onClick = { attachments = attachments.filterIndexed { itemIndex, _ -> itemIndex != index } }) { Text("Retirer") }
+                                        }
+                                    }
+                                }
+                            }
                             OutlinedTextField(
                                 value = question,
                                 onValueChange = { question = it },
@@ -560,6 +639,21 @@ fun NativeHomeScreen(
                                 minLines = 1,
                                 maxLines = 5
                             )
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = authenticated && !sending && attachments.size < 8) { Text("＋ Fichier") }
+                                TextButton(onClick = { camera.launch(null) }, enabled = authenticated && !sending && attachments.size < 8) { Text("📷 Photo") }
+                                TextButton(
+                                    onClick = {
+                                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
+                                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Parlez à JURIS")
+                                        }
+                                        runCatching { voiceInput.launch(intent) }
+                                    },
+                                    enabled = authenticated && !sending
+                                ) { Text("🎙 Parler") }
+                            }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     chatStatus.ifBlank { if (sending) "Analyse en cours…" else "JURIS · Sources juridiques à vérifier" },
@@ -571,11 +665,15 @@ fun NativeHomeScreen(
                                     onClick = {
                                         val value = question.trim()
                                         if (value.isNotEmpty()) {
-                                            onSendQuestion(value)
+                                            onSendQuestion(
+                                                if (value.isBlank() && attachments.isNotEmpty()) "JURIS, analyse les pièces jointes que je viens de transmettre et explique-moi ce qu'elles établissent." else value,
+                                                attachments.toList()
+                                            )
                                             question = ""
+                                            attachments = emptyList()
                                         }
                                     },
-                                    enabled = authenticated && selectedOrganizationId != null && question.isNotBlank() && !sending,
+                                    enabled = authenticated && selectedOrganizationId != null && (question.isNotBlank() || attachments.isNotEmpty()) && !sending,
                                     colors = ButtonDefaults.buttonColors(containerColor = SteelBlue),
                                     shape = RoundedCornerShape(14.dp)
                                 ) { Text(if (sending) "Analyse…" else "Envoyer") }
