@@ -6,6 +6,16 @@ from app.legal_search_plan import (
 )
 
 
+def test_nbi_question_targets_official_fpt_implementing_decrees():
+    queries = build_official_search_queries("Qu'est-ce qu'une NBI ?")
+    joined = " ".join(queries).casefold()
+
+    assert any("décret 2006-779" in query for query in queries)
+    assert any("décret 93-863" in query for query in queries)
+    assert any("décret 2006-780" in query for query in queries)
+    assert all(len(query) <= 500 for query in queries)
+
+
 def test_annual_evaluation_contestation_targets_cgfp_and_territorial_implementing_decree():
     question = "Mon agent de maîtrise m'as fait une évaluation annuelle à charge, puis-je la contester ?"
     query = build_official_search_query(question)
