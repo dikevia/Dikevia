@@ -237,3 +237,17 @@ def test_native_instance_preparation_is_handed_to_the_shared_juris_chat():
     assert "onSendQuestion(buildJurisInstancePrompt(instancePreparation))" in source
     assert "api.ask(" not in source
     assert "Approfondir cette préparation avec JURIS" in source
+
+
+def test_android_f3sct_label_maps_to_backend_fs_instance_key():
+    from pathlib import Path
+
+    activity = (
+        Path(__file__).resolve().parents[2]
+        / "android" / "app" / "src" / "main" / "java"
+        / "fr" / "dikevia" / "commercial" / "NativePreviewActivity.kt"
+    )
+    source = activity.read_text(encoding="utf-8")
+    assert 'instance.equals("F3SCT", ignoreCase = true)' in source
+    assert 'else instance' in source
+    assert 'backendInstance,' in source
