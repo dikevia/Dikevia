@@ -450,19 +450,28 @@ fun NativeHomeScreen(
                 if (administrationEdition) {
                     AdminLanding()
                 } else {
-                    JurisOrb(
-                        state = JurisOrbState.READY,
-                        diameter = 148.dp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Spacer(Modifier.height(14.dp))
-                    Text("JURIS", color = Navy, fontSize = 27.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
-                    Text(
-                        "Votre assistant juridique territorial",
-                        color = Color(0xFF52677C),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(Modifier.height(28.dp))
+                    val hasAssistantResponse = chatTranscript.any { it.role != "user" }
+                    if (!hasAssistantResponse) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(300.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                JurisOrb(
+                                    state = if (sending) JurisOrbState.ANALYZING else JurisOrbState.READY,
+                                    diameter = 248.dp,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                                Spacer(Modifier.height(18.dp))
+                                Text("JURIS", color = Navy, fontSize = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+                                Text(
+                                    if (sending) "Analyse de votre demande…" else "Votre assistant juridique territorial",
+                                    color = Color(0xFF52677C),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
