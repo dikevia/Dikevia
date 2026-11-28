@@ -181,3 +181,59 @@ async def test_instance_preparation_distinguishes_full_text_from_case_law_metada
     assert sources[1]["full_text_retrieved"] is True
     assert sources[2]["full_text_retrieved"] is False
     assert "métadonnées/extrait uniquement" in sources[2]["verification_note"]
+
+
+@pytest.mark.parametrize(
+    ("objet", "expected_code"),
+    [
+        ("Alerte pour danger grave et imminent et droit de retrait", "danger_grave_imminent"),
+        ("Visite de locaux et visite de service", "visites"),
+        ("Enquête après accident de service", "enquete"),
+        ("Mise à jour du DUERP et programme annuel de prévention", "duerp_programme"),
+    ],
+)
+def test_f3sct_operational_preparation_covers_core_missions(objet, expected_code):
+    from app.instances import prepare_instance
+
+    result = prepare_instance("FS", objet)
+
+    matching = [point for point in result["points"] if point["code"] == expected_code]
+    assert len(matching) == 1
+    assert len(matching[0]["questions"]) >= 4
+    assert len(matching[0]["documents"]) >= 4
+    assert result["legal_conclusion"] is False
+
+
+@pytest.mark.asyncio
+async def test_f3sct_operational_topics_feed_the_official_legal_search_context():
+    legal = FakeLegifrance()
+    case_law = FakeCaseLaw()
+
+    result = await prepare_instance_with_legal_sources(
+        "FS",
+        "Mise à jour du DUERP et programme annuel de prévention",
+        legifrance_connector=legal,
+        case_law_connector=case_law,
+        effective_date=date(2026, 11, 28),
+    )
+
+    assert result["points"][0]["code"] == "duerp_programme"
+    assert "DUERP" in legal.code_queries[0][0]
+    assert "DUERP" in case_law.queries[0][0]
+    assert result["legal_research"]["status"] == "SEARCHED"
+
+
+def test_native_instance_preparation_is_handed_to_the_shared_juris_chat():
+    from pathlib import Path
+
+    native = (
+        Path(__file__).resolve().parents[2]
+        / "android" / "app" / "src" / "main" / "java"
+        / "fr" / "dikevia" / "commercial" / "feature" / "home"
+        / "NativeHomeScreen.kt"
+    )
+    source = native.read_text(encoding="utf-8")
+    assert "buildJurisInstancePrompt(instancePreparation)" in source
+    assert "onSendQuestion(buildJurisInstancePrompt(instancePreparation))" in source
+    assert "api.ask(" not in source
+    assert "Approfondir cette préparation avec JURIS" in source
