@@ -394,7 +394,7 @@ LEGAL_CORPUS_INTERLEAVED_LIMIT = 18
 def _question_mentions_saint_etienne(question: str) -> bool:
     """Require an explicit Saint-Étienne mention before local city documents enter retrieval."""
     folded = _fold(str(question or ""))
-    return bool(re.search(r"\\b(?:saint|st)\\s+etienne\\b", folded))
+    return bool(re.search(r"\b(?:saint|st)\s+etienne\b", folded))
 
 
 def _should_search_local_employer_documents(public_service: str, employer: str) -> bool:
