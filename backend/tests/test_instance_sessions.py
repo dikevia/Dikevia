@@ -106,3 +106,10 @@ def test_instance_session_api_has_list_create_read_and_update_routes():
     assert ("/api/v1/instances/sessions/{session_id}", "GET") in routes
     assert ("/api/v1/instances/sessions/{session_id}", "PUT") in routes
     assert ("/api/v1/instances/sessions/{session_id}/pdf", "GET") in routes
+
+
+def test_loaded_instance_session_cannot_be_reassigned_to_another_instance_in_ui():
+    html = (ROOT / "frontend/index.html").read_text()
+    assert "$('#instanceType').disabled=true" in html
+    assert "$('#instanceType').disabled=false" in html
+    assert "if(activeInstanceSession){sessionMessage('Ce dossier est rattaché à '" in html
