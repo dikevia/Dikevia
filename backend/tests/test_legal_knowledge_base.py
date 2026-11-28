@@ -22,6 +22,30 @@ def test_clean_text_and_hash_are_deterministic():
     assert sha256_text("juris") != sha256_text("JURIS")
 
 
+def test_multi_source_selection_reserves_cgfp_decree_and_case_law_when_available():
+    results_by_query = [
+        [
+            {"source_id": "code-1", "version_id": "v-code-1", "source_type": "LEGIFRANCE_LEGI", "document_kind": "CODE"},
+            {"source_id": "code-2", "version_id": "v-code-2", "source_type": "LEGIFRANCE_LEGI", "document_kind": "CODE"},
+            {"source_id": "decree-1", "version_id": "v-decree-1", "source_type": "LEGIFRANCE_LODA", "document_kind": "DECREE"},
+        ],
+        [
+            {"source_id": "decree-2", "version_id": "v-decree-2", "source_type": "LEGIFRANCE_LODA", "document_kind": "DECREE"},
+            {"source_id": "case-1", "version_id": "v-case-1", "source_type": "LEGIFRANCE_CETAT", "document_kind": "ADMIN_CASELAW"},
+        ],
+    ]
+
+    selected = select_multi_source_chunks(results_by_query, limit=4)
+    families = {
+        ("CGFP" if item["document_kind"] == "CODE" else
+         "REGULATORY" if item["document_kind"] == "DECREE" else
+         "JURISPRUDENCE" if item["document_kind"] == "ADMIN_CASELAW" else "OTHER")
+        for item in selected
+    }
+    assert {"CGFP", "REGULATORY", "JURISPRUDENCE"} <= families
+    assert len({item["version_id"] for item in selected}) == len(selected)
+
+
 def test_date_filtered_version_requires_matching_consulted_and_stored_ids():
     requested = date(2025, 1, 1)
     payload = {
