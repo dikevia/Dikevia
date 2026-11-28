@@ -38,6 +38,9 @@ def test_dossier_content_validation_limits_fields_and_status():
     bad = dict(base, facts_summary="x" * 20001)
     with pytest.raises(ValueError):
         validate_dossier_content(bad)
+    bad = dict(base, instance_preparation="x" * 20001)
+    with pytest.raises(ValueError):
+        validate_dossier_content(bad)
 
 
 def test_dossier_migration_enforces_owner_and_tenant_rls_and_has_rollback():
@@ -62,7 +65,7 @@ def test_dossier_routes_are_authenticated_tenant_routes():
 
 def test_frontend_exposes_dossier_build_edit_save_and_print_actions():
     html = (ROOT / "frontend/index.html").read_text()
-    for item in ("buildDossier", "saveDossier", "printDossier", "dossierFacts", "dossierSources", "/dossier/pdf", "responseType==='blob'"):
+    for item in ("buildDossier", "saveDossier", "printDossier", "dossierFacts", "dossierSources", "dossierInstancePreparation", "instance_preparation", "latestInstancePreparation=null", "/dossier/pdf", "responseType==='blob'"):
         assert item in html
     assert "localStorage" not in html
 
