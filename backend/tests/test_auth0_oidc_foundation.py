@@ -202,6 +202,56 @@ def test_auth0_migration_keeps_database_roles_and_org_memberships_out_of_auth0()
     assert "platform_admins" not in (ROOT / "frontend/oidc-auth.js").read_text()
 
 
+def test_auth0_id_token_accepts_native_android_client_without_weakening_audience_checks(monkeypatch):
+    issuer = "https://tenant.eu.auth0.com/"
+    spa_client_id = "public-spa-client-id"
+    native_client_id = "android-native-client-id"
+    monkeypatch.setattr(security, "settings", SimpleNamespace(
+        oidc_issuer=issuer,
+        oidc_client_id=spa_client_id,
+        oidc_native_client_id=native_client_id,
+        oidc_jwks_url=issuer + ".well-known/jwks.json",
+        oidc_algorithms="RS256",
+    ))
+    monkeypatch.setattr(security, "jwks_client", lambda _url: FakeJwks())
+    now = int(time.time())
+    principal = security.Principal(subject="auth0|android-user", issuer=issuer)
+
+    for audience in (native_client_id, spa_client_id):
+        token = jwt.encode(
+            {"iss": issuer, "aud": audience, "sub": principal.subject,
+             "iat": now, "exp": now + 600},
+            KEY, algorithm="RS256",
+        )
+        verified = security.verify_identity_token(token, principal)
+        assert verified.subject == principal.subject
+
+    invalid = jwt.encode(
+        {"iss": issuer, "aud": "unregistered-client-id", "sub": principal.subject,
+         "iat": now, "exp": now + 600},
+        KEY, algorithm="RS256",
+    )
+    with pytest.raises(HTTPException):
+        security.verify_identity_token(invalid, principal)
+
+    multi_audience = jwt.encode(
+        {"iss": issuer, "aud": [native_client_id, "urn:additional-resource"],
+         "azp": native_client_id, "sub": principal.subject,
+         "iat": now, "exp": now + 600},
+        KEY, algorithm="RS256",
+    )
+    assert security.verify_identity_token(multi_audience, principal).subject == principal.subject
+
+    wrong_authorized_party = jwt.encode(
+        {"iss": issuer, "aud": [native_client_id, "urn:additional-resource"],
+         "azp": "unregistered-client-id", "sub": principal.subject,
+         "iat": now, "exp": now + 600},
+        KEY, algorithm="RS256",
+    )
+    with pytest.raises(HTTPException):
+        security.verify_identity_token(wrong_authorized_party, principal)
+
+
 def test_auth0_id_token_is_signature_audience_issuer_and_subject_bound(monkeypatch):
     issuer = "https://tenant.eu.auth0.com/"
     client_id = "public-spa-client-id"
