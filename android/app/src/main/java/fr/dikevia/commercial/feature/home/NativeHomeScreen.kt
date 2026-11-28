@@ -392,10 +392,12 @@ fun NativeHomeScreen(
     onStopReading: () -> Unit,
     isSpeaking: Boolean,
     onExportPdf: (String) -> Unit,
+    onCreateZip: (List<JurisChatAttachment>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var question by remember { mutableStateOf("") }
     var attachments by remember { mutableStateOf<List<JurisChatAttachment>>(emptyList()) }
+    var voiceMode by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     var selectedInstance by remember { mutableStateOf<String?>(null) }
@@ -441,6 +443,14 @@ fun NativeHomeScreen(
 
     LaunchedEffect(chatTranscript.size, sending) {
         chatScrollState.animateScrollTo(chatScrollState.maxValue)
+    }
+    var lastAutoSpoken by remember { mutableStateOf("") }
+    LaunchedEffect(chatTranscript.lastOrNull()?.content, voiceMode) {
+        val latest = chatTranscript.lastOrNull()
+        if (voiceMode && latest?.role == "assistant" && latest.content != lastAutoSpoken) {
+            lastAutoSpoken = latest.content
+            onReadAloud(latest.content)
+        }
     }
 
     MaterialTheme {
@@ -620,6 +630,9 @@ fun NativeHomeScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             if (attachments.isNotEmpty()) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    TextButton(onClick = { onCreateZip(attachments.toList()) }) { Text("Créer ZIP") }
+                                }
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     attachments.forEachIndexed { index, attachment ->
                                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -642,6 +655,14 @@ fun NativeHomeScreen(
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 TextButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = authenticated && !sending && attachments.size < 8) { Text("＋ Fichier") }
                                 TextButton(onClick = { camera.launch(null) }, enabled = authenticated && !sending && attachments.size < 8) { Text("📷 Photo") }
+                                TextButton(
+                                    onClick = {
+                                        voiceMode = !voiceMode
+                                        if (voiceMode) lastAutoSpoken = chatTranscript.lastOrNull()?.content.orEmpty()
+                                        else onStopReading()
+                                    },
+                                    enabled = authenticated && !sending
+                                ) { Text(if (voiceMode) "Voix activée" else "Mode vocal") }
                                 TextButton(
                                     onClick = {
                                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
