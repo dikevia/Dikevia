@@ -962,7 +962,7 @@ def _provider_context_history(
 
 
 class LegalOrchestrator:
-    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None, founder_cross_encoder_access: bool = False) -> AskResponse:
+    async def ask(self, request: AskRequest, organization_id: str, conn=None, conversation_history: list[dict] | None = None, allow_local_documents: bool = False, personal_user_id: str | None = None, founder_cross_encoder_access: bool = False, additional_local_sources: list[dict] | None = None) -> AskResponse:
         request_id = str(uuid4())
         ai_usage_events: list[dict] = []
         answer_started_at = None
@@ -1596,6 +1596,7 @@ class LegalOrchestrator:
                         )
         local_sources: list[dict] = []
         local_issue = None
+        explicitly_selected_local_sources = list(additional_local_sources or [])
         if _should_search_local_employer_documents(request.public_service, request.employer):
             if conn is None:
                 local_issue = "Les documents propres à l'employeur ne sont pas accessibles dans ce contexte."
@@ -1967,6 +1968,7 @@ class LegalOrchestrator:
                 )
             sources.append(response_source)
 
+        local_sources.extend(explicitly_selected_local_sources)
         sources.extend(local_sources)
         sources.extend(personal_sources)
 
