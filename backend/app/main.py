@@ -1105,9 +1105,11 @@ async def update_instance_session(session_id: str, payload: dict, ctx: TenantCon
     stored = serialize_instance_session(existing)
     # The instance identity is immutable after creation. Enforce this server-side;
     # a disabled HTML select is only a usability guard, not an authorization boundary.
-    requested_instance = payload.get("instance_code", stored["instance_code"])
-    if requested_instance != stored["instance_code"]:
-        raise HTTPException(422, "L'instance d'un dossier de séance ne peut pas être modifiée. Créez un nouveau dossier.")
+    try:
+        from .instance_sessions import ensure_instance_identity_unchanged
+        ensure_instance_identity_unchanged(stored["instance_code"], payload)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
     merged = {key: stored[key] for key in (
         "instance_code","title","meeting_date","meeting_status","agenda","preparation",
         "questions","documents","minutes","action_items"
