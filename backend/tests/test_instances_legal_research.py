@@ -289,6 +289,10 @@ def test_native_juris_chat_keeps_a_visible_multi_turn_transcript():
     assert "conversationAtSend" in activity
     assert "conversationEpochAtSend" in activity
     assert "conversationEpoch != conversationEpochAtSend" in activity
+    assert "resetConversationForContextChange()" in activity
+    assert "onFactsStartDateChange" in activity
+    assert "onFactsEndDateChange" in activity
+    assert "onSituationOngoingChange" in activity
     assert "conversationId = answer.conversationId" in activity
     assert "chatTranscript.add(JurisChatMessage(\"assistant\", \"La demande n'a pas pu être traitée : $message\"))" in activity
 
