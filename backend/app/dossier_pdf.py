@@ -103,6 +103,7 @@ def render_legal_dossier_pdf(content: dict, dossier_id: str = "") -> bytes:
     _section(story, "Objet et demande", styles, content.get("objective"))
     _section(story, "Éléments rapportés et questions", styles, content.get("facts_summary"))
     _section(story, "Chronologie", styles, content.get("chronology"))
+    _section(story, "Préparation de l’instance (CST / CAP / CCP / F3SCT)", styles, content.get("instance_preparation"))
 
     analyses = content.get("legal_analyses") or []
     if analyses:
