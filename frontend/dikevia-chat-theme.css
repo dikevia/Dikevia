@@ -1501,14 +1501,17 @@ html.dikevia-standard-app .juris-welcome-icon {display:grid;place-items:center;o
 html.dikevia-standard-app .juris-welcome-icon:before,
 html.dikevia-standard-app .juris-welcome-icon:after {content:none}
 .instance-launch-grid {
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:0 0 15px;
+  position:relative;z-index:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:0 0 15px;
 }
 .instance-launch-card {
-  display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;
-  padding:15px;text-align:left;border:1px solid #e1e8f0;border-radius:14px;
+  position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;
+  min-height:112px;padding:15px;text-align:left;border:1px solid #e1e8f0;border-radius:14px;
   background:linear-gradient(155deg,#fff,#f7faff);color:#35465d;cursor:pointer;
+  pointer-events:auto;touch-action:manipulation;-webkit-tap-highlight-color:rgba(69,151,202,.18);
   transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease;
 }
+.instance-launch-card:focus-visible {outline:3px solid #56a8d7;outline-offset:3px}
+.instance-launch-card[aria-pressed="true"] {border-color:#56a8d7;background:linear-gradient(155deg,#f1f8fd,#e8f3fb);box-shadow:0 7px 20px rgba(42,111,163,.14)}
 .instance-launch-card:hover,.instance-launch-card.active {
   border-color:#83b8dd;box-shadow:0 7px 20px rgba(42,111,163,.10);transform:translateY(-1px);
 }
