@@ -288,3 +288,27 @@ def test_native_juris_chat_keeps_a_visible_multi_turn_transcript():
     assert 'chatTranscript.add(JurisChatMessage("assistant", renderedAnswer))' in activity
     assert "conversationAtSend" in activity
     assert "conversationId = answer.conversationId" in activity
+
+@pytest.mark.parametrize(
+    ("instance", "objet"),
+    [
+        ("CST", "Point divers sur la politique RH de la collectivité"),
+        ("CAP", "Demande d'éclaircissement sur une situation de carrière"),
+        ("CCP", "Question relative à une situation contractuelle particulière"),
+        ("FS", "Préoccupation sur les conditions d'exercice dans un service"),
+    ],
+)
+def test_unmatched_instance_topic_returns_a_safe_qualification_workflow(instance, objet):
+    from app.instances import prepare_instance
+
+    result = prepare_instance(instance, objet)
+
+    assert result["legal_conclusion"] is False
+    assert len(result["points"]) == 1
+    point = result["points"][0]
+    assert point["code"] == "qualification_a_completer"
+    assert point["qualification"] == "piste_de_preparation_a_confirmer"
+    assert len(point["questions"]) >= 5
+    assert len(point["documents"]) >= 4
+    assert result["documents_a_demander"] == point["documents"]
+    assert "ne confirme ni la compétence" in result["notice"]
