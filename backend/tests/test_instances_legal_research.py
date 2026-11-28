@@ -234,7 +234,7 @@ def test_native_instance_preparation_is_handed_to_the_shared_juris_chat():
     )
     source = native.read_text(encoding="utf-8")
     assert "buildJurisInstancePrompt(instancePreparation)" in source
-    assert "onSendQuestion(buildJurisInstancePrompt(instancePreparation))" in source
+    assert "onSendQuestion(buildJurisInstancePrompt(instancePreparation), emptyList())" in source
     assert "api.ask(" not in source
     assert "Approfondir cette préparation avec JURIS" in source
 
@@ -284,7 +284,8 @@ def test_native_juris_chat_keeps_a_visible_multi_turn_transcript():
 
     assert "chatTranscript: List<JurisChatMessage>" in native_ui
     assert 'if (message.role == "user") "Vous" else "JURIS"' in native_ui
-    assert 'chatTranscript.add(JurisChatMessage("user", question.trim()))' in activity
+    assert 'chatTranscript.add(JurisChatMessage("user", buildString {' in activity
+    assert "append(question.trim())" in activity
     assert 'chatTranscript.add(JurisChatMessage("assistant", renderedAnswer))' in activity
     assert "conversationAtSend" in activity
     assert "conversationEpochAtSend" in activity
