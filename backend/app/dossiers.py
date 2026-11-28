@@ -75,6 +75,7 @@ def build_dossier_content(conversation: dict, messages: list[dict]) -> dict:
         "questions": questions,
         "legal_analyses": analyses,
         "legal_sources": sources,
+        "instance_preparation": "",
         "documents_and_evidence": "Aucune pièce jointe n'est automatiquement incorporée. Ajouter ici les références des pièces utiles, sans données personnelles excessives.",
         "points_to_verify": missing,
         "conclusion": "Conclusion à établir après vérification des faits, des textes applicables et des pièces du dossier.",
@@ -89,11 +90,11 @@ def validate_dossier_content(content: Any) -> dict:
     if not isinstance(content, dict):
         raise ValueError("Le contenu du dossier doit être un objet JSON.")
     allowed = {"schema_version", "status", "title", "employer", "facts_dates", "objective", "facts_summary",
-               "chronology", "questions", "legal_analyses", "legal_sources", "documents_and_evidence",
+               "chronology", "questions", "legal_analyses", "legal_sources", "instance_preparation", "documents_and_evidence",
                "points_to_verify", "conclusion", "action_plan", "generated_at", "conversation_message_count", "warning"}
     clean = {k: v for k, v in content.items() if k in allowed}
     for key, limit in {"title": 160, "employer": 180, "objective": 5000, "facts_summary": 20000,
-                       "chronology": 20000, "documents_and_evidence": 10000, "conclusion": 10000,
+                       "chronology": 20000, "instance_preparation": 20000, "documents_and_evidence": 10000, "conclusion": 10000,
                        "action_plan": 10000}.items():
         value = clean.get(key, "")
         if not isinstance(value, str) or len(value) > limit:
