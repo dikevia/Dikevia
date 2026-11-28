@@ -97,6 +97,7 @@ async def test_live_legifrance_success_uses_snapshot_as_article_discovery_only(m
         "00000000-0000-0000-0000-000000000001",
     )
 
+    print("DEBUG_CGFP_BASELINE", response.verification_status, response.missing_information, response.sources, captured.get("sources"))
     assert response.verification_status == "PARTIELLEMENT_VERIFIE"
     assert captured["sources"][0]["source_type"] == "LEGIFRANCE_LODA"
     assert not any(source["source_type"] == "CGFP_SNAPSHOT" for source in captured["sources"])
