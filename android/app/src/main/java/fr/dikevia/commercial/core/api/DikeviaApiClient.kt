@@ -13,6 +13,16 @@ data class DikeviaOrganization(
     val role: String
 )
 
+
+data class DikeviaInstanceSession(
+    val id: String,
+    val instanceCode: String,
+    val title: String,
+    val meetingDate: String?,
+    val meetingStatus: String,
+    val minutes: String
+)
+
 data class DikeviaAnswer(
     val conversationId: String?,
     val answer: String,
@@ -53,6 +63,68 @@ class DikeviaApiClient {
             }
         }
     }
+
+
+    fun listInstanceSessions(accessToken: String, idToken: String, organizationId: String): List<DikeviaInstanceSession> {
+        val json = request("/api/v1/instances/sessions?limit=50", "GET", accessToken, idToken, organizationId) as JSONArray
+        return buildList {
+            for (index in 0 until json.length()) {
+                val item = json.getJSONObject(index)
+                add(parseInstanceSession(item))
+            }
+        }
+    }
+
+    fun createInstanceSession(
+        accessToken: String,
+        idToken: String,
+        organizationId: String,
+        instanceCode: String,
+        title: String,
+        meetingDate: String?,
+        preparation: JSONObject,
+        minutes: String
+    ): DikeviaInstanceSession {
+        require(instanceCode in setOf("CST", "CAP", "CCP", "F3SCT"))
+        require(title.trim().length in 3..200) { "L'intitulé doit contenir entre 3 et 200 caractères." }
+        val payload = JSONObject()
+            .put("instance_code", instanceCode)
+            .put("title", title.trim())
+            .put("meeting_status", "PREPARATION")
+            .put("agenda", JSONArray().put(JSONObject().put("title", preparation.optString("objet", title.trim()))))
+            .put("preparation", preparation)
+            .put("questions", JSONArray())
+            .put("documents", JSONArray())
+            .put("minutes", minutes)
+            .put("action_items", JSONArray())
+        if (!meetingDate.isNullOrBlank()) payload.put("meeting_date", meetingDate.trim())
+        val response = request("/api/v1/instances/sessions", "POST", accessToken, idToken, organizationId, payload) as JSONObject
+        return parseInstanceSession(response)
+    }
+
+    fun updateInstanceSession(
+        accessToken: String,
+        idToken: String,
+        organizationId: String,
+        session: DikeviaInstanceSession,
+        minutes: String
+    ): DikeviaInstanceSession {
+        val payload = JSONObject().put("minutes", minutes)
+        val response = request(
+            "/api/v1/instances/sessions/${session.id}", "PUT",
+            accessToken, idToken, organizationId, payload
+        ) as JSONObject
+        return parseInstanceSession(response)
+    }
+
+    private fun parseInstanceSession(item: JSONObject) = DikeviaInstanceSession(
+        id = item.getString("id"),
+        instanceCode = item.optString("instance_code"),
+        title = item.optString("title"),
+        meetingDate = item.optString("meeting_date").takeIf { it.isNotBlank() && it != "null" },
+        meetingStatus = item.optString("meeting_status", "PREPARATION"),
+        minutes = item.optString("minutes", "")
+    )
 
     fun prepareInstance(
         accessToken: String,
