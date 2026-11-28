@@ -266,3 +266,25 @@ def test_native_instance_result_is_bound_to_the_selected_instance():
     assert "preparationMatchesInstance(instancePreparation, selectedInstance)" in source
     assert 'selectedInstance.equals("F3SCT", ignoreCase = true)' in source
     assert '"F3SCT (FS)"' in source
+
+
+def test_native_juris_chat_keeps_a_visible_multi_turn_transcript():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    native_ui = (
+        root / "android" / "app" / "src" / "main" / "java"
+        / "fr" / "dikevia" / "commercial" / "feature" / "home"
+        / "NativeHomeScreen.kt"
+    ).read_text(encoding="utf-8")
+    activity = (
+        root / "android" / "app" / "src" / "main" / "java"
+        / "fr" / "dikevia" / "commercial" / "NativePreviewActivity.kt"
+    ).read_text(encoding="utf-8")
+
+    assert "chatTranscript: List<JurisChatMessage>" in native_ui
+    assert 'if (message.role == "user") "Vous" else "JURIS"' in native_ui
+    assert 'chatTranscript.add(JurisChatMessage("user", question.trim()))' in activity
+    assert 'chatTranscript.add(JurisChatMessage("assistant", renderedAnswer))' in activity
+    assert "conversationAtSend" in activity
+    assert "conversationId = answer.conversationId" in activity
