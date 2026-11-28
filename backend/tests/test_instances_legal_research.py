@@ -155,6 +155,13 @@ def test_instance_ui_renders_law_sources_and_does_not_hide_metadata_only_jurispr
     assert "data.cst_qualification" in source
     assert "event.target.id!=='instanceObject'" in source
     assert "event.target.id!=='instanceType'" in source
+    assert "document.addEventListener('click',event=>{const button=event.target?.closest?.('[data-instance-choice]')" in source
+    assert "card.setAttribute('aria-pressed',String(active))" in source
+    assert all(f'data-instance-choice="{choice}"' in source for choice in ("CST", "CAP", "CCP", "FS"))
+    theme = frontend.with_name("dikevia-chat-theme.css").read_text(encoding="utf-8")
+    assert "pointer-events:auto" in theme
+    assert "touch-action:manipulation" in theme
+    assert ".instance-launch-card:focus-visible" in theme
 
 
 @pytest.mark.asyncio
