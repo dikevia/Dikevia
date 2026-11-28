@@ -998,6 +998,44 @@ async def delete_chat_conversation(conversation_id: str, ctx: TenantContext = De
     return None
 
 
+async def validate_instance_session_document_refs(ctx: TenantContext, documents: list) -> list:
+    """Resolve attached corpus documents inside the active tenant; never trust client metadata."""
+    ids = []
+    for item in documents:
+        if isinstance(item, dict) and item.get("document_id"):
+            try:
+                ids.append(str(UUID(str(item["document_id"]))))
+            except ValueError:
+                raise HTTPException(422, "Référence documentaire invalide.")
+    if not ids:
+        return documents
+    unique_ids = list(dict.fromkeys(ids))
+    rows = await ctx.conn.fetch(
+        """SELECT d.id,d.title,d.document_type,d.validation_status,d.scan_status,
+                  d.original_filename,c.name AS collectivity_name
+           FROM documents d JOIN collectivities c
+             ON c.id=d.collectivity_id AND c.organization_id=d.organization_id
+           WHERE d.organization_id=$1::uuid AND d.id=ANY($2::uuid[])""",
+        ctx.organization_id, unique_ids,
+    )
+    found = {str(row["id"]): row for row in rows}
+    if set(unique_ids) - set(found):
+        raise HTTPException(422, "Un document sélectionné est introuvable dans l'organisation active.")
+    result = []
+    for item in documents:
+        if not isinstance(item, dict) or not item.get("document_id"):
+            result.append(item)
+            continue
+        row = found[str(UUID(str(item["document_id"]))) ]
+        result.append({
+            "document_id": str(row["id"]), "title": row["title"],
+            "document_type": row["document_type"], "validation_status": row["validation_status"],
+            "scan_status": row["scan_status"], "filename": row["original_filename"],
+            "collectivity_name": row["collectivity_name"],
+        })
+    return result
+
+
 @app.get("/api/v1/instances/sessions", dependencies=[Depends(require_syndicate_subscription)])
 async def list_instance_sessions(limit: int = 50, ctx: TenantContext = Depends(get_tenant_context)):
     if limit < 1 or limit > 100:
@@ -1026,6 +1064,7 @@ async def create_instance_session(payload: dict, ctx: TenantContext = Depends(ge
     data.setdefault("documents", [])
     data.setdefault("minutes", "")
     data.setdefault("action_items", [])
+    data["documents"] = await validate_instance_session_document_refs(ctx, data["documents"])
     row = await ctx.conn.fetchrow(
         """INSERT INTO instance_sessions(
              organization_id,created_by,instance_code,title,meeting_date,meeting_status,
@@ -1119,6 +1158,7 @@ async def update_instance_session(session_id: str, payload: dict, ctx: TenantCon
         data = validate_instance_session(merged)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
+    data["documents"] = await validate_instance_session_document_refs(ctx, data["documents"])
     row = await ctx.conn.fetchrow(
         """UPDATE instance_sessions SET instance_code=$3,title=$4,meeting_date=$5::date,meeting_status=$6,
              agenda=$7::jsonb,preparation=$8::jsonb,questions=$9::jsonb,documents=$10::jsonb,
