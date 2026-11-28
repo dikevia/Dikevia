@@ -55,6 +55,7 @@ class Auth0NativeAuth(
         }
         try {
             WebAuthProvider.login(account)
+                .withScheme("${BuildConfig.APPLICATION_ID}.auth0")
                 .withAudience(BuildConfig.AUTH0_API_AUDIENCE)
                 .withScope(BuildConfig.AUTH0_OIDC_SCOPES)
                 .start(hostActivity, object : Callback<Credentials, AuthenticationException> {
@@ -104,6 +105,7 @@ class Auth0NativeAuth(
         onError: (String) -> Unit
     ) {
         WebAuthProvider.logout(account)
+            .withScheme("${BuildConfig.APPLICATION_ID}.auth0")
             .start(hostActivity, object : Callback<Void?, AuthenticationException> {
                 override fun onFailure(error: AuthenticationException) {
                     onError("La déconnexion Auth0 n'a pas abouti.")
