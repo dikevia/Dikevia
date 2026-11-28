@@ -900,6 +900,7 @@ $('#instanceObject').addEventListener('input',invalidateInstancePreparation);$('
  ].filter(Boolean).join('\n\n').slice(0,4100);
  const mission='\n\nMISSION JURIS : approfondis cette préparation. Vérifie les textes et leur version applicable à la date des faits, la jurisprudence pertinente et la compétence de l’instance. Distingue les sources effectivement récupérées des simples métadonnées, les faits déclarés des faits établis et les hypothèses des conclusions. Identifie les informations manquantes, pose les questions de clarification nécessaires, prépare des questions argumentées pour la séance et un plan d’action syndical. N’invente aucune source et ne présume jamais de la compétence de l’instance.';
  const prompt=(context+mission).slice(0,5000);
+ startNewChat();
  setView('ask');$('#askQuestion').value=prompt;$('#askCharCount').textContent=prompt.length+' / 5000';$('#askQuestion').focus();
 });$('#prepareInstance').addEventListener('click',prepareInstance);
 $('#orgSelect').addEventListener('change',e=>selectOrg(e.target.value).catch(e=>alert(e.message)));$$('.nav').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));$$('[data-goto]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.goto)));$('#refresh').addEventListener('click',()=>loadOverview().catch(e=>alert(e.message)));$('#checkLegifrance').addEventListener('click',checkLegifrance);$('#searchDocs').addEventListener('click',()=>searchDocs().catch(e=>alert(e.message)));$('#allDocs').addEventListener('click',()=>loadDocuments().catch(e=>alert(e.message)));
