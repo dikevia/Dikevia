@@ -42,6 +42,30 @@ def _source_metadata(source: dict) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def _render_integrated_claims(claims: list[dict]) -> tuple[str, dict[str, str]]:
+    """Render source-validated propositions as a coherent answer, not a document catalogue."""
+    unique_sources: dict[str, str] = {}
+    paragraphs: list[str] = []
+    current_axis = None
+    current_parts: list[str] = []
+    for claim in claims:
+        source_id = claim["source_id"]
+        unique_sources[source_id] = " ".join(
+            str(claim.get("source_title") or "").split()
+        )[:300]
+        axis = str(claim.get("axis") or "")
+        if current_parts and axis != current_axis:
+            paragraphs.append(" ".join(current_parts))
+            current_parts = []
+        current_axis = axis
+        text = " ".join(str(claim.get("text") or "").split()).strip()
+        if text:
+            current_parts.append(f"{text} [source:{source_id}]")
+    if current_parts:
+        paragraphs.append(" ".join(current_parts))
+    return "\n\n".join(paragraphs).strip(), unique_sources
+
+
 def _citation_is_valid(source: dict) -> bool:
     if not isinstance(source, dict):
         return False
@@ -2599,30 +2623,10 @@ class LegalOrchestrator:
                                     )
                                 # The model is instructed to put the direct answer first.
                                 # Render it immediately instead of prefacing it with legal boilerplate.
-                                # Keep the verified propositions, but present them as a
-                                # connected legal explanation grouped by research axis.
-                                # The source panel already exposes document titles and links;
-                                # repeating a bibliography here made JURIS sound like a search engine.
-                                unique_sources = {}
-                                paragraphs = []
-                                current_axis = None
-                                current_parts = []
-                                for claim in claims:
-                                    source_id = claim["source_id"]
-                                    unique_sources[source_id] = " ".join(
-                                        str(claim["source_title"]).split()
-                                    )[:300]
-                                    axis = str(claim.get("axis") or "")
-                                    if current_parts and axis != current_axis:
-                                        paragraphs.append(" ".join(current_parts))
-                                        current_parts = []
-                                    current_axis = axis
-                                    text = " ".join(str(claim["text"]).split()).strip()
-                                    if text:
-                                        current_parts.append(f"{text} [source:{source_id}]")
-                                if current_parts:
-                                    paragraphs.append(" ".join(current_parts))
-                                rendered_claims = ["\n\n".join(paragraphs).strip(), ""]
+                                # Render the validated claims as a coherent explanation;
+                                # detailed source titles and links remain in the source panel.
+                                integrated_answer, unique_sources = _render_integrated_claims(claims)
+                                rendered_claims = [integrated_answer, ""]
                                 if any(
                                     source.get("source_type") == "CGFP_SNAPSHOT"
                                     and source.get("reference_role") == "CGFP_SNAPSHOT_FALLBACK_EVIDENCE"
