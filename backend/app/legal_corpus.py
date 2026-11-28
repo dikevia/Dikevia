@@ -417,11 +417,31 @@ def corpus_version_citation_id(source_id: object, version_id: object = None) -> 
     return stable_source_id
 
 
+def _legal_source_family(item: dict) -> str:
+    """Return a broad legal family for balanced retrieval, not a legal-validity verdict."""
+    source_type = str(item.get("source_type") or "").upper()
+    document_kind = str(item.get("document_kind") or "").upper()
+    if document_kind in {"ADMIN_CASELAW", "LEGIFRANCE_CETAT"} or "CETAT" in source_type:
+        return "JURISPRUDENCE"
+    if document_kind in {"DECREE", "DECRET", "ORDER", "ARRETE", "LAW", "ORDONNANCE"}:
+        return "REGULATORY"
+    if document_kind in {"CODE", "CGFP_SNAPSHOT"} or source_type in {
+        "LEGIFRANCE_LEGI", "LEGIFRANCE_API", "CGFP_SNAPSHOT",
+    }:
+        return "CGFP"
+    return "OTHER"
+
+
 def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: int = 12) -> list[dict]:
-    """Keep results from each independent legal sub-question before de-duplication."""
+    """Interleave research axes while reserving room for complementary legal families.
+
+    This is retrieval diversity only. It does not promote a source to legal evidence:
+    temporal, authority, scope, citation and claim-level checks still run downstream.
+    """
     if not 1 <= limit <= 30:
         raise ValueError("La limite de résultats du corpus doit être comprise entre 1 et 30.")
-    selected: list[dict] = []
+
+    interleaved: list[dict] = []
     seen: set[str] = set()
     max_depth = max((len(items) for items in results_by_query), default=0)
     for depth in range(max_depth):
@@ -429,9 +449,6 @@ def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: i
             if depth >= len(items):
                 continue
             item = items[depth]
-            # A legal document can have several independently stored versions.
-            # De-duplicate repeated retrievals of the same version, not distinct
-            # versions sharing the document's stable official source_id.
             version_id = item.get("version_id")
             identifier = (
                 f"version:{version_id}"
@@ -443,9 +460,35 @@ def interleave_legal_corpus_results(results_by_query: list[list[dict]], limit: i
             if identifier is None or identifier in seen:
                 continue
             seen.add(identifier)
-            selected.append(item)
-            if len(selected) >= limit:
-                return selected
+            interleaved.append(item)
+
+    # First reserve the best retrieved candidate from each available legal family.
+    # This prevents a large family (usually codes or decrees) from crowding out
+    # jurisprudence or regulatory texts before downstream relevance checks.
+    selected: list[dict] = []
+    selected_ids: set[str] = set()
+    for family in ("CGFP", "REGULATORY", "JURISPRUDENCE"):
+        candidate = next((item for item in interleaved if _legal_source_family(item) == family), None)
+        if candidate is None:
+            continue
+        version_id = candidate.get("version_id")
+        identifier = f"version:{version_id}" if version_id else f"source:{candidate.get('source_id')}"
+        if identifier not in selected_ids:
+            selected.append(candidate)
+            selected_ids.add(identifier)
+        if len(selected) >= limit:
+            return selected[:limit]
+
+    # Fill remaining slots using the original round-robin order across query axes.
+    for item in interleaved:
+        version_id = item.get("version_id")
+        identifier = f"version:{version_id}" if version_id else f"source:{item.get('source_id')}"
+        if identifier in selected_ids:
+            continue
+        selected.append(item)
+        selected_ids.add(identifier)
+        if len(selected) >= limit:
+            break
     return selected
 
 
