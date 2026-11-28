@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +40,8 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.rememberDrawerState
 import kotlinx.coroutines.launch
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -60,6 +63,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import fr.dikevia.commercial.designsystem.JurisOrb
@@ -579,11 +584,27 @@ fun NativeHomeScreen(
                                                     Text(message.content, color = Navy, style = MaterialTheme.typography.bodyMedium)
                                                     if (message.role != "user") {
                                                         Spacer(Modifier.height(10.dp))
-                                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                            TextButton(onClick = { clipboard.setText(AnnotatedString(message.content)) }) { Text("Copier") }
-                                                            TextButton(onClick = { onReadAloud(message.content) }) { Text("Écouter") }
-                                                            TextButton(onClick = { onExportPdf(message.content) }) { Text("PDF") }
-                                                            if (isSpeaking) TextButton(onClick = onStopReading) { Text("Arrêter") }
+                                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                            IconButton(
+                                                                onClick = { clipboard.setText(AnnotatedString(message.content)) },
+                                                                modifier = Modifier.size(34.dp).semantics { contentDescription = "Copier la réponse" },
+                                                                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Glacier, contentColor = Navy)
+                                                            ) { Text("⧉", fontSize = 17.sp) }
+                                                            IconButton(
+                                                                onClick = { onReadAloud(message.content) },
+                                                                modifier = Modifier.size(34.dp).semantics { contentDescription = "Écouter la réponse" },
+                                                                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Glacier, contentColor = Navy)
+                                                            ) { Text("▶", fontSize = 13.sp) }
+                                                            IconButton(
+                                                                onClick = { onExportPdf(message.content) },
+                                                                modifier = Modifier.size(34.dp).semantics { contentDescription = "Exporter la réponse en PDF" },
+                                                                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Glacier, contentColor = Navy)
+                                                            ) { Text("PDF", fontSize = 9.sp, fontWeight = FontWeight.Bold) }
+                                                            if (isSpeaking) IconButton(
+                                                                onClick = onStopReading,
+                                                                modifier = Modifier.size(34.dp).semantics { contentDescription = "Arrêter la lecture" },
+                                                                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Glacier, contentColor = Navy)
+                                                            ) { Text("■", fontSize = 13.sp) }
                                                         }
                                                     }
                                                 }
@@ -656,7 +677,11 @@ fun NativeHomeScreen(
                         ) {
                             if (attachments.isNotEmpty()) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    TextButton(onClick = { onCreateZip(attachments.toList()) }) { Text("Créer ZIP") }
+                                    IconButton(
+                                        onClick = { onCreateZip(attachments.toList()) },
+                                        modifier = Modifier.size(34.dp).semantics { contentDescription = "Créer une archive ZIP avec les pièces jointes" },
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Glacier, contentColor = Navy)
+                                    ) { Text("ZIP", fontSize = 9.sp, fontWeight = FontWeight.Bold) }
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(
@@ -688,9 +713,18 @@ fun NativeHomeScreen(
                                 minLines = 1,
                                 maxLines = 5
                             )
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = authenticated && !sending && attachments.size < 8) { Text("＋ Fichier") }
-                                TextButton(
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = { filePicker.launch(arrayOf("*/*")) },
+                                    enabled = authenticated && !sending && attachments.size < 8,
+                                    modifier = Modifier.size(38.dp).semantics { contentDescription = "Joindre un fichier" },
+                                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Glacier, contentColor = Navy)
+                                ) { Text("＋", fontSize = 22.sp) }
+                                IconButton(
                                     onClick = {
                                         runCatching {
                                             val directory = File(context.cacheDir, "camera").apply { mkdirs() }
@@ -699,17 +733,24 @@ fun NativeHomeScreen(
                                             pendingPhotoUri?.let { camera.launch(it) }
                                         }
                                     },
-                                    enabled = authenticated && !sending && attachments.size < 8
-                                ) { Text("📷 Photo") }
-                                TextButton(
+                                    enabled = authenticated && !sending && attachments.size < 8,
+                                    modifier = Modifier.size(38.dp).semantics { contentDescription = "Prendre une photo" },
+                                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Glacier, contentColor = Navy)
+                                ) { Text("▣", fontSize = 17.sp) }
+                                IconButton(
                                     onClick = {
                                         voiceMode = !voiceMode
                                         if (voiceMode) lastAutoSpoken = chatTranscript.lastOrNull()?.content.orEmpty()
                                         else onStopReading()
                                     },
-                                    enabled = authenticated && !sending
-                                ) { Text(if (voiceMode) "Voix activée" else "Mode vocal") }
-                                TextButton(
+                                    enabled = authenticated && !sending,
+                                    modifier = Modifier.size(38.dp).semantics { contentDescription = if (voiceMode) "Désactiver le mode vocal" else "Activer le mode vocal" },
+                                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                        containerColor = if (voiceMode) Color(0xFFDCEFEA) else Glacier,
+                                        contentColor = if (voiceMode) Color(0xFF176B58) else Navy
+                                    )
+                                ) { Text("◖))", fontSize = 13.sp) }
+                                IconButton(
                                     onClick = {
                                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                                             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -718,8 +759,10 @@ fun NativeHomeScreen(
                                         }
                                         runCatching { voiceInput.launch(intent) }
                                     },
-                                    enabled = authenticated && !sending
-                                ) { Text("🎙 Parler") }
+                                    enabled = authenticated && !sending,
+                                    modifier = Modifier.size(38.dp).semantics { contentDescription = "Dicter une question à JURIS" },
+                                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Glacier, contentColor = Navy)
+                                ) { Text("🎙", fontSize = 17.sp) }
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
