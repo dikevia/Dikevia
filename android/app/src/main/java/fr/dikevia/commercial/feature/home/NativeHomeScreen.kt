@@ -422,13 +422,30 @@ fun NativeHomeScreen(
                         val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
                             ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null } ?: "piece_jointe"
                         require(isSupportedChatAttachment(name)) { "Format non pris en charge : $name" }
-                        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Impossible de lire $name")
-                        require(bytes.isNotEmpty() && bytes.size <= 60 * 1024 * 1024) { "Fichier vide ou supérieur à 60 Mo : $name" }
+                        val maxBytes = if (name.endsWith(".zip", ignoreCase = true)) 60 * 1024 * 1024 else 20 * 1024 * 1024
+                        val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
+                            val output = java.io.ByteArrayOutputStream()
+                            val buffer = ByteArray(16 * 1024)
+                            var total = 0
+                            while (true) {
+                                val count = input.read(buffer)
+                                if (count < 0) break
+                                total += count
+                                require(total <= maxBytes) { "Fichier trop volumineux : $name" }
+                                output.write(buffer, 0, count)
+                            }
+                            output.toByteArray()
+                        } ?: error("Impossible de lire $name")
+                        require(bytes.isNotEmpty()) { "Fichier vide : $name" }
                         JurisChatAttachment(name, context.contentResolver.getType(uri) ?: "application/octet-stream", bytes)
                     }.getOrNull()
                 }
             }
-            attachments = (attachments + loaded).take(8)
+            val combined = attachments.toMutableList()
+            loaded.forEach { item ->
+                if (combined.size < 8 && combined.sumOf { it.bytes.size } + item.bytes.size <= 60 * 1024 * 1024) combined.add(item)
+            }
+            attachments = combined
         }
     }
     var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
