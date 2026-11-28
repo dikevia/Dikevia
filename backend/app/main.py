@@ -1064,6 +1064,30 @@ async def get_instance_session(session_id: str, ctx: TenantContext = Depends(get
     return serialize_instance_session(row)
 
 
+@app.get("/api/v1/instances/sessions/{session_id}/pdf", dependencies=[Depends(require_syndicate_subscription)])
+async def download_instance_session_pdf(session_id: str, ctx: TenantContext = Depends(get_tenant_context)):
+    try:
+        session_uuid = str(UUID(session_id))
+    except ValueError:
+        raise HTTPException(422, "Identifiant de séance invalide.")
+    row = await ctx.conn.fetchrow(
+        """SELECT id,instance_code,title,meeting_date,meeting_status,agenda,preparation,
+                  questions,documents,minutes,action_items,created_by,created_at,updated_at
+           FROM instance_sessions WHERE id=$1::uuid AND organization_id=$2::uuid""",
+        session_uuid, ctx.organization_id,
+    )
+    if not row:
+        raise HTTPException(404, "Dossier de séance introuvable dans cette organisation.")
+    from .instance_sessions import render_instance_session_pdf
+    pdf_bytes = render_instance_session_pdf(serialize_instance_session(row))
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="dossier-seance-{session_uuid}.pdf"',
+                 "Cache-Control": "private, no-store"},
+    )
+
+
 @app.put("/api/v1/instances/sessions/{session_id}", dependencies=[Depends(require_syndicate_subscription)])
 async def update_instance_session(session_id: str, payload: dict, ctx: TenantContext = Depends(get_tenant_context)):
     try:
