@@ -54,7 +54,7 @@ def test_instance_session_frontend_exposes_shared_session_dossier_workflow():
     for control in (
         "instanceSessionsPanel", "refreshInstanceSessions", "sessionTitle",
         "sessionAgenda", "sessionQuestions", "sessionDocuments", "sessionMinutes",
-        "sessionActions", "createInstanceSession", "saveInstanceSession", "exportInstanceSessionPdf",
+        "sessionActions", "createInstanceSession", "saveInstanceSession", "exportInstanceSessionPdf", "continueSessionWithJuris",
         "/api/v1/instances/sessions",
     ):
         assert control in html
@@ -63,6 +63,8 @@ def test_instance_session_frontend_exposes_shared_session_dossier_workflow():
     assert ".join('\\n')" in html
     assert "preparation:activeInstanceSession?activeInstanceSession.preparation:(latestInstancePreparation||{})" in html
     assert "/pdf" in html
+    assert "MISSION JURIS" in html
+    assert "N’invente aucune source" in html
 
 
 
