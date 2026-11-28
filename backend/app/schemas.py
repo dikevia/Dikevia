@@ -17,6 +17,7 @@ class AskRequest(BaseModel):
     situation_ongoing: bool = False
     question: str = Field(min_length=1, max_length=5000)
     confirm_local_document_ai_transfer: bool = False
+    local_document_ids: list[UUID] = Field(default_factory=list, max_length=20)
     # The model identifier travels with the vector so incompatible client encoders fail closed.
     query_embedding_model: Literal["Xenova/paraphrase-multilingual-MiniLM-L12-v2"] | None = None
     query_embedding: list[float] | None = Field(default=None, min_length=384, max_length=384)
