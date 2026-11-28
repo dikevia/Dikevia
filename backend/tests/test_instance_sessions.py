@@ -68,6 +68,29 @@ def test_instance_session_frontend_exposes_shared_session_dossier_workflow():
 
 
 
+def test_instance_session_pdf_displays_linked_document_metadata():
+    from io import BytesIO
+    from pypdf import PdfReader
+
+    pdf = render_instance_session_pdf({
+        "id": "test-linked-doc",
+        "instance_code": "CST",
+        "title": "Séance CST — documents liés",
+        "meeting_status": "PREPARATION",
+        "documents": [{
+            "document_id": "doc-123", "title": "Délibération temps de travail",
+            "collectivity_name": "Ville de test", "validation_status": "VERIFIED",
+            "scan_status": "CLEAN",
+        }],
+    })
+    text = " ".join(page.extract_text() or "" for page in PdfReader(BytesIO(pdf)).pages)
+    assert "Délibération temps de travail" in text
+    assert "Ville de test" in text
+    assert "VERIFIED" in text
+    assert "CLEAN" in text
+    assert "doc-123" in text
+
+
 def test_instance_session_pdf_contains_agenda_notes_and_warning():
     from pypdf import PdfReader
     from io import BytesIO
