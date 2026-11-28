@@ -73,3 +73,42 @@ def test_dossier_persists_local_source_collectivity_and_validation_fields():
     assert "x.collectivity" in html
     assert "x.local_document_type" in html
     assert "x.validation_status" in html
+
+
+
+def test_server_pdf_export_renders_dossier_without_losing_legal_caveats():
+    from pypdf import PdfReader
+    from io import BytesIO
+    from app.dossier_pdf import render_legal_dossier_pdf
+
+    content = build_dossier_content(
+        {"title": "Dossier congés"},
+        [
+            {"role": "user", "content": "Refus de congés les 3 et 4 juin."},
+            {"role": "assistant", "content": "Analyse à contrôler.",
+             "metadata": {"verification_status": "NON_VERIFIE",
+                          "sources": [{"title": "CGFP L. 621-1",
+                                       "official_url": "https://www.legifrance.gouv.fr"}]}},
+        ],
+    )
+    pdf = render_legal_dossier_pdf(content, "test-dossier")
+    assert pdf.startswith(b"%PDF-")
+    reader = PdfReader(BytesIO(pdf))
+    extracted = "\n".join(page.extract_text() or "" for page in reader.pages)
+    assert "Dossier congés" in extracted
+    assert "NON_VERIFIE" in extracted
+    assert "ne vaut ni validation juridique" in extracted
+    assert "CGFP L. 621-1" in extracted
+
+
+def test_dossier_pdf_route_is_authenticated_and_private():
+    from app.main import app
+    route = next(
+        r for r in app.routes
+        if getattr(r, "path", None) == "/api/v1/chat/conversations/{conversation_id}/dossier/pdf"
+    )
+    import inspect
+    source = inspect.getsource(route.endpoint)
+    assert "organization_id=$2::uuid AND user_id=$3::uuid" in source
+    assert "application/pdf" in source
+    assert "Cache-Control" in source
