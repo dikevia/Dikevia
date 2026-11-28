@@ -59,6 +59,8 @@ def test_instance_session_frontend_exposes_shared_session_dossier_workflow():
     ):
         assert control in html
     assert "loadInstanceSessions()" in html
+    assert "split(/\\r?\\n/)" in html
+    assert ".join('\\n')" in html
     assert "preparation:activeInstanceSession?activeInstanceSession.preparation:(latestInstancePreparation||{})" in html
     assert "/pdf" in html
 
