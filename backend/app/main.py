@@ -1099,7 +1099,7 @@ async def update_legal_dossier(conversation_id: str, payload: dict, ctx: TenantC
     # Original exchanges, AI analyses, citations and verification metadata are immutable here.
     # Only the explicitly editable dossier fields may be changed by the user.
     editable = {"status", "title", "employer", "objective", "facts_summary", "chronology",
-                "documents_and_evidence", "conclusion", "action_plan"}
+                "documents_and_evidence", "instance_preparation", "conclusion", "action_plan"}
     for key in editable:
         if key in content:
             stored[key] = content[key]
