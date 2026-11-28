@@ -1103,6 +1103,11 @@ async def update_instance_session(session_id: str, payload: dict, ctx: TenantCon
     if not existing:
         raise HTTPException(404, "Dossier de séance introuvable dans cette organisation.")
     stored = serialize_instance_session(existing)
+    # The instance identity is immutable after creation. Enforce this server-side;
+    # a disabled HTML select is only a usability guard, not an authorization boundary.
+    requested_instance = payload.get("instance_code", stored["instance_code"])
+    if requested_instance != stored["instance_code"]:
+        raise HTTPException(422, "L'instance d'un dossier de séance ne peut pas être modifiée. Créez un nouveau dossier.")
     merged = {key: stored[key] for key in (
         "instance_code","title","meeting_date","meeting_status","agenda","preparation",
         "questions","documents","minutes","action_items"
