@@ -484,7 +484,9 @@ async def search_legal_corpus(
     rows = await conn.fetch("""
       WITH search_terms AS (
         SELECT websearch_to_tsquery('french',$1) AS original_query,
-               websearch_to_tsquery('french',$2) AS expansion_query
+               to_tsquery('french', array_to_string(
+                 tsvector_to_array(to_tsvector('french',$2)), ' | '
+               )) AS expansion_query
       ), lexical_candidates AS (
         SELECT c.id chunk_id,c.version_id,c.ordinal,
           (2.0 * ts_rank_cd(c.search_vector,st.original_query)
