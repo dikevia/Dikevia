@@ -1,7 +1,9 @@
 package fr.dikevia.commercial.feature.home
 
 import android.content.Intent
-import android.graphics.Bitmap
+import android.net.Uri
+import androidx.core.content.FileProvider
+import java.io.File
 import android.provider.OpenableColumns
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -429,11 +431,17 @@ fun NativeHomeScreen(
             attachments = (attachments + loaded).take(8)
         }
     }
-    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
-        if (bitmap != null) {
-            val output = java.io.ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 88, output)
-            attachments = (attachments + JurisChatAttachment("photo_${System.currentTimeMillis()}.jpg", "image/jpeg", output.toByteArray())).take(8)
+    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        val uri = pendingPhotoUri
+        pendingPhotoUri = null
+        if (success && uri != null) attachmentScope.launch {
+            val photo = withContext(Dispatchers.IO) {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            }
+            if (photo != null && photo.isNotEmpty()) {
+                attachments = (attachments + JurisChatAttachment("photo_${System.currentTimeMillis()}.jpg", "image/jpeg", photo)).take(8)
+            }
         }
     }
     val voiceInput = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -654,7 +662,17 @@ fun NativeHomeScreen(
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 TextButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = authenticated && !sending && attachments.size < 8) { Text("＋ Fichier") }
-                                TextButton(onClick = { camera.launch(null) }, enabled = authenticated && !sending && attachments.size < 8) { Text("📷 Photo") }
+                                TextButton(
+                                    onClick = {
+                                        runCatching {
+                                            val directory = File(context.cacheDir, "camera").apply { mkdirs() }
+                                            val file = File(directory, "juris_${System.currentTimeMillis()}.jpg")
+                                            pendingPhotoUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                                            camera.launch(pendingPhotoUri)
+                                        }
+                                    },
+                                    enabled = authenticated && !sending && attachments.size < 8
+                                ) { Text("📷 Photo") }
                                 TextButton(
                                     onClick = {
                                         voiceMode = !voiceMode
